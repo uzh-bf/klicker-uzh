@@ -102,9 +102,7 @@ function LiveSessionWizard({
         timeLimit: yup
           .number()
           .min(1, t('manage.sessionForms.liveQuizTimeRestriction')),
-        questionIds: yup
-          .array()
-          .min(1, t('manage.sessionForms.liveQuizMinQuestions')),
+        questionIds: yup.array(),
       })
     ),
   })

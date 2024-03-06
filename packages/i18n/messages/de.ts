@@ -477,6 +477,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     microSession: {
+      numOfQuestionSets: 'Anzahl Fragesets: {number}',
       notFound:
         'Unter diesem Link existiert kein Microlearning oder diese ist noch nicht aktiv.',
       solvedMicrolearning:
@@ -487,6 +488,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       availableFrom: 'Verfügbar ab {date}',
       availableUntil: 'Verfügbar bis {date}',
+      questionSetN: 'Frageset {number}',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',
@@ -612,7 +614,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
-      sessions: 'Sessionen',
+      sessions: 'Live-Quizzes',
       courses: 'Kurse',
       migration: 'Migration',
       generateToken: 'Login-Token generieren',
@@ -1214,6 +1216,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      courseElements: 'Kurs-Elemente',
+      otherActions: 'Weitere Aktionen',
     },
   },
   control: {

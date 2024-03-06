@@ -184,7 +184,7 @@ export const Participation = ParticipationRef.implement({
       nullable: true,
     }),
 
-    completedMicroSessions: t.exposeStringList('completedMicroSessions'),
+    completedMicroLearnings: t.exposeStringList('completedMicroLearnings'),
 
     course: t.expose('course', {
       type: CourseRef,

@@ -138,7 +138,6 @@ model User {
   tags              Tag[]
   questionInstances QuestionInstance[]
   sessions          LiveSession[]
-  learningElements  LearningElement[]
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
   elementInstances  ElementInstance[]
@@ -454,13 +453,9 @@ model QuestionStack {
 
   elements StackElement[]
 
-  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  learningElementId String?          @db.Uuid
-  groupActivity     GroupActivity?
+  groupActivity GroupActivity?
 
   bookmarkedBy Participation[]
-
-  @@unique([type, learningElementId, order])
 }
 
 model StackElement {
@@ -498,7 +493,6 @@ model Course {
   isGamificationEnabled Boolean   @default(true)
 
   sessions          LiveSession[]
-  learningElements  LearningElement[]
   microSessions     MicroSession[]
   elementStacks     ElementStack[]
   practiceQuizzes   PracticeQuiz[]
@@ -666,58 +660,16 @@ model LiveQuiz {
 
 // #endregion
 
-// ----- PRACTICE QUIZZES -----
-// #region
-enum OrderType {
-  SEQUENTIAL
-  SHUFFLED
-  LAST_RESPONSE
-}
-
-enum LearningElementStatus {
-  DRAFT
-  PUBLISHED
-}
-
-model LearningElement {
-  id String @id @default(uuid()) @db.Uuid
-
-  name             String
-  displayName      String
-  description      String?
-  pointsMultiplier Int                   @default(1)
-  resetTimeDays    Int                   @default(6)
-  orderType        OrderType             @default(SEQUENTIAL)
-  status           LearningElementStatus @default(DRAFT)
-
-  stacks QuestionStack[]
-
-  owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId  String  @db.Uuid
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// #endregion
-
 // ----- MICROLEARNING -----
 // #region
-enum MicroLearningStatus {
-  DRAFT
-  PUBLISHED
-}
-
 model MicroLearning {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int                 @default(1)
+  pointsMultiplier Int               @default(1)
   description      String?
-  status           MicroLearningStatus @default(DRAFT)
+  status           PublicationStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
@@ -1061,6 +1013,7 @@ model Participation {
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
   completedMicroSessions  String[]
+  completedMicroLearnings String[]
   bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
   bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]

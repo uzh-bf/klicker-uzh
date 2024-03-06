@@ -40,6 +40,7 @@ import {
   QuestionResponse,
   QuestionResponseChoices,
   StackFeedbackStatus,
+  StackInput,
 } from '../types/app'
 
 const POINTS_PER_INSTANCE = 10
@@ -100,6 +101,7 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       stacks: orderedStacks,
+      numOfStacks: orderedStacks.length,
     }
   }
 
@@ -1071,7 +1073,7 @@ function combineStackStatus({
   return prevStatus
 }
 
-interface RespondToPracticeQuizStackInput {
+interface RespondToElementStackInput {
   stackId: number
   courseId: string
   responses: {
@@ -1085,8 +1087,8 @@ interface RespondToPracticeQuizStackInput {
   }[]
 }
 
-export async function respondToPracticeQuizStack(
-  { stackId, courseId, responses }: RespondToPracticeQuizStackInput,
+export async function respondToElementStack(
+  { stackId, courseId, responses }: RespondToElementStackInput,
   ctx: Context
 ) {
   let stackScore: number | undefined = undefined
@@ -1239,22 +1241,12 @@ export async function respondToPracticeQuizStack(
   }
 }
 
-interface PracticeQuizStackInput {
-  displayName?: string | null
-  description?: string | null
-  order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
-}
-
 interface ManipulatePracticeQuizArgs {
   id?: string
   name: string
   displayName: string
   description?: string | null
-  stacks: PracticeQuizStackInput[]
+  stacks: StackInput[]
   courseId: string
   multiplier: number
   order: ElementOrderType
@@ -1320,8 +1312,8 @@ export async function manipulatePracticeQuiz(
     .flatMap((stack) => stack.elements)
     .map((stackElem) => stackElem.elementId)
     .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== undefined
-    ) as number[]
+      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
+    )
 
   const dbElements = await ctx.prisma.element.findMany({
     where: {

@@ -1,6 +1,0 @@
-mutation RequestPresignedURL($fileType: String!) {
-  requestPresignedURL(fileType: $fileType) {
-    fileName
-    signedUrl
-  }
-}

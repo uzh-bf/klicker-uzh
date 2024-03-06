@@ -1616,7 +1616,7 @@
             "deprecationReason": null
           },
           {
-            "name": "microSessions",
+            "name": "microLearnings",
             "description": null,
             "args": [],
             "type": {
@@ -1627,7 +1627,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "MicroSession",
+                  "name": "MicroLearning",
                   "ofType": null
                 }
               }
@@ -5466,7 +5466,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "MicroSession",
+        "name": "MicroLearning",
         "description": null,
         "fields": [
           {
@@ -5542,26 +5542,6 @@
             "deprecationReason": null
           },
           {
-            "name": "instances",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "QuestionInstance",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "name",
             "description": null,
             "args": [],
@@ -5578,7 +5558,7 @@
             "deprecationReason": null
           },
           {
-            "name": "numOfInstances",
+            "name": "numOfStacks",
             "description": null,
             "args": [],
             "type": {
@@ -5638,6 +5618,26 @@
             "deprecationReason": null
           },
           {
+            "name": "stacks",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "ElementStack",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "status",
             "description": null,
             "args": [],
@@ -5646,7 +5646,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "MicroSessionStatus",
+                "name": "PublicationStatus",
                 "ofType": null
               }
             },
@@ -5657,29 +5657,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "MicroSessionStatus",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "DRAFT",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "PUBLISHED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -6475,7 +6452,7 @@
             "deprecationReason": null
           },
           {
-            "name": "createMicroSession",
+            "name": "createMicroLearning",
             "description": null,
             "args": [
               {
@@ -6567,7 +6544,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "questions",
+                "name": "stacks",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -6579,8 +6556,8 @@
                       "kind": "NON_NULL",
                       "name": null,
                       "ofType": {
-                        "kind": "SCALAR",
-                        "name": "Int",
+                        "kind": "INPUT_OBJECT",
+                        "name": "ElementStackInput",
                         "ofType": null
                       }
                     }
@@ -6609,7 +6586,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -7232,7 +7209,7 @@
             "deprecationReason": null
           },
           {
-            "name": "deleteMicroSession",
+            "name": "deleteMicroLearning",
             "description": null,
             "args": [
               {
@@ -7254,7 +7231,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -7418,7 +7395,7 @@
             "deprecationReason": null
           },
           {
-            "name": "editMicroSession",
+            "name": "editMicroLearning",
             "description": null,
             "args": [
               {
@@ -7526,7 +7503,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "questions",
+                "name": "stacks",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -7538,8 +7515,8 @@
                       "kind": "NON_NULL",
                       "name": null,
                       "ofType": {
-                        "kind": "SCALAR",
-                        "name": "Int",
+                        "kind": "INPUT_OBJECT",
+                        "name": "ElementStackInput",
                         "ofType": null
                       }
                     }
@@ -7568,7 +7545,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -8971,7 +8948,7 @@
             "deprecationReason": null
           },
           {
-            "name": "markMicroSessionCompleted",
+            "name": "markMicroLearningCompleted",
             "description": null,
             "args": [
               {
@@ -9106,7 +9083,7 @@
             "deprecationReason": null
           },
           {
-            "name": "publishMicroSession",
+            "name": "publishMicroLearning",
             "description": null,
             "args": [
               {
@@ -9128,7 +9105,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -9238,52 +9215,7 @@
             "deprecationReason": null
           },
           {
-            "name": "respondToFeedback",
-            "description": null,
-            "args": [
-              {
-                "name": "id",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "responseContent",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Feedback",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "respondToPracticeQuizStack",
+            "name": "respondToElementStack",
             "description": null,
             "args": [
               {
@@ -9352,25 +9284,9 @@
             "deprecationReason": null
           },
           {
-            "name": "respondToQuestionInstance",
+            "name": "respondToFeedback",
             "description": null,
             "args": [
-              {
-                "name": "courseId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
               {
                 "name": "id",
                 "description": null,
@@ -9388,14 +9304,14 @@
                 "deprecationReason": null
               },
               {
-                "name": "response",
+                "name": "responseContent",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "INPUT_OBJECT",
-                    "name": "ResponseInput",
+                    "kind": "SCALAR",
+                    "name": "String",
                     "ofType": null
                   }
                 },
@@ -9406,7 +9322,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "QuestionInstance",
+              "name": "Feedback",
               "ofType": null
             },
             "isDeprecated": false,
@@ -9691,7 +9607,7 @@
             "deprecationReason": null
           },
           {
-            "name": "unpublishMicroSession",
+            "name": "unpublishMicroLearning",
             "description": null,
             "args": [
               {
@@ -9713,7 +9629,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -11610,7 +11526,7 @@
         "description": null,
         "fields": [
           {
-            "name": "completedMicroSessions",
+            "name": "completedMicroLearnings",
             "description": null,
             "args": [],
             "type": {
@@ -11805,7 +11721,7 @@
             "deprecationReason": null
           },
           {
-            "name": "numOfQuestions",
+            "name": "numOfStacks",
             "description": null,
             "args": [],
             "type": {
@@ -11904,35 +11820,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "PracticeQuizOrderType",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "LAST_RESPONSE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SEQUENTIAL",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SHUFFLED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -12603,7 +12490,7 @@
             "deprecationReason": null
           },
           {
-            "name": "microSession",
+            "name": "microLearning",
             "description": null,
             "args": [
               {
@@ -12625,7 +12512,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "MicroSession",
+              "name": "MicroLearning",
               "ofType": null
             },
             "isDeprecated": false,
@@ -13030,35 +12917,6 @@
                   "ofType": null
                 }
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "singleMicroSession",
-            "description": null,
-            "args": [
-              {
-                "name": "id",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "MicroSession",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null

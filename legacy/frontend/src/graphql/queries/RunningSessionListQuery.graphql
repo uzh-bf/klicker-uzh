@@ -1,9 +1,0 @@
-query RunningSessionList {
-  sessions: allRunningSessions {
-    id
-    startedAt
-    user {
-      email
-    }
-  }
-}

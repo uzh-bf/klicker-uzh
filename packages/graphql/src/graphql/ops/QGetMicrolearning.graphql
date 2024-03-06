@@ -1,0 +1,31 @@
+#import "./FElementDataWithoutSolutions.graphql"
+
+query GetMicroLearning($id: String!) {
+  microLearning(id: $id) {
+    id
+    name
+    displayName
+    description
+    pointsMultiplier
+    scheduledStartAt
+    scheduledEndAt
+    course {
+      id
+      displayName
+      color
+    }
+    stacks {
+      id
+      type
+      displayName
+      description
+      order
+      elements {
+        id
+        type
+        elementType
+        ...ElementDataWithoutSolutions
+      }
+    }
+  }
+}

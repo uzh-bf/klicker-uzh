@@ -1,8 +1,0 @@
-mutation DeleteFeedback($sessionId: ID!, $feedbackId: ID!) {
-  deleteFeedback(sessionId: $sessionId, feedbackId: $feedbackId) {
-    id
-    feedbacks {
-      id
-    }
-  }
-}

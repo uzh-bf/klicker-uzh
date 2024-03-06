@@ -475,6 +475,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
     microSession: {
+      numOfQuestionSets: 'Number of question sets: {number}',
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
@@ -485,6 +486,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       availableFrom: 'Available from {date}',
       availableUntil: 'Available until {date}',
+      questionSetN: 'Question set {number}',
     },
     session: {
       noActiveQuestion: 'No question active.',
@@ -614,7 +616,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
-      sessions: 'Quizzes',
+      sessions: 'Live Quizzes',
       courses: 'Courses',
       migration: 'Migration',
       generateToken: 'Generate login token',
@@ -1205,6 +1207,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following practice quiz?',
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      courseElements: 'Course Elements',
+      otherActions: 'Other actions',
     },
   },
   control: {

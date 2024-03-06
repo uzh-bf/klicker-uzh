@@ -4,7 +4,7 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PracticeQuizOrderType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -52,7 +52,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
   isModerationEnabled: boolean
 }
 
-export interface MicroSessionFormValues extends CommonFormValues {
+export interface MicroLearningFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
@@ -61,7 +61,7 @@ export interface MicroSessionFormValues extends CommonFormValues {
   }[]
   startDate: string
   endDate: string
-  order: PracticeQuizOrderType
+  order: ElementOrderType
   resetTimeDays: string
 }
 
@@ -113,7 +113,7 @@ function MultistepWizard({
   const handleSubmit = async (
     values:
       | LiveSessionFormValues
-      | MicroSessionFormValues
+      | MicroLearningFormValues
       | PracticeQuizFormValues,
     bag: any
   ) => {

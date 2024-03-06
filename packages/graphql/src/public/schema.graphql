@@ -142,7 +142,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
-  microSessions: [MicroSession!]
+  microLearnings: [MicroLearning!]
   name: String!
   notificationEmail: String
   numOfActiveParticipants: Int
@@ -512,24 +512,19 @@ type MediaFile {
   type: String!
 }
 
-type MicroSession {
+type MicroLearning {
   arePushNotificationsSent: Boolean!
   course: Course
   description: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]
   name: String!
-  numOfInstances: Int
+  numOfStacks: Int
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
-  status: MicroSessionStatus!
-}
-
-enum MicroSessionStatus {
-  DRAFT
-  PUBLISHED
+  stacks: [ElementStack!]
+  status: PublicationStatus!
 }
 
 type Mutation {
@@ -548,7 +543,7 @@ type Mutation {
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
-  createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
+  createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
@@ -557,14 +552,14 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
-  deleteMicroSession(id: String!): MicroSession
+  deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
-  editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
+  editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
@@ -588,16 +583,15 @@ type Mutation {
   manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, tags: [String!]): Element
   manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!]): Element
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!]): Element
-  markMicroSessionCompleted(courseId: String!, id: String!): Participation
+  markMicroLearningCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
-  publishMicroSession(id: String!): MicroSession
+  publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToPracticeQuizStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
-  respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
@@ -605,7 +599,7 @@ type Mutation {
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
-  unpublishMicroSession(id: String!): MicroSession
+  unpublishMicroLearning(id: String!): MicroLearning
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -759,7 +753,7 @@ type ParticipantWithAchievements {
 }
 
 type Participation {
-  completedMicroSessions: [String!]!
+  completedMicroLearnings: [String!]!
   course: Course
   id: Int!
   isActive: Boolean!
@@ -774,18 +768,12 @@ type PracticeQuiz {
   displayName: String!
   id: String!
   name: String!
-  numOfQuestions: Int
+  numOfStacks: Int
   orderType: ElementOrderType!
   pointsMultiplier: Int!
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PublicationStatus!
-}
-
-enum PracticeQuizOrderType {
-  LAST_RESPONSE
-  SEQUENTIAL
-  SHUFFLED
 }
 
 enum PublicationStatus {
@@ -819,7 +807,7 @@ type Query {
   getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
-  microSession(id: String!): MicroSession
+  microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
@@ -834,7 +822,6 @@ type Query {
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
   sessionHMAC(id: String!): String
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
-  singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userLogins: [UserLogin!]

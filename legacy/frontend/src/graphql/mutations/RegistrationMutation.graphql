@@ -1,9 +1,0 @@
-mutation CreateUser($email: String!, $password: String!, $shortname: String!, $institution: String!, $useCase: String) {
-  createUser(email: $email, password: $password, shortname: $shortname, institution: $institution, useCase: $useCase) {
-    id
-    email
-    shortname
-    institution
-    useCase
-  }
-}

@@ -2,8 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder'
 import { GroupActivityRef, IGroupActivity } from './groupActivity'
-import type { IMicroSession } from './microSession'
-import { MicroSessionRef } from './microSession'
+import { IMicroLearning, MicroLearningRef } from './microLearning'
 import type {
   IParticipant,
   IParticipantGroup,
@@ -28,7 +27,7 @@ export interface ICourse extends DB.Course {
 
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
-  microSessions?: IMicroSession[]
+  microLearnings?: IMicroLearning[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
@@ -94,8 +93,8 @@ export const Course = builder.objectType(CourseRef, {
       type: [PracticeQuizRef],
       nullable: true,
     }),
-    microSessions: t.expose('microSessions', {
-      type: [MicroSessionRef],
+    microLearnings: t.expose('microLearnings', {
+      type: [MicroLearningRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {

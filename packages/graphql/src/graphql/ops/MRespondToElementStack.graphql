@@ -1,0 +1,36 @@
+mutation RespondToElementStack(
+  $stackId: Int!
+  $courseId: String!
+  $responses: [StackResponseInput!]!
+) {
+  respondToElementStack(
+    stackId: $stackId
+    courseId: $courseId
+    responses: $responses
+  ) {
+    id
+    status
+    score
+    evaluations {
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      choices
+      answers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      solutions
+      solutionRanges
+    }
+  }
+}

@@ -1,3 +1,0 @@
-mutation DeleteResponse($instanceId: ID!, $response: String!) {
-  deleteResponse(instanceId: $instanceId, response: $response)
-}

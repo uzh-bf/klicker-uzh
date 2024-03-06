@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstanceType,
-  PublishMicroSessionDocument,
+  PublishMicroLearningDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
@@ -30,7 +30,7 @@ function PublishConfirmationModal({
       id: elementId,
     },
   })
-  const [publishMicroSession] = useMutation(PublishMicroSessionDocument, {
+  const [publishMicroLearning] = useMutation(PublishMicroLearningDocument, {
     variables: {
       id: elementId,
     },
@@ -42,7 +42,7 @@ function PublishConfirmationModal({
         <Button
           onClick={async () => {
             if (elementType === ElementInstanceType.Microlearning) {
-              await publishMicroSession()
+              await publishMicroLearning()
             } else if (elementType === ElementInstanceType.PracticeQuiz) {
               await publishPracticeQuiz()
             }

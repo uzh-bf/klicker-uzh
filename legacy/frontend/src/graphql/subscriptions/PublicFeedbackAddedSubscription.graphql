@@ -1,7 +1,0 @@
-#import "../fragments/PublicFeedbackFragment.graphql"
-
-subscription PublicFeedbackAdded($sessionId: ID!) {
-  publicFeedbackAdded(sessionId: $sessionId) {
-    ...PublicFeedbackFields
-  }
-}

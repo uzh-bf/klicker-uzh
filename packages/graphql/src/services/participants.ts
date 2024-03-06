@@ -1,8 +1,4 @@
-import {
-  MicroSessionStatus,
-  PublicationStatus,
-  SessionStatus,
-} from '@klicker-uzh/prisma'
+import { PublicationStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail'
@@ -109,7 +105,7 @@ export async function getParticipations(
             : undefined,
           course: {
             include: {
-              microSessions: {
+              microLearnings: {
                 where: {
                   scheduledStartAt: {
                     lt: new Date(),
@@ -117,7 +113,7 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                  status: MicroSessionStatus.PUBLISHED,
+                  status: PublicationStatus.PUBLISHED,
                 },
               },
               sessions: {

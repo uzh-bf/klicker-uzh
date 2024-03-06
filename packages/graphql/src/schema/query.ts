@@ -4,14 +4,14 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
-import * as MicroSessionService from '../services/microLearning'
+import * as MicroLearningService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { GroupActivityDetails } from './groupActivity'
-import { MicroSession } from './microSession'
+import { MicroLearning } from './microLearning'
 import {
   Participant,
   ParticipantGroup,
@@ -266,14 +266,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      microSession: t.field({
+      microLearning: t.field({
         nullable: true,
-        type: MicroSession,
+        type: MicroLearning,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return MicroSessionService.getSingleMicroSession(args, ctx)
+          return MicroLearningService.getSingleMicroLearning(args, ctx)
         },
       }),
 
@@ -364,17 +364,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return QuestionService.getSingleQuestion(args, ctx)
-        },
-      }),
-
-      singleMicroSession: asUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroSessionService.getSingleMicroSession(args, ctx)
         },
       }),
 

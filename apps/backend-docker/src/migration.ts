@@ -2,7 +2,6 @@
 
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 import { PrismaClient } from '@klicker-uzh/prisma'
-import UpgradeQuestionDataMigration from '../scripts/2023-11-13_upgrade_question_data.js'
 
 interface Migration {
   id: string
@@ -10,13 +9,7 @@ interface Migration {
   migrate: (tx: PrismaMigrationClient) => Promise<void>
 }
 
-const migrations: Migration[] = [
-  {
-    id: '2023-11-13_upgrade_question_data',
-    isIdempotent: true,
-    migrate: UpgradeQuestionDataMigration,
-  },
-]
+const migrations: Migration[] = []
 
 export async function migrate(prisma: PrismaClient) {
   for (const { id, isIdempotent, migrate } of migrations) {

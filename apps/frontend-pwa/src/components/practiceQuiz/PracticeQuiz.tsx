@@ -99,7 +99,7 @@ function PracticeQuiz({
           <PracticeQuizOverview
             displayName={quiz.displayName}
             description={quiz.description ?? undefined}
-            numOfQuestions={quiz.stacks?.length ?? undefined}
+            numOfStacks={quiz.numOfStacks ?? undefined}
             orderType={quiz.orderType}
             resetTimeDays={quiz.resetTimeDays ?? undefined}
             // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
@@ -125,6 +125,10 @@ function PracticeQuiz({
             }}
             handleNextElement={handleNextElement}
             withParticipant={!!dataParticipant?.self}
+            onAllStacksCompletion={() =>
+              // TODO: re-introduce summary page for practice quiz
+              router.push(`/`)
+            }
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
           />
         )}
