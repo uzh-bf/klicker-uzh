@@ -10,12 +10,14 @@ interface UseStudentResponseProps {
   stack: ElementStack
   currentStep: number
   setStudentResponse: React.Dispatch<React.SetStateAction<StudentResponseType>>
+  defaultRead?: boolean
 }
 
 function useStudentResponse({
   stack,
   currentStep,
   setStudentResponse,
+  defaultRead = false,
 }: UseStudentResponseProps) {
   useEffect(() => {
     const newStudentResponse =
@@ -43,7 +45,7 @@ function useStudentResponse({
             ...acc,
             [element.id]: {
               type: element.elementData.type,
-              response: undefined,
+              response: defaultRead ? true : undefined,
               correct: undefined,
               valid: true,
             },

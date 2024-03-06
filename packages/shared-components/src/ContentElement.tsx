@@ -12,6 +12,7 @@ interface ContentelementProps {
   read: boolean
   onRead: () => void
   elementIx: number
+  hideReadButton?: boolean
 }
 
 function ContentElement({
@@ -19,12 +20,16 @@ function ContentElement({
   read,
   onRead,
   elementIx,
+  hideReadButton = false,
 }: ContentelementProps) {
   const t = useTranslations()
 
   return (
     <div
-      className="px-3 pt-2 pb-10 border border-solid rounded-lg bg-slate-100"
+      className={twMerge(
+        'px-3 pt-2 border border-solid rounded-lg bg-slate-100',
+        !hideReadButton && 'pb-10'
+      )}
       data-cy={`content-element-${elementIx + 1}`}
     >
       <div className="flex flex-row gap-3 -mb-2">
@@ -35,20 +40,22 @@ function ContentElement({
           data={{ cy: `content-element-md-${elementIx + 1}` }}
         />
       </div>
-      <Button
-        disabled={read}
-        onClick={onRead}
-        className={{
-          root: twMerge(
-            'float-right h-8',
-            read && 'bg-green-700 bg-opacity-50 text-white'
-          ),
-        }}
-        data={{ cy: `read-content-element-${elementIx + 1}` }}
-      >
-        <FontAwesomeIcon icon={faCheck} />
-        <div>{t('pwa.practiceQuiz.read')}</div>
-      </Button>
+      {!hideReadButton && (
+        <Button
+          disabled={read}
+          onClick={onRead}
+          className={{
+            root: twMerge(
+              'float-right h-8',
+              read && 'bg-green-700 bg-opacity-50 text-white'
+            ),
+          }}
+          data={{ cy: `read-content-element-${elementIx + 1}` }}
+        >
+          <FontAwesomeIcon icon={faCheck} />
+          <div>{t('pwa.practiceQuiz.read')}</div>
+        </Button>
+      )}
     </div>
   )
 }

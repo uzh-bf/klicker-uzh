@@ -65,6 +65,7 @@ interface StudentElementProps {
   studentResponse: StudentResponseType
   setStudentResponse: Dispatch<SetStateAction<StudentResponseType>>
   stackStorage?: StudentResponseType
+  hideReadButton?: boolean
 }
 
 function StudentElement({
@@ -73,6 +74,7 @@ function StudentElement({
   studentResponse,
   setStudentResponse,
   stackStorage,
+  hideReadButton = false,
 }: StudentElementProps) {
   if (element.elementData.type === ElementType.Flashcard) {
     return (
@@ -211,6 +213,7 @@ function StudentElement({
           })
         }}
         elementIx={elementIx}
+        hideReadButton={hideReadButton}
       />
     )
   } else {

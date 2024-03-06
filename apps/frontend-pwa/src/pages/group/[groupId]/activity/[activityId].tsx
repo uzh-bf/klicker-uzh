@@ -1,7 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import GroupActivityClue from '@components/groupActivity/GroupActivityClue'
 import {
-  ElementType,
   GroupActivityDetailsDocument,
   StartGroupActivityDocument,
   SubmitGroupActivityDecisionsDocument,
@@ -10,15 +8,14 @@ import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { array, number, object, string } from 'yup'
 import Layout from '../../../../components/Layout'
-import { Options } from '../../../../components/common/OptionsDisplay'
+import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
+import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
 
 function GroupActivityDetails() {
   const t = useTranslations()
@@ -190,7 +187,17 @@ function GroupActivityDetails() {
           {data.groupActivityDetails.activityInstance && (
             <div className="py-4 lg:pt-0">
               <H1>{t('pwa.groupActivity.yourTasks')}</H1>
-              <Formik
+              <GroupActivityStack
+                stack={data.groupActivityDetails.stacks[0]}
+                decisions={
+                  data.groupActivityDetails?.activityInstance?.decisions
+                }
+                submittedAt={dayjs(
+                  data.groupActivityDetails.activityInstance
+                    .decisionsSubmittedAt
+                ).format('DD.MM.YYYY HH:mm:ss')}
+              />
+              {/* <Formik
                 isInitialValid={false}
                 initialValues={data.groupActivityDetails.stacks[0].elements?.reduce(
                   (acc, element) => {
@@ -339,7 +346,7 @@ function GroupActivityDetails() {
                     )}
                   </Form>
                 )}
-              </Formik>
+              </Formik> */}
             </div>
           )}
         </div>
