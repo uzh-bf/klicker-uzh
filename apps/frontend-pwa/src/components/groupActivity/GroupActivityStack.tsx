@@ -1,4 +1,10 @@
-import { ElementStack, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import {
+  ElementStack,
+  ElementType,
+  GroupActivityDetailsDocument,
+  SubmitGroupActivityDecisionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   ElementChoicesType,
   StudentResponseType,
@@ -11,25 +17,37 @@ import { useState } from 'react'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
+  activityId: number
   stack: ElementStack
   decisions?: any // TODO: typing
   submittedAt?: string
 }
 
 function GroupActivityStack({
+  activityId,
   stack,
-  decisions,
+  decisions, // TODO: load previous answers from instances and display them if existent
   submittedAt,
 }: GroupActivityStackProps) {
   const t = useTranslations()
   const router = useRouter()
 
-  // TODO
-  const respondToGroupActivity = (input: any) => null
+  const [submitGroupActivityDecisions, { loading: submitLoading }] =
+    useMutation(SubmitGroupActivityDecisionsDocument, {
+      refetchQueries: [
+        {
+          query: GroupActivityDetailsDocument,
+          variables: {
+            groupId: router.query.groupId,
+            activityId: router.query.activityId,
+          },
+        },
+      ],
+    })
+
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // initialize student responses
   useStudentResponse({
@@ -72,11 +90,9 @@ function GroupActivityStack({
             (response) => !response.valid
           )}
           onClick={async () => {
-            setIsSubmitting(true)
-            const result = await respondToGroupActivity({
+            const result = await submitGroupActivityDecisions({
               variables: {
-                stackId: stack.id,
-                courseId: router.query.courseId as string,
+                activityId: activityId,
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (
@@ -96,9 +112,7 @@ function GroupActivityStack({
                         type: value.type as ElementChoicesType,
                         choicesResponse: responseList,
                       }
-                    }
-                    // submission logic for numerical questions
-                    else if (value.type === ElementType.Numerical) {
+                    } else if (value.type === ElementType.Numerical) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Numerical,
@@ -109,6 +123,12 @@ function GroupActivityStack({
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
                         freeTextResponse: value.response as string,
+                      }
+                    } else if (value.type === ElementType.Content) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Content,
+                        contentReponse: value.response as boolean,
                       }
                     } else {
                       return {
@@ -122,17 +142,16 @@ function GroupActivityStack({
               },
             })
 
-            if (!result?.data?.respondToElementStack) {
+            if (!result?.data?.submitGroupActivityDecisions) {
               console.error('Error submitting response')
               return
             }
 
             // set status and score according to returned correctness
             setStudentResponse({})
-            setIsSubmitting(false)
           }}
           type="submit"
-          loading={isSubmitting}
+          loading={submitLoading}
           data={{ cy: 'submit-group-activity' }}
         >
           {t('pwa.groupActivity.sendAnswers')}

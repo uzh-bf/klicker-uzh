@@ -9423,7 +9423,7 @@
             "description": null,
             "args": [
               {
-                "name": "activityInstanceId",
+                "name": "activityId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -9439,7 +9439,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "decisions",
+                "name": "responses",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -9452,7 +9452,7 @@
                       "name": null,
                       "ofType": {
                         "kind": "INPUT_OBJECT",
-                        "name": "GroupActivityDecisionInput",
+                        "name": "StackResponseInput",
                         "ofType": null
                       }
                     }
@@ -9464,8 +9464,8 @@
               }
             ],
             "type": {
-              "kind": "OBJECT",
-              "name": "GroupActivityInstance",
+              "kind": "SCALAR",
+              "name": "Int",
               "ofType": null
             },
             "isDeprecated": false,

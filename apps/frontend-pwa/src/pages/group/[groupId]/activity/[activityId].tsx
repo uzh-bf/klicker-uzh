@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GroupActivityDetailsDocument,
   StartGroupActivityDocument,
-  SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -47,19 +46,6 @@ function GroupActivityDetails() {
     }
   )
 
-  const [submitGroupActivityDecisions, { loading: submitLoading }] =
-    useMutation(SubmitGroupActivityDecisionsDocument, {
-      refetchQueries: [
-        {
-          query: GroupActivityDetailsDocument,
-          variables: {
-            groupId: router.query.groupId,
-            activityId: router.query.activityId,
-          },
-        },
-      ],
-    })
-
   if (!data || loading) {
     return (
       <Layout>
@@ -75,8 +61,6 @@ function GroupActivityDetails() {
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
-
-  console.log(data.groupActivityDetails)
 
   return (
     <Layout
@@ -188,165 +172,14 @@ function GroupActivityDetails() {
             <div className="py-4 lg:pt-0">
               <H1>{t('pwa.groupActivity.yourTasks')}</H1>
               <GroupActivityStack
+                activityId={data.groupActivityDetails.activityInstance.id}
                 stack={data.groupActivityDetails.stacks[0]}
-                decisions={
-                  data.groupActivityDetails?.activityInstance?.decisions
-                }
+                decisions={null} // TODO: load decisions here
                 submittedAt={dayjs(
                   data.groupActivityDetails.activityInstance
                     .decisionsSubmittedAt
                 ).format('DD.MM.YYYY HH:mm:ss')}
               />
-              {/* <Formik
-                isInitialValid={false}
-                initialValues={data.groupActivityDetails.stacks[0].elements?.reduce(
-                  (acc, element) => {
-                    if (
-                      element.elementData.type === ElementType.Numerical ||
-                      element.elementData.type === ElementType.FreeText
-                    ) {
-                      const previousDecision =
-                        data.groupActivityDetails?.activityInstance?.decisions?.find(
-                          (decision) => decision.id === element.id
-                        )
-
-                      return {
-                        ...acc,
-                        [element.id]: previousDecision?.response ?? '',
-                      }
-                    }
-
-                    const previousDecision =
-                      data.groupActivityDetails?.activityInstance?.decisions?.find(
-                        (decision) => decision.id === element.id
-                      )
-
-                    return {
-                      ...acc,
-                      [element.id]: previousDecision?.selectedOptions ?? [],
-                    }
-                  },
-                  {}
-                )}
-                validationSchema={object().shape(
-                  data.groupActivityDetails.stacks[0].elements.reduce(
-                    (acc, instance) => {
-                      if (instance.elementData.type === ElementType.Numerical) {
-                        return {
-                          ...acc,
-                          [instance.id]: number().required(),
-                        }
-                      }
-
-                      if (instance.elementData.type === ElementType.FreeText) {
-                        return {
-                          ...acc,
-                          [instance.id]: string().required().min(1),
-                        }
-                      }
-
-                      return {
-                        ...acc,
-                        [instance.id]: array()
-                          .required()
-                          .of(number().required())
-                          .min(1),
-                      }
-                    },
-                    {}
-                  )
-                )}
-                onSubmit={async (values) => {
-                  submitGroupActivityDecisions({
-                    variables: {
-                      activityInstanceId:
-                        data.groupActivityDetails.activityInstance?.id,
-                      decisions: Object.entries(values).map(([id, value]) => {
-                        if (Array.isArray(value)) {
-                          return {
-                            id: Number(id),
-                            selectedOptions: value,
-                          }
-                        }
-
-                        return {
-                          id: Number(id),
-                          response: value,
-                        }
-                      }),
-                    },
-                  })
-                }}
-              >
-                {({
-                  values,
-                  isSubmitting,
-                  setFieldValue,
-                  errors,
-                  isValid,
-                  touched,
-                }) => (
-                  <Form className="flex flex-col">
-                    <div className="flex-1">
-                      {data.groupActivityDetails?.stacks[0].elements?.map(
-                        (element) => (
-                          <div
-                            key={element.id}
-                            className="py-4 space-y-2 border-b last:border-b-0 first:lg:pt-0"
-                          >
-                            <Markdown content={element.elementData.content} />
-                            <Options
-                              isCompact
-                              disabled={
-                                !!data.groupActivityDetails.activityInstance
-                                  .decisions
-                              }
-                              isResponseValid={
-                                touched[element.id] && !errors[element.id]
-                              }
-                              questionType={element.elementData.type}
-                              options={element.elementData.options}
-                              response={values[element.id] ?? ''}
-                              onChangeResponse={(response) => {
-                                setFieldValue(element.id, response, true)
-                              }}
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    {!data.groupActivityDetails?.activityInstance?.decisions ? (
-                      <div className="flex flex-col">
-                        <Button
-                          type="submit"
-                          loading={isSubmitting}
-                          disabled={!isValid}
-                          className={{
-                            root: 'self-end mt-4 text-lg font-bold',
-                          }}
-                          data={{ cy: 'submit-group-activity' }}
-                        >
-                          {t('pwa.groupActivity.sendAnswers')}
-                        </Button>
-                        <div className="p-2 mt-4 text-sm text-center text-orange-700 bg-orange-200 rounded">
-                          {t('pwa.groupActivity.oneSolutionPerGroup')}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
-                        {t.rich('pwa.groupActivity.alreadySubmittedAt', {
-                          br: () => <br />,
-                          date: dayjs(
-                            data.groupActivityDetails.activityInstance
-                              .decisionsSubmittedAt
-                          ).format('DD.MM.YYYY HH:mm:ss'),
-                        })}
-                      </div>
-                    )}
-                  </Form>
-                )}
-              </Formik> */}
             </div>
           )}
         </div>

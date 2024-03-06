@@ -36,7 +36,7 @@ function GroupActivityClue({ clue }: GroupActivityClueProps) {
           {clue.participant.username}
         </div>
       </div>
-      <div>
+      <div className="text-sm h-10">
         <div className="font-bold">{clue.displayName}</div>
         {typeof clue.value === 'string' && (
           <div>
