@@ -417,8 +417,6 @@ model QuestionInstance {
   groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupActivityId String?        @db.Uuid
 
-  bookmarkedBy Participation[]
-
   question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
   owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -450,8 +448,6 @@ model QuestionStack {
   elements StackElement[]
 
   groupActivity GroupActivity?
-
-  bookmarkedBy Participation[]
 }
 
 model StackElement {
@@ -974,8 +970,6 @@ model Participation {
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
   completedMicroLearnings String[]
-  bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
-  bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())
