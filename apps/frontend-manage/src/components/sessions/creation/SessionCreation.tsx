@@ -13,6 +13,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import GroupActivityWizard from './GroupActivityWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroLearningWizard from './MicroLearningWizard'
 import PracticeQuizWizard from './PracticeQuizWizard'
@@ -97,7 +98,7 @@ function SessionCreation({
   }
 
   return (
-    <div className="flex flex-col justify-center print-hidden">
+    <div className="flex flex-col justify-center print-hidden h-full">
       <div className="w-full h-full rounded-lg">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
@@ -138,6 +139,16 @@ function SessionCreation({
             initialValues={
               (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ?? undefined
             }
+          />
+        )}
+        {creationMode === WizardMode.GroupActivity && (
+          <GroupActivityWizard
+            title={t('shared.generic.groupActivity')}
+            closeWizard={closeWizard}
+            courses={courseSelection || [{ label: '', value: '' }]}
+            // initialValues={
+            //   (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ?? undefined
+            // }
           />
         )}
       </div>

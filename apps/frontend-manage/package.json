@@ -44,6 +44,7 @@
     "react-dom": "18.2.0",
     "react-dropzone": "14.2.3",
     "react-qrcode-logo": "2.9.0",
+    "react-resizable-panels": "2.0.12",
     "react-select": "5.7.4",
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",

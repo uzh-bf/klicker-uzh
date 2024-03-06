@@ -173,7 +173,7 @@ function PracticeQuizWizard({
   }
 
   return (
-    <div>
+    <>
       <MultistepWizard
         title={title}
         onCloseWizard={closeWizard}
@@ -251,7 +251,7 @@ function PracticeQuizWizard({
             : t('manage.sessionForms.practiceQuizCreationFailed')
         }
       />
-    </div>
+    </>
   )
 }
 

@@ -138,7 +138,7 @@ function MultistepWizard({
       enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
-        <Form className="border-b h-76 border-uzh-grey-60">
+        <Form className="h-full overflow-y-auto">
           <Validator stepNumber={stepNumber} validateForm={validateForm} />
           <div className="flex flex-row items-end gap-8">
             <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
@@ -160,7 +160,7 @@ function MultistepWizard({
             />
           </div>
 
-          <div className="flex flex-col justify-between gap-1 py-4 md:h-60">
+          <div className="flex flex-col justify-between gap-1 py-4">
             {!isCompleted && <>{step}</>}
 
             {isCompleted && (

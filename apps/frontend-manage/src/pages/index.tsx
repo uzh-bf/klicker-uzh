@@ -12,6 +12,11 @@ import useSortingAndFiltering, {
 } from '../lib/hooks/useSortingAndFiltering'
 
 import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@components/common/Resizeable'
+import {
   faArchive,
   faInbox,
   faMagnifyingGlass,
@@ -139,259 +144,279 @@ function Index() {
           <SuspendedCreationButtons setCreationMode={setCreationMode} />
         </Suspense>
       )}
-      {creationMode && (
-        <div className="flex-none mb-4">
-          <SessionCreation
-            creationMode={creationMode}
-            closeWizard={() => {
-              router.push('/')
-              setCreationMode(() => undefined)
-            }}
-            sessionId={router.query.sessionId as string}
-            editMode={router.query.editMode as string}
-            duplicationMode={router.query.duplicationMode as string}
-            selection={selectedQuestionData}
-            resetSelection={() => setSelectedQuestions({})}
-          />
-        </div>
-      )}
 
-      <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
-        {dataQuestions && dataQuestions.userQuestions && (
-          <div>
-            <div className="hidden h-full md:block">
-              <TagList
-                key={creationMode}
-                compact={!!creationMode}
-                activeTags={filters.tags}
-                activeType={filters.type}
-                sampleSolution={filters.sampleSolution}
-                answerFeedbacks={filters.answerFeedbacks}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-                handleToggleArchive={handleToggleArchive}
-                isArchiveActive={filters.archive}
+      <ResizablePanelGroup direction="vertical">
+        {creationMode && (
+          <>
+            <ResizablePanel id="wizards" order={1} defaultSize={15} minSize={5}>
+              <SessionCreation
+                creationMode={creationMode}
+                closeWizard={() => {
+                  router.push('/')
+                  setCreationMode(() => undefined)
+                }}
+                sessionId={router.query.sessionId as string}
+                editMode={router.query.editMode as string}
+                duplicationMode={router.query.duplicationMode as string}
+                selection={selectedQuestionData}
+                resetSelection={() => setSelectedQuestions({})}
               />
-            </div>
-            <div className="md:hidden">
-              <TagList
-                compact
-                key={creationMode}
-                activeTags={filters.tags}
-                activeType={filters.type}
-                sampleSolution={filters.sampleSolution}
-                answerFeedbacks={filters.answerFeedbacks}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-                handleToggleArchive={handleToggleArchive}
-                isArchiveActive={filters.archive}
-              />
-            </div>
-          </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle className="w-0.5 bg-gray-200" />
+          </>
         )}
-        <div className="flex flex-col flex-1 w-full overflow-auto">
-          {!dataQuestions || loadingQuestions ? (
-            <Loader />
-          ) : (
-            <>
-              <div className="flex flex-row content-center justify-between flex-none">
-                <div className="flex flex-row items-center gap-1 pb-3">
-                  <div className="flex flex-col text-sm pr-0.5">
-                    <Checkbox
-                      checked={
-                        Object.values(selectedQuestions).filter(
-                          (value) => value
-                        ).length == processedQuestions?.length
-                      }
-                      partial={
-                        Object.values(selectedQuestions).filter(
-                          (value) => value
-                        ).length > 0
-                      }
-                      onCheck={() => {
-                        setSelectedQuestions((prev) => {
-                          let allQuestions = {}
 
-                          if (processedQuestions) {
-                            if (!R.isEmpty(selectedQuestionData)) {
-                              // set questions after filtering to undefined
-                              // do not uncheck questions that are selected but not in the filtered set
-                              allQuestions = processedQuestions.reduce(
-                                (acc, curr) => ({
-                                  ...acc,
-                                  [curr.id]: undefined,
-                                }),
-                                {}
-                              )
-                            } else {
-                              // set all questions after filtering to their id and data
-                              allQuestions = processedQuestions.reduce(
-                                (acc, question) => ({
-                                  ...acc,
-                                  [question.id]: question,
-                                }),
-                                {}
-                              )
-                            }
+        <ResizablePanel id="content" order={2} defaultSize={85}>
+          <div className="flex flex-col gap-4 overflow-y-auto md:flex-row h-full pt-4">
+            {dataQuestions && dataQuestions.userQuestions && (
+              <div>
+                <div className="hidden h-full md:block">
+                  <TagList
+                    key={creationMode}
+                    compact={!!creationMode}
+                    activeTags={filters.tags}
+                    activeType={filters.type}
+                    sampleSolution={filters.sampleSolution}
+                    answerFeedbacks={filters.answerFeedbacks}
+                    handleReset={handleReset}
+                    handleTagClick={handleTagClick}
+                    toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                    toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
+                    handleToggleArchive={handleToggleArchive}
+                    isArchiveActive={filters.archive}
+                  />
+                </div>
+                <div className="md:hidden">
+                  <TagList
+                    compact
+                    key={creationMode}
+                    activeTags={filters.tags}
+                    activeType={filters.type}
+                    sampleSolution={filters.sampleSolution}
+                    answerFeedbacks={filters.answerFeedbacks}
+                    handleReset={handleReset}
+                    handleTagClick={handleTagClick}
+                    toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                    toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
+                    handleToggleArchive={handleToggleArchive}
+                    isArchiveActive={filters.archive}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col flex-1 w-full overflow-auto">
+              {!dataQuestions || loadingQuestions ? (
+                <Loader />
+              ) : (
+                <>
+                  <div className="flex flex-row content-center justify-between flex-none">
+                    <div className="flex flex-row items-center gap-1 pb-3">
+                      <div className="flex flex-col text-sm pr-0.5">
+                        <Checkbox
+                          checked={
+                            Object.values(selectedQuestions).filter(
+                              (value) => value
+                            ).length == processedQuestions?.length
                           }
+                          partial={
+                            Object.values(selectedQuestions).filter(
+                              (value) => value
+                            ).length > 0
+                          }
+                          onCheck={() => {
+                            setSelectedQuestions((prev) => {
+                              let allQuestions = {}
 
-                          return { ...prev, ...allQuestions }
+                              if (processedQuestions) {
+                                if (!R.isEmpty(selectedQuestionData)) {
+                                  // set questions after filtering to undefined
+                                  // do not uncheck questions that are selected but not in the filtered set
+                                  allQuestions = processedQuestions.reduce(
+                                    (acc, curr) => ({
+                                      ...acc,
+                                      [curr.id]: undefined,
+                                    }),
+                                    {}
+                                  )
+                                } else {
+                                  // set all questions after filtering to their id and data
+                                  allQuestions = processedQuestions.reduce(
+                                    (acc, question) => ({
+                                      ...acc,
+                                      [question.id]: question,
+                                    }),
+                                    {}
+                                  )
+                                }
+                              }
+
+                              return { ...prev, ...allQuestions }
+                            })
+                          }}
+                        />
+                        {t('manage.questionPool.numSelected', {
+                          count: Object.keys(selectedQuestionData).length,
+                          total: processedQuestions?.length,
+                        })}
+                      </div>
+
+                      <TextField
+                        placeholder={t('manage.general.searchPlaceholder')}
+                        value={searchInput}
+                        onChange={(newValue: string) => {
+                          setSearchInput(newValue)
+                          handleSearch(newValue)
+                        }}
+                        icon={faMagnifyingGlass}
+                        className={{
+                          input: 'h-10 pl-9',
+
+                          field: 'w-30 pr-3 rounded-md',
+                        }}
+                      />
+
+                      <div className="flex flex-row gap-1 pr-3">
+                        <Button
+                          disabled={!sortBy}
+                          onClick={() => {
+                            handleSortOrderToggle()
+                          }}
+                          className={{
+                            root: 'h-10 shadow-sm rounded-md',
+                          }}
+                          data={{ cy: 'sort-order-question-pool-toggle' }}
+                        >
+                          <Button.Icon>
+                            <FontAwesomeIcon icon={sortIcon} />
+                          </Button.Icon>
+                        </Button>
+                        <Select
+                          className={{
+                            root: 'min-w-30',
+                            trigger: 'h-10',
+                          }}
+                          placeholder={t('manage.general.sortBy')}
+                          items={[
+                            {
+                              value: SortyByType.CREATED,
+                              label: t('manage.general.date'),
+                              data: { cy: 'sort-by-question-pool-created' },
+                            },
+                            {
+                              value: SortyByType.TITLE,
+                              label: t('manage.general.title'),
+                              data: { cy: 'sort-by-question-pool-title' },
+                            },
+                          ]}
+                          onChange={(newSortBy: string) => {
+                            setSortBy(newSortBy)
+                            handleSortByChange(newSortBy as SortyByType)
+                          }}
+                          data={{ cy: 'sort-by-question-pool' }}
+                        />
+                      </div>
+
+                      {Object.keys(selectedQuestionData).length > 0 && (
+                        <>
+                          <Tooltip
+                            tooltip={t('manage.questionPool.moveToArchive')}
+                          >
+                            <Button
+                              className={{
+                                root: 'h-10 ml-1',
+                              }}
+                              onClick={async () => {
+                                await toggleIsArchived({
+                                  variables: {
+                                    questionIds:
+                                      Object.keys(selectedQuestionData).map(
+                                        Number
+                                      ),
+                                    isArchived: true,
+                                  },
+                                })
+                                setSelectedQuestions({})
+                              }}
+                              data={{ cy: 'move-to-archive' }}
+                            >
+                              <FontAwesomeIcon icon={faArchive} />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip
+                            tooltip={t(
+                              'manage.questionPool.restoreFromArchive'
+                            )}
+                          >
+                            <Button
+                              className={{
+                                root: 'h-10 ml-1',
+                              }}
+                              onClick={async () => {
+                                await toggleIsArchived({
+                                  variables: {
+                                    questionIds:
+                                      Object.keys(selectedQuestionData).map(
+                                        Number
+                                      ),
+                                    isArchived: false,
+                                  },
+                                })
+                                setSelectedQuestions({})
+                              }}
+                              data={{ cy: 'restore-from-archive' }}
+                            >
+                              <FontAwesomeIcon icon={faInbox} />
+                            </Button>
+                          </Tooltip>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      onClick={() =>
+                        setIsQuestionCreationModalOpen(
+                          !isQuestionCreationModalOpen
+                        )
+                      }
+                      className={{
+                        root: 'h-10 font-bold text-white bg-primary-80',
+                      }}
+                      data={{ cy: 'create-question' }}
+                    >
+                      {t('manage.questionPool.createQuestionCaps')}
+                    </Button>
+                  </div>
+
+                  <div className="h-full overflow-y-auto">
+                    <QuestionList
+                      questions={processedQuestions}
+                      selectedQuestions={selectedQuestionData}
+                      setSelectedQuestions={(id: number, data: Element) => {
+                        setSelectedQuestions((prev) => {
+                          return { ...prev, [id]: prev[id] ? undefined : data }
+                        })
+                      }}
+                      tagfilter={filters.tags}
+                      handleTagClick={(tag: string) =>
+                        handleTagClick(tag, false)
+                      }
+                      unsetDeletedQuestion={(questionId: number) => {
+                        setSelectedQuestions((prev) => {
+                          if (prev[questionId]) {
+                            const newSelectedQuestions = { ...prev }
+                            delete newSelectedQuestions[questionId]
+                            return newSelectedQuestions
+                          }
+                          return prev
                         })
                       }}
                     />
-                    {t('manage.questionPool.numSelected', {
-                      count: Object.keys(selectedQuestionData).length,
-                      total: processedQuestions?.length,
-                    })}
                   </div>
-
-                  <TextField
-                    placeholder={t('manage.general.searchPlaceholder')}
-                    value={searchInput}
-                    onChange={(newValue: string) => {
-                      setSearchInput(newValue)
-                      handleSearch(newValue)
-                    }}
-                    icon={faMagnifyingGlass}
-                    className={{
-                      input: 'h-10 pl-9',
-
-                      field: 'w-30 pr-3 rounded-md',
-                    }}
-                  />
-
-                  <div className="flex flex-row gap-1 pr-3">
-                    <Button
-                      disabled={!sortBy}
-                      onClick={() => {
-                        handleSortOrderToggle()
-                      }}
-                      className={{
-                        root: 'h-10 shadow-sm rounded-md',
-                      }}
-                      data={{ cy: 'sort-order-question-pool-toggle' }}
-                    >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={sortIcon} />
-                      </Button.Icon>
-                    </Button>
-                    <Select
-                      className={{
-                        root: 'min-w-30',
-                        trigger: 'h-10',
-                      }}
-                      placeholder={t('manage.general.sortBy')}
-                      items={[
-                        {
-                          value: SortyByType.CREATED,
-                          label: t('manage.general.date'),
-                          data: { cy: 'sort-by-question-pool-created' },
-                        },
-                        {
-                          value: SortyByType.TITLE,
-                          label: t('manage.general.title'),
-                          data: { cy: 'sort-by-question-pool-title' },
-                        },
-                      ]}
-                      onChange={(newSortBy: string) => {
-                        setSortBy(newSortBy)
-                        handleSortByChange(newSortBy as SortyByType)
-                      }}
-                      data={{ cy: 'sort-by-question-pool' }}
-                    />
-                  </div>
-
-                  {Object.keys(selectedQuestionData).length > 0 && (
-                    <>
-                      <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
-                        <Button
-                          className={{
-                            root: 'h-10 ml-1',
-                          }}
-                          onClick={async () => {
-                            await toggleIsArchived({
-                              variables: {
-                                questionIds:
-                                  Object.keys(selectedQuestionData).map(Number),
-                                isArchived: true,
-                              },
-                            })
-                            setSelectedQuestions({})
-                          }}
-                          data={{ cy: 'move-to-archive' }}
-                        >
-                          <FontAwesomeIcon icon={faArchive} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip
-                        tooltip={t('manage.questionPool.restoreFromArchive')}
-                      >
-                        <Button
-                          className={{
-                            root: 'h-10 ml-1',
-                          }}
-                          onClick={async () => {
-                            await toggleIsArchived({
-                              variables: {
-                                questionIds:
-                                  Object.keys(selectedQuestionData).map(Number),
-                                isArchived: false,
-                              },
-                            })
-                            setSelectedQuestions({})
-                          }}
-                          data={{ cy: 'restore-from-archive' }}
-                        >
-                          <FontAwesomeIcon icon={faInbox} />
-                        </Button>
-                      </Tooltip>
-                    </>
-                  )}
-                </div>
-                <Button
-                  onClick={() =>
-                    setIsQuestionCreationModalOpen(!isQuestionCreationModalOpen)
-                  }
-                  className={{
-                    root: 'h-10 font-bold text-white bg-primary-80',
-                  }}
-                  data={{ cy: 'create-question' }}
-                >
-                  {t('manage.questionPool.createQuestionCaps')}
-                </Button>
-              </div>
-
-              <div className="h-full overflow-y-auto">
-                <QuestionList
-                  questions={processedQuestions}
-                  selectedQuestions={selectedQuestionData}
-                  setSelectedQuestions={(id: number, data: Element) => {
-                    setSelectedQuestions((prev) => {
-                      return { ...prev, [id]: prev[id] ? undefined : data }
-                    })
-                  }}
-                  tagfilter={filters.tags}
-                  handleTagClick={(tag: string) => handleTagClick(tag, false)}
-                  unsetDeletedQuestion={(questionId: number) => {
-                    setSelectedQuestions((prev) => {
-                      if (prev[questionId]) {
-                        const newSelectedQuestions = { ...prev }
-                        delete newSelectedQuestions[questionId]
-                        return newSelectedQuestions
-                      }
-                      return prev
-                    })
-                  }}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+                </>
+              )}
+            </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {isQuestionCreationModalOpen && (
         <QuestionEditModal
