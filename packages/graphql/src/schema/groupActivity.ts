@@ -4,8 +4,7 @@ import type { ICourse } from './course.js'
 import { Course } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { ParticipantGroupRef, ParticipantRef } from './participant.js'
-import type { IQuestionInstance } from './question.js'
-import { QuestionInstanceRef } from './question.js'
+import { ElementStackRef, IElementStack } from './practiceQuizzes.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -126,7 +125,7 @@ export interface IGroupActivityDetails {
   course: ICourse
   activityInstance?: DB.GroupActivityInstance | null
   clues: DB.GroupActivityClue[]
-  instances: IQuestionInstance[]
+  stacks: IElementStack[]
 }
 export const GroupActivityDetailsRef = builder.objectRef<IGroupActivityDetails>(
   'GroupActivityDetails'
@@ -157,8 +156,8 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
       type: [GroupActivityClueRef],
     }),
 
-    instances: t.expose('instances', {
-      type: [QuestionInstanceRef],
+    stacks: t.expose('stacks', {
+      type: [ElementStackRef],
     }),
 
     course: t.expose('course', {

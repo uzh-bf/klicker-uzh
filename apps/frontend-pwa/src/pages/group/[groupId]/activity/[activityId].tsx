@@ -26,8 +26,8 @@ function GroupActivityDetails() {
 
   const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
     variables: {
-      groupId: router.query.groupId,
-      activityId: router.query.activityId,
+      groupId: router.query.groupId as string,
+      activityId: router.query.activityId as string,
     },
   })
 
@@ -35,8 +35,8 @@ function GroupActivityDetails() {
     StartGroupActivityDocument,
     {
       variables: {
-        groupId: router.query.groupId,
-        activityId: router.query.activityId,
+        groupId: router.query.groupId as string,
+        activityId: router.query.activityId as string,
       },
       refetchQueries: [
         {
@@ -98,7 +98,7 @@ function GroupActivityDetails() {
               className={{
                 root: 'prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
               }}
-              content={data.groupActivityDetails.description}
+              content={data.groupActivityDetails.description ?? undefined}
             />
           </div>
 
@@ -118,57 +118,59 @@ function GroupActivityDetails() {
                   )
                 })}
               {data.groupActivityDetails.activityInstance &&
-                data.groupActivityDetails.activityInstance.clues.map((clue) => {
-                  return (
-                    <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 py-2 border rounded shadow',
-                        clue.participant.isSelf && 'border-primary-40'
-                      )}
-                      key={clue.participant.id}
-                    >
-                      <div className="flex flex-col items-center flex-none w-24 px-4">
-                        <Image
-                          src={
-                            clue.participant.avatar
-                              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${clue.participant.avatar}.svg`
-                              : '/user-solid.svg'
-                          }
-                          alt=""
-                          height={25}
-                          width={30}
-                        />
-                        <div
-                          className={twMerge(
-                            clue.participant.isSelf && 'font-bold'
+                data.groupActivityDetails.activityInstance.clues?.map(
+                  (clue) => {
+                    return (
+                      <div
+                        className={twMerge(
+                          'flex flex-row items-center gap-2 py-2 border rounded shadow',
+                          clue.participant.isSelf && 'border-primary-40'
+                        )}
+                        key={clue.participant.id}
+                      >
+                        <div className="flex flex-col items-center flex-none w-24 px-4">
+                          <Image
+                            src={
+                              clue.participant.avatar
+                                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${clue.participant.avatar}.svg`
+                                : '/user-solid.svg'
+                            }
+                            alt=""
+                            height={25}
+                            width={30}
+                          />
+                          <div
+                            className={twMerge(
+                              clue.participant.isSelf && 'font-bold'
+                            )}
+                          >
+                            {clue.participant.username}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{clue.displayName}</div>
+                          {typeof clue.value === 'string' && (
+                            <div>
+                              {clue.type === 'NUMBER' ? (
+                                `${Number(
+                                  clue.unit === '%'
+                                    ? parseFloat(clue.value) * 100
+                                    : clue.value
+                                ).toLocaleString()} ${clue.unit}`
+                              ) : (
+                                <Markdown
+                                  withProse
+                                  content={clue.value}
+                                  className={{ root: 'prose-sm' }}
+                                />
+                              )}
+                            </div>
                           )}
-                        >
-                          {clue.participant.username}
                         </div>
                       </div>
-                      <div>
-                        <div className="font-bold">{clue.displayName}</div>
-                        {typeof clue.value === 'string' && (
-                          <div>
-                            {clue.type === 'NUMBER' ? (
-                              `${Number(
-                                clue.unit === '%'
-                                  ? clue.value * 100
-                                  : clue.value
-                              ).toLocaleString()} ${clue.unit}`
-                            ) : (
-                              <Markdown
-                                withProse
-                                content={clue.value}
-                                className={{ root: 'prose-sm' }}
-                              />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  }
+                )}
             </div>
             <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
               {t.rich('pwa.groupActivity.coordinateHints', {
@@ -184,7 +186,7 @@ function GroupActivityDetails() {
               <H1>{t('pwa.groupActivity.yourGroup')}</H1>
 
               <div className="flex flex-row gap-2">
-                {data.groupActivityDetails.group.participants.map(
+                {data.groupActivityDetails.group.participants?.map(
                   (participant) => (
                     <div
                       key={participant.id}
@@ -211,7 +213,7 @@ function GroupActivityDetails() {
               </p>
               <Button
                 disabled={
-                  data.groupActivityDetails.group.participants.length === 1
+                  data.groupActivityDetails.group.participants?.length === 1
                 }
                 loading={startLoading}
                 className={{ root: 'self-end mt-4 text-lg font-bold' }}
@@ -221,7 +223,7 @@ function GroupActivityDetails() {
                 {t('pwa.groupActivity.startCaps')}
               </Button>
 
-              {data.groupActivityDetails.group.participants.length === 1 && (
+              {data.groupActivityDetails.group.participants?.length === 1 && (
                 <div className="p-2 mt-4 text-sm text-center text-red-500 bg-red-100 rounded">
                   {t.rich('pwa.groupActivity.minTwoPersons', {
                     br: () => <br />,

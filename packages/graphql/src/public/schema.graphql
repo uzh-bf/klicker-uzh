@@ -394,10 +394,10 @@ type GroupActivityDetails {
   displayName: String!
   group: ParticipantGroup!
   id: String!
-  instances: [QuestionInstance!]!
   name: String!
   scheduledEndAt: Date
   scheduledStartAt: Date
+  stacks: [ElementStack!]!
 }
 
 type GroupActivityInstance {

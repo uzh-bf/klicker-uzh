@@ -304,9 +304,13 @@ export async function getGroupActivityDetails(
           displayName: 'asc',
         },
       },
-      instances: {
-        orderBy: {
-          order: 'asc',
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       parameters: true,
@@ -405,9 +409,13 @@ export async function startGroupActivity(
           displayName: 'asc',
         },
       },
-      instances: {
-        orderBy: {
-          order: 'asc',
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       parameters: true,

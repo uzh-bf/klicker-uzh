@@ -411,16 +411,10 @@ model QuestionInstance {
   /// [PrismaQuestionResults]
   results Json
 
-  sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId  Int?
-  stackElement    StackElement?  @relation(fields: [stackElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  stackElementId  Int?           @unique
-  microSession    MicroSession?  @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microSessionId  String?        @db.Uuid
-  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  groupActivityId String?        @db.Uuid
-
-  bookmarkedBy Participation[]
+  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionBlockId Int?
+  microSession   MicroSession? @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microSessionId String?       @db.Uuid
 
   question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
@@ -431,44 +425,7 @@ model QuestionInstance {
   updatedAt DateTime @updatedAt
 
   @@unique([type, sessionBlockId, order])
-  @@unique([type, stackElementId, order])
   @@unique([type, microSessionId, order])
-  @@unique([type, groupActivityId, order])
-}
-
-enum QuestionStackType {
-  LEARNING_ELEMENT
-  MICRO_SESSION
-  LIVE_SESSION
-  GROUP_ACTIVITY
-}
-
-model QuestionStack {
-  id Int @id @default(autoincrement())
-
-  type        QuestionStackType
-  displayName String?
-  description String?
-  order       Int?
-
-  elements StackElement[]
-
-  groupActivity GroupActivity?
-
-  bookmarkedBy Participation[]
-}
-
-model StackElement {
-  id Int @id @default(autoincrement())
-
-  order Int?
-
-  stack   QuestionStack @relation(fields: [stackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  stackId Int
-
-  mdContent String?
-
-  questionInstance QuestionInstance?
 }
 
 // #endregion
@@ -795,17 +752,10 @@ model GroupActivity {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
-  // TODO: remove after migration
-  questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
-  questionStackId Int?           @unique
-
-  // TODO: make required after migration
-  elementStack ElementStack?
+  stacks ElementStack[]
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
-  // TODO: remove after migration
-  instances         QuestionInstance[]
   activityInstances GroupActivityInstance[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -1014,8 +964,6 @@ model Participation {
   subscriptions           PushSubscription[]
   completedMicroSessions  String[]
   completedMicroLearnings String[]
-  bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
-  bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())

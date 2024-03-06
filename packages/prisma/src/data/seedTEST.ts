@@ -538,7 +538,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityClues({ activityId: groupActivityId1 }),
         ],
       },
-      elementStack: {
+      stacks: {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 0,
@@ -583,7 +583,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
         ],
       },
-      elementStack: {
+      stacks: {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 100,
