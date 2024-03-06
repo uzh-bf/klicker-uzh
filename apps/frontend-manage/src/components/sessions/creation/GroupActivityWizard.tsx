@@ -1,4 +1,5 @@
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
+import { faSave, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType, GroupActivity } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -7,6 +8,7 @@ import {
   FormikSelectField,
   FormikTextField,
   H3,
+  Prose,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import {
@@ -25,6 +27,7 @@ import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
+import WizardErrorMessage from './WizardErrorMessage'
 
 interface GroupActivityWizardProps {
   title: string
@@ -74,18 +77,21 @@ function GroupActivityWizard({
     courseId: yup
       .string()
       .required(t('manage.sessionForms.groupActivityCourse')),
-    clues: yup.array().of(
-      yup.object().shape({
-        name: yup.string().required(t('manage.sessionForms.clueName')),
-        displayName: yup
-          .string()
-          .required(t('manage.sessionForms.clueDisplayName')),
-        description: yup.string(),
-        type: yup.string().oneOf(['STRING', 'NUMBER']),
-        value: yup.string().required(t('manage.sessionForms.clueValue')),
-        unit: yup.string(),
-      })
-    ),
+    clues: yup
+      .array()
+      .of(
+        yup.object().shape({
+          name: yup.string().required(t('manage.sessionForms.clueName')),
+          displayName: yup
+            .string()
+            .required(t('manage.sessionForms.clueDisplayName')),
+          description: yup.string(),
+          type: yup.string().oneOf(['STRING', 'NUMBER']),
+          value: yup.string().required(t('manage.sessionForms.clueValue')),
+          unit: yup.string(),
+        })
+      )
+      .min(2),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
@@ -371,7 +377,7 @@ function StepTwo(props: StepProps) {
               }) || []
             }
             required
-            tooltip={t('manage.sessionForms.microlearningCourse')}
+            tooltip={t('manage.sessionForms.groupActivityCourse')}
             label={t('shared.generic.course')}
             data={{ cy: 'select-course' }}
             className={{ tooltip: 'z-20' }}
@@ -386,7 +392,7 @@ function StepTwo(props: StepProps) {
         <FormikDateField
           label={t('shared.generic.startDate')}
           name="startDate"
-          tooltip={t('manage.sessionForms.microlearningStartDate')}
+          tooltip={t('manage.sessionForms.groupActivityStartDate')}
           required
           className={{
             root: 'w-[24rem]',
@@ -398,7 +404,7 @@ function StepTwo(props: StepProps) {
         <FormikDateField
           label={t('shared.generic.endDate')}
           name="endDate"
-          tooltip={t('manage.sessionForms.microlearningEndDate')}
+          tooltip={t('manage.sessionForms.groupActivityEndDate')}
           required
           className={{
             root: 'w-[24rem]',
@@ -412,7 +418,7 @@ function StepTwo(props: StepProps) {
             name="multiplier"
             placeholder={t('manage.sessionForms.multiplierDefault')}
             label={t('shared.generic.multiplier')}
-            tooltip={t('manage.sessionForms.microlearningMultiplier')}
+            tooltip={t('manage.sessionForms.groupActivityMultiplier')}
             required
             items={[
               {
@@ -466,7 +472,10 @@ function StepTwo(props: StepProps) {
         <FieldArray name="clues">
           {({ push, remove, move }: FieldArrayRenderProps) => (
             <div>
-              <H3>Clues</H3>
+              <H3 className={{ root: 'mb-0' }}>Clues</H3>
+              <Prose className={{ root: 'max-w-none prose-sm' }}>
+                {t('manage.sessionForms.groupActivityCluesDescription')}
+              </Prose>
               <Formik
                 validationSchema={yup.object().shape({
                   name: yup.string().required(),
@@ -519,32 +528,60 @@ function StepTwo(props: StepProps) {
                       label="Value"
                       labelType="small"
                     />
-                    <FormikTextField
-                      disabled={values.type !== 'NUMBER'}
-                      name="unit"
-                      label="Unit"
-                      labelType="small"
-                    />
+                    {values.type === 'NUMBER' && (
+                      <FormikTextField
+                        disabled={values.type !== 'NUMBER'}
+                        name="unit"
+                        label="Unit"
+                        labelType="small"
+                      />
+                    )}
                     <Button
-                      className={{ root: 'self-center' }}
+                      className={{ root: 'mt-7 self-start' }}
                       type="button"
                       onClick={async () => {
                         await submitForm()
                         resetForm()
                       }}
                     >
-                      Save
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faSave} />
+                      </Button.Icon>
                     </Button>
                   </Form>
                 )}
               </Formik>
-              <div className="flex flex-row gap-2 mt-4">
-                {field.value.map((clue) => (
-                  <div key={clue.name} className="border p-2">
-                    {clue.name} {clue.displayName} {clue.value} {clue.unit}
+              <div className="flex flex-row gap-2 mt-4 flex-wrap max-h-20 overflow-y-auto">
+                {field.value.map((clue, ix) => (
+                  <div
+                    key={clue.name}
+                    className="border py-1 text-sm px-2 rounded flex flex-row gap-4"
+                  >
+                    <div className="flex-1">
+                      <div className="font-bold">{clue.displayName}</div>
+                      <div>
+                        {clue.value} {clue.unit}
+                      </div>
+                    </div>
+                    <div className="flex-initial self-center">
+                      <Button basic onClick={() => remove(ix)}>
+                        <Button.Icon>
+                          <FontAwesomeIcon
+                            className="text-red-400"
+                            icon={faTrash}
+                          />
+                        </Button.Icon>
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
+              {meta.error && (
+                <div className="text-sm text-red-400 px-2">
+                  <WizardErrorMessage fieldName="clues" />
+                  {typeof meta.error === 'string' && meta.error}
+                </div>
+              )}
             </div>
           )}
         </FieldArray>

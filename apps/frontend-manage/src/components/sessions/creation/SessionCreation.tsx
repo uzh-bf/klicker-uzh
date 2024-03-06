@@ -98,7 +98,7 @@ function SessionCreation({
   }
 
   return (
-    <div className="flex flex-col justify-center print-hidden h-full">
+    <div className="flex flex-col justify-center print-hidden h-96">
       <div className="w-full h-full rounded-lg">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard

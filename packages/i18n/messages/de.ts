@@ -98,6 +98,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
+      groupActivity: 'Gruppenaktivität',
+      groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -116,7 +118,6 @@ export default {
       leave: 'Austreten',
       documentation: 'Dokumentation',
       features: 'Features',
-      groupActivities: 'Gruppenaktivitäten',
       experiencePoints: 'Erfahrungspunkte',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -969,6 +970,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      groupActivityTypes:
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+      groupActivityCreated:
+        'Your group activity <b>{name}</b> has been created successfully.',
+      groupActivityEdited:
+        'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityDescription:
+        'In this step, enter the name and description of the group activity.',
+      groupActivitySettings:
+        'In this step, select the start and end date and define clues that are distributed to the group members.',
+      groupActivityQuestions:
+        'In this step, select the questions for the group activity.',
+      groupActivityEditingFailed: 'Editing the group activity failed...',
+      groupActivityCreationFailed: 'Creating the group activity failed...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Add a description to your group activity that will be displayed to participants at the beginning.',
+      groupActivityCourse:
+        'For the creation of a group activity, the selection of the corresponding course is required.',
+      groupActivityStartDate:
+        'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
+      groupActivityEndDate:
+        'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityMultiplier:
+        'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
+      groupActivityUseCase:
+        '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
+      groupActivityCluesDescription:
+        'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
     },
     formErrors: {
       resolveErrors:

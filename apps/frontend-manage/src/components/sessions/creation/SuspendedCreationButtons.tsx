@@ -21,7 +21,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const { data } = useSuspenseQuery(UserProfileDocument)
 
   return (
-    <div className="grid gap-1 md:grid-cols-4 md:gap-2">
+    <div className="grid gap-1 md:grid-cols-4 md:gap-2 pb-4">
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}

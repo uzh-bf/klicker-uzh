@@ -98,6 +98,8 @@ export default {
       microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
+      groupActivity: 'Group Activity',
+      groupActivities: 'Group Activities',
       characters: 'characters',
       precision: 'Precision',
       unit: 'Unit',
@@ -116,7 +118,6 @@ export default {
       leave: 'Leave',
       documentation: 'Documentation',
       features: 'Features',
-      groupActivities: 'Group activities',
       experiencePoints: 'Experience points',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -863,10 +864,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newBlockSelected: 'Add 1 block with {count} questions',
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
-      displayNameTooltip:
-        'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
+      displayNameTooltip: 'The display name is shown to participants.',
       microlearningTypes:
-        'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can only contain content elements, flashcards, single choice, multiple choice, kprim and numerical questions.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
@@ -964,6 +964,36 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      groupActivityTypes:
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+      groupActivityCreated:
+        'Your group activity <b>{name}</b> has been created successfully.',
+      groupActivityEdited:
+        'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityDescription:
+        'In this step, enter the name and description of the group activity.',
+      groupActivitySettings:
+        'In this step, select the start and end date and define clues that are distributed to the group members.',
+      groupActivityQuestions:
+        'In this step, select the questions for the group activity.',
+      groupActivityEditingFailed: 'Editing the group activity failed...',
+      groupActivityCreationFailed: 'Creating the group activity failed...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Add a description to your group activity that will be displayed to participants at the beginning.',
+      groupActivityCourse:
+        'For the creation of a group activity, the selection of the corresponding course is required.',
+      groupActivityStartDate:
+        'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
+      groupActivityEndDate:
+        'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityMultiplier:
+        'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
+      groupActivityUseCase:
+        '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
+      groupActivityCluesDescription:
+        'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
     },
     formErrors: {
       resolveErrors:
