@@ -5,15 +5,16 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Tag } from 'src/ops'
-import { ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
-} from '../lib/questions'
+} from 'src/lib/questions'
+import { Tag } from 'src/ops'
+import { ContextWithUser } from '../lib/context'
 import { DisplayMode } from '../types/app'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
@@ -493,17 +494,29 @@ export async function updateQuestionInstances(
       id: questionId,
     },
     include: {
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                where: {
+                  status: DB.PublicationStatus.DRAFT,
+                },
+              },
+              practiceQuiz: {
+                where: {
+                  status: DB.PublicationStatus.DRAFT,
+                },
+              },
+            },
+          },
+        },
+      },
       instances: {
         include: {
           sessionBlock: {
             include: {
               session: true,
-            },
-          },
-          // TODO: update all instances in element stacks for practice quizzes
-          microSession: {
-            where: {
-              status: DB.MicroSessionStatus.DRAFT,
             },
           },
         },
@@ -521,7 +534,7 @@ export async function updateQuestionInstances(
     multiplier: number
     sessionId: string | undefined
     practiceQuizId: string | undefined
-    microlearningId: string | undefined
+    microLearningId: string | undefined
   }[] = {
     ...question.instances.reduce<
       {
@@ -529,7 +542,7 @@ export async function updateQuestionInstances(
         multiplier: number
         sessionId: string | undefined
         practiceQuizId: string | undefined
-        microlearningId: string | undefined
+        microLearningId: string | undefined
       }[]
     >((acc, instance) => {
       if (
@@ -543,34 +556,56 @@ export async function updateQuestionInstances(
             multiplier: instance.sessionBlock.session.pointsMultiplier,
             sessionId: instance.sessionBlock.session.id,
             practiceQuizId: undefined,
-            microlearningId: undefined,
-          },
-        ]
-      }
-      // TODO: return instanceId, multiplier, sessionId, practiceQuizId and microlearningId for practice quiz
-      else if (instance.microSession?.status === DB.MicroSessionStatus.DRAFT) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.microSession.pointsMultiplier,
-            sessionId: undefined,
-            practiceQuizId: undefined,
-            microlearningId: instance.microSession.id,
+            microLearningId: undefined,
           },
         ]
       }
       return acc
     }, []),
+    ...question.elementInstances.reduce<
+      {
+        instanceId: number
+        multiplier: number
+        sessionId: string | undefined
+        practiceQuizId: string | undefined
+        microLearningId: string | undefined
+      }[]
+    >((acc, instance) => {
+      if (
+        instance.elementStack?.microLearning?.status ===
+        DB.PublicationStatus.DRAFT
+      ) {
+        return [
+          ...acc,
+          {
+            instanceId: instance.id,
+            multiplier: instance.elementStack.microLearning.pointsMultiplier,
+            sessionId: undefined,
+            practiceQuizId: undefined,
+            microLearningId: instance.elementStack.microLearning.id,
+          },
+        ]
+      }
+
+      if (
+        instance.elementStack?.practiceQuiz?.status ===
+        DB.PublicationStatus.DRAFT
+      ) {
+        return [
+          ...acc,
+          {
+            instanceId: instance.id,
+            multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+            sessionId: undefined,
+            practiceQuizId: undefined,
+            microLearningId: instance.elementStack.practiceQuiz.id,
+          },
+        ]
+      }
+
+      return acc
+    }, []),
   }
-
-  console.log(instanceData)
-
-  // prepare new question objects
-  const newQuestionData = processQuestionData(question)
-
-  // prepare new results objects
-  const newResults = prepareInitialInstanceResults(newQuestionData)
 
   const updatedInstances = (
     await Promise.allSettled(
@@ -580,34 +615,92 @@ export async function updateQuestionInstances(
           multiplier,
           sessionId,
           practiceQuizId,
-          microlearningId,
+          microLearningId,
         }) => {
-          const instance = await ctx.prisma.questionInstance.update({
-            where: { id: instanceId },
-            data: {
-              questionData: newQuestionData,
-              results: newResults,
-              pointsMultiplier: multiplier * question.pointsMultiplier,
-            },
-          })
-
-          if (!instance) return null
+          let instance
 
           // invalidate cache for the corresponding element
           if (typeof sessionId !== 'undefined') {
+            // prepare new question objects
+            const newQuestionData = processQuestionData(question)
+
+            // prepare new results objects
+            const newResults = prepareInitialInstanceResults(question)
+
+            instance = await ctx.prisma.questionInstance.update({
+              where: { id: instanceId },
+              data: {
+                questionData: newQuestionData,
+                results: newResults,
+                pointsMultiplier: multiplier * question.pointsMultiplier,
+              },
+            })
+
+            if (!instance) return null
+
             ctx.emitter.emit('invalidate', {
               typename: 'Session',
               id: sessionId,
             })
           } else if (typeof practiceQuizId !== 'undefined') {
+            const oldInstance = await ctx.prisma.elementInstance.findUnique({
+              where: { id: instanceId },
+            })
+
+            if (!oldInstance) return null
+
+            // prepare new question objects
+            const newQuestionData = processElementData(question)
+
+            // prepare new results objects
+            const newResults = getInitialElementResults(question)
+
+            instance = await ctx.prisma.elementInstance.update({
+              where: { id: instanceId },
+              data: {
+                elementData: newQuestionData,
+                results: newResults,
+                options: {
+                  ...oldInstance.options,
+                  pointsMultiplier: multiplier * question.pointsMultiplier,
+                },
+              },
+            })
+
             ctx.emitter.emit('invalidate', {
               typename: 'PracticeQuiz',
               id: practiceQuizId,
             })
-          } else if (typeof microlearningId !== 'undefined') {
+          } else if (typeof microLearningId !== 'undefined') {
+            const oldInstance = await ctx.prisma.elementInstance.findUnique({
+              where: { id: instanceId },
+            })
+
+            if (!oldInstance) return null
+
+            // prepare new question objects
+            const newQuestionData = processElementData(question)
+
+            // prepare new results objects
+            const newResults = getInitialElementResults(question)
+
+            instance = await ctx.prisma.elementInstance.update({
+              where: { id: instanceId },
+              data: {
+                elementData: newQuestionData,
+                results: newResults,
+                options: {
+                  ...oldInstance.options,
+                  pointsMultiplier: multiplier * question.pointsMultiplier,
+                },
+              },
+            })
+
+            if (!instance) return null
+
             ctx.emitter.emit('invalidate', {
-              typename: 'MicroSession',
-              id: microlearningId,
+              typename: 'MicroLearning',
+              id: microLearningId,
             })
           }
 
