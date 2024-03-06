@@ -65,9 +65,10 @@ export function prepareCourse({
   displayName: string
   ownerId: string
   color?: string
-  pinCode?: number
+  pinCode: number
   startDate: Date
   endDate: Date
+  groupDeadlineDate: Date
   notificationEmail?: string
 }) {
   const data = {
