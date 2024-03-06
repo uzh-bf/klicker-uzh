@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.15...v3.1.0-rc.16) (2024-03-06)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure builds work for new updateQuestionInstances ([eff3ace](https://github.com/uzh-bf/klicker-uzh/commit/eff3ace669c7bb3915b4e98e70eff8aeccadb71b))
+
 ## [3.1.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.14...v3.1.0-rc.15) (2024-03-06)
 
 
