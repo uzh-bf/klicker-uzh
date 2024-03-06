@@ -41,7 +41,7 @@ import {
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  QuestionInstance,
+  QuestionOrElementInstance,
   Tag,
 } from './question'
 import { ElementType } from './questionData'
@@ -843,8 +843,7 @@ export const Mutation = builder.mutationType({
       }),
 
       updateQuestionInstances: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: [QuestionInstance],
+        type: [QuestionOrElementInstance],
         args: {
           questionId: t.arg.int({ required: true }),
         },

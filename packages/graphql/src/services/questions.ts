@@ -525,7 +525,7 @@ export async function updateQuestionInstances(
   })
 
   if (!question) {
-    return null
+    return []
   }
 
   // get all instances and the corresponding element multipliers
@@ -708,9 +708,28 @@ export async function updateQuestionInstances(
         }
       )
     )
-  ).flatMap((result) => {
+  ).flatMap<{
+    questionInstance?: DB.QuestionInstance
+    elementInstance?: DB.ElementInstance
+  }>((result) => {
     if (result.status !== 'fulfilled' || !result.value) return []
-    return result.value
+
+    // TODO: remove this mapping after the live quiz migration
+    if (result.value.type === 'SESSION') {
+      return [
+        {
+          questionInstance: result.value as DB.QuestionInstance,
+          elementInstance: undefined,
+        },
+      ]
+    }
+
+    return [
+      {
+        elementInstance: result.value as DB.ElementInstance,
+        questionInstance: undefined,
+      },
+    ]
   })
 
   return updatedInstances
