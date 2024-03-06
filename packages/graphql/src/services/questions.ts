@@ -598,7 +598,7 @@ export async function updateQuestionInstances(
             multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
             sessionId: undefined,
             practiceQuizId: instance.elementStack.practiceQuiz.id,
-            microLearningId: instance.elementStack.practiceQuiz.id,
+            microLearningId: undefined,
           },
         ]
       }
