@@ -1,10 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import type { ICourse } from './course.js'
-import { Course } from './course.js'
+import { CourseRef, type ICourse } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { ParticipantGroupRef, ParticipantRef } from './participant.js'
 import { ElementStackRef, IElementStack } from './practiceQuizzes.js'
+import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -35,6 +35,28 @@ export const GroupActivity = GroupActivityRef.implement({
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+  }),
+})
+
+export interface IGroupActivityDecision {
+  instanceId: number
+  type: DB.ElementType
+  freeTextResponse?: string
+  choicesResponse?: number[]
+  numericalResponse?: number
+  contentResponse?: boolean
+}
+export const GroupActivityDecisionRef =
+  builder.objectRef<IGroupActivityDecision>('GroupActivityDecision')
+
+export const GroupActivityDecision = GroupActivityDecisionRef.implement({
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    type: t.expose('type', { type: ElementType }),
+    freeTextResponse: t.exposeString('freeTextResponse', { nullable: true }),
+    choicesResponse: t.exposeIntList('choicesResponse', { nullable: true }),
+    numericalResponse: t.exposeFloat('numericalResponse', { nullable: true }),
+    contentResponse: t.exposeBoolean('contentResponse', { nullable: true }),
   }),
 })
 
@@ -161,7 +183,7 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
     }),
 
     group: t.expose('group', {

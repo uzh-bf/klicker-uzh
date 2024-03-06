@@ -745,6 +745,7 @@ model GroupActivityInstance {
   clues                  GroupActivityClueInstance[]
   clueInstanceAssignment GroupActivityClueAssignment[]
 
+  /// [PrismaGroupActivityDecisions]
   decisions            Json?
   decisionsSubmittedAt DateTime?
   results              Json?

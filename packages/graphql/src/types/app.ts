@@ -281,6 +281,15 @@ export type ElementInstanceResults =
   | ContentInstanceResults
   | AllQuestionInstanceTypeData
 
+export type GroupActivityDecisions = {
+  instanceId: number
+  type: ElementType
+  freeTextResponse?: string
+  choicesResponse?: number[]
+  numericalResponse?: number
+  contentResponse?: boolean
+}[]
+
 declare global {
   namespace PrismaJson {
     type PrismaQuestionResponse = QuestionResponse
@@ -289,6 +298,7 @@ declare global {
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaElementInstanceResults = ElementInstanceResults
+    type PrismaGroupActivityDecisions = GroupActivityDecisions
   }
 }
 // #endregion

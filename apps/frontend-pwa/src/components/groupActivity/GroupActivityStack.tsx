@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ElementStack,
   ElementType,
+  GroupActivityDecision,
   GroupActivityDetailsDocument,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -13,20 +14,20 @@ import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStud
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
   activityId: number
   stack: ElementStack
-  decisions?: any // TODO: typing
+  decisions?: GroupActivityDecision[]
   submittedAt?: string
 }
 
 function GroupActivityStack({
   activityId,
   stack,
-  decisions, // TODO: load previous answers from instances and display them if existent
+  decisions,
   submittedAt,
 }: GroupActivityStackProps) {
   const t = useTranslations()
@@ -49,13 +50,85 @@ function GroupActivityStack({
     {}
   )
 
-  // initialize student responses
   useStudentResponse({
     stack,
     currentStep: 0,
     setStudentResponse,
     defaultRead: true,
   })
+
+  useEffect(() => {
+    const loadedResponses = decisions?.reduce((acc, decision) => {
+      if (!decision) return acc
+
+      if (
+        decision.type === ElementType.Sc ||
+        decision.type === ElementType.Mc
+      ) {
+        return {
+          ...acc,
+          [decision.instanceId]: {
+            type: decision.type,
+            response: decision.choicesResponse?.reduce(
+              (acc, choice) => ({ ...acc, [choice]: true }),
+              {} as Record<number, boolean>
+            ),
+            valid: true,
+          },
+        }
+      } else if (decision.type === ElementType.Kprim) {
+        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
+          (acc, choice) => ({ ...acc, [choice]: false }),
+          {} as Record<number, boolean>
+        )
+
+        return {
+          ...acc,
+          [decision.instanceId]: {
+            type: decision.type,
+            response: decision.choicesResponse?.reduce(
+              (acc, choice) => ({ ...acc, [choice]: true }),
+              responseObj as Record<number, boolean>
+            ),
+            valid: true,
+          },
+        }
+      } else if (decision.type === ElementType.Numerical) {
+        return {
+          ...acc,
+          [decision.instanceId]: {
+            type: decision.type,
+            response: decision.numericalResponse
+              ? String(decision.numericalResponse)
+              : undefined,
+            valid: true,
+          },
+        }
+      } else if (decision.type === ElementType.FreeText) {
+        return {
+          ...acc,
+          [decision.instanceId]: {
+            type: decision.type,
+            response: decision.freeTextResponse ?? undefined,
+            valid: true,
+          },
+        }
+      } else if (decision.type === ElementType.Content) {
+        return {
+          ...acc,
+          [decision.instanceId]: {
+            type: decision.type,
+            response: decision.contentResponse ?? undefined,
+            valid: true,
+          },
+        }
+      } else {
+        return acc
+      }
+    }, {} as StudentResponseType)
+
+    setStudentResponse((prev) => loadedResponses || prev)
+  }, [decisions])
 
   return (
     <>
@@ -76,6 +149,7 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
+                  disabledInput
                 />
               </div>
             )

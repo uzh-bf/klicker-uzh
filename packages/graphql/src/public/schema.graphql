@@ -380,6 +380,15 @@ type GroupActivityClueInstance {
   value: String
 }
 
+type GroupActivityDecision {
+  choicesResponse: [Int!]
+  contentResponse: Boolean
+  freeTextResponse: String
+  instanceId: Int!
+  numericalResponse: Float
+  type: ElementType!
+}
+
 input GroupActivityDecisionInput {
   id: Int!
   response: String

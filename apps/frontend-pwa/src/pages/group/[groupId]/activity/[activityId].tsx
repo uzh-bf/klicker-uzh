@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  ElementStack,
   GroupActivityDetailsDocument,
   StartGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -173,8 +174,8 @@ function GroupActivityDetails() {
               <H1>{t('pwa.groupActivity.yourTasks')}</H1>
               <GroupActivityStack
                 activityId={data.groupActivityDetails.activityInstance.id}
-                stack={data.groupActivityDetails.stacks[0]}
-                decisions={null} // TODO: load decisions here
+                stack={data.groupActivityDetails.stacks[0] as ElementStack}
+                decisions={data.groupActivityDetails.activityInstance.decisions}
                 submittedAt={dayjs(
                   data.groupActivityDetails.activityInstance
                     .decisionsSubmittedAt

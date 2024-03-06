@@ -425,6 +425,16 @@ export type GroupActivityClueInstance = {
   value?: Maybe<Scalars['String']['output']>;
 };
 
+export type GroupActivityDecision = {
+  __typename?: 'GroupActivityDecision';
+  choicesResponse?: Maybe<Array<Scalars['Int']['output']>>;
+  contentResponse?: Maybe<Scalars['Boolean']['output']>;
+  freeTextResponse?: Maybe<Scalars['String']['output']>;
+  instanceId: Scalars['Int']['output'];
+  numericalResponse?: Maybe<Scalars['Float']['output']>;
+  type: ElementType;
+};
+
 export type GroupActivityDecisionInput = {
   id: Scalars['Int']['input'];
   response?: InputMaybe<Scalars['String']['input']>;
