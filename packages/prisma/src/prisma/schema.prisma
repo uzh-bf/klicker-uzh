@@ -138,7 +138,6 @@ model User {
   tags              Tag[]
   questionInstances QuestionInstance[]
   sessions          LiveSession[]
-  microSessions     MicroSession[]
   groupActivities   GroupActivity[]
   elementInstances  ElementInstance[]
   practiceQuizzes   PracticeQuiz[]
@@ -415,12 +414,8 @@ model QuestionInstance {
   sessionBlockId  Int?
   stackElement    StackElement?  @relation(fields: [stackElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   stackElementId  Int?           @unique
-  microSession    MicroSession?  @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microSessionId  String?        @db.Uuid
   groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupActivityId String?        @db.Uuid
-
-  bookmarkedBy Participation[]
 
   question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
@@ -432,7 +427,6 @@ model QuestionInstance {
 
   @@unique([type, sessionBlockId, order])
   @@unique([type, stackElementId, order])
-  @@unique([type, microSessionId, order])
   @@unique([type, groupActivityId, order])
 }
 
@@ -454,8 +448,6 @@ model QuestionStack {
   elements StackElement[]
 
   groupActivity GroupActivity?
-
-  bookmarkedBy Participation[]
 }
 
 model StackElement {
@@ -493,7 +485,6 @@ model Course {
   isGamificationEnabled Boolean   @default(true)
 
   sessions          LiveSession[]
-  microSessions     MicroSession[]
   elementStacks     ElementStack[]
   practiceQuizzes   PracticeQuiz[]
   groupActivities   GroupActivity[]
@@ -682,40 +673,6 @@ model MicroLearning {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// TODO - delete after migration
-enum MicroSessionStatus {
-  DRAFT
-  PUBLISHED
-}
-
-// TODO - delete after migration
-model MicroSession {
-  id String @id @default(uuid()) @db.Uuid
-
-  name             String
-  displayName      String
-  pointsMultiplier Int                @default(1)
-  description      String?
-  status           MicroSessionStatus @default(DRAFT)
-
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
-
-  arePushNotificationsSent Boolean @default(false)
-
-  instances QuestionInstance[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
-  // TODO: why is course optional?
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1012,10 +969,7 @@ model Participation {
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
-  completedMicroSessions  String[]
   completedMicroLearnings String[]
-  bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
-  bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())
