@@ -9,11 +9,15 @@ on:
       - 'CI'
     paths:
       - 'apps/backend-docker/**'
+      - 'packages/graphql/**'
+      - 'packages/prisma/**'
       - '.github/workflows/v3_backend-docker**'
   pull_request:
     # branches: [ "v3" ]
     paths:
       - 'apps/backend-docker/**'
+      - 'packages/graphql/**'
+      - 'packages/prisma/**'
       - '.github/workflows/v3_backend-docker**'
 
 env:

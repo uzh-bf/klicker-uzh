@@ -1,13 +1,26 @@
 mutation UpdateQuestionInstances($questionId: Int!) {
   updateQuestionInstances(questionId: $questionId) {
-    id
-    questionData {
+    questionInstance {
       id
-      name
-      type
-      content
-      pointsMultiplier
-      type
+      questionData {
+        id
+        name
+        type
+        content
+        pointsMultiplier
+        type
+      }
+    }
+    elementInstance {
+      id
+      elementData {
+        id
+        name
+        type
+        content
+        pointsMultiplier
+        type
+      }
     }
   }
 }
