@@ -136,7 +136,10 @@ function PracticeQuizElement({
                   href={href}
                 />
                 <Dropdown
-                  className={{ item: 'p-1', viewport: 'bg-white' }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
                   trigger={t('manage.course.otherActions')}
                   items={[
                     {
