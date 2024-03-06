@@ -356,6 +356,7 @@ type GroupActivity {
   displayName: String!
   id: ID!
   name: String!
+  numOfStacks: Int
   scheduledEndAt: Date!
   scheduledStartAt: Date!
 }

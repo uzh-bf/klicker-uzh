@@ -398,6 +398,7 @@ export type GroupActivity = {
   displayName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  numOfStacks?: Maybe<Scalars['Int']['output']>;
   scheduledEndAt: Scalars['Date']['output'];
   scheduledStartAt: Scalars['Date']['output'];
 };

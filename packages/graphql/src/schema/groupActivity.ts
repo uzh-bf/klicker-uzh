@@ -22,7 +22,9 @@ export const GroupActivityDecisionInput = builder.inputType(
   }
 )
 
-export interface IGroupActivity extends DB.GroupActivity {}
+export interface IGroupActivity extends DB.GroupActivity {
+  numOfStacks?: number
+}
 export const GroupActivityRef =
   builder.objectRef<IGroupActivity>('GroupActivity')
 export const GroupActivity = GroupActivityRef.implement({
@@ -32,6 +34,7 @@ export const GroupActivity = GroupActivityRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
