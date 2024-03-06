@@ -138,7 +138,6 @@ model User {
   tags              Tag[]
   questionInstances QuestionInstance[]
   sessions          LiveSession[]
-  microSessions     MicroSession[]
   groupActivities   GroupActivity[]
   elementInstances  ElementInstance[]
   practiceQuizzes   PracticeQuiz[]
@@ -413,8 +412,6 @@ model QuestionInstance {
 
   sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId Int?
-  microSession   MicroSession? @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microSessionId String?       @db.Uuid
 
   question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
@@ -425,7 +422,6 @@ model QuestionInstance {
   updatedAt DateTime @updatedAt
 
   @@unique([type, sessionBlockId, order])
-  @@unique([type, microSessionId, order])
 }
 
 // #endregion
@@ -450,7 +446,6 @@ model Course {
   isGamificationEnabled Boolean   @default(true)
 
   sessions          LiveSession[]
-  microSessions     MicroSession[]
   elementStacks     ElementStack[]
   practiceQuizzes   PracticeQuiz[]
   groupActivities   GroupActivity[]
@@ -639,40 +634,6 @@ model MicroLearning {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// TODO - delete after migration
-enum MicroSessionStatus {
-  DRAFT
-  PUBLISHED
-}
-
-// TODO - delete after migration
-model MicroSession {
-  id String @id @default(uuid()) @db.Uuid
-
-  name             String
-  displayName      String
-  pointsMultiplier Int                @default(1)
-  description      String?
-  status           MicroSessionStatus @default(DRAFT)
-
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
-
-  arePushNotificationsSent Boolean @default(false)
-
-  instances QuestionInstance[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
-  // TODO: why is course optional?
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -962,7 +923,6 @@ model Participation {
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
-  completedMicroSessions  String[]
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]
 
