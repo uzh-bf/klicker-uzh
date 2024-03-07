@@ -1,11 +1,6 @@
 mutation SubmitGroupActivityDecisions(
-  $activityInstanceId: Int!
-  $decisions: [GroupActivityDecisionInput!]!
+  $activityId: Int!
+  $responses: [StackResponseInput!]!
 ) {
-  submitGroupActivityDecisions(
-    activityInstanceId: $activityInstanceId
-    decisions: $decisions
-  ) {
-    id
-  }
+  submitGroupActivityDecisions(activityId: $activityId, responses: $responses)
 }

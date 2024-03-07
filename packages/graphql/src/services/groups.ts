@@ -1,9 +1,17 @@
-import { LeaderboardType } from '@klicker-uzh/prisma'
+import {
+  ElementType,
+  GroupActivityStatus,
+  LeaderboardType,
+} from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
+import {
+  RespondToElementStackInput,
+  updateQuestionResults,
+} from './practiceQuizzes'
 interface CreateParticipantGroupArgs {
   courseId: string
   name: string
@@ -304,9 +312,13 @@ export async function getGroupActivityDetails(
           displayName: 'asc',
         },
       },
-      instances: {
-        orderBy: {
-          order: 'asc',
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       parameters: true,
@@ -405,9 +417,13 @@ export async function startGroupActivity(
           displayName: 'asc',
         },
       },
-      instances: {
-        orderBy: {
-          order: 'asc',
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       parameters: true,
@@ -543,22 +559,16 @@ export async function startGroupActivity(
   }
 }
 
-interface SubmitGroupActivityDecisionsArgs {
-  activityInstanceId: number
-  decisions: {
-    id: number
-    response?: string | null
-    selectedOptions?: number[] | null
-  }[]
-}
-
 export async function submitGroupActivityDecisions(
-  { activityInstanceId, decisions }: SubmitGroupActivityDecisionsArgs,
+  {
+    activityId,
+    responses,
+  }: Partial<RespondToElementStackInput> & { activityId: number },
   ctx: ContextWithUser
 ) {
   const groupActivityInstance =
     await ctx.prisma.groupActivityInstance.findUnique({
-      where: { id: activityInstanceId },
+      where: { id: activityId },
       include: {
         groupActivity: true,
         group: {
@@ -578,7 +588,8 @@ export async function submitGroupActivityDecisions(
   if (
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
-    !!groupActivityInstance.decisionsSubmittedAt
+    !!groupActivityInstance.decisionsSubmittedAt ||
+    groupActivityInstance.groupActivity.status === GroupActivityStatus.DRAFT
   ) {
     return null
   }
@@ -591,15 +602,63 @@ export async function submitGroupActivityDecisions(
     return null
   }
 
+  // save answers on instances in aggregated form
+  await Promise.all(
+    responses!.flatMap((inputResponse) => {
+      return ctx.prisma.$transaction(async (prisma) => {
+        if (inputResponse.type === ElementType.CONTENT) return []
+        const instanceId = inputResponse.instanceId
+
+        // fetch the existing instance
+        const instance = await prisma.elementInstance.findUnique({
+          where: { id: instanceId },
+        })
+        if (!instance || !instance.elementData) return []
+
+        let response
+        if (
+          inputResponse.type === ElementType.SC ||
+          inputResponse.type === ElementType.MC ||
+          inputResponse.type === ElementType.KPRIM
+        ) {
+          response = { choices: inputResponse.choicesResponse }
+        } else if (inputResponse.type === ElementType.NUMERICAL) {
+          response = { value: String(inputResponse.numericalResponse) }
+        } else if (inputResponse.type === ElementType.FREE_TEXT) {
+          response = { value: inputResponse.freeTextResponse }
+        } else {
+          console.log('Element type not supported for group activity')
+          return
+        }
+
+        // compute the updated results
+        const updatedResults = updateQuestionResults({
+          instance,
+          elementData: instance.elementData,
+          response: response,
+        })
+
+        // update the instance with the new results
+        await prisma.elementInstance.update({
+          where: { id: instanceId },
+          data: {
+            results: updatedResults,
+          },
+        })
+      })
+    })
+  )
+
   const updatedActivityInstance = await ctx.prisma.groupActivityInstance.update(
     {
-      where: { id: activityInstanceId },
+      where: { id: activityId },
       data: {
-        decisions,
+        decisions: responses,
         decisionsSubmittedAt: new Date(),
       },
     }
   )
 
-  return updatedActivityInstance
+  // return updatedActivityInstance
+  return updatedActivityInstance.id
 }

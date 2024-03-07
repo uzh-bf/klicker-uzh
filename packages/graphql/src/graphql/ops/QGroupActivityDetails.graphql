@@ -1,4 +1,4 @@
-#import "./FQuestionData.graphql"
+#import "./FElementDataWithoutSolutions.graphql"
 
 query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
@@ -13,21 +13,17 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       displayName
     }
 
-    instances {
+    stacks {
       id
-      ...QuestionData
-      evaluation {
-        feedbacks {
-          ix
-          feedback
-          correct
-          value
-        }
-        choices
-        score
-        pointsAwarded
-        percentile
-        newPointsFrom
+      type
+      displayName
+      description
+      order
+      elements {
+        id
+        type
+        elementType
+        ...ElementDataWithoutSolutions
       }
     }
 

@@ -65,9 +65,10 @@ export function prepareCourse({
   displayName: string
   ownerId: string
   color?: string
-  pinCode?: number
+  pinCode: number
   startDate: Date
   endDate: Date
+  groupDeadlineDate: Date
   notificationEmail?: string
 }) {
   const data = {
@@ -389,17 +390,6 @@ export function prepareGroupActivityStack({
     elements: {
       createMany: {
         data: [
-          ...flashcards.slice(0, 2).map((el, ix) => ({
-            migrationId: String(migrationIdOffset + ix),
-            order: ix,
-            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: {},
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
           ...questions.map((el, ix) => ({
             migrationId: String(migrationIdOffset + 2 + ix),
             order: 2 + ix,
@@ -885,6 +875,7 @@ export function prepareGroupActivityClues({
         name: 'numberClue1',
         displayName: 'Display number clue',
         value: '-100.25',
+        unit: 'kg',
       },
     },
     {
@@ -899,6 +890,7 @@ export function prepareGroupActivityClues({
         name: 'numberClue2',
         displayName: 'Display number clue 2',
         value: '0',
+        unit: '%',
       },
     },
     {
@@ -913,6 +905,7 @@ export function prepareGroupActivityClues({
         name: 'numberClue3',
         displayName: 'Display number clue 3',
         value: '100.25',
+        unit: 'm',
       },
     },
   ]

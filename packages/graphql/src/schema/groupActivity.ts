@@ -1,11 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import type { ICourse } from './course.js'
-import { Course } from './course.js'
+import { CourseRef, type ICourse } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { ParticipantGroupRef, ParticipantRef } from './participant.js'
-import type { IQuestionInstance } from './question.js'
-import { QuestionInstanceRef } from './question.js'
+import { ElementStackRef, IElementStack } from './practiceQuizzes.js'
+import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -23,7 +22,9 @@ export const GroupActivityDecisionInput = builder.inputType(
   }
 )
 
-export interface IGroupActivity extends DB.GroupActivity {}
+export interface IGroupActivity extends DB.GroupActivity {
+  numOfStacks?: number
+}
 export const GroupActivityRef =
   builder.objectRef<IGroupActivity>('GroupActivity')
 export const GroupActivity = GroupActivityRef.implement({
@@ -33,9 +34,32 @@ export const GroupActivity = GroupActivityRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+  }),
+})
+
+export interface IGroupActivityDecision {
+  instanceId: number
+  type: DB.ElementType
+  freeTextResponse?: string
+  choicesResponse?: number[]
+  numericalResponse?: number
+  contentResponse?: boolean
+}
+export const GroupActivityDecisionRef =
+  builder.objectRef<IGroupActivityDecision>('GroupActivityDecision')
+
+export const GroupActivityDecision = GroupActivityDecisionRef.implement({
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    type: t.expose('type', { type: ElementType }),
+    freeTextResponse: t.exposeString('freeTextResponse', { nullable: true }),
+    choicesResponse: t.exposeIntList('choicesResponse', { nullable: true }),
+    numericalResponse: t.exposeFloat('numericalResponse', { nullable: true }),
+    contentResponse: t.exposeBoolean('contentResponse', { nullable: true }),
   }),
 })
 
@@ -126,7 +150,7 @@ export interface IGroupActivityDetails {
   course: ICourse
   activityInstance?: DB.GroupActivityInstance | null
   clues: DB.GroupActivityClue[]
-  instances: IQuestionInstance[]
+  stacks: IElementStack[]
 }
 export const GroupActivityDetailsRef = builder.objectRef<IGroupActivityDetails>(
   'GroupActivityDetails'
@@ -157,12 +181,12 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
       type: [GroupActivityClueRef],
     }),
 
-    instances: t.expose('instances', {
-      type: [QuestionInstanceRef],
+    stacks: t.expose('stacks', {
+      type: [ElementStackRef],
     }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
     }),
 
     group: t.expose('group', {

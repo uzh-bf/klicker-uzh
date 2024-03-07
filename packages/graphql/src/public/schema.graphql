@@ -356,6 +356,7 @@ type GroupActivity {
   displayName: String!
   id: ID!
   name: String!
+  numOfStacks: Int
   scheduledEndAt: Date!
   scheduledStartAt: Date!
 }
@@ -380,6 +381,15 @@ type GroupActivityClueInstance {
   value: String
 }
 
+type GroupActivityDecision {
+  choicesResponse: [Int!]
+  contentResponse: Boolean
+  freeTextResponse: String
+  instanceId: Int!
+  numericalResponse: Float
+  type: ElementType!
+}
+
 input GroupActivityDecisionInput {
   id: Int!
   response: String
@@ -394,10 +404,10 @@ type GroupActivityDetails {
   displayName: String!
   group: ParticipantGroup!
   id: String!
-  instances: [QuestionInstance!]!
   name: String!
   scheduledEndAt: Date
   scheduledStartAt: Date
+  stacks: [ElementStack!]!
 }
 
 type GroupActivityInstance {
@@ -595,7 +605,7 @@ type Mutation {
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
-  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
+  submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean

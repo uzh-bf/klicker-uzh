@@ -16,7 +16,6 @@ import {
   prepareGroupActivityStack,
   prepareParticipant,
   prepareQuestion,
-  prepareQuestionInstance,
   prepareSession,
   prepareStackVariety,
   prepareUser,
@@ -124,7 +123,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       color: '#016272',
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
-      endDate: new Date('2024-01-01T23:59'),
+      endDate: new Date('2030-01-01T23:59'),
       groupDeadlineDate: new Date('2024-01-01T00:01'),
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
@@ -251,62 +250,62 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // TODO: remove after migration to new data structure
-  const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
-  const groupActivityTest = await prisma.groupActivity.upsert({
-    where: {
-      id: GROUP_ACTIVITY_ID,
-    },
-    create: {
-      id: GROUP_ACTIVITY_ID,
-      name: 'Gruppenquest 1',
-      displayName: 'Gruppenquest 1',
-      description: `testing it`,
-      status: 'PUBLISHED',
-      scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
-      scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
-      parameters: {},
-      clues: {
-        connectOrCreate: [
-          ...prepareGroupActivityClues({ activityId: GROUP_ACTIVITY_ID }),
-        ],
-      },
-      instances: {
-        connectOrCreate: await Promise.all(
-          [0].map(async (qId, ix) => {
-            const question = await prisma.element.findUnique({
-              where: { originalId: String(qId) },
-            })
+  // const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
+  // const groupActivityTest = await prisma.groupActivity.upsert({
+  //   where: {
+  //     id: GROUP_ACTIVITY_ID,
+  //   },
+  //   create: {
+  //     id: GROUP_ACTIVITY_ID,
+  //     name: 'Gruppenquest 1',
+  //     displayName: 'Gruppenquest 1',
+  //     description: `testing it`,
+  //     status: 'PUBLISHED',
+  //     scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
+  //     scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
+  //     parameters: {},
+  //     clues: {
+  //       connectOrCreate: [
+  //         ...prepareGroupActivityClues({ activityId: GROUP_ACTIVITY_ID }),
+  //       ],
+  //     },
+  //     instances: {
+  //       connectOrCreate: await Promise.all(
+  //         [0].map(async (qId, ix) => {
+  //           const question = await prisma.element.findUnique({
+  //             where: { originalId: String(qId) },
+  //           })
 
-            return {
-              where: {
-                type_groupActivityId_order: {
-                  type: 'GROUP_ACTIVITY',
-                  groupActivityId: GROUP_ACTIVITY_ID,
-                  order: ix,
-                },
-              },
-              create: prepareQuestionInstance({
-                question,
-                type: 'GROUP_ACTIVITY',
-                order: ix,
-              }),
-            }
-          })
-        ),
-      },
-      owner: {
-        connect: {
-          id: USER_ID_TEST,
-        },
-      },
-      course: {
-        connect: {
-          id: COURSE_ID_TEST,
-        },
-      },
-    },
-    update: {},
-  })
+  //           return {
+  //             where: {
+  //               type_groupActivityId_order: {
+  //                 type: 'GROUP_ACTIVITY',
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 order: ix,
+  //               },
+  //             },
+  //             create: prepareQuestionInstance({
+  //               question,
+  //               type: 'GROUP_ACTIVITY',
+  //               order: ix,
+  //             }),
+  //           }
+  //         })
+  //       ),
+  //     },
+  //     owner: {
+  //       connect: {
+  //         id: USER_ID_TEST,
+  //       },
+  //     },
+  //     course: {
+  //       connect: {
+  //         id: COURSE_ID_TEST,
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
 
   // create participants
   const participantsTesting = await Promise.all(
@@ -539,7 +538,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityClues({ activityId: groupActivityId1 }),
         ],
       },
-      elementStack: {
+      stacks: {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 0,
@@ -584,7 +583,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
         ],
       },
-      elementStack: {
+      stacks: {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 100,

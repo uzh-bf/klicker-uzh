@@ -20,6 +20,7 @@ interface NumericalQuestionProps {
   existingResponse?: string
   elementIx: number
   evaluation?: InstanceEvaluation
+  disabled?: boolean
 }
 
 function NumericalQuestion({
@@ -31,6 +32,7 @@ function NumericalQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  disabled,
 }: NumericalQuestionProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -70,7 +72,7 @@ function NumericalQuestion({
           unit={options.unit ?? undefined}
           min={options.restrictions?.min ?? undefined}
           max={options.restrictions?.max ?? undefined}
-          disabled={!!existingResponse}
+          disabled={disabled || !!existingResponse}
           elementIx={elementIx}
         />
       </div>

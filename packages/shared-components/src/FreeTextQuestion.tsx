@@ -20,6 +20,7 @@ interface FreeTextQuestionProps {
   existingResponse?: string
   elementIx: number
   evaluation?: InstanceEvaluation
+  disabled?: boolean
 }
 
 function FreeTextQuestion({
@@ -31,6 +32,7 @@ function FreeTextQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  disabled,
 }: FreeTextQuestionProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -59,7 +61,7 @@ function FreeTextQuestion({
             setResponse(newValue, valid)
           }}
           maxLength={options.restrictions?.maxLength ?? undefined}
-          disabled={!!existingResponse}
+          disabled={disabled || !!existingResponse}
           elementIx={elementIx}
         />
       </div>

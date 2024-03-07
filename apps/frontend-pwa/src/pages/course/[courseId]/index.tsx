@@ -454,10 +454,10 @@ function CourseOverview({ courseId }: Props) {
                     />
                   </div>
 
-                  {course?.groupActivities?.length > 0 && (
+                  {(course?.groupActivities?.length ?? -1) > 0 && (
                     <div className="mt-8">
                       <H4>{t('shared.generic.groupActivities')}</H4>
-                      <div className="flex-col pt-2 border-t">
+                      <div className="flex-col pt-2 border-t gap-1">
                         {course.groupActivities?.map((activity) => (
                           <div
                             key={activity.id}
