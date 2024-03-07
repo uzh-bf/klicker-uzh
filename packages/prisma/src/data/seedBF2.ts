@@ -213,8 +213,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
 
 ![](https://klickeruzhprodimages.blob.core.windows.net/2c26825d-84e0-4599-878c-3e0605e8180c/4d1f495b-fb1f-42de-b6b9-49afce587f77.png)`,
       status: Prisma.GroupActivityStatus.PUBLISHED,
-      scheduledStartAt: new Date('2024-03-01T11:00:00.000Z'),
-      scheduledEndAt: new Date('2024-03-20T11:00:00.000Z'),
+      scheduledStartAt: new Date('2024-03-08T13:00:00.000Z'),
+      scheduledEndAt: new Date('2024-03-15T23:00:00.000Z'),
       parameters: {},
       clues: {
         connectOrCreate: [
