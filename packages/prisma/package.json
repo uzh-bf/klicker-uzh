@@ -79,6 +79,7 @@
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev bun run src/data/seedAchievements.ts",
     "seed:bf2": "ENV=development doppler run --config dev bun run src/data/seedBF2.ts",
+    "seed:prod:bf2": "ENV=development doppler run --config prd bun run src/data/seedBF2.ts",
     "seed:groupActivityResults": "ENV=development doppler run --config dev -- bun run src/data/seedGroupActivityResults.ts",
     "seed:prod:achievements": "ENV=production doppler run --config prd -- bun run src/data/seedAchievements.ts",
     "seed:flashcards": "ENV=development doppler run --config dev bun run src/data/seedFlashcards.ts",
