@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.1.0-rc.16",
+  "version": "3.1.0-rc.17",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",

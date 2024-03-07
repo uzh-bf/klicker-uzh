@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.16...v3.1.0-rc.17) (2024-03-07)
+
+
+### Features
+
+* introduce student frontend components for group activity ([#4058](https://github.com/uzh-bf/klicker-uzh/issues/4058)) ([76f9e9b](https://github.com/uzh-bf/klicker-uzh/commit/76f9e9b85ce381d072d18b43d661496cd5ce41bf))
+
 ## [3.1.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.15...v3.1.0-rc.16) (2024-03-06)
 
 
