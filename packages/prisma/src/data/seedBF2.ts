@@ -228,8 +228,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond1',
-              displayName: 'Schweizer Eidgenossenschaft',
-              value: 'CH0031835561',
+              displayName: 'Firma 1',
+              value: 'CH0031835561 (Schweizer Eidgenossenschaft)',
             },
           },
           {
@@ -242,8 +242,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond2',
-              displayName: 'ZKB',
-              value: 'CH0506071221',
+              displayName: 'Firma 2',
+              value: 'CH0506071221 (ZKB)',
             },
           },
           {
@@ -256,8 +256,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond3',
-              displayName: 'Novartis',
-              value: 'CH0270190991',
+              displayName: 'Firma 3',
+              value: 'CH0270190991 (Novartis)',
             },
           },
           {
@@ -270,8 +270,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond4',
-              displayName: 'Lindt & Sprüngli',
-              value: 'CH0564642079',
+              displayName: 'Firma 4',
+              value: 'CH0564642079 (Lindt & Sprüngli)',
             },
           },
           {
@@ -284,8 +284,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond5',
-              displayName: 'ABB',
-              value: 'CH1214797198',
+              displayName: 'Firma 5',
+              value: 'CH1214797198 (ABB)',
             },
           },
           {
@@ -298,8 +298,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: Prisma.ParameterType.STRING,
               name: 'bond6',
-              displayName: 'Apple',
-              value: 'CH0271171693',
+              displayName: 'Firma 6',
+              value: 'CH0271171693 (Apple)',
             },
           },
         ],

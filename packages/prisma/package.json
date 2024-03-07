@@ -11,8 +11,7 @@
     "@klicker-uzh/util": "workspace:*"
   },
   "dependencies": {
-    "@prisma/client": "5.9.1",
-    "uuid": "9.0.0"
+    "@prisma/client": "5.9.1"
   },
   "devDependencies": {
     "@pothos/plugin-prisma": "3.60.0",
@@ -40,7 +39,7 @@
     "tsup": "7.2.0",
     "turndown": "7.1.2",
     "typescript": "5.1.6",
-    "uuidv4": "6.2.13",
+    "uuid": "9.0.0",
     "xml2js": "0.6.2"
   },
   "scripts": {
