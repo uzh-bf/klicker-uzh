@@ -630,6 +630,47 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
+            connectToCourse: true,
+          }),
+        ],
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  const quizId2 = '58cfd921-2bc1-40a4-a186-846626eb0591'
+  const practiceQuiz2 = await prismaClient.practiceQuiz.upsert({
+    where: {
+      id: quizId2,
+    },
+    create: {
+      id: quizId2,
+      name: 'Practice Quiz Draft',
+      displayName: 'Practice Quiz Draft Student Title',
+      description:
+        'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      status: Prisma.PublicationStatus.DRAFT,
+      orderType: Prisma.ElementOrderType.SPACED_REPETITION,
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 300,
+            flashcards: [flashcards[0]],
+            questions: [questionsTest[0]],
+            contentElements: [contentElements[0]],
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_TEST,
+            connectToCourse: false,
           }),
         ],
       },
