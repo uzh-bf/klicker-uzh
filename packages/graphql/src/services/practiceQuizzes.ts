@@ -1516,6 +1516,22 @@ export async function publishPracticeQuiz(
     data: {
       status: PublicationStatus.PUBLISHED,
     },
+    include: {
+      stacks: true,
+    },
+  })
+
+  // connect all elementStacks in the practice quiz to the course
+  const courseId = practiceQuiz.courseId
+  await ctx.prisma.course.update({
+    where: {
+      id: courseId,
+    },
+    data: {
+      elementStacks: {
+        connect: practiceQuiz.stacks.map((stack) => ({ id: stack.id })),
+      },
+    },
   })
 
   return practiceQuiz
