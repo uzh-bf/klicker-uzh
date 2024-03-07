@@ -9,6 +9,7 @@ import path from 'path'
 import * as R from 'ramda'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
+import { v4 as uuid } from 'uuid'
 import { parseStringPromise } from 'xml2js'
 import Prisma from '../../dist'
 import {
@@ -367,19 +368,15 @@ export async function prepareSession({
 }
 
 export function prepareGroupActivityStack({
-  flashcards,
   questions,
   contentElements,
   courseId,
   connectStackToCourse,
-  migrationIdOffset,
 }: {
-  flashcards: Prisma.Element[]
   questions: Prisma.Element[]
-  contentElements: Prisma.Element[]
+  contentElements?: Prisma.Element[]
   courseId: string
   connectStackToCourse?: boolean
-  migrationIdOffset: number
 }) {
   return {
     displayName: 'Stack displayname for group activity',
@@ -389,30 +386,44 @@ export function prepareGroupActivityStack({
     options: {},
     elements: {
       createMany: {
-        data: [
-          ...questions.map((el, ix) => ({
-            migrationId: String(migrationIdOffset + 2 + ix),
-            order: 2 + ix,
-            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: { pointsMultiplier: 1, resetTimeDays: 5 },
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
-          ...contentElements.slice(0, 2).map((el, ix) => ({
-            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
-            order: questions.length + 2 + ix,
-            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: {},
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
-        ],
+        data: contentElements
+          ? [
+              ...questions.map((el, ix) => ({
+                migrationId: uuid(),
+                order: ix,
+                type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+                elementType: el.type,
+                elementData: processElementData(el),
+                options: { pointsMultiplier: 1, resetTimeDays: 5 },
+                results: getInitialElementResults(el),
+                ownerId: el.ownerId,
+                elementId: el.id,
+              })),
+              ...contentElements.map((el, ix) => ({
+                migrationId: uuid(),
+                order: questions.length + ix,
+                type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+                elementType: el.type,
+                elementData: processElementData(el),
+                options: {},
+                results: getInitialElementResults(el),
+                ownerId: el.ownerId,
+                elementId: el.id,
+              })),
+            ]
+          : [
+              ...questions.map((el, ix) => ({
+                migrationId: uuid(),
+                order: ix,
+                type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+                elementType: el.type,
+                elementData: processElementData(el),
+                options: { pointsMultiplier: 1, resetTimeDays: 5 },
+                results: getInitialElementResults(el),
+                ownerId: el.ownerId,
+                elementId: el.id,
+              })),
+            ],
       },
     },
     course: connectStackToCourse

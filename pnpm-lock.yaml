@@ -1950,6 +1950,9 @@ importers:
       '@prisma/client':
         specifier: 5.9.1
         version: 5.9.1(prisma@5.9.1)
+      uuid:
+        specifier: 9.0.0
+        version: 9.0.0
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.60.0

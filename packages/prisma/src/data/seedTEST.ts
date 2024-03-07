@@ -541,8 +541,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 0,
-            flashcards,
             questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
@@ -586,10 +584,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 100,
-            flashcards,
             questions: questionsTest,
-            contentElements,
+            contentElements: contentElements.slice(0, 2),
             courseId: COURSE_ID_TEST,
             connectStackToCourse: false,
           }),
