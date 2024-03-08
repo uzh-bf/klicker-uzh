@@ -161,15 +161,17 @@ function CourseOverview({ courseId }: Props) {
                 key="info"
                 value="info"
                 label={t('pwa.courses.courseInformation')}
+                data={{ cy: 'student-course-information' }}
               />
             )}
 
             {course?.isGamificationEnabled &&
-              data.participantGroups?.map((group) => (
+              data.participantGroups?.map((group, ix) => (
                 <Tabs.Tab
                   key={group.id}
                   value={group.id}
                   label={`${t('shared.generic.group')} ${group.name}`}
+                  data={{ cy: `student-course-existing-group-${ix}` }}
                 />
               ))}
 
@@ -180,6 +182,7 @@ function CourseOverview({ courseId }: Props) {
                   key="create"
                   value="create"
                   label={t('pwa.courses.createJoinGroup')}
+                  data={{ cy: 'student-course-create-group' }}
                 />
               )}
           </Tabs.TabList>
@@ -458,7 +461,7 @@ function CourseOverview({ courseId }: Props) {
                     <div className="mt-8">
                       <H4>{t('shared.generic.groupActivities')}</H4>
                       <div className="flex-col pt-2 border-t gap-1">
-                        {course.groupActivities?.map((activity) => (
+                        {course.groupActivities?.map((activity, activityIx) => (
                           <div
                             key={activity.id}
                             className="flex flex-row justify-between flex-1 gap-8 border-b last:border-b-0"
@@ -529,7 +532,9 @@ function CourseOverview({ courseId }: Props) {
                                       className={{
                                         root: 'gap-4 text-left text-sm',
                                       }}
-                                      data={{ cy: 'open-group-activity' }}
+                                      data={{
+                                        cy: `open-group-activity-${activityIx}`,
+                                      }}
                                     >
                                       <Button.Icon>
                                         <FontAwesomeIcon
