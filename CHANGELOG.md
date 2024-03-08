@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.17...v3.1.0-rc.18) (2024-03-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that group activity fields are only disabled if decisions exist already ([44f5fe6](https://github.com/uzh-bf/klicker-uzh/commit/44f5fe6b5ffe56ae87e737964b27ccac58e4b21a))
+
+
+### Enhancements
+
+* connect practice quiz element stacks to course on publish ([#4063](https://github.com/uzh-bf/klicker-uzh/issues/4063)) ([f6c1025](https://github.com/uzh-bf/klicker-uzh/commit/f6c1025e8479a8b0661b99659339c62d26bc9482))
+* **cypress:** add group activity student frontend test ([#4065](https://github.com/uzh-bf/klicker-uzh/issues/4065)) ([e6c61d4](https://github.com/uzh-bf/klicker-uzh/commit/e6c61d47134b8e00145e82c0d67a8fa35b91f5d4))
+
 ## [3.1.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.16...v3.1.0-rc.17) (2024-03-07)
 
 
