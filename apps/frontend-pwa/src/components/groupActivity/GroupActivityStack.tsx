@@ -149,7 +149,7 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
-                  disabledInput
+                  disabledInput={!!decisions}
                 />
               </div>
             )
