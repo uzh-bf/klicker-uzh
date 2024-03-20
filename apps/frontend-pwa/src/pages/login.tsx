@@ -23,7 +23,7 @@ function Login() {
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
 
   const loginSchema = Yup.object().shape({
-    username: Yup.string().required(t('shared.generic.usernameError')),
+    usernameOrEmail: Yup.string().required(t('shared.generic.usernameError')),
     password: Yup.string().required(t('shared.generic.passwordError')),
   })
 
@@ -40,7 +40,7 @@ function Login() {
     try {
       const result: FetchResult = await loginParticipant({
         variables: {
-          username: values.username.trim(),
+          usernameOrEmail: values.usernameOrEmail.trim(),
           password: values.password.trim(),
         },
       })
@@ -68,15 +68,15 @@ function Login() {
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
-        initialValues={{ username: '', password: '' }}
+        initialValues={{ usernameOrEmail: '', password: '' }}
         validationSchema={loginSchema}
         onSubmit={onSubmit}
       >
         {({ isSubmitting }) => {
           return (
             <LoginForm
-              labelIdentifier={t('shared.generic.username')}
-              fieldIdentifier="username"
+              labelIdentifier={t('shared.generic.usernameOrEmail')}
+              fieldIdentifier="usernameOrEmail"
               dataIdentifier={{ cy: 'username-field' }}
               labelSecret={t('shared.generic.password')}
               fieldSecret="password"
