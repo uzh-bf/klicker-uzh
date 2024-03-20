@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.18...v3.1.0-rc.19) (2024-03-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add styling to media library to fix overlay issues ([#4068](https://github.com/uzh-bf/klicker-uzh/issues/4068)) ([e97abb3](https://github.com/uzh-bf/klicker-uzh/commit/e97abb3205b918cf0b88c41dafdc4c23a995ba88))
+* **packages/graphql:** ensure that confusion feedbacks are ordered correctly ([#4067](https://github.com/uzh-bf/klicker-uzh/issues/4067)) ([c076358](https://github.com/uzh-bf/klicker-uzh/commit/c076358973726545ddfe04f35df43a2d25cd4a50))
+* **packages/graphql:** ensure that number of questions on microlearning are not reset on publish ([01e105a](https://github.com/uzh-bf/klicker-uzh/commit/01e105a8c247140698a1d51f4aa2804c7422b7d8))
+
+
+### Enhancements
+
+* allow students to login with email or username ([#4066](https://github.com/uzh-bf/klicker-uzh/issues/4066)) ([2070fc6](https://github.com/uzh-bf/klicker-uzh/commit/2070fc660de7d7bbe260257ac575ad336546f5e4))
+
 ## [3.1.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.17...v3.1.0-rc.18) (2024-03-08)
 
 
