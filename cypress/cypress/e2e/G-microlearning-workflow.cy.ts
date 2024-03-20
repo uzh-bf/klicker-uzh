@@ -857,11 +857,11 @@ describe('Different microlearning workflows', () => {
     )
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
-      .contains(`${microLearningName} (converted)`)
+      .should('have.value', `${microLearningName} (converted)`)
       .type(practiceQuizName)
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
-      .contains(`${microLearningName}`)
+      .should('have.value', microLearningName)
       .type(practiceQuizDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
 
