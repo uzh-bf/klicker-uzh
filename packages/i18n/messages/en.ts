@@ -72,6 +72,7 @@ export default {
       logout: 'Logout',
       login: 'Login',
       username: 'Username',
+      usernameOrEmail: 'Username / E-mail',
       email: 'E-mail address',
       password: 'Password',
       token: 'Token',

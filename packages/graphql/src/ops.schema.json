@@ -8431,7 +8431,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "username",
+                "name": "usernameOrEmail",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
