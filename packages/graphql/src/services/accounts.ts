@@ -104,18 +104,22 @@ export function createParticipantToken(participantId: string) {
 }
 
 interface LoginParticipantArgs {
-  username: string
+  usernameOrEmail: string
   password: string
 }
 
 export async function loginParticipant(
-  { username, password }: LoginParticipantArgs,
+  { usernameOrEmail, password }: LoginParticipantArgs,
   ctx: Context
 ) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { username: username },
+  const participantWithUsername = await ctx.prisma.participant.findUnique({
+    where: { username: usernameOrEmail },
+  })
+  const participantWithEmail = await ctx.prisma.participant.findUnique({
+    where: { email: usernameOrEmail },
   })
 
+  const participant = participantWithUsername || participantWithEmail
   if (!participant) return null
 
   const isLoginValid = await bcrypt.compare(password, participant.password)
