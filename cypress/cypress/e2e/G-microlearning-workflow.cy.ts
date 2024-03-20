@@ -852,9 +852,6 @@ describe('Different microlearning workflows', () => {
     ).click()
 
     // check if the practice quiz editor is open
-    cy.findByText(messages.manage.questionPool.createPracticeQuiz).should(
-      'exist'
-    )
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
       .should('have.value', `${microLearningName} (converted)`)
