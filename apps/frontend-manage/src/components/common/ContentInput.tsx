@@ -91,7 +91,7 @@ function ContentInput({
     <div
       className={twMerge(
         disabled && 'pointer-events-none opacity-70',
-        'border border-solid rounded flex-1',
+        'border border-solid rounded flex-1 relative',
         showToolbarOnFocus && 'group',
         className?.root
       )}
@@ -305,7 +305,7 @@ function ContentInput({
       {isImageDropzoneOpen && (
         <div
           className={twMerge(
-            'flex flex-col md:flex-row',
+            'flex flex-col md:flex-row bg-white absolute z-10 border-2 border-solid w-full rounded-b-md !border-t-0 ',
             showToolbarOnFocus && 'group-focus-within:flex hidden'
           )}
         >
