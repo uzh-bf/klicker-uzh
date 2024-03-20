@@ -842,7 +842,6 @@ describe('Different microlearning workflows', () => {
     cy.clearAllSessionStorage()
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText('Testkurs').click()
     cy.findByText(courseName).click()
 
     // start conversion of a microlearning into a practice quiz
