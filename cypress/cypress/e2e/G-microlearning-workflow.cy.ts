@@ -830,4 +830,72 @@ describe('Different microlearning workflows', () => {
     // TODO: properly check content of evaluation page
     cy.findByText('Evaluation').should('exist')
   })
+
+  it('converts a seeded past microlearning into a practice quiz', () => {
+    const courseName = 'Testkurs'
+    const microLearningName = 'Test Microlearning Past'
+    const practiceQuizName = 'Practice Quiz Converted'
+    const practiceQuizDisplayName = 'Practice Quiz Converted Displayname'
+
+    // login as lecturer and navigate to course overview
+    cy.clearAllCookies()
+    cy.clearAllSessionStorage()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText('Testkurs').click()
+    cy.findByText(courseName).click()
+
+    // start conversion of a microlearning into a practice quiz
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(
+      `[data-cy="convert-microlearning-${microLearningName}-to-practice-quiz"]`
+    ).click()
+
+    // check if the practice quiz editor is open
+    cy.findByText(messages.manage.questionPool.createPracticeQuiz).should(
+      'exist'
+    )
+    cy.get('[data-cy="insert-practice-quiz-name"]')
+      .click()
+      .contains(`${microLearningName} (converted)`)
+      .type(practiceQuizName)
+    cy.get('[data-cy="insert-practice-quiz-display-name"]')
+      .click()
+      .contains(`${microLearningName}`)
+      .type(practiceQuizDisplayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // continue to the next step and change the default settings
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.multiplier1)
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier2
+    )
+    cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check if any questions are contained in the question step and create quiz
+    cy.get('[data-cy="move-block-1-left"]').should('exist').click()
+    cy.get('[data-cy="move-block-1-right"]').should('exist').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check if the practice quiz is listed in the course overview
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
 })
