@@ -1188,6 +1188,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editMicrolearning: 'Edit microlearning',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
+      convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       deleteMicrolearning: 'Delete microlearning',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
