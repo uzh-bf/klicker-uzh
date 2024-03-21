@@ -175,7 +175,7 @@ function PracticeQuizWizard({
   }
 
   return (
-    <div>
+    <>
       <MultistepWizard
         title={title}
         onCloseWizard={closeWizard}
@@ -253,7 +253,7 @@ function PracticeQuizWizard({
             : t('manage.sessionForms.practiceQuizCreationFailed')
         }
       />
-    </div>
+    </>
   )
 }
 
@@ -482,7 +482,17 @@ function StepTwo(props: StepProps) {
 function StepThree(_: StepProps) {
   return (
     <div className="mt-2 mb-2">
-      <BlockField fieldName="questions" />
+      <BlockField
+        fieldName="questions"
+        acceptedTypes={[
+          ElementType.Sc,
+          ElementType.Mc,
+          ElementType.Kprim,
+          ElementType.Numerical,
+          ElementType.Flashcard,
+          ElementType.Content,
+        ]}
+      />
     </div>
   )
 }

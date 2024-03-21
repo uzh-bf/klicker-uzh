@@ -709,6 +709,8 @@ model GroupActivity {
   displayName String
   status      GroupActivityStatus @default(DRAFT)
 
+  pointsMultiplier Int @default(1)
+
   description      String?
   scheduledStartAt DateTime
   scheduledEndAt   DateTime

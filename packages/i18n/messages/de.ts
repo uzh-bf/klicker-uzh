@@ -99,6 +99,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
+      groupActivity: 'Gruppenaktivität',
+      groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -117,7 +119,6 @@ export default {
       leave: 'Austreten',
       documentation: 'Dokumentation',
       features: 'Features',
-      groupActivities: 'Gruppenaktivitäten',
       experiencePoints: 'Erfahrungspunkte',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -155,6 +156,8 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
+      clues: 'Hinweise',
+      value: 'Wert',
     },
     contentInput: {
       boldStyle:
@@ -970,6 +973,52 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      groupActivityTypes:
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+      groupActivityCreated:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
+      groupActivityEdited:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
+      groupActivityDescription:
+        'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
+      groupActivitySettings:
+        'In diesem Schritt können Sie Einstellungen für Ihre Gruppenaktivität vornehmen und Hinweise definieren, die an Teilnehmende verteilt werden.',
+      groupActivityQuestions:
+        'In diesem Schritt wählen Sie die Fragen für die Gruppenaktivität aus.',
+      groupActivityEditingFailed:
+        'Bearbeiten der Gruppenaktivität fehlgeschlagen...',
+      groupActivityCreationFailed:
+        'Erstellen der Gruppenaktivität fehlgeschlagen...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
+      groupActivityCourse:
+        'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
+      groupActivityStartDate:
+        'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
+      groupActivityEndDate:
+        'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityMultiplier:
+        'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
+      groupActivityUseCase:
+        '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
+      groupActivityCluesDescription:
+        'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
+      groupActivityAddClude: 'Neuen Hinweis hinzufügen',
+      groupActivityClueType: 'Hinweis-Typ',
+      textClue: 'Text-Hinweis',
+      numericalClue: 'Numerischer Hinweis',
+      groupActivityNameError:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
+      groupActivityDisplayNameError:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
+      clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
+      clueDisplayNameMissing:
+        'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
+      clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
+      clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
     },
     formErrors: {
       resolveErrors:

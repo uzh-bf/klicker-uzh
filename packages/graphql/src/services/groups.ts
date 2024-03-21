@@ -1,17 +1,26 @@
 import {
+  Element,
+  ElementInstanceType,
+  ElementStackType,
   ElementType,
   GroupActivityStatus,
   LeaderboardType,
+  ParameterType,
 } from '@klicker-uzh/prisma'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
+import { StackInput } from 'src/types/app'
+import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
 import {
   RespondToElementStackInput,
   updateQuestionResults,
 } from './practiceQuizzes'
+
 interface CreateParticipantGroupArgs {
   courseId: string
   name: string
@@ -226,6 +235,151 @@ export async function getParticipantGroups(
       }))
     ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
   }))
+}
+
+interface ClueInput {
+  name: string
+  displayName: string
+  type: ParameterType
+  value: string
+  unit?: string | null
+}
+
+interface CreateGroupActivityArgs {
+  id?: string
+  name: string
+  displayName: string
+  description?: string | null
+  courseId: string
+  multiplier: number
+  startDate: Date
+  endDate: Date
+  clues: ClueInput[]
+  stack: StackInput
+}
+
+export async function manipulateGroupActivity(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    courseId,
+    multiplier,
+    startDate,
+    endDate,
+    clues,
+    stack,
+  }: CreateGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const elements = stack.elements
+    .map((stackElem) => stackElem.elementId)
+    .filter(
+      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
+    )
+
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: elements },
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+
+  const elementMap = dbElements.reduce<Record<number, Element>>(
+    (acc, elem) => ({ ...acc, [elem.id]: elem }),
+    {}
+  )
+
+  const newId = uuidv4()
+  const createOrUpdateJSON = {
+    id: id ?? newId,
+    name: name,
+    displayName: displayName,
+    description: description,
+    status: GroupActivityStatus.DRAFT,
+    scheduledStartAt: startDate,
+    scheduledEndAt: endDate,
+    parameters: {},
+    pointsMultiplier: 2,
+    clues: {
+      connectOrCreate: [
+        ...clues.map((clue) => ({
+          where: {
+            groupActivityId_name: {
+              groupActivityId: id ?? newId,
+              name: clue.name,
+            },
+          },
+          create: {
+            name: clue.name,
+            displayName: clue.displayName,
+            type: clue.type,
+            value: clue.value,
+            unit: clue.unit,
+          },
+        })),
+      ],
+    },
+    stacks: {
+      create: {
+        type: ElementStackType.GROUP_ACTIVITY,
+        order: 0,
+        displayName: stack.displayName,
+        description: stack.description,
+        options: {},
+        elements: {
+          create: stack.elements.map((elem) => {
+            const element = elementMap[elem.elementId]
+            const processedElementData = processElementData(element)
+
+            return {
+              elementType: element.type,
+              migrationId: uuidv4(),
+              order: elem.order,
+              type: ElementInstanceType.GROUP_ACTIVITY,
+              elementData: processedElementData,
+              options: {
+                pointsMultiplier: multiplier * element.pointsMultiplier,
+              },
+              results: getInitialElementResults(processedElementData),
+              element: {
+                connect: { id: element.id },
+              },
+              owner: {
+                connect: { id: ctx.user.sub },
+              },
+            }
+          }),
+        },
+      },
+    },
+    owner: {
+      connect: {
+        id: ctx.user.sub,
+      },
+    },
+    course: {
+      connect: {
+        id: courseId,
+      },
+    },
+  }
+
+  const groupActivity = await ctx.prisma.groupActivity.upsert({
+    where: {
+      id: id ?? newId,
+    },
+    create: createOrUpdateJSON,
+    update: createOrUpdateJSON,
+  })
+
+  return groupActivity
 }
 
 export async function updateGroupAverageScores(ctx: Context) {
