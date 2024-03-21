@@ -1003,6 +1003,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
       groupActivityCluesDescription:
         'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
+      groupActivityAddClude: 'Neuen Hinweis hinzufügen',
+      groupActivityClueType: 'Hinweis-Typ',
+      textClue: 'Text-Hinweis',
+      numericalClue: 'Numerischer Hinweis',
     },
     formErrors: {
       resolveErrors:
