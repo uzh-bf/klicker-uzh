@@ -1,5 +1,6 @@
 import { GroupActivity } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import Link from 'next/link'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
@@ -14,6 +15,7 @@ function GroupActivityElement({ groupActivity }: GroupActivityElementProps) {
       <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
         {groupActivity.name || ''}
       </Ellipsis>
+      <Link href={`/groupActivity/${groupActivity.id}`}>Overview</Link>
     </div>
   )
 }

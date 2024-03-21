@@ -1,0 +1,21 @@
+query GetGroupActivity($id: String!) {
+  groupActivity(id: $id) {
+    id
+    name
+    displayName
+    clues {
+      id
+      name
+    }
+    course {
+      id
+      displayName
+    }
+    instances {
+      id
+      decisions
+      decisionsSubmittedAt
+      results
+    }
+  }
+}
