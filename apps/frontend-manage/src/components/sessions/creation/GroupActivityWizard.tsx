@@ -1,7 +1,15 @@
+import { useMutation } from '@apollo/client'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementType, GroupActivity } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateGroupActivityDocument,
+  ElementStackInput,
+  ElementType,
+  GetSingleCourseDocument,
+  GroupActivity,
+  ParameterType,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikDateField,
@@ -24,7 +32,10 @@ import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import GroupActivityClueModal from './GroupActivityClueModal'
-import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
+import MultistepWizard, {
+  GroupActivityClueType,
+  GroupActivityFormValues,
+} from './MultistepWizard'
 import WizardErrorMessage from './WizardErrorMessage'
 
 interface GroupActivityWizardProps {
@@ -36,21 +47,6 @@ interface GroupActivityWizardProps {
   }[]
   initialValues?: GroupActivity
 }
-
-type GroupActivityClueType =
-  | {
-      name: string
-      displayName: string
-      type: 'STRING'
-      value: string
-    }
-  | {
-      name: string
-      displayName: string
-      type: 'NUMBER'
-      value: number
-      unit: string
-    }
 
 function GroupActivityWizard({
   title,
@@ -65,7 +61,7 @@ function GroupActivityWizard({
   const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
-  // const [createMicroSession] = useMutation(CreateMicroLearningDocument)
+  const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
   // const [editMicroSession] = useMutation(EditMicroLearningDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
@@ -100,7 +96,9 @@ function GroupActivityWizard({
           displayName: yup
             .string()
             .required(t('manage.sessionForms.clueDisplayNameMissing')),
-          type: yup.string().oneOf(['STRING', 'NUMBER']),
+          type: yup
+            .string()
+            .oneOf([ParameterType.String, ParameterType.Number]),
           value: yup
             .string()
             .required(t('manage.sessionForms.clueValueMissing')),
@@ -135,69 +133,75 @@ function GroupActivityWizard({
       .min(1),
   })
 
-  const onSubmit = async (values: MicroLearningFormValues) => {
-    // try {
-    //   let success = false
-    //   if (initialValues) {
-    //     const result = await editMicroSession({
-    //       variables: {
-    //         id: initialValues?.id || '',
-    //         name: values.name,
-    //         displayName: values.displayName,
-    //         description: values.description,
-    //         stacks: values.questions.map((q: any, ix) => {
-    //           return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-    //         }),
-    //         startDate: dayjs(values.startDate).utc().format(),
-    //         endDate: dayjs(values.endDate).utc().format(),
-    //         multiplier: parseInt(values.multiplier),
-    //         courseId: values.courseId,
-    //       },
-    //       refetchQueries: [
-    //         {
-    //           query: GetSingleCourseDocument,
-    //           variables: {
-    //             courseId: values.courseId,
-    //           },
-    //         },
-    //       ],
-    //     })
-    //     success = Boolean(result.data?.editMicroLearning)
-    //   } else {
-    //     const result = await createMicroSession({
-    //       variables: {
-    //         name: values.name,
-    //         displayName: values.displayName,
-    //         description: values.description,
-    //         stacks: values.questions.map((q: any, ix) => {
-    //           return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-    //         }),
-    //         startDate: dayjs(values.startDate).utc().format(),
-    //         endDate: dayjs(values.endDate).utc().format(),
-    //         multiplier: parseInt(values.multiplier),
-    //         courseId: values.courseId,
-    //       },
-    //       refetchQueries: [
-    //         {
-    //           query: GetSingleCourseDocument,
-    //           variables: {
-    //             courseId: values.courseId,
-    //           },
-    //         },
-    //       ],
-    //     })
-    //     success = Boolean(result.data?.createMicroLearning)
-    //   }
-    //   if (success) {
-    //     setSelectedCourseId(values.courseId)
-    //     setEditMode(!!initialValues)
-    //     setIsWizardCompleted(true)
-    //   }
-    // } catch (error) {
-    //   console.log(error)
-    //   setEditMode(!!initialValues)
-    //   setErrorToastOpen(true)
-    // }
+  const onSubmit = async (values: GroupActivityFormValues) => {
+    try {
+      let success = false
+      //   if (initialValues) {
+      //     const result = await editMicroSession({
+      //       variables: {
+      //         id: initialValues?.id || '',
+      //         name: values.name,
+      //         displayName: values.displayName,
+      //         description: values.description,
+      //         stacks: values.questions.map((q: any, ix) => {
+      //           return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
+      //         }),
+      //         startDate: dayjs(values.startDate).utc().format(),
+      //         endDate: dayjs(values.endDate).utc().format(),
+      //         multiplier: parseInt(values.multiplier),
+      //         courseId: values.courseId,
+      //       },
+      //       refetchQueries: [
+      //         {
+      //           query: GetSingleCourseDocument,
+      //           variables: {
+      //             courseId: values.courseId,
+      //           },
+      //         },
+      //       ],
+      //     })
+      //     success = Boolean(result.data?.editMicroLearning)
+      //   } else {
+      const result = await createGroupActivity({
+        variables: {
+          name: values.name,
+          displayName: values.displayName,
+          description: values.description,
+
+          startDate: dayjs(values.startDate).utc().format(),
+          endDate: dayjs(values.endDate).utc().format(),
+          multiplier: parseInt(values.multiplier),
+          courseId: values.courseId,
+          clues: values.clues,
+          stack: values.questions.reduce<ElementStackInput>(
+            (acc, q, ix) => {
+              acc.elements.push({ elementId: q.id, order: ix })
+              return acc
+            },
+            { order: 0, elements: [] }
+          ),
+        },
+        refetchQueries: [
+          {
+            query: GetSingleCourseDocument,
+            variables: {
+              courseId: values.courseId,
+            },
+          },
+        ],
+      })
+      success = Boolean(result.data?.createGroupActivity)
+
+      if (success) {
+        setSelectedCourseId(values.courseId)
+        setEditMode(!!initialValues)
+        setIsWizardCompleted(true)
+      }
+    } catch (error) {
+      console.log(error)
+      setEditMode(!!initialValues)
+      setErrorToastOpen(true)
+    }
   }
 
   return (
@@ -208,11 +212,11 @@ function GroupActivityWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.groupActivityCreated', {
+              ? t.rich('manage.sessionForms.groupActivityEdited', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.groupActivityEdited', {
+              : t.rich('manage.sessionForms.groupActivityCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -515,7 +519,9 @@ function StepTwo(props: StepProps) {
                     <div className="group border rounded border-black h-full">
                       <div className="w-full p-1 group-hover:hidden h-full">{`${
                         clue.value
-                      } ${clue.type === 'NUMBER' && (clue.unit ?? '')}`}</div>
+                      } ${
+                        clue.type === ParameterType.Number && (clue.unit ?? '')
+                      }`}</div>
                       <Button
                         basic
                         onClick={() => remove(ix)}
