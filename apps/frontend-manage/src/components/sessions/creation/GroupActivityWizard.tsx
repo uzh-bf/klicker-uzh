@@ -212,11 +212,11 @@ function GroupActivityWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.groupActivityCreated', {
+              ? t.rich('manage.sessionForms.groupActivityEdited', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.groupActivityEdited', {
+              : t.rich('manage.sessionForms.groupActivityCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}

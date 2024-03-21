@@ -1141,7 +1141,7 @@ export const Mutation = builder.mutationType({
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),

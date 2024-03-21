@@ -4,7 +4,7 @@ mutation CreateGroupActivity(
   $name: String!
   $displayName: String!
   $description: String
-  $courseId: String
+  $courseId: String!
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!
