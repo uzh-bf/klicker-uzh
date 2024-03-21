@@ -536,6 +536,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataSharing: '',
       privacyDataUsage: '',
       privacyDataStorage: '',
+      emailMissing:
+        'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
     },
     avatar: {
       hair: 'Hair',
