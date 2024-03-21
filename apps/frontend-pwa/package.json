@@ -92,7 +92,7 @@
     "lint": "next lint",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test next dev --port 3001"
+    "start:test": "cross-env NODE_ENV=test pnpm start"
   },
   "engines": {
     "node": "=20"
