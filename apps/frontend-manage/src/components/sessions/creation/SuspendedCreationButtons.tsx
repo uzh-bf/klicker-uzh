@@ -58,7 +58,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(WizardMode.GroupActivity)
         }}
-        data={{ cy: 'create-group-task' }}
+        data={{ cy: 'create-group-activity' }}
       />
     </div>
   )

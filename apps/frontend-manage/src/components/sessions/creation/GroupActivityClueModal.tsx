@@ -29,6 +29,9 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
           root: 'h-full min-h-20 hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
         }}
         onClick={() => setOpen(true)}
+        data={{
+          cy: 'add-group-activity-clue',
+        }}
       >
         <FontAwesomeIcon icon={faPlus} />
         <div>{t('manage.sessionForms.groupActivityAddClue')}</div>
@@ -78,14 +81,17 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                   {
                     label: t('manage.sessionForms.textClue'),
                     value: ParameterType.String,
+                    data: { cy: 'group-activity-clue-type-string' },
                   },
                   {
                     label: t('manage.sessionForms.numericalClue'),
                     value: ParameterType.Number,
+                    data: { cy: 'group-activity-clue-type-number' },
                   },
                 ]}
                 label={t('manage.sessionForms.groupActivityClueType')}
                 labelType="small"
+                data={{ cy: 'group-activity-clue-type' }}
                 required
               />
               <div className="flex flex-row gap-2 w-full">
@@ -94,12 +100,14 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                   label={t('manage.sessionForms.name')}
                   labelType="small"
                   className={{ root: 'w-1/2' }}
+                  data={{ cy: 'group-activity-clue-name' }}
                   required
                 />
                 <FormikTextField
                   name="displayName"
                   label={t('manage.sessionForms.displayName')}
                   labelType="small"
+                  data={{ cy: 'group-activity-clue-display-name' }}
                   required
                   className={{ root: 'w-1/2' }}
                 />
@@ -110,6 +118,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                   name="value"
                   label={t('shared.generic.value')}
                   labelType="small"
+                  data={{ cy: 'group-activity-string-clue-value' }}
                   required
                 />
               )}
@@ -119,6 +128,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                     name="value"
                     label={t('shared.generic.value')}
                     labelType="small"
+                    data={{ cy: 'group-activity-number-clue-value' }}
                     required
                     className={{ root: 'w-1/2' }}
                   />
@@ -126,6 +136,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                     disabled={values.type !== ParameterType.Number}
                     name="unit"
                     label={t('shared.generic.unit')}
+                    data={{ cy: 'group-activity-number-clue-unit' }}
                     labelType="small"
                     className={{ root: 'w-1/2 mt-1' }}
                   />
@@ -140,6 +151,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                   resetForm()
                   setOpen(false)
                 }}
+                data={{ cy: 'group-activity-clue-save' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />

@@ -517,11 +517,11 @@ function StepTwo(props: StepProps) {
                   >
                     <div className="font-bold">{clue.name}</div>
                     <div className="group border rounded border-black h-full">
-                      <div className="w-full p-1 group-hover:hidden h-full">{`${
-                        clue.value
-                      } ${
-                        clue.type === ParameterType.Number && (clue.unit ?? '')
-                      }`}</div>
+                      <div className="w-full p-1 group-hover:hidden h-full">
+                        {clue.type === ParameterType.Number && clue.unit
+                          ? `${clue.value} ${clue.unit}`
+                          : clue.value}
+                      </div>
                       <Button
                         basic
                         onClick={() => remove(ix)}
