@@ -360,7 +360,23 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
-  const [field, meta, helpers] = useField('clues')
+  const [field, meta, helpers] = useField<
+    (
+      | {
+          name: string
+          displayName: string
+          type: 'STRING'
+          value: string
+        }
+      | {
+          name: string
+          displayName: string
+          type: 'NUMBER'
+          value: number
+          unit: string
+        }
+    )[]
+  >('clues')
 
   return (
     <div className="flex flex-row gap-8">
@@ -489,6 +505,7 @@ function StepTwo(props: StepProps) {
                 </div>
               </div>
               <Formik
+                // TODO: specify proper error messages for form
                 validationSchema={yup.object().shape({
                   name: yup.string().required(),
                   displayName: yup.string().required(),
@@ -572,23 +589,27 @@ function StepTwo(props: StepProps) {
                   </Form>
                 )}
               </Formik>
-              <div className="flex flex-row gap-2 mt-4 flex-wrap max-h-20 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
                 {field.value.map((clue, ix) => (
                   <div
                     key={clue.name}
-                    className="border py-1 text-sm px-2 rounded flex flex-row gap-4"
+                    className="py-1 text-sm px-2 rounded flex flex-col w-full"
                   >
-                    <div className="flex-1">
-                      <div className="font-bold">{clue.displayName}</div>
-                      <div>
-                        {clue.value} {clue.unit}
-                      </div>
-                    </div>
-                    <div className="flex-initial self-center">
-                      <Button basic onClick={() => remove(ix)}>
+                    <div className="font-bold">{clue.displayName}</div>
+                    <div className="group border rounded border-black">
+                      <div className="w-full p-1 group-hover:hidden">{`${
+                        clue.value
+                      } ${clue.type === 'NUMBER' ? clue.unit : ''}`}</div>
+                      <Button
+                        basic
+                        onClick={() => remove(ix)}
+                        className={{
+                          root: 'hidden p-1 w-full group-hover:flex bg-red-600 items-center justify-center',
+                        }}
+                      >
                         <Button.Icon>
                           <FontAwesomeIcon
-                            className="text-red-400"
+                            className="text-white"
                             icon={faTrash}
                           />
                         </Button.Icon>
