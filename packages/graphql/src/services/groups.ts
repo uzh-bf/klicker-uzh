@@ -662,3 +662,27 @@ export async function submitGroupActivityDecisions(
   // return updatedActivityInstance
   return updatedActivityInstance.id
 }
+
+interface GetGroupActivityArgs {
+  id: string
+}
+
+export async function getGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      course: true,
+      clues: true,
+      activityInstances: {
+        include: {
+          group: true,
+        },
+      },
+    },
+  })
+
+  return groupActivity
+}

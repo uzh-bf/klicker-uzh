@@ -352,9 +352,12 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  clues: [GroupActivityClue!]
+  course: Course
   description: String
   displayName: String!
   id: ID!
+  instances: [GroupActivityInstance!]
   name: String!
   numOfStacks: Int
   scheduledEndAt: Date!
@@ -815,6 +818,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
