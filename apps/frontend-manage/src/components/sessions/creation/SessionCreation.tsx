@@ -31,6 +31,7 @@ interface SessionCreationProps {
   sessionId?: string
   editMode?: string
   duplicationMode?: string
+  conversionMode?: string
   selection: Record<number, Element>
   resetSelection: () => void
 }
@@ -41,6 +42,7 @@ function SessionCreation({
   sessionId,
   editMode,
   duplicationMode,
+  conversionMode,
   selection,
   resetSelection,
 }: SessionCreationProps) {
@@ -52,21 +54,28 @@ function SessionCreation({
       skip:
         !sessionId ||
         (editMode !== WizardMode.LiveQuiz &&
-          duplicationMode !== WizardMode.LiveQuiz),
+          duplicationMode !== WizardMode.LiveQuiz) ||
+        conversionMode === 'microLearningToPracticeQuiz',
     }
   )
   const { data: dataMicroSession, loading: microLoading } = useQuery(
     GetMicroLearningDocument,
     {
       variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== WizardMode.Microlearning,
+      skip:
+        !sessionId ||
+        (editMode !== WizardMode.Microlearning &&
+          conversionMode !== 'microLearningToPracticeQuiz'),
     }
   )
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetPracticeQuizDocument,
     {
       variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== WizardMode.PracticeQuiz,
+      skip:
+        !sessionId ||
+        editMode !== WizardMode.PracticeQuiz ||
+        conversionMode === 'microLearningToPracticeQuiz',
     }
   )
 
@@ -92,9 +101,25 @@ function SessionCreation({
         duplicationMode === WizardMode.LiveQuiz) &&
       liveLoading) ||
     (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
-    (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading)
+    (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
+    (sessionId &&
+      conversionMode === 'microLearningToPracticeQuiz' &&
+      microLoading)
   ) {
     return <Loader />
+  }
+
+  // initialize practice quiz data from microlearning
+  let initialDataPracticeQuiz: PracticeQuiz | undefined
+  if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroSession) {
+    initialDataPracticeQuiz = {
+      name: `${dataMicroSession.microLearning?.name} (converted)`,
+      displayName: dataMicroSession.microLearning?.displayName,
+      description: dataMicroSession.microLearning?.description,
+      stacks: dataMicroSession.microLearning?.stacks,
+      pointsMultiplier: dataMicroSession.microLearning?.pointsMultiplier,
+      course: dataMicroSession.microLearning?.course,
+    } as PracticeQuiz
   }
 
   return (
@@ -131,14 +156,17 @@ function SessionCreation({
             }
           />
         )}
-        {creationMode === WizardMode.PracticeQuiz && (
+        {(creationMode === WizardMode.PracticeQuiz ||
+          conversionMode == 'microLearningToPracticeQuiz') && (
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
-              (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ?? undefined
+              (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
+              initialDataPracticeQuiz
             }
+            conversion={conversionMode === 'microLearningToPracticeQuiz'}
           />
         )}
         {creationMode === WizardMode.GroupActivity && (

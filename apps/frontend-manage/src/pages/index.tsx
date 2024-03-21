@@ -91,6 +91,8 @@ function Index() {
       setCreationMode(router.query.editMode as any)
     } else if (router.query.sessionId && router.query.duplicationMode) {
       setCreationMode(router.query.duplicationMode as any)
+    } else if (router.query.sessionId && router.query.conversionMode) {
+      setCreationMode(router.query.conversionMode as any)
     }
   }, [router])
 
@@ -152,6 +154,7 @@ function Index() {
             }}
             sessionId={router.query.sessionId as string}
             editMode={router.query.editMode as string}
+            conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as string}
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}

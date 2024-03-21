@@ -32,6 +32,7 @@ interface PracticeQuizWizardProps {
     value: string
   }[]
   initialValues?: PracticeQuiz
+  conversion?: boolean
 }
 
 function PracticeQuizWizard({
@@ -39,6 +40,7 @@ function PracticeQuizWizard({
   closeWizard,
   courses,
   initialValues,
+  conversion = false,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -46,7 +48,7 @@ function PracticeQuizWizard({
   const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
   const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(!!initialValues)
+  const [editMode, setEditMode] = useState(!!initialValues && !conversion)
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
@@ -107,7 +109,7 @@ function PracticeQuizWizard({
 
   const onSubmit = async (values: PracticeQuizFormValues) => {
     try {
-      if (initialValues) {
+      if (initialValues && !conversion) {
         const result = await editPracticeQuiz({
           variables: {
             id: initialValues.id,
@@ -167,7 +169,7 @@ function PracticeQuizWizard({
       }
     } catch (error) {
       console.log(error)
-      setEditMode(!!initialValues)
+      setEditMode(!!initialValues && !conversion)
       setErrorToastOpen(true)
     }
   }
@@ -213,7 +215,7 @@ function PracticeQuizWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
-        editMode={!!initialValues}
+        editMode={!!initialValues && !conversion}
         initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
