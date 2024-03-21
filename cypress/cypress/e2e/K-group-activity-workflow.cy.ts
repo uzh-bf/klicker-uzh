@@ -40,10 +40,9 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // fill out the settings of the group activity
-    // TODO: uncomment
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
