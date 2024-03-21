@@ -356,6 +356,7 @@ type GroupActivity {
   displayName: String!
   id: ID!
   name: String!
+  numOfStacks: Int
   scheduledEndAt: Date!
   scheduledStartAt: Date!
 }
@@ -378,6 +379,15 @@ type GroupActivityClueInstance {
   type: ParameterType!
   unit: String
   value: String
+}
+
+type GroupActivityDecision {
+  choicesResponse: [Int!]
+  contentResponse: Boolean
+  freeTextResponse: String
+  instanceId: Int!
+  numericalResponse: Float
+  type: ElementType!
 }
 
 input GroupActivityDecisionInput {
@@ -573,7 +583,7 @@ type Mutation {
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
-  loginParticipant(password: String!, username: String!): ID
+  loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
@@ -595,7 +605,7 @@ type Mutation {
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
-  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
+  submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean

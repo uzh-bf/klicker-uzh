@@ -65,6 +65,8 @@ interface StudentElementProps {
   studentResponse: StudentResponseType
   setStudentResponse: Dispatch<SetStateAction<StudentResponseType>>
   stackStorage?: StudentResponseType
+  hideReadButton?: boolean
+  disabledInput?: boolean
 }
 
 function StudentElement({
@@ -73,6 +75,8 @@ function StudentElement({
   studentResponse,
   setStudentResponse,
   stackStorage,
+  hideReadButton = false,
+  disabledInput = false,
 }: StudentElementProps) {
   if (element.elementData.type === ElementType.Flashcard) {
     return (
@@ -134,6 +138,7 @@ function StudentElement({
         }
         evaluation={stackStorage?.[element.id]?.evaluation}
         elementIx={elementIx}
+        disabled={disabledInput}
       />
     )
   } else if (element.elementData.type === ElementType.Numerical) {
@@ -160,6 +165,7 @@ function StudentElement({
         existingResponse={stackStorage?.[element.id]?.response as string}
         evaluation={stackStorage?.[element.id]?.evaluation}
         elementIx={elementIx}
+        disabled={disabledInput}
       />
     )
   } else if (element.elementData.type === ElementType.FreeText) {
@@ -186,6 +192,7 @@ function StudentElement({
         existingResponse={stackStorage?.[element.id]?.response as string}
         evaluation={stackStorage?.[element.id]?.evaluation}
         elementIx={elementIx}
+        disabled={disabledInput}
       />
     )
   } else if (element.elementData.type === ElementType.Content) {
@@ -211,6 +218,7 @@ function StudentElement({
           })
         }}
         elementIx={elementIx}
+        hideReadButton={hideReadButton}
       />
     )
   } else {

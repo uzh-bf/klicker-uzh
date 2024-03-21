@@ -13,11 +13,7 @@ import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import {
-  GroupActivityDecisionInput,
-  GroupActivityDetails,
-  GroupActivityInstance,
-} from './groupActivity'
+import { GroupActivityDetails } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
   AvatarSettingsInput,
@@ -150,7 +146,7 @@ export const Mutation = builder.mutationType({
       loginParticipant: t.id({
         nullable: true,
         args: {
-          username: t.arg.string({ required: true }),
+          usernameOrEmail: t.arg.string({ required: true }),
           password: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -368,11 +364,11 @@ export const Mutation = builder.mutationType({
 
       submitGroupActivityDecisions: t.withAuth(asParticipant).field({
         nullable: true,
-        type: GroupActivityInstance,
+        type: 'Int',
         args: {
-          activityInstanceId: t.arg.int({ required: true }),
-          decisions: t.arg({
-            type: [GroupActivityDecisionInput],
+          activityId: t.arg.int({ required: true }),
+          responses: t.arg({
+            type: [StackResponseInput],
             required: true,
           }),
         },

@@ -515,7 +515,9 @@ export async function getCourseData(
       },
       groupActivities: {
         include: {
-          instances: true,
+          _count: {
+            select: { stacks: true },
+          },
         },
         orderBy: {
           updatedAt: 'desc',
@@ -610,11 +612,20 @@ export async function getCourseData(
     }
   })
 
+  const reducedGroupActivities = course?.groupActivities.map(
+    (groupActivity) => {
+      return {
+        ...groupActivity,
+        numOfStacks: groupActivity._count.stacks,
+      }
+    }
+  )
+
   return {
     ...course,
     sessions: reducedSessions,
     practiceQuizzes: reducedPracticeQuizzes,
-    groupActivities: course?.groupActivities,
+    groupActivities: reducedGroupActivities,
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,

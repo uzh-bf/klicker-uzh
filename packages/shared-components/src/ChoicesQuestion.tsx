@@ -28,6 +28,7 @@ interface ChoicesQuestionProps {
   existingResponse?: Record<number, boolean>
   elementIx: number
   evaluation?: InstanceEvaluation
+  disabled?: boolean
 }
 
 function ChoicesQuestion({
@@ -39,6 +40,7 @@ function ChoicesQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  disabled,
 }: ChoicesQuestionProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -69,7 +71,7 @@ function ChoicesQuestion({
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
-            disabled={!!existingResponse}
+            disabled={disabled || !!existingResponse}
           />
         )}
 
@@ -84,7 +86,7 @@ function ChoicesQuestion({
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
-            disabled={!!existingResponse}
+            disabled={disabled || !!existingResponse}
           />
         )}
 
@@ -99,7 +101,7 @@ function ChoicesQuestion({
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
-            disabled={!!existingResponse}
+            disabled={disabled || !!existingResponse}
           />
         )}
       </div>

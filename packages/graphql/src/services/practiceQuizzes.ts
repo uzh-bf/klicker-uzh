@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Element,
+  ElementInstance,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
@@ -601,6 +602,110 @@ function evaluateQuestionResponse(
   }
 }
 
+interface UpdateQuestionResultsInputs {
+  instance: ElementInstance
+  elementData: AllElementTypeData
+  response: ResponseInput
+}
+
+export function updateQuestionResults({
+  instance,
+  elementData,
+  response,
+}: UpdateQuestionResultsInputs) {
+  // FIXME: ensure the types of this allow assignment of the different element type results
+  const results: AllQuestionInstanceTypeData['results'] = instance?.results
+
+  let updatedResults:
+    | {
+        choices: Record<string, number>
+        total: number
+      }
+    | Record<string, number> = {}
+
+  switch (elementData.type) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
+      updatedResults.choices = (
+        response as QuestionResponseChoices
+      ).choices.reduce(
+        (acc, ix) => ({
+          ...acc,
+          [ix]: acc[ix] + 1,
+        }),
+        results.choices as Record<string, number>
+      )
+      updatedResults.total = results.total + 1
+      break
+    }
+
+    case ElementType.NUMERICAL: {
+      if (
+        typeof response.value === 'undefined' ||
+        response.value === null ||
+        response.value === ''
+      ) {
+        return {}
+      }
+
+      const parsedValue = parseFloat(response.value)
+      if (
+        isNaN(parsedValue) ||
+        (typeof elementData.options.restrictions?.min === 'number' &&
+          parsedValue < elementData.options.restrictions.min) ||
+        (typeof elementData.options.restrictions?.max === 'number' &&
+          parsedValue > elementData.options.restrictions.max)
+      ) {
+        return {}
+      }
+
+      const value = String(parsedValue)
+
+      if (Object.keys(results.responses).includes(value)) {
+        updatedResults.responses = {
+          ...results.responses,
+          [value]: results.responses[value] + 1,
+        }
+      } else {
+        updatedResults.responses = { ...results.responses, [value]: 1 }
+      }
+      updatedResults.total = results.total + 1
+      break
+    }
+
+    case ElementType.FREE_TEXT: {
+      if (
+        typeof response.value === 'undefined' ||
+        response.value === null ||
+        response.value === '' ||
+        (typeof elementData.options.restrictions?.maxLength === 'number' &&
+          response.value.length > elementData.options.restrictions?.maxLength)
+      ) {
+        return {}
+      }
+
+      const value = R.toLower(R.trim(response.value))
+
+      if (Object.keys(results.responses).includes(value)) {
+        updatedResults.responses = {
+          ...results.responses,
+          [value]: results.responses[value] + 1,
+        }
+      } else {
+        updatedResults.responses = { ...results.responses, [value]: 1 }
+      }
+      updatedResults.total = results.total + 1
+      break
+    }
+
+    default:
+      break
+  }
+
+  return updatedResults
+}
+
 export async function respondToQuestion(
   {
     courseId,
@@ -673,100 +778,15 @@ export async function respondToQuestion(
 
       const elementData = instance?.elementData
 
-      // FIXME: ensure the types of this allow assignment of the different element type results
-      const results: AllQuestionInstanceTypeData['results'] = instance?.results
-
       if (!elementData) {
         return {}
       }
 
-      let updatedResults:
-        | {
-            choices: Record<string, number>
-            total: number
-          }
-        | Record<string, number> = {}
-
-      switch (elementData.type) {
-        case ElementType.SC:
-        case ElementType.MC:
-        case ElementType.KPRIM: {
-          updatedResults.choices = (
-            response as QuestionResponseChoices
-          ).choices.reduce(
-            (acc, ix) => ({
-              ...acc,
-              [ix]: acc[ix] + 1,
-            }),
-            results.choices as Record<string, number>
-          )
-          updatedResults.total = results.total + 1
-          break
-        }
-
-        case ElementType.NUMERICAL: {
-          if (
-            typeof response.value === 'undefined' ||
-            response.value === null ||
-            response.value === ''
-          ) {
-            return {}
-          }
-
-          const parsedValue = parseFloat(response.value)
-          if (
-            isNaN(parsedValue) ||
-            (typeof elementData.options.restrictions?.min === 'number' &&
-              parsedValue < elementData.options.restrictions.min) ||
-            (typeof elementData.options.restrictions?.max === 'number' &&
-              parsedValue > elementData.options.restrictions.max)
-          ) {
-            return {}
-          }
-
-          const value = String(parsedValue)
-
-          if (Object.keys(results.responses).includes(value)) {
-            updatedResults.responses = {
-              ...results.responses,
-              [value]: results.responses[value] + 1,
-            }
-          } else {
-            updatedResults.responses = { ...results.responses, [value]: 1 }
-          }
-          updatedResults.total = results.total + 1
-          break
-        }
-
-        case ElementType.FREE_TEXT: {
-          if (
-            typeof response.value === 'undefined' ||
-            response.value === null ||
-            response.value === '' ||
-            (typeof elementData.options.restrictions?.maxLength === 'number' &&
-              response.value.length >
-                elementData.options.restrictions?.maxLength)
-          ) {
-            return {}
-          }
-
-          const value = R.toLower(R.trim(response.value))
-
-          if (Object.keys(results.responses).includes(value)) {
-            updatedResults.responses = {
-              ...results.responses,
-              [value]: results.responses[value] + 1,
-            }
-          } else {
-            updatedResults.responses = { ...results.responses, [value]: 1 }
-          }
-          updatedResults.total = results.total + 1
-          break
-        }
-
-        default:
-          break
-      }
+      const updatedResults = updateQuestionResults({
+        instance,
+        elementData,
+        response,
+      })
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
@@ -1073,7 +1093,7 @@ function combineStackStatus({
   return prevStatus
 }
 
-interface RespondToElementStackInput {
+export interface RespondToElementStackInput {
   stackId: number
   courseId: string
   responses: {
@@ -1495,6 +1515,22 @@ export async function publishPracticeQuiz(
     },
     data: {
       status: PublicationStatus.PUBLISHED,
+    },
+    include: {
+      stacks: true,
+    },
+  })
+
+  // connect all elementStacks in the practice quiz to the course
+  const courseId = practiceQuiz.courseId
+  await ctx.prisma.course.update({
+    where: {
+      id: courseId,
+    },
+    data: {
+      elementStacks: {
+        connect: practiceQuiz.stacks.map((stack) => ({ id: stack.id })),
+      },
     },
   })
 

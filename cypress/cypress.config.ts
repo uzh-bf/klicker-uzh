@@ -10,6 +10,7 @@ export default defineConfig({
     LECTURER_IDENTIFIER: 'lecturer',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
+    STUDENT_EMAIL: 'testuser1@test.uzh.ch',
     STUDENT_PASSWORD: 'abcd',
 
     codeCoverage: {
