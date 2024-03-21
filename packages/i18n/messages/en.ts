@@ -995,6 +995,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
       groupActivityCluesDescription:
         'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
+      groupActivityAddClue: 'Add new clue',
+      groupActivityClueType: 'Clue type',
+      textClue: 'Text clue',
+      numericalClue: 'Numerical clue',
     },
     formErrors: {
       resolveErrors:

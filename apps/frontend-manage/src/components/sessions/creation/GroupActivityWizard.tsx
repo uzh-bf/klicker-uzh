@@ -1,11 +1,10 @@
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
-import { faSave, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType, GroupActivity } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikDateField,
-  FormikNumberField,
   FormikSelectField,
   FormikTextField,
   Label,
@@ -15,8 +14,6 @@ import {
   ErrorMessage,
   FieldArray,
   FieldArrayRenderProps,
-  Form,
-  Formik,
   useField,
 } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -26,6 +23,7 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
+import GroupActivityClueModal from './GroupActivityClueModal'
 import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
 import WizardErrorMessage from './WizardErrorMessage'
 
@@ -38,6 +36,21 @@ interface GroupActivityWizardProps {
   }[]
   initialValues?: GroupActivity
 }
+
+type GroupActivityClueType =
+  | {
+      name: string
+      displayName: string
+      type: 'STRING'
+      value: string
+    }
+  | {
+      name: string
+      displayName: string
+      type: 'NUMBER'
+      value: number
+      unit: string
+    }
 
 function GroupActivityWizard({
   title,
@@ -360,23 +373,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
-  const [field, meta, helpers] = useField<
-    (
-      | {
-          name: string
-          displayName: string
-          type: 'STRING'
-          value: string
-        }
-      | {
-          name: string
-          displayName: string
-          type: 'NUMBER'
-          value: number
-          unit: string
-        }
-    )[]
-  >('clues')
+  const [field, meta, helpers] = useField<GroupActivityClueType[]>('clues')
 
   return (
     <div className="flex flex-row gap-8">
@@ -484,10 +481,10 @@ function StepTwo(props: StepProps) {
           />
         </div>
       </div>
-      <div className="">
+      <div className="w-full">
         <FieldArray name="clues">
           {({ push, remove, move }: FieldArrayRenderProps) => (
-            <div>
+            <div className="w-full">
               <div className="flex flex-row gap-4">
                 <div className="flex flex-row items-center gap-3">
                   <Label
@@ -495,6 +492,7 @@ function StepTwo(props: StepProps) {
                     tooltip={t(
                       'manage.sessionForms.groupActivityCluesDescription'
                     )}
+                    // TODO: rename internationalized labels
                     label="Clues"
                     showTooltipSymbol
                     className={{
@@ -504,107 +502,22 @@ function StepTwo(props: StepProps) {
                   />
                 </div>
               </div>
-              <Formik
-                // TODO: specify proper error messages for form
-                validationSchema={yup.object().shape({
-                  name: yup.string().required(),
-                  displayName: yup.string().required(),
-                  type: yup.string().required(),
-                  value: yup.string().required(),
-                  unit: yup.string().optional(),
-                })}
-                initialValues={{
-                  name: '',
-                  displayName: '',
-                  type: 'STRING',
-                  value: '',
-                  unit: undefined,
-                }}
-                onSubmit={(values) => {
-                  push(values)
-                }}
-              >
-                {({
-                  values,
-                  isSubmitting,
-                  isValid,
-                  resetForm,
-                  validateForm,
-                  submitForm,
-                }) => (
-                  <Form className="flex flex-row gap-2">
-                    <FormikSelectField
-                      name="type"
-                      items={[
-                        { label: 'Text', value: 'STRING' },
-                        { label: 'Number', value: 'NUMBER' },
-                      ]}
-                      label="Type"
-                      labelType="small"
-                    />
-                    <FormikTextField
-                      name="name"
-                      label="Name"
-                      labelType="small"
-                    />
-                    <FormikTextField
-                      name="displayName"
-                      label="Display Name"
-                      labelType="small"
-                    />
-                    {values.type === 'STRING' && (
-                      <FormikTextField
-                        name="value"
-                        label="Value"
-                        labelType="small"
-                      />
-                    )}
-                    {values.type === 'NUMBER' && (
-                      <FormikNumberField
-                        name="value"
-                        label="Value"
-                        labelType="small"
-                      />
-                    )}
-                    {values.type === 'NUMBER' && (
-                      <FormikTextField
-                        disabled={values.type !== 'NUMBER'}
-                        name="unit"
-                        label="Unit"
-                        labelType="small"
-                      />
-                    )}
-                    <Button
-                      className={{ root: 'mt-7 self-start' }}
-                      type="button"
-                      onClick={async () => {
-                        await submitForm()
-                        resetForm()
-                      }}
-                    >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faSave} />
-                      </Button.Icon>
-                    </Button>
-                  </Form>
-                )}
-              </Formik>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3 w-full max-h-32 overflow-y-auto">
                 {field.value.map((clue, ix) => (
                   <div
                     key={clue.name}
-                    className="py-1 text-sm px-2 rounded flex flex-col w-full"
+                    className="text-sm rounded flex flex-col w-full"
                   >
-                    <div className="font-bold">{clue.displayName}</div>
-                    <div className="group border rounded border-black">
-                      <div className="w-full p-1 group-hover:hidden">{`${
+                    <div className="font-bold">{clue.name}</div>
+                    <div className="group border rounded border-black h-full">
+                      <div className="w-full p-1 group-hover:hidden h-full">{`${
                         clue.value
                       } ${clue.type === 'NUMBER' ? clue.unit : ''}`}</div>
                       <Button
                         basic
                         onClick={() => remove(ix)}
                         className={{
-                          root: 'hidden p-1 w-full group-hover:flex bg-red-600 items-center justify-center',
+                          root: 'h-full hidden p-1 w-full group-hover:flex bg-red-600 items-center justify-center',
                         }}
                       >
                         <Button.Icon>
@@ -617,6 +530,7 @@ function StepTwo(props: StepProps) {
                     </div>
                   </div>
                 ))}
+                <GroupActivityClueModal pushClue={push} />
               </div>
               {meta.error && (
                 <div className="text-sm text-red-400 px-2">
