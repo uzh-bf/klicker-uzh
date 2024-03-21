@@ -1,15 +1,13 @@
 describe('Create and solve a group activity', () => {
-  beforeEach(() => {
-    // cy.exec('cd .. && pnpm run prisma:setup:yes && cd cypress', {
-    //   failOnNonZeroExit: false,
-    // })
-    cy.loginStudent()
+  it('create a group activity and solve it', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="create-group-activity"]').click()
   })
 
-  // TODO
-  it('create a group activity and solve it', function () {})
-
   it('take part in the seeded group activity', function () {
+    cy.loginStudent()
+
     // start the group activity
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()

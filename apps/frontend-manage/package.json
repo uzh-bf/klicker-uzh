@@ -94,7 +94,7 @@
     "format:check": "prettier --check .",
     "lint": "next lint",
     "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test next dev --port 3002"
   },
   "engines": {
     "node": "=20"
