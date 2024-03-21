@@ -6,7 +6,10 @@ import {
   Participant,
   UpdateParticipantAvatarDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
+import {
+  AVATAR_OPTIONS,
+  AVATAR_OPTIONS_KEY,
+} from '@klicker-uzh/shared-components/src/constants'
 import { Button, FormikSelectField, H3 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -98,11 +101,11 @@ function AvatarUpdateForm({
     >
       {({ values, isSubmitting, isValid }) => {
         return (
-          <Form>
-            <div className="space-y-2 rounded md:bg-slate-50 md:p-4">
-              <H3 className={{ root: 'border-b' }}>Avatar</H3>
-              <div className="flex flex-col gap-4 md:flex-row md:gap-8">
-                <div className="flex-1">
+          <Form className="md:h-full">
+            <div className="rounded md:bg-slate-50 md:p-4 md:h-full">
+              <div className="flex flex-col justify-between md:h-full">
+                <div>
+                  <H3 className={{ root: 'border-b' }}>Avatar</H3>
                   <BigHead
                     // @ts-ignore
                     className="w-full border-b-4 md:h-48 border-primary-80"
@@ -124,44 +127,48 @@ function AvatarUpdateForm({
                     facialHair={values.facialHair}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3 md:text-sm">
-                  {Object.keys(AVATAR_OPTIONS).map((key) => (
-                    <FormikSelectField
-                      className={{
-                        root: 'w-full',
-                        label: 'font-bold text-md',
-                        select: {
-                          root: 'w-full md:w-36',
-                          trigger: 'w-full md:p-1 justify-between md:px-3',
-                        },
-                      }}
-                      key={key}
-                      label={t(`pwa.avatar.${key}`)}
-                      labelType="small"
-                      name={key}
-                      items={AVATAR_OPTIONS[key].map((value) => {
-                        return {
-                          label: t(`pwa.avatar.${value}`),
-                          value: value,
-                          data: { cy: `avatar-${key}-${value}` },
-                        }
-                      })}
-                      data={{ cy: `avatar-${key}-select` }}
-                    />
-                  ))}
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3 text-sm w-full">
+                    {Object.keys(AVATAR_OPTIONS).map((key) => (
+                      <FormikSelectField
+                        className={{
+                          root: 'w-full',
+                          label: 'font-bold text-md',
+                          select: {
+                            root: 'w-full md:w-38',
+                            trigger: 'w-full md:p-1 justify-between md:px-3',
+                          },
+                        }}
+                        key={key}
+                        label={t(`pwa.avatar.${key}`)}
+                        labelType="small"
+                        name={key}
+                        items={AVATAR_OPTIONS[key as AVATAR_OPTIONS_KEY].map(
+                          (value) => {
+                            return {
+                              label: t(`pwa.avatar.${value}`),
+                              value: value,
+                              data: { cy: `avatar-${key}-${value}` },
+                            }
+                          }
+                        )}
+                        data={{ cy: `avatar-${key}-select` }}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    fluid
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                    data={{ cy: 'save-avatar-update' }}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faSave} />
+                    </Button.Icon>
+                    <Button.Label>{t('shared.generic.save')}</Button.Label>
+                  </Button>
                 </div>
               </div>
-              <Button
-                fluid
-                type="submit"
-                disabled={isSubmitting || !isValid}
-                data={{ cy: 'save-avatar-update' }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faSave} />
-                </Button.Icon>
-                <Button.Label>{t('shared.generic.save')}</Button.Label>
-              </Button>
             </div>
           </Form>
         )
