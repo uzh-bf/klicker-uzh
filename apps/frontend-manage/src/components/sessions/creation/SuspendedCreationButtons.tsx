@@ -21,7 +21,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const { data } = useSuspenseQuery(UserProfileDocument)
 
   return (
-    <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
+    <div className="grid gap-1 md:grid-cols-4 md:gap-2 pb-4">
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
@@ -51,15 +51,14 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
-        comingSoon
         isCatalystRequired
-        disabled={true || !data?.userProfile?.catalyst}
+        disabled={!data?.userProfile?.catalyst}
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {
           setCreationMode(WizardMode.GroupActivity)
         }}
-        data={{ cy: 'create-group-task' }}
+        data={{ cy: 'create-group-activity' }}
       />
     </div>
   )

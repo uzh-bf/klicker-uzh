@@ -194,7 +194,7 @@ function LiveSessionWizard({
   }
 
   return (
-    <div>
+    <>
       <MultistepWizard
         title={title}
         onCloseWizard={closeWizard}
@@ -307,7 +307,7 @@ function LiveSessionWizard({
             : t('manage.sessionForms.liveQuizCreationFailed')
         }
       />
-    </div>
+    </>
   )
 }
 

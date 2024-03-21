@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import {
   GetMicroLearningDocument,
   SelfDocument,
@@ -9,6 +8,7 @@ import { Progress } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import Layout from '../../../components/Layout'
 import ElementStack from '../../../components/practiceQuiz/ElementStack'
 
 function MicrolearningInstance() {
