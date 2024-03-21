@@ -105,8 +105,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
               {values.type === 'STRING' && (
                 <FormikTextField
                   name="value"
-                  // TODO: replace label
-                  label="Value"
+                  label={t('shared.generic.value')}
                   labelType="small"
                   required
                 />
@@ -115,8 +114,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                 <div className="flex flex-row gap-2 w-full">
                   <FormikNumberField
                     name="value"
-                    // TODO: replace label
-                    label="Value"
+                    label={t('shared.generic.value')}
                     labelType="small"
                     required
                     className={{ root: 'w-1/2' }}

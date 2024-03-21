@@ -492,8 +492,7 @@ function StepTwo(props: StepProps) {
                     tooltip={t(
                       'manage.sessionForms.groupActivityCluesDescription'
                     )}
-                    // TODO: rename internationalized labels
-                    label="Clues"
+                    label={t('shared.generic.clues')}
                     showTooltipSymbol
                     className={{
                       root: 'font-bold',

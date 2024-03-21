@@ -156,6 +156,8 @@ export default {
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
+      clues: 'Clues',
+      value: 'Value',
     },
     contentInput: {
       boldStyle:

@@ -156,6 +156,8 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
+      clues: 'Hinweise',
+      value: 'Wert',
     },
     contentInput: {
       boldStyle:
