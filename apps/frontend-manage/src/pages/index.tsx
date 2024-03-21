@@ -142,10 +142,8 @@ function Index() {
         </Suspense>
       )}
 
-      {/* <ResizablePanelGroup direction="vertical"> */}
       {creationMode && (
         <>
-          {/* <ResizablePanel id="wizards" order={1} defaultSize={15} minSize={5}> */}
           <SessionCreation
             creationMode={creationMode}
             closeWizard={() => {
@@ -159,12 +157,9 @@ function Index() {
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />
-          {/* </ResizablePanel> */}
-          {/* <ResizableHandle withHandle className="w-0.5 bg-gray-200" /> */}
         </>
       )}
 
-      {/* <ResizablePanel id="content" order={2} defaultSize={85}> */}
       <div className="flex flex-col gap-4 overflow-y-auto md:flex-row h-full">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
@@ -401,8 +396,6 @@ function Index() {
           )}
         </div>
       </div>
-      {/* </ResizablePanel> */}
-      {/* </ResizablePanelGroup> */}
 
       {isQuestionCreationModalOpen && (
         <QuestionEditModal
