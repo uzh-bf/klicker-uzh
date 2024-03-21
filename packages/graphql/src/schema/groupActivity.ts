@@ -36,6 +36,8 @@ export const GroupActivity = GroupActivityRef.implement({
     description: t.exposeString('description', { nullable: true }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
+    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
   }),
@@ -194,3 +196,16 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     }),
   }),
 })
+
+export const GroupActivityClueInput = builder.inputType(
+  'GroupActivityClueInput',
+  {
+    fields: (t) => ({
+      name: t.string({ required: true }),
+      displayName: t.string({ required: true }),
+      type: t.field({ type: ParameterType, required: true }),
+      value: t.string({ required: true }),
+      unit: t.string({ required: false }),
+    }),
+  }
+)

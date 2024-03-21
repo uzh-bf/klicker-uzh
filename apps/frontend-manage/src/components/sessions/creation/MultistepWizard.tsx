@@ -4,7 +4,7 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementOrderType, ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -30,6 +30,21 @@ interface MultistepWizardProps {
     tooltipDisabled?: string
   }[]
 }
+
+export type GroupActivityClueType =
+  | {
+      name: string
+      displayName: string
+      type: ParameterType.String
+      value: string
+    }
+  | {
+      name: string
+      displayName: string
+      type: ParameterType.Number
+      value: string
+      unit: string
+    }
 
 interface CommonFormValues {
   name: string
@@ -74,6 +89,18 @@ export interface PracticeQuizFormValues extends CommonFormValues {
   }[]
   order: any
   resetTimeDays: string
+}
+
+export interface GroupActivityFormValues extends CommonFormValues {
+  questions: {
+    id: number
+    title: string
+    hasAnswerFeedbacks: boolean
+    hasSampleSolution: boolean
+  }[]
+  startDate: string
+  endDate: string
+  clues: GroupActivityClueType[]
 }
 
 function Validator({

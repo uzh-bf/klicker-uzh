@@ -1,5 +1,6 @@
 import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikNumberField,
@@ -47,7 +48,9 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
             displayName: yup
               .string()
               .required(t('manage.sessionForms.clueDisplayNameMissing')),
-            type: yup.string().oneOf(['STRING', 'NUMBER']),
+            type: yup
+              .string()
+              .oneOf([ParameterType.String, ParameterType.Number]),
             value: yup
               .string()
               .required(t('manage.sessionForms.clueValueMissing')),
@@ -56,7 +59,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
           initialValues={{
             name: '',
             displayName: '',
-            type: 'STRING',
+            type: ParameterType.String,
             value: '',
             unit: undefined,
           }}
@@ -72,10 +75,13 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
               <FormikSelectField
                 name="type"
                 items={[
-                  { label: t('manage.sessionForms.textClue'), value: 'STRING' },
+                  {
+                    label: t('manage.sessionForms.textClue'),
+                    value: ParameterType.String,
+                  },
                   {
                     label: t('manage.sessionForms.numericalClue'),
-                    value: 'NUMBER',
+                    value: ParameterType.Number,
                   },
                 ]}
                 label={t('manage.sessionForms.groupActivityClueType')}
@@ -99,7 +105,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                 />
               </div>
 
-              {values.type === 'STRING' && (
+              {values.type === ParameterType.String && (
                 <FormikTextField
                   name="value"
                   label={t('shared.generic.value')}
@@ -107,7 +113,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                   required
                 />
               )}
-              {values.type === 'NUMBER' && (
+              {values.type === ParameterType.Number && (
                 <div className="flex flex-row gap-2 w-full">
                   <FormikNumberField
                     name="value"
@@ -117,7 +123,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                     className={{ root: 'w-1/2' }}
                   />
                   <FormikTextField
-                    disabled={values.type !== 'NUMBER'}
+                    disabled={values.type !== ParameterType.Number}
                     name="unit"
                     label={t('shared.generic.unit')}
                     labelType="small"

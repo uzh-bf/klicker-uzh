@@ -2,10 +2,12 @@ import {
   ElementType,
   GroupActivityStatus,
   LeaderboardType,
+  ParameterType,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
+import { StackInput } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
 import {
@@ -226,6 +228,45 @@ export async function getParticipantGroups(
       }))
     ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
   }))
+}
+
+interface ClueInput {
+  name: string
+  displayName: string
+  type: ParameterType
+  value: string
+  unit?: string | null
+}
+
+interface CreateGroupActivityArgs {
+  id?: string
+  name: string
+  displayName: string
+  description?: string | null
+  courseId?: string | null
+  multiplier: number
+  startDate: Date
+  endDate: Date
+  clues: ClueInput[]
+  stack: StackInput
+}
+
+export async function manipulateGroupActivity(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    courseId,
+    multiplier,
+    startDate,
+    endDate,
+    clues,
+    stack,
+  }: CreateGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  return null
 }
 
 export async function updateGroupAverageScores(ctx: Context) {
