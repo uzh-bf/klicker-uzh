@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -24,6 +23,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { WizardMode } from '../sessions/creation/SessionCreation'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
