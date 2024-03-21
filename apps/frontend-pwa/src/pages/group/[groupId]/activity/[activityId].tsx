@@ -63,8 +63,6 @@ function GroupActivityDetails() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
-  console.log(data.groupActivityDetails)
-
   return (
     <Layout
       course={data.groupActivityDetails.course}
