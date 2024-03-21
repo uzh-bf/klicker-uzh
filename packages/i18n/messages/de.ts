@@ -1009,6 +1009,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityClueType: 'Hinweis-Typ',
       textClue: 'Text-Hinweis',
       numericalClue: 'Numerischer Hinweis',
+      groupActivityNameError:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
+      groupActivityDisplayNameError:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
+      clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
+      clueDisplayNameMissing:
+        'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
+      clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
+      clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
     },
     formErrors: {
       resolveErrors:

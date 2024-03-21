@@ -1001,6 +1001,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityClueType: 'Clue type',
       textClue: 'Text clue',
       numericalClue: 'Numerical clue',
+      groupActivityNameError: 'Please enter a name for your group activity.',
+      groupActivityDisplayNameError:
+        'Please enter a valid display name for your group activity.',
+      groupActivityMin2Clues:
+        'Please add at least two clues to your group activity.',
+      clueNameMissing: 'Please enter a name for your clue.',
+      clueDisplayNameMissing:
+        'Please enter a valid display name for your clue.',
+      clueContentMissing: 'Please enter a content for your clue.',
+      clueValueMissing: 'Please enter a value for your numerical clue.',
     },
     formErrors: {
       resolveErrors:

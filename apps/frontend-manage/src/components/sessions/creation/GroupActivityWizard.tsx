@@ -71,10 +71,12 @@ function GroupActivityWizard({
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
   const stepOneValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    name: yup
+      .string()
+      .required(t('manage.sessionForms.groupActivityNameError')),
     displayName: yup
       .string()
-      .required(t('manage.sessionForms.sessionDisplayName')),
+      .required(t('manage.sessionForms.groupActivityDisplayNameError')),
     description: yup.string(),
   })
 
@@ -94,17 +96,18 @@ function GroupActivityWizard({
       .array()
       .of(
         yup.object().shape({
-          name: yup.string().required(t('manage.sessionForms.clueName')),
+          name: yup.string().required(t('manage.sessionForms.clueNameMissing')),
           displayName: yup
             .string()
-            .required(t('manage.sessionForms.clueDisplayName')),
-          description: yup.string(),
+            .required(t('manage.sessionForms.clueDisplayNameMissing')),
           type: yup.string().oneOf(['STRING', 'NUMBER']),
-          value: yup.string().required(t('manage.sessionForms.clueValue')),
+          value: yup
+            .string()
+            .required(t('manage.sessionForms.clueValueMissing')),
           unit: yup.string(),
         })
       )
-      .min(2),
+      .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
@@ -497,7 +500,7 @@ function StepTwo(props: StepProps) {
                     showTooltipSymbol
                     className={{
                       root: 'font-bold',
-                      tooltip: 'font-normal',
+                      tooltip: 'font-normal text-sm !z-30',
                     }}
                   />
                 </div>
@@ -512,7 +515,7 @@ function StepTwo(props: StepProps) {
                     <div className="group border rounded border-black h-full">
                       <div className="w-full p-1 group-hover:hidden h-full">{`${
                         clue.value
-                      } ${clue.type === 'NUMBER' ? clue.unit : ''}`}</div>
+                      } ${clue.type === 'NUMBER' && (clue.unit ?? '')}`}</div>
                       <Button
                         basic
                         onClick={() => remove(ix)}

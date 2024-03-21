@@ -40,13 +40,17 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
         className={{ content: 'w-[40rem] h-max self-center pt-0' }}
       >
         <Formik
-          // TODO: specify proper error messages for form
-          // TODO: add tooltips for the fields
           validationSchema={yup.object().shape({
-            name: yup.string().required(),
-            displayName: yup.string().required(),
-            type: yup.string().required(),
-            value: yup.string().required(),
+            name: yup
+              .string()
+              .required(t('manage.sessionForms.clueNameMissing')),
+            displayName: yup
+              .string()
+              .required(t('manage.sessionForms.clueDisplayNameMissing')),
+            type: yup.string().oneOf(['STRING', 'NUMBER']),
+            value: yup
+              .string()
+              .required(t('manage.sessionForms.clueValueMissing')),
             unit: yup.string().optional(),
           })}
           initialValues={{
@@ -60,14 +64,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
             pushClue(values)
           }}
         >
-          {({
-            values,
-            isSubmitting,
-            isValid,
-            resetForm,
-            validateForm,
-            submitForm,
-          }) => (
+          {({ values, resetForm, submitForm }) => (
             <Form className="flex flex-col">
               <div className="text-base test-gray-800">
                 {t('manage.sessionForms.groupActivityCluesDescription')}
@@ -124,8 +121,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
                     name="unit"
                     label={t('shared.generic.unit')}
                     labelType="small"
-                    required
-                    className={{ root: 'w-1/2' }}
+                    className={{ root: 'w-1/2 mt-1' }}
                   />
                 </div>
               )}
