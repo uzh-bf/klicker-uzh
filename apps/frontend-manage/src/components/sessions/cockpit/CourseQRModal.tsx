@@ -57,7 +57,7 @@ function CourseQRModal({
       title="QR Code"
       trigger={
         <Button
-          className={{ root: 'w-[41%] sm:w-max !mr-0' }}
+          className={{ root: 'w-full !mr-0' }}
           onClick={() => setModalOpen(true)}
           data={dataTrigger}
         >
@@ -70,14 +70,17 @@ function CourseQRModal({
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: className?.modal,
+        content: twMerge('h-max w-max', className?.modal),
       }}
       dataOverlay={dataModal}
       dataCloseButton={dataCloseButton}
     >
       <div>
         <QR
-          className={{ title: 'text-base' }}
+          className={{
+            title: 'text-base',
+            canvas: 'flex justify-center',
+          }}
           path={relativeLink}
           width={100}
         />
@@ -88,7 +91,7 @@ function CourseQRModal({
           fluid
           className={{
             root: twMerge(
-              'text-lg font-bold text-white h-11 bg-primary-80',
+              'mt-3 text-lg font-bold text-white h-11 bg-primary-80',
               className?.button
             ),
           }}
