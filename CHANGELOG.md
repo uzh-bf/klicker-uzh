@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.19...v3.1.0-rc.20) (2024-03-21)
+
+
+### Features
+
+* add possibility to convert past microlearning to practice quiz ([#4069](https://github.com/uzh-bf/klicker-uzh/issues/4069)) ([a0f1aa4](https://github.com/uzh-bf/klicker-uzh/commit/a0f1aa42a8d48614544af5b1f1aa64aacd8b66a9))
+
+
+### Other
+
+* **apps/frontend-pwa:** reorder the elements on the participant profile for better overview ([#4074](https://github.com/uzh-bf/klicker-uzh/issues/4074)) ([6113134](https://github.com/uzh-bf/klicker-uzh/commit/6113134d831170a4ef23a8cd52652f91b16b880a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show notification in case of missing participant email address ([6a6503e](https://github.com/uzh-bf/klicker-uzh/commit/6a6503ee79ce3498c4589d4108fde219849e6a47))
+
 ## [3.1.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.18...v3.1.0-rc.19) (2024-03-20)
 
 
