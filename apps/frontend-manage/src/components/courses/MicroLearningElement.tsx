@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArrowsRotate,
   faCheck,
   faHandPointer,
   faHourglassEnd,
@@ -181,6 +182,33 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
                           onClick: async () => await unpublishMicroLearning(),
                           data: {
                             cy: `unpublish-microlearning-${microLearning.name}`,
+                          },
+                        },
+                      ]
+                    : []),
+                  ...(isPast
+                    ? [
+                        {
+                          label: (
+                            <div className="flex flex-row items-center text-primary gap-1 cursor-pointer">
+                              <FontAwesomeIcon icon={faArrowsRotate} />
+                              <div>
+                                {t(
+                                  'manage.course.convertMicroLearningToPracticeQuiz'
+                                )}
+                              </div>
+                            </div>
+                          ),
+                          onClick: () =>
+                            router.push({
+                              pathname: '/',
+                              query: {
+                                sessionId: microLearning.id,
+                                conversionMode: 'microLearningToPracticeQuiz',
+                              },
+                            }),
+                          data: {
+                            cy: `convert-microlearning-${microLearning.name}-to-practice-quiz`,
                           },
                         },
                       ]
