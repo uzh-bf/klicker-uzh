@@ -5,10 +5,10 @@ import { ElementType, GroupActivity } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikDateField,
+  FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  H3,
-  Prose,
+  Label,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import {
@@ -472,10 +472,22 @@ function StepTwo(props: StepProps) {
         <FieldArray name="clues">
           {({ push, remove, move }: FieldArrayRenderProps) => (
             <div>
-              <H3 className={{ root: 'mb-0' }}>Clues</H3>
-              <Prose className={{ root: 'max-w-none prose-sm' }}>
-                {t('manage.sessionForms.groupActivityCluesDescription')}
-              </Prose>
+              <div className="flex flex-row gap-4">
+                <div className="flex flex-row items-center gap-3">
+                  <Label
+                    required
+                    tooltip={t(
+                      'manage.sessionForms.groupActivityCluesDescription'
+                    )}
+                    label="Clues"
+                    showTooltipSymbol
+                    className={{
+                      root: 'font-bold',
+                      tooltip: 'font-normal',
+                    }}
+                  />
+                </div>
+              </div>
               <Formik
                 validationSchema={yup.object().shape({
                   name: yup.string().required(),
@@ -523,11 +535,20 @@ function StepTwo(props: StepProps) {
                       label="Display Name"
                       labelType="small"
                     />
-                    <FormikTextField
-                      name="value"
-                      label="Value"
-                      labelType="small"
-                    />
+                    {values.type === 'STRING' && (
+                      <FormikTextField
+                        name="value"
+                        label="Value"
+                        labelType="small"
+                      />
+                    )}
+                    {values.type === 'NUMBER' && (
+                      <FormikNumberField
+                        name="value"
+                        label="Value"
+                        labelType="small"
+                      />
+                    )}
                     {values.type === 'NUMBER' && (
                       <FormikTextField
                         disabled={values.type !== 'NUMBER'}
