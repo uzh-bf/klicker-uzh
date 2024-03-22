@@ -532,7 +532,7 @@ Um genauere Angaben zu diesen Titeln zu finden, durchsucht ihr Boerse.de. Für d
             create: {
               type: Prisma.ParameterType.NUMBER,
               name: 'unilever_wachstum',
-              displayName: 'Unilever Wachstumsrate k_{ek}',
+              displayName: 'Unilever Wachstumsrate k_ek',
               value: '2.50',
               unit: '%',
             },
@@ -548,7 +548,7 @@ Um genauere Angaben zu diesen Titeln zu finden, durchsucht ihr Boerse.de. Für d
               GC1Question9,
               GC1Question10,
               GC1Question11,
-              GC1Question13,
+              GC1Question12,
               GC1Question13,
             ] as Prisma.Element[],
             courseId: COURSE_ID_TEST,
