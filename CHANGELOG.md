@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.20...v3.1.0-rc.21) (2024-03-22)
+
+
+### Bug Fixes
+
+* **packages/markdown:** unescape html signs on markdown parsing ([#4075](https://github.com/uzh-bf/klicker-uzh/issues/4075)) ([5db6132](https://github.com/uzh-bf/klicker-uzh/commit/5db61326462f6bf98d2a95210ae46bf1dcda2539))
+
 ## [3.1.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.19...v3.1.0-rc.20) (2024-03-21)
 
 
