@@ -13,6 +13,7 @@ import {
   FormikTextField,
   H3,
   Prose,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -123,6 +124,13 @@ function UpdateAccountInfoForm({
                 <H3 className={{ root: 'border-b mb-0' }}>
                   {t('shared.generic.profile')}
                 </H3>
+                {!user.email ? (
+                  <UserNotification
+                    message={t('pwa.profile.emailMissing')}
+                    type="error"
+                    className={{ root: 'mt-2' }}
+                  />
+                ) : null}
                 <div className="mb-2 space-y-3">
                   <FormikTextField
                     // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently

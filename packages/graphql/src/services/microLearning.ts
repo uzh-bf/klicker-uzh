@@ -272,13 +272,6 @@ export async function publishMicroLearning(
     data: {
       status: PublicationStatus.PUBLISHED,
     },
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
   })
 
   return microLearning

@@ -72,6 +72,7 @@ export default {
       logout: 'Logout',
       login: 'Login',
       username: 'Username',
+      usernameOrEmail: 'Username / E-mail',
       email: 'E-mail address',
       password: 'Password',
       token: 'Token',
@@ -535,6 +536,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataSharing: '',
       privacyDataUsage: '',
       privacyDataStorage: '',
+      emailMissing:
+        'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
     },
     avatar: {
       hair: 'Hair',
@@ -1188,6 +1191,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editMicrolearning: 'Edit microlearning',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
+      convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       deleteMicrolearning: 'Delete microlearning',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',

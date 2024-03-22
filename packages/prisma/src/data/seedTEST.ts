@@ -774,6 +774,47 @@ Mehr bla bla...
     },
     update: {},
   })
+
+  const microlearningId3 = '71702826-e693-451d-ad64-ed763d973fcd'
+  const microlearningPast = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId3,
+    },
+    create: {
+      id: microlearningId3,
+      name: 'Test Microlearning Past',
+      displayName: 'Test Microlearning Past',
+      description: `Dieses Microlearning ist bereits vorbei...`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 500,
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()

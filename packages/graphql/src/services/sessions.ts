@@ -1567,6 +1567,8 @@ export async function getUnassignedSessions(ctx: ContextWithUser) {
 
 // compute the average of all feedbacks that were given within the last 10 minutes
 const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+  // TODO: for improved efficiency, try to use descending feedback ordering
+  // and break early once first is not within the filtering requirements anymore
   const recentFeedbacks = feedbacks.filter(
     (feedback) =>
       dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
@@ -1889,7 +1891,11 @@ export async function getSessionEvaluation(
           updatedAt: 'desc',
         },
       },
-      confusionFeedbacks: true,
+      confusionFeedbacks: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
     },
   })
 

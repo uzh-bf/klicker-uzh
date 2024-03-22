@@ -72,6 +72,7 @@ export default {
       logout: 'Ausloggen',
       login: 'Login',
       username: 'Benutzername',
+      usernameOrEmail: 'Benutzername / E-Mail',
       email: 'E-Mail Adresse',
       password: 'Passwort',
       token: 'Token',
@@ -533,6 +534,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen irreversibel löschen.',
       deleteProfileConfirmation:
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+      emailMissing:
+        'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
     },
     avatar: {
       hair: 'Frisur',
@@ -1196,6 +1199,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editMicrolearning: 'Microlearning bearbeiten',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
+      convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
       deleteMicrolearning: 'Microlearning löschen',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',

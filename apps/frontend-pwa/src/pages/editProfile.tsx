@@ -43,15 +43,15 @@ function EditProfile() {
               setShowSuccess={setShowSuccess}
             />
           </div>
-          <div className="w-full md:w-1/2">
-            <AccountDeletionForm />
+          <div className="w-full md:w-1/2 md:h-full">
+            <AvatarUpdateForm
+              user={data.self}
+              setShowError={setShowError}
+              setShowSuccess={setShowSuccess}
+            />
           </div>
         </div>
-        <AvatarUpdateForm
-          user={data.self}
-          setShowError={setShowError}
-          setShowSuccess={setShowSuccess}
-        />
+        <AccountDeletionForm />
       </div>
       <Toast
         type="error"

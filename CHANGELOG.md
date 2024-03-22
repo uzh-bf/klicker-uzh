@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.19...v3.1.0-rc.20) (2024-03-21)
+
+
+### Features
+
+* add possibility to convert past microlearning to practice quiz ([#4069](https://github.com/uzh-bf/klicker-uzh/issues/4069)) ([a0f1aa4](https://github.com/uzh-bf/klicker-uzh/commit/a0f1aa42a8d48614544af5b1f1aa64aacd8b66a9))
+
+
+### Other
+
+* **apps/frontend-pwa:** reorder the elements on the participant profile for better overview ([#4074](https://github.com/uzh-bf/klicker-uzh/issues/4074)) ([6113134](https://github.com/uzh-bf/klicker-uzh/commit/6113134d831170a4ef23a8cd52652f91b16b880a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show notification in case of missing participant email address ([6a6503e](https://github.com/uzh-bf/klicker-uzh/commit/6a6503ee79ce3498c4589d4108fde219849e6a47))
+
+## [3.1.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.18...v3.1.0-rc.19) (2024-03-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add styling to media library to fix overlay issues ([#4068](https://github.com/uzh-bf/klicker-uzh/issues/4068)) ([e97abb3](https://github.com/uzh-bf/klicker-uzh/commit/e97abb3205b918cf0b88c41dafdc4c23a995ba88))
+* **packages/graphql:** ensure that confusion feedbacks are ordered correctly ([#4067](https://github.com/uzh-bf/klicker-uzh/issues/4067)) ([c076358](https://github.com/uzh-bf/klicker-uzh/commit/c076358973726545ddfe04f35df43a2d25cd4a50))
+* **packages/graphql:** ensure that number of questions on microlearning are not reset on publish ([01e105a](https://github.com/uzh-bf/klicker-uzh/commit/01e105a8c247140698a1d51f4aa2804c7422b7d8))
+
+
+### Enhancements
+
+* allow students to login with email or username ([#4066](https://github.com/uzh-bf/klicker-uzh/issues/4066)) ([2070fc6](https://github.com/uzh-bf/klicker-uzh/commit/2070fc660de7d7bbe260257ac575ad336546f5e4))
+
+## [3.1.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.17...v3.1.0-rc.18) (2024-03-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that group activity fields are only disabled if decisions exist already ([44f5fe6](https://github.com/uzh-bf/klicker-uzh/commit/44f5fe6b5ffe56ae87e737964b27ccac58e4b21a))
+
+
+### Enhancements
+
+* connect practice quiz element stacks to course on publish ([#4063](https://github.com/uzh-bf/klicker-uzh/issues/4063)) ([f6c1025](https://github.com/uzh-bf/klicker-uzh/commit/f6c1025e8479a8b0661b99659339c62d26bc9482))
+* **cypress:** add group activity student frontend test ([#4065](https://github.com/uzh-bf/klicker-uzh/issues/4065)) ([e6c61d4](https://github.com/uzh-bf/klicker-uzh/commit/e6c61d47134b8e00145e82c0d67a8fa35b91f5d4))
+
 ## [3.1.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.16...v3.1.0-rc.17) (2024-03-07)
 
 
