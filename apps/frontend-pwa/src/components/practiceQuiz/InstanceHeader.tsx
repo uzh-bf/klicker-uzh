@@ -1,7 +1,7 @@
-import FlagElementModal from '@components/flags/FlagElementModal'
 import { H4 } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import FlagElementModal from '../flags/FlagElementModal'
 
 interface InstanceHeaderProps {
   instanceId: number

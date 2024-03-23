@@ -13,7 +13,11 @@ import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { GroupActivityDetails } from './groupActivity'
+import {
+  GroupActivity,
+  GroupActivityClueInput,
+  GroupActivityDetails,
+} from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
   AvatarSettingsInput,
@@ -1125,6 +1129,27 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return MicroLearningService.deleteMicroLearning(args, ctx)
+          },
+        }),
+
+      createGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
           },
         }),
       // #endregion

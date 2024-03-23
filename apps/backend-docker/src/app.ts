@@ -134,7 +134,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         requestHeaders: ['x-graphql-yoga-csrf'], // default
       }),
       usePersistedOperations({
-        allowArbitraryOperations: process.env.NODE_ENV === 'development',
+        allowArbitraryOperations:
+          process.env.NODE_ENV === 'development' ||
+          process.env.NODE_ENV === 'test',
         getPersistedOperation(sha256Hash: string) {
           return persistedOperations[sha256Hash]
         },

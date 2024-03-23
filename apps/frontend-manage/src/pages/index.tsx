@@ -141,8 +141,9 @@ function Index() {
           <SuspendedCreationButtons setCreationMode={setCreationMode} />
         </Suspense>
       )}
+
       {creationMode && (
-        <div className="flex-none mb-4">
+        <>
           <SessionCreation
             creationMode={creationMode}
             closeWizard={() => {
@@ -156,10 +157,10 @@ function Index() {
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />
-        </div>
+        </>
       )}
 
-      <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
+      <div className="flex flex-col gap-4 overflow-y-auto md:flex-row h-full">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
             <div className="hidden h-full md:block">

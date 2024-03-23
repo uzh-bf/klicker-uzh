@@ -49,6 +49,7 @@
     "build:test": "cross-env NODE_ENV=test next build",
     "dev": "next dev --port 3010",
     "dev:offline": "next dev --port 3010",
+    "dev:test": "cross-env NODE_ENV=test next dev --port 3010",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "next lint",

@@ -1,0 +1,33 @@
+#import "./FElementData.graphql"
+
+mutation CreateGroupActivity(
+  $name: String!
+  $displayName: String!
+  $description: String
+  $courseId: String!
+  $multiplier: Int!
+  $startDate: Date!
+  $endDate: Date!
+  $clues: [GroupActivityClueInput!]!
+  $stack: ElementStackInput!
+) {
+  createGroupActivity(
+    name: $name
+    displayName: $displayName
+    description: $description
+    courseId: $courseId
+    multiplier: $multiplier
+    startDate: $startDate
+    endDate: $endDate
+    clues: $clues
+    stack: $stack
+  ) {
+    id
+    name
+    displayName
+    description
+    scheduledStartAt
+    scheduledEndAt
+    pointsMultiplier
+  }
+}

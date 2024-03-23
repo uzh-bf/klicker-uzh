@@ -1,7 +1,4 @@
 import { useQuery } from '@apollo/client'
-import AccountDeletionForm from '@components/forms/AccountDeletionForm'
-import AvatarUpdateForm from '@components/forms/AvatarUpdateForm'
-import UpdateAccountInfoForm from '@components/forms/UpdateAccountInfoForm'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
@@ -11,6 +8,9 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../components/Layout'
+import AccountDeletionForm from '../components/forms/AccountDeletionForm'
+import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
+import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
 
 function EditProfile() {
   const t = useTranslations()

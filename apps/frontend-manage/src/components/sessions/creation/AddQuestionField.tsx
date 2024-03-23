@@ -7,21 +7,14 @@ import { twMerge } from 'tailwind-merge'
 
 interface AddQuestionFieldProps {
   push: (value: any) => void
+  acceptedTypes: ElementType[]
 }
 
-function AddQuestionField({ push }: AddQuestionFieldProps) {
+function AddQuestionField({ push, acceptedTypes }: AddQuestionFieldProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: [
-        ElementType.Sc,
-        ElementType.Mc,
-        ElementType.Kprim,
-        // ElementType.FreeText,
-        ElementType.Numerical,
-        ElementType.Content,
-        ElementType.Flashcard,
-      ],
+      accept: acceptedTypes,
       drop: (item: {
         id: number
         type: string

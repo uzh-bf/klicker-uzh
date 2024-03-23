@@ -14,7 +14,6 @@ import {
   FormikTextField,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
 import { ErrorMessage } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -50,7 +49,6 @@ function MicroLearningWizard({
 
   const [createMicroSession] = useMutation(CreateMicroLearningDocument)
   const [editMicroSession] = useMutation(EditMicroLearningDocument)
-  dayjs.extend(utc)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
@@ -172,7 +170,7 @@ function MicroLearningWizard({
   }
 
   return (
-    <div>
+    <>
       <MultistepWizard
         title={title}
         onCloseWizard={closeWizard}
@@ -258,7 +256,7 @@ function MicroLearningWizard({
             : t('manage.sessionForms.microlearningCreationFailed')
         }
       />
-    </div>
+    </>
   )
 }
 
@@ -451,7 +449,17 @@ function StepTwo(props: StepProps) {
 function StepThree(_: StepProps) {
   return (
     <div className="mt-2 mb-2">
-      <BlockField fieldName="questions" />
+      <BlockField
+        fieldName="questions"
+        acceptedTypes={[
+          ElementType.Sc,
+          ElementType.Mc,
+          ElementType.Kprim,
+          ElementType.Numerical,
+          ElementType.Flashcard,
+          ElementType.Content,
+        ]}
+      />
     </div>
   )
 }

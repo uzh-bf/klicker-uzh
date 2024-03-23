@@ -1,10 +1,10 @@
-import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { WizardMode } from '../../sessions/creation/SessionCreation'
 
 interface EditLiveQuizButtonProps {
   liveQuiz: Partial<Session>
