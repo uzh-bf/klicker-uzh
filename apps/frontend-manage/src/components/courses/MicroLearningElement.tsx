@@ -30,11 +30,11 @@ import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 
-interface MicroLearningTileProps {
+interface MicroLearningElementProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
 }
 
-function MicroLearningTile({ microLearning }: MicroLearningTileProps) {
+function MicroLearningElement({ microLearning }: MicroLearningElementProps) {
   const t = useTranslations()
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
@@ -271,4 +271,4 @@ function MicroLearningTile({ microLearning }: MicroLearningTileProps) {
   )
 }
 
-export default MicroLearningTile
+export default MicroLearningElement
