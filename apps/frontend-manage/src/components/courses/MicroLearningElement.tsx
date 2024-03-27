@@ -30,11 +30,11 @@ import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 
-interface MicroLearningElementProps {
+interface MicroLearningTileProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
 }
 
-function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
+function MicroLearningTile({ microLearning }: MicroLearningTileProps) {
   const t = useTranslations()
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
@@ -226,7 +226,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
         </div>
       </div>
       <div className="mb-1 text-sm italic">
-        {t('pwa.microSession.numOfQuestionSets', {
+        {t('pwa.microLearning.numOfQuestionSets', {
           number: microLearning.numOfStacks || '0',
         })}
       </div>
@@ -271,4 +271,4 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
   )
 }
 
-export default MicroSessionTile
+export default MicroLearningTile
