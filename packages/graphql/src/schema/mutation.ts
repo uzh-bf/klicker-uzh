@@ -432,17 +432,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagQuestion: t.withAuth(asParticipant).string({
-        nullable: true,
-        args: {
-          questionInstanceId: t.arg.int({ required: true }),
-          content: t.arg.string({ required: true }),
-        },
-        async resolve(_, args, ctx) {
-          return ParticipantService.flagQuestion(args, ctx)
-        },
-      }),
-
       flagElement: t.withAuth(asParticipant).string({
         nullable: true,
         args: {
