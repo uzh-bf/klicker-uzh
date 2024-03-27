@@ -79,7 +79,7 @@ function PracticeQuizOverview({
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.microSession.numOfQuestionSets', {
+              {t('pwa.microLearning.numOfQuestionSets', {
                 number: numOfStacks,
               })}
             </div>

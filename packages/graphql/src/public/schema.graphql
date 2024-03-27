@@ -575,7 +575,6 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
   flagElement(content: String!, elementInstanceId: Int!): String
-  flagQuestion(content: String!, questionInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   joinCourse(courseId: String!): ParticipantLearningData

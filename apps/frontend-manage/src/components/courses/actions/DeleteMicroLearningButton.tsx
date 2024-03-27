@@ -4,7 +4,7 @@ import { MicroLearning } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import MicroSessionDeletionModal from '../modals/MicroSessionDeletionModal'
+import MicroLearningDeletionModal from '../modals/MicroLearningDeletionModal'
 
 interface DeleteMicroLearningButtonProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
@@ -29,7 +29,7 @@ function DeleteMicroLearningButton({
         </Button.Icon>
         <Button.Label>{t('manage.course.deleteMicrolearning')}</Button.Label>
       </Button>
-      <MicroSessionDeletionModal
+      <MicroLearningDeletionModal
         sessionId={microLearning.id}
         title={microLearning.name}
         open={deletionModal}

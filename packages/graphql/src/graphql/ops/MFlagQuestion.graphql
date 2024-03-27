@@ -1,3 +1,0 @@
-mutation FlagQuestion($questionInstanceId: Int!, $content: String!) {
-  flagQuestion(questionInstanceId: $questionInstanceId, content: $content)
-}

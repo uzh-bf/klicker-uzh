@@ -133,7 +133,7 @@ export async function sendPushNotifications(ctx: Context) {
       try {
         await sendPushNotificationsToSubscribers(microLearning, ctx)
 
-        //update microSession to prevent sending push notifications multiple times
+        //update microLearning to prevent sending push notifications multiple times
         await ctx.prisma.microLearning.update({
           where: {
             id: microLearning.id,

@@ -3,7 +3,7 @@ import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroLearning,
-  UnpublishMicroSessionDocument,
+  UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -16,7 +16,7 @@ function UnpublishMicroLearningButton({
   microLearning,
 }: UnpublishMicroLearningButtonProps) {
   const t = useTranslations()
-  const [unpublishMicroSession] = useMutation(UnpublishMicroSessionDocument, {
+  const [unpublishMicrolearning] = useMutation(UnpublishMicroLearningDocument, {
     variables: { id: microLearning.id },
   })
 
@@ -24,7 +24,7 @@ function UnpublishMicroLearningButton({
     <Button
       basic
       className={{ root: 'text-primary' }}
-      onClick={async () => await unpublishMicroSession()}
+      onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >
       <Button.Icon>

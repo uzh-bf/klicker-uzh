@@ -167,7 +167,7 @@ function PracticeQuizElement({
           className="mb-1 text-sm italic"
           data-cy={`practice-quiz-num-of-questions-${practiceQuiz.name}`}
         >
-          {t('pwa.microSession.numOfQuestionSets', {
+          {t('pwa.microLearning.numOfQuestionSets', {
             number: practiceQuiz.numOfStacks || '0',
           })}
         </div>
