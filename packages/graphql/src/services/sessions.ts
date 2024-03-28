@@ -99,7 +99,7 @@ export async function createSession(
 
   const session = await ctx.prisma.liveSession.create({
     data: {
-      name.trim(),
+      name: name.trim(),
       displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
