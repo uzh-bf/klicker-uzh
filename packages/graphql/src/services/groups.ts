@@ -25,7 +25,7 @@ export async function createParticipantGroup(
 
   const participantGroup = await ctx.prisma.participantGroup.create({
     data: {
-      name,
+      name: name.trim(),
       code: code,
       course: {
         connect: {
