@@ -62,7 +62,7 @@ function SessionBlock({
 
     const expirationTime = new Date()
     expirationTime.setSeconds(
-      expirationTime.getSeconds() + (timeUntilExpiration ?? 0)
+      expirationTime.getSeconds() + (timeUntilExpiration ?? 0) + 1
     )
     const closureTime = new Date()
     closureTime.setSeconds(closureTime.getSeconds() + (timeUntilClosure ?? 0))
@@ -113,7 +113,7 @@ function SessionBlock({
               if (inCooldown && value !== 0) {
                 return <FontAwesomeIcon icon={faSave} />
               } else {
-                return value
+                return Math.max(value - 1, 0)
               }
             }}
           />
