@@ -47,7 +47,7 @@ function SessionBlock({
   )
 
   // cooldown duration in seconds
-  const cooldownDuration = 15
+  const cooldownDuration = 10
 
   // compute the time until expiration (student-visible time) and
   // the time until the block is closed (including cooldown)
@@ -68,7 +68,9 @@ function SessionBlock({
       expirationTime.getSeconds() + (timeUntilExpiration ?? 0) + 1
     )
     const closureTime = new Date()
-    closureTime.setSeconds(closureTime.getSeconds() + (timeUntilClosure ?? 0))
+    closureTime.setSeconds(
+      closureTime.getSeconds() + (timeUntilClosure ?? 0) + 1
+    )
     setTotalDuration((timeUntilExpiration ?? 0) + 1)
     setEndTime(expirationTime)
 
