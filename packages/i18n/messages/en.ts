@@ -1071,6 +1071,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived speed of the lecture.',
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
+      skipCooldown: 'Skip cooldown',
     },
     evaluation: {
       evaluationNotYetAvailable:

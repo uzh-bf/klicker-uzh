@@ -22,6 +22,8 @@ interface SessionBlockProps {
   className?: string
   active: boolean
   block: SessionBlockType
+  inCooldown: boolean
+  setInCooldown: (value: boolean) => void
 }
 
 const ICON_MAP = {
@@ -34,6 +36,8 @@ function SessionBlock({
   className,
   active,
   block,
+  inCooldown,
+  setInCooldown,
 }: SessionBlockProps): React.ReactElement {
   const t = useTranslations()
   const [endTime, setEndTime] = useState<Date>()
@@ -41,7 +45,6 @@ function SessionBlock({
   const [totalDuration, setTotalDuration] = useState<number | undefined | null>(
     undefined
   )
-  const [inCooldown, setInCooldown] = useState<boolean>(false)
 
   // cooldown duration in seconds
   const cooldownDuration = 15
@@ -66,7 +69,7 @@ function SessionBlock({
     )
     const closureTime = new Date()
     closureTime.setSeconds(closureTime.getSeconds() + (timeUntilClosure ?? 0))
-    setTotalDuration(timeUntilExpiration)
+    setTotalDuration((timeUntilExpiration ?? 0) + 1)
     setEndTime(expirationTime)
 
     return { expiration: expirationTime, closure: closureTime }
@@ -105,7 +108,7 @@ function SessionBlock({
               if (timeRemaining < 1.5) {
                 setTimerColor('#FFA500')
                 setEndTime(closureTime)
-                setTotalDuration(cooldownDuration)
+                setTotalDuration((cooldownDuration ?? 0) + 1)
                 setInCooldown(true)
               }
             }}

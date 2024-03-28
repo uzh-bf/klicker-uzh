@@ -1078,6 +1078,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Geschwindigkeit des Unterrichts.',
       confusionDifficultyTooltip:
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Schwierigkeit des vermittelten Inhalts.',
+      skipCooldown: 'Cooldown überspringen',
     },
     evaluation: {
       evaluationNotYetAvailable:
