@@ -14,7 +14,7 @@ import { CycleCountdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
@@ -35,23 +35,40 @@ function SessionBlock({
   block,
 }: SessionBlockProps): React.ReactElement {
   const t = useTranslations()
+  const [endTime, setEndTime] = useState<Date>()
+  const [timerColor, setTimerColor] = useState<string | undefined>(undefined)
+  const [totalDuration, setTotalDuration] = useState<number | undefined | null>(
+    undefined
+  )
 
-  // compute the time until expiration in seconds + 20 seconds buffer from now
-  const untilExpiration = useMemo(() => {
+  // cooldown duration in seconds
+  const cooldownDuration = 20
+
+  // compute the time until expiration (student-visible time) and
+  // the time until the block is closed (including cooldown)
+  const { expiration: expirationTime, closure: closureTime } = useMemo(() => {
     if (block.status === SessionBlockStatus.Executed) {
-      return -1
+      setTotalDuration(0)
+      return { expiration: undefined, closure: undefined }
     }
-    return block.expiresAt
-      ? dayjs(block.expiresAt).add(20, 'second').diff(dayjs(), 'second')
+    const timeUntilExpiration = block.expiresAt
+      ? dayjs(block.expiresAt).diff(dayjs(), 'second')
       : block.timeLimit
-  }, [block.expiresAt, block.status, block.timeLimit])
+    const timeUntilClosure = block.expiresAt
+      ? dayjs(block.expiresAt).diff(dayjs(), 'second') + cooldownDuration
+      : block.timeLimit
 
-  // compute the expiration time as a date
-  const expirationTime = useMemo(() => {
-    const time = new Date()
-    time.setSeconds(time.getSeconds() + (untilExpiration ?? 0))
-    return time
-  }, [untilExpiration])
+    const expirationTime = new Date()
+    expirationTime.setSeconds(
+      expirationTime.getSeconds() + (timeUntilExpiration ?? 0)
+    )
+    const closureTime = new Date()
+    closureTime.setSeconds(closureTime.getSeconds() + (timeUntilClosure ?? 0))
+    setTotalDuration(timeUntilExpiration)
+    setEndTime(expirationTime)
+
+    return { expiration: expirationTime, closure: closureTime }
+  }, [block.expiresAt, block.status, block.timeLimit])
 
   return (
     <div
@@ -70,19 +87,27 @@ function SessionBlock({
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
         <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
-        {block.timeLimit && untilExpiration && untilExpiration !== -2 && (
+        {block.timeLimit && (
           <CycleCountdown
-            key={`${block.expiresAt}-${block.status}`}
+            key={`${block.id}-${endTime}-${totalDuration}`}
             size="sm"
             isStatic={
               !block.expiresAt || block.status === SessionBlockStatus.Executed
             }
-            expiresAt={expirationTime}
+            color={timerColor}
+            expiresAt={endTime ?? new Date()}
             strokeWidthRem={0.2}
-            totalDuration={
-              block.status !== SessionBlockStatus.Executed ? untilExpiration : 0
-            }
+            totalDuration={totalDuration ?? 0}
             terminalPercentage={100}
+            onUpdate={(timeRemaining) => {
+              console.log('time remaining:', timeRemaining)
+              console.log('total duration:', totalDuration)
+              if (timeRemaining < 1.5) {
+                setTimerColor('#FFA500')
+                setEndTime(closureTime)
+                setTotalDuration(cooldownDuration)
+              }
+            }}
           />
         )}
       </div>
