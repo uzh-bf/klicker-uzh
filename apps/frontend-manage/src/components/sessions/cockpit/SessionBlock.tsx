@@ -80,7 +80,8 @@ function SessionBlock({
       className={twMerge(
         className,
         'bg-uzh-grey-40 p-4 rounded min-w-[150px]',
-        active && 'bg-green-300'
+        active && 'bg-green-300',
+        inCooldown && 'bg-orange-200'
       )}
     >
       <div
@@ -106,7 +107,7 @@ function SessionBlock({
             terminalPercentage={100}
             onUpdate={(timeRemaining) => {
               if (timeRemaining < 1.5) {
-                setTimerColor('#FFA500')
+                setTimerColor('#FF4D01')
                 setEndTime(closureTime)
                 setTotalDuration((cooldownDuration ?? 0) + 1)
                 setInCooldown(true)
