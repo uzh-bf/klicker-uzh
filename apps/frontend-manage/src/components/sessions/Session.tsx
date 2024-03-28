@@ -1,8 +1,10 @@
 import { useMutation } from '@apollo/client'
-import { faCopy } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
+  IconDefinition,
   faArrowUpRightFromSquare,
   faCalendarDays,
+  faCheck,
   faCode,
   faPencil,
   faPlay,
@@ -35,6 +37,8 @@ interface SessionProps {
 
 function Session({ session }: SessionProps) {
   const t = useTranslations()
+  const router = useRouter()
+
   const [startSession] = useMutation(StartSessionDocument, {
     variables: { id: session.id },
     refetchQueries: [
@@ -43,6 +47,7 @@ function Session({ session }: SessionProps) {
       },
     ],
   })
+
   const [deleteSession] = useMutation(DeleteSessionDocument, {
     variables: { id: session.id || '' },
     update(cache) {
@@ -70,7 +75,18 @@ function Session({ session }: SessionProps) {
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
 
-  const router = useRouter()
+  const timeIcon: Record<SessionStatus, IconDefinition> = {
+    [SessionStatus.Prepared]: faCalendarDays,
+    [SessionStatus.Scheduled]: faClock,
+    [SessionStatus.Running]: faPlay,
+    [SessionStatus.Completed]: faCheck,
+  }
+  const timeStamp: Record<SessionStatus, string> = {
+    [SessionStatus.Prepared]: session.createdAt,
+    [SessionStatus.Scheduled]: session.createdAt,
+    [SessionStatus.Running]: session.startedAt,
+    [SessionStatus.Completed]: session.finishedAt,
+  }
 
   return (
     <>
@@ -106,12 +122,8 @@ function Session({ session }: SessionProps) {
                       }}
                       data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faCode} size="sm" />
-                      </Button.Icon>
-                      <Button.Label>
-                        {t('manage.sessions.embeddingEvaluation')}
-                      </Button.Label>
+                      <FontAwesomeIcon icon={faCode} size="sm" />
+                      {t('manage.sessions.embeddingEvaluation')}
                     </Button>
                     <EmbeddingModal
                       key={session.id}
@@ -171,9 +183,12 @@ function Session({ session }: SessionProps) {
                     </div>
                   </Button>
                 )}
-                <div className="flex flex-row items-center text-sm">
-                  <FontAwesomeIcon icon={faCalendarDays} className="mr-1" />
-                  {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
+                <div className="flex flex-row items-center text-sm gap-1">
+                  <FontAwesomeIcon
+                    icon={timeIcon[session.status]}
+                    className="mr-1"
+                  />
+                  {dayjs(timeStamp[session.status]).format('YYYY-MM-DD HH:mm')}
                 </div>
               </div>
             </div>
