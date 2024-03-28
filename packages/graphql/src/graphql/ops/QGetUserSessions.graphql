@@ -8,6 +8,7 @@ query GetUserSessions {
     createdAt
     updatedAt
     startedAt
+    finishedAt
     numOfBlocks
     numOfQuestions
     blocks {
