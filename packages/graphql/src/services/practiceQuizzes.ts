@@ -1353,8 +1353,8 @@ export async function manipulatePracticeQuiz(
   )
 
   const createOrUpdateJSON = {
-    name,
-    displayName: displayName ?? name,
+    name: name.trim(),
+    displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
@@ -1364,7 +1364,7 @@ export async function manipulatePracticeQuiz(
         return {
           type: ElementStackType.PRACTICE_QUIZ,
           order: stack.order,
-          displayName: stack.displayName ?? '',
+          displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
           options: {},
           elements: {

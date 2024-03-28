@@ -33,7 +33,7 @@ export async function loginUserToken(
   ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
-    where: { shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (!user) {
@@ -113,10 +113,10 @@ export async function loginParticipant(
   ctx: Context
 ) {
   const participantWithUsername = await ctx.prisma.participant.findUnique({
-    where: { username: usernameOrEmail },
+    where: { username: usernameOrEmail.trim() },
   })
   const participantWithEmail = await ctx.prisma.participant.findUnique({
-    where: { email: usernameOrEmail },
+    where: { email: usernameOrEmail.trim() },
   })
 
   const participant = participantWithUsername || participantWithEmail
@@ -268,7 +268,7 @@ export async function createParticipantAccount(
       ) as { email: string; sub: string }
       // check if the username is already taken by another user
       const existingUser = await ctx.prisma.participant.findUnique({
-        where: { username },
+        where: { username: username.trim() },
       })
 
       if (existingUser) {
@@ -282,7 +282,7 @@ export async function createParticipantAccount(
           participant: {
             create: {
               email: ltiData.email,
-              username,
+              username: username.trim(),
               password: await bcrypt.hash(password, 10),
               isEmailValid: true,
               isProfilePublic,
@@ -316,7 +316,7 @@ export async function createParticipantAccount(
     const participant = await ctx.prisma.participant.create({
       data: {
         email,
-        username,
+        username: username.trim(),
         password: await bcrypt.hash(password, 10),
         isEmailValid: false,
         isProfilePublic,
@@ -406,7 +406,7 @@ export async function checkParticipantNameAvailable(
   ctx: Context
 ) {
   const participant = await ctx.prisma.participant.findUnique({
-    where: { username },
+    where: { username: username.trim() },
   })
 
   if (!participant || participant.id === ctx.user?.sub) return true
@@ -419,7 +419,7 @@ export async function checkShortnameAvailable(
   ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (!user || user.id === ctx.user?.sub) return true
@@ -441,7 +441,7 @@ export async function createUserLogin(
   const login = await ctx.prisma.userLogin.create({
     data: {
       password: hashedPassword,
-      name,
+      name: name.trim(),
       // scope,
       // TODO: allow creation of other access levels once auth is handled granularly
       scope: UserLoginScope.FULL_ACCESS,
@@ -482,7 +482,7 @@ export async function changeShortname(
 ) {
   // check if the shortname is already taken
   const existingUser = await ctx.prisma.user.findUnique({
-    where: { shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -496,7 +496,7 @@ export async function changeShortname(
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
-    data: { shortname },
+    data: { shortname: shortname.trim() },
   })
 
   return user
@@ -523,7 +523,7 @@ export async function changeInitialSettings(
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
-    where: { shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -541,7 +541,7 @@ export async function changeInitialSettings(
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
     data: {
-      shortname,
+      shortname: shortname.trim(),
       locale,
       sendProjectUpdates: sendUpdates,
       firstLogin: false,

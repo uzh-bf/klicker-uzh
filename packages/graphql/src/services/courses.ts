@@ -410,8 +410,8 @@ export async function createCourse(
 
   const course = await ctx.prisma.course.create({
     data: {
-      name: name,
-      displayName: displayName,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description: description,
       color: color ?? '#CCD5ED',
       startDate: startDate,
