@@ -2,6 +2,7 @@ import {
   faCalendar,
   faCheck,
   faExternalLink,
+  faSave,
   faSync,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -40,9 +41,10 @@ function SessionBlock({
   const [totalDuration, setTotalDuration] = useState<number | undefined | null>(
     undefined
   )
+  const [inCooldown, setInCooldown] = useState<boolean>(false)
 
   // cooldown duration in seconds
-  const cooldownDuration = 20
+  const cooldownDuration = 15
 
   // compute the time until expiration (student-visible time) and
   // the time until the block is closed (including cooldown)
@@ -100,12 +102,18 @@ function SessionBlock({
             totalDuration={totalDuration ?? 0}
             terminalPercentage={100}
             onUpdate={(timeRemaining) => {
-              console.log('time remaining:', timeRemaining)
-              console.log('total duration:', totalDuration)
               if (timeRemaining < 1.5) {
                 setTimerColor('#FFA500')
                 setEndTime(closureTime)
                 setTotalDuration(cooldownDuration)
+                setInCooldown(true)
+              }
+            }}
+            formatter={(value) => {
+              if (inCooldown && value !== 0) {
+                return <FontAwesomeIcon icon={faSave} />
+              } else {
+                return value
               }
             }}
           />
