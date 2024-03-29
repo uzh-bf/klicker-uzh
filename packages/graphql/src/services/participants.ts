@@ -46,7 +46,7 @@ export async function updateParticipantProfile(
         data: {
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-          email,
+          email: email?.toLowerCase(),
           password: hashedPassword,
           username: username?.trim() ?? undefined,
         },
@@ -61,8 +61,8 @@ export async function updateParticipantProfile(
     data: {
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-      email: email ?? undefined,
-      username: username?.trim() ?? undefined,
+      email: email?.toLowerCase(),
+      username: username?.trim(),
     },
   })
 

@@ -83,7 +83,7 @@ function CreateAccountForm({
     <Formik
       isInitialValid={false}
       initialValues={{
-        email: initialEmail ?? '',
+        email: initialEmail?.toLowerCase() ?? '',
         username: initialUsername,
         password: '',
         passwordRepetition: '',

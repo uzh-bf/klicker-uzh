@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.22...v3.1.0-rc.23) (2024-03-29)
+
+
+### Bug Fixes
+
+* ensure that participant emails are always converted to lower case ([#4083](https://github.com/uzh-bf/klicker-uzh/issues/4083)) ([cfd4e6b](https://github.com/uzh-bf/klicker-uzh/commit/cfd4e6b162addcc9e5e32ce5931f28223e5ae7f4))
+
+## [3.1.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.21...v3.1.0-rc.22) (2024-03-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that live quizzes are sorted correctly ([#4080](https://github.com/uzh-bf/klicker-uzh/issues/4080)) ([5eddace](https://github.com/uzh-bf/klicker-uzh/commit/5eddace4569250c08fd6d0ff56a5f2b087cf1032))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add cooldown period to countodwn on lecturer cockpit ([#4081](https://github.com/uzh-bf/klicker-uzh/issues/4081)) ([30eb88f](https://github.com/uzh-bf/klicker-uzh/commit/30eb88f823fac72e0eb14cf64f5b6510d9b20f30))
+
 ## [3.1.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.20...v3.1.0-rc.21) (2024-03-22)
 
 

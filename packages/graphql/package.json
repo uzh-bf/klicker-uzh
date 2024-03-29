@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.1.0-rc.21",
+  "version": "3.1.0-rc.23",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

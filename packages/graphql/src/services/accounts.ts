@@ -116,7 +116,7 @@ export async function loginParticipant(
     where: { username: usernameOrEmail.trim() },
   })
   const participantWithEmail = await ctx.prisma.participant.findUnique({
-    where: { email: usernameOrEmail.trim() },
+    where: { email: usernameOrEmail.trim().toLowerCase() },
   })
 
   const participant = participantWithUsername || participantWithEmail
@@ -281,7 +281,7 @@ export async function createParticipantAccount(
           ssoId: ltiData.sub,
           participant: {
             create: {
-              email: ltiData.email,
+              email: ltiData.email.toLowerCase(),
               username: username.trim(),
               password: await bcrypt.hash(password, 10),
               isEmailValid: true,
