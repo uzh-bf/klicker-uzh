@@ -147,7 +147,7 @@ function JoinCourse({
               handleSubmit={async (values) => {
                 await createParticipantAccount({
                   variables: {
-                    email: values.email.trim(),
+                    email: values.email.trim().toLowerCase(),
                     username: values.username.trim(),
                     password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
