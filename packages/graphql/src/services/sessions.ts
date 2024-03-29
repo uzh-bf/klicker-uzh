@@ -99,8 +99,8 @@ export async function createSession(
 
   const session = await ctx.prisma.liveSession.create({
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
       isGamificationEnabled,
@@ -241,8 +241,8 @@ export async function editSession(
   const session = await ctx.prisma.liveSession.update({
     where: { id },
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
       isGamificationEnabled: isGamificationEnabled,
@@ -1451,7 +1451,7 @@ export async function getRunningSessions(
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
-      shortname,
+      shortname: shortname.trim(),
     },
     include: {
       sessions: {

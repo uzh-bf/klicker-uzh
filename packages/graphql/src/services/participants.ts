@@ -30,7 +30,7 @@ export async function updateParticipantProfile(
   // check that username corresponds to no other participant
   if (username) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: { username },
+      where: { username: username.trim() },
     })
 
     if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
@@ -48,7 +48,7 @@ export async function updateParticipantProfile(
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
           email: email?.toLowerCase(),
           password: hashedPassword,
-          username: username ?? undefined,
+          username: username?.trim() ?? undefined,
         },
       })
     } else {
@@ -62,7 +62,7 @@ export async function updateParticipantProfile(
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
       email: email?.toLowerCase(),
-      username: username ?? undefined,
+      username: username?.trim(),
     },
   })
 
