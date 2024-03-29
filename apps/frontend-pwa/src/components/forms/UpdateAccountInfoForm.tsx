@@ -105,7 +105,7 @@ function UpdateAccountInfoForm({
             password:
               values.password === '' ? undefined : values.password.trim(),
             username: values.username.trim(),
-            email: values.email,
+            email: values.email.toLowerCase(),
           },
         })
 
