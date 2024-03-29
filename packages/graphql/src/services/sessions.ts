@@ -1451,7 +1451,7 @@ export async function getRunningSessions(
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
-      shortname,
+      shortname: shortname.trim(),
     },
     include: {
       sessions: {

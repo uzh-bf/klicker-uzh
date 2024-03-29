@@ -315,7 +315,7 @@ export async function createParticipantAccount(
   try {
     const participant = await ctx.prisma.participant.create({
       data: {
-        email,
+        email: email.trim().toLowerCase(),
         username: username.trim(),
         password: await bcrypt.hash(password, 10),
         isEmailValid: false,

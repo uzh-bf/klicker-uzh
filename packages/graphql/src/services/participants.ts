@@ -30,7 +30,7 @@ export async function updateParticipantProfile(
   // check that username corresponds to no other participant
   if (username) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: { username },
+      where: { username: username.trim() },
     })
 
     if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
