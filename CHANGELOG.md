@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.23...v3.1.0-rc.24) (2024-03-29)
+
+
+### Bug Fixes
+
+* ensure that user inputs are properly trimmed ([#4082](https://github.com/uzh-bf/klicker-uzh/issues/4082)) ([29756d5](https://github.com/uzh-bf/klicker-uzh/commit/29756d58417bbf305cbcf5f5e4c37b43551afd6f))
+
 ## [3.1.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.22...v3.1.0-rc.23) (2024-03-29)
 
 
