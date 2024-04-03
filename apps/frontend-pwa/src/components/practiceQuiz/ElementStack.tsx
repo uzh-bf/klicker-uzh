@@ -14,7 +14,6 @@ import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStud
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/practiceQuiz/DynamicMarkdown'
 import Bookmark from './Bookmark'
@@ -54,7 +53,6 @@ function ElementStack({
   hideBookmark = false,
 }: ElementStackProps) {
   const t = useTranslations()
-  const router = useRouter()
 
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
 
@@ -69,10 +67,11 @@ function ElementStack({
 
   const showMarkAsRead = useMemo(() => {
     if (
-      Object.values(studentResponse).some(
-        (response) =>
+      Object.entries(studentResponse).some(
+        ([key, response]) =>
           response.type === ElementType.Content &&
-          typeof response.response === 'undefined'
+          typeof response.response === 'undefined' &&
+          !stackStorage?.[parseInt(key)]?.response
       )
     ) {
       return true
