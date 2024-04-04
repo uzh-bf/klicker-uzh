@@ -18,6 +18,7 @@ import {
   SessionBlock,
   SessionStatus,
   Session as SessionType,
+  SoftDeleteLiveSessionDocument,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -49,7 +50,7 @@ function Session({ session }: SessionProps) {
   })
 
   const [deleteSession] = useMutation(DeleteSessionDocument, {
-    variables: { id: session.id || '' },
+    variables: { id: session.id },
     update(cache) {
       const data = cache.readQuery({
         query: GetUserSessionsDocument,
@@ -70,10 +71,33 @@ function Session({ session }: SessionProps) {
     },
   })
 
+  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
+    variables: { id: session.id },
+    update(cache) {
+      const data = cache.readQuery({
+        query: GetUserSessionsDocument,
+      })
+      cache.writeQuery({
+        query: GetUserSessionsDocument,
+        data: {
+          userSessions:
+            data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
+        },
+      })
+    },
+    optimisticResponse: {
+      softDeleteLiveSession: {
+        __typename: 'Session',
+        id: session.id,
+      },
+    },
+  })
+
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
+  const [softDeletionModal, setSoftDeletionModal] = useState<boolean>(false)
 
   const timeIcon: Record<SessionStatus, IconDefinition> = {
     [SessionStatus.Prepared]: faCalendarDays,
@@ -262,6 +286,22 @@ function Session({ session }: SessionProps) {
                   </Button>
                 </>
               )}
+              {SessionStatus.Completed === session.status && (
+                <Button
+                  className={{
+                    root: 'border-red-600 text-sm py-1 px-3',
+                  }}
+                  onClick={() => setSoftDeletionModal(true)}
+                  data={{ cy: `delete-past-session-${session.name}` }}
+                >
+                  <Button.Icon className={{ root: 'text-red-400' }}>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {t('manage.sessions.deleteSession')}
+                  </Button.Label>
+                </Button>
+              )}
             </div>
           }
         >
@@ -309,6 +349,14 @@ function Session({ session }: SessionProps) {
         title={session.name}
         open={deletionModal}
         setOpen={setDeletionModal}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+      />
+      <LiveSessionDeletionModal
+        deleteSession={softDeleteLiveSession}
+        message={t('manage.sessions.pastLiveQuizDeletionHint')}
+        title={session.name}
+        open={softDeletionModal}
+        setOpen={setSoftDeletionModal}
       />
     </>
   )

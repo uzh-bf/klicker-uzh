@@ -1,9 +1,10 @@
-import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface LiveSessionDeletionModalProps {
   title: string
+  message: string
   deleteSession: () => Promise<any>
   open: boolean
   setOpen: (value: boolean) => void
@@ -11,12 +12,12 @@ interface LiveSessionDeletionModalProps {
 
 function LiveSessionDeletionModal({
   title,
+  message,
   deleteSession,
   open,
   setOpen,
 }: LiveSessionDeletionModalProps) {
   const t = useTranslations()
-  // TODO: implement more efficiently with working update instead of expensive refetch
 
   return (
     <Modal
@@ -45,17 +46,22 @@ function LiveSessionDeletionModal({
       onClose={(): void => setOpen(false)}
       open={open}
       hideCloseButton={true}
-      className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+      title={t('manage.sessions.deleteLiveQuiz')}
+      className={{
+        content: 'w-[40rem] min-h-max h-max self-center pt-0',
+        title: 'text-xl',
+      }}
     >
       <div>
-        <H2>{t('manage.sessions.deleteLiveQuiz')}</H2>
         <div>{t('manage.sessions.confirmLiveQuizDeletion')}</div>
-        <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
-          <H3>{title}</H3>
-        </div>
-        <div className="mt-6 mb-2 text-sm italic">
-          {t('manage.sessions.liveQuizDeletionHint')}
-        </div>
+        <H3
+          className={{
+            root: 'p-2 mt-1 border border-solid rounded border-uzh-grey-40',
+          }}
+        >
+          {title}
+        </H3>
+        <div className="mt-4 text-sm italic">{message}</div>
       </div>
     </Modal>
   )

@@ -1,0 +1,5 @@
+mutation SoftDeleteLiveSession($id: String!) {
+  softDeleteLiveSession(id: $id) {
+    id
+  }
+}
