@@ -81,9 +81,10 @@ function TagList({
         activeTags.length > 0 ||
         activeType ||
         sampleSolution ||
-        answerFeedbacks
+        answerFeedbacks ||
+        showUntagged
       ),
-    [activeTags, activeType, sampleSolution, answerFeedbacks]
+    [activeTags, activeType, sampleSolution, answerFeedbacks, showUntagged]
   )
 
   return (
