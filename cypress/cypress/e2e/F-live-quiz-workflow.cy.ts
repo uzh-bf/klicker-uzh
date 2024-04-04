@@ -407,6 +407,8 @@ describe('Different live-quiz workflows', () => {
 
     // click through blocks and end session
     cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // open block
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click() // close block
