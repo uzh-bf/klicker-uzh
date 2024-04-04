@@ -26,7 +26,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
   })
 
-  it('creates a session with one block', () => {
+  it('creates a session with one block and deletes it', () => {
     const questionTitle = uuid()
     const question = uuid()
     const sessionName = uuid()
@@ -268,7 +268,7 @@ describe('Different live-quiz workflows', () => {
     //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
   })
 
-  it('creates a live quiz without questions and tests the feedback mechanisms', () => {
+  it('creates a live quiz without questions and tests the feedback mechanisms and deletes the completed live session', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
@@ -414,6 +414,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click() // end session
+
+    // delete past session
     cy.findByText(sessionName).should('exist')
     cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
     cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
