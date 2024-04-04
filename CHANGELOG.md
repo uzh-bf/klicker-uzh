@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.25...v3.1.0-rc.26) (2024-04-04)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that cache is ignored on participant fetch after login ([#4086](https://github.com/uzh-bf/klicker-uzh/issues/4086)) ([5d563d9](https://github.com/uzh-bf/klicker-uzh/commit/5d563d9d47ab5249bc7b562f8512a6ae47df7122))
+
 ## [3.1.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.24...v3.1.0-rc.25) (2024-04-04)
 
 
