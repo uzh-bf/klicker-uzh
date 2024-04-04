@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.24...v3.1.0-rc.25) (2024-04-04)
+
+
+### Features
+
+* add possibiliy to delete past live quizzes (soft deletion) ([#4087](https://github.com/uzh-bf/klicker-uzh/issues/4087)) ([2ced494](https://github.com/uzh-bf/klicker-uzh/commit/2ced4948c3232c7c5cb982fa4dee6bc45629c2ce))
+* show participant count on blocks of live quiz ([#4088](https://github.com/uzh-bf/klicker-uzh/issues/4088)) ([d047a33](https://github.com/uzh-bf/klicker-uzh/commit/d047a335ed4ad926c282277f1d34e211a369089b))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that completed content element stacks can be skipped ([#4084](https://github.com/uzh-bf/klicker-uzh/issues/4084)) ([1b3cc39](https://github.com/uzh-bf/klicker-uzh/commit/1b3cc399f25d4b779fa15f1576dac14de4f2cfcd))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to filter for untagged questions ([#4085](https://github.com/uzh-bf/klicker-uzh/issues/4085)) ([4b8b2b2](https://github.com/uzh-bf/klicker-uzh/commit/4b8b2b2c1e71329098fe35ae30998325879105ac))
+
+
+### Refactors
+
+* **apps/frontend-pwa:** replace dynamic markdown component through shared implementation ([f3e3bb1](https://github.com/uzh-bf/klicker-uzh/commit/f3e3bb10ccbed39cfbc80347f3c0ce0b8e240f74))
+* combine deletion modals to single component ([#4089](https://github.com/uzh-bf/klicker-uzh/issues/4089)) ([97f62ac](https://github.com/uzh-bf/klicker-uzh/commit/97f62acc5d985813245ca5c952b19e1341b8dc17))
+
 ## [3.1.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.23...v3.1.0-rc.24) (2024-03-29)
 
 
