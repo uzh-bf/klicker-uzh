@@ -11,11 +11,19 @@ interface Props {
   tag: Tag
   handleTagClick: (tag: string) => void
   active: boolean
+  isStatic?: boolean
   onMoveUp?: () => void
   onMoveDown?: () => void
 }
 
-function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
+function UserTag({
+  tag,
+  handleTagClick,
+  active,
+  isStatic = false,
+  onMoveDown,
+  onMoveUp,
+}: Props) {
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
 
@@ -54,9 +62,11 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
             <TagActions
               tag={tag}
               active={active}
-              setEditMode={setEditMode}
-              isDeletionModalOpen={isDeletionModalOpen}
-              setIsDeletionModalOpen={setIsDeletionModalOpen}
+              setEditMode={isStatic ? undefined : setEditMode}
+              isDeletionModalOpen={isStatic ? undefined : isDeletionModalOpen}
+              setIsDeletionModalOpen={
+                isStatic ? undefined : setIsDeletionModalOpen
+              }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
             />

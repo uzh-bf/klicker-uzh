@@ -168,6 +168,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
@@ -184,6 +185,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
@@ -378,7 +380,9 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
-                  handleTagClick={(tag: string) => handleTagClick(tag, false)}
+                  handleTagClick={(tag: string) =>
+                    handleTagClick(tag, false, false)
+                  }
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {
                       if (prev[questionId]) {

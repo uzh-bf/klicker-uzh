@@ -3,6 +3,7 @@ import { useReducer } from 'react'
 
 export type QuestionPoolFilters = {
   archive: boolean
+  untagged: boolean
   tags: string[]
   name: string | null
   type?: ElementType
@@ -44,6 +45,7 @@ type ReducerAction = {
   type: QuestionPoolReducerActionType
   tagName?: ElementType | string
   isQuestionTag?: boolean
+  isUntagged?: boolean
   newValue?: boolean
   name?: string
   by?: SortyByType
@@ -53,6 +55,7 @@ const INITIAL_STATE: FilterSortType = {
   filters: {
     type: undefined,
     archive: false,
+    untagged: false,
     tags: [],
     name: null,
     sampleSolution: false,
@@ -67,6 +70,18 @@ const INITIAL_STATE: FilterSortType = {
 function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
   switch (action.type) {
     case QuestionPoolReducerActionType.TAG_CLICK:
+      // if the changed tag is untagged
+      if (action.isUntagged) {
+        return {
+          ...state,
+          filters: {
+            ...state.filters,
+            tags: [],
+            untagged: !state.filters.untagged,
+          },
+        }
+      }
+
       // if the changed tag is a question type tag
       if (action.isQuestionTag) {
         if (state.filters.type === action.tagName) {
@@ -99,6 +114,7 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         filters: {
           ...state.filters,
           tags: [...state.filters.tags, action.tagName!],
+          untagged: false,
         },
       }
 
@@ -191,11 +207,16 @@ function useSortingAndFiltering() {
         type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
         newValue: !state.filters.archive,
       }),
-    handleTagClick: (tagName: string, isQuestionTag: boolean): void =>
+    handleTagClick: (
+      tagName: string,
+      isQuestionTag: boolean,
+      isUntagged: boolean
+    ): void =>
       dispatch({
         type: QuestionPoolReducerActionType.TAG_CLICK,
         tagName,
         isQuestionTag,
+        isUntagged,
       }),
     toggleSampleSolutionFilter: (): void =>
       dispatch({
