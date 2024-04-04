@@ -927,6 +927,7 @@ type SessionBlock {
   expiresAt: Date
   id: Int!
   instances: [QuestionInstance!]
+  numOfParticipants: Int
   order: Int
   randomSelection: Int
   status: SessionBlockStatus!
