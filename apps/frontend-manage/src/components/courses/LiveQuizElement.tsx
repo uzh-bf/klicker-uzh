@@ -18,6 +18,7 @@ import {
   Session,
   SessionAccessMode,
   SessionStatus,
+  SoftDeleteLiveSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown } from '@uzh-bf/design-system'
@@ -39,7 +40,16 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   const router = useRouter()
 
   const [deletionModal, setDeletionModal] = useState(false)
+  const [softDeletionModal, setSoftDeletionModal] = useState(false)
+
+  // TODO: implement update and optimistic response
   const [deleteSession] = useMutation(DeleteSessionDocument, {
+    variables: { id: session.id || '' },
+    refetchQueries: [GetSingleCourseDocument],
+  })
+
+  // TODO: implement update and optimistic response
+  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
     variables: { id: session.id || '' },
     refetchQueries: [GetSingleCourseDocument],
   })
@@ -113,7 +123,30 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
               <RunningLiveQuizLink liveQuiz={session} />
             )}
             {session.status === SessionStatus.Completed && (
-              <EvaluationLinkLiveQuiz liveQuiz={session} />
+              <>
+                <EvaluationLinkLiveQuiz liveQuiz={session} />
+                <Dropdown
+                  data={{ cy: `live-quiz-actions-${session.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <div className="flex flex-row items-center text-red-600 gap-2 cursor-pointer">
+                          <FontAwesomeIcon icon={faTrashCan} />
+                          <div>{t('manage.sessions.deleteSession')}</div>
+                        </div>
+                      ),
+                      onClick: () => setSoftDeletionModal(true),
+                      data: { cy: `delete-past-live-quiz-${session.name}` },
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+              </>
             )}
             <div>{statusMap[session.status || SessionStatus.Prepared]}</div>
           </div>
@@ -150,6 +183,14 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         title={session.name || ''}
         open={deletionModal}
         setOpen={setDeletionModal}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+      />
+      <LiveSessionDeletionModal
+        deleteSession={softDeleteLiveSession}
+        title={session.name || ''}
+        open={softDeletionModal}
+        setOpen={setSoftDeletionModal}
+        message={t('manage.sessions.pastLiveQuizDeletionHint')}
       />
     </div>
   )

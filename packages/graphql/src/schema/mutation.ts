@@ -908,6 +908,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      softDeleteLiveSession: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.softDeleteLiveSession(args, ctx)
+        },
+      }),
+
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,

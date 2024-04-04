@@ -309,7 +309,7 @@ function SessionTimeline({
                   handleEndSession()
                 }
               }}
-              data={{ cy: 'interaction-first-block' }}
+              data={{ cy: 'next-block-timeline' }}
             >
               <Button.Label>
                 {buttonState === 'blockActive' && inCooldown

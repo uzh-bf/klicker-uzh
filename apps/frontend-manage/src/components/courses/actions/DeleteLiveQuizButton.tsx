@@ -41,6 +41,7 @@ function DeleteLiveQuizButton({ liveQuiz }: DeleteLiveQuizButtonProps) {
         title={liveQuiz.name || ''}
         open={deletionModal}
         setOpen={setDeletionModal}
+        message={t('manage.sessions.liveQuizDeletionHint')}
       />
     </>
   )
