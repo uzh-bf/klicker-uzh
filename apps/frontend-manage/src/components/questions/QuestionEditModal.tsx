@@ -1484,7 +1484,12 @@ function QuestionEditModal({
                 {values.explanation && (
                   <div className="mt-4">
                     <H3>{t('shared.generic.explanation')}</H3>
-                    <Markdown content={values.explanation} />
+                    <Markdown
+                      className={{
+                        root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                      }}
+                      content={values.explanation}
+                    />
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(values.type) &&
@@ -1497,7 +1502,12 @@ function QuestionEditModal({
                           className="pt-1 pb-1 border-b last:border-b-0"
                         >
                           {choice.feedback ? (
-                            <Markdown content={choice.feedback} />
+                            <Markdown
+                              className={{
+                                root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                              }}
+                              content={choice.feedback}
+                            />
                           ) : (
                             t('manage.questionForms.noFeedbackDefined')
                           )}
