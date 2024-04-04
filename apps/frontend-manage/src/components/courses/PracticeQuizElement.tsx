@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -7,7 +8,12 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PracticeQuiz, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  DeletePracticeQuizDocument,
+  GetSingleCourseDocument,
+  PracticeQuiz,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -17,7 +23,7 @@ import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
-import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
+import DeletionModal from './modals/DeletionModal'
 
 interface PracticeQuizElementProps {
   practiceQuiz: Partial<PracticeQuiz>
@@ -32,6 +38,13 @@ function PracticeQuizElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+
+  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
+    variables: { id: practiceQuiz.id! },
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
 
@@ -180,11 +193,16 @@ function PracticeQuizElement({
       >
         {t('manage.course.linkPracticeQuizCopied')}
       </Toast>
-      <PracticeQuizDeletionModal
-        elementId={practiceQuiz.id!}
-        title={practiceQuiz.name!}
+      <DeletionModal
+        title={t('manage.course.deletePracticeQuiz')}
+        description={t('manage.course.confirmDeletionPracticeQuiz')}
+        elementName={practiceQuiz.name!}
+        message={t('manage.course.hintDeletionPracticeQuiz')}
+        deleteElement={deletePracticeQuiz}
         open={deletionModal}
         setOpen={setDeletionModal}
+        primaryData={{ cy: 'confirm-delete-practice-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-practice-quiz' }}
       />
     </div>
   )

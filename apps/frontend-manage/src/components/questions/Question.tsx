@@ -260,7 +260,9 @@ function Question({
             onClose={(): void => setIsDeletionModalOpen(false)}
             open={isDeletionModalOpen}
             hideCloseButton={true}
-            className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+            className={{
+              content: 'w-[40rem] min-h-max h-max self-center pt-0',
+            }}
           >
             <div>
               <H2>{t('manage.questionPool.deleteQuestion')}</H2>
@@ -271,7 +273,7 @@ function Question({
                 </H3>
                 <div>{content}</div>
               </div>
-              <div className="mt-6 mb-2 text-sm italic">
+              <div className="mt-4 mb-2 text-sm italic">
                 {t('manage.questionPool.noQuestionRecovery')}
               </div>
             </div>
