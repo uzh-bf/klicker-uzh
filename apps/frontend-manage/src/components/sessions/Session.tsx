@@ -71,7 +71,7 @@ function Session({ session }: SessionProps) {
     },
   })
 
-  const [softDeleteLiveQuiz] = useMutation(SoftDeleteLiveSessionDocument, {
+  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
     variables: { id: session.id },
     update(cache) {
       const data = cache.readQuery({
@@ -352,7 +352,7 @@ function Session({ session }: SessionProps) {
         message={t('manage.sessions.liveQuizDeletionHint')}
       />
       <LiveSessionDeletionModal
-        deleteSession={softDeleteLiveQuiz}
+        deleteSession={softDeleteLiveSession}
         message={t('manage.sessions.pastLiveQuizDeletionHint')}
         title={session.name}
         open={softDeletionModal}

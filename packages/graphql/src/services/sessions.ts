@@ -2180,6 +2180,7 @@ export async function softDeleteLiveSession(
     where: {
       id,
       ownerId: ctx.user.sub,
+      status: SessionStatus.COMPLETED,
     },
     data: {
       isDeleted: true,

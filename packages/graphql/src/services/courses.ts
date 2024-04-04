@@ -490,6 +490,9 @@ export async function getCourseData(
     where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           blocks: {
             include: {
