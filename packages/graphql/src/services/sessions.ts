@@ -1500,6 +1500,9 @@ export async function getUserSessions(ctx: ContextWithUser) {
     },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -2167,4 +2170,26 @@ export async function deleteSession(
 
     throw e
   }
+}
+
+export async function softDeleteLiveSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedLiveSession = await ctx.prisma.liveSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isDeleted: true,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id,
+  })
+
+  return deletedLiveSession
 }
