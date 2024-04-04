@@ -104,9 +104,9 @@ describe('Different live-quiz workflows', () => {
 
     // start session and then skip through the blocks
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
-    cy.get('[data-cy="interaction-first-block"]').click()
-    cy.get('[data-cy="interaction-first-block"]').click()
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
   })
 
   it('shows a possible workflow of running a session and answering questions', () => {
@@ -184,7 +184,7 @@ describe('Different live-quiz workflows', () => {
 
     // start session and first block
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
 
     // login student and answer first question
     cy.loginStudent()
@@ -214,10 +214,10 @@ describe('Different live-quiz workflows', () => {
     cy.wait(1000)
 
     // close first block
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
     // start next block
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
 
     // login student and answer first question
@@ -239,7 +239,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="sessions"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.wait(1000)
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
 
     cy.url().then((url) => {
       const sessionIdEvaluation = url.split('/')[4]
@@ -396,5 +396,19 @@ describe('Different live-quiz workflows', () => {
     cy.loginStudent()
     cy.findByText(sessionName).click()
     cy.findByText(feedback1).should('not.exist')
+
+    // click through blocks and end session
+    cy.loginLecturer()
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click() // end session
+    cy.findByText(sessionName).should('exist')
+    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.findByText(sessionName).should('not.exist')
   })
 })
