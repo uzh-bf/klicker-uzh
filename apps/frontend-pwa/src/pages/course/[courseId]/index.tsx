@@ -12,6 +12,7 @@ import {
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import {
@@ -28,7 +29,6 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import DynamicMarkdown from 'src/components/practiceQuiz/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import Tabs from '../../../components/common/Tabs'

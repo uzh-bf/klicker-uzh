@@ -10,12 +10,12 @@ import StudentElement, {
   ElementChoicesType,
   StudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import DynamicMarkdown from 'src/components/practiceQuiz/DynamicMarkdown'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 
