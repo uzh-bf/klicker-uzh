@@ -29,7 +29,7 @@ import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
-import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
+import DeletionModal from './modals/DeletionModal'
 
 interface LiveQuizElementProps {
   session: Partial<Session>
@@ -178,19 +178,27 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
           />
         )}
       </div>
-      <LiveSessionDeletionModal
-        deleteSession={deleteSession}
-        title={session.name || ''}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+        deleteElement={deleteSession}
         open={deletionModal}
         setOpen={setDeletionModal}
-        message={t('manage.sessions.liveQuizDeletionHint')}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
-      <LiveSessionDeletionModal
-        deleteSession={softDeleteLiveSession}
-        title={session.name || ''}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
+        message={t('manage.sessions.pastLiveQuizDeletionHint')}
+        deleteElement={softDeleteLiveSession}
         open={softDeletionModal}
         setOpen={setSoftDeletionModal}
-        message={t('manage.sessions.pastLiveQuizDeletionHint')}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
     </div>
   )

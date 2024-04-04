@@ -9,7 +9,7 @@ import {
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import LiveSessionDeletionModal from '../modals/LiveSessionDeletionModal'
+import DeletionModal from '../modals/DeletionModal'
 
 interface DeleteLiveQuizButtonProps {
   liveQuiz: Partial<Session>
@@ -36,12 +36,16 @@ function DeleteLiveQuizButton({ liveQuiz }: DeleteLiveQuizButtonProps) {
         </Button.Icon>
         <Button.Label>{t('manage.sessions.deleteSession')}</Button.Label>
       </Button>
-      <LiveSessionDeletionModal
-        deleteSession={deleteSession}
-        title={liveQuiz.name || ''}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={liveQuiz.name || ''}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+        deleteElement={deleteSession}
         open={deletionModal}
         setOpen={setDeletionModal}
-        message={t('manage.sessions.liveQuizDeletionHint')}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
     </>
   )
