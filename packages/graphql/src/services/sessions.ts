@@ -478,8 +478,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       }
     })
 
-    console.log(participants)
-
     // sessionXP should always be around as soon as there are logged-in participants (check first)
     // sessionLB only for sessions that are compatible with points collection (check second)
     if (sessionXP) {
@@ -586,9 +584,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           return participant
         })
       }
-
-      console.log(existingParticipants)
-      console.log(newAchievements)
 
       // update xp of existing participants
       promises = promises.concat(
@@ -1606,7 +1601,11 @@ export async function getCockpitSession(
   const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
-      activeBlock: true,
+      activeBlock: {
+        include: {
+          instances: true,
+        },
+      },
       blocks: {
         orderBy: {
           order: 'asc',
@@ -1633,6 +1632,35 @@ export async function getCockpitSession(
     return null
   }
 
+  // number of participants per block
+  const blockParticipants = session.blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.instances.reduce(
+        (instanceAcc, instance) => min(instanceAcc, instance.participants),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  if (session.activeBlock && session.activeBlock.id) {
+    // TODO: improve typing
+    const activeInstanceIds = session.activeBlock?.instances.map(
+      (instance) => instance.id as number
+    )
+    const redisMulti = ctx.redisExec.multi()
+    activeInstanceIds?.forEach((instanceId) => {
+      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
+    })
+    const cacheContent = await redisMulti.exec()
+    const activeBlockParticipants = cacheContent
+      ?.map(([_, result]) => parseInt(result?.participants as string))
+      .reduce((acc, val) => min(acc, val), 100000)
+    blockParticipants[session.activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id]
+  }
+
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
@@ -1640,6 +1668,7 @@ export async function getCockpitSession(
     blocks: session.blocks.map((block) => {
       return {
         ...block,
+        numOfParticipants: blockParticipants[block.id],
         instances: block.instances.map((instance) => {
           const questionData = instance.questionData
           if (

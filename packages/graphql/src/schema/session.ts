@@ -98,12 +98,14 @@ export const Session = SessionRef.implement({
 })
 
 export interface ISessionBlock extends DB.SessionBlock {
+  numOfParticipants?: number
   instances?: IQuestionInstance[]
 }
 export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
 export const SessionBlock = SessionBlockRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+    numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
 
     status: t.expose('status', { type: SessionBlockStatus }),
     order: t.exposeInt('order', { nullable: true }),

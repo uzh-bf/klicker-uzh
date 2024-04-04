@@ -4,6 +4,7 @@ import {
   faExternalLink,
   faSave,
   faSync,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -94,7 +95,21 @@ function SessionBlock({
         <div>
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
-        <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+        {typeof block.numOfParticipants !== 'undefined' &&
+        block.numOfParticipants !== null ? (
+          <div className="flex flex-row items-center">
+            <span>
+              {`${t('manage.cockpit.blockN', {
+                number: block.order! + 1,
+              })} (${block.numOfParticipants}`}
+            </span>
+            <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
+            <span>{')'}</span>
+          </div>
+        ) : (
+          <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+        )}
+
         {block.timeLimit && (
           <CycleCountdown
             key={`${block.id}-${endTime}-${totalDuration}`}
