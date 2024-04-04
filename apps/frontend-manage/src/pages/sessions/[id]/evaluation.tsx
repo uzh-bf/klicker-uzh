@@ -2,10 +2,10 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Block,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
+  SessionBlock,
   SessionBlockStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -28,7 +28,6 @@ import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
 import EvaluationControlBar from '../../../components/sessions/evaluation/EvaluationControlBar'
 import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
@@ -37,9 +36,10 @@ import {
   TextSizes,
   sizeReducer,
 } from '../../../components/sessions/evaluation/constants'
+import useEvaluationInitialization from '../../../lib/hooks/useEvaluationInitialization'
 
 export type EvaluationTabData = TabData & { ix: number }
-export type EvaluationBlock = Omit<Block, 'tabData'> & {
+export type EvaluationBlock = Omit<SessionBlock, 'tabData'> & {
   tabData: EvaluationTabData[]
 }
 

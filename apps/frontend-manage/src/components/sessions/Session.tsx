@@ -28,7 +28,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import LiveSessionDeletionModal from '../courses/modals/LiveSessionDeletionModal'
+import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import { WizardMode } from './creation/SessionCreation'
 
@@ -344,19 +344,27 @@ function Session({ session }: SessionProps) {
           </div>
         </Collapsible>
       </div>
-      <LiveSessionDeletionModal
-        deleteSession={deleteSession}
-        title={session.name}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+        deleteElement={deleteSession}
         open={deletionModal}
         setOpen={setDeletionModal}
-        message={t('manage.sessions.liveQuizDeletionHint')}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
-      <LiveSessionDeletionModal
-        deleteSession={softDeleteLiveSession}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
         message={t('manage.sessions.pastLiveQuizDeletionHint')}
-        title={session.name}
+        deleteElement={softDeleteLiveSession}
         open={softDeletionModal}
         setOpen={setSoftDeletionModal}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
     </>
   )

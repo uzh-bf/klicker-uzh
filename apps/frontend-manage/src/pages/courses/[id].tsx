@@ -175,6 +175,7 @@ function CourseOverviewPage() {
               >
                 <MicroLearningList
                   microLearnings={course.microLearnings ?? []}
+                  courseId={course.id}
                   userCatalyst={user?.userProfile?.catalyst}
                 />
               </Tabs.TabContent>

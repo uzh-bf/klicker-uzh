@@ -21,7 +21,7 @@ import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationTabs from '../../hooks/useEvaluationTabs'
+import useEvaluationTabs from '../../../lib/hooks/useEvaluationTabs'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,

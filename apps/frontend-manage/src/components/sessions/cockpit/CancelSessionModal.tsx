@@ -11,15 +11,15 @@ import { useRouter } from 'next/router'
 interface CancelSessionModalProps {
   sessionId: string
   title: string
-  isDeletionModalOpen: boolean
-  setIsDeletionModalOpen: (value: boolean) => void
+  isCancellationModalOpen: boolean
+  setIsCancellationModalOpen: (value: boolean) => void
 }
 
 function CancelSessionModal({
   sessionId,
   title,
-  isDeletionModalOpen,
-  setIsDeletionModalOpen,
+  isCancellationModalOpen,
+  setIsCancellationModalOpen,
 }: CancelSessionModalProps) {
   const [cancelSession] = useMutation(CancelSessionDocument, {
     variables: { id: sessionId },
@@ -51,14 +51,14 @@ function CancelSessionModal({
       }
       onSecondaryAction={
         <Button
-          onClick={(): void => setIsDeletionModalOpen(false)}
+          onClick={(): void => setIsCancellationModalOpen(false)}
           data={{ cy: 'abort-cancel-session' }}
         >
           {t('shared.generic.cancel')}
         </Button>
       }
-      onClose={(): void => setIsDeletionModalOpen(false)}
-      open={isDeletionModalOpen}
+      onClose={(): void => setIsCancellationModalOpen(false)}
+      open={isCancellationModalOpen}
       hideCloseButton={true}
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
