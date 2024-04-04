@@ -1,20 +1,10 @@
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
-
-const DynamicMarkdown = dynamic(
-  async () => {
-    const { Markdown } = await import('@klicker-uzh/markdown')
-    return Markdown
-  },
-  {
-    ssr: false,
-  }
-)
 
 function Landing() {
   const t = useTranslations()
