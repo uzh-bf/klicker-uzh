@@ -48,6 +48,12 @@ function TagActions({
         query: GetUserQuestionsDocument,
       },
     ],
+    optimisticResponse: {
+      deleteTag: {
+        id: tag.id,
+        __typename: 'Tag',
+      },
+    },
   })
 
   return (
