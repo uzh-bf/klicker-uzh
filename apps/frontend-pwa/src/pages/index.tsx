@@ -185,7 +185,7 @@ const Index = function () {
 
   if (loading || !data) {
     return (
-      <Layout displayName={t('shared.generic.title')}>
+      <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
       </Layout>
     )
@@ -209,7 +209,7 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName={t('shared.generic.title')}>
+    <Layout key="pwa-home-layout" displayName={t('shared.generic.title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
