@@ -17,7 +17,9 @@ function Login() {
   const router = useRouter()
 
   const [loginParticipant] = useMutation(LoginParticipantDocument)
-  const [fetchSelf] = useLazyQuery(SelfDocument)
+  const [fetchSelf] = useLazyQuery(SelfDocument, {
+    fetchPolicy: 'network-only',
+  })
   const [error, setError] = useState<string>('')
   const [showError, setShowError] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
