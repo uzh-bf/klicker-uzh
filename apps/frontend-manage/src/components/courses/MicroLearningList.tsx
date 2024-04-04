@@ -6,11 +6,13 @@ import MicroLearningElement from './MicroLearningElement'
 interface MicroLearningListProps {
   microLearnings: (Partial<MicroLearning> &
     Pick<MicroLearning, 'id' | 'name'>)[]
+  courseId: string
   userCatalyst?: boolean
 }
 
 function MicroLearningList({
   microLearnings,
+  courseId,
   userCatalyst,
 }: MicroLearningListProps) {
   const t = useTranslations()
@@ -22,6 +24,7 @@ function MicroLearningList({
           {microLearnings.map((microlearning) => (
             <MicroLearningElement
               microLearning={microlearning}
+              courseId={courseId}
               key={microlearning.id}
             />
           ))}
