@@ -758,6 +758,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hideArchived: 'Archiv verstecken',
       elementTypes: 'Elementtypen',
       tags: 'Tags',
+      untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:

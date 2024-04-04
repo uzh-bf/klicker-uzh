@@ -75,6 +75,10 @@ export function filterQuestions(
     )
   }
 
+  if (filters.untagged) {
+    results = results.filter(({ tags }) => tags?.length === 0)
+  }
+
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
     results = results.filter(({ type, tags }): boolean => {

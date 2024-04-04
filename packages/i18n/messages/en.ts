@@ -760,6 +760,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchived: 'Hide archived',
       elementTypes: 'Element types',
       tags: 'Tags',
+      untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
