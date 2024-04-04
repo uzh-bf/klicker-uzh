@@ -1649,7 +1649,7 @@ export async function getCockpitSession(
     const activeInstanceIds = session.activeBlock?.instances.map(
       (instance) => instance.id as number
     )
-    const redisMulti = ctx.redisExec.multi()
+    const redisMulti = ctx.redisExec.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
     })

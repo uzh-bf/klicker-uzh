@@ -89,7 +89,7 @@ function SessionBlock({
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between items-center text-gray-700 font-bold'
+          'flex flex-row justify-between items-center text-gray-700'
         )}
       >
         <div>
@@ -98,13 +98,13 @@ function SessionBlock({
         {typeof block.numOfParticipants !== 'undefined' &&
         block.numOfParticipants !== null ? (
           <div className="flex flex-row items-center">
-            <span>
-              {`${t('manage.cockpit.blockN', {
+            <span className="font-bold">
+              {t('manage.cockpit.blockN', {
                 number: block.order! + 1,
-              })} (${block.numOfParticipants}`}
+              })}
             </span>
+            <span className="ml-1">{` - ${block.numOfParticipants}`}</span>
             <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
-            <span>{')'}</span>
           </div>
         ) : (
           <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
@@ -137,6 +137,7 @@ function SessionBlock({
                 return Math.max(value - 1, 0)
               }
             }}
+            className={{ countdown: 'font-bold' }}
           />
         )}
       </div>
