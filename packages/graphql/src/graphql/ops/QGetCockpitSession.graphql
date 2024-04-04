@@ -18,6 +18,7 @@ query GetCockpitSession($id: String!) {
     }
     blocks {
       id
+      numOfParticipants
       order
       status
       expiresAt

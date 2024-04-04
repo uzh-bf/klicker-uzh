@@ -4,6 +4,7 @@ import {
   faExternalLink,
   faSave,
   faSync,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -88,13 +89,27 @@ function SessionBlock({
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between items-center text-gray-700 font-bold'
+          'flex flex-row justify-between items-center text-gray-700'
         )}
       >
         <div>
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
-        <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+        {typeof block.numOfParticipants !== 'undefined' &&
+        block.numOfParticipants !== null ? (
+          <div className="flex flex-row items-center">
+            <span className="font-bold">
+              {t('manage.cockpit.blockN', {
+                number: block.order! + 1,
+              })}
+            </span>
+            <span className="ml-1">{` - ${block.numOfParticipants}`}</span>
+            <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
+          </div>
+        ) : (
+          <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+        )}
+
         {block.timeLimit && (
           <CycleCountdown
             key={`${block.id}-${endTime}-${totalDuration}`}
@@ -122,6 +137,7 @@ function SessionBlock({
                 return Math.max(value - 1, 0)
               }
             }}
+            className={{ countdown: 'font-bold' }}
           />
         )}
       </div>
