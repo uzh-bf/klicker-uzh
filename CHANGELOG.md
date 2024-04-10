@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.26...v3.1.0-rc.27) (2024-04-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that markdown is properly rendered on element explanation preview ([683033f](https://github.com/uzh-bf/klicker-uzh/commit/683033fcb034ea8ce2cdff6282b07e61813c3762))
+* **packages/markdown:** ensure that empty lines are not removed during markdown parsing ([#4090](https://github.com/uzh-bf/klicker-uzh/issues/4090)) ([1ee5848](https://github.com/uzh-bf/klicker-uzh/commit/1ee58480176187fd7584907c56de6192c247d248))
+
 ## [3.1.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.25...v3.1.0-rc.26) (2024-04-04)
 
 
