@@ -303,9 +303,6 @@ const Index = function () {
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
-                disabled={
-                  !course?.isGamificationEnabled && !course?.description
-                }
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}

@@ -411,6 +411,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to leave the course leaderboard?',
       leaveCourseInformation:
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+      noGamificationOrDescription:
+        'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',

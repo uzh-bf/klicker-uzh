@@ -76,7 +76,12 @@ function CourseOverviewPage() {
         />
       </div>
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-2/3">
+        <div
+          className={twMerge(
+            'w-full',
+            data?.course?.isGamificationEnabled && 'md:w-2/3'
+          )}
+        >
           <div className="md:mr-2">
             <H2>{t('manage.course.courseElements')}</H2>
             <Tabs
