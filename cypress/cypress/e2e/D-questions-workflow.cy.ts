@@ -54,6 +54,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
@@ -103,6 +104,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
@@ -160,6 +162,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
