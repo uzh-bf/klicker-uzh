@@ -54,7 +54,6 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').should('have.value', choice2)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
@@ -69,6 +68,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="move-answer-option-ix-1-down"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-0"]').should('have.value', choice1)
     cy.get('[data-cy="insert-answer-field-1"]').should('have.value', choice2)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -103,7 +103,6 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').should('have.value', choice2)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
@@ -118,6 +117,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="move-answer-option-ix-1-down"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-0"]').should('have.value', choice1)
     cy.get('[data-cy="insert-answer-field-1"]').should('have.value', choice2)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -160,7 +160,6 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4)
     cy.get('[data-cy="insert-answer-field-3"]').should('have.value', choice4)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
@@ -195,6 +194,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field-1"]').should('have.value', choice4)
     cy.get('[data-cy="insert-answer-field-2"]').should('have.value', choice3)
     cy.get('[data-cy="insert-answer-field-3"]').should('have.value', choice1)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
