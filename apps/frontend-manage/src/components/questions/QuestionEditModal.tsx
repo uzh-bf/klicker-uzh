@@ -957,7 +957,7 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy="insert-answer-field"
+                                          data_cy={`insert-answer-field-${index}`}
                                         />
                                       )}
                                     </FastField>
