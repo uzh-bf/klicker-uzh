@@ -69,7 +69,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis
-            maxLength={25}
+            maxLength={50}
             className={{ markdown: 'font-bold text-base' }}
           >
             {session.name || ''}

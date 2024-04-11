@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowDown,
+  faArrowUp,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementDisplayMode,
@@ -892,7 +896,7 @@ function QuestionEditModal({
 
                   {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                     <FieldArray name="options.choices">
-                      {({ push, remove }: FieldArrayRenderProps) => {
+                      {({ push, remove, move }: FieldArrayRenderProps) => {
                         return (
                           <div className="flex flex-col w-full gap-2 pt-2">
                             {values.options?.choices?.map(
@@ -918,29 +922,25 @@ function QuestionEditModal({
                                       ' bg-red-100 border-red-300'
                                   )}
                                 >
-                                  <div className="flex flex-row w-full focus:border-primary-40">
+                                  <div className="flex flex-row w-full items-center focus:border-primary-40">
                                     {/* // TODO: define maximum height of editor if possible */}
                                     <FastField
                                       name={`options.choices.${index}.value`}
                                       questionType={values.type}
                                       shouldUpdate={(next, prev) =>
-                                        next?.formik.values[
-                                          `options.choices.${index}.value`
-                                        ] !==
-                                          prev?.formik.values[
-                                            `options.choices.${index}.value`
-                                          ] ||
+                                        next?.formik.values.options.choices[
+                                          index
+                                        ].value !==
+                                          prev?.formik.values.options.choices[
+                                            index
+                                          ].value ||
                                         next.formik.values.type !==
-                                          prev.formik.values.type ||
-                                        next.formik.values.options?.choices
-                                          .length !==
-                                          prev.formik.values.options?.choices
-                                            .length
+                                          prev.formik.values.type
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
-                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}`}
+                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}-${values.options.choices[index].ix}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -957,7 +957,7 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy="insert-answer-field"
+                                          data_cy={`insert-answer-field-${index}`}
                                         />
                                       )}
                                     </FastField>
@@ -990,6 +990,37 @@ function QuestionEditModal({
                                         </FastField>
                                       </div>
                                     )}
+                                    <div className="ml-2 flex flex-col">
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={index === 0}
+                                        onClick={() => move(index, index - 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-up`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowUp}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={
+                                          index ===
+                                          values.options?.choices.length - 1
+                                        }
+                                        onClick={() => move(index, index + 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-down`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowDown}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                    </div>
                                     <Button
                                       onClick={() => {
                                         // decrement the choice.ix value of all answers after this one
@@ -1004,7 +1035,7 @@ function QuestionEditModal({
                                         remove(index)
                                       }}
                                       className={{
-                                        root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                        root: 'items-center justify-center w-10 h-10 text-white bg-red-600 rounded-md',
                                       }}
                                       data={{
                                         cy: `delete-answer-option-ix-${index}`,

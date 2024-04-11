@@ -74,7 +74,7 @@ function MicroLearningElement({
       data-cy={`microlearning-${microLearning.name}`}
     >
       <div className="flex flex-row items-center justify-between">
-        <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+        <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
           {microLearning.name || ''}
         </Ellipsis>
 
