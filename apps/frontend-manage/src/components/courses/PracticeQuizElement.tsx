@@ -55,7 +55,7 @@ function PracticeQuizElement({
     >
       <div>
         <div className="flex flex-row justify-between">
-          <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+          <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
             {practiceQuiz.name || ''}
           </Ellipsis>
           <div className="flex flex-row items-center gap-3 text-sm">

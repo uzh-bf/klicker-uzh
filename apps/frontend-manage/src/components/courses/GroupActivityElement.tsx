@@ -11,7 +11,7 @@ function GroupActivityElement({ groupActivity }: GroupActivityElementProps) {
       className="w-full p-2 border border-solid rounded border-uzh-grey-80"
       data-cy={`groupActivity-${groupActivity.name}`}
     >
-      <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+      <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
         {groupActivity.name || ''}
       </Ellipsis>
     </div>
