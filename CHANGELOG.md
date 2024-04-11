@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.28...v3.1.0-rc.29) (2024-04-11)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that choice feedbacks movements are correctly shown in UI ([602ed14](https://github.com/uzh-bf/klicker-uzh/commit/602ed14a106204266311e86b20cc0862899b56dd))
+
 ## [3.1.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.27...v3.1.0-rc.28) (2024-04-11)
 
 
