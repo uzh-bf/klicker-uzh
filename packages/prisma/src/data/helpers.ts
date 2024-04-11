@@ -63,6 +63,7 @@ export function prepareCourse({
   id: string
   name: string
   displayName: string
+  description?: string
   ownerId: string
   color?: string
   pinCode: number

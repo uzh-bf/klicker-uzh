@@ -119,6 +119,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: COURSE_ID_TEST,
       name: 'Testkurs',
       displayName: 'Testkurs',
+      description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
