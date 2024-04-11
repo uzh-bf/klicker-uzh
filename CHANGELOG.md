@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.27...v3.1.0-rc.28) (2024-04-11)
+
+
+### Other
+
+* **apps/frontend-pwa:** ensure that content of group activity clue is displayed entirely ([d492da1](https://github.com/uzh-bf/klicker-uzh/commit/d492da1ba1dd8ecb3c222a1ddbee8bfef124df31))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to sort answer options on choices questions ([#4092](https://github.com/uzh-bf/klicker-uzh/issues/4092)) ([0737d9e](https://github.com/uzh-bf/klicker-uzh/commit/0737d9e3be266cfceaec89ab4159a2cb6697e04f))
+* **apps/frontend-pwa:** ensure that course buttons are never disabled after successful join ([#4091](https://github.com/uzh-bf/klicker-uzh/issues/4091)) ([b68e6cf](https://github.com/uzh-bf/klicker-uzh/commit/b68e6cfe54cac810083100c40aa2afa17c969f66))
+
 ## [3.1.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.26...v3.1.0-rc.27) (2024-04-10)
 
 
