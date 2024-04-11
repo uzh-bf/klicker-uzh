@@ -1060,12 +1060,11 @@ function QuestionEditModal({
                                           name={`options.choices.${index}.feedback`}
                                           questionType={values.type}
                                           shouldUpdate={(next, prev) =>
-                                            next?.formik.values[
-                                              `options.choices.${index}.feedback`
-                                            ] !==
-                                              prev?.formik.values[
-                                                `options.choices.${index}.feedback`
-                                              ] ||
+                                            next?.formik.values.options.choices[
+                                              index
+                                            ].feedback !==
+                                              prev?.formik.values.options
+                                                .choices[index].feedback ||
                                             next?.formik.values.type !==
                                               prev?.formik.values.type
                                           }
@@ -1075,6 +1074,7 @@ function QuestionEditModal({
                                             meta,
                                           }: FastFieldProps) => (
                                             <ContentInput
+                                              key={`${values.type}-feedback-${index}-${values.options.choices[index].ix}`}
                                               error={meta.error}
                                               touched={meta.touched}
                                               content={field.value || '<br>'}
@@ -1095,7 +1095,6 @@ function QuestionEditModal({
                                               placeholder={t(
                                                 'manage.questionForms.feedbackPlaceholder'
                                               )}
-                                              key={`${values.type}-feedback-${index}`}
                                             />
                                           )}
                                         </FastField>
