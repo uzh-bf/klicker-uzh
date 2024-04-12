@@ -655,7 +655,9 @@ export function updateQuestionResults({
         (typeof elementData.options.restrictions?.min === 'number' &&
           parsedValue < elementData.options.restrictions.min) ||
         (typeof elementData.options.restrictions?.max === 'number' &&
-          parsedValue > elementData.options.restrictions.max)
+          parsedValue > elementData.options.restrictions.max &&
+          parsedValue <= 1e30 && // prevent overflow
+          parsedValue >= -1e30) // prevent underflow
       ) {
         return {}
       }

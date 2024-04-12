@@ -810,7 +810,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter the possible answers that students can select for the question here.',
       answerOptionPlaceholder: 'Enter your answer option here...',
       FTOptionsTooltip:
-        'Enter optional settings for the free text question here.',
+        'Enter optional settings for the open question here. Note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
+
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
@@ -994,6 +995,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There must be exactly four answer options for Kprim questions',
       explanationRequired:
         'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
+      NRUnderflow:
+        'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
+      NROverflow:
+        'Numerical quantities cannot be larger than 1e30 for technical reasons.',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
