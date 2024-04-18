@@ -301,7 +301,9 @@ export type ElementInstanceResults =
 export interface IElementResults<
   Type extends ElementType,
   Results extends ElementInstanceResults
-> {}
+> {
+  // TODO: add content here, if refinement later on is possible
+}
 
 export type ChoicesElementResultsData = IElementResults<
   'SC' | 'MC' | 'KPRIM',

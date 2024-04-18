@@ -667,7 +667,7 @@ export function updateQuestionResults({
         response.value === null ||
         response.value === ''
       ) {
-        return {}
+        return results
       }
 
       const parsedValue = parseFloat(response.value)
@@ -680,7 +680,7 @@ export function updateQuestionResults({
         parsedValue > 1e30 || // prevent overflow
         parsedValue < -1e30 // prevent underflow
       ) {
-        return {}
+        return results
       }
 
       const value = String(parsedValue)
@@ -706,7 +706,7 @@ export function updateQuestionResults({
         (typeof elementData.options.restrictions?.maxLength === 'number' &&
           response.value.length > elementData.options.restrictions?.maxLength)
       ) {
-        return {}
+        return results
       }
 
       const value = R.toLower(R.trim(response.value))
