@@ -113,6 +113,37 @@ export type QuestionResultsOpen = {
 
 export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
+export interface IQuestionInstanceWithResults<
+  Type extends ElementType,
+  Results extends QuestionResults
+> extends QuestionInstance {
+  elementType?: Type
+  questionData: AllElementTypeData
+  results: Results
+  statistics?: {
+    max?: number
+    mean?: number
+    median?: number
+    min?: number
+    q1?: number
+    q3?: number
+    sd?: number[]
+  }
+}
+
+export type ChoicesQuestionInstanceData = IQuestionInstanceWithResults<
+  'SC' | 'MC' | 'KPRIM',
+  QuestionResultsChoices
+>
+export type OpenQuestionInstanceData = IQuestionInstanceWithResults<
+  'FREE_TEXT' | 'NUMERICAL',
+  QuestionResultsOpen
+>
+
+export type AllQuestionInstanceTypeData =
+  | ChoicesQuestionInstanceData
+  | OpenQuestionInstanceData
+
 export type Choice = {
   ix: number
   value: string
@@ -234,52 +265,71 @@ export type ElementInstanceOptions = {
   resetTimeDays?: number
 }
 
-export interface IQuestionInstanceWithResults<
-  Type extends ElementType,
-  Results extends QuestionResults
-> extends QuestionInstance {
-  elementType?: Type
-  questionData: AllElementTypeData
-  results: Results
-  statistics?: {
-    max?: number
-    mean?: number
-    median?: number
-    min?: number
-    q1?: number
-    q3?: number
-    sd?: number[]
-  }
+export type ElementResultsChoices = {
+  choices: Record<string, number>
+  total: number
 }
 
-export type ChoicesQuestionInstanceData = IQuestionInstanceWithResults<
-  'SC' | 'MC' | 'KPRIM',
-  QuestionResultsChoices
->
-export type OpenQuestionInstanceData = IQuestionInstanceWithResults<
-  'FREE_TEXT' | 'NUMERICAL',
-  QuestionResultsOpen
->
+export type ElementResultsOpen = {
+  responses: {
+    [x: string]: {
+      count: number
+      value: string
+      correct?: boolean
+    }
+  }
+  total: number
+}
 
-export type AllQuestionInstanceTypeData =
-  | ChoicesQuestionInstanceData
-  | OpenQuestionInstanceData
-
-export type FlashcardInstanceResults = {
+export type FlashcardResults = {
   [FlashcardCorrectness.INCORRECT]: number
   [FlashcardCorrectness.PARTIAL]: number
   [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
-export type ContentInstanceResults = {
+export type ContentResults = {
   total: number
 }
 
 export type ElementInstanceResults =
-  | FlashcardInstanceResults
-  | ContentInstanceResults
-  | AllQuestionInstanceTypeData
+  | ElementResultsChoices
+  | ElementResultsOpen
+  | FlashcardResults
+  | ContentResults
+
+export interface IElementResults<
+  Type extends ElementType,
+  Results extends ElementInstanceResults
+> {}
+
+export type ChoicesElementResultsData = IElementResults<
+  'SC' | 'MC' | 'KPRIM',
+  ElementResultsChoices
+>
+export type OpenElementResultsData = IElementResults<
+  'FREE_TEXT' | 'NUMERICAL',
+  ElementResultsOpen
+>
+
+export type FlashcardElementResultsData = IElementResults<
+  'FLASHCARD',
+  FlashcardResults
+>
+
+export type ContentElementResultsData = IElementResults<
+  'CONTENT',
+  ContentResults
+>
+
+export type AllElementInstanceTypeData =
+  | ChoicesElementResultsData
+  | OpenElementResultsData
+
+export type ElementResults =
+  | FlashcardElementResultsData
+  | ContentElementResultsData
+  | AllElementInstanceTypeData
 
 export type GroupActivityDecisions = {
   instanceId: number
@@ -294,10 +344,10 @@ declare global {
   namespace PrismaJson {
     type PrismaQuestionResponse = QuestionResponse
     type PrismaElementOptions = ElementOptions
+    type PrismaElementResults = ElementInstanceResults // TODO: replace through ElementResults here
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceOptions = ElementInstanceOptions
-    type PrismaElementInstanceResults = ElementInstanceResults
     type PrismaGroupActivityDecisions = GroupActivityDecisions
   }
 }

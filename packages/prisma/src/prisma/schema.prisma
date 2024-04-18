@@ -279,7 +279,7 @@ model ElementInstance {
   /// [PrismaElementData]
   elementData Json // contains a copy of relevant element data
 
-  /// [PrismaElementInstanceResults]
+  /// [PrismaElementResults]
   results Json // contains the collection of gathered results
 
   responses       QuestionResponse[]
@@ -1002,7 +1002,7 @@ model QuestionResponse {
   /// [PrismaQuestionResponse]
   response Json
 
-  /// [PrismaAggregatedResponse]
+  /// [PrismaElementResults]
   aggregatedResponses Json?
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)

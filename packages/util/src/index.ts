@@ -93,7 +93,7 @@ export function getInitialElementResults(element: Element) {
         ...acc,
         [ix]: 0,
       }),
-      {}
+      { total: 0 }
     )
     return { choices, total: 0 }
   } else if (
@@ -106,7 +106,7 @@ export function getInitialElementResults(element: Element) {
     }
   } else if (element.type === ElementType.CONTENT) {
     return {
-      viewed: 0,
+      total: 0,
     }
   } else {
     throw new Error(

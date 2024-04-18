@@ -34,10 +34,12 @@ import {
 import { IInstanceEvaluation } from '../schema/question'
 import {
   AllElementTypeData,
-  AllQuestionInstanceTypeData,
-  ContentInstanceResults,
+  ContentResults,
+  ElementInstanceResults,
+  ElementResultsChoices,
+  ElementResultsOpen,
   FlashcardCorrectness,
-  FlashcardInstanceResults,
+  FlashcardResults,
   QuestionResponse,
   QuestionResponseChoices,
   StackFeedbackStatus,
@@ -150,7 +152,7 @@ async function respondToFlashcard(
   }
 
   // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardInstanceResults
+  const existingResults = existingInstance.results as FlashcardResults
   await ctx.prisma.elementInstance.update({
     where: {
       id,
@@ -216,12 +218,13 @@ async function respondToFlashcard(
       },
     },
   })
-  const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
-    [FlashcardCorrectness.INCORRECT]: 0,
-    [FlashcardCorrectness.PARTIAL]: 0,
-    [FlashcardCorrectness.CORRECT]: 0,
-    total: 0,
-  }
+  const aggregatedResponses =
+    (existingResponse?.aggregatedResponses as FlashcardResults) ?? {
+      [FlashcardCorrectness.INCORRECT]: 0,
+      [FlashcardCorrectness.PARTIAL]: 0,
+      [FlashcardCorrectness.CORRECT]: 0,
+      total: 0,
+    }
 
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -330,7 +333,6 @@ async function respondToContent(
   { id, courseId }: RespondToContentInput,
   ctx: Context
 ) {
-  // TODO: potentially use aggregated results here as well to count how often the content was viewed
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
@@ -349,7 +351,7 @@ async function respondToContent(
   }
 
   // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentInstanceResults
+  const existingResults = existingInstance.results as ContentResults
   await ctx.prisma.elementInstance.update({
     where: {
       id,
@@ -404,6 +406,20 @@ async function respondToContent(
     },
   })
 
+  // find existing question response
+  const existingResponse = await ctx.prisma.questionResponse.findUnique({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: id,
+      },
+    },
+  })
+  const aggregatedResponses =
+    (existingResponse?.aggregatedResponses as ContentResults) ?? {
+      total: 0,
+    }
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -433,6 +449,11 @@ async function respondToContent(
       },
       trialsCount: 1,
 
+      // AGGREGATED RESPONSES
+      aggregatedResponses: {
+        total: 1,
+      },
+
       // CORRECT
       correctCount: 1,
       correctCountStreak: 1,
@@ -445,6 +466,11 @@ async function respondToContent(
       },
       trialsCount: {
         increment: 1,
+      },
+
+      // AGGREGATED RESPONSES
+      aggregatedResponses: {
+        total: aggregatedResponses.total + 1,
       },
 
       // CORRECT
@@ -613,20 +639,14 @@ export function updateQuestionResults({
   elementData,
   response,
 }: UpdateQuestionResultsInputs) {
-  // FIXME: ensure the types of this allow assignment of the different element type results
-  const results: AllQuestionInstanceTypeData['results'] = instance?.results
-
-  let updatedResults:
-    | {
-        choices: Record<string, number>
-        total: number
-      }
-    | Record<string, number> = {}
+  let updatedResults: ElementInstanceResults = {}
 
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
+      const results = instance?.results as ElementResultsChoices
+
       updatedResults.choices = (
         response as QuestionResponseChoices
       ).choices.reduce(
@@ -634,13 +654,14 @@ export function updateQuestionResults({
           ...acc,
           [ix]: acc[ix] + 1,
         }),
-        results.choices as Record<string, number>
+        results.choices
       )
       updatedResults.total = results.total + 1
       break
     }
 
     case ElementType.NUMERICAL: {
+      const results = instance?.results as ElementResultsOpen
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
@@ -677,6 +698,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.FREE_TEXT: {
+      const results = instance?.results as ElementResultsOpen
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
@@ -899,6 +921,8 @@ export async function respondToQuestion(
       pointsAwarded = null
       lastAwardedAt = undefined
     }
+
+    // TODO: update aggregated results for choices and open questions
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
