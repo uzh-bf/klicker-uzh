@@ -298,41 +298,6 @@ export type ElementInstanceResults =
   | FlashcardResults
   | ContentResults
 
-export interface IElementResults<
-  Type extends ElementType,
-  Results extends ElementInstanceResults
-> {
-  // TODO: add content here, if refinement later on is possible
-}
-
-export type ChoicesElementResultsData = IElementResults<
-  'SC' | 'MC' | 'KPRIM',
-  ElementResultsChoices
->
-export type OpenElementResultsData = IElementResults<
-  'FREE_TEXT' | 'NUMERICAL',
-  ElementResultsOpen
->
-
-export type FlashcardElementResultsData = IElementResults<
-  'FLASHCARD',
-  FlashcardResults
->
-
-export type ContentElementResultsData = IElementResults<
-  'CONTENT',
-  ContentResults
->
-
-export type AllElementInstanceTypeData =
-  | ChoicesElementResultsData
-  | OpenElementResultsData
-
-export type ElementResults =
-  | FlashcardElementResultsData
-  | ContentElementResultsData
-  | AllElementInstanceTypeData
-
 export type GroupActivityDecisions = {
   instanceId: number
   type: ElementType
@@ -346,7 +311,7 @@ declare global {
   namespace PrismaJson {
     type PrismaQuestionResponse = QuestionResponse
     type PrismaElementOptions = ElementOptions
-    type PrismaElementResults = ElementInstanceResults // TODO: replace through ElementResults here
+    type PrismaElementResults = ElementInstanceResults
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceOptions = ElementInstanceOptions
