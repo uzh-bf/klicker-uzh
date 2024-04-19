@@ -31,7 +31,7 @@ async function run() {
   let totalUpdates = 0
 
   for (const instance of instances) {
-    const responses = instance.results.responses
+    const responses = (instance.results as any).responses
 
     // check if the results follow the old logic with value: count instead of hash: {value, count, correct}
     const isOldLogic =
@@ -56,16 +56,14 @@ async function run() {
       numericalResults++
 
       // TODO: uncomment this part for execution
-      //   updatePromises.push(
-      //     prisma.elementInstance.update({
-      //       where: { id: instance.id },
-      //       data: {
-      //         results: {
-      //           set: updatedResponses,
-      //         },
-      //       },
-      //     })
-      //   )
+      updatePromises.push(
+        prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            results: updatedResponses,
+          },
+        })
+      )
     } else if (instance.elementType === ElementType.FREE_TEXT) {
       const updatedResponses = convertFreeTextResponses(
         instance.elementData,
@@ -77,16 +75,14 @@ async function run() {
       freeTextResults++
 
       // TODO: uncomment this part for execution
-      //   updatePromises.push(
-      //     prisma.elementInstance.update({
-      //       where: { id: instance.id },
-      //       data: {
-      //         results: {
-      //           set: updatedResponses,
-      //         },
-      //       },
-      //     })
-      //   )
+      updatePromises.push(
+        prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            results: updatedResponses,
+          },
+        })
+      )
     } else {
       error(`Unknown element type for this script: ${instance.elementType}`)
     }
@@ -101,7 +97,7 @@ async function run() {
   console.log(`Free text updates: ${freeTextResults}`)
 
   // ! USE THIS STATEMENT TO EXECUTE UPDATES
-  //   await prisma.$transaction(updatePromises)
+  await prisma.$transaction(updatePromises)
 }
 
 function convertNumericalResponses(
