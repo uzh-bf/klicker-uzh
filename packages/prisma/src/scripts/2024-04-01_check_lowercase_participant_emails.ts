@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '../client'
 
 async function run() {
   const prisma = new PrismaClient()
