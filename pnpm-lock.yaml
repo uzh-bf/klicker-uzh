@@ -1604,6 +1604,9 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
+      md5:
+        specifier: 2.3.0
+        version: 2.3.0
       mongodb:
         specifier: 5.7.0
         version: 5.7.0
