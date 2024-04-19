@@ -21,6 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import hash from 'object-hash'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
@@ -35,7 +36,6 @@ import { IInstanceEvaluation } from '../schema/question'
 import {
   AllElementTypeData,
   ContentResults,
-  ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
@@ -487,12 +487,96 @@ async function respondToContent(
   return result
 }
 
-function evaluateQuestionResponse(
+interface EvaluateAnswerCorrectnessArgs {
+  elementData: AllElementTypeData
+  response: ResponseInput
+}
+
+function evaluateAnswerCorrectness({
+  elementData,
+  response,
+}: EvaluateAnswerCorrectnessArgs) {
+  switch (elementData.type) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
+      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const solution = elementOptions.choices.reduce<number[]>(
+        (acc, choice) => {
+          if (choice.correct) return [...acc, choice.ix]
+          return acc
+        },
+        []
+      )
+
+      if (elementData.type === ElementType.SC) {
+        const correctness = gradeQuestionSC({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      } else if (elementData.type === ElementType.MC) {
+        const correctness = gradeQuestionMC({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      } else {
+        const correctness = gradeQuestionKPRIM({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      }
+    }
+
+    case ElementType.NUMERICAL: {
+      const solutionRanges = (elementData.options as NumericalQuestionOptions)
+        .solutionRanges
+
+      const correctness = gradeQuestionNumerical({
+        response: parseFloat(String(response.value)),
+        solutionRanges: solutionRanges ?? [],
+      })
+      return correctness
+    }
+
+    case ElementType.FREE_TEXT: {
+      const solutions = (elementData.options as FreeTextQuestionOptions)
+        .solutions
+
+      const correctness = gradeQuestionFreeText({
+        response: response.value ?? '',
+        solutions: solutions ?? [],
+      })
+      return correctness
+    }
+
+    default:
+      return null
+  }
+}
+
+interface EvaluatedQuestionResponses {
+  feedbacks: any[]
+  choices?: Record<string, number>
+  answers?: Record<string, number>
+  score: number
+  xp: number
+  percentile: number
+  pointsMultiplier?: number
+  explanation?: string | null
+}
+
+function evaluateElementResponse(
   elementData: AllElementTypeData,
   results: any,
-  response: ResponseInput,
+  correctness: number | null,
   multiplier?: number
-) {
+): EvaluatedQuestionResponses | null {
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -504,74 +588,52 @@ function evaluateQuestionResponse(
 
       const elementOptions = elementData.options as ChoiceQuestionOptions
       const feedbacks = elementOptions.choices
-      const solution = elementOptions.choices.reduce<number[]>(
-        (acc, choice) => {
-          if (choice.correct) return [...acc, choice.ix]
-          return acc
-        },
-        []
-      )
 
       if (elementData.type === ElementType.SC) {
-        const pointsPercentage = gradeQuestionSC({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
-        const pointsPercentage = gradeQuestionMC({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
       } else {
-        const pointsPercentage = gradeQuestionKPRIM({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
@@ -579,45 +641,29 @@ function evaluateQuestionResponse(
     }
 
     case ElementType.NUMERICAL: {
-      const solutionRanges = (elementData.options as NumericalQuestionOptions)
-        .solutionRanges
-
-      const correct = gradeQuestionNumerical({
-        response: parseFloat(String(response.value)),
-        solutionRanges: solutionRanges ?? [],
-      })
-
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
         answers: results?.responses ?? {},
-        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
-          pointsPercentage: correct,
+          pointsPercentage: correctness,
         }),
-        percentile: correct ?? 0,
+        percentile: correctness ?? 0,
         pointsMultiplier: multiplier,
         explanation: elementData.explanation,
       }
     }
 
     case ElementType.FREE_TEXT: {
-      const solutions = (elementData.options as FreeTextQuestionOptions)
-        .solutions
-
-      const correct = gradeQuestionFreeText({
-        response: response.value ?? '',
-        solutions: solutions ?? [],
-      })
-
       return {
         feedbacks: [],
         answers: results.responses ?? {},
-        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
-          pointsPercentage: correct,
+          pointsPercentage: correctness,
         }),
-        percentile: correct ?? 0,
+        percentile: correctness ?? 0,
         pointsMultiplier: multiplier,
         explanation: elementData.explanation,
       }
@@ -632,20 +678,21 @@ interface UpdateQuestionResultsInputs {
   instance: ElementInstance
   elementData: AllElementTypeData
   response: ResponseInput
+  correct?: boolean
 }
 
-export function updateQuestionResults({
+export async function updateQuestionResults({
   instance,
   elementData,
   response,
+  correct,
 }: UpdateQuestionResultsInputs) {
-  let updatedResults: ElementInstanceResults = {}
-
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
       const results = instance?.results as ElementResultsChoices
+      let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
         response as QuestionResponseChoices
@@ -657,11 +704,13 @@ export function updateQuestionResults({
         results.choices
       )
       updatedResults.total = results.total + 1
-      break
+      return updatedResults
     }
 
     case ElementType.NUMERICAL: {
       const results = instance?.results as ElementResultsOpen
+      let updatedResults: ElementResultsOpen = results
+
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
@@ -684,21 +733,30 @@ export function updateQuestionResults({
       }
 
       const value = String(parsedValue)
+      const hashedValue = await hash(value, 0)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
-          [value]: results.responses[value] + 1,
+          [hashedValue]: {
+            ...results.responses[hashedValue],
+            count: results.responses[hashedValue].count + 1,
+          },
         }
       } else {
-        updatedResults.responses = { ...results.responses, [value]: 1 }
+        updatedResults.responses = {
+          ...results.responses,
+          [hashedValue]: { value: value, count: 1, correct: correct },
+        }
       }
       updatedResults.total = results.total + 1
-      break
+      return updatedResults
     }
 
     case ElementType.FREE_TEXT: {
       const results = instance?.results as ElementResultsOpen
+      let updatedResults: ElementResultsOpen = results
+
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
@@ -710,24 +768,33 @@ export function updateQuestionResults({
       }
 
       const value = R.toLower(R.trim(response.value))
+      const hashedValue = await hash(value, 0)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
-          [value]: results.responses[value] + 1,
+          [hashedValue]: {
+            ...results.responses[hashedValue],
+            count: results.responses[hashedValue].count + 1,
+          },
         }
       } else {
-        updatedResults.responses = { ...results.responses, [value]: 1 }
+        updatedResults.responses = {
+          ...results.responses,
+          [hashedValue]: {
+            value: value,
+            count: 1,
+            correct: correct,
+          },
+        }
       }
       updatedResults.total = results.total + 1
-      break
+      return updatedResults
     }
 
     default:
-      break
+      return null
   }
-
-  return updatedResults
 }
 
 export async function respondToQuestion(
@@ -759,6 +826,7 @@ export async function respondToQuestion(
     treatAnonymous = true
   }
 
+  let correctness: number | null = null
   const { instance, updatedInstance } = await ctx.prisma.$transaction(
     async (prisma) => {
       const instance = await prisma.elementInstance.findUnique({
@@ -806,10 +874,14 @@ export async function respondToQuestion(
         return {}
       }
 
-      const updatedResults = updateQuestionResults({
+      // evaluate the correctness of the response
+      correctness = evaluateAnswerCorrectness({ elementData, response })
+
+      const updatedResults = await updateQuestionResults({
         instance,
         elementData,
         response,
+        correct: correctness === 1,
       })
 
       const updatedInstance = await prisma.elementInstance.update({
@@ -829,12 +901,12 @@ export async function respondToQuestion(
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
 
-  if (!instance || !updatedInstance || !elementData) return null
-
-  const evaluation = evaluateQuestionResponse(
+  if (!instance || !updatedInstance || !elementData || correctness === -1)
+    return null
+  const evaluation = evaluateElementResponse(
     elementData,
     results,
-    response,
+    correctness,
     updatedInstance.options.pointsMultiplier
   )
   const score = evaluation?.score || 0
