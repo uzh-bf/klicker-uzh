@@ -59,17 +59,19 @@ export function validateNumericalResponse({
   if (!response) return false
 
   if (
-    typeof options.restrictions?.min !== 'undefined' &&
-    options.restrictions?.min !== null &&
-    parseFloat(response) < options.restrictions?.min
+    (typeof options.restrictions?.min !== 'undefined' &&
+      options.restrictions?.min !== null &&
+      parseFloat(response) < options.restrictions?.min) ||
+    parseFloat(response) < -1e30 // prevent underflow
   ) {
     return false
   }
 
   if (
-    typeof options.restrictions?.max !== 'undefined' &&
-    options.restrictions?.max !== null &&
-    parseFloat(response) > options.restrictions?.max
+    (typeof options.restrictions?.max !== 'undefined' &&
+      options.restrictions?.max !== null &&
+      parseFloat(response) > options.restrictions?.max) ||
+    parseFloat(response) > 1e30 // prevent overflow
   ) {
     return false
   }
