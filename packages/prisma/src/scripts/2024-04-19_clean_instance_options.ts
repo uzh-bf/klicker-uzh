@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '../client'
 
 async function run() {
   const prisma = new PrismaClient()
@@ -39,7 +39,7 @@ async function run() {
       if (
         !options ||
         !options.pointsMultiplier ||
-        !options.resetTimeDays ||
+        typeof options.resetTimeDays === 'undefined' ||
         options.pointsMultiplier !==
           quiz.pointsMultiplier * element.pointsMultiplier ||
         options.resetTimeDays !== quiz.resetTimeDays
@@ -134,7 +134,7 @@ async function run() {
   console.log('Instance errors (used in live quizzes):', liveQuizInstanceErrors)
 
   // ! USE THIS STATEMENT TO EXECUTE UPDATES
-  //   await prisma.$transaction(updatePromises)
+  await prisma.$transaction(updatePromises)
 }
 
 await run()
