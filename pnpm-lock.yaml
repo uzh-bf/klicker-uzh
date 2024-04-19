@@ -1604,15 +1604,15 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
+      md5:
+        specifier: 2.3.0
+        version: 2.3.0
       mongodb:
         specifier: 5.7.0
         version: 5.7.0
       node-schedule:
         specifier: 2.1.1
         version: 2.1.1
-      object-hash:
-        specifier: 3.0.0
-        version: 3.0.0
       ramda:
         specifier: 0.29.0
         version: 0.29.0
@@ -1689,9 +1689,6 @@ importers:
       '@types/node-schedule':
         specifier: ^2.1.0
         version: 2.1.6
-      '@types/object-hash':
-        specifier: ^3.0.2
-        version: 3.0.6
       '@types/ramda':
         specifier: ^0.29.3
         version: 0.29.10

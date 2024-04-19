@@ -21,7 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import hash from 'object-hash'
+import md5 from 'md5'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
@@ -681,7 +681,7 @@ interface UpdateQuestionResultsInputs {
   correct?: boolean
 }
 
-export async function updateQuestionResults({
+export function updateQuestionResults({
   instance,
   elementData,
   response,
@@ -733,7 +733,7 @@ export async function updateQuestionResults({
       }
 
       const value = String(parsedValue)
-      const hashedValue = await hash(value, 0)
+      const hashedValue = md5(value)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
@@ -768,7 +768,7 @@ export async function updateQuestionResults({
       }
 
       const value = R.toLower(R.trim(response.value))
-      const hashedValue = await hash(value, 0)
+      const hashedValue = md5(value)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
@@ -860,13 +860,13 @@ export async function respondToQuestion(
 
       // if the participant had already responded, don't track the new response
       // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-      const hasPreviousResponse = instance?.responses.length > 0
-      if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
-        return {
-          instance,
-          updatedInstance: instance,
-        }
-      }
+      // const hasPreviousResponse = instance?.responses.length > 0
+      // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+      //   return {
+      //     instance,
+      //     updatedInstance: instance,
+      //   }
+      // }
 
       const elementData = instance?.elementData
 
@@ -877,7 +877,7 @@ export async function respondToQuestion(
       // evaluate the correctness of the response
       correctness = evaluateAnswerCorrectness({ elementData, response })
 
-      const updatedResults = await updateQuestionResults({
+      const updatedResults = updateQuestionResults({
         instance,
         elementData,
         response,
@@ -901,8 +901,9 @@ export async function respondToQuestion(
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
 
-  if (!instance || !updatedInstance || !elementData || correctness === -1)
+  if (!instance || !updatedInstance || !elementData || correctness === null)
     return null
+
   const evaluation = evaluateElementResponse(
     elementData,
     results,
