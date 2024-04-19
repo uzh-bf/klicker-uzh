@@ -14,9 +14,15 @@ function FTEvaluation({ options, evaluation }: Props) {
   const t = useTranslations()
 
   const answers = Object.entries(
-    evaluation.answers as Record<string, number>
+    evaluation.answers as Record<
+      string,
+      { value: string; count: number; correct: boolean }
+    >
   ).reduce(
-    (acc, [value, count]) => ({ ...acc, [value]: { value, count } }),
+    (acc, [_, answer]) => ({
+      ...acc,
+      [answer.value]: { value: answer.value, count: answer.count },
+    }),
     {}
   ) as Record<string, Record<string, string | number>>
   const solutions = options.solutions ? options.solutions : []
