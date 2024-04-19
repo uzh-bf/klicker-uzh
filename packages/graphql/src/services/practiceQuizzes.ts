@@ -704,7 +704,7 @@ export function updateQuestionResults({
         results.choices
       )
       updatedResults.total = results.total + 1
-      return updatedResults
+      return { results: updatedResults, modified: true }
     }
 
     case ElementType.NUMERICAL: {
@@ -716,7 +716,7 @@ export function updateQuestionResults({
         response.value === null ||
         response.value === ''
       ) {
-        return results
+        return { results: results, modified: false }
       }
 
       const parsedValue = parseFloat(response.value)
@@ -729,7 +729,7 @@ export function updateQuestionResults({
         parsedValue > 1e30 || // prevent overflow
         parsedValue < -1e30 // prevent underflow
       ) {
-        return results
+        return { results: results, modified: false }
       }
 
       const value = String(parsedValue)
@@ -750,7 +750,7 @@ export function updateQuestionResults({
         }
       }
       updatedResults.total = results.total + 1
-      return updatedResults
+      return { results: updatedResults, modified: true }
     }
 
     case ElementType.FREE_TEXT: {
@@ -764,7 +764,7 @@ export function updateQuestionResults({
         (typeof elementData.options.restrictions?.maxLength === 'number' &&
           response.value.length > elementData.options.restrictions?.maxLength)
       ) {
-        return results
+        return { results: results, modified: false }
       }
 
       const value = R.toLower(R.trim(response.value))
@@ -789,11 +789,11 @@ export function updateQuestionResults({
         }
       }
       updatedResults.total = results.total + 1
-      return updatedResults
+      return { results: updatedResults, modified: true }
     }
 
     default:
-      return null
+      return { results: null, modified: false }
   }
 }
 
@@ -826,9 +826,8 @@ export async function respondToQuestion(
     treatAnonymous = true
   }
 
-  let correctness: number | null = null
-  const { instance, updatedInstance } = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const { instance, updatedInstance, correctness, validResponse } =
+    await ctx.prisma.$transaction(async (prisma) => {
       const instance = await prisma.elementInstance.findUnique({
         where: { id },
         // if the participant is logged in, fetch the last response of the participant
@@ -855,7 +854,12 @@ export async function respondToQuestion(
       })
 
       if (!instance) {
-        return {}
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
       }
 
       // if the participant had already responded, don't track the new response
@@ -871,11 +875,16 @@ export async function respondToQuestion(
       const elementData = instance?.elementData
 
       if (!elementData) {
-        return {}
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
       }
 
       // evaluate the correctness of the response
-      correctness = evaluateAnswerCorrectness({ elementData, response })
+      const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
         instance,
@@ -887,21 +896,28 @@ export async function respondToQuestion(
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
         data: {
-          results: updatedResults,
+          results: updatedResults.results,
         },
       })
 
       return {
         instance,
         updatedInstance,
+        correctness,
+        validResponse: true,
       }
-    }
-  )
+    })
 
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
 
-  if (!instance || !updatedInstance || !elementData || correctness === null)
+  if (
+    !instance ||
+    !updatedInstance ||
+    !elementData ||
+    !validResponse ||
+    correctness === null
+  )
     return null
 
   const evaluation = evaluateElementResponse(
@@ -995,7 +1011,94 @@ export async function respondToQuestion(
       lastAwardedAt = undefined
     }
 
-    // TODO: update aggregated results for choices and open questions
+    // update aggregated results for choices and open questions
+    const existingResponse = await ctx.prisma.questionResponse.findUnique({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: id,
+        },
+      },
+    })
+
+    let newAggResponses
+    if (
+      instance.elementType === ElementType.SC ||
+      instance.elementType === ElementType.MC ||
+      instance.elementType === ElementType.KPRIM
+    ) {
+      newAggResponses = (existingResponse?.aggregatedResponses ??
+        getInitialElementResults({
+          type: instance.elementType,
+          options: instance.elementData.options,
+        } as Element)) as ElementResultsChoices
+
+      // update aggregated responses for choices
+      newAggResponses.choices = (
+        response as QuestionResponseChoices
+      ).choices.reduce(
+        (acc, ix) => ({
+          ...acc,
+          [ix]: acc[ix] + 1,
+        }),
+        newAggResponses.choices
+      )
+      newAggResponses.total = newAggResponses.total + 1
+    } else {
+      newAggResponses = (existingResponse?.aggregatedResponses ??
+        getInitialElementResults({
+          type: instance.elementType,
+        } as Element)) as ElementResultsOpen
+
+      // update aggregated responses for open questions
+      if (instance.elementType === ElementType.NUMERICAL) {
+        const value = String(parseFloat(response.value!))
+        const hashedValue = md5(value)
+
+        if (Object.keys(newAggResponses.responses).includes(value)) {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              ...newAggResponses.responses[hashedValue],
+              count: newAggResponses.responses[hashedValue].count + 1,
+            },
+          }
+        } else {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              value: value,
+              count: 1,
+              correct: correctness === 1,
+            },
+          }
+        }
+        newAggResponses.total = newAggResponses.total + 1
+      } else {
+        const value = R.toLower(R.trim(response.value!))
+        const hashedValue = md5(value)
+
+        if (Object.keys(newAggResponses.responses).includes(value)) {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              ...newAggResponses.responses[hashedValue],
+              count: newAggResponses.responses[hashedValue].count + 1,
+            },
+          }
+        } else {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              value: value,
+              count: 1,
+              correct: correctness === 1,
+            },
+          }
+        }
+        newAggResponses.total = newAggResponses.total + 1
+      }
+    }
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
@@ -1013,6 +1116,7 @@ export async function respondToQuestion(
           lastAwardedAt,
           lastXpAwardedAt,
           response: response as QuestionResponse,
+          aggregatedResponses: newAggResponses,
           participant: {
             connect: { id: ctx.user.sub },
           },
@@ -1030,6 +1134,7 @@ export async function respondToQuestion(
         },
         update: {
           response: response as QuestionResponse,
+          aggregatedResponses: newAggResponses,
           lastAwardedAt,
           lastXpAwardedAt,
           trialsCount: {

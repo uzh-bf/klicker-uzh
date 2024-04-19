@@ -218,7 +218,6 @@ export interface BaseElementData {
   content: string
   pointsMultiplier: number
   explanation?: string | null
-
   options: object
 }
 
