@@ -808,7 +808,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
       FTOptionsTooltip:
-        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor.',
+        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
+
       answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
@@ -1001,6 +1002,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
       explanationRequired:
         'Bitte geben Sie eine Erklärung ein. Auf Flashcards wird diese Erklärung den Studierenden als Antwort auf die Frage angezeigt.',
+      NRUnderflow:
+        'Numerische Angaben dürfen aus technischen Gründen nicht kleiner als -1e30 sein.',
+      NROverflow:
+        'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
     },
     sessions: {
       runningSessions: 'Laufende Sessionen',

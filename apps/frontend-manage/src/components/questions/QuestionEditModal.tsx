@@ -214,10 +214,16 @@ function QuestionEditModal({
             unit: Yup.string().nullable(),
 
             restrictions: Yup.object().shape({
-              min: Yup.number().nullable(),
+              min: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable(),
               // TODO: less than if max defined
               // .lessThan(Yup.ref('max')),
-              max: Yup.number().nullable(),
+              max: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable(),
               // TODO: more than if min defined
               // .moreThan(Yup.ref('min')),
             }),
@@ -841,7 +847,7 @@ function QuestionEditModal({
                           label={t('shared.generic.options')}
                           className={{
                             root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-base font-normal',
+                            tooltip: 'text-sm font-normal w-80 md:w-1/2',
                           }}
                           tooltip={t('manage.questionForms.FTOptionsTooltip')}
                           showTooltipSymbol={true}
@@ -1153,7 +1159,7 @@ function QuestionEditModal({
                             name="options.restrictions.min"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
@@ -1166,7 +1172,7 @@ function QuestionEditModal({
                             name="options.restrictions.max"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
@@ -1191,7 +1197,7 @@ function QuestionEditModal({
                             name="options.accuracy"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             precision={0}
                             data={{ cy: 'set-numerical-accuracy' }}
@@ -1439,11 +1445,25 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to FT questions */}
-                      {errors.options && errors.options.restrictions && (
-                        <li>{`${t('manage.questionForms.answerLength')}: ${
-                          errors.options.restrictions.maxLength
+                      {errors.options &&
+                        errors.options.restrictions?.maxLength && (
+                          <li>{`${t('manage.questionForms.answerLength')}: ${
+                            errors.options.restrictions.maxLength
+                          }`}</li>
+                        )}
+
+                      {/* error messages specific to NR questions */}
+                      {errors.options && errors.options.restrictions?.min && (
+                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                          errors.options.restrictions.min
                         }`}</li>
                       )}
+                      {errors.options && errors.options.restrictions?.max && (
+                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                          errors.options.restrictions.max
+                        }`}</li>
+                      )}
+
                       {errors.options &&
                         errors.options.solutions &&
                         typeof errors.options.solutions === 'object' &&
