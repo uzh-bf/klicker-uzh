@@ -1,5 +1,15 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import { FlashcardCorrectness, QuestionResponseFlashcard } from 'src/types/app'
+import pMap from 'p-map'
+import { ElementType, PrismaClient } from '../client'
+
+export enum FlashcardCorrectness {
+  INCORRECT = 'INCORRECT',
+  PARTIAL = 'PARTIAL',
+  CORRECT = 'CORRECT',
+}
+
+export type QuestionResponseFlashcard = {
+  correctness: FlashcardCorrectness
+}
 
 async function run() {
   const prisma = new PrismaClient()
@@ -198,7 +208,7 @@ async function run() {
   console.log('Number of combined updates in total:', updatePromises.length)
 
   // ! USE THIS STATEMENT TO EXECUTE UPDATES
-  //   await prisma.$transaction(updatePromises)
+  await pMap(updatePromises, (i) => i, { concurrency: 50 })
 }
 
 await run()
