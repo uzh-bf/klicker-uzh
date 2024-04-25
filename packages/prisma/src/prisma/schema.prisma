@@ -285,8 +285,8 @@ model ElementInstance {
   responses       QuestionResponse[]
   detailResponses QuestionResponseDetail[]
 
-  element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  elementId      Int?
+  element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId      Int
   elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementStackId Int
   owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
