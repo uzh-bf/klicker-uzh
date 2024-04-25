@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.31...v3.1.0-rc.32) (2024-04-25)
+
+
+### Bug Fixes
+
+* ensure that all element instances are linked to an existing element ([#4102](https://github.com/uzh-bf/klicker-uzh/issues/4102)) ([c12a83f](https://github.com/uzh-bf/klicker-uzh/commit/c12a83f83c5ceb16a6b51b5e7b4065426537f446))
+
+
+### Enhancements
+
+* track correct, partial and wrong counts for all element types ([#4103](https://github.com/uzh-bf/klicker-uzh/issues/4103)) ([111df0f](https://github.com/uzh-bf/klicker-uzh/commit/111df0f0c8ef3318970978e73c1b251c3b2462a6))
+
 ## [3.1.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.30...v3.1.0-rc.31) (2024-04-19)
 
 
