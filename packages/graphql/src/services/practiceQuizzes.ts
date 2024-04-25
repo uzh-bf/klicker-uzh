@@ -492,7 +492,7 @@ interface EvaluateAnswerCorrectnessArgs {
   response: ResponseInput
 }
 
-function evaluateAnswerCorrectness({
+export function evaluateAnswerCorrectness({
   elementData,
   response,
 }: EvaluateAnswerCorrectnessArgs) {
