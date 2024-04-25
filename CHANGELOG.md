@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.30...v3.1.0-rc.31) (2024-04-19)
+
+
+### Enhancements
+
+* update types and ensure consistency of aggregated results and instance results ([#4097](https://github.com/uzh-bf/klicker-uzh/issues/4097)) ([21c16b7](https://github.com/uzh-bf/klicker-uzh/commit/21c16b7e38a79883ff5af6b7d1621f9a84f1d629))
+
 ## [3.1.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.29...v3.1.0-rc.30) (2024-04-12)
 
 
