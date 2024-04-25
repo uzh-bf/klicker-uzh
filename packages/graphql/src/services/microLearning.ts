@@ -96,7 +96,7 @@ interface ManipulateMicroLearningArgs {
   endDate: Date
 }
 
-// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into hel)
+// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into helper functions)
 export async function manipulateMicroLearning(
   {
     id,
