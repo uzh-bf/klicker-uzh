@@ -642,7 +642,7 @@ export async function submitGroupActivityDecisions(
         await prisma.elementInstance.update({
           where: { id: instanceId },
           data: {
-            results: updatedResults,
+            results: updatedResults.results,
           },
         })
       })

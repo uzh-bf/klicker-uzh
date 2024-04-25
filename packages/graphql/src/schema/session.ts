@@ -242,6 +242,37 @@ export const QuestionResponseRef =
 export const QuestionResponse = QuestionResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    trialsCount: t.exposeInt('trialsCount'),
+
+    totalScore: t.exposeFloat('totalScore'),
+    totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
+    totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
+    lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
+    lastXpAwardedAt: t.expose('lastXpAwardedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+
+    correctCount: t.exposeInt('correctCount'),
+    correctCountStreak: t.exposeInt('correctCountStreak'),
+    lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
+
+    partialCorrectCount: t.exposeInt('partialCorrectCount'),
+    lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+
+    wrongCount: t.exposeInt('wrongCount'),
+    lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
+
+    response: t.expose('response', { type: 'Json' }),
+
+    aggregatedResponses: t.expose('aggregatedResponses', {
+      type: 'Json',
+      nullable: true,
+    }),
   }),
 })
 

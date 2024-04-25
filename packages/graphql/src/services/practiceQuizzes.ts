@@ -21,6 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import md5 from 'md5'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
@@ -29,15 +30,17 @@ import {
   ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
+  QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops'
 import { IInstanceEvaluation } from '../schema/question'
 import {
   AllElementTypeData,
-  AllQuestionInstanceTypeData,
-  ContentInstanceResults,
+  ContentResults,
+  ElementResultsChoices,
+  ElementResultsOpen,
   FlashcardCorrectness,
-  FlashcardInstanceResults,
+  FlashcardResults,
   QuestionResponse,
   QuestionResponseChoices,
   StackFeedbackStatus,
@@ -109,6 +112,68 @@ export async function getPracticeQuizData(
   return quiz
 }
 
+interface CombineCorrectnessParamsInput {
+  correct: boolean
+  partial: boolean
+  incorrect: boolean
+  existingResponse?: QuestionResponseType | null
+}
+
+function combineNewCorrectnessParams({
+  correct,
+  partial,
+  incorrect,
+}: CombineCorrectnessParamsInput) {
+  return {
+    // CORRECT
+    correctCount: correct ? 1 : 0,
+    correctCountStreak: correct ? 1 : 0,
+    lastCorrectAt: correct ? new Date() : undefined,
+
+    // PARTIALLY CORRECT
+    partialCorrectCount: partial ? 1 : 0,
+    lastPartialCorrectAt: partial ? new Date() : undefined,
+
+    // WRONG
+    wrongCount: incorrect ? 1 : 0,
+    lastWrongAt: incorrect ? new Date() : undefined,
+  }
+}
+
+function combineCorrectnessParams({
+  correct,
+  partial,
+  incorrect,
+  existingResponse,
+}: CombineCorrectnessParamsInput) {
+  return {
+    // CORRECT
+    correctCount: {
+      increment: correct ? 1 : 0,
+    },
+    correctCountStreak: {
+      increment: correct
+        ? 1
+        : existingResponse
+        ? -existingResponse.correctCountStreak
+        : 0,
+    },
+    lastCorrectAt: correct ? new Date() : undefined,
+
+    // PARTIALLY CORRECT
+    partialCorrectCount: {
+      increment: partial ? 1 : 0,
+    },
+    lastPartialCorrectAt: partial ? new Date() : undefined,
+
+    // INCORRECT
+    wrongCount: {
+      increment: incorrect ? 1 : 0,
+    },
+    lastWrongAt: incorrect ? new Date() : undefined,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
@@ -150,7 +215,7 @@ async function respondToFlashcard(
   }
 
   // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardInstanceResults
+  const existingResults = existingInstance.results as FlashcardResults
   await ctx.prisma.elementInstance.update({
     where: {
       id,
@@ -216,12 +281,13 @@ async function respondToFlashcard(
       },
     },
   })
-  const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
-    [FlashcardCorrectness.INCORRECT]: 0,
-    [FlashcardCorrectness.PARTIAL]: 0,
-    [FlashcardCorrectness.CORRECT]: 0,
-    total: 0,
-  }
+  const aggregatedResponses =
+    (existingResponse?.aggregatedResponses as FlashcardResults) ?? {
+      [FlashcardCorrectness.INCORRECT]: 0,
+      [FlashcardCorrectness.PARTIAL]: 0,
+      [FlashcardCorrectness.CORRECT]: 0,
+      total: 0,
+    }
 
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -256,21 +322,11 @@ async function respondToFlashcard(
       },
       trialsCount: 1,
 
-      // CORRECT
-      correctCount: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      correctCountStreak: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      lastCorrectAt:
-        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
-
-      // PARTIALLY CORRECT
-      partialCorrectCount: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
-      lastPartialCorrectAt:
-        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
-
-      // WRONG
-      wrongCount: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
-      lastWrongAt:
-        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+      ...combineNewCorrectnessParams({
+        correct: response === FlashcardCorrectness.CORRECT,
+        partial: response === FlashcardCorrectness.PARTIAL,
+        incorrect: response === FlashcardCorrectness.INCORRECT,
+      }),
     },
     update: {
       // RESPONSE
@@ -287,34 +343,12 @@ async function respondToFlashcard(
         increment: 1,
       },
 
-      // CORRECT
-      correctCount: {
-        increment: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      },
-      correctCountStreak: {
-        increment:
-          response === FlashcardCorrectness.CORRECT
-            ? 1
-            : existingResponse
-            ? -existingResponse.correctCountStreak
-            : 0,
-      },
-      lastCorrectAt:
-        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
-
-      // PARTIALLY CORRECT
-      partialCorrectCount: {
-        increment: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
-      },
-      lastPartialCorrectAt:
-        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
-
-      // INCORRECT
-      wrongCount: {
-        increment: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
-      },
-      lastWrongAt:
-        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+      ...combineCorrectnessParams({
+        correct: response === FlashcardCorrectness.CORRECT,
+        partial: response === FlashcardCorrectness.PARTIAL,
+        incorrect: response === FlashcardCorrectness.INCORRECT,
+        existingResponse,
+      }),
     },
   })
 
@@ -330,7 +364,6 @@ async function respondToContent(
   { id, courseId }: RespondToContentInput,
   ctx: Context
 ) {
-  // TODO: potentially use aggregated results here as well to count how often the content was viewed
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
@@ -349,7 +382,7 @@ async function respondToContent(
   }
 
   // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentInstanceResults
+  const existingResults = existingInstance.results as ContentResults
   await ctx.prisma.elementInstance.update({
     where: {
       id,
@@ -404,6 +437,20 @@ async function respondToContent(
     },
   })
 
+  // find existing question response
+  const existingResponse = await ctx.prisma.questionResponse.findUnique({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: id,
+      },
+    },
+  })
+  const aggregatedResponses =
+    (existingResponse?.aggregatedResponses as ContentResults) ?? {
+      total: 0,
+    }
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -433,6 +480,11 @@ async function respondToContent(
       },
       trialsCount: 1,
 
+      // AGGREGATED RESPONSES
+      aggregatedResponses: {
+        total: 1,
+      },
+
       // CORRECT
       correctCount: 1,
       correctCountStreak: 1,
@@ -445,6 +497,11 @@ async function respondToContent(
       },
       trialsCount: {
         increment: 1,
+      },
+
+      // AGGREGATED RESPONSES
+      aggregatedResponses: {
+        total: aggregatedResponses.total + 1,
       },
 
       // CORRECT
@@ -461,12 +518,96 @@ async function respondToContent(
   return result
 }
 
-function evaluateQuestionResponse(
+interface EvaluateAnswerCorrectnessArgs {
+  elementData: AllElementTypeData
+  response: ResponseInput
+}
+
+function evaluateAnswerCorrectness({
+  elementData,
+  response,
+}: EvaluateAnswerCorrectnessArgs) {
+  switch (elementData.type) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
+      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const solution = elementOptions.choices.reduce<number[]>(
+        (acc, choice) => {
+          if (choice.correct) return [...acc, choice.ix]
+          return acc
+        },
+        []
+      )
+
+      if (elementData.type === ElementType.SC) {
+        const correctness = gradeQuestionSC({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      } else if (elementData.type === ElementType.MC) {
+        const correctness = gradeQuestionMC({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      } else {
+        const correctness = gradeQuestionKPRIM({
+          responseCount: elementOptions.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return correctness
+      }
+    }
+
+    case ElementType.NUMERICAL: {
+      const solutionRanges = (elementData.options as NumericalQuestionOptions)
+        .solutionRanges
+
+      const correctness = gradeQuestionNumerical({
+        response: parseFloat(String(response.value)),
+        solutionRanges: solutionRanges ?? [],
+      })
+      return correctness
+    }
+
+    case ElementType.FREE_TEXT: {
+      const solutions = (elementData.options as FreeTextQuestionOptions)
+        .solutions
+
+      const correctness = gradeQuestionFreeText({
+        response: response.value ?? '',
+        solutions: solutions ?? [],
+      })
+      return correctness
+    }
+
+    default:
+      return null
+  }
+}
+
+interface EvaluatedQuestionResponses {
+  feedbacks: any[]
+  choices?: Record<string, number>
+  answers?: Record<string, number>
+  score: number
+  xp: number
+  percentile: number
+  pointsMultiplier?: number
+  explanation?: string | null
+}
+
+function evaluateElementResponse(
   elementData: AllElementTypeData,
   results: any,
-  response: ResponseInput,
+  correctness: number | null,
   multiplier?: number
-) {
+): EvaluatedQuestionResponses | null {
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -478,74 +619,52 @@ function evaluateQuestionResponse(
 
       const elementOptions = elementData.options as ChoiceQuestionOptions
       const feedbacks = elementOptions.choices
-      const solution = elementOptions.choices.reduce<number[]>(
-        (acc, choice) => {
-          if (choice.correct) return [...acc, choice.ix]
-          return acc
-        },
-        []
-      )
 
       if (elementData.type === ElementType.SC) {
-        const pointsPercentage = gradeQuestionSC({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
-        const pointsPercentage = gradeQuestionMC({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
       } else {
-        const pointsPercentage = gradeQuestionKPRIM({
-          responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
-          solution,
-        })
         return {
           feedbacks,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
-            pointsPercentage,
+            pointsPercentage: correctness,
             pointsMultiplier: multiplier,
           }),
           xp: computeAwardedXp({
-            pointsPercentage,
+            pointsPercentage: correctness,
           }),
-          percentile: pointsPercentage ?? 0,
+          percentile: correctness ?? 0,
           pointsMultiplier: multiplier,
           explanation: elementData.explanation,
         }
@@ -553,45 +672,29 @@ function evaluateQuestionResponse(
     }
 
     case ElementType.NUMERICAL: {
-      const solutionRanges = (elementData.options as NumericalQuestionOptions)
-        .solutionRanges
-
-      const correct = gradeQuestionNumerical({
-        response: parseFloat(String(response.value)),
-        solutionRanges: solutionRanges ?? [],
-      })
-
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
         answers: results?.responses ?? {},
-        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
-          pointsPercentage: correct,
+          pointsPercentage: correctness,
         }),
-        percentile: correct ?? 0,
+        percentile: correctness ?? 0,
         pointsMultiplier: multiplier,
         explanation: elementData.explanation,
       }
     }
 
     case ElementType.FREE_TEXT: {
-      const solutions = (elementData.options as FreeTextQuestionOptions)
-        .solutions
-
-      const correct = gradeQuestionFreeText({
-        response: response.value ?? '',
-        solutions: solutions ?? [],
-      })
-
       return {
         feedbacks: [],
         answers: results.responses ?? {},
-        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
-          pointsPercentage: correct,
+          pointsPercentage: correctness,
         }),
-        percentile: correct ?? 0,
+        percentile: correctness ?? 0,
         pointsMultiplier: multiplier,
         explanation: elementData.explanation,
       }
@@ -606,27 +709,22 @@ interface UpdateQuestionResultsInputs {
   instance: ElementInstance
   elementData: AllElementTypeData
   response: ResponseInput
+  correct?: boolean
 }
 
 export function updateQuestionResults({
   instance,
   elementData,
   response,
+  correct,
 }: UpdateQuestionResultsInputs) {
-  // FIXME: ensure the types of this allow assignment of the different element type results
-  const results: AllQuestionInstanceTypeData['results'] = instance?.results
-
-  let updatedResults:
-    | {
-        choices: Record<string, number>
-        total: number
-      }
-    | Record<string, number> = {}
-
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
+      const results = instance?.results as ElementResultsChoices
+      let updatedResults: ElementResultsChoices = results
+
       updatedResults.choices = (
         response as QuestionResponseChoices
       ).choices.reduce(
@@ -634,19 +732,22 @@ export function updateQuestionResults({
           ...acc,
           [ix]: acc[ix] + 1,
         }),
-        results.choices as Record<string, number>
+        results.choices
       )
       updatedResults.total = results.total + 1
-      break
+      return { results: updatedResults, modified: true }
     }
 
     case ElementType.NUMERICAL: {
+      const results = instance?.results as ElementResultsOpen
+      let updatedResults: ElementResultsOpen = results
+
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
         response.value === ''
       ) {
-        return {}
+        return { results: results, modified: false }
       }
 
       const parsedValue = parseFloat(response.value)
@@ -659,24 +760,34 @@ export function updateQuestionResults({
         parsedValue > 1e30 || // prevent overflow
         parsedValue < -1e30 // prevent underflow
       ) {
-        return {}
+        return { results: results, modified: false }
       }
 
       const value = String(parsedValue)
+      const hashedValue = md5(value)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
-          [value]: results.responses[value] + 1,
+          [hashedValue]: {
+            ...results.responses[hashedValue],
+            count: results.responses[hashedValue].count + 1,
+          },
         }
       } else {
-        updatedResults.responses = { ...results.responses, [value]: 1 }
+        updatedResults.responses = {
+          ...results.responses,
+          [hashedValue]: { value: value, count: 1, correct: correct },
+        }
       }
       updatedResults.total = results.total + 1
-      break
+      return { results: updatedResults, modified: true }
     }
 
     case ElementType.FREE_TEXT: {
+      const results = instance?.results as ElementResultsOpen
+      let updatedResults: ElementResultsOpen = results
+
       if (
         typeof response.value === 'undefined' ||
         response.value === null ||
@@ -684,28 +795,37 @@ export function updateQuestionResults({
         (typeof elementData.options.restrictions?.maxLength === 'number' &&
           response.value.length > elementData.options.restrictions?.maxLength)
       ) {
-        return {}
+        return { results: results, modified: false }
       }
 
       const value = R.toLower(R.trim(response.value))
+      const hashedValue = md5(value)
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
-          [value]: results.responses[value] + 1,
+          [hashedValue]: {
+            ...results.responses[hashedValue],
+            count: results.responses[hashedValue].count + 1,
+          },
         }
       } else {
-        updatedResults.responses = { ...results.responses, [value]: 1 }
+        updatedResults.responses = {
+          ...results.responses,
+          [hashedValue]: {
+            value: value,
+            count: 1,
+            correct: correct,
+          },
+        }
       }
       updatedResults.total = results.total + 1
-      break
+      return { results: updatedResults, modified: true }
     }
 
     default:
-      break
+      return { results: null, modified: false }
   }
-
-  return updatedResults
 }
 
 export async function respondToQuestion(
@@ -737,8 +857,8 @@ export async function respondToQuestion(
     treatAnonymous = true
   }
 
-  const { instance, updatedInstance } = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const { instance, updatedInstance, correctness, validResponse } =
+    await ctx.prisma.$transaction(async (prisma) => {
       const instance = await prisma.elementInstance.findUnique({
         where: { id },
         // if the participant is logged in, fetch the last response of the participant
@@ -765,54 +885,76 @@ export async function respondToQuestion(
       })
 
       if (!instance) {
-        return {}
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
       }
 
       // if the participant had already responded, don't track the new response
       // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-      const hasPreviousResponse = instance?.responses.length > 0
-      if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
-        return {
-          instance,
-          updatedInstance: instance,
-        }
-      }
+      // const hasPreviousResponse = instance?.responses.length > 0
+      // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+      //   return {
+      //     instance,
+      //     updatedInstance: instance,
+      //   }
+      // }
 
       const elementData = instance?.elementData
 
       if (!elementData) {
-        return {}
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
       }
+
+      // evaluate the correctness of the response
+      const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
         instance,
         elementData,
         response,
+        correct: correctness === 1,
       })
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
         data: {
-          results: updatedResults,
+          results: updatedResults.results,
         },
       })
 
       return {
         instance,
         updatedInstance,
+        correctness,
+        validResponse: true,
       }
-    }
-  )
+    })
 
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
 
-  if (!instance || !updatedInstance || !elementData) return null
+  if (
+    !instance ||
+    !updatedInstance ||
+    !elementData ||
+    !validResponse ||
+    correctness === null
+  )
+    return null
 
-  const evaluation = evaluateQuestionResponse(
+  const evaluation = evaluateElementResponse(
     elementData,
     results,
-    response,
+    correctness,
     updatedInstance.options.pointsMultiplier
   )
   const score = evaluation?.score || 0
@@ -900,6 +1042,95 @@ export async function respondToQuestion(
       lastAwardedAt = undefined
     }
 
+    // update aggregated results for choices and open questions
+    const existingResponse = await ctx.prisma.questionResponse.findUnique({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: id,
+        },
+      },
+    })
+
+    let newAggResponses
+    if (
+      instance.elementType === ElementType.SC ||
+      instance.elementType === ElementType.MC ||
+      instance.elementType === ElementType.KPRIM
+    ) {
+      newAggResponses = (existingResponse?.aggregatedResponses ??
+        getInitialElementResults({
+          type: instance.elementType,
+          options: instance.elementData.options,
+        } as Element)) as ElementResultsChoices
+
+      // update aggregated responses for choices
+      newAggResponses.choices = (
+        response as QuestionResponseChoices
+      ).choices.reduce(
+        (acc, ix) => ({
+          ...acc,
+          [ix]: acc[ix] + 1,
+        }),
+        newAggResponses.choices
+      )
+      newAggResponses.total = newAggResponses.total + 1
+    } else {
+      newAggResponses = (existingResponse?.aggregatedResponses ??
+        getInitialElementResults({
+          type: instance.elementType,
+        } as Element)) as ElementResultsOpen
+
+      // update aggregated responses for open questions
+      if (instance.elementType === ElementType.NUMERICAL) {
+        const value = String(parseFloat(response.value!))
+        const hashedValue = md5(value)
+
+        if (Object.keys(newAggResponses.responses).includes(value)) {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              ...newAggResponses.responses[hashedValue],
+              count: newAggResponses.responses[hashedValue].count + 1,
+            },
+          }
+        } else {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              value: value,
+              count: 1,
+              correct: correctness === 1,
+            },
+          }
+        }
+        newAggResponses.total = newAggResponses.total + 1
+      } else {
+        const value = R.toLower(R.trim(response.value!))
+        const hashedValue = md5(value)
+
+        if (Object.keys(newAggResponses.responses).includes(value)) {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              ...newAggResponses.responses[hashedValue],
+              count: newAggResponses.responses[hashedValue].count + 1,
+            },
+          }
+        } else {
+          newAggResponses.responses = {
+            ...newAggResponses.responses,
+            [hashedValue]: {
+              value: value,
+              count: 1,
+              correct: correctness === 1,
+            },
+          }
+        }
+        newAggResponses.total = newAggResponses.total + 1
+      }
+    }
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -916,6 +1147,7 @@ export async function respondToQuestion(
           lastAwardedAt,
           lastXpAwardedAt,
           response: response as QuestionResponse,
+          aggregatedResponses: newAggResponses,
           participant: {
             connect: { id: ctx.user.sub },
           },
@@ -930,9 +1162,16 @@ export async function respondToQuestion(
               },
             },
           },
+
+          ...combineNewCorrectnessParams({
+            correct: correctness === 1,
+            partial: correctness > 0 && correctness < 1,
+            incorrect: correctness === 0,
+          }),
         },
         update: {
           response: response as QuestionResponse,
+          aggregatedResponses: newAggResponses,
           lastAwardedAt,
           lastXpAwardedAt,
           trialsCount: {
@@ -950,6 +1189,13 @@ export async function respondToQuestion(
           totalXpAwarded: {
             increment: xpAwarded,
           },
+
+          ...combineCorrectnessParams({
+            correct: correctness === 1,
+            partial: correctness > 0 && correctness < 1,
+            incorrect: correctness === 0,
+            existingResponse,
+          }),
         },
       }),
       ctx.prisma.questionResponseDetail.create({

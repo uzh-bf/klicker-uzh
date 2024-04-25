@@ -17,8 +17,17 @@ function NREvaluation({ options, evaluation, reference }: Props) {
   const t = useTranslations()
 
   const results = Object.entries(
-    evaluation.answers as Record<string, number>
-  ).reduce((acc, [value, count]) => ({ ...acc, [value]: { value, count } }), {})
+    evaluation.answers as Record<
+      string,
+      { value: string; count: number; correct: boolean }
+    >
+  ).reduce(
+    (acc, [_, answer]) => ({
+      ...acc,
+      [answer.value]: { value: answer.value, count: answer.count },
+    }),
+    {}
+  )
 
   return (
     <div className="h-40 space-y-2">
