@@ -30,6 +30,7 @@ import {
   ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
+  QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops'
 import { IInstanceEvaluation } from '../schema/question'
@@ -109,6 +110,68 @@ export async function getPracticeQuizData(
   }
 
   return quiz
+}
+
+interface CombineCorrectnessParamsInput {
+  correct: boolean
+  partial: boolean
+  incorrect: boolean
+  existingResponse?: QuestionResponseType | null
+}
+
+function combineNewCorrectnessParams({
+  correct,
+  partial,
+  incorrect,
+}: CombineCorrectnessParamsInput) {
+  return {
+    // CORRECT
+    correctCount: correct ? 1 : 0,
+    correctCountStreak: correct ? 1 : 0,
+    lastCorrectAt: correct ? new Date() : undefined,
+
+    // PARTIALLY CORRECT
+    partialCorrectCount: partial ? 1 : 0,
+    lastPartialCorrectAt: partial ? new Date() : undefined,
+
+    // WRONG
+    wrongCount: incorrect ? 1 : 0,
+    lastWrongAt: incorrect ? new Date() : undefined,
+  }
+}
+
+function combineCorrectnessParams({
+  correct,
+  partial,
+  incorrect,
+  existingResponse,
+}: CombineCorrectnessParamsInput) {
+  return {
+    // CORRECT
+    correctCount: {
+      increment: correct ? 1 : 0,
+    },
+    correctCountStreak: {
+      increment: correct
+        ? 1
+        : existingResponse
+        ? -existingResponse.correctCountStreak
+        : 0,
+    },
+    lastCorrectAt: correct ? new Date() : undefined,
+
+    // PARTIALLY CORRECT
+    partialCorrectCount: {
+      increment: partial ? 1 : 0,
+    },
+    lastPartialCorrectAt: partial ? new Date() : undefined,
+
+    // INCORRECT
+    wrongCount: {
+      increment: incorrect ? 1 : 0,
+    },
+    lastWrongAt: incorrect ? new Date() : undefined,
+  }
 }
 
 interface RespondToFlashcardInput {
@@ -259,21 +322,11 @@ async function respondToFlashcard(
       },
       trialsCount: 1,
 
-      // CORRECT
-      correctCount: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      correctCountStreak: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      lastCorrectAt:
-        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
-
-      // PARTIALLY CORRECT
-      partialCorrectCount: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
-      lastPartialCorrectAt:
-        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
-
-      // WRONG
-      wrongCount: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
-      lastWrongAt:
-        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+      ...combineNewCorrectnessParams({
+        correct: response === FlashcardCorrectness.CORRECT,
+        partial: response === FlashcardCorrectness.PARTIAL,
+        incorrect: response === FlashcardCorrectness.INCORRECT,
+      }),
     },
     update: {
       // RESPONSE
@@ -290,34 +343,12 @@ async function respondToFlashcard(
         increment: 1,
       },
 
-      // CORRECT
-      correctCount: {
-        increment: response === FlashcardCorrectness.CORRECT ? 1 : 0,
-      },
-      correctCountStreak: {
-        increment:
-          response === FlashcardCorrectness.CORRECT
-            ? 1
-            : existingResponse
-            ? -existingResponse.correctCountStreak
-            : 0,
-      },
-      lastCorrectAt:
-        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
-
-      // PARTIALLY CORRECT
-      partialCorrectCount: {
-        increment: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
-      },
-      lastPartialCorrectAt:
-        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
-
-      // INCORRECT
-      wrongCount: {
-        increment: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
-      },
-      lastWrongAt:
-        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+      ...combineCorrectnessParams({
+        correct: response === FlashcardCorrectness.CORRECT,
+        partial: response === FlashcardCorrectness.PARTIAL,
+        incorrect: response === FlashcardCorrectness.INCORRECT,
+        existingResponse,
+      }),
     },
   })
 
@@ -1131,6 +1162,12 @@ export async function respondToQuestion(
               },
             },
           },
+
+          ...combineNewCorrectnessParams({
+            correct: correctness === 1,
+            partial: correctness > 0 && correctness < 1,
+            incorrect: correctness === 0,
+          }),
         },
         update: {
           response: response as QuestionResponse,
@@ -1152,6 +1189,13 @@ export async function respondToQuestion(
           totalXpAwarded: {
             increment: xpAwarded,
           },
+
+          ...combineCorrectnessParams({
+            correct: correctness === 1,
+            partial: correctness > 0 && correctness < 1,
+            incorrect: correctness === 0,
+            existingResponse,
+          }),
         },
       }),
       ctx.prisma.questionResponseDetail.create({

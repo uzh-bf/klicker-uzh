@@ -875,7 +875,22 @@ type QuestionOrElementInstance {
 }
 
 type QuestionResponse {
+  aggregatedResponses: Json
+  correctCount: Int!
+  correctCountStreak: Int!
   id: Int!
+  lastAwardedAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastWrongAt: Date
+  lastXpAwardedAt: Date
+  partialCorrectCount: Int!
+  response: Json!
+  totalPointsAwarded: Float
+  totalScore: Float!
+  totalXpAwarded: Float
+  trialsCount: Int!
+  wrongCount: Int!
 }
 
 type QuestionResponseDetail {

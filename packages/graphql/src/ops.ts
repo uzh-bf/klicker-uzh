@@ -1598,7 +1598,22 @@ export type QuestionOrElementInstance = {
 
 export type QuestionResponse = {
   __typename?: 'QuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
   id: Scalars['Int']['output'];
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  response: Scalars['Json']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type QuestionResponseDetail = {
