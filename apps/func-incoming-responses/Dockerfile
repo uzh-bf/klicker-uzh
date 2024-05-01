@@ -9,4 +9,4 @@ COPY . /home/site/wwwroot
 
 WORKDIR /home/site/wwwroot
 
-RUN npm install
+RUN set -x && npm install

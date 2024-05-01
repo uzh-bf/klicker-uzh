@@ -14,4 +14,4 @@ WORKDIR /home/site/wwwroot
 # instead of using the one in the PNPM workspace (which is problematic with Docker)
 RUN sed -i 's/workspace:\*/\*/g' package.json
 
-RUN npm install
+RUN set -x && npm install
