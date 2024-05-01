@@ -135,7 +135,7 @@ function SessionCreation({
                   ? ({
                       ...dataLiveSession?.liveSession,
                       name: `${dataLiveSession.liveSession.name} (Copy)`,
-                      displayName: `${dataLiveSession.liveSession.displayName} (Copy)`,
+                      displayName: dataLiveSession.liveSession.displayName,
                     } as Session)
                   : (dataLiveSession?.liveSession as Session)
                 : undefined
