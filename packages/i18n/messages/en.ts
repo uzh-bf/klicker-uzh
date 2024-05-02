@@ -80,7 +80,8 @@ export default {
       signin: 'Login',
       usernameError: 'Please enter your username.',
       passwordError: 'Please enter your password.',
-      loginError: 'The username or password are incorrect.',
+      studentLoginError:
+        'The username or password are incorrect. If you have forgotten your password, please use the "Magic link login" function.',
       systemError: 'An unexpected error occurred. Please try again later.',
       error: 'Error',
       back: 'Back',
@@ -215,6 +216,8 @@ export default {
   },
   pwa: {
     general: {
+      magicLinkLogin: 'Magic Link Login',
+      passwordLogin: 'Password Login',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',

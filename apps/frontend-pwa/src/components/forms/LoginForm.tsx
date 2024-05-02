@@ -1,4 +1,6 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
+import { faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -6,7 +8,6 @@ import usePWAInstall, {
 import {
   Button,
   FormikTextField,
-  PinField,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -30,9 +31,10 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  usePinField?: boolean
   installAndroid?: string
   installIOS?: string
+  magicLinkLogin?: boolean
+  setMagicLinkLogin?: (value: boolean) => void
 }
 
 export function LoginForm({
@@ -43,9 +45,10 @@ export function LoginForm({
   fieldSecret,
   dataSecret,
   isSubmitting,
-  usePinField = false,
   installAndroid,
   installIOS,
+  magicLinkLogin,
+  setMagicLinkLogin,
 }: LoginFormProps) {
   const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
@@ -107,7 +110,6 @@ export function LoginForm({
               root: 'md:px-4 rounded-none h-full flex items-center md:pb-14 md:-my-2',
             }}
           >
-            {/* // TODO: move this into login form component / shared-components or similar */}
             <Form className="mx-auto w-72 sm:w-96">
               <FormikTextField
                 required
@@ -117,41 +119,59 @@ export function LoginForm({
                 data={dataIdentifier}
               />
 
-              {usePinField ? (
-                <PinField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  className={{ root: 'mt-1' }}
-                  data={dataSecret}
-                />
-              ) : (
-                <FormikTextField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  data={dataSecret}
-                  icon={passwordHidden ? faEye : faEyeSlash}
-                  onIconClick={() => setPasswordHidden(!passwordHidden)}
-                  className={{ root: 'mt-1', icon: 'bg-transparent' }}
-                  type={passwordHidden ? 'password' : 'text'}
-                />
+              {magicLinkLogin && setMagicLinkLogin && (
+                <div className="flex flex-col md:flex-row mt-3 md:mt-2 gap-2">
+                  <Button
+                    fluid
+                    className={{ root: 'flex flex-row gap-2' }}
+                    type="submit"
+                  >
+                    <div>
+                      <FontAwesomeIcon
+                        icon={faWandMagicSparkles}
+                        className="text-orange-400"
+                      />
+                    </div>
+                    <div>{t('pwa.general.magicLinkLogin')}</div>
+                  </Button>
+                  <Button
+                    fluid
+                    type="button"
+                    onClick={() => setMagicLinkLogin(false)}
+                  >
+                    {t('pwa.general.passwordLogin')}
+                  </Button>
+                </div>
               )}
 
-              <div className="flex flex-row justify-end w-full">
-                <Button
-                  className={{
-                    root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
-                  }}
-                  type="submit"
-                  disabled={isSubmitting}
-                  data={{ cy: 'submit-login' }}
-                >
-                  <Button.Label>{t('shared.generic.signin')}</Button.Label>
-                </Button>
-              </div>
+              {!magicLinkLogin && (
+                <>
+                  <FormikTextField
+                    required
+                    label={labelSecret}
+                    labelType="small"
+                    name={fieldSecret}
+                    data={dataSecret}
+                    icon={passwordHidden ? faEye : faEyeSlash}
+                    onIconClick={() => setPasswordHidden(!passwordHidden)}
+                    className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                    type={passwordHidden ? 'password' : 'text'}
+                  />
+
+                  <div className="flex flex-row justify-end w-full">
+                    <Button
+                      className={{
+                        root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      data={{ cy: 'submit-login' }}
+                    >
+                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
+                    </Button>
+                  </div>
+                </>
+              )}
 
               {installAndroid && onChrome && (
                 <div className="flex flex-col justify-center mt-4 md:hidden">

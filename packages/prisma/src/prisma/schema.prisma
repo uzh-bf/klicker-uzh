@@ -863,6 +863,9 @@ model Participant {
 
   locale Locale @default(en)
 
+  magicLinkToken     String?
+  magicLinkExpiresAt DateTime?
+
   participantGroups       ParticipantGroup[]
   accounts                ParticipantAccount[]
   participations          Participation[]

@@ -23,11 +23,24 @@ function Login() {
   const [error, setError] = useState<string>('')
   const [showError, setShowError] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
+  const [magicLinkLogin, setMagicLinkLogin] = useState(true)
 
-  const loginSchema = Yup.object().shape({
-    usernameOrEmail: Yup.string().required(t('shared.generic.usernameError')),
-    password: Yup.string().required(t('shared.generic.passwordError')),
-  })
+  const loginSchema = (magicLinkState: boolean) => {
+    if (!magicLinkState) {
+      return Yup.object().shape({
+        usernameOrEmail: Yup.string().required(
+          t('shared.generic.usernameError')
+        ),
+        password: Yup.string().required(t('shared.generic.passwordError')),
+      })
+    } else {
+      return Yup.object().shape({
+        usernameOrEmail: Yup.string().required(
+          t('shared.generic.usernameError')
+        ),
+      })
+    }
+  }
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -37,7 +50,10 @@ function Login() {
     }
   }, [])
 
-  const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
+  const loginWithPassword = async (
+    values: any,
+    { setSubmitting, resetForm }: any
+  ) => {
     setError('')
     try {
       const result: FetchResult = await loginParticipant({
@@ -48,7 +64,7 @@ function Login() {
       })
 
       if (!result.data?.loginParticipant) {
-        setError(t('shared.generic.loginError'))
+        setError(t('shared.generic.studentLoginError'))
         setShowError(true)
         setSubmitting(false)
         resetForm()
@@ -71,24 +87,31 @@ function Login() {
     <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
         initialValues={{ usernameOrEmail: '', password: '' }}
-        validationSchema={loginSchema}
-        onSubmit={onSubmit}
-      >
-        {({ isSubmitting }) => {
-          return (
-            <LoginForm
-              labelIdentifier={t('shared.generic.usernameOrEmail')}
-              fieldIdentifier="usernameOrEmail"
-              dataIdentifier={{ cy: 'username-field' }}
-              labelSecret={t('shared.generic.password')}
-              fieldSecret="password"
-              dataSecret={{ cy: 'password-field' }}
-              isSubmitting={isSubmitting}
-              installAndroid={t('pwa.login.installAndroid')}
-              installIOS={t('pwa.login.installIOS')}
-            />
-          )
+        validationSchema={loginSchema(magicLinkLogin)}
+        onSubmit={(values: any, { setSubmitting, resetForm }: any) => {
+          if (magicLinkLogin) {
+            // TODO implement logic
+            console.log('magic link login')
+          } else {
+            loginWithPassword(values, { setSubmitting, resetForm })
+          }
         }}
+      >
+        {({ isSubmitting }) => (
+          <LoginForm
+            labelIdentifier={t('shared.generic.usernameOrEmail')}
+            fieldIdentifier="usernameOrEmail"
+            dataIdentifier={{ cy: 'username-field' }}
+            labelSecret={t('shared.generic.password')}
+            fieldSecret="password"
+            dataSecret={{ cy: 'password-field' }}
+            isSubmitting={isSubmitting}
+            installAndroid={t('pwa.login.installAndroid')}
+            installIOS={t('pwa.login.installIOS')}
+            magicLinkLogin={magicLinkLogin}
+            setMagicLinkLogin={setMagicLinkLogin}
+          />
+        )}
       </Formik>
       <Toast
         type="error"
