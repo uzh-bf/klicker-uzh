@@ -2,6 +2,7 @@ import { FetchResult, useLazyQuery, useMutation } from '@apollo/client'
 import {
   LoginParticipantDocument,
   SelfDocument,
+  SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -17,11 +18,14 @@ function Login() {
   const router = useRouter()
 
   const [loginParticipant] = useMutation(LoginParticipantDocument)
+  const [sendMagicLink] = useMutation(SendMagicLinkDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',
   })
   const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState<string>('')
   const [showError, setShowError] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
   const [magicLinkLogin, setMagicLinkLogin] = useState(true)
 
@@ -83,6 +87,29 @@ function Login() {
     }
   }
 
+  const sendMagicLinkEmail = async (values: any, { setSubmitting }: any) => {
+    setError('')
+    try {
+      const result = await sendMagicLink({
+        variables: {
+          usernameOrEmail: values.usernameOrEmail.trim(),
+        },
+      })
+
+      // show success message on success
+      if (result.data?.sendMagicLink) {
+        setSuccess(t('pwa.general.magicLinkSent'))
+        setShowSuccess(true)
+        setSubmitting(false)
+      }
+    } catch (e) {
+      console.error(e)
+      setError(t('shared.generic.systemError'))
+      setShowError(true)
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
@@ -90,8 +117,7 @@ function Login() {
         validationSchema={loginSchema(magicLinkLogin)}
         onSubmit={(values: any, { setSubmitting, resetForm }: any) => {
           if (magicLinkLogin) {
-            // TODO implement logic
-            console.log('magic link login')
+            sendMagicLinkEmail(values, { setSubmitting })
           } else {
             loginWithPassword(values, { setSubmitting, resetForm })
           }
@@ -120,6 +146,14 @@ function Login() {
         setOpenExternal={setShowError}
       >
         {error}
+      </Toast>
+      <Toast
+        type="success"
+        duration={8000}
+        openExternal={showSuccess}
+        setOpenExternal={setShowSuccess}
+      >
+        {success}
       </Toast>
     </div>
   )

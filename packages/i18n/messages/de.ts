@@ -218,6 +218,8 @@ export default {
     general: {
       magicLinkLogin: 'Magic Link Login',
       passwordLogin: 'Passwort Login',
+      magicLinkSent:
+        'Falls ein Account existiert, wurde ein Login-Link an die hinterlegte E-Mail Adresse gesendet.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',

@@ -601,6 +601,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

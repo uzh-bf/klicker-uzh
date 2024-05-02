@@ -154,6 +154,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      sendMagicLink: t.boolean({
+        nullable: true,
+        args: {
+          usernameOrEmail: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.sendMagicLink(args, ctx)
+        },
+      }),
+
       // createParticipantAndJoinCourse: t.field({
       //   nullable: true,
       //   type: Participant,

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
+import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -139,6 +140,45 @@ export async function loginParticipant(
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
+}
+
+interface SendMagicLinkArgs {
+  usernameOrEmail: string
+}
+
+export async function sendMagicLink(
+  { usernameOrEmail }: SendMagicLinkArgs,
+  ctx: Context
+) {
+  const participantWithUsername = await ctx.prisma.participant.findUnique({
+    where: { username: usernameOrEmail.trim() },
+  })
+  const participantWithEmail = await ctx.prisma.participant.findUnique({
+    where: { email: usernameOrEmail.trim().toLowerCase() },
+  })
+
+  const participant = participantWithUsername || participantWithEmail
+
+  // participant does not exist, return early
+  if (!participant) return true
+
+  const magicLinkToken = uuidv4()
+  const magicLinkExpiration = dayjs().add(15, 'minute').toDate()
+
+  // set loginToken and loginTokenExpiresAt
+  await ctx.prisma.participant.update({
+    where: { id: participant.id },
+    data: {
+      magicLinkToken: magicLinkToken,
+      magicLinkExpiresAt: magicLinkExpiration,
+    },
+  })
+
+  // TODO: send email to user with magic link
+  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magic-login?token=${magicLinkToken}`
+  console.log(magicLink)
+
+  return true
 }
 
 export async function logoutParticipant(_: any, ctx: ContextWithUser) {
