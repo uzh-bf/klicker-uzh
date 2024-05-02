@@ -253,6 +253,10 @@ export const QuestionResponse = QuestionResponseRef.implement({
       type: 'Date',
       nullable: true,
     }),
+    lastAnsweredAt: t.expose('lastAnsweredAt', {
+      type: 'Date',
+      nullable: true,
+    }),
 
     correctCount: t.exposeInt('correctCount'),
     correctCountStreak: t.exposeInt('correctCountStreak'),
@@ -263,6 +267,10 @@ export const QuestionResponse = QuestionResponseRef.implement({
       type: 'Date',
       nullable: true,
     }),
+
+    eFactor: t.exposeFloat('eFactor'),
+    interval: t.exposeInt('interval'),
+    nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
 
     wrongCount: t.exposeInt('wrongCount'),
     lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
