@@ -100,6 +100,7 @@ describe('Different microlearning workflows', () => {
     // sign in as student on a laptop and respond to one question
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -122,6 +123,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.viewport('iphone-x')
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -227,6 +229,7 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -338,6 +341,7 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -438,6 +442,7 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -533,6 +538,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -570,6 +576,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))

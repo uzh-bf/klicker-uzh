@@ -107,6 +107,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
     cy.viewport('iphone-x')
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))

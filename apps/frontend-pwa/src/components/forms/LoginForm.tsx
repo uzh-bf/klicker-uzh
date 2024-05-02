@@ -125,6 +125,8 @@ export function LoginForm({
                     fluid
                     className={{ root: 'flex flex-row gap-2' }}
                     type="submit"
+                    disabled={isSubmitting}
+                    data={{ cy: 'magic-link-login' }}
                   >
                     <div>
                       <FontAwesomeIcon
@@ -138,6 +140,7 @@ export function LoginForm({
                     fluid
                     type="button"
                     onClick={() => setMagicLinkLogin(false)}
+                    data={{ cy: 'password-login' }}
                   >
                     {t('pwa.general.passwordLogin')}
                   </Button>
