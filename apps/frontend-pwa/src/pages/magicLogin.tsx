@@ -1,5 +1,8 @@
-import { useMutation } from '@apollo/client'
-import { LoginParticipantMagicLinkDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useLazyQuery, useMutation } from '@apollo/client'
+import {
+  LoginParticipantMagicLinkDocument,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, Toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -16,6 +19,9 @@ function MagicLogin() {
   const { token, username } = router.query
 
   const [loginWithMagicLink] = useMutation(LoginParticipantMagicLinkDocument)
+  const [fetchSelf] = useLazyQuery(SelfDocument, {
+    fetchPolicy: 'network-only',
+  })
   const [showError, setShowError] = useState(false)
 
   // set timeout of 2 seconds to show the loader and then login in timeout callback
@@ -32,9 +38,9 @@ function MagicLogin() {
         })
 
         if (result?.data?.loginParticipantMagicLink) {
-          // TODO: fetch profile data as for normal login
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
+          await fetchSelf()
           router.push('/')
         } else {
           setShowError(true)
