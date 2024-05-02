@@ -220,6 +220,10 @@ export default {
       passwordLogin: 'Password Login',
       magicLinkSent:
         'If an account exists, a magic link has been sent to the e-mail address.',
+      processingLogin:
+        'Your magic link login is being processed. Please wait a moment.',
+      magicLinkLoginFailed:
+        'The magic link login failed. You will be redirected to the login page.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',

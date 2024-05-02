@@ -1,0 +1,3 @@
+mutation LoginParticipantMagicLink($username: String!, $token: String!) {
+  loginParticipantMagicLink(username: $username, token: $token)
+}

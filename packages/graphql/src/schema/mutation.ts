@@ -154,6 +154,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginParticipantMagicLink: t.id({
+        nullable: true,
+        args: {
+          username: t.arg.string({ required: true }),
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantMagicLink(args, ctx)
+        },
+      }),
+
       sendMagicLink: t.boolean({
         nullable: true,
         args: {

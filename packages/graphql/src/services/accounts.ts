@@ -175,10 +175,44 @@ export async function sendMagicLink(
   })
 
   // TODO: send email to user with magic link
-  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magic-login?token=${magicLinkToken}`
+  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkToken}&username=${participant.username}`
   console.log(magicLink)
 
   return true
+}
+
+export async function loginParticipantMagicLink(
+  { username, token }: { username: string; token: string },
+  ctx: Context
+) {
+  if (!username || !token) return null
+  const participant = await ctx.prisma.participant.findUnique({
+    where: {
+      username: username,
+      magicLinkToken: token,
+      magicLinkExpiresAt: {
+        gte: new Date(),
+      },
+    },
+  })
+
+  if (!participant) return null
+
+  // reset magic link token and expiration
+  await ctx.prisma.participant.update({
+    where: { id: participant.id },
+    data: {
+      lastLoginAt: new Date(),
+      magicLinkToken: null,
+      magicLinkExpiresAt: null,
+    },
+  })
+
+  const jwt = createParticipantToken(participant.id)
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+
+  return participant.id
 }
 
 export async function logoutParticipant(_: any, ctx: ContextWithUser) {
