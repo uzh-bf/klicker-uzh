@@ -204,6 +204,8 @@ export default {
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
       'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
+    tosAgreementRequired:
+      'Please accept the terms of service and privacy policy before logging in.',
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
