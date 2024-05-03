@@ -1,6 +1,12 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
-import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  H1,
+  Tooltip,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
@@ -45,12 +51,40 @@ function SignInOutButton() {
     )
   }
 
+  const eduIdLoginButton = (
+    <Button
+      fluid
+      disabled={!tosChecked}
+      data={{ cy: 'eduid-login-button' }}
+      className={{ root: 'p-4 disabled:opacity-50' }}
+      onClick={() =>
+        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+          callbackUrl:
+            (router.query?.redirectTo as string) ??
+            process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+        })
+      }
+    >
+      <Image
+        src="/edu-id-logo.svg"
+        width={300}
+        height={90}
+        alt="Logo"
+        className="mx-auto"
+        data-cy="login-logo"
+      />
+    </Button>
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <p className="px-3 py-2 rounded shadow bg-slate-100 border-slate-300">
         {t('auth.loginInfo')}
       </p>
       <Checkbox
+        className={{
+          root: !tosChecked ? 'border border-red-500 bg-red-100' : undefined,
+        }}
         data={{ cy: 'tos-checkbox' }}
         label={
           <div className="text-sm">
@@ -82,27 +116,13 @@ function SignInOutButton() {
         checked={tosChecked}
       />
 
-      <Button
-        disabled={!tosChecked}
-        data={{ cy: 'eduid-login-button' }}
-        className={{ root: 'p-4 disabled:opacity-50' }}
-        onClick={() =>
-          signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-            callbackUrl:
-              (router.query?.redirectTo as string) ??
-              process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
-          })
-        }
-      >
-        <Image
-          src="/edu-id-logo.svg"
-          width={300}
-          height={90}
-          alt="Logo"
-          className="mx-auto"
-          data-cy="login-logo"
-        />
-      </Button>
+      {!tosChecked ? (
+        <Tooltip tooltip={t('auth.tosAgreementRequired')}>
+          {eduIdLoginButton}
+        </Tooltip>
+      ) : (
+        eduIdLoginButton
+      )}
       <Button
         className={{
           root: 'disabled:opacity-50 justify-center italic',

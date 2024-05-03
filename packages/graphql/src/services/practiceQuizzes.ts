@@ -125,6 +125,9 @@ function combineNewCorrectnessParams({
   incorrect,
 }: CombineCorrectnessParamsInput) {
   return {
+    // track last answer date
+    lastAnsweredAt: new Date(),
+
     // CORRECT
     correctCount: correct ? 1 : 0,
     correctCountStreak: correct ? 1 : 0,
@@ -147,6 +150,9 @@ function combineCorrectnessParams({
   existingResponse,
 }: CombineCorrectnessParamsInput) {
   return {
+    // track last answer date
+    lastAnsweredAt: new Date(),
+
     // CORRECT
     correctCount: {
       increment: correct ? 1 : 0,
@@ -488,6 +494,7 @@ async function respondToContent(
       // CORRECT
       correctCount: 1,
       correctCountStreak: 1,
+      lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
     },
     update: {
@@ -511,6 +518,7 @@ async function respondToContent(
       correctCountStreak: {
         increment: 1,
       },
+      lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
     },
   })

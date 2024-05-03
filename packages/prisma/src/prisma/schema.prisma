@@ -988,6 +988,7 @@ model QuestionResponse {
   totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
+  lastAnsweredAt     DateTime?
 
   correctCount       Int       @default(0)
   correctCountStreak Int       @default(0)
@@ -998,6 +999,11 @@ model QuestionResponse {
 
   wrongCount  Int       @default(0)
   lastWrongAt DateTime?
+
+  // spaced repetition parameters
+  eFactor   Float     @default(2.5)
+  interval  Int       @default(1)
+  nextDueAt DateTime?
 
   /// [PrismaQuestionResponse]
   response Json

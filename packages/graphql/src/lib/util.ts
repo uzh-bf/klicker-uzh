@@ -1,3 +1,8 @@
+import {
+  ElementInstance,
+  ElementStack,
+  QuestionResponse,
+} from '@klicker-uzh/prisma'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -58,30 +63,45 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-export const orderStacks = R.sort((a: any, b: any) => {
-  const aResponses = a.elements[0].responses
-  const bResponses = b.elements[0].responses
+export const orderStacks = R.sort(
+  (
+    a: ElementStack & {
+      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
+    },
+    b: ElementStack & {
+      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
+    }
+  ) => {
+    const aResponses = a.elements[0].responses
+    const bResponses = b.elements[0].responses
 
-  // place instances, which have never been answered at the front
-  if (aResponses.length === 0 && bResponses.length === 0) return 0
-  if (aResponses.length === 0) return -1
-  if (bResponses.length === 0) return 1
+    // place instances, which have never been answered at the front
+    if (
+      !aResponses ||
+      !bResponses ||
+      (aResponses.length === 0 && bResponses.length === 0)
+    )
+      return 0
+    if (aResponses.length === 0) return -1
+    if (bResponses.length === 0) return 1
 
-  const aResponse = aResponses[0]
-  const bResponse = bResponses[0]
+    const aResponse = aResponses[0]
+    const bResponse = bResponses[0]
 
-  // sort first according by correctCountStreak ascending, then by correctCount ascending, then by the lastResponseAt from old to new
-  if (aResponse.correctCountStreak < bResponse.correctCountStreak) return -1
-  if (aResponse.correctCountStreak > bResponse.correctCountStreak) return 1
+    // sort first according by correctCountStreak ascending, then by correctCount ascending, then by the lastResponseAt from old to new
+    if (aResponse.correctCountStreak < bResponse.correctCountStreak) return -1
+    if (aResponse.correctCountStreak > bResponse.correctCountStreak) return 1
 
-  if (aResponse.correctCount < bResponse.correctCount) return -1
-  if (aResponse.correctCount > bResponse.correctCount) return 1
+    if (aResponse.correctCount < bResponse.correctCount) return -1
+    if (aResponse.correctCount > bResponse.correctCount) return 1
 
-  if (aResponse.lastCorrectAt < bResponse.lastCorrectAt) return -1
-  if (aResponse.lastCorrectAt > bResponse.lastCorrectAt) return 1
+    if (!aResponse.lastCorrectAt || !bResponse.lastCorrectAt) return 0
+    if (aResponse.lastCorrectAt < bResponse.lastCorrectAt) return -1
+    if (aResponse.lastCorrectAt > bResponse.lastCorrectAt) return 1
 
-  return 0
-})
+    return 0
+  }
+)
 
 export async function sendEmailMigrationNotification(
   email: string,
