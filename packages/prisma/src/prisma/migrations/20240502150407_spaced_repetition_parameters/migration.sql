@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "QuestionResponse" ADD COLUMN     "eFactor" DOUBLE PRECISION NOT NULL DEFAULT 2.5,
+ADD COLUMN     "interval" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "lastAnsweredAt" TIMESTAMP(3),
+ADD COLUMN     "nextDueAt" TIMESTAMP(3);

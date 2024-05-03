@@ -1601,12 +1601,16 @@ export type QuestionResponse = {
   aggregatedResponses?: Maybe<Scalars['Json']['output']>;
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
   id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
   lastAwardedAt?: Maybe<Scalars['Date']['output']>;
   lastCorrectAt?: Maybe<Scalars['Date']['output']>;
   lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
   lastWrongAt?: Maybe<Scalars['Date']['output']>;
   lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
   partialCorrectCount: Scalars['Int']['output'];
   response: Scalars['Json']['output'];
   totalPointsAwarded?: Maybe<Scalars['Float']['output']>;

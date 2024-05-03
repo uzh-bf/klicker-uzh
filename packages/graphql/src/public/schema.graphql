@@ -878,12 +878,16 @@ type QuestionResponse {
   aggregatedResponses: Json
   correctCount: Int!
   correctCountStreak: Int!
+  eFactor: Float!
   id: Int!
+  interval: Int!
+  lastAnsweredAt: Date
   lastAwardedAt: Date
   lastCorrectAt: Date
   lastPartialCorrectAt: Date
   lastWrongAt: Date
   lastXpAwardedAt: Date
+  nextDueAt: Date
   partialCorrectCount: Int!
   response: Json!
   totalPointsAwarded: Float
