@@ -1219,10 +1219,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
-      publishingHint:
-        'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      practicePublishingHint:
+        'Das Publizieren eines Übungs-Quizzes macht das Element ab dem Startdatum (falls spezifiziert / anderenfalls ab sofort) für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Übungs-Quizzes mit einem Startdatum in der Zukunft werden automatisch zum enstprechenden Zeitpunkt für die Teilnehmenden sichtbar.',
       microPublishingHint:
-        'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
+        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       confirmDeletionMicrolearning:
         'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
       hintDeletionMicrolearning:

@@ -1210,10 +1210,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
-      publishingHint:
-        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
+      practicePublishingHint:
+        'Publishing a practice quiz makes the element visible to all participants from the start date (if specified / otherwise immediately). This process can only be undone if the start time is in the future and/or no answers have been submitted. Practice quizzes with a start date in the future will automatically become visible to participants at the corresponding time.',
       microPublishingHint:
-        'Microlearnings are additionally only visible within the specified date range.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future and/or no answers have been submitted. Changes to the content of an element cannot be made after publishing.',
       confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicrolearning:
