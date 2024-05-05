@@ -597,6 +597,7 @@ type Mutation {
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
+  publishScheduledPracticeQuizzes: Boolean!
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback

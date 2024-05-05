@@ -211,6 +211,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      publishScheduledPracticeQuizzes: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
+        },
+      }),
+
       createParticipantAccount: t.field({
         nullable: true,
         type: ParticipantTokenData,

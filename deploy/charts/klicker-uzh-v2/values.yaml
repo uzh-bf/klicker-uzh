@@ -1,4 +1,4 @@
-teamsWebhookUrl: ''
+teamsWebhookUrl: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -45,6 +45,7 @@ vapid:
 cron:
   dailyGroupScores: "* * * * *"
   pushNotifications: "*/5 * * * *"
+  practiceQuizPublications: "*/5 * * * *"
   token: ""
 
 auth:

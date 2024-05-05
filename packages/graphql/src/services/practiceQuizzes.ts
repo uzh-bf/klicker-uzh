@@ -1764,31 +1764,123 @@ export async function publishPracticeQuiz(
   { id }: PublishPracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
     },
-    data: {
-      status: PublicationStatus.PUBLISHED,
-    },
-    include: {
-      stacks: true,
-    },
   })
 
-  // connect all elementStacks in the practice quiz to the course
-  const courseId = practiceQuiz.courseId
-  await ctx.prisma.course.update({
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (
+    practiceQuiz.availableFrom &&
+    dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
+  ) {
+    // change the status of the practice quiz to scheduled for the cronjob to identify it and publish it at the given time
+    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return updatedQuiz
+  } else {
+    // publish practice quiz completely and link all stacks to the course
+    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+      },
+      include: {
+        stacks: true,
+      },
+    })
+
+    // connect all elementStacks in the practice quiz to the course
+    const courseId = updatedQuiz.courseId
+    await ctx.prisma.course.update({
+      where: {
+        id: courseId,
+      },
+      data: {
+        elementStacks: {
+          connect: updatedQuiz.stacks.map((stack) => ({ id: stack.id })),
+        },
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return updatedQuiz
+  }
+}
+
+export async function publishScheduledPracticeQuizzes(ctx: Context) {
+  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
     where: {
-      id: courseId,
-    },
-    data: {
-      elementStacks: {
-        connect: practiceQuiz.stacks.map((stack) => ({ id: stack.id })),
+      status: PublicationStatus.SCHEDULED,
+      availableFrom: {
+        lte: new Date(),
       },
     },
   })
 
-  return practiceQuiz
+  const updatedQuizzes = await Promise.all(
+    quizzesToPublish.map((quiz) =>
+      ctx.prisma.practiceQuiz.update({
+        where: {
+          id: quiz.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          stacks: true,
+        },
+      })
+    )
+  )
+
+  await Promise.all(
+    updatedQuizzes.map((quiz) =>
+      ctx.prisma.course.update({
+        where: {
+          id: quiz.courseId,
+        },
+        data: {
+          elementStacks: {
+            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
+          },
+        },
+      })
+    )
+  )
+
+  updatedQuizzes.forEach((quiz) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: quiz.id,
+    })
+  })
+
+  return true
 }
