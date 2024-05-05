@@ -55,6 +55,7 @@ export default {
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
+      scheduled: 'Geplant',
       published: 'Öffentlich',
       points: 'Punkte',
       title: 'KlickerUZH',

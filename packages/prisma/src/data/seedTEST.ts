@@ -704,7 +704,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.SCHEDULED,
       orderType: Prisma.ElementOrderType.SPACED_REPETITION,
       availableFrom: new Date('2030-01-01T11:00:00.000Z'),
       stacks: {

@@ -145,7 +145,39 @@ function PracticeQuizElement({
               </>
             )}
 
-            {/* // TODO: add case for scheduled */}
+            {practiceQuiz.status === PublicationStatus.Scheduled && (
+              <>
+                <PracticeQuizAccessLink
+                  practiceQuiz={practiceQuiz}
+                  href={href}
+                />
+                {/* // TODO: add possibilities to unpusblish the quiz here
+                <Dropdown
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <PracticeQuizPreviewLink
+                          practiceQuiz={practiceQuiz}
+                          href={href}
+                        />
+                      ),
+                      onClick: () => null,
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                /> */}
+                <StatusTag
+                  color="bg-green-300"
+                  status={t('shared.generic.scheduled')}
+                  icon={faClock}
+                />
+              </>
+            )}
 
             {practiceQuiz.status === PublicationStatus.Published && (
               <>
@@ -175,7 +207,7 @@ function PracticeQuizElement({
                 <StatusTag
                   color="bg-green-300"
                   status={t('shared.generic.published')}
-                  icon={isFuture ? faClock : faUserGroup}
+                  icon={faUserGroup}
                 />
               </>
             )}

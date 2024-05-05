@@ -55,6 +55,7 @@ export default {
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
+      scheduled: 'Scheduled',
       published: 'Published',
       points: 'Points',
       title: 'KlickerUZH',
