@@ -1610,13 +1610,18 @@ export async function manipulatePracticeQuiz(
     {}
   )
 
+  const availabilityTime =
+    availableFrom && dayjs(availableFrom).isBefore(dayjs())
+      ? undefined
+      : availableFrom ?? undefined
+
   const createOrUpdateJSON = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
-    availableFrom: availableFrom ?? undefined,
+    availableFrom: availabilityTime,
     resetTimeDays: resetTimeDays,
     stacks: {
       create: stacks.map((stack) => {
