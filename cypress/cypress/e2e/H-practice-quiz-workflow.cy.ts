@@ -296,8 +296,8 @@ describe('Different practice quiz workflows', () => {
 
     // edit the practice quiz and change the availability date to the past
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).click()
-    cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
+    cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName3}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
@@ -310,7 +310,7 @@ describe('Different practice quiz workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
       messages.shared.generic.draft
     )
 
