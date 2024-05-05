@@ -162,6 +162,7 @@ function PracticeQuizElement({
                   href={href}
                 />
                 <Dropdown
+                  data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
                   className={{
                     item: 'p-1 hover:bg-gray-200',
                     viewport: 'bg-white',
@@ -202,6 +203,7 @@ function PracticeQuizElement({
                   href={href}
                 />
                 <Dropdown
+                  data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
                   className={{
                     item: 'p-1 hover:bg-gray-200',
                     viewport: 'bg-white',
