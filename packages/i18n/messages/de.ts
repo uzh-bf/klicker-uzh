@@ -142,6 +142,7 @@ export default {
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
+      availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
       repetitionInterval: 'Wiederholungszeitraum',
@@ -944,6 +945,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizAvailableFrom:
+        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:

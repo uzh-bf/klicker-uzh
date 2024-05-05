@@ -142,6 +142,7 @@ export default {
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
+      availableFrom: 'Available from',
       startDate: 'Start date',
       endDate: 'End date',
       repetitionInterval: 'Repetition interval',
@@ -941,6 +942,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
+      practiceQuizAvailableFrom:
+        'Specify an optional start date from which the practice quiz is available after publication. If you do not change the date, the quiz is available on the course overview immediately after publication.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:

@@ -1526,6 +1526,7 @@ interface ManipulatePracticeQuizArgs {
   courseId: string
   multiplier: number
   order: ElementOrderType
+  availableFrom?: Date | null
   resetTimeDays: number
 }
 
@@ -1539,6 +1540,7 @@ export async function manipulatePracticeQuiz(
     courseId,
     multiplier,
     order,
+    availableFrom,
     resetTimeDays,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser
@@ -1614,6 +1616,7 @@ export async function manipulatePracticeQuiz(
     description,
     pointsMultiplier: multiplier,
     orderType: order,
+    availableFrom: availableFrom ?? undefined,
     resetTimeDays: resetTimeDays,
     stacks: {
       create: stacks.map((stack) => {

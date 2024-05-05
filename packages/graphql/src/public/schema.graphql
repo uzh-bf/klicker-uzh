@@ -556,7 +556,7 @@ type Mutation {
   createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
@@ -570,7 +570,7 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
-  editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session

@@ -995,6 +995,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1022,6 +1023,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
