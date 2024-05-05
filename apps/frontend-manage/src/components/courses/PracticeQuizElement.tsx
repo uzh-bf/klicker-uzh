@@ -5,6 +5,7 @@ import {
   faCopy,
   faHandPointer,
   faHourglassStart,
+  faLock,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -14,6 +15,7 @@ import {
   GetSingleCourseDocument,
   PracticeQuiz,
   PublicationStatus,
+  UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
@@ -40,10 +42,18 @@ function PracticeQuizElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
-  const isFuture = dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
 
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
     variables: { id: practiceQuiz.id! },
+    // TODO: add optimistic response and update cache
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
+
+  const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
+    variables: { id: practiceQuiz.id! },
+    // TODO: add optimistic response and update cache
     refetchQueries: [
       { query: GetSingleCourseDocument, variables: { courseId: courseId } },
     ],
@@ -151,7 +161,6 @@ function PracticeQuizElement({
                   practiceQuiz={practiceQuiz}
                   href={href}
                 />
-                {/* // TODO: add possibilities to unpusblish the quiz here
                 <Dropdown
                   className={{
                     item: 'p-1 hover:bg-gray-200',
@@ -161,16 +170,23 @@ function PracticeQuizElement({
                   items={[
                     {
                       label: (
-                        <PracticeQuizPreviewLink
-                          practiceQuiz={practiceQuiz}
-                          href={href}
-                        />
+                        <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                          <FontAwesomeIcon
+                            icon={faLock}
+                            className="w-[1.1rem]"
+                          />
+
+                          <div>{t('manage.course.unpublishPracticeQuiz')}</div>
+                        </div>
                       ),
-                      onClick: () => null,
+                      onClick: async () => await unpublishPracticeQuiz(),
+                      data: {
+                        cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
+                      },
                     },
                   ]}
                   triggerIcon={faHandPointer}
-                /> */}
+                />
                 <StatusTag
                   color="bg-green-300"
                   status={t('shared.generic.scheduled')}

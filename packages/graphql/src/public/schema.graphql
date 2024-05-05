@@ -611,6 +611,7 @@ type Mutation {
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishMicroLearning(id: String!): MicroLearning
+  unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant

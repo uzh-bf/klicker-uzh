@@ -1721,6 +1721,35 @@ export async function getBookmarksPracticeQuiz(
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
+interface UnpublishPracticeQuizArgs {
+  id: string
+}
+
+export async function unpublishPracticeQuiz(
+  { id }: UnpublishPracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.SCHEDULED,
+    },
+    data: {
+      status: PublicationStatus.DRAFT,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  return practiceQuiz
+}
+
 interface DeletePracticeQuizArgs {
   id: string
 }

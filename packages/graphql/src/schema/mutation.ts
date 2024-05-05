@@ -1096,6 +1096,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      unpublishPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
+          },
+        }),
+
       unpublishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

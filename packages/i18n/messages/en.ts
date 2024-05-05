@@ -1225,6 +1225,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following practice quiz?',
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      unpublishPracticeQuiz: 'Unpublish practice quiz',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
     },
