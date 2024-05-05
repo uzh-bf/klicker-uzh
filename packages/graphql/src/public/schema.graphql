@@ -772,6 +772,7 @@ type Participation {
 }
 
 type PracticeQuiz {
+  availableFrom: Date
   course: Course
   courseId: String
   description: String
@@ -789,6 +790,7 @@ type PracticeQuiz {
 enum PublicationStatus {
   DRAFT
   PUBLISHED
+  SCHEDULED
 }
 
 type PushSubscription {

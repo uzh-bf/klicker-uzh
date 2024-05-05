@@ -11736,6 +11736,18 @@
         "description": null,
         "fields": [
           {
+            "name": "availableFrom",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "course",
             "description": null,
             "args": [],
@@ -11937,6 +11949,12 @@
           },
           {
             "name": "PUBLISHED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SCHEDULED",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

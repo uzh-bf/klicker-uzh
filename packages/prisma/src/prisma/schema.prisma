@@ -29,7 +29,7 @@ model Migration {
 
 enum PublicationStatus {
   DRAFT
-  // REVIEW
+  SCHEDULED
   PUBLISHED
 }
 
@@ -366,6 +366,7 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
+  availableFrom    DateTime?
 
   stacks ElementStack[]
 

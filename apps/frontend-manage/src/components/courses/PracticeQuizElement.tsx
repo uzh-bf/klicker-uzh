@@ -1,9 +1,10 @@
 import { useMutation } from '@apollo/client'
 import { WizardMode } from '@components/sessions/creation/SessionCreation'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
   faHandPointer,
+  faHourglassStart,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -16,6 +17,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -38,6 +40,7 @@ function PracticeQuizElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const isFuture = dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
 
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
     variables: { id: practiceQuiz.id! },
@@ -142,6 +145,8 @@ function PracticeQuizElement({
               </>
             )}
 
+            {/* // TODO: add case for scheduled */}
+
             {practiceQuiz.status === PublicationStatus.Published && (
               <>
                 <PracticeQuizAccessLink
@@ -170,7 +175,7 @@ function PracticeQuizElement({
                 <StatusTag
                   color="bg-green-300"
                   status={t('shared.generic.published')}
-                  icon={faUserGroup}
+                  icon={isFuture ? faClock : faUserGroup}
                 />
               </>
             )}
@@ -184,6 +189,20 @@ function PracticeQuizElement({
             number: practiceQuiz.numOfStacks || '0',
           })}
         </div>
+        {practiceQuiz.availableFrom && (
+          <div className="flex flex-row gap-4 text-sm">
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faHourglassStart} />
+              <div>
+                {t('manage.course.startAt', {
+                  time: dayjs(practiceQuiz.availableFrom)
+                    .local()
+                    .format('DD.MM.YYYY, HH:mm'),
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Toast
         openExternal={copyToast}
