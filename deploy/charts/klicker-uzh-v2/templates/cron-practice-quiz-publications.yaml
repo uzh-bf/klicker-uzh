@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "chart.fullname" . }}-cron-push
+  name: {{ include "chart.fullname" . }}-cron-practice-quiz-publications
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
