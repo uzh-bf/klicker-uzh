@@ -1561,8 +1561,6 @@ export async function manipulatePracticeQuiz(
       },
     })
 
-    console.log('INSIDE METHOD WITH AVAILABLE FROM VALUE:', availableFrom)
-
     if (!oldElement) {
       throw new GraphQLError('Practice quiz not found')
     }
