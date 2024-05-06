@@ -1026,6 +1026,8 @@ model QuestionResponse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  isMigrated Boolean @default(false)
+
   @@unique([participantId, questionInstanceId])
   @@unique([participantId, elementInstanceId])
 }
