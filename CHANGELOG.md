@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.33...v3.1.0-rc.34) (2024-05-06)
+
+
+### Features
+
+* add optional start date and cronjob for automated practice quiz publication ([#4109](https://github.com/uzh-bf/klicker-uzh/issues/4109)) ([efd7d16](https://github.com/uzh-bf/klicker-uzh/commit/efd7d1631ecab3d5912c738de969499fe99d78b6))
+
 ## [3.1.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.32...v3.1.0-rc.33) (2024-05-05)
 
 
