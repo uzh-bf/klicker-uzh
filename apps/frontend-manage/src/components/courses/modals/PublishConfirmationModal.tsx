@@ -13,6 +13,7 @@ interface PublishConfirmationModalProps {
     | ElementInstanceType.PracticeQuiz
   elementId: string
   title: string
+  publicationHint: string
   open: boolean
   setOpen: (value: boolean) => void
 }
@@ -21,6 +22,7 @@ function PublishConfirmationModal({
   elementType,
   elementId,
   title,
+  publicationHint,
   open,
   setOpen,
 }: PublishConfirmationModalProps) {
@@ -75,16 +77,11 @@ function PublishConfirmationModal({
       }}
     >
       <div>
-        <div>{t('manage.course.confirmPublishing')}</div>
+        <div className="text-base">{t('manage.course.confirmPublishing')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
-        <div className="mt-6 mb-2 text-sm italic">
-          {elementType === ElementInstanceType.PracticeQuiz &&
-            t('manage.course.practicePublishingHint')}
-          {elementType === ElementInstanceType.Microlearning &&
-            t('manage.course.microPublishingHint')}
-        </div>
+        <div className="mt-3 mb-2 text-sm italic">{publicationHint}</div>
       </div>
     </Modal>
   )
