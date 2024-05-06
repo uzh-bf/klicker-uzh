@@ -290,7 +290,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
     cy.get(`[data-cy="unpublish-practiceQuiz-${practiceQuizName3}"]`).click()
-    cy.get(`[data-cy="microlearning-${practiceQuizName3}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
       messages.shared.generic.draft
     )
 
