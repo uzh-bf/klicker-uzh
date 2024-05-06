@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.34...v3.1.0-rc.35) (2024-05-06)
+
+
+### Bug Fixes
+
+* ensure that practice quiz cronjob name is shorter than maximum name length ([5ea90b2](https://github.com/uzh-bf/klicker-uzh/commit/5ea90b217fd31101c39aa3cefb213864c3125f8c))
+
 ## [3.1.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.33...v3.1.0-rc.34) (2024-05-06)
 
 
