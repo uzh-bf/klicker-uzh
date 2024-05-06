@@ -14,7 +14,6 @@ import {
   FormikTextField,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
 import { ErrorMessage } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -50,7 +49,6 @@ function MicroLearningWizard({
 
   const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
   const [editMicroLearning] = useMutation(EditMicroLearningDocument)
-  dayjs.extend(utc)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
