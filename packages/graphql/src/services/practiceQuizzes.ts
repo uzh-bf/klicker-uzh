@@ -1561,6 +1561,8 @@ export async function manipulatePracticeQuiz(
       },
     })
 
+    console.log('INSIDE METHOD WITH AVAILABLE FROM VALUE:', availableFrom)
+
     if (!oldElement) {
       throw new GraphQLError('Practice quiz not found')
     }
@@ -1612,7 +1614,7 @@ export async function manipulatePracticeQuiz(
 
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
-      ? undefined
+      ? null
       : availableFrom ?? undefined
 
   const createOrUpdateJSON = {
