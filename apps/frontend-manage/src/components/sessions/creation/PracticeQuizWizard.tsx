@@ -231,7 +231,7 @@ function PracticeQuizWizard({
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}`)
+          router.push(`/courses/${selectedCourseId}?tab=practiceQuizzes`)
         }}
         workflowItems={[
           {

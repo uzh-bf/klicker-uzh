@@ -224,7 +224,7 @@ function MicroLearningWizard({
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}`)
+          router.push(`/courses/${selectedCourseId}?tab=microLearnings`)
         }}
         workflowItems={[
           {
