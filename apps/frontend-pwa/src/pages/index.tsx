@@ -243,11 +243,7 @@ const Index = function () {
               <div>
                 <FontAwesomeIcon icon={faBullhorn} />
               </div>
-              <div>
-                Help shape the future of KlickerUZH by sharing your experiences
-                and needs for personal learning analytics. Complete our 15-min
-                survey for a chance to win a 25.- voucher.
-              </div>
+              <div>{t('pwa.general.surveyInvitation')}</div>
             </Button>
           </Link>
         )}
