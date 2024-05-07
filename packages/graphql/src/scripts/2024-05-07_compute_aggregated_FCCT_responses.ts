@@ -25,6 +25,9 @@ async function run() {
             in: [ElementType.FLASHCARD, ElementType.CONTENT],
           },
         },
+        aggregatedResponses: {
+          not: null,
+        },
       },
       include: {
         elementInstance: {
@@ -34,7 +37,7 @@ async function run() {
       orderBy: {
         createdAt: 'asc',
       },
-      take: 250,
+      take: 100,
       skip: offset,
     })
 
@@ -55,14 +58,14 @@ async function run() {
     // loop over responses and update them as required
     for (const response of responses) {
       // console.log(`${counter}/${total}`)
-      const aggregatedResponses = response.aggregatedResponses
+      // const aggregatedResponses = response.aggregatedResponses
 
-      if (aggregatedResponses === null) {
-        console.log(
-          `Aggregated responses for questionResponse ${response.id} are set to null`
-        )
-        continue
-      }
+      // if (aggregatedResponses === null) {
+      //   console.log(
+      //     `Aggregated responses for questionResponse ${response.id} are set to null`
+      //   )
+      //   continue
+      // }
 
       const detailResponses = await prisma.questionResponseDetail.findMany({
         where: {
@@ -219,7 +222,7 @@ async function run() {
     // ! USE THIS STATEMENT TO EXECUTE UPDATES
     await Promise.allSettled(updatePromises)
 
-    offset += 250
+    offset += 100
   }
 }
 
