@@ -13,9 +13,9 @@ async function run() {
 
   const startTime = new Date().getTime()
 
-  let doContinue = true
+  let offset = 0
 
-  while (doContinue) {
+  while (offset >= 0) {
     // fetch all question responses belonging to an element instance with type SC, MC, KPRIM, NUMERICAL or FREE_TEXT
     const responses = await prisma.questionResponse.findMany({
       where: {
@@ -34,11 +34,12 @@ async function run() {
       orderBy: {
         createdAt: 'asc',
       },
-      take: 100,
+      take: 250,
+      skip: offset,
     })
 
     if (responses.length === 0) {
-      doContinue = false
+      offset = -1
       break
     }
 
@@ -144,7 +145,10 @@ async function run() {
           updatePromises.push(
             prisma.questionResponse.update({
               where: { id: response.id },
-              data: { aggregatedResponses: aggregatedResponses },
+              data: {
+                aggregatedResponses: aggregatedResponses,
+                isMigrated: true,
+              },
             })
           )
 
@@ -180,7 +184,10 @@ async function run() {
           updatePromises.push(
             prisma.questionResponse.update({
               where: { id: response.id },
-              data: { aggregatedResponses: aggregatedResponses },
+              data: {
+                aggregatedResponses: aggregatedResponses,
+                isMigrated: true,
+              },
             })
           )
 
@@ -200,6 +207,7 @@ async function run() {
     }
 
     // logging
+    console.warn(`Time elapsed: ${(new Date().getTime() - startTime) / 1000}`)
     console.log(
       `Total considered question responses with inconsistent aggregated results: ${responses.length}`
     )
@@ -210,6 +218,8 @@ async function run() {
 
     // ! USE THIS STATEMENT TO EXECUTE UPDATES
     await Promise.allSettled(updatePromises)
+
+    offset += 250
   }
 }
 
