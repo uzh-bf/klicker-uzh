@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
+  faBullhorn,
   faChalkboard,
   faCheck,
   faCirclePlus,
@@ -9,6 +10,7 @@ import {
   faLink,
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroLearning,
   ParticipationsDocument,
@@ -18,10 +20,13 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
@@ -45,7 +50,15 @@ type LocalMicroLearningType = Partial<MicroLearning> & {
 }
 
 const Index = function () {
+  const router = useRouter()
   const t = useTranslations()
+
+  const { value: hasSeenSurvey, setValue: setHasSeenSurvey } = useStickyState(
+    'hasSeenSurvey',
+    false
+  )
+
+  console.log(hasSeenSurvey)
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
@@ -214,6 +227,31 @@ const Index = function () {
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
+        {hasSeenSurvey === 'false' && (
+          <Link
+            href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
+            target="_blank"
+          >
+            <Button
+              className={{
+                root: 'text-sm flex flex-row gap-4 items-center bg-orange-100 border border-orange-200 rounded-lg p-2 text-left',
+              }}
+              onClick={() => {
+                setHasSeenSurvey(true)
+              }}
+            >
+              <div>
+                <FontAwesomeIcon icon={faBullhorn} />
+              </div>
+              <div>
+                Help shape the future of KlickerUZH by sharing your experiences
+                and needs for personal learning analytics. Complete our 15-min
+                survey for a chance to win a 25.- voucher.
+              </div>
+            </Button>
+          </Link>
+        )}
+
         {activeSessions.length !== 0 && (
           <div>
             <H1 className={{ root: 'text-xl mb-2' }}>
