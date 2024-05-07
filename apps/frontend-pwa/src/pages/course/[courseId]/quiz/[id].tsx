@@ -2,11 +2,13 @@ import { useQuery } from '@apollo/client'
 import {
   GetPracticeQuizDocument,
   PracticeQuiz as PracticeQuizType,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { UserNotification } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -47,6 +49,26 @@ function PracticeQuizPage({ courseId, id }: Props) {
   }
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
+
+  // show notification with activity start date
+  if (data.practiceQuiz.status === PublicationStatus.Scheduled) {
+    return (
+      <Layout
+        displayName={data.practiceQuiz.displayName}
+        course={data.practiceQuiz.course ?? undefined}
+      >
+        <UserNotification
+          type="warning"
+          message={t('pwa.practiceQuiz.scheduledAvailableFrom', {
+            name: data.practiceQuiz.displayName,
+            date: dayjs(data.practiceQuiz.availableFrom).format(
+              'DD.MM.YYYY HH:mm'
+            ),
+          })}
+        />
+      </Layout>
+    )
   }
 
   const handleNextQuestion = () => {
