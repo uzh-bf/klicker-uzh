@@ -1,9 +1,11 @@
 import { useMutation } from '@apollo/client'
 import { WizardMode } from '@components/sessions/creation/SessionCreation'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
   faHandPointer,
+  faHourglassStart,
+  faLock,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -13,9 +15,11 @@ import {
   GetSingleCourseDocument,
   PracticeQuiz,
   PublicationStatus,
+  UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -41,6 +45,15 @@ function PracticeQuizElement({
 
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
     variables: { id: practiceQuiz.id! },
+    // TODO: add optimistic response and update cache
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
+
+  const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
+    variables: { id: practiceQuiz.id! },
+    // TODO: add optimistic response and update cache
     refetchQueries: [
       { query: GetSingleCourseDocument, variables: { courseId: courseId } },
     ],
@@ -142,6 +155,47 @@ function PracticeQuizElement({
               </>
             )}
 
+            {practiceQuiz.status === PublicationStatus.Scheduled && (
+              <>
+                <PracticeQuizAccessLink
+                  practiceQuiz={practiceQuiz}
+                  href={href}
+                />
+                <Dropdown
+                  data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                          <FontAwesomeIcon
+                            icon={faLock}
+                            className="w-[1.1rem]"
+                          />
+
+                          <div>{t('manage.course.unpublishPracticeQuiz')}</div>
+                        </div>
+                      ),
+                      onClick: async () => await unpublishPracticeQuiz(),
+                      data: {
+                        cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
+                      },
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+                <StatusTag
+                  color="bg-green-300"
+                  status={t('shared.generic.scheduled')}
+                  icon={faClock}
+                />
+              </>
+            )}
+
             {practiceQuiz.status === PublicationStatus.Published && (
               <>
                 <PracticeQuizAccessLink
@@ -149,6 +203,7 @@ function PracticeQuizElement({
                   href={href}
                 />
                 <Dropdown
+                  data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
                   className={{
                     item: 'p-1 hover:bg-gray-200',
                     viewport: 'bg-white',
@@ -184,6 +239,20 @@ function PracticeQuizElement({
             number: practiceQuiz.numOfStacks || '0',
           })}
         </div>
+        {practiceQuiz.availableFrom && (
+          <div className="flex flex-row gap-4 text-sm">
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faHourglassStart} />
+              <div>
+                {t('manage.course.startAt', {
+                  time: dayjs(practiceQuiz.availableFrom)
+                    .local()
+                    .format('DD.MM.YYYY, HH:mm'),
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Toast
         openExternal={copyToast}

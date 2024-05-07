@@ -36,6 +36,7 @@ function PublishMicroLearningButton({
         elementType={ElementInstanceType.Microlearning}
         elementId={microLearning.id}
         title={microLearning.name}
+        publicationHint={t('manage.course.microPublishingHint')}
         open={publishModal}
         setOpen={setPublishModal}
       />

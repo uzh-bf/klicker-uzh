@@ -55,6 +55,7 @@ export default {
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
+      scheduled: 'Scheduled',
       published: 'Published',
       points: 'Points',
       title: 'KlickerUZH',
@@ -141,6 +142,7 @@ export default {
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
+      availableFrom: 'Available from',
       startDate: 'Start date',
       endDate: 'End date',
       repetitionInterval: 'Repetition interval',
@@ -940,6 +942,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
+      practiceQuizAvailableFrom:
+        'Specify an optional start date from which the practice quiz is available after publication. If you do not change the date, the quiz is available on the course overview immediately after publication.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1209,10 +1213,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
-      publishingHint:
-        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
+      practicePublishingHint:
+        'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
+      practiceSchedulingHint:
+        'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
-        'Microlearnings are additionally only visible within the specified date range.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future and/or no answers have been submitted. Changes to the content of an element cannot be made after publishing.',
       confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicrolearning:
@@ -1224,6 +1230,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following practice quiz?',
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      unpublishPracticeQuiz: 'Unpublish practice quiz',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
     },

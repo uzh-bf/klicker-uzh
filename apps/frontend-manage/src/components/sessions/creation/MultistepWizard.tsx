@@ -73,6 +73,7 @@ export interface PracticeQuizFormValues extends CommonFormValues {
     hasSampleSolution: boolean
   }[]
   order: any
+  availableFrom?: string
   resetTimeDays: string
 }
 

@@ -55,6 +55,7 @@ export default {
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
+      scheduled: 'Geplant',
       published: 'Öffentlich',
       points: 'Punkte',
       title: 'KlickerUZH',
@@ -141,6 +142,7 @@ export default {
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
+      availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
       repetitionInterval: 'Wiederholungszeitraum',
@@ -943,6 +945,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizAvailableFrom:
+        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1218,10 +1222,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
-      publishingHint:
-        'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      practicePublishingHint:
+        'Das Publizieren dieses Übungs-Quizzes macht das Element ab sofort für alle Teilnehmenden über den Zuganglink und die KlickerUZH App sichtbar. Dieser Prozess kann nicht rückgängig gemacht werden.',
+      practiceSchedulingHint:
+        'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
       microPublishingHint:
-        'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
+        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       confirmDeletionMicrolearning:
         'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
       hintDeletionMicrolearning:
@@ -1233,6 +1239,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishPracticeQuiz: 'Veröffentlichung aufheben',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
     },
