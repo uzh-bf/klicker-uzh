@@ -786,6 +786,7 @@ export async function getCoursePracticeQuiz(
     orderType: ElementOrderType.SPACED_REPETITION,
     status: PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
+    availableFrom: null,
     course,
     courseId,
     ownerId: course.ownerId,

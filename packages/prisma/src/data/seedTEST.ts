@@ -625,6 +625,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       courseId: COURSE_ID_TEST,
       status: Prisma.PublicationStatus.PUBLISHED,
       orderType: Prisma.ElementOrderType.SPACED_REPETITION,
+      availableFrom: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {
         create: [
           ...prepareStackVariety({
@@ -669,6 +670,47 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: [
           ...prepareStackVariety({
             migrationIdOffset: 300,
+            flashcards: [flashcards[0]],
+            questions: [questionsTest[0]],
+            contentElements: [contentElements[0]],
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_TEST,
+            connectToCourse: false,
+          }),
+        ],
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  const quizId3 = '56e51ab4-89e3-4d9d-ae04-dd9e8869fbd2'
+  const practiceQuiz3 = await prismaClient.practiceQuiz.upsert({
+    where: {
+      id: quizId3,
+    },
+    create: {
+      id: quizId3,
+      name: 'Practice Quiz Future',
+      displayName: 'Practice Quiz Future Student Title',
+      description:
+        'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      status: Prisma.PublicationStatus.SCHEDULED,
+      orderType: Prisma.ElementOrderType.SPACED_REPETITION,
+      availableFrom: new Date('2030-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 400,
             flashcards: [flashcards[0]],
             questions: [questionsTest[0]],
             contentElements: [contentElements[0]],

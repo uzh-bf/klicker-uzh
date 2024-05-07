@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.1.0-rc.32",
+  "version": "3.1.0-rc.35",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -76,6 +76,7 @@
     "ts-node": "10.9.1",
     "ts-node-dev": "2.0.0",
     "tsup": "7.2.0",
+    "tsx": "4.9.1",
     "typescript": "5.1.6",
     "web-push": "3.6.1"
   },

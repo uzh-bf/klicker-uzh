@@ -7,6 +7,7 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   displayName
   description
   pointsMultiplier
+  availableFrom
   resetTimeDays
   orderType
   numOfStacks

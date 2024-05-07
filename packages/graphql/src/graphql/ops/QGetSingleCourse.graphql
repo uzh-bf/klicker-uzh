@@ -32,6 +32,7 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
       status
+      availableFrom
       numOfStacks
     }
     groupActivities {
