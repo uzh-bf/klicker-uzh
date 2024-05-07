@@ -478,6 +478,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       flagQuestionText:
         'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       infoStack: 'Information element',
+      scheduledAvailableFrom:
+        'The practice quiz {name} will be available from {date}.',
       inactiveParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
