@@ -58,7 +58,6 @@ const Index = function () {
     false
   )
 
-  console.log(hasSeenSurvey)
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
