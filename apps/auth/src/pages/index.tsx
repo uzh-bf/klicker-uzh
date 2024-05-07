@@ -1,5 +1,6 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
+import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
 import {
   Button,
   Checkbox,
@@ -13,8 +14,6 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
-
-import useStickyState from 'src/hooks/useStickyState'
 
 function SignInOutButton() {
   const t = useTranslations()
