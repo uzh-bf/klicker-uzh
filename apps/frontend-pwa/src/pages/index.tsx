@@ -55,7 +55,7 @@ const Index = function () {
 
   const { value: hasSeenSurvey, setValue: setHasSeenSurvey } = useStickyState(
     'hasSeenSurvey',
-    false
+    'false'
   )
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
