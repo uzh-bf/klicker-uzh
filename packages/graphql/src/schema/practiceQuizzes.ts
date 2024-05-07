@@ -124,5 +124,6 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     course: t.expose('course', { type: CourseRef, nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
+    availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
   }),
 })

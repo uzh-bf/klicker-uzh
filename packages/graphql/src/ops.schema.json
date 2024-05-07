@@ -6842,6 +6842,18 @@
             "description": null,
             "args": [
               {
+                "name": "availableFrom",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Date",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "courseId",
                 "description": null,
                 "type": {
@@ -7666,6 +7678,18 @@
             "name": "editPracticeQuiz",
             "description": null,
             "args": [
+              {
+                "name": "availableFrom",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Date",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "courseId",
                 "description": null,
@@ -9207,6 +9231,22 @@
             "deprecationReason": null
           },
           {
+            "name": "publishScheduledPracticeQuizzes",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "requestMigrationToken",
             "description": null,
             "args": [
@@ -9725,6 +9765,35 @@
             "type": {
               "kind": "OBJECT",
               "name": "MicroLearning",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "unpublishPracticeQuiz",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "PracticeQuiz",
               "ofType": null
             },
             "isDeprecated": false,
@@ -11736,6 +11805,18 @@
         "description": null,
         "fields": [
           {
+            "name": "availableFrom",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "course",
             "description": null,
             "args": [],
@@ -11937,6 +12018,12 @@
           },
           {
             "name": "PUBLISHED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SCHEDULED",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

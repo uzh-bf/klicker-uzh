@@ -556,7 +556,7 @@ type Mutation {
   createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
@@ -570,7 +570,7 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
-  editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
@@ -597,6 +597,7 @@ type Mutation {
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
+  publishScheduledPracticeQuizzes: Boolean!
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
@@ -610,6 +611,7 @@ type Mutation {
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishMicroLearning(id: String!): MicroLearning
+  unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -772,6 +774,7 @@ type Participation {
 }
 
 type PracticeQuiz {
+  availableFrom: Date
   course: Course
   courseId: String
   description: String
@@ -789,6 +792,7 @@ type PracticeQuiz {
 enum PublicationStatus {
   DRAFT
   PUBLISHED
+  SCHEDULED
 }
 
 type PushSubscription {

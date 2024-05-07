@@ -4,7 +4,7 @@ import {
   PublishMicroLearningDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
@@ -13,6 +13,7 @@ interface PublishConfirmationModalProps {
     | ElementInstanceType.PracticeQuiz
   elementId: string
   title: string
+  publicationHint: string
   open: boolean
   setOpen: (value: boolean) => void
 }
@@ -21,6 +22,7 @@ function PublishConfirmationModal({
   elementType,
   elementId,
   title,
+  publicationHint,
   open,
   setOpen,
 }: PublishConfirmationModalProps) {
@@ -38,6 +40,7 @@ function PublishConfirmationModal({
 
   return (
     <Modal
+      title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
           onClick={async () => {
@@ -49,7 +52,7 @@ function PublishConfirmationModal({
             setOpen(false)
           }}
           className={{
-            root: 'font-bold text-white bg-primary-80',
+            root: 'font-bold text-white bg-primary-80 text-base',
           }}
           data={{ cy: 'confirm-publish-action' }}
         >
@@ -60,6 +63,7 @@ function PublishConfirmationModal({
         <Button
           onClick={(): void => setOpen(false)}
           data={{ cy: 'cancel-publish-action' }}
+          className={{ root: 'text-base' }}
         >
           {t('shared.generic.cancel')}
         </Button>
@@ -67,19 +71,17 @@ function PublishConfirmationModal({
       onClose={(): void => setOpen(false)}
       open={open}
       hideCloseButton={true}
-      className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+      className={{
+        content: 'w-[40rem] h-max self-center pt-0',
+        title: 'text-xl',
+      }}
     >
       <div>
-        <H2>{t(`manage.course.publishItem${elementType}`)}</H2>
-        <div>{t('manage.course.confirmPublishing')}</div>
+        <div className="text-base">{t('manage.course.confirmPublishing')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
-        <div className="mt-6 mb-2 text-sm italic">
-          {t('manage.course.publishingHint')}
-          {elementType === ElementInstanceType.Microlearning &&
-            t('manage.course.microPublishingHint')}
-        </div>
+        <div className="mt-3 mb-2 text-sm italic">{publicationHint}</div>
       </div>
     </Modal>
   )

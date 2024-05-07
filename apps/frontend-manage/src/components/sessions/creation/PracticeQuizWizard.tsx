@@ -10,10 +10,12 @@ import {
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  FormikDateField,
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { ErrorMessage } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -69,6 +71,7 @@ function PracticeQuizWizard({
       .string()
       .required(t('manage.sessionForms.practiceQuizSelectCourse')),
     order: yup.string(),
+    availableFrom: yup.date(),
     resetTimeDays: yup
       .string()
       .required(t('manage.sessionForms.practiceQuizResetDays'))
@@ -122,6 +125,7 @@ function PracticeQuizWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
             order: values.order,
+            availableFrom: dayjs(values.availableFrom).utc().format(),
             resetTimeDays: parseInt(values.resetTimeDays),
           },
           refetchQueries: [
@@ -150,6 +154,7 @@ function PracticeQuizWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
             order: values.order,
+            availableFrom: dayjs(values.availableFrom).utc().format(),
             resetTimeDays: parseInt(values.resetTimeDays),
           },
           refetchQueries: [
@@ -211,6 +216,11 @@ function PracticeQuizWizard({
             : '1',
           courseId: initialValues?.course?.id || courses?.[0]?.value,
           order: initialValues?.orderType || ElementOrderType.SpacedRepetition,
+          availableFrom: initialValues?.availableFrom
+            ? dayjs(initialValues?.availableFrom)
+                .local()
+                .format('YYYY-MM-DDTHH:mm')
+            : dayjs().local().format('YYYY-MM-DDTHH:mm'),
           resetTimeDays: initialValues?.resetTimeDays || '6',
         }}
         onSubmit={onSubmit}
@@ -354,126 +364,157 @@ function StepTwo(props: StepProps) {
   // }, [validateField, props.courses])
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row items-center gap-4">
-        <FormikSelectField
-          placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
-          name="courseId"
-          items={
-            props.courses?.map((course) => {
-              return {
-                ...course,
-                data: { cy: `select-course-${course.label}` },
-              }
-            }) || [{ label: '', value: '' }]
-          }
-          required
-          tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}
-          label={t('shared.generic.course')}
-          data={{ cy: 'select-course' }}
-          className={{ tooltip: 'z-20' }}
-          hideError
-        />
-        <ErrorMessage
-          name="courseId"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-
-      <div className="flex flex-row items-center gap-4">
-        <FormikSelectField
-          label={t('shared.generic.multiplier')}
-          required
-          tooltip={t('manage.sessionForms.practiceQuizMultiplier')}
-          name="multiplier"
-          placeholder={t('manage.sessionForms.multiplierDefault')}
-          items={[
-            {
-              label: t('manage.sessionForms.multiplier1'),
-              value: '1',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier1')}`,
-              },
-            },
-            {
-              label: t('manage.sessionForms.multiplier2'),
-              value: '2',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier2')}`,
-              },
-            },
-            {
-              label: t('manage.sessionForms.multiplier3'),
-              value: '3',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier3')}`,
-              },
-            },
-            {
-              label: t('manage.sessionForms.multiplier4'),
-              value: '4',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier4')}`,
-              },
-            },
-          ]}
-          data={{ cy: 'select-multiplier' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-
-      <div className="flex flex-row items-center gap-4">
-        <FormikNumberField
-          name="resetTimeDays"
-          label={t('shared.generic.repetitionInterval')}
-          tooltip={t('manage.sessionForms.practiceQuizRepetition')}
-          className={{
-            root: '!w-80',
-            tooltip: 'z-20',
-          }}
-          required
-          hideError={true}
-          data={{ cy: 'insert-reset-time-days' }}
-        />
-        <ErrorMessage
-          name="resetTimeDays"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-
-      <div className="flex flex-row items-center gap-4">
-        <FormikSelectField
-          label={t('shared.generic.order')}
-          tooltip={t('manage.sessionForms.practiceQuizOrder')}
-          name="order"
-          placeholder={t('manage.sessionForms.practiceQuizSelectOrder')}
-          items={Object.values(ElementOrderType).map((order) => {
-            return {
-              value: order,
-              label: t(`manage.sessionForms.practiceQuiz${order}`),
-              data: {
-                cy: `select-order-${t(
-                  `manage.sessionForms.practiceQuiz${order}`
-                )}`,
-              },
+    <div className="flex flex-col md:flex-row gap-2 md:gap-8">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-row items-center gap-4">
+          <FormikSelectField
+            placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
+            name="courseId"
+            items={
+              props.courses?.map((course) => {
+                return {
+                  ...course,
+                  data: { cy: `select-course-${course.label}` },
+                }
+              }) || [{ label: '', value: '' }]
             }
-          })}
-          required
-          data={{ cy: 'select-order' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="order"
-          component="div"
-          className="text-sm text-red-400"
-        />
+            required
+            tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}
+            label={t('shared.generic.course')}
+            data={{ cy: 'select-course' }}
+            className={{ tooltip: 'z-20' }}
+            hideError
+          />
+          <ErrorMessage
+            name="courseId"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+
+        <div className="flex flex-row items-center gap-4">
+          <FormikSelectField
+            label={t('shared.generic.multiplier')}
+            required
+            tooltip={t('manage.sessionForms.practiceQuizMultiplier')}
+            name="multiplier"
+            placeholder={t('manage.sessionForms.multiplierDefault')}
+            items={[
+              {
+                label: t('manage.sessionForms.multiplier1'),
+                value: '1',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier1'
+                  )}`,
+                },
+              },
+              {
+                label: t('manage.sessionForms.multiplier2'),
+                value: '2',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier2'
+                  )}`,
+                },
+              },
+              {
+                label: t('manage.sessionForms.multiplier3'),
+                value: '3',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier3'
+                  )}`,
+                },
+              },
+              {
+                label: t('manage.sessionForms.multiplier4'),
+                value: '4',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier4'
+                  )}`,
+                },
+              },
+            ]}
+            data={{ cy: 'select-multiplier' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="multiplier"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+
+        <div className="flex flex-row items-center gap-4">
+          <FormikDateField
+            label={t('shared.generic.availableFrom')}
+            name="availableFrom"
+            tooltip={t('manage.sessionForms.practiceQuizAvailableFrom')}
+            className={{
+              root: 'w-[24rem]',
+              input: 'bg-uzh-grey-20',
+              tooltip: 'z-20 w-80 md:w-max',
+            }}
+            data={{ cy: 'select-available-from' }}
+          />
+          <ErrorMessage
+            name="availableFrom"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-row items-center gap-4">
+          <FormikNumberField
+            name="resetTimeDays"
+            label={t('shared.generic.repetitionInterval')}
+            tooltip={t('manage.sessionForms.practiceQuizRepetition')}
+            className={{
+              root: '!w-80',
+              tooltip: 'z-20',
+            }}
+            required
+            hideError={true}
+            data={{ cy: 'insert-reset-time-days' }}
+          />
+          <ErrorMessage
+            name="resetTimeDays"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+
+        <div className="flex flex-row items-center gap-4">
+          <FormikSelectField
+            label={t('shared.generic.order')}
+            tooltip={t('manage.sessionForms.practiceQuizOrder')}
+            name="order"
+            placeholder={t('manage.sessionForms.practiceQuizSelectOrder')}
+            items={Object.values(ElementOrderType).map((order) => {
+              return {
+                value: order,
+                label: t(`manage.sessionForms.practiceQuiz${order}`),
+                data: {
+                  cy: `select-order-${t(
+                    `manage.sessionForms.practiceQuiz${order}`
+                  )}`,
+                },
+              }
+            })}
+            required
+            data={{ cy: 'select-order' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="order"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
     </div>
   )

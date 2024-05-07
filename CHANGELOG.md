@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.34...v3.1.0-rc.35) (2024-05-06)
+
+
+### Bug Fixes
+
+* ensure that practice quiz cronjob name is shorter than maximum name length ([5ea90b2](https://github.com/uzh-bf/klicker-uzh/commit/5ea90b217fd31101c39aa3cefb213864c3125f8c))
+
+## [3.1.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.33...v3.1.0-rc.34) (2024-05-06)
+
+
+### Features
+
+* add optional start date and cronjob for automated practice quiz publication ([#4109](https://github.com/uzh-bf/klicker-uzh/issues/4109)) ([efd7d16](https://github.com/uzh-bf/klicker-uzh/commit/efd7d1631ecab3d5912c738de969499fe99d78b6))
+
+## [3.1.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.32...v3.1.0-rc.33) (2024-05-05)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove copy text from display name of duplicated live quiz ([92de510](https://github.com/uzh-bf/klicker-uzh/commit/92de510919bce06e8b0aeacceca3e1b7aa6a4065))
+
+
+### Deployment
+
+* **apps/func-*:** add initial containerized version of azure functions ([#4105](https://github.com/uzh-bf/klicker-uzh/issues/4105)) ([2fac778](https://github.com/uzh-bf/klicker-uzh/commit/2fac77883d2a03ab16a5791a129f3d8e5dcfc885))
+
+
+### Enhancements
+
+* **apps/frontend-auth:** improve layout of auth page and highlight ToS ([#4107](https://github.com/uzh-bf/klicker-uzh/issues/4107)) ([47a3970](https://github.com/uzh-bf/klicker-uzh/commit/47a3970c4b358dbf28acfd97a143e43808211a4e))
+* update data structure for elaborate spaced repetition algorithm ([#4106](https://github.com/uzh-bf/klicker-uzh/issues/4106)) ([ae6dace](https://github.com/uzh-bf/klicker-uzh/commit/ae6dace36d6e13d6a6cecb3ad9f7abe8f7b1a0d7))
+
 ## [3.1.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.31...v3.1.0-rc.32) (2024-04-25)
 
 
