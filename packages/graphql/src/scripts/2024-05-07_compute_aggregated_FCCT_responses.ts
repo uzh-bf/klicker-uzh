@@ -55,14 +55,14 @@ async function run() {
     // loop over responses and update them as required
     for (const response of responses) {
       // console.log(`${counter}/${total}`)
-      // const aggregatedResponses = response.aggregatedResponses
+      const aggregatedResponses = response.aggregatedResponses
 
-      // if (aggregatedResponses === null) {
-      //   console.log(
-      //     `Aggregated responses for questionResponse ${response.id} are set to null`
-      //   )
-      //   continue
-      // }
+      if (aggregatedResponses === null) {
+        console.log(
+          `Aggregated responses for questionResponse ${response.id} are set to null`
+        )
+        continue
+      }
 
       const detailResponses = await prisma.questionResponseDetail.findMany({
         where: {
