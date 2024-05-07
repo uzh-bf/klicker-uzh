@@ -63,6 +63,9 @@ export async function getPracticeQuizData(
           status: PublicationStatus.PUBLISHED,
         },
         {
+          status: PublicationStatus.SCHEDULED,
+        },
+        {
           ownerId: ctx.user?.sub,
         },
       ],
@@ -95,6 +98,11 @@ export async function getPracticeQuizData(
   })
 
   if (!quiz) return null
+
+  // if the quiz is scheduled, return the quiz without the stacks
+  if (quiz.status === PublicationStatus.SCHEDULED) {
+    return { ...quiz, stacks: [] }
+  }
 
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
