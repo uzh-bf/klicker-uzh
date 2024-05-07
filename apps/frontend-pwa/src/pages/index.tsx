@@ -58,7 +58,6 @@ const Index = function () {
     false
   )
 
-
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
 
