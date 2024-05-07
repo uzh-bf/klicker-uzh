@@ -38,6 +38,12 @@ function CourseOverviewPage() {
     }
   }, [data, router])
 
+  useEffect(() => {
+    if (router.query.tab) {
+      setTabValue(router.query.tab as string)
+    }
+  }, [router.query.tab])
+
   if (error) {
     return <div>{error.message}</div>
   }
