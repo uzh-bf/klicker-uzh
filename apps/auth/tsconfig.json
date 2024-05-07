@@ -29,7 +29,6 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "../../packages/shared-components/src/hooks/useStickyState.ts"
   ],
   "exclude": [
     "node_modules"
