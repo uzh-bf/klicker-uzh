@@ -218,7 +218,7 @@ export default {
   pwa: {
     general: {
       surveyInvitation:
-        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst. Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
+        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst (auch, wenn du den Begriff noch gar nicht kennst 😎). Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',

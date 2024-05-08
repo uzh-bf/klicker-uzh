@@ -218,7 +218,7 @@ export default {
   pwa: {
     general: {
       surveyInvitation:
-        'Help shape the future of KlickerUZH by sharing your experiences and needs for personal learning analytics. Complete our 15-min survey for a chance to win a 25.- voucher.',
+        'Help shape the future of KlickerUZH by sharing your experiences and needs for personal learning analytics (even if you have never heard of it 😎). Complete our 15-min survey for a chance to win a 25.- voucher.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
