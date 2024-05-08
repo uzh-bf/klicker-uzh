@@ -467,6 +467,9 @@ importers:
       '@socialgouv/matomo-next':
         specifier: 1.6.1
         version: 1.6.1(next@14.1.0)
+      '@types/js-cookie':
+        specifier: ^3.0.3
+        version: 3.0.6
       '@uzh-bf/design-system':
         specifier: 2.5.2
         version: 2.5.2(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.19)(@types/react@18.2.55)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
@@ -494,6 +497,9 @@ importers:
       graphql-ws:
         specifier: 5.13.1
         version: 5.13.1(graphql@16.7.1)
+      js-cookie:
+        specifier: 3.0.5
+        version: 3.0.5
       jsonwebtoken:
         specifier: 9.0.1
         version: 9.0.1
@@ -2123,6 +2129,9 @@ importers:
       '@tsconfig/recommended':
         specifier: ^1.0.2
         version: 1.0.3
+      '@types/js-cookie':
+        specifier: ^3.0.3
+        version: 3.0.6
       '@types/node':
         specifier: ^18.17.4
         version: 18.19.14
@@ -11032,7 +11041,6 @@ packages:
 
   /@types/js-cookie@3.0.6:
     resolution: {integrity: sha512-wkw9yd1kEXOPnvEeEV1Go1MmxtBJL0RR79aOTAApecWFVu7w0NNXNqhcWgvw2YgZDYadliXkl14pa3WXw5jlCQ==}
-    dev: true
 
   /@types/js-search@1.4.4:
     resolution: {integrity: sha512-NYIBuSRTi2h6nLne0Ygx78BZaiT/q0lLU7YSkjOrDJWpSx6BioIZA/i2GZ+WmMUzEQs2VNIWcXRRAqisrG3ZNA==}
