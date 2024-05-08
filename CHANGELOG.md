@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-control:** add missing js-cookie dependence to control frontend ([f89c544](https://github.com/uzh-bf/klicker-uzh/commit/f89c5445358e776d638a60720f37017435ab62ac))
+
 ## [3.1.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.35...v3.1.0-rc.36) (2024-05-08)
 
 
