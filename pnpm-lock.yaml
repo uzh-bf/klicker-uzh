@@ -681,6 +681,9 @@ importers:
       is-hotkey:
         specifier: 0.2.0
         version: 0.2.0
+      js-cookie:
+        specifier: 3.0.5
+        version: 3.0.5
       js-search:
         specifier: 2.0.1
         version: 2.0.1
@@ -772,6 +775,9 @@ importers:
       '@types/d3':
         specifier: ^7.4.0
         version: 7.4.3
+      '@types/js-cookie':
+        specifier: ^3.0.3
+        version: 3.0.6
       '@types/js-search':
         specifier: ^1.4.0
         version: 1.4.4
@@ -989,6 +995,9 @@ importers:
       '@types/body-parser':
         specifier: ^1.19.2
         version: 1.19.5
+      '@types/js-cookie':
+        specifier: ^3.0.3
+        version: 3.0.6
       '@types/jsonwebtoken':
         specifier: ^9.0.2
         version: 9.0.5
