@@ -74,9 +74,9 @@ export enum FlashcardCorrectness {
 }
 
 export enum ResponseCorrectness {
+  CORRECT = 'CORRECT',
   INCORRECT = 'INCORRECT',
   PARTIAL = 'PARTIAL',
-  CORRECT = 'CORRECT',
 }
 
 export enum StackFeedbackStatus {
@@ -315,14 +315,12 @@ export type GroupActivityDecisions = {
 export type GroupActivityResults = {
   passed: boolean
   points: number
-  maxPoints: number
   comment?: string | null
   grading: {
     instanceId: number
-    correctness: ResponseCorrectness
     score: number
+    maxPoints: number
     feedback?: string | null
-    // maxScore: number // TODO: add in GraphQL schema
   }[]
 }
 

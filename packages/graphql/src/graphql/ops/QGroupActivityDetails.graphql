@@ -64,6 +64,8 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
 
       decisions
       decisionsSubmittedAt
+      results
+      resultsComputedAt
     }
   }
 }

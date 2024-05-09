@@ -422,6 +422,13 @@ type GroupActivityDetails {
   stacks: [ElementStack!]!
 }
 
+type GroupActivityGrading {
+  feedback: String
+  instanceId: Int!
+  maxPoints: Float!
+  score: Float!
+}
+
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
@@ -434,6 +441,13 @@ type GroupActivityInstance {
 
 type GroupActivityParameter {
   id: Int!
+}
+
+type GroupActivityResults {
+  comment: String
+  grading: [GroupActivityGrading!]!
+  passed: Boolean!
+  points: Float!
 }
 
 type GroupLeaderboardEntry {
@@ -918,6 +932,12 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+enum ResponseCorrectnessType {
+  CORRECT
+  INCORRECT
+  PARTIAL
 }
 
 input ResponseInput {

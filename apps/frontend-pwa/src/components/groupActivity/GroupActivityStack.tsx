@@ -4,23 +4,28 @@ import {
   ElementType,
   GroupActivityDecision,
   GroupActivityDetailsDocument,
+  GroupActivityResults,
+  ResponseCorrectnessType,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   ElementChoicesType,
   StudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
   activityId: number
   stack: ElementStack
   decisions?: GroupActivityDecision[]
+  results: GroupActivityResults
   submittedAt?: string
 }
 
@@ -28,6 +33,7 @@ function GroupActivityStack({
   activityId,
   stack,
   decisions,
+  results,
   submittedAt,
 }: GroupActivityStackProps) {
   const t = useTranslations()
@@ -136,11 +142,24 @@ function GroupActivityStack({
         {stack.elements &&
           stack.elements.length > 0 &&
           stack.elements.map((element, elementIx) => {
+            const grading = results?.grading.find(
+              (grading) => grading.instanceId === element.id
+            )
+            const correctness = grading
+              ? grading.score < grading.maxPoints
+                ? grading.score > 0
+                  ? ResponseCorrectnessType.Partial
+                  : ResponseCorrectnessType.Incorrect
+                : ResponseCorrectnessType.Correct
+              : undefined
+
             return (
-              <div key={`${element.id}-student`}>
+              <div key={`${element.id}-student`} className="mb-2 text-lg">
                 <InstanceHeader
                   instanceId={element.id}
                   name={element.elementData.name}
+                  className="mb-0"
+                  correctness={correctness}
                   withParticipant
                 />
                 <StudentElement
@@ -151,6 +170,73 @@ function GroupActivityStack({
                   hideReadButton
                   disabledInput={!!decisions}
                 />
+                {grading && correctness && (
+                  <div
+                    className={twMerge(
+                      'rounded mb-6 mt-3 shadow !border-l-4 text-base',
+                      correctness === ResponseCorrectnessType.Correct &&
+                        '!border-l-green-500',
+                      correctness === ResponseCorrectnessType.Partial &&
+                        '!border-l-yellow-500',
+                      correctness === ResponseCorrectnessType.Incorrect &&
+                        '!border-l-red-700'
+                    )}
+                  >
+                    <div
+                      className={twMerge(
+                        'flex flex-row justify-between px-2 py-1',
+                        correctness === ResponseCorrectnessType.Correct &&
+                          'bg-green-100',
+                        correctness === ResponseCorrectnessType.Partial &&
+                          'bg-yellow-100',
+                        correctness === ResponseCorrectnessType.Incorrect &&
+                          'bg-red-200'
+                      )}
+                    >
+                      <div>{t(`pwa.groupActivity.answer${correctness}`)}</div>
+                      <div className="font-bold self-end">{`${grading.score}/${
+                        grading.maxPoints
+                      } ${t('shared.generic.points')}`}</div>
+                    </div>
+                    {grading.feedback && (
+                      <DynamicMarkdown
+                        className={{ root: 'mt-1 p-2 !pt-0' }}
+                        content={grading.feedback}
+                      />
+                    )}
+                  </div>
+
+                  // <div
+                  //   className={twMerge(
+                  //     'text-base mt-3 border border-solid p-2 rounded mb-4',
+                  //     correctness === ResponseCorrectnessType.Correct &&
+                  //       'border-green-500 bg-green-100',
+                  //     correctness === ResponseCorrectnessType.Partial &&
+                  //       'border-yellow-500 bg-yellow-100',
+                  //     correctness === ResponseCorrectnessType.Incorrect &&
+                  //       'border-red-700 bg-red-200'
+                  //   )}
+                  // >
+                  // <div
+                  //   className={twMerge(
+                  //     'flex flex-row justify-between',
+                  //     grading.feedback && 'mb-1'
+                  //   )}
+                  // >
+                  //   <div>{t(`pwa.groupActivity.answer${correctness}`)}</div>
+                  //   <div className="font-bold">{`${grading.score}/${
+                  //     grading.maxPoints
+                  //   } ${t('shared.generic.points')}`}</div>
+                  // </div>
+                  // {grading.feedback && (
+                  //   <div className="italic">
+                  //     {t('pwa.groupActivity.groupActivityFeedback', {
+                  //       feedback: grading.feedback,
+                  //     })}
+                  //   </div>
+                  //   )}
+                  // </div>
+                )}
               </div>
             )
           })}

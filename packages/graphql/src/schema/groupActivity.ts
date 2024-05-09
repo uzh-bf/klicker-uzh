@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
+import { ResponseCorrectness } from '../types/app.js'
 import { CourseRef, type ICourse } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { ParticipantGroupRef, ParticipantRef } from './participant.js'
@@ -9,6 +10,13 @@ import { ElementType } from './questionData.js'
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
 })
+
+export const ResponseCorrectnessType = builder.enumType(
+  'ResponseCorrectnessType',
+  {
+    values: Object.values(ResponseCorrectness),
+  }
+)
 
 export const GroupActivityDecisionInput = builder.inputType(
   'GroupActivityDecisionInput',
@@ -80,6 +88,46 @@ export const GroupActivityDecision = GroupActivityDecisionRef.implement({
     choicesResponse: t.exposeIntList('choicesResponse', { nullable: true }),
     numericalResponse: t.exposeFloat('numericalResponse', { nullable: true }),
     contentResponse: t.exposeBoolean('contentResponse', { nullable: true }),
+  }),
+})
+
+export interface IGroupActivityGrading {
+  instanceId: number
+  score: number
+  maxPoints: number
+  feedback?: string | null
+}
+export const GroupActivityGradingRef = builder.objectRef<IGroupActivityGrading>(
+  'GroupActivityGrading'
+)
+
+export const GroupActivityGrading = GroupActivityGradingRef.implement({
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    score: t.exposeFloat('score'),
+    maxPoints: t.exposeFloat('maxPoints'),
+    feedback: t.exposeString('feedback', { nullable: true }),
+  }),
+})
+
+export interface IGroupActivityResults {
+  passed: boolean
+  points: number
+  comment?: string | null
+  grading: IGroupActivityGrading[]
+}
+export const GroupActivityResultsRef = builder.objectRef<IGroupActivityResults>(
+  'GroupActivityResults'
+)
+
+export const GroupActivityResults = GroupActivityResultsRef.implement({
+  fields: (t) => ({
+    passed: t.exposeBoolean('passed'),
+    points: t.exposeFloat('points'),
+    comment: t.exposeString('comment', { nullable: true }),
+    grading: t.expose('grading', {
+      type: [GroupActivityGradingRef],
+    }),
   }),
 })
 

@@ -514,49 +514,40 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   const groupActivityDecisions = groupActivityCompleted.stacks[0].elements.map(
     (element) => {
-      const baseDecisions = { elementId: element.id, type: element.elementType }
+      const baseDecisions = {
+        instanceId: element.id,
+        type: element.elementType,
+      }
 
       if (element.elementType === Prisma.ElementType.CONTENT) {
         return {
           ...baseDecisions,
-          decision: {
-            contentResponse: true,
-          },
+          contentResponse: true,
         }
       } else if (element.elementType === Prisma.ElementType.SC) {
         return {
           ...baseDecisions,
-          decision: {
-            choicesResponse: [1],
-          },
+          choicesResponse: [1],
         }
       } else if (element.elementType === Prisma.ElementType.MC) {
         return {
           ...baseDecisions,
-          decision: {
-            choicesResponse: [1, 2],
-          },
+          choicesResponse: [1, 2],
         }
       } else if (element.elementType === Prisma.ElementType.KPRIM) {
         return {
           ...baseDecisions,
-          decision: {
-            choicesResponse: [0, 1, 3],
-          },
+          choicesResponse: [0, 1, 3],
         }
       } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
         return {
           ...baseDecisions,
-          decision: {
-            freeTextResponse: 'This is a free text response.',
-          },
+          freeTextResponse: 'This is a free text response.',
         }
       } else if (element.elementType === Prisma.ElementType.NUMERICAL) {
         return {
           ...baseDecisions,
-          decision: {
-            numericalResponse: 10,
-          },
+          numericalResponse: 10,
         }
       }
     }
@@ -588,10 +579,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const groupActivityResults = {
     passed: true,
     points: 43,
-    maxPoints: groupActivityCompleted.stacks[0].elements.reduce(
-      (acc, element) => acc + 25 * (element.options.pointsMultiplier || 1),
-      0
-    ),
     comment: 'This is an optional comment by the lecturer.',
     grading: groupActivityCompleted.stacks[0].elements.reduce<
       {
@@ -603,7 +590,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     >((acc, element) => {
       if (element.elementType === Prisma.ElementType.CONTENT) return acc
 
-      const maxScore = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
+      const maxPoints = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
       ]
@@ -613,11 +600,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         {
           instanceId: element.id,
           correctness: correctness,
+          maxPoints: maxPoints,
           score:
             correctness === 'CORRECT'
-              ? maxScore
+              ? maxPoints
               : correctness === 'PARTIAL'
-              ? Math.floor(Math.random() * maxScore)
+              ? Math.floor(Math.random() * maxPoints)
               : 0,
           ...(correctness === 'INCORRECT' && {
             feedback:

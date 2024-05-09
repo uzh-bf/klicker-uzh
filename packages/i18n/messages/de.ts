@@ -609,6 +609,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       past: 'Abgeschlossen',
       passed: 'Bestanden',
       failed: 'Nicht bestanden',
+      groupActivityPassed:
+        'Gratulation! Deine Gruppe hat die Gruppenaktivität bestanden.',
+      groupActivityFailed:
+        'Oh nein! Deine Gruppe hat die Gruppenaktivität leider nicht bestanden.',
+      groupActivityFeedback: 'Feedback: {feedback}',
+      answerCORRECT: 'Eure Antwort ist korrekt.',
+      answerPARTIAL: 'Eure Antwort ist teilweise korrekt.',
+      answerINCORRECT: 'Eure Antwort ist falsch.',
       openGroupActivity: 'Zur Gruppenaktivität',
       openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:

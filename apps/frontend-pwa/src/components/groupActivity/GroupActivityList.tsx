@@ -31,8 +31,6 @@ function GroupActivityList({
 }: GroupActivityListProps) {
   const t = useTranslations()
 
-  console.log(groupActivityInstances)
-
   return (
     <div className="mt-8">
       <H3>{t('shared.generic.groupActivities')}</H3>
@@ -40,7 +38,7 @@ function GroupActivityList({
         {groupActivities?.map((activity, activityIx) => (
           <div
             key={activity.id}
-            className="flex flex-row border border-solid rounded-md p-1.5 justify-between"
+            className="flex flex-col md:flex-row border border-solid rounded-md p-1.5 justify-between gap-2 md:gap-0"
           >
             <div>
               <div>{activity.displayName}</div>

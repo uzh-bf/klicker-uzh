@@ -488,17 +488,12 @@ export async function getGroupActivityDetails(
 
   if (!groupActivity || !group) return null
 
-  // ensure that the requesting participant is part of the group
+  // ensure that the requesting participant is part of the group and that the group activity is active
   if (
-    !group.participants.some((participant) => participant.id === ctx.user.sub)
-  ) {
-    return null
-  }
-
-  // before the active date, return null
-  if (
-    dayjs().isBefore(groupActivity.scheduledStartAt) ||
-    dayjs().isAfter(groupActivity.scheduledEndAt)
+    !group.participants.some(
+      (participant) => participant.id === ctx.user.sub
+    ) ||
+    dayjs().isBefore(groupActivity.scheduledStartAt)
   ) {
     return null
   }
@@ -525,6 +520,15 @@ export async function getGroupActivityDetails(
       },
     },
   })
+
+  // if the group activity has ended and no decisions / results have been provided, return null
+  if (
+    dayjs().isAfter(groupActivity.scheduledEndAt) &&
+    (!activityInstance?.decisionsSubmittedAt ||
+      !activityInstance?.resultsComputedAt)
+  ) {
+    return null
+  }
 
   return {
     ...groupActivity,
