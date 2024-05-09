@@ -70,6 +70,7 @@ function SessionTimeline({
   const { locale } = useRouter()
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
+  const [inCooldown, setInCooldown] = useState<boolean>(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
@@ -119,15 +120,18 @@ function SessionTimeline({
         lastActiveBlockId === blocks[blocks.length - 1].id &&
         activeBlockId === -1
       ) {
+        setInCooldown(false)
         setButtonState('endSession')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
         activeBlockId === -1
       ) {
+        setInCooldown(false)
         setButtonState('firstBlock')
       } else {
         // no block is active and the last block of the session has not yet been executed
+        setInCooldown(false)
         setButtonState('nextBlock')
       }
     }
@@ -240,8 +244,10 @@ function SessionTimeline({
             {blocks.map((block, idx) => (
               <>
                 <SessionBlock
-                  key={block.id}
+                  key={`${block.id}-${block.status}`}
                   block={block}
+                  inCooldown={inCooldown && activeBlockId === block.id}
+                  setInCooldown={setInCooldown}
                   active={activeBlockId === block.id}
                   className="my-auto"
                 />
@@ -281,7 +287,10 @@ function SessionTimeline({
                   (buttonState === 'firstBlock' ||
                     buttonState === 'nextBlock') &&
                     `text-white bg-primary-80`,
-                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white'
+                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white',
+                  buttonState === 'blockActive' &&
+                    inCooldown &&
+                    'text-uzh-red-100 border-uzh-red-100'
                 ),
               }}
               onClick={() => {
@@ -295,18 +304,23 @@ function SessionTimeline({
                   handleOpenBlock(blocks[openBlockIndex].id)
                 } else if (buttonState === 'blockActive') {
                   handleCloseBlock(activeBlockId)
+                  setInCooldown(false)
                 } else {
                   handleEndSession()
                 }
               }}
-              data={{ cy: 'interaction-first-block' }}
+              data={{ cy: 'next-block-timeline' }}
             >
-              <Button.Label>{t(`manage.cockpit.${buttonState}`)}</Button.Label>
+              <Button.Label>
+                {buttonState === 'blockActive' && inCooldown
+                  ? t('manage.cockpit.skipCooldown')
+                  : t(`manage.cockpit.${buttonState}`)}
+              </Button.Label>
             </Button>
           </div>
           <CancelSessionModal
-            isDeletionModalOpen={cancelSessionModal}
-            setIsDeletionModalOpen={setCancelSessionModal}
+            isCancellationModalOpen={cancelSessionModal}
+            setIsCancellationModalOpen={setCancelSessionModal}
             sessionId={sessionId}
             title={sessionName}
           />

@@ -13,6 +13,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteMicroLearningDocument,
+  GetSingleCourseDocument,
   MicroLearning,
   PublicationStatus,
   UnpublishMicroLearningDocument,
@@ -28,13 +30,17 @@ import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
-import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
+import DeletionModal from './modals/DeletionModal'
 
 interface MicroLearningElementProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
+  courseId: string
 }
 
-function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
+function MicroLearningElement({
+  microLearning,
+  courseId,
+}: MicroLearningElementProps) {
   const t = useTranslations()
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
@@ -48,13 +54,27 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
     variables: { id: microLearning.id },
   })
 
+  const [deleteMicroLearning] = useMutation(DeleteMicroLearningDocument, {
+    variables: { id: microLearning.id },
+    optimisticResponse: {
+      __typename: 'Mutation',
+      deleteMicroLearning: {
+        __typename: 'MicroLearning',
+        id: microLearning.id,
+      },
+    },
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
+
   return (
     <div
       className="w-full p-2 border border-solid rounded border-uzh-grey-80"
       data-cy={`microlearning-${microLearning.name}`}
     >
       <div className="flex flex-row items-center justify-between">
-        <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+        <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
           {microLearning.name || ''}
         </Ellipsis>
 
@@ -226,7 +246,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
         </div>
       </div>
       <div className="mb-1 text-sm italic">
-        {t('pwa.microSession.numOfQuestionSets', {
+        {t('pwa.microLearning.numOfQuestionSets', {
           number: microLearning.numOfStacks || '0',
         })}
       </div>
@@ -261,14 +281,19 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
       >
         {t('manage.course.linkMicrolearningCopied')}
       </Toast>
-      <MicroLearningDeletionModal
-        sessionId={microLearning.id}
-        title={microLearning.name}
+      <DeletionModal
+        title={t('manage.course.deleteMicrolearning')}
+        description={t('manage.course.confirmDeletionMicrolearning')}
+        elementName={microLearning.name}
+        message={t('manage.course.hintDeletionMicrolearning')}
+        deleteElement={deleteMicroLearning}
         open={deletionModal}
         setOpen={setDeletionModal}
+        primaryData={{ cy: 'confirm-delete-microlearning' }}
+        secondaryData={{ cy: 'cancel-delete-microlearning' }}
       />
     </div>
   )
 }
 
-export default MicroSessionTile
+export default MicroLearningElement

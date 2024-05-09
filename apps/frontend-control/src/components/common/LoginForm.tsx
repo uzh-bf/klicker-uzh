@@ -102,7 +102,7 @@ export function LoginForm({
                 data={dataSecret}
                 icon={passwordHidden ? faEye : faEyeSlash}
                 onIconClick={() => setPasswordHidden(!passwordHidden)}
-                className={{ root: 'mt-1' }}
+                className={{ root: 'mt-1', icon: 'bg-transparent' }}
                 type={passwordHidden ? 'password' : 'text'}
               />
             )}

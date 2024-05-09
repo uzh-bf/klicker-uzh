@@ -9,11 +9,16 @@ import { useTranslations } from 'next-intl'
 import UserTag from './UserTag'
 
 interface Props {
+  showUntagged: boolean
   activeTags: string[]
-  handleTagClick: (tagName: string, isQuestionTag: boolean) => void
+  handleTagClick: (
+    tagName: string,
+    isQuestionTag: boolean,
+    isUntagged: boolean
+  ) => void
 }
 
-function SuspendedTags({ activeTags, handleTagClick }: Props) {
+function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
   const t = useTranslations()
 
   const { data, error } = useSuspenseQuery(GetUserTagsDocument)
@@ -39,7 +44,7 @@ function SuspendedTags({ activeTags, handleTagClick }: Props) {
           <UserTag
             key={tag.id}
             tag={tag}
-            handleTagClick={(tag: string) => handleTagClick(tag, false)}
+            handleTagClick={(tag: string) => handleTagClick(tag, false, false)}
             active={activeTags.includes(tag.name)}
             onMoveDown={
               ix < data.userTags!.length - 1
@@ -60,6 +65,13 @@ function SuspendedTags({ activeTags, handleTagClick }: Props) {
           />
         )
       )}
+      <UserTag
+        key={'untagged-tag-trigger'}
+        tag={{ id: 0, name: t('manage.questionPool.untagged'), order: 1 }}
+        handleTagClick={(tag: string) => handleTagClick(tag, false, true)}
+        active={showUntagged}
+        isStatic
+      />
     </ul>
   )
 }

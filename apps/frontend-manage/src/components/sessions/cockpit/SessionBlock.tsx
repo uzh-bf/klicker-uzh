@@ -2,7 +2,9 @@ import {
   faCalendar,
   faCheck,
   faExternalLink,
+  faSave,
   faSync,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -14,13 +16,15 @@ import { CycleCountdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
   className?: string
   active: boolean
   block: SessionBlockType
+  inCooldown: boolean
+  setInCooldown: (value: boolean) => void
 }
 
 const ICON_MAP = {
@@ -33,56 +37,107 @@ function SessionBlock({
   className,
   active,
   block,
+  inCooldown,
+  setInCooldown,
 }: SessionBlockProps): React.ReactElement {
   const t = useTranslations()
+  const [endTime, setEndTime] = useState<Date>()
+  const [timerColor, setTimerColor] = useState<string | undefined>(undefined)
+  const [totalDuration, setTotalDuration] = useState<number | undefined | null>(
+    undefined
+  )
 
-  // compute the time until expiration in seconds + 20 seconds buffer from now
-  const untilExpiration = useMemo(() => {
+  // cooldown duration in seconds
+  const cooldownDuration = 10
+
+  // compute the time until expiration (student-visible time) and
+  // the time until the block is closed (including cooldown)
+  const { expiration: expirationTime, closure: closureTime } = useMemo(() => {
     if (block.status === SessionBlockStatus.Executed) {
-      return -1
+      setTotalDuration(0)
+      return { expiration: undefined, closure: undefined }
     }
-    return block.expiresAt
-      ? dayjs(block.expiresAt).add(20, 'second').diff(dayjs(), 'second')
+    const timeUntilExpiration = block.expiresAt
+      ? dayjs(block.expiresAt).diff(dayjs(), 'second')
       : block.timeLimit
-  }, [block.expiresAt, block.status, block.timeLimit])
+    const timeUntilClosure = block.expiresAt
+      ? dayjs(block.expiresAt).diff(dayjs(), 'second') + cooldownDuration
+      : block.timeLimit
 
-  // compute the expiration time as a date
-  const expirationTime = useMemo(() => {
-    const time = new Date()
-    time.setSeconds(time.getSeconds() + (untilExpiration ?? 0))
-    return time
-  }, [untilExpiration])
+    const expirationTime = new Date()
+    expirationTime.setSeconds(
+      expirationTime.getSeconds() + (timeUntilExpiration ?? 0) + 1
+    )
+    const closureTime = new Date()
+    closureTime.setSeconds(
+      closureTime.getSeconds() + (timeUntilClosure ?? 0) + 1
+    )
+    setTotalDuration((timeUntilExpiration ?? 0) + 1)
+    setEndTime(expirationTime)
+
+    return { expiration: expirationTime, closure: closureTime }
+  }, [block.expiresAt, block.status, block.timeLimit])
 
   return (
     <div
       className={twMerge(
         className,
         'bg-uzh-grey-40 p-4 rounded min-w-[150px]',
-        active && 'bg-green-300'
+        active && 'bg-green-300',
+        inCooldown && 'bg-orange-200'
       )}
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between items-center text-gray-700 font-bold'
+          'flex flex-row justify-between items-center text-gray-700'
         )}
       >
         <div>
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
-        <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
-        {block.timeLimit && untilExpiration && untilExpiration !== -2 && (
+        {typeof block.numOfParticipants !== 'undefined' &&
+        block.numOfParticipants !== null ? (
+          <div className="flex flex-row items-center">
+            <span className="font-bold">
+              {t('manage.cockpit.blockN', {
+                number: block.order! + 1,
+              })}
+            </span>
+            <span className="ml-1">{` - ${block.numOfParticipants}`}</span>
+            <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
+          </div>
+        ) : (
+          <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+        )}
+
+        {block.timeLimit && (
           <CycleCountdown
-            key={`${block.expiresAt}-${block.status}`}
+            key={`${block.id}-${endTime}-${totalDuration}`}
             size="sm"
             isStatic={
               !block.expiresAt || block.status === SessionBlockStatus.Executed
             }
-            expiresAt={expirationTime}
+            color={timerColor}
+            expiresAt={endTime ?? new Date()}
             strokeWidthRem={0.2}
-            totalDuration={
-              block.status !== SessionBlockStatus.Executed ? untilExpiration : 0
-            }
+            totalDuration={totalDuration ?? 0}
             terminalPercentage={100}
+            onUpdate={(timeRemaining) => {
+              if (timeRemaining < 1.5) {
+                setTimerColor('#FF4D01')
+                setEndTime(closureTime)
+                setTotalDuration((cooldownDuration ?? 0) + 1)
+                setInCooldown(true)
+              }
+            }}
+            formatter={(value) => {
+              if (inCooldown && value !== 0) {
+                return <FontAwesomeIcon icon={faSave} />
+              } else {
+                return Math.max(value - 1, 0)
+              }
+            }}
+            className={{ countdown: 'font-bold' }}
           />
         )}
       </div>

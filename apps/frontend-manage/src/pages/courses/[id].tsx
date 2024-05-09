@@ -38,6 +38,12 @@ function CourseOverviewPage() {
     }
   }, [data, router])
 
+  useEffect(() => {
+    if (router.query.tab) {
+      setTabValue(router.query.tab as string)
+    }
+  }, [router.query.tab])
+
   if (error) {
     return <div>{error.message}</div>
   }
@@ -76,7 +82,12 @@ function CourseOverviewPage() {
         />
       </div>
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-2/3">
+        <div
+          className={twMerge(
+            'w-full',
+            data?.course?.isGamificationEnabled && 'md:w-2/3'
+          )}
+        >
           <div className="md:mr-2">
             <H2>{t('manage.course.courseElements')}</H2>
             <Tabs
@@ -175,6 +186,7 @@ function CourseOverviewPage() {
               >
                 <MicroLearningList
                   microLearnings={course.microLearnings ?? []}
+                  courseId={course.id}
                   userCatalyst={user?.userProfile?.catalyst}
                 />
               </Tabs.TabContent>

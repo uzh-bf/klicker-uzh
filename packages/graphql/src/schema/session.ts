@@ -98,12 +98,14 @@ export const Session = SessionRef.implement({
 })
 
 export interface ISessionBlock extends DB.SessionBlock {
+  numOfParticipants?: number
   instances?: IQuestionInstance[]
 }
 export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
 export const SessionBlock = SessionBlockRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+    numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
 
     status: t.expose('status', { type: SessionBlockStatus }),
     order: t.exposeInt('order', { nullable: true }),
@@ -240,6 +242,45 @@ export const QuestionResponseRef =
 export const QuestionResponse = QuestionResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    trialsCount: t.exposeInt('trialsCount'),
+
+    totalScore: t.exposeFloat('totalScore'),
+    totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
+    totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
+    lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
+    lastXpAwardedAt: t.expose('lastXpAwardedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    lastAnsweredAt: t.expose('lastAnsweredAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+
+    correctCount: t.exposeInt('correctCount'),
+    correctCountStreak: t.exposeInt('correctCountStreak'),
+    lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
+
+    partialCorrectCount: t.exposeInt('partialCorrectCount'),
+    lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+
+    eFactor: t.exposeFloat('eFactor'),
+    interval: t.exposeInt('interval'),
+    nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
+
+    wrongCount: t.exposeInt('wrongCount'),
+    lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
+
+    response: t.expose('response', { type: 'Json' }),
+
+    aggregatedResponses: t.expose('aggregatedResponses', {
+      type: 'Json',
+      nullable: true,
+    }),
   }),
 })
 

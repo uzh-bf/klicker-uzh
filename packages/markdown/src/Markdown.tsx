@@ -57,6 +57,20 @@ function Markdown({
       return content
     }
     try {
+      const contentUnescaped = content
+        .replace(
+          /&amp;|&lt;|&gt;|&#39;|&quot;/g,
+          (tag) =>
+            ({
+              '&amp;': '&',
+              '&lt;': '<',
+              '&gt;': '>',
+              '&#39;': "'",
+              '&quot;': '"',
+            }[tag] || tag)
+        )
+        .replace(/<br>/g, '&nbsp;')
+
       return (
         unified()
           .use(markdown)
@@ -146,7 +160,7 @@ function Markdown({
               ...(components as any),
             },
           })
-          .processSync(content).result
+          .processSync(contentUnescaped).result
       )
     } catch (e) {
       console.error(e)

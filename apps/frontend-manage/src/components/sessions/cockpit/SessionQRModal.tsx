@@ -43,24 +43,25 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: 'max-w-6xl',
+        content: 'h-max max-h-full max-w-6xl overflow-y-auto',
       }}
     >
-      <div className="flex flex-row gap-8">
+      <div className="flex flex-col md:flex-row gap-8">
         <div className="flex-1">
           <H3>Account Link</H3>
           <Prose>{t('manage.cockpit.qrCodeAccountLinkDescription')}</Prose>
           <QR
-            className={{ title: 'text-base' }}
+            className={{ title: 'text-base', canvas: 'flex justify-center' }}
             path={accountRelativeLink}
             width={100}
           />
 
           <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
             <Button
+              fluid
               className={{
                 root: twMerge(
-                  'text-lg font-bold text-white h-11 bg-primary-80'
+                  'text-lg font-bold text-white h-9 mt-2 bg-primary-80'
                 ),
               }}
               data={{ cy: `qr-link-${shortname}` }}
@@ -73,16 +74,17 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
           <H3>{t('manage.cockpit.qrCodeDirectLinkTitle')}</H3>
           <Prose>{t('manage.cockpit.qrCodeDirectLinkDescription')}</Prose>
           <QR
-            className={{ title: 'text-base' }}
+            className={{ title: 'text-base', canvas: 'flex justify-center' }}
             path={sessionRelativeLink}
             width={100}
           />
 
           <Link passHref href={`/qr${sessionRelativeLink}`} target="_blank">
             <Button
+              fluid
               className={{
                 root: twMerge(
-                  'text-lg font-bold text-white h-11 bg-primary-80'
+                  'mt-2 text-lg font-bold text-white h-9 bg-primary-80'
                 ),
               }}
               data={{ cy: `qr-direct-link-${sessionId}` }}

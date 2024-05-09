@@ -410,8 +410,8 @@ export async function createCourse(
 
   const course = await ctx.prisma.course.create({
     data: {
-      name: name,
-      displayName: displayName,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description: description,
       color: color ?? '#CCD5ED',
       startDate: startDate,
@@ -490,6 +490,9 @@ export async function getCourseData(
     where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           blocks: {
             include: {
@@ -642,6 +645,9 @@ export async function getControlCourse(
     where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           blocks: {
             include: {
@@ -780,6 +786,7 @@ export async function getCoursePracticeQuiz(
     orderType: ElementOrderType.SPACED_REPETITION,
     status: PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
+    availableFrom: null,
     course,
     courseId,
     ownerId: course.ownerId,

@@ -189,12 +189,16 @@ export const StudentQuestion = ({
       !isNaN(questionOptions.restrictions.min)
     ) {
       validator = validator.min(questionOptions.restrictions.min)
+    } else {
+      validator = validator.min(-1e30) // prevent underflow
     }
     if (
       typeof questionOptions.restrictions?.max === 'number' &&
       !isNaN(questionOptions.restrictions.max)
     ) {
       validator = validator.max(questionOptions.restrictions.max)
+    } else {
+      validator = validator.max(1e30) // prevent overflow
     }
     const schema = Yup.object().shape({
       input: validator,

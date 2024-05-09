@@ -17,6 +17,7 @@ import {
   Session,
   SessionAccessMode,
   SessionStatus,
+  SoftDeleteLiveSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown } from '@uzh-bf/design-system'
@@ -28,7 +29,7 @@ import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
-import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
+import DeletionModal from './modals/DeletionModal'
 
 interface LiveQuizElementProps {
   session: Partial<Session>
@@ -39,7 +40,16 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   const router = useRouter()
 
   const [deletionModal, setDeletionModal] = useState(false)
+  const [softDeletionModal, setSoftDeletionModal] = useState(false)
+
+  // TODO: implement update and optimistic response
   const [deleteSession] = useMutation(DeleteSessionDocument, {
+    variables: { id: session.id || '' },
+    refetchQueries: [GetSingleCourseDocument],
+  })
+
+  // TODO: implement update and optimistic response
+  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
     variables: { id: session.id || '' },
     refetchQueries: [GetSingleCourseDocument],
   })
@@ -59,7 +69,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis
-            maxLength={25}
+            maxLength={50}
             className={{ markdown: 'font-bold text-base' }}
           >
             {session.name || ''}
@@ -113,7 +123,30 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
               <RunningLiveQuizLink liveQuiz={session} />
             )}
             {session.status === SessionStatus.Completed && (
-              <EvaluationLinkLiveQuiz liveQuiz={session} />
+              <>
+                <EvaluationLinkLiveQuiz liveQuiz={session} />
+                <Dropdown
+                  data={{ cy: `live-quiz-actions-${session.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <div className="flex flex-row items-center text-red-600 gap-2 cursor-pointer">
+                          <FontAwesomeIcon icon={faTrashCan} />
+                          <div>{t('manage.sessions.deleteSession')}</div>
+                        </div>
+                      ),
+                      onClick: () => setSoftDeletionModal(true),
+                      data: { cy: `delete-past-live-quiz-${session.name}` },
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+              </>
             )}
             <div>{statusMap[session.status || SessionStatus.Prepared]}</div>
           </div>
@@ -145,11 +178,27 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
           />
         )}
       </div>
-      <LiveSessionDeletionModal
-        deleteSession={deleteSession}
-        title={session.name || ''}
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
+        message={t('manage.sessions.liveQuizDeletionHint')}
+        deleteElement={deleteSession}
         open={deletionModal}
         setOpen={setDeletionModal}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
+      />
+      <DeletionModal
+        title={t('manage.sessions.deleteLiveQuiz')}
+        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        elementName={session.name || ''}
+        message={t('manage.sessions.pastLiveQuizDeletionHint')}
+        deleteElement={softDeleteLiveSession}
+        open={softDeletionModal}
+        setOpen={setSoftDeletionModal}
+        primaryData={{ cy: 'confirm-delete-live-quiz' }}
+        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
     </div>
   )

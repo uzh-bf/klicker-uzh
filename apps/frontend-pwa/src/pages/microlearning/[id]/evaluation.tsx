@@ -59,7 +59,7 @@ function MicrolearningEvaluation() {
           <div>
             <H3>{t('shared.generic.congrats')}</H3>
             <p>
-              {t.rich('pwa.microSession.solvedMicrolearning', {
+              {t.rich('pwa.microLearning.solvedMicrolearning', {
                 name: microlearning.displayName,
                 it: (text) => <span className="italic">{text}</span>,
               })}
@@ -84,7 +84,7 @@ function MicrolearningEvaluation() {
                 <div className="flex flex-row justify-between" key={stack.id}>
                   <div>
                     {stack.displayName ||
-                      t('pwa.microSession.questionSetN', { number: ix + 1 })}
+                      t('pwa.microLearning.questionSetN', { number: ix + 1 })}
                   </div>
                   <div>
                     {typeof aggregatedResults.evaluation[stack.id]
@@ -131,7 +131,7 @@ function MicrolearningEvaluation() {
         {typeof participation?.getParticipation?.isActive === 'boolean' &&
           participation?.getParticipation?.isActive === false && (
             <UserNotification type="info">
-              {t.rich('pwa.microSession.inactiveParticipation', {
+              {t.rich('pwa.microLearning.inactiveParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
                 name: microlearning.displayName,
               })}
@@ -139,7 +139,7 @@ function MicrolearningEvaluation() {
           )}
         {participant?.self && !participation?.getParticipation && (
           <UserNotification className={{ root: 'mt-5' }} type="info">
-            {t.rich('pwa.microSession.missingParticipation', {
+            {t.rich('pwa.microLearning.missingParticipation', {
               it: (text) => <span className="italic">{text}</span>,
               name: microlearning.displayName,
             })}

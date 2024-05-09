@@ -47,8 +47,8 @@ function MicroLearningWizard({
   const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
-  const [createMicroSession] = useMutation(CreateMicroLearningDocument)
-  const [editMicroSession] = useMutation(EditMicroLearningDocument)
+  const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
+  const [editMicroLearning] = useMutation(EditMicroLearningDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
@@ -107,7 +107,7 @@ function MicroLearningWizard({
       let success = false
 
       if (initialValues) {
-        const result = await editMicroSession({
+        const result = await editMicroLearning({
           variables: {
             id: initialValues?.id || '',
             name: values.name,
@@ -132,7 +132,7 @@ function MicroLearningWizard({
         })
         success = Boolean(result.data?.editMicroLearning)
       } else {
-        const result = await createMicroSession({
+        const result = await createMicroLearning({
           variables: {
             name: values.name,
             displayName: values.displayName,
@@ -224,7 +224,7 @@ function MicroLearningWizard({
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}`)
+          router.push(`/courses/${selectedCourseId}?tab=microLearnings`)
         }}
         workflowItems={[
           {

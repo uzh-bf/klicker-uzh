@@ -5,6 +5,7 @@ import {
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import PublishConfirmationModal from '../modals/PublishConfirmationModal'
@@ -18,6 +19,9 @@ function PublishPracticeQuizButton({
 }: PublishPracticeQuizButtonProps) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
+  const startFuture =
+    practiceQuiz.availableFrom &&
+    dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
 
   return (
     <>
@@ -36,6 +40,15 @@ function PublishPracticeQuizButton({
         elementType={ElementInstanceType.PracticeQuiz}
         elementId={practiceQuiz.id!}
         title={practiceQuiz.name!}
+        publicationHint={
+          startFuture
+            ? t('manage.course.practiceSchedulingHint', {
+                date: dayjs(practiceQuiz.availableFrom).format(
+                  'DD.MM.YYYY HH:mm'
+                ),
+              })
+            : t('manage.course.practicePublishingHint')
+        }
         open={publishModal}
         setOpen={setPublishModal}
       />

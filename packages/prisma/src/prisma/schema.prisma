@@ -29,7 +29,7 @@ model Migration {
 
 enum PublicationStatus {
   DRAFT
-  // REVIEW
+  SCHEDULED
   PUBLISHED
 }
 
@@ -279,14 +279,14 @@ model ElementInstance {
   /// [PrismaElementData]
   elementData Json // contains a copy of relevant element data
 
-  /// [PrismaElementInstanceResults]
+  /// [PrismaElementResults]
   results Json // contains the collection of gathered results
 
   responses       QuestionResponse[]
   detailResponses QuestionResponseDetail[]
 
-  element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  elementId      Int?
+  element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId      Int
   elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementStackId Int
   owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -366,6 +366,7 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
+  availableFrom    DateTime?
 
   stacks ElementStack[]
 
@@ -527,6 +528,7 @@ model LiveSession {
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
   isGamificationEnabled      Boolean @default(false)
+  isDeleted                  Boolean @default(false)
 
   namespace        String    @default(uuid()) @db.Uuid
   pinCode          Int?
@@ -576,6 +578,7 @@ model LiveQuiz {
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
   isGamificationEnabled      Boolean @default(false)
+  isDeleted                  Boolean @default(false)
 
   namespace        String    @default(uuid()) @db.Uuid
   pinCode          Int?
@@ -787,7 +790,6 @@ model Feedback {
   session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?      @db.Uuid
 
-  // TODO - remove optional after migration
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
@@ -822,7 +824,6 @@ model ConfusionTimestep {
   session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?      @db.Uuid
 
-  // TODO - remove optional after migration
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
@@ -990,6 +991,7 @@ model QuestionResponse {
   totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
+  lastAnsweredAt     DateTime?
 
   correctCount       Int       @default(0)
   correctCountStreak Int       @default(0)
@@ -1001,10 +1003,15 @@ model QuestionResponse {
   wrongCount  Int       @default(0)
   lastWrongAt DateTime?
 
+  // spaced repetition parameters
+  eFactor   Float     @default(2.5)
+  interval  Int       @default(1)
+  nextDueAt DateTime?
+
   /// [PrismaQuestionResponse]
   response Json
 
-  /// [PrismaAggregatedResponse]
+  /// [PrismaElementResults]
   aggregatedResponses Json?
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -1021,6 +1028,8 @@ model QuestionResponse {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  isMigrated Boolean @default(false)
 
   @@unique([participantId, questionInstanceId])
   @@unique([participantId, elementInstanceId])

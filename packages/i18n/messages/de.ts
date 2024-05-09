@@ -55,6 +55,7 @@ export default {
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
+      scheduled: 'Geplant',
       published: 'Öffentlich',
       points: 'Punkte',
       title: 'KlickerUZH',
@@ -142,6 +143,7 @@ export default {
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
+      availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
       repetitionInterval: 'Wiederholungszeitraum',
@@ -207,6 +209,8 @@ export default {
     signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
       'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 26.08.2023) und <privacy></privacy> (aktualisiert am 26.08.2023).',
+    tosAgreementRequired:
+      'Bitte akzeptieren Sie die Nutzungsbedingungen und Datenschutzerklärung, bevor Sie sich einloggen.',
     termsOfService: 'Nutzungsbedingungen',
     privacyPolicy: 'Datenschutzerklärung',
     tosUrl: 'https://www.klicker.uzh.ch/nutzungsbedingungen',
@@ -216,6 +220,8 @@ export default {
   },
   pwa: {
     general: {
+      surveyInvitation:
+        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst (auch, wenn du den Begriff noch gar nicht kennst 😎). Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',
@@ -415,6 +421,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Möchten Sie das Leaderboard wirklich verlassen?',
       leaveCourseInformation:
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
+      noGamificationOrDescription:
+        'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -475,12 +483,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flagQuestionText:
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       infoStack: 'Informationselement',
+      scheduledAvailableFrom: 'Das Übungs-Quiz {name} ist ab {date} verfügbar.',
       inactiveParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
-    microSession: {
+    microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',
       notFound:
         'Unter diesem Link existiert kein Microlearning oder diese ist noch nicht aktiv.',
@@ -537,6 +546,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen irreversibel löschen.',
       deleteProfileConfirmation:
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+      emailMissing:
+        'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
     },
     avatar: {
       hair: 'Frisur',
@@ -759,6 +770,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hideArchived: 'Archiv verstecken',
       elementTypes: 'Elementtypen',
       tags: 'Tags',
+      untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:
@@ -806,7 +818,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
       FTOptionsTooltip:
-        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor.',
+        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
+
       answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
@@ -938,6 +951,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizAvailableFrom:
+        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1045,6 +1060,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
       explanationRequired:
         'Bitte geben Sie eine Erklärung ein. Auf Flashcards wird diese Erklärung den Studierenden als Antwort auf die Frage angezeigt.',
+      NRUnderflow:
+        'Numerische Angaben dürfen aus technischen Gründen nicht kleiner als -1e30 sein.',
+      NROverflow:
+        'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
     },
     sessions: {
       runningSessions: 'Laufende Sessionen',
@@ -1065,6 +1084,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie die folgendes Live Quiz löschen möchten?',
       liveQuizDeletionHint:
         'Das Löschen eines Live Quizzes ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      pastLiveQuizDeletionHint:
+        'Das Löschen eines abgeschlossenen Live Quizzes entfernt dieses aus der Dozierendenansicht. Gesammelte Punkte und Antworten der Teilnehmenden bleiben jedoch erhalten und allfällige öffentliche Evaluationslinks bleiben weiterhin gültig. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
@@ -1125,6 +1146,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Geschwindigkeit des Unterrichts.',
       confusionDifficultyTooltip:
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Schwierigkeit des vermittelten Inhalts.',
+      skipCooldown: 'Cooldown überspringen',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -1252,10 +1274,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
-      publishingHint:
-        'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      practicePublishingHint:
+        'Das Publizieren dieses Übungs-Quizzes macht das Element ab sofort für alle Teilnehmenden über den Zuganglink und die KlickerUZH App sichtbar. Dieser Prozess kann nicht rückgängig gemacht werden.',
+      practiceSchedulingHint:
+        'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
       microPublishingHint:
-        'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
+        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       confirmDeletionMicrolearning:
         'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
       hintDeletionMicrolearning:
@@ -1267,6 +1291,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishPracticeQuiz: 'Veröffentlichung aufheben',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
     },

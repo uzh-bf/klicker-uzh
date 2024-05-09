@@ -63,7 +63,7 @@ function Flashcard({
               elementIx={elementIx}
             />
           ) : (
-            <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
+            <div className="flex flex-row items-center self-end gap-2 mt-2 text-sm text-gray-500">
               <FontAwesomeIcon icon={faHandPointer} />
               {t('pwa.practiceQuiz.flashcardClick')}
             </div>
@@ -90,7 +90,7 @@ function FlashcardFront({
       content={content}
       className={{
         root: twMerge(
-          'mx-auto text-center flex-none',
+          'mx-auto text-center flex-none prose prose-p:!m-0 prose-img:!m-0',
           isFlipped &&
             'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4 backface-hidden'
         ),
@@ -118,7 +118,7 @@ function FlashcardBack({
 
   return (
     <div className="flex flex-col flex-1 w-full transform-rotateY-180">
-      <div className="flex flex-1">
+      <div className="flex flex-1 prose prose-p:!m-0 prose-img:!m-0">
         <DynamicMarkdown content={explanation} withProse />
       </div>
       <div className="flex flex-col items-center justify-center flex-shrink-0 w-full gap-1 pt-4 border-t border-gray-300">

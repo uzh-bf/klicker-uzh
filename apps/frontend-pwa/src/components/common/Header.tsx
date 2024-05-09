@@ -121,7 +121,7 @@ function Header({
             </Button>
           </Link>
         )}
-        {participant && !participant?.avatar && (
+        {participant && (!participant?.avatar || !participant?.email) && (
           <Link href="/editProfile">
             <Button
               className={{

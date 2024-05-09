@@ -34,7 +34,7 @@ export async function createParticipantGroup(
 
   const participantGroup = await ctx.prisma.participantGroup.create({
     data: {
-      name,
+      name: name.trim(),
       code: code,
       course: {
         connect: {
@@ -796,7 +796,7 @@ export async function submitGroupActivityDecisions(
         await prisma.elementInstance.update({
           where: { id: instanceId },
           data: {
-            results: updatedResults,
+            results: updatedResults.results,
           },
         })
       })

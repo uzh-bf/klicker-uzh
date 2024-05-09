@@ -43,7 +43,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
       <Layout>
         <UserNotification
           type="error"
-          message={t('pwa.microSession.notFound')}
+          message={t('pwa.microLearning.notFound')}
         />
       </Layout>
     )
@@ -100,7 +100,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.microSession.numOfQuestionSets', {
+              {t('pwa.microLearning.numOfQuestionSets', {
                 number: data.microLearning.stacks?.length,
               })}
             </div>
@@ -116,7 +116,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faClock} />
             <div>
-              {t('pwa.microSession.availableFrom', {
+              {t('pwa.microLearning.availableFrom', {
                 date: dayjs(data.microLearning.scheduledStartAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),
@@ -126,7 +126,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faClock} />
             <div>
-              {t('pwa.microSession.availableUntil', {
+              {t('pwa.microLearning.availableUntil', {
                 date: dayjs(data.microLearning.scheduledEndAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),

@@ -27,12 +27,17 @@ import TagItem from './TagItem'
 interface Props {
   compact: boolean
   isArchiveActive: boolean
+  showUntagged: boolean
   activeTags: string[]
   activeType?: ElementType
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
-  handleTagClick: (tagName: string, isQuestionTag: boolean) => void
+  handleTagClick: (
+    tagName: string,
+    isQuestionTag: boolean,
+    isUntagged: boolean
+  ) => void
   toggleSampleSolutionFilter: () => void
   toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
@@ -41,6 +46,7 @@ interface Props {
 function TagList({
   compact,
   isArchiveActive,
+  showUntagged,
   activeTags,
   activeType,
   sampleSolution,
@@ -75,9 +81,10 @@ function TagList({
         activeTags.length > 0 ||
         activeType ||
         sampleSolution ||
-        answerFeedbacks
+        answerFeedbacks ||
+        showUntagged
       ),
-    [activeTags, activeType, sampleSolution, answerFeedbacks]
+    [activeTags, activeType, sampleSolution, answerFeedbacks, showUntagged]
   )
 
   return (
@@ -112,7 +119,7 @@ function TagList({
               text={t(`shared.${type as ElementType}.typeLabel`)}
               icon={activeType === type ? icons[1] : icons[0]}
               active={activeType === type}
-              onClick={(): void => handleTagClick(type, true)}
+              onClick={(): void => handleTagClick(type, true, false)}
             />
           ))}
         </ul>
@@ -127,6 +134,7 @@ function TagList({
       {userTagsVisible && (
         <Suspense fallback={<Loader />}>
           <SuspendedTags
+            showUntagged={showUntagged}
             activeTags={activeTags}
             handleTagClick={handleTagClick}
           />

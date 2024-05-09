@@ -32,7 +32,7 @@ function ContentElement({
       )}
       data-cy={`content-element-${elementIx + 1}`}
     >
-      <div className="flex flex-row gap-3 -mb-2">
+      <div className="flex flex-row gap-3 -mb-2 prose prose-p:!m-0 prose-img:!m-0 leading-6">
         <FontAwesomeIcon icon={faBookOpen} className="mt-1.5" />
         <DynamicMarkdown
           content={element.elementData.content}

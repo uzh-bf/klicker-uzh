@@ -2,6 +2,194 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-control:** add missing js-cookie dependence to control frontend ([f89c544](https://github.com/uzh-bf/klicker-uzh/commit/f89c5445358e776d638a60720f37017435ab62ac))
+
+## [3.1.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.35...v3.1.0-rc.36) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-*:** add js-cookie and [@types](https://github.com/types) to all frontend apps ([bb77002](https://github.com/uzh-bf/klicker-uzh/commit/bb77002946491ba30df2cd6f677f25eb0bc7950e))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** automatically select correct tab on element overview ([#4112](https://github.com/uzh-bf/klicker-uzh/issues/4112)) ([7b342d5](https://github.com/uzh-bf/klicker-uzh/commit/7b342d5fef59da1747032dc4e775f6b006a36b5c))
+* **apps/frontend-pwa:** show hint for scheduled practice quiz ([#4111](https://github.com/uzh-bf/klicker-uzh/issues/4111)) ([2f683c8](https://github.com/uzh-bf/klicker-uzh/commit/2f683c8cb4d02794a66cb348dc75192e34e1c9ab))
+* **packages/graphql:** seed demo flashcards and content elements ([#4114](https://github.com/uzh-bf/klicker-uzh/issues/4114)) ([2d8e262](https://github.com/uzh-bf/klicker-uzh/commit/2d8e262a1880d7885dfe143449aa4e758814987e))
+
+## [3.1.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.34...v3.1.0-rc.35) (2024-05-06)
+
+
+### Bug Fixes
+
+* ensure that practice quiz cronjob name is shorter than maximum name length ([5ea90b2](https://github.com/uzh-bf/klicker-uzh/commit/5ea90b217fd31101c39aa3cefb213864c3125f8c))
+
+## [3.1.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.33...v3.1.0-rc.34) (2024-05-06)
+
+
+### Features
+
+* add optional start date and cronjob for automated practice quiz publication ([#4109](https://github.com/uzh-bf/klicker-uzh/issues/4109)) ([efd7d16](https://github.com/uzh-bf/klicker-uzh/commit/efd7d1631ecab3d5912c738de969499fe99d78b6))
+
+## [3.1.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.32...v3.1.0-rc.33) (2024-05-05)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove copy text from display name of duplicated live quiz ([92de510](https://github.com/uzh-bf/klicker-uzh/commit/92de510919bce06e8b0aeacceca3e1b7aa6a4065))
+
+
+### Deployment
+
+* **apps/func-*:** add initial containerized version of azure functions ([#4105](https://github.com/uzh-bf/klicker-uzh/issues/4105)) ([2fac778](https://github.com/uzh-bf/klicker-uzh/commit/2fac77883d2a03ab16a5791a129f3d8e5dcfc885))
+
+
+### Enhancements
+
+* **apps/frontend-auth:** improve layout of auth page and highlight ToS ([#4107](https://github.com/uzh-bf/klicker-uzh/issues/4107)) ([47a3970](https://github.com/uzh-bf/klicker-uzh/commit/47a3970c4b358dbf28acfd97a143e43808211a4e))
+* update data structure for elaborate spaced repetition algorithm ([#4106](https://github.com/uzh-bf/klicker-uzh/issues/4106)) ([ae6dace](https://github.com/uzh-bf/klicker-uzh/commit/ae6dace36d6e13d6a6cecb3ad9f7abe8f7b1a0d7))
+
+## [3.1.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.31...v3.1.0-rc.32) (2024-04-25)
+
+
+### Bug Fixes
+
+* ensure that all element instances are linked to an existing element ([#4102](https://github.com/uzh-bf/klicker-uzh/issues/4102)) ([c12a83f](https://github.com/uzh-bf/klicker-uzh/commit/c12a83f83c5ceb16a6b51b5e7b4065426537f446))
+
+
+### Enhancements
+
+* track correct, partial and wrong counts for all element types ([#4103](https://github.com/uzh-bf/klicker-uzh/issues/4103)) ([111df0f](https://github.com/uzh-bf/klicker-uzh/commit/111df0f0c8ef3318970978e73c1b251c3b2462a6))
+
+## [3.1.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.30...v3.1.0-rc.31) (2024-04-19)
+
+
+### Enhancements
+
+* update types and ensure consistency of aggregated results and instance results ([#4097](https://github.com/uzh-bf/klicker-uzh/issues/4097)) ([21c16b7](https://github.com/uzh-bf/klicker-uzh/commit/21c16b7e38a79883ff5af6b7d1621f9a84f1d629))
+
+## [3.1.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.29...v3.1.0-rc.30) (2024-04-12)
+
+
+### Bug Fixes
+
+* ensure that students can only input numbers within range of variable precision ([#4096](https://github.com/uzh-bf/klicker-uzh/issues/4096)) ([3f25d67](https://github.com/uzh-bf/klicker-uzh/commit/3f25d67a7d63429c1595bf852fb7d908b3fc1c83))
+
+## [3.1.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.28...v3.1.0-rc.29) (2024-04-11)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that choice feedbacks movements are correctly shown in UI ([602ed14](https://github.com/uzh-bf/klicker-uzh/commit/602ed14a106204266311e86b20cc0862899b56dd))
+
+## [3.1.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.27...v3.1.0-rc.28) (2024-04-11)
+
+
+### Other
+
+* **apps/frontend-pwa:** ensure that content of group activity clue is displayed entirely ([d492da1](https://github.com/uzh-bf/klicker-uzh/commit/d492da1ba1dd8ecb3c222a1ddbee8bfef124df31))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to sort answer options on choices questions ([#4092](https://github.com/uzh-bf/klicker-uzh/issues/4092)) ([0737d9e](https://github.com/uzh-bf/klicker-uzh/commit/0737d9e3be266cfceaec89ab4159a2cb6697e04f))
+* **apps/frontend-pwa:** ensure that course buttons are never disabled after successful join ([#4091](https://github.com/uzh-bf/klicker-uzh/issues/4091)) ([b68e6cf](https://github.com/uzh-bf/klicker-uzh/commit/b68e6cfe54cac810083100c40aa2afa17c969f66))
+
+## [3.1.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.26...v3.1.0-rc.27) (2024-04-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that markdown is properly rendered on element explanation preview ([683033f](https://github.com/uzh-bf/klicker-uzh/commit/683033fcb034ea8ce2cdff6282b07e61813c3762))
+* **packages/markdown:** ensure that empty lines are not removed during markdown parsing ([#4090](https://github.com/uzh-bf/klicker-uzh/issues/4090)) ([1ee5848](https://github.com/uzh-bf/klicker-uzh/commit/1ee58480176187fd7584907c56de6192c247d248))
+
+## [3.1.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.25...v3.1.0-rc.26) (2024-04-04)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that cache is ignored on participant fetch after login ([#4086](https://github.com/uzh-bf/klicker-uzh/issues/4086)) ([5d563d9](https://github.com/uzh-bf/klicker-uzh/commit/5d563d9d47ab5249bc7b562f8512a6ae47df7122))
+
+## [3.1.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.24...v3.1.0-rc.25) (2024-04-04)
+
+
+### Features
+
+* add possibiliy to delete past live quizzes (soft deletion) ([#4087](https://github.com/uzh-bf/klicker-uzh/issues/4087)) ([2ced494](https://github.com/uzh-bf/klicker-uzh/commit/2ced4948c3232c7c5cb982fa4dee6bc45629c2ce))
+* show participant count on blocks of live quiz ([#4088](https://github.com/uzh-bf/klicker-uzh/issues/4088)) ([d047a33](https://github.com/uzh-bf/klicker-uzh/commit/d047a335ed4ad926c282277f1d34e211a369089b))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that completed content element stacks can be skipped ([#4084](https://github.com/uzh-bf/klicker-uzh/issues/4084)) ([1b3cc39](https://github.com/uzh-bf/klicker-uzh/commit/1b3cc399f25d4b779fa15f1576dac14de4f2cfcd))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to filter for untagged questions ([#4085](https://github.com/uzh-bf/klicker-uzh/issues/4085)) ([4b8b2b2](https://github.com/uzh-bf/klicker-uzh/commit/4b8b2b2c1e71329098fe35ae30998325879105ac))
+
+
+### Refactors
+
+* **apps/frontend-pwa:** replace dynamic markdown component through shared implementation ([f3e3bb1](https://github.com/uzh-bf/klicker-uzh/commit/f3e3bb10ccbed39cfbc80347f3c0ce0b8e240f74))
+* combine deletion modals to single component ([#4089](https://github.com/uzh-bf/klicker-uzh/issues/4089)) ([97f62ac](https://github.com/uzh-bf/klicker-uzh/commit/97f62acc5d985813245ca5c952b19e1341b8dc17))
+
+## [3.1.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.23...v3.1.0-rc.24) (2024-03-29)
+
+
+### Bug Fixes
+
+* ensure that user inputs are properly trimmed ([#4082](https://github.com/uzh-bf/klicker-uzh/issues/4082)) ([29756d5](https://github.com/uzh-bf/klicker-uzh/commit/29756d58417bbf305cbcf5f5e4c37b43551afd6f))
+
+## [3.1.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.22...v3.1.0-rc.23) (2024-03-29)
+
+
+### Bug Fixes
+
+* ensure that participant emails are always converted to lower case ([#4083](https://github.com/uzh-bf/klicker-uzh/issues/4083)) ([cfd4e6b](https://github.com/uzh-bf/klicker-uzh/commit/cfd4e6b162addcc9e5e32ce5931f28223e5ae7f4))
+
+## [3.1.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.21...v3.1.0-rc.22) (2024-03-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that live quizzes are sorted correctly ([#4080](https://github.com/uzh-bf/klicker-uzh/issues/4080)) ([5eddace](https://github.com/uzh-bf/klicker-uzh/commit/5eddace4569250c08fd6d0ff56a5f2b087cf1032))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add cooldown period to countodwn on lecturer cockpit ([#4081](https://github.com/uzh-bf/klicker-uzh/issues/4081)) ([30eb88f](https://github.com/uzh-bf/klicker-uzh/commit/30eb88f823fac72e0eb14cf64f5b6510d9b20f30))
+
+## [3.1.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.20...v3.1.0-rc.21) (2024-03-22)
+
+
+### Bug Fixes
+
+* **packages/markdown:** unescape html signs on markdown parsing ([#4075](https://github.com/uzh-bf/klicker-uzh/issues/4075)) ([5db6132](https://github.com/uzh-bf/klicker-uzh/commit/5db61326462f6bf98d2a95210ae46bf1dcda2539))
+
+## [3.1.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.19...v3.1.0-rc.20) (2024-03-21)
+
+
+### Features
+
+* add possibility to convert past microlearning to practice quiz ([#4069](https://github.com/uzh-bf/klicker-uzh/issues/4069)) ([a0f1aa4](https://github.com/uzh-bf/klicker-uzh/commit/a0f1aa42a8d48614544af5b1f1aa64aacd8b66a9))
+
+
+### Other
+
+* **apps/frontend-pwa:** reorder the elements on the participant profile for better overview ([#4074](https://github.com/uzh-bf/klicker-uzh/issues/4074)) ([6113134](https://github.com/uzh-bf/klicker-uzh/commit/6113134d831170a4ef23a8cd52652f91b16b880a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show notification in case of missing participant email address ([6a6503e](https://github.com/uzh-bf/klicker-uzh/commit/6a6503ee79ce3498c4589d4108fde219849e6a47))
+
 ## [3.1.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.18...v3.1.0-rc.19) (2024-03-20)
 
 

@@ -42,7 +42,7 @@ export async function prepareUser({
     firstLogin: false,
     logins: {
       create: {
-        name: name,
+        name: name.trim(),
         password: hashedPassword,
         scope: UserLoginScope.FULL_ACCESS,
       },
@@ -63,6 +63,7 @@ export function prepareCourse({
   id: string
   name: string
   displayName: string
+  description?: string
   ownerId: string
   color?: string
   pinCode: number
@@ -1045,7 +1046,7 @@ export async function prepareContentElements(
     Object.entries(content).map(async ([name, data]) => {
       const contentElement = await prismaClient.element.create({
         data: {
-          name: name,
+          name: name.trim(),
           content: data,
           options: {},
           type: ElementType.CONTENT,

@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowDown,
+  faArrowUp,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementDisplayMode,
@@ -210,10 +214,16 @@ function QuestionEditModal({
             unit: Yup.string().nullable(),
 
             restrictions: Yup.object().shape({
-              min: Yup.number().nullable(),
+              min: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable(),
               // TODO: less than if max defined
               // .lessThan(Yup.ref('max')),
-              max: Yup.number().nullable(),
+              max: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable(),
               // TODO: more than if min defined
               // .moreThan(Yup.ref('min')),
             }),
@@ -837,7 +847,7 @@ function QuestionEditModal({
                           label={t('shared.generic.options')}
                           className={{
                             root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-base font-normal',
+                            tooltip: 'text-sm font-normal w-80 md:w-1/2',
                           }}
                           tooltip={t('manage.questionForms.FTOptionsTooltip')}
                           showTooltipSymbol={true}
@@ -892,7 +902,7 @@ function QuestionEditModal({
 
                   {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                     <FieldArray name="options.choices">
-                      {({ push, remove }: FieldArrayRenderProps) => {
+                      {({ push, remove, move }: FieldArrayRenderProps) => {
                         return (
                           <div className="flex flex-col w-full gap-2 pt-2">
                             {values.options?.choices?.map(
@@ -918,29 +928,25 @@ function QuestionEditModal({
                                       ' bg-red-100 border-red-300'
                                   )}
                                 >
-                                  <div className="flex flex-row w-full focus:border-primary-40">
+                                  <div className="flex flex-row w-full items-center focus:border-primary-40">
                                     {/* // TODO: define maximum height of editor if possible */}
                                     <FastField
                                       name={`options.choices.${index}.value`}
                                       questionType={values.type}
                                       shouldUpdate={(next, prev) =>
-                                        next?.formik.values[
-                                          `options.choices.${index}.value`
-                                        ] !==
-                                          prev?.formik.values[
-                                            `options.choices.${index}.value`
-                                          ] ||
+                                        next?.formik.values.options.choices[
+                                          index
+                                        ].value !==
+                                          prev?.formik.values.options.choices[
+                                            index
+                                          ].value ||
                                         next.formik.values.type !==
-                                          prev.formik.values.type ||
-                                        next.formik.values.options?.choices
-                                          .length !==
-                                          prev.formik.values.options?.choices
-                                            .length
+                                          prev.formik.values.type
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
-                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}`}
+                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}-${values.options.choices[index].ix}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -957,7 +963,7 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy="insert-answer-field"
+                                          data_cy={`insert-answer-field-${index}`}
                                         />
                                       )}
                                     </FastField>
@@ -990,6 +996,37 @@ function QuestionEditModal({
                                         </FastField>
                                       </div>
                                     )}
+                                    <div className="ml-2 flex flex-col">
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={index === 0}
+                                        onClick={() => move(index, index - 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-up`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowUp}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={
+                                          index ===
+                                          values.options?.choices.length - 1
+                                        }
+                                        onClick={() => move(index, index + 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-down`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowDown}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                    </div>
                                     <Button
                                       onClick={() => {
                                         // decrement the choice.ix value of all answers after this one
@@ -1004,7 +1041,7 @@ function QuestionEditModal({
                                         remove(index)
                                       }}
                                       className={{
-                                        root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                        root: 'items-center justify-center w-10 h-10 text-white bg-red-600 rounded-md',
                                       }}
                                       data={{
                                         cy: `delete-answer-option-ix-${index}`,
@@ -1029,12 +1066,11 @@ function QuestionEditModal({
                                           name={`options.choices.${index}.feedback`}
                                           questionType={values.type}
                                           shouldUpdate={(next, prev) =>
-                                            next?.formik.values[
-                                              `options.choices.${index}.feedback`
-                                            ] !==
-                                              prev?.formik.values[
-                                                `options.choices.${index}.feedback`
-                                              ] ||
+                                            next?.formik.values.options.choices[
+                                              index
+                                            ].feedback !==
+                                              prev?.formik.values.options
+                                                .choices[index].feedback ||
                                             next?.formik.values.type !==
                                               prev?.formik.values.type
                                           }
@@ -1044,6 +1080,7 @@ function QuestionEditModal({
                                             meta,
                                           }: FastFieldProps) => (
                                             <ContentInput
+                                              key={`${values.type}-feedback-${index}-${values.options.choices[index].ix}`}
                                               error={meta.error}
                                               touched={meta.touched}
                                               content={field.value || '<br>'}
@@ -1064,7 +1101,6 @@ function QuestionEditModal({
                                               placeholder={t(
                                                 'manage.questionForms.feedbackPlaceholder'
                                               )}
-                                              key={`${values.type}-feedback-${index}`}
                                             />
                                           )}
                                         </FastField>
@@ -1123,7 +1159,7 @@ function QuestionEditModal({
                             name="options.restrictions.min"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
@@ -1136,7 +1172,7 @@ function QuestionEditModal({
                             name="options.restrictions.max"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
@@ -1161,7 +1197,7 @@ function QuestionEditModal({
                             name="options.accuracy"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
+                              numberField: { input: 'bg-white' },
                             }}
                             precision={0}
                             data={{ cy: 'set-numerical-accuracy' }}
@@ -1409,11 +1445,25 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to FT questions */}
-                      {errors.options && errors.options.restrictions && (
-                        <li>{`${t('manage.questionForms.answerLength')}: ${
-                          errors.options.restrictions.maxLength
+                      {errors.options &&
+                        errors.options.restrictions?.maxLength && (
+                          <li>{`${t('manage.questionForms.answerLength')}: ${
+                            errors.options.restrictions.maxLength
+                          }`}</li>
+                        )}
+
+                      {/* error messages specific to NR questions */}
+                      {errors.options && errors.options.restrictions?.min && (
+                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                          errors.options.restrictions.min
                         }`}</li>
                       )}
+                      {errors.options && errors.options.restrictions?.max && (
+                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                          errors.options.restrictions.max
+                        }`}</li>
+                      )}
+
                       {errors.options &&
                         errors.options.solutions &&
                         typeof errors.options.solutions === 'object' &&
@@ -1484,7 +1534,12 @@ function QuestionEditModal({
                 {values.explanation && (
                   <div className="mt-4">
                     <H3>{t('shared.generic.explanation')}</H3>
-                    <Markdown content={values.explanation} />
+                    <Markdown
+                      className={{
+                        root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                      }}
+                      content={values.explanation}
+                    />
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(values.type) &&
@@ -1497,7 +1552,12 @@ function QuestionEditModal({
                           className="pt-1 pb-1 border-b last:border-b-0"
                         >
                           {choice.feedback ? (
-                            <Markdown content={choice.feedback} />
+                            <Markdown
+                              className={{
+                                root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                              }}
+                              content={choice.feedback}
+                            />
                           ) : (
                             t('manage.questionForms.noFeedbackDefined')
                           )}

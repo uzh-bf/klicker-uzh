@@ -43,12 +43,32 @@ describe('Create questions', () => {
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
+    const choice1 = '50%'
+    const choice2 = '100%'
+
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+
+    cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
+    cy.get('[data-cy="move-answer-option-ix-0-down"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice1)
+
+    cy.get('[data-cy="move-answer-option-ix-1-up"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="move-answer-option-ix-1-down"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
@@ -63,6 +83,9 @@ describe('Create questions', () => {
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
+    const choice1 = '50%'
+    const choice2 = '100%'
+
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
@@ -76,9 +99,26 @@ describe('Create questions', () => {
       .contains(messages.shared.MC.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+
+    cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
+    cy.get('[data-cy="move-answer-option-ix-0-down"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice1)
+
+    cy.get('[data-cy="move-answer-option-ix-1-up"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="move-answer-option-ix-1-down"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
@@ -93,6 +133,11 @@ describe('Create questions', () => {
     const questionTitle = 'A KPRIM ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
+    const choice1 = '50%'
+    const choice2 = '100%'
+    const choice3 = '75%'
+    const choice4 = '60%'
+
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
@@ -106,13 +151,52 @@ describe('Create questions', () => {
       .contains(messages.shared.KPRIM.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(2).click().type('75%')
+    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(3).click().type('60%')
+    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+
+    cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
+    cy.get('[data-cy="move-answer-option-ix-0-down"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice1)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4)
+
+    cy.get('[data-cy="move-answer-option-ix-3-up"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="move-answer-option-ix-3-down"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice1)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice4)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice3)
+
+    cy.get('[data-cy="move-answer-option-ix-2-up"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice4)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice1)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice3)
+
+    cy.get('[data-cy="move-answer-option-ix-2-down"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice2)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice4)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice1)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
@@ -185,9 +269,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 

@@ -30,7 +30,7 @@ export async function updateParticipantProfile(
   // check that username corresponds to no other participant
   if (username) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: { username },
+      where: { username: username.trim() },
     })
 
     if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
@@ -46,9 +46,9 @@ export async function updateParticipantProfile(
         data: {
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-          email,
+          email: email?.toLowerCase(),
           password: hashedPassword,
-          username: username ?? undefined,
+          username: username?.trim() ?? undefined,
         },
       })
     } else {
@@ -61,8 +61,8 @@ export async function updateParticipantProfile(
     data: {
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-      email: email ?? undefined,
-      username: username ?? undefined,
+      email: email?.toLowerCase(),
+      username: username?.trim(),
     },
   })
 
@@ -458,49 +458,6 @@ export async function getBookmarkedElementStacks(
   })
 
   return participation?.bookmarkedElementStacks ?? []
-}
-
-// TODO: remove after migration to element instances
-export async function flagQuestion(
-  args: { questionInstanceId: number; content: string },
-  ctx: ContextWithUser
-) {
-  const questionInstance = await ctx.prisma.questionInstance.findUnique({
-    where: {
-      id: args.questionInstanceId,
-    },
-    include: {
-      microSession: {
-        include: {
-          course: true,
-        },
-      },
-    },
-  })
-
-  if (!questionInstance?.microSession?.course?.notificationEmail) return null
-
-  await fetch(process.env.NOTIFICATION_URL as string, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      elementType: 'Microlearning',
-      elementId: questionInstance?.microSession?.id,
-      elementName: questionInstance?.microSession?.name,
-      questionId: questionInstance.questionId,
-      questionName: questionInstance.questionData.name,
-      content: args.content,
-      participantId: ctx.user?.sub,
-      secret: process.env.NOTIFICATION_SECRET,
-      notificationEmail:
-        questionInstance.microSession?.course?.notificationEmail,
-    }),
-  })
-
-  return 'OK'
 }
 
 export async function flagElement(

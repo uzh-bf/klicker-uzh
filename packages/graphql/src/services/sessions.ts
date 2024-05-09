@@ -99,8 +99,8 @@ export async function createSession(
 
   const session = await ctx.prisma.liveSession.create({
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
       isGamificationEnabled,
@@ -241,8 +241,8 @@ export async function editSession(
   const session = await ctx.prisma.liveSession.update({
     where: { id },
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
       isGamificationEnabled: isGamificationEnabled,
@@ -478,8 +478,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       }
     })
 
-    console.log(participants)
-
     // sessionXP should always be around as soon as there are logged-in participants (check first)
     // sessionLB only for sessions that are compatible with points collection (check second)
     if (sessionXP) {
@@ -586,9 +584,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           return participant
         })
       }
-
-      console.log(existingParticipants)
-      console.log(newAchievements)
 
       // update xp of existing participants
       promises = promises.concat(
@@ -1451,7 +1446,7 @@ export async function getRunningSessions(
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
-      shortname,
+      shortname: shortname.trim(),
     },
     include: {
       sessions: {
@@ -1500,6 +1495,9 @@ export async function getUserSessions(ctx: ContextWithUser) {
     },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -1603,7 +1601,11 @@ export async function getCockpitSession(
   const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
-      activeBlock: true,
+      activeBlock: {
+        include: {
+          instances: true,
+        },
+      },
       blocks: {
         orderBy: {
           order: 'asc',
@@ -1630,6 +1632,35 @@ export async function getCockpitSession(
     return null
   }
 
+  // number of participants per block
+  const blockParticipants = session.blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.instances.reduce(
+        (instanceAcc, instance) => min(instanceAcc, instance.participants),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  if (session.activeBlock && session.activeBlock.id) {
+    // TODO: improve typing
+    const activeInstanceIds = session.activeBlock?.instances.map(
+      (instance) => instance.id as number
+    )
+    const redisMulti = ctx.redisExec.pipeline()
+    activeInstanceIds?.forEach((instanceId) => {
+      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
+    })
+    const cacheContent = await redisMulti.exec()
+    const activeBlockParticipants = cacheContent
+      ?.map(([_, result]) => parseInt(result?.participants as string))
+      .reduce((acc, val) => min(acc, val), 100000)
+    blockParticipants[session.activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id]
+  }
+
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
@@ -1637,6 +1668,7 @@ export async function getCockpitSession(
     blocks: session.blocks.map((block) => {
       return {
         ...block,
+        numOfParticipants: blockParticipants[block.id],
         instances: block.instances.map((instance) => {
           const questionData = instance.questionData
           if (
@@ -2167,4 +2199,27 @@ export async function deleteSession(
 
     throw e
   }
+}
+
+export async function softDeleteLiveSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedLiveSession = await ctx.prisma.liveSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: SessionStatus.COMPLETED,
+    },
+    data: {
+      isDeleted: true,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id,
+  })
+
+  return deletedLiveSession
 }

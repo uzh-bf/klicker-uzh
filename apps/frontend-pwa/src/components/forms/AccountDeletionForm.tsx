@@ -34,6 +34,15 @@ function AccountDeletionForm() {
         <Prose className={{ root: '' }}>
           {t('pwa.profile.deleteProfileDescription')}
         </Prose>
+        <Button
+          onClick={(): void => setDeleteModalOpen(true)}
+          data={{ cy: 'confirm-delete-account' }}
+          className={{
+            root: 'border-red-700 text-red-600 hover:bg-red-600 hover:border-red-700 hover:text-white',
+          }}
+        >
+          {t('shared.generic.delete')}
+        </Button>
 
         <Modal
           title={t('pwa.profile.deleteProfile')}
@@ -64,14 +73,6 @@ function AccountDeletionForm() {
               data={{ cy: 'cancel-delete-account' }}
             >
               {t('shared.generic.cancel')}
-            </Button>
-          }
-          trigger={
-            <Button
-              onClick={(): void => setDeleteModalOpen(true)}
-              data={{ cy: 'confirm-delete-account' }}
-            >
-              {t('shared.generic.delete')}
             </Button>
           }
         >

@@ -215,6 +215,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      publishScheduledPracticeQuizzes: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
+        },
+      }),
+
       createParticipantAccount: t.field({
         nullable: true,
         type: ParticipantTokenData,
@@ -433,17 +440,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.bookmarkElementStack(args, ctx)
-        },
-      }),
-
-      flagQuestion: t.withAuth(asParticipant).string({
-        nullable: true,
-        args: {
-          questionInstanceId: t.arg.int({ required: true }),
-          content: t.arg.string({ required: true }),
-        },
-        async resolve(_, args, ctx) {
-          return ParticipantService.flagQuestion(args, ctx)
         },
       }),
 
@@ -923,6 +919,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      softDeleteLiveSession: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.softDeleteLiveSession(args, ctx)
+        },
+      }),
+
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,
@@ -992,6 +999,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1019,6 +1027,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1090,6 +1099,19 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return MicroLearningService.publishMicroLearning(args, ctx)
+          },
+        }),
+
+      unpublishPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
           },
         }),
 

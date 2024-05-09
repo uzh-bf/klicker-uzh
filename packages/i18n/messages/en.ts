@@ -55,6 +55,7 @@ export default {
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
+      scheduled: 'Scheduled',
       published: 'Published',
       points: 'Points',
       title: 'KlickerUZH',
@@ -142,6 +143,7 @@ export default {
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
+      availableFrom: 'Available from',
       startDate: 'Start date',
       endDate: 'End date',
       repetitionInterval: 'Repetition interval',
@@ -207,6 +209,8 @@ export default {
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
       'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
+    tosAgreementRequired:
+      'Please accept the terms of service and privacy policy before logging in.',
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
@@ -216,6 +220,8 @@ export default {
   },
   pwa: {
     general: {
+      surveyInvitation:
+        'Help shape the future of KlickerUZH by sharing your experiences and needs for personal learning analytics (even if you have never heard of it 😎). Complete our 15-min survey for a chance to win a 25.- voucher.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
@@ -414,6 +420,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to leave the course leaderboard?',
       leaveCourseInformation:
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+      noGamificationOrDescription:
+        'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -473,12 +481,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       flagQuestionText:
         'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       infoStack: 'Information element',
+      scheduledAvailableFrom:
+        'The practice quiz {name} will be available from {date}.',
       inactiveParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
-    microSession: {
+    microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
@@ -539,6 +549,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataSharing: '',
       privacyDataUsage: '',
       privacyDataStorage: '',
+      emailMissing:
+        'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
     },
     avatar: {
       hair: 'Hair',
@@ -761,6 +773,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchived: 'Hide archived',
       elementTypes: 'Element types',
       tags: 'Tags',
+      untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
@@ -808,7 +821,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter the possible answers that students can select for the question here.',
       answerOptionPlaceholder: 'Enter your answer option here...',
       FTOptionsTooltip:
-        'Enter optional settings for the free text question here.',
+        'Enter optional settings for the open question here. Note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
+
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
@@ -934,6 +948,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
+      practiceQuizAvailableFrom:
+        'Specify an optional start date from which the practice quiz is available after publication. If you do not change the date, the quiz is available on the course overview immediately after publication.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1035,6 +1051,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There must be exactly four answer options for Kprim questions',
       explanationRequired:
         'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
+      NRUnderflow:
+        'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
+      NROverflow:
+        'Numerical quantities cannot be larger than 1e30 for technical reasons.',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
@@ -1055,6 +1075,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following live quiz?',
       liveQuizDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
+      pastLiveQuizDeletionHint:
+        'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
       creationExplanation:
@@ -1115,6 +1137,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived speed of the lecture.',
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
+      skipCooldown: 'Skip cooldown',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -1240,10 +1263,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
-      publishingHint:
-        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
+      practicePublishingHint:
+        'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
+      practiceSchedulingHint:
+        'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
-        'Microlearnings are additionally only visible within the specified date range.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future and/or no answers have been submitted. Changes to the content of an element cannot be made after publishing.',
       confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicrolearning:
@@ -1255,6 +1280,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following practice quiz?',
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      unpublishPracticeQuiz: 'Unpublish practice quiz',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
     },

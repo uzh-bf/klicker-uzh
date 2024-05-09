@@ -58,7 +58,7 @@ function SessionCreation({
         conversionMode === 'microLearningToPracticeQuiz',
     }
   )
-  const { data: dataMicroSession, loading: microLoading } = useQuery(
+  const { data: dataMicroLearning, loading: microLoading } = useQuery(
     GetMicroLearningDocument,
     {
       variables: { id: sessionId || '' },
@@ -111,14 +111,14 @@ function SessionCreation({
 
   // initialize practice quiz data from microlearning
   let initialDataPracticeQuiz: PracticeQuiz | undefined
-  if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroSession) {
+  if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroLearning) {
     initialDataPracticeQuiz = {
-      name: `${dataMicroSession.microLearning?.name} (converted)`,
-      displayName: dataMicroSession.microLearning?.displayName,
-      description: dataMicroSession.microLearning?.description,
-      stacks: dataMicroSession.microLearning?.stacks,
-      pointsMultiplier: dataMicroSession.microLearning?.pointsMultiplier,
-      course: dataMicroSession.microLearning?.course,
+      name: `${dataMicroLearning.microLearning?.name} (converted)`,
+      displayName: dataMicroLearning.microLearning?.displayName,
+      description: dataMicroLearning.microLearning?.description,
+      stacks: dataMicroLearning.microLearning?.stacks,
+      pointsMultiplier: dataMicroLearning.microLearning?.pointsMultiplier,
+      course: dataMicroLearning.microLearning?.course,
     } as PracticeQuiz
   }
 
@@ -136,7 +136,7 @@ function SessionCreation({
                   ? ({
                       ...dataLiveSession?.liveSession,
                       name: `${dataLiveSession.liveSession.name} (Copy)`,
-                      displayName: `${dataLiveSession.liveSession.displayName} (Copy)`,
+                      displayName: dataLiveSession.liveSession.displayName,
                     } as Session)
                   : (dataLiveSession?.liveSession as Session)
                 : undefined
@@ -152,7 +152,7 @@ function SessionCreation({
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
-              (dataMicroSession?.microLearning as MicroLearning) ?? undefined
+              (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
             }
           />
         )}

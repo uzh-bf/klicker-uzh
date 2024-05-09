@@ -14,8 +14,8 @@ describe('Different microlearning workflows', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
-    const microSessionName = uuid()
-    const microSessionDisplayName = microSessionName
+    const microLearningName = uuid()
+    const microLearningDisplayName = microLearningName
     const description = uuid()
 
     // set up question
@@ -23,10 +23,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     //
     // create a microlearning
@@ -37,10 +37,10 @@ describe('Different microlearning workflows', () => {
     // step 1
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
-      .type(microSessionName)
+      .type(microLearningName)
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
-      .type(microSessionDisplayName)
+      .type(microLearningDisplayName)
     cy.get('[data-cy="insert-microlearning-description"]')
       .click()
       .type(description)
@@ -84,16 +84,16 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
+    cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.published
     )
 
@@ -108,10 +108,10 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'exist'
     )
-    cy.findByText(microSessionDisplayName).click()
+    cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
@@ -130,10 +130,10 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'exist'
     )
-    cy.findByText(microSessionDisplayName).click()
+    cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 
@@ -144,8 +144,8 @@ describe('Different microlearning workflows', () => {
   it('creates and publishes a future micro learning that should not be visible to students and tests unpublishing it', () => {
     const questionTitle = uuid()
     const question = uuid()
-    const microSessionName = uuid()
-    const microSessionDisplayName = microSessionName
+    const microLearningName = uuid()
+    const microLearningDisplayName = microLearningName
     const description = uuid()
     const courseName = 'Testkurs'
 
@@ -154,10 +154,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // create a microlearning
@@ -166,10 +166,10 @@ describe('Different microlearning workflows', () => {
     // step 1
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
-      .type(microSessionName)
+      .type(microLearningName)
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
-      .type(microSessionDisplayName)
+      .type(microLearningDisplayName)
     cy.get('[data-cy="insert-microlearning-description"]')
       .click()
       .type(description)
@@ -211,16 +211,16 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
+    cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.published
     )
 
@@ -235,7 +235,7 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'not.exist'
     )
 
@@ -245,9 +245,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
-    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`).click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="unpublish-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
   })
@@ -255,8 +255,8 @@ describe('Different microlearning workflows', () => {
   it('creates and publishes a past micro learning that should not be visible to students', () => {
     const questionTitle = uuid()
     const question = uuid()
-    const microSessionName = uuid()
-    const microSessionDisplayName = microSessionName
+    const microLearningName = uuid()
+    const microLearningDisplayName = microLearningName
     const description = uuid()
     const courseName = 'Testkurs'
 
@@ -265,10 +265,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // create a microlearning
@@ -277,10 +277,10 @@ describe('Different microlearning workflows', () => {
     // step 1
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
-      .type(microSessionName)
+      .type(microLearningName)
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
-      .type(microSessionDisplayName)
+      .type(microLearningDisplayName)
     cy.get('[data-cy="insert-microlearning-description"]')
       .click()
       .type(description)
@@ -322,16 +322,16 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
+    cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.published
     )
 
@@ -346,7 +346,7 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'not.exist'
     )
   })
@@ -354,8 +354,8 @@ describe('Different microlearning workflows', () => {
   it('creates and edits a micro learning, which should then be accessible by students', () => {
     const questionTitle = uuid()
     const question = uuid()
-    const microSessionName = uuid()
-    const microSessionDisplayName = microSessionName
+    const microLearningName = uuid()
+    const microLearningDisplayName = microLearningName
     const description = uuid()
     const courseName = 'Testkurs'
 
@@ -364,10 +364,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // create a microlearning
@@ -376,10 +376,10 @@ describe('Different microlearning workflows', () => {
     // step 1
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
-      .type(microSessionName)
+      .type(microLearningName)
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
-      .type(microSessionDisplayName)
+      .type(microLearningDisplayName)
     cy.get('[data-cy="insert-microlearning-description"]')
       .click()
       .type(description)
@@ -422,16 +422,16 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="load-session-list"]').click()
 
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
+    cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.published
     )
 
@@ -446,7 +446,7 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'not.exist'
     )
 
@@ -456,15 +456,15 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
-    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`).click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="unpublish-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // edit the micro learning
-    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
-    cy.get(`[data-cy="edit-microlearning-${microSessionName}"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="edit-microlearning-${microLearningName}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
       'exist'
     )
@@ -472,10 +472,10 @@ describe('Different microlearning workflows', () => {
     // check if the first page of the edit form are shown correctly
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
-      .should('have.value', microSessionName)
+      .should('have.value', microLearningName)
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
-      .should('have.value', microSessionDisplayName)
+      .should('have.value', microLearningDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if correct values are in the form and rename it
@@ -515,16 +515,16 @@ describe('Different microlearning workflows', () => {
     // go to microlearning list and check if it exists in draft state
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish the microlearning
-    cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
+    cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.published
     )
 
@@ -541,10 +541,10 @@ describe('Different microlearning workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.contains('[data-cy="microlearnings"]', microSessionDisplayName).should(
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
       'exist'
     )
-    cy.findByText(microSessionDisplayName).click()
+    cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 

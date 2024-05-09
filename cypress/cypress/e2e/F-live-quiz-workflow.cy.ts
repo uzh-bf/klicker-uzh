@@ -26,7 +26,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
   })
 
-  it('creates a session with one block', () => {
+  it('creates a session with one block and deletes it', () => {
     const questionTitle = uuid()
     const question = uuid()
     const sessionName = uuid()
@@ -35,9 +35,9 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -59,6 +59,14 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.contains('[data-cy="session-block"]', sessionName)
+
+    // delete this session again
+    cy.findByText(sessionName).should('exist')
+    cy.get(`[data-cy="delete-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="delete-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.findByText(sessionName).should('not.exist')
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {
@@ -70,9 +78,9 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -104,9 +112,9 @@ describe('Different live-quiz workflows', () => {
 
     // start session and then skip through the blocks
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
-    cy.get('[data-cy="interaction-first-block"]').click()
-    cy.get('[data-cy="interaction-first-block"]').click()
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
   })
 
   it('shows a possible workflow of running a session and answering questions', () => {
@@ -119,9 +127,9 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('25%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('25%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // step 1
@@ -184,7 +192,7 @@ describe('Different live-quiz workflows', () => {
 
     // start session and first block
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
 
     // login student and answer first question
     cy.loginStudent()
@@ -214,10 +222,10 @@ describe('Different live-quiz workflows', () => {
     cy.wait(1000)
 
     // close first block
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
     // start next block
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
 
     // login student and answer first question
@@ -239,7 +247,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="sessions"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.wait(1000)
-    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="next-block-timeline"]').click()
 
     cy.url().then((url) => {
       const sessionIdEvaluation = url.split('/')[4]
@@ -260,7 +268,7 @@ describe('Different live-quiz workflows', () => {
     //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
   })
 
-  it('creates a live quiz without questions and tests the feedback mechanisms', () => {
+  it('creates a live quiz without questions and tests the feedback mechanisms and deletes the completed live session', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
@@ -270,9 +278,9 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // create a live quiz with a single question
@@ -396,5 +404,23 @@ describe('Different live-quiz workflows', () => {
     cy.loginStudent()
     cy.findByText(sessionName).click()
     cy.findByText(feedback1).should('not.exist')
+
+    // click through blocks and end session
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click() // end session
+
+    // delete past session
+    cy.findByText(sessionName).should('exist')
+    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.findByText(sessionName).should('not.exist')
   })
 })

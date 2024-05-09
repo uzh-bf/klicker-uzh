@@ -96,7 +96,7 @@ interface ManipulateMicroLearningArgs {
   endDate: Date
 }
 
-// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into hel)
+// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into helper functions)
 export async function manipulateMicroLearning(
   {
     id,
@@ -177,8 +177,8 @@ export async function manipulateMicroLearning(
   )
 
   const createOrUpdateJSON = {
-    name,
-    displayName: displayName ?? name,
+    name: name.trim(),
+    displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     scheduledStartAt: dayjs(startDate).toDate(),
@@ -188,7 +188,7 @@ export async function manipulateMicroLearning(
         return {
           type: ElementStackType.MICROLEARNING,
           order: stack.order,
-          displayName: stack.displayName ?? '',
+          displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
           options: {},
           elements: {

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import {
   Button,
   Checkbox,
@@ -19,7 +20,6 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-import DynamicMarkdown from '../practiceQuiz/DynamicMarkdown'
 
 interface Props {
   initialUsername?: string
@@ -83,7 +83,7 @@ function CreateAccountForm({
     <Formik
       isInitialValid={false}
       initialValues={{
-        email: initialEmail ?? '',
+        email: initialEmail?.toLowerCase() ?? '',
         username: initialUsername,
         password: '',
         passwordRepetition: '',
