@@ -586,33 +586,48 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityResults = {
-    totalScore: 450,
+    totalScore: groupActivityCompleted.stacks[0].elements.reduce(
+      (acc, element) => acc + 25 * (element.options.pointsMultiplier || 1),
+      0
+    ),
     comment: 'This is an optional comment by the lecturer.',
-    grading: groupActivityCompleted.stacks[0].elements.map((element) => {
+    grading: groupActivityCompleted.stacks[0].elements.reduce<
+      {
+        instanceId: number
+        correctness: string
+        score: number
+        feedback?: string
+      }[]
+    >((acc, element) => {
+      if (element.elementType === Prisma.ElementType.CONTENT) return acc
+
       const maxScore = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
       ]
 
-      return {
-        instanceId: element.id,
-        correctness: correctness,
-        score:
-          correctness === 'CORRECT'
-            ? maxScore
-            : correctness === 'PARTIAL'
-            ? Math.floor(Math.random() * maxScore)
-            : 0,
-        ...(correctness === 'INCORRECT' && {
-          feedback:
-            'In case of an incorrect answer, this feedback is provided.',
-        }),
-        ...(correctness === 'PARTIAL' && {
-          feedback:
-            'In case of a partially correct answer, this feedback is provided.',
-        }),
-      }
-    }),
+      return [
+        ...acc,
+        {
+          instanceId: element.id,
+          correctness: correctness,
+          score:
+            correctness === 'CORRECT'
+              ? maxScore
+              : correctness === 'PARTIAL'
+              ? Math.floor(Math.random() * maxScore)
+              : 0,
+          ...(correctness === 'INCORRECT' && {
+            feedback:
+              'In case of an incorrect answer, this feedback is provided.',
+          }),
+          ...(correctness === 'PARTIAL' && {
+            feedback:
+              'In case of a partially correct answer, this feedback is provided.',
+          }),
+        },
+      ]
+    }, []),
   }
 
   // seed group activity instance with decisions and results
