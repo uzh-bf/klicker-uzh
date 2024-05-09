@@ -87,11 +87,11 @@ const Development = () => {
 
         <div className="mb-8">
           As part of a project backed by swissuniversities and the Teaching
-          Center at the Dept. of Banking and Finance (UZH), the KlickerUZH team
-          will be working on several interesting focus areas over the coming
-          years. We will be developing best practices and materials, as well as
-          extending the KlickerUZH with capabilities that support each of these
-          areas. <br />
+          Center at the Dept. of Finance (UZH), the KlickerUZH team will be
+          working on several interesting focus areas over the coming years. We
+          will be developing best practices and materials, as well as extending
+          the KlickerUZH with capabilities that support each of these areas.{' '}
+          <br />
           This page and our official documentation will be continuously extended
           with helpful resources. You can help shape the KlickerUZH by joining
           our{' '}

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-control:** add missing js-cookie dependence to control frontend ([f89c544](https://github.com/uzh-bf/klicker-uzh/commit/f89c5445358e776d638a60720f37017435ab62ac))
+
+## [3.1.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.35...v3.1.0-rc.36) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-*:** add js-cookie and [@types](https://github.com/types) to all frontend apps ([bb77002](https://github.com/uzh-bf/klicker-uzh/commit/bb77002946491ba30df2cd6f677f25eb0bc7950e))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** automatically select correct tab on element overview ([#4112](https://github.com/uzh-bf/klicker-uzh/issues/4112)) ([7b342d5](https://github.com/uzh-bf/klicker-uzh/commit/7b342d5fef59da1747032dc4e775f6b006a36b5c))
+* **apps/frontend-pwa:** show hint for scheduled practice quiz ([#4111](https://github.com/uzh-bf/klicker-uzh/issues/4111)) ([2f683c8](https://github.com/uzh-bf/klicker-uzh/commit/2f683c8cb4d02794a66cb348dc75192e34e1c9ab))
+* **packages/graphql:** seed demo flashcards and content elements ([#4114](https://github.com/uzh-bf/klicker-uzh/issues/4114)) ([2d8e262](https://github.com/uzh-bf/klicker-uzh/commit/2d8e262a1880d7885dfe143449aa4e758814987e))
+
 ## [3.1.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.34...v3.1.0-rc.35) (2024-05-06)
 
 
