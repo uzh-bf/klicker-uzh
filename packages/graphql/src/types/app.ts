@@ -73,6 +73,12 @@ export enum FlashcardCorrectness {
   CORRECT = 'CORRECT',
 }
 
+export enum ResponseCorrectness {
+  INCORRECT = 'INCORRECT',
+  PARTIAL = 'PARTIAL',
+  CORRECT = 'CORRECT',
+}
+
 export enum StackFeedbackStatus {
   UNANSWERED = 'unanswered',
   MANUALLY_GRADED = 'manuallyGraded',
@@ -300,11 +306,23 @@ export type ElementInstanceResults =
 export type GroupActivityDecisions = {
   instanceId: number
   type: ElementType
-  freeTextResponse?: string
-  choicesResponse?: number[]
-  numericalResponse?: number
-  contentResponse?: boolean
+  freeTextResponse?: string | null
+  choicesResponse?: number[] | null
+  numericalResponse?: number | null
+  contentResponse?: boolean | null
 }[]
+
+export type GroupActivityResults = {
+  totalScore: number
+  comment?: string | null
+  grading: {
+    instanceId: number
+    correctness: ResponseCorrectness
+    score: number
+    feedback?: string | null
+    // maxScore: number // TODO: add in GraphQL schema
+  }[]
+}
 
 declare global {
   namespace PrismaJson {
@@ -315,6 +333,7 @@ declare global {
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
+    type PrismaGroupActivityResults = GroupActivityResults
   }
 }
 // #endregion

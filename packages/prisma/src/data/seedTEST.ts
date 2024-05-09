@@ -459,6 +459,187 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const groupActivityId3 = '8918501d-5e44-49d6-916e-43ba11794b96'
+  const groupActivityCompleted = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId3,
+    },
+    create: {
+      id: groupActivityId3,
+      name: 'Gruppenquest Completed',
+      displayName: 'Gruppenquest Completed',
+      description: `Description of the completed group activity.`,
+      status: Prisma.GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2021-01-01T11:00:00.000Z'),
+      parameters: {},
+      pointsMultiplier: 2,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId3 }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            migrationIdOffset: 200,
+            flashcards: [flashcards[0]],
+            questions: questionsTest,
+            contentElements: [contentElements[0]],
+            courseId: COURSE_ID_TEST,
+            connectStackToCourse: true,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  const groupActivityDecisions = groupActivityCompleted.stacks[0].elements.map(
+    (element) => {
+      const baseDecisions = { elementId: element.id, type: element.elementType }
+
+      if (element.elementType === Prisma.ElementType.CONTENT) {
+        return {
+          ...baseDecisions,
+          decision: {
+            contentResponse: true,
+          },
+        }
+      } else if (element.elementType === Prisma.ElementType.SC) {
+        return {
+          ...baseDecisions,
+          decision: {
+            choicesResponse: [1],
+          },
+        }
+      } else if (element.elementType === Prisma.ElementType.MC) {
+        return {
+          ...baseDecisions,
+          decision: {
+            choicesResponse: [1, 2],
+          },
+        }
+      } else if (element.elementType === Prisma.ElementType.KPRIM) {
+        return {
+          ...baseDecisions,
+          decision: {
+            choicesResponse: [0, 1, 3],
+          },
+        }
+      } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
+        return {
+          ...baseDecisions,
+          decision: {
+            freeTextResponse: 'This is a free text response.',
+          },
+        }
+      } else if (element.elementType === Prisma.ElementType.NUMERICAL) {
+        return {
+          ...baseDecisions,
+          decision: {
+            numericalResponse: 10,
+          },
+        }
+      }
+    }
+  )
+
+  // seed group activity instance with decisions
+  const groupActivityInstanceId = 1
+  const groupActivityInstance = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId,
+    },
+    create: {
+      decisions: groupActivityDecisions,
+      decisionsSubmittedAt: new Date('2020-06-01T11:00:00.000Z'),
+      groupActivity: {
+        connect: {
+          id: groupActivityId3,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[0],
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityResults = {
+    totalScore: 450,
+    comment: 'This is an optional comment by the lecturer.',
+    grading: groupActivityCompleted.stacks[0].elements.map((element) => {
+      const maxScore = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
+      const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
+        Math.floor(Math.random() * 3)
+      ]
+
+      return {
+        instanceId: element.id,
+        correctness: correctness,
+        score:
+          correctness === 'CORRECT'
+            ? maxScore
+            : correctness === 'PARTIAL'
+            ? Math.floor(Math.random() * maxScore)
+            : 0,
+        ...(correctness === 'INCORRECT' && {
+          feedback:
+            'In case of an incorrect answer, this feedback is provided.',
+        }),
+        ...(correctness === 'PARTIAL' && {
+          feedback:
+            'In case of a partially correct answer, this feedback is provided.',
+        }),
+      }
+    }),
+  }
+
+  // seed group activity instance with decisions and results
+  const groupActivityInstanceId2 = 2
+  const groupActivityInstance2 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId2,
+    },
+    create: {
+      decisions: groupActivityDecisions,
+      decisionsSubmittedAt: new Date('2020-06-01T11:00:00.000Z'),
+      results: groupActivityResults,
+      resultsComputedAt: new Date(),
+      groupActivity: {
+        connect: {
+          id: groupActivityId3,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[1],
+        },
+      },
+    },
+    update: {},
+  })
+
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
