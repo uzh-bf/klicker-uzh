@@ -24,6 +24,9 @@ export const GroupActivityDecisionInput = builder.inputType(
 
 export interface IGroupActivity extends DB.GroupActivity {
   numOfStacks?: number
+  activityInstances?: IGroupActivityInstance[]
+  course?: ICourse
+  clues?: DB.GroupActivityClue[]
 }
 export const GroupActivityRef =
   builder.objectRef<IGroupActivity>('GroupActivity')
@@ -40,6 +43,21 @@ export const GroupActivity = GroupActivityRef.implement({
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+
+    instances: t.expose('activityInstances', {
+      type: [GroupActivityInstanceRef],
+      nullable: true,
+    }),
+
+    course: t.expose('course', {
+      type: CourseRef,
+      nullable: true,
+    }),
+
+    clues: t.expose('clues', {
+      type: [GroupActivityClueRef],
+      nullable: true,
+    }),
   }),
 })
 
