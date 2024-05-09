@@ -205,37 +205,6 @@ function GroupActivityStack({
                       />
                     )}
                   </div>
-
-                  // <div
-                  //   className={twMerge(
-                  //     'text-base mt-3 border border-solid p-2 rounded mb-4',
-                  //     correctness === ResponseCorrectnessType.Correct &&
-                  //       'border-green-500 bg-green-100',
-                  //     correctness === ResponseCorrectnessType.Partial &&
-                  //       'border-yellow-500 bg-yellow-100',
-                  //     correctness === ResponseCorrectnessType.Incorrect &&
-                  //       'border-red-700 bg-red-200'
-                  //   )}
-                  // >
-                  // <div
-                  //   className={twMerge(
-                  //     'flex flex-row justify-between',
-                  //     grading.feedback && 'mb-1'
-                  //   )}
-                  // >
-                  //   <div>{t(`pwa.groupActivity.answer${correctness}`)}</div>
-                  //   <div className="font-bold">{`${grading.score}/${
-                  //     grading.maxPoints
-                  //   } ${t('shared.generic.points')}`}</div>
-                  // </div>
-                  // {grading.feedback && (
-                  //   <div className="italic">
-                  //     {t('pwa.groupActivity.groupActivityFeedback', {
-                  //       feedback: grading.feedback,
-                  //     })}
-                  //   </div>
-                  //   )}
-                  // </div>
                 )}
               </div>
             )
