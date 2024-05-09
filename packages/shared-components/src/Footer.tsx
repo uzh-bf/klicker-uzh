@@ -17,7 +17,7 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
           <p className="py-2 m-0 text-xs leading-5 text-center text-gray-400">
             &copy;
             {new Date().getFullYear()} IBF Teaching Center, Department of
-            Banking and Finance, University of Zurich. All rights reserved.
+            Finance, University of Zurich. All rights reserved.
             <br />
             Products and Services displayed herein are trademarks or registered
             trademarks of their respective owners.

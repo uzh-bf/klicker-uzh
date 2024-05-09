@@ -115,7 +115,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
             />
             {user?.catalyst ? (
               <SupportEntry
-                href="mailto:klicker@bf.uzh.ch"
+                href="mailto:klicker@df.uzh.ch"
                 title={t('manage.support.email')}
                 subtitle={t('manage.support.emailDesc')}
                 icon={faEnvelope}

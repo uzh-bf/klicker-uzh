@@ -4,7 +4,7 @@
 >
 > Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which will be available until the end of 2023. To migrate to KlickerUZH v3.0, start the [migration process](https://manage.klicker.uzh.ch/migration).
 
-`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
+`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Finance at the University of Zurich, Switzerland.
 
 ![Klicker Screenshot Timeline](apps/docs/static/img/question_pool_mac.png)
 
@@ -34,7 +34,7 @@ To share code more easily between different services, we added new packages to t
 - [Shared Components](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/shared-components): The `shared-components` package is configured as an internal turborepo package, mainly providing the possibility to share React components between the frontends and reduce code duplication.
 - [Markdown](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/markdown): The markdown package exports a React component to render markdown strings into formatted elements.
 
-For more code commonality between different projects at the Teaching Center and the Department of Banking and Finance more generally, we also use a [Design System Package](https://github.com/uzh-bf/design-system) with commonly used, pre-styled and theme-based components.
+For more code commonality between different projects at the Teaching Center and the Department of Finance more generally, we also use a [Design System Package](https://github.com/uzh-bf/design-system) with commonly used, pre-styled and theme-based components.
 
 ## Roadmap / Issues
 

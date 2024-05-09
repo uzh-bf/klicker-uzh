@@ -265,9 +265,9 @@ export const USE_CASES = {
           <li>
             Student feedback: From the students' perspective, the use of
             KlickerUZH is generally regarded as beneficial (average grade across
-            several years in different Department of Banking and Finance (DBF)
-            lectures: 5.0/6.0). Some critical voices express concerns about time
-            loss and question the effective benefits.
+            several years in different Department of Finance (DF) lectures:
+            5.0/6.0). Some critical voices express concerns about time loss and
+            question the effective benefits.
           </li>
           <li>
             Question type: So far, single-choice questions have been
@@ -855,7 +855,7 @@ export const USE_CASES = {
             identical (number and content) in the autumn semester 2020, 2021 and
             2022. However, in 2022 we included the gamification approach and
             added microlearnings on the course level. We saw higher access
-            numbers, more repetition across all students as well as more
+            numbers, more repetition across all students as well as more
             repetition per student (fall 20/21: Average: 1.96x per student,
             maximum: 21x vs. fall 2022: Average: 2.45x per student, Maximum:
             41x).

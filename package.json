@@ -9,8 +9,8 @@
   "license": "AGPL-3.0",
   "main": "apps/func/dist/index.js",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
