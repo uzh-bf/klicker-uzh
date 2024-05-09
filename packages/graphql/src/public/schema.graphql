@@ -359,10 +359,12 @@ type GroupActivity {
   id: ID!
   instances: [GroupActivityInstance!]
   name: String!
-  numOfStacks: Int
+  numOfQuestions: Int
   pointsMultiplier: Int
   scheduledEndAt: Date!
   scheduledStartAt: Date!
+  stacks: [ElementStack!]
+  status: GroupActivityStatus!
 }
 
 type GroupActivityClue {
@@ -448,6 +450,11 @@ type GroupActivityResults {
   grading: [GroupActivityGrading!]!
   passed: Boolean!
   points: Float!
+}
+
+enum GroupActivityStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type GroupLeaderboardEntry {

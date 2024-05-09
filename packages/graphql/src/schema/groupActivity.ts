@@ -11,6 +11,10 @@ export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
 })
 
+export const GroupActivityStatus = builder.enumType('GroupActivityStatus', {
+  values: Object.values(DB.GroupActivityStatus),
+})
+
 export const ResponseCorrectnessType = builder.enumType(
   'ResponseCorrectnessType',
   {
@@ -31,7 +35,8 @@ export const GroupActivityDecisionInput = builder.inputType(
 )
 
 export interface IGroupActivity extends DB.GroupActivity {
-  numOfStacks?: number
+  stacks?: IElementStack[]
+  numOfQuestions?: number
   activityInstances?: IGroupActivityInstance[]
   course?: ICourse
   clues?: DB.GroupActivityClue[]
@@ -45,12 +50,18 @@ export const GroupActivity = GroupActivityRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
-    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
+    status: t.expose('status', { type: GroupActivityStatus }),
+    numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+
+    stacks: t.expose('stacks', {
+      type: [ElementStackRef],
+      nullable: true,
+    }),
 
     instances: t.expose('activityInstances', {
       type: [GroupActivityInstanceRef],

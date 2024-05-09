@@ -11,6 +11,7 @@ interface PublishConfirmationModalProps {
   elementType:
     | ElementInstanceType.Microlearning
     | ElementInstanceType.PracticeQuiz
+    | ElementInstanceType.GroupActivity
   elementId: string
   title: string
   publicationHint: string
@@ -37,6 +38,13 @@ function PublishConfirmationModal({
       id: elementId,
     },
   })
+  // TODO
+  // const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
+  //   variables: {
+  //     id: elementId,
+  //   },
+  // })
+  const publishGroupActivity = async () => {}
 
   return (
     <Modal
@@ -48,6 +56,8 @@ function PublishConfirmationModal({
               await publishMicroLearning()
             } else if (elementType === ElementInstanceType.PracticeQuiz) {
               await publishPracticeQuiz()
+            } else if (elementType === ElementInstanceType.GroupActivity) {
+              await publishGroupActivity()
             }
             setOpen(false)
           }}
