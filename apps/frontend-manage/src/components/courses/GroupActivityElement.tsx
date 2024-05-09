@@ -1,10 +1,7 @@
 import { useMutation } from '@apollo/client'
+import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  faClock,
-  faHandPointer,
-  faTrashCan,
-} from '@fortawesome/free-regular-svg-icons'
-import {
+  faArrowsRotate,
   faCheck,
   faHourglassEnd,
   faHourglassStart,
@@ -136,7 +133,8 @@ function GroupActivityElement({
             </>
           )}
 
-          {groupActivity.status === GroupActivityStatus.Published && (
+          {(groupActivity.status === GroupActivityStatus.Published ||
+            groupActivity.status === GroupActivityStatus.Graded) && (
             <>
               {isPast && (
                 <Link
@@ -164,17 +162,39 @@ function GroupActivityElement({
                 </Button>
               )}
 
-              <StatusTag
-                color="bg-green-300"
-                status={
-                  isFuture
-                    ? t('shared.generic.scheduled')
-                    : isPast
-                    ? t('shared.generic.completed')
-                    : t('shared.generic.running')
-                }
-                icon={isFuture ? faClock : isPast ? faCheck : faPlay}
-              />
+              {isFuture && (
+                <StatusTag
+                  color="bg-green-300"
+                  status={t('shared.generic.scheduled')}
+                  icon={faLock}
+                />
+              )}
+              {isPast && (
+                <StatusTag
+                  color={
+                    groupActivity.status === GroupActivityStatus.Graded
+                      ? 'bg-green-300'
+                      : 'bg-orange-300'
+                  }
+                  status={
+                    groupActivity.status === GroupActivityStatus.Graded
+                      ? t('shared.generic.completed')
+                      : t('shared.generic.grading')
+                  }
+                  icon={
+                    groupActivity.status === GroupActivityStatus.Graded
+                      ? faCheck
+                      : faArrowsRotate
+                  }
+                />
+              )}
+              {!(isFuture || isPast) && (
+                <StatusTag
+                  color="bg-green-300"
+                  status={t('shared.generic.running')}
+                  icon={faPlay}
+                />
+              )}
             </>
           )}
         </div>

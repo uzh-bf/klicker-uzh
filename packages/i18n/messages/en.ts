@@ -57,6 +57,7 @@ export default {
       draft: 'Draft',
       scheduled: 'Scheduled',
       published: 'Published',
+      grading: 'Grading',
       completed: 'Completed',
       running: 'Running',
       points: 'Points',

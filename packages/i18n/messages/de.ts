@@ -59,6 +59,7 @@ export default {
       published: 'Öffentlich',
       completed: 'Abgeschlossen',
       running: 'Laufend',
+      grading: 'Bewertung',
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
