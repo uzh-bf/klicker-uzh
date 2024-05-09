@@ -74,7 +74,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     await prepareUser({
       id: USER_ID_TEST,
       name: 'Lecturer',
-      email: 'lecturer@bf.uzh.ch',
+      email: 'lecturer@df.uzh.ch',
       shortname: 'lecturer',
       password: 'abcd',
       catalystIndividual: true,
@@ -86,7 +86,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     await prepareUser({
       id: USER_ID_TEST2,
       name: 'Free Tier User',
-      email: 'free@bf.uzh.ch',
+      email: 'free@df.uzh.ch',
       shortname: 'free',
       password: 'abcd',
     })
@@ -96,7 +96,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     await prepareUser({
       id: USER_ID_TEST3,
       name: 'Individual Pro User',
-      email: 'pro1@bf.uzh.ch',
+      email: 'pro1@df.uzh.ch',
       shortname: 'pro1',
       password: 'abcd',
       catalystIndividual: true,
@@ -107,7 +107,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     await prepareUser({
       id: USER_ID_TEST4,
       name: 'Institutional Pro User',
-      email: 'pro2@bf.uzh.ch',
+      email: 'pro2@df.uzh.ch',
       shortname: 'pro2',
       password: 'abcd',
       catalystInstitutional: true,
