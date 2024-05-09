@@ -1,11 +1,15 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementStack,
   GroupActivityDetailsDocument,
+  GroupActivityGrading,
   StartGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -13,6 +17,7 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
@@ -63,6 +68,14 @@ function GroupActivityDetails() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
+  const instance = data.groupActivityDetails.activityInstance
+  const maxTotalPoints = instance?.results?.grading.reduce(
+    (acc: number, grading: GroupActivityGrading) => {
+      return acc + grading.maxPoints
+    },
+    0
+  )
+
   return (
     <Layout
       course={data.groupActivityDetails.course}
@@ -74,7 +87,7 @@ function GroupActivityDetails() {
 
       <div className="flex flex-col lg:gap-12 p-4 mx-auto border rounded max-w-[1800px] lg:flex-row">
         <div className="lg:flex-1">
-          <div className="">
+          <div>
             <H1>{t('pwa.groupActivity.initialSituation')}</H1>
 
             <Markdown
@@ -90,7 +103,7 @@ function GroupActivityDetails() {
             <H1>{t('pwa.groupActivity.yourHints')}</H1>
 
             <div className="grid grid-cols-1 gap-2 mt-2 text-xs md:grid-cols-2">
-              {!data.groupActivityDetails.activityInstance &&
+              {!instance &&
                 data.groupActivityDetails.clues.map((clue) => {
                   return (
                     <div
@@ -101,12 +114,10 @@ function GroupActivityDetails() {
                     </div>
                   )
                 })}
-              {data.groupActivityDetails.activityInstance &&
-                data.groupActivityDetails.activityInstance.clues?.map(
-                  (clue) => {
-                    return <GroupActivityClue clue={clue} key={clue.id} />
-                  }
-                )}
+              {instance &&
+                instance.clues?.map((clue) => {
+                  return <GroupActivityClue clue={clue} key={clue.id} />
+                })}
             </div>
             <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
               {t.rich('pwa.groupActivity.coordinateHints', {
@@ -169,17 +180,55 @@ function GroupActivityDetails() {
             </div>
           )}
 
-          {data.groupActivityDetails.activityInstance && (
+          {instance && (
             <div className="py-4 lg:pt-0">
               <H1>{t('pwa.groupActivity.yourTasks')}</H1>
+              {instance?.results && (
+                <div
+                  className={twMerge(
+                    'rounded mb-6 shadow',
+                    instance.results.passed
+                      ? '!border-l-4 !border-l-green-500'
+                      : '!border-l-4 !border-l-red-700'
+                  )}
+                >
+                  <div
+                    className={twMerge(
+                      'flex flex-col justify-between md:flex-row text-base md:text-lg px-2 py-1',
+                      instance.results.passed ? 'bg-green-100' : 'bg-red-200'
+                    )}
+                  >
+                    {instance.results.passed ? (
+                      <div className="flex flex-row gap-2 items-center leading-6">
+                        <FontAwesomeIcon icon={faCheck} />
+                        <div>{t('pwa.groupActivity.groupActivityPassed')}</div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-row gap-2 items-center leading-6">
+                        <FontAwesomeIcon icon={faXmark} />
+                        <div>{t('pwa.groupActivity.groupActivityFailed')}</div>
+                      </div>
+                    )}
+                    <div className="font-bold self-end min-w-max">{`${
+                      instance.results.points
+                    }/${maxTotalPoints} ${t('shared.generic.points')}`}</div>
+                  </div>
+                  {instance.results.comment && (
+                    <DynamicMarkdown
+                      className={{ root: 'mt-1 p-2 !pt-0' }}
+                      content={instance.results.comment}
+                    />
+                  )}
+                </div>
+              )}
               <GroupActivityStack
-                activityId={data.groupActivityDetails.activityInstance.id}
+                activityId={instance.id}
                 stack={data.groupActivityDetails.stacks[0] as ElementStack}
-                decisions={data.groupActivityDetails.activityInstance.decisions}
-                submittedAt={dayjs(
-                  data.groupActivityDetails.activityInstance
-                    .decisionsSubmittedAt
-                ).format('DD.MM.YYYY HH:mm:ss')}
+                decisions={instance.decisions}
+                results={instance.results}
+                submittedAt={dayjs(instance.decisionsSubmittedAt).format(
+                  'DD.MM.YYYY HH:mm:ss'
+                )}
               />
             </div>
           )}

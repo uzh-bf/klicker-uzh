@@ -10,7 +10,7 @@ import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
-import { GroupActivityDetails } from './groupActivity'
+import { GroupActivity, GroupActivityDetails } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
   Participant,
@@ -457,6 +457,17 @@ export const Query = builder.queryType({
         type: [UserLogin],
         resolve(_, __, ctx) {
           return AccountService.getUserLogins(ctx)
+        },
+      }),
+
+      groupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.getGroupActivity(args, ctx)
         },
       }),
 

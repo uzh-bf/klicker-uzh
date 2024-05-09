@@ -753,6 +753,7 @@ model GroupActivityInstance {
   /// [PrismaGroupActivityDecisions]
   decisions            Json?
   decisionsSubmittedAt DateTime?
+  /// [PrismaGroupActivityResults]
   results              Json?
   resultsComputedAt    DateTime?
 

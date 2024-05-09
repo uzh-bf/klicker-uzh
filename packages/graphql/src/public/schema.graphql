@@ -352,9 +352,12 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  clues: [GroupActivityClue!]
+  course: Course
   description: String
   displayName: String!
   id: ID!
+  instances: [GroupActivityInstance!]
   name: String!
   numOfStacks: Int
   pointsMultiplier: Int
@@ -419,6 +422,13 @@ type GroupActivityDetails {
   stacks: [ElementStack!]!
 }
 
+type GroupActivityGrading {
+  feedback: String
+  instanceId: Int!
+  maxPoints: Float!
+  score: Float!
+}
+
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
@@ -426,10 +436,18 @@ type GroupActivityInstance {
   groupActivityId: ID!
   id: Int!
   results: Json
+  resultsComputedAt: Date
 }
 
 type GroupActivityParameter {
   id: Int!
+}
+
+type GroupActivityResults {
+  comment: String
+  grading: [GroupActivityGrading!]!
+  passed: Boolean!
+  points: Float!
 }
 
 type GroupLeaderboardEntry {
@@ -829,6 +847,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
@@ -913,6 +932,12 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+enum ResponseCorrectnessType {
+  CORRECT
+  INCORRECT
+  PARTIAL
 }
 
 input ResponseInput {
