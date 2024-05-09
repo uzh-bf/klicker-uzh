@@ -601,7 +601,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       notAchievedYet: 'Noch nicht erreicht',
     },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'Ende: {time}',
+      available: 'Verfügbar',
+      started: 'Gestartet',
+      submitted: 'Abgegeben',
+      past: 'Abgeschlossen',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
       openGroupActivity: 'Zur Gruppenaktivität',
+      openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:
         'Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.',
       initialSituation: 'Ausgangslage',

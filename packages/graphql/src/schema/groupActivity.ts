@@ -97,6 +97,10 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       nullable: true,
     }),
     results: t.expose('results', { type: 'Json', nullable: true }),
+    resultsComputedAt: t.expose('resultsComputedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
     clues: t.expose('clues', {
       type: [GroupActivityClueInstanceRef],
       nullable: true,

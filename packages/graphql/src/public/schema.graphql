@@ -429,6 +429,7 @@ type GroupActivityInstance {
   groupActivityId: ID!
   id: Int!
   results: Json
+  resultsComputedAt: Date
 }
 
 type GroupActivityParameter {

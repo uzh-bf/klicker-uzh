@@ -586,7 +586,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityResults = {
-    totalScore: groupActivityCompleted.stacks[0].elements.reduce(
+    passed: true,
+    points: 43,
+    maxPoints: groupActivityCompleted.stacks[0].elements.reduce(
       (acc, element) => acc + 25 * (element.options.pointsMultiplier || 1),
       0
     ),

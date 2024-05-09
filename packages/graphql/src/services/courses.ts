@@ -197,6 +197,9 @@ export async function getCourseOverviewData(
               where: {
                 status: GroupActivityStatus.PUBLISHED,
               },
+              orderBy: {
+                scheduledStartAt: 'asc',
+              },
             },
           },
         },

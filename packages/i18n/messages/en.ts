@@ -604,7 +604,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noAchievements: 'No achievements yet.',
     },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'End: {time}',
+      available: 'Available',
+      started: 'Started',
+      submitted: 'Submitted',
+      past: 'Past',
+      passed: 'Passed',
+      failed: 'Failed',
       openGroupActivity: 'Open Group Activity',
+      openActivityFeedback: 'Open Feedback',
       activityNotYetActive:
         'The group activity is not active or not yet unlocked.',
       initialSituation: 'Situation',

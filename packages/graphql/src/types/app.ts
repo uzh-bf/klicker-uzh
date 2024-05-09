@@ -313,7 +313,9 @@ export type GroupActivityDecisions = {
 }[]
 
 export type GroupActivityResults = {
-  totalScore: number
+  passed: boolean
+  points: number
+  maxPoints: number
   comment?: string | null
   grading: {
     instanceId: number
