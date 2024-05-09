@@ -1174,6 +1174,46 @@ export const Mutation = builder.mutationType({
             return ParticipantGroupService.manipulateGroupActivity(args, ctx)
           },
         }),
+
+      publishGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.publishGroupActivity(args, ctx)
+          },
+        }),
+
+      unpublishGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.unpublishGroupActivity(args, ctx)
+          },
+        }),
+
+      deleteGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.deleteGroupActivity(args, ctx)
+          },
+        }),
+
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----

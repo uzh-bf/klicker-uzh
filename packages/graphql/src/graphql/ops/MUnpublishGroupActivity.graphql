@@ -1,0 +1,8 @@
+mutation UnpublishGroupActivity($id: String!) {
+  unpublishGroupActivity(id: $id) {
+    id
+    name
+    displayName
+    status
+  }
+}

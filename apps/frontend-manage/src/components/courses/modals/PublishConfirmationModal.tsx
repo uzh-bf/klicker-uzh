@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstanceType,
+  PublishGroupActivityDocument,
   PublishMicroLearningDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -38,13 +39,11 @@ function PublishConfirmationModal({
       id: elementId,
     },
   })
-  // TODO
-  // const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
-  //   variables: {
-  //     id: elementId,
-  //   },
-  // })
-  const publishGroupActivity = async () => {}
+  const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
+    variables: {
+      id: elementId,
+    },
+  })
 
   return (
     <Modal

@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import {
   faClock,
   faHandPointer,
@@ -7,18 +8,24 @@ import {
   faCheck,
   faHourglassEnd,
   faHourglassStart,
+  faLock,
   faPencil,
   faPlay,
+  faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteGroupActivityDocument,
+  GetSingleCourseDocument,
   GroupActivity,
   GroupActivityStatus,
+  UnpublishGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../sessions/creation/SessionCreation'
@@ -28,9 +35,13 @@ import DeletionModal from './modals/DeletionModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
+  courseId: string
 }
 
-function GroupActivityElement({ groupActivity }: GroupActivityElementProps) {
+function GroupActivityElement({
+  groupActivity,
+  courseId,
+}: GroupActivityElementProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -38,10 +49,30 @@ function GroupActivityElement({ groupActivity }: GroupActivityElementProps) {
   const isFuture = dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(groupActivity.scheduledEndAt).isBefore(dayjs())
 
-  // TODO: unpublish method
-  const unpublishGroupActivity = async () => {}
-  // TODO: delete method
-  const deleteGroupActivity = async () => {}
+  const [unpublishGroupActivity] = useMutation(UnpublishGroupActivityDocument, {
+    variables: {
+      id: groupActivity.id,
+    },
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
+
+  const [deleteGroupActivity] = useMutation(DeleteGroupActivityDocument, {
+    variables: {
+      id: groupActivity.id,
+    },
+    optimisticResponse: {
+      __typename: 'Mutation',
+      deleteGroupActivity: {
+        __typename: 'GroupActivity',
+        id: groupActivity.id,
+      },
+    },
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
 
   return (
     <div
@@ -107,10 +138,31 @@ function GroupActivityElement({ groupActivity }: GroupActivityElementProps) {
 
           {groupActivity.status === GroupActivityStatus.Published && (
             <>
-              {/* // TODO */}
-              {isPast && <div>FINISHED - GRADING LINK</div>}
-              {/* // TODO */}
-              {isFuture && <div>SCHEDULED - UNPUBLISHING</div>}
+              {isPast && (
+                <Link
+                  href={`/courses/${courseId}/grading/groupActivity/${groupActivity.id}`}
+                >
+                  <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                    <FontAwesomeIcon
+                      icon={faUpRightFromSquare}
+                      className="w-[1.1rem]"
+                    />
+                    <div>{t('manage.course.gradeGroupActivity')}</div>
+                  </div>
+                </Link>
+              )}
+              {isFuture && (
+                <Button
+                  onClick={async () => await unpublishGroupActivity()}
+                  data-cy={`unpublish-groupActivity-${groupActivity.name}`}
+                  basic
+                >
+                  <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                    <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+                    <div>{t('manage.course.unpublishGroupActivity')}</div>
+                  </div>
+                </Button>
+              )}
 
               <StatusTag
                 color="bg-green-300"

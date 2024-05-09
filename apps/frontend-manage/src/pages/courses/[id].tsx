@@ -197,6 +197,7 @@ function CourseOverviewPage() {
               >
                 <GroupActivityList
                   groupActivities={course.groupActivities ?? []}
+                  courseId={course.id}
                   userCatalyst={user?.userProfile?.catalyst}
                 />
               </Tabs.TabContent>

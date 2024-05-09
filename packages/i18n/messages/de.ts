@@ -1321,6 +1321,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
       hintDeletionGroupActivity:
         'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishGroupActivity: 'Veröffentlichung aufheben',
+      gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
     },

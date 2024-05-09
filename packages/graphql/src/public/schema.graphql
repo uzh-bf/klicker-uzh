@@ -597,6 +597,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteGroupActivity(id: String!): GroupActivity
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
@@ -630,6 +631,7 @@ type Mutation {
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
   publishScheduledPracticeQuizzes: Boolean!
@@ -645,6 +647,7 @@ type Mutation {
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
+  unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean

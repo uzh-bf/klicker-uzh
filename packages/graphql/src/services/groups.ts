@@ -7,6 +7,7 @@ import {
   LeaderboardType,
   ParameterType,
 } from '@klicker-uzh/prisma'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -843,4 +844,72 @@ export async function getGroupActivity(
   })
 
   return groupActivity
+}
+
+export async function publishGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.PUBLISHED,
+    },
+  })
+
+  return updatedGroupActivity
+}
+
+export async function unpublishGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.DRAFT,
+    },
+  })
+
+  return updatedGroupActivity
+}
+
+export async function deleteGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.groupActivity.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: GroupActivityStatus.DRAFT,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+
+    return deletedItem
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
+      console.warn(
+        'The group activity is already published and cannot be deleted anymore.'
+      )
+      return null
+    }
+
+    throw e
+  }
 }
