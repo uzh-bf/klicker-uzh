@@ -53,7 +53,7 @@ async function run() {
   // return
 
   // delete all questionResponses without aggregated results
-  // TODO: do this manually
+  // do this manually
 
   let doContinue = true
 
@@ -69,9 +69,9 @@ async function run() {
         },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
-      take: 250,
+      take: 50,
     })
 
     console.log(`Total considered question responses: ${responses.length}`)
