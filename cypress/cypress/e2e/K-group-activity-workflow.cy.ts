@@ -22,10 +22,10 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // fill out first step of creation process
