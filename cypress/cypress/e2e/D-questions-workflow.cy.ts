@@ -234,7 +234,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0')
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100')
-    cy.get('[data-cy="input-numerical-accuracy"]').contains('Precision: %')
+    cy.get('[data-cy="input-numerical-accuracy"]').contains('Precision: 0')
     cy.get('[data-cy="input-numerical-unit"]').contains('%')
   })
 
