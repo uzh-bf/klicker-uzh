@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.37...v3.1.0-rc.38) (2024-05-11)
+
+
+### Bug Fixes
+
+* ensure that unit is stored and correctly displayed for numerical questions ([#4123](https://github.com/uzh-bf/klicker-uzh/issues/4123)) ([907e257](https://github.com/uzh-bf/klicker-uzh/commit/907e257d1f67b3c1634fe7bb753eadbe730f3303))
+
+
+### Other
+
+* **packages/shared-components:** fix content element styling ([8871e4a](https://github.com/uzh-bf/klicker-uzh/commit/8871e4a88d098501cb59ac5e635a0ccc1a316d45))
+
 ## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
 
 
