@@ -33,6 +33,7 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
     case DB.ElementType.NUMERICAL: {
       return {
         hasSampleSolution: options?.hasSampleSolution ?? false,
+        unit: options?.unit ?? undefined,
         accuracy: options?.accuracy ?? undefined,
         placeholder: options?.placeholder ?? undefined,
         restrictions: {
