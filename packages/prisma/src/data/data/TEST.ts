@@ -73,6 +73,8 @@ export const QUESTIONS = [
     options: {
       hasSampleSolution: true,
       hasAnswerFeedbacks: false,
+      accuracy: 2,
+      unit: '%',
       restrictions: {
         min: -10,
         max: 100,

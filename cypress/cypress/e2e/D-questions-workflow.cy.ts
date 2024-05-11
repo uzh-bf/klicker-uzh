@@ -225,6 +225,8 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="set-numerical-minimum"]').click().type('0')
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
+    cy.get('[data-cy="set-numerical-unit"]').click().type('%')
+    cy.get('[data-cy="set-numerical-accuracy"]').click().type('0')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
@@ -232,6 +234,8 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0')
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100')
+    cy.get('[data-cy="input-numerical-accuracy"]').contains('Precision: 0')
+    cy.get('[data-cy="input-numerical-unit"]').contains('%')
   })
 
   it('creates a Free Text question', () => {
