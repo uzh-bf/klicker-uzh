@@ -31,10 +31,8 @@ function Header({
   const { pathname, asPath, query } = router
   const t = useTranslations()
 
-  const { value: hasSeenSurvey, setValue: setHasSeenSurvey } = useStickyState(
-    'hasSeenSurvey',
-    'false'
-  )
+  const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
+    useStickyState('hasSeenSurvey', 'false')
 
   const [changeParticipantLocale] = useMutation(ChangeParticipantLocaleDocument)
 
@@ -91,7 +89,7 @@ function Header({
           >
             <Button
               className={{
-                root: 'text-white flex flex-row gap-2 items-center bg-uzh-red-100 border-uzh-red-100 rounded px-2 -mx-2',
+                root: 'hidden md:flex text-white flex-row gap-2 items-center bg-uzh-red-100 border-uzh-red-100 rounded px-2 -mx-2',
               }}
               onClick={() => {
                 setHasSeenSurvey(true)
