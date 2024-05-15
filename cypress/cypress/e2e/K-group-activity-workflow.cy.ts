@@ -266,7 +266,7 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="publish-groupActivity-${newName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="groupActivity-${newName}"]`)
-      .findByText(messages.shared.generic.published)
+      .findByText(messages.shared.generic.running)
       .should('exist')
   })
 
