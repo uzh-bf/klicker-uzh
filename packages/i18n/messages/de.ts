@@ -157,6 +157,7 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
+      survey: 'Umfrage',
     },
     contentInput: {
       boldStyle:

@@ -157,6 +157,7 @@ export default {
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
+      survey: 'Survey',
     },
     contentInput: {
       boldStyle:

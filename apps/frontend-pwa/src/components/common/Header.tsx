@@ -1,11 +1,13 @@
 import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
   Participant,
 } from '@klicker-uzh/graphql/dist/ops'
+import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
 import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -28,6 +30,11 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const t = useTranslations()
+
+  const { value: hasSeenSurvey, setValue: setHasSeenSurvey } = useStickyState(
+    'hasSeenSurvey',
+    'false'
+  )
 
   const [changeParticipantLocale] = useMutation(ChangeParticipantLocaleDocument)
 
@@ -77,6 +84,24 @@ function Header({
             basic
           />
         </div>
+        {hasSeenSurvey === 'false' && (
+          <Link
+            href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
+            target="_blank"
+          >
+            <Button
+              className={{
+                root: 'text-white flex flex-row gap-2 items-center bg-uzh-red-100 border-uzh-red-100 rounded px-2 -mx-2',
+              }}
+              onClick={() => {
+                setHasSeenSurvey(true)
+              }}
+            >
+              <FontAwesomeIcon icon={faBullhorn} className="text-sm" />
+              <div>{t('shared.generic.survey')}</div>
+            </Button>
+          </Link>
+        )}
         {course?.id && (
           <Link href={`/course/${course.id}/docs`}>
             <Button
