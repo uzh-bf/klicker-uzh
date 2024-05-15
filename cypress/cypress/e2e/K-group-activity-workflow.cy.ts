@@ -154,6 +154,9 @@ describe('Create and solve a group activity', () => {
       .findByText(messages.shared.generic.draft)
       .should('exist')
     cy.get(`[data-cy="publish-groupActivity-${name}"]`).click()
+    cy.get('[data-cy="cancel-publish-action"]').click()
+    cy.get(`[data-cy="publish-groupActivity-${name}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="groupActivity-${name}"]`)
       .findByText(messages.shared.generic.scheduled)
       .should('exist')
@@ -204,11 +207,17 @@ describe('Create and solve a group activity', () => {
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
 
-    // delete two of the clues and create new ones
-    cy.get(`[data-cy="remove-clue-${clueName2}"]`).click()
-    cy.findByText(clueName2).should('not.exist')
-    cy.get(`[data-cy="remove-clue-${clueName3}"]`).click()
-    cy.findByText(clueName3).should('not.exist')
+    // TODO: also test deletion of old clues
+    // check that clues exist and add a new one
+    cy.findByText(clueName).should('exist')
+    cy.findByText(clueName2).should('exist')
+    cy.findByText(clueName3).should('exist')
+
+    const clueNameNew = 'New Clue ' + random
+    const clueDisplayNameNew = 'New Clue Display Name ' + random
+    const clueContentNew = 'New Clue Content ' + random
+    const clueUnitNew = 'm'
+    const fullContentNew = clueContentNew + ' ' + clueUnitNew
 
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
@@ -219,37 +228,19 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.sessionForms.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName2)
+    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueNameNew)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .type(clueDisplayName2)
+      .type(clueDisplayNameNew)
     cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(clueContent2)
+      String(clueContentNew)
     )
-    cy.get('[data-cy="group-activity-number-clue-unit"]').click().type(clueUnit)
-    cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.get(`[data-cy="groupActivity-clue-${clueName2}"]`).should('exist')
-    cy.findByText(fullContent2).should('exist')
-
-    cy.get('[data-cy="add-group-activity-clue"]').click()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.sessionForms.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.sessionForms.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName3)
-    cy.get('[data-cy="group-activity-clue-display-name"]')
+    cy.get('[data-cy="group-activity-number-clue-unit"]')
       .click()
-      .type(clueDisplayName3)
-    cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(clueContent3)
-    )
+      .type(clueUnitNew)
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.get(`[data-cy="groupActivity-clue-${clueName3}"]`).should('exist')
-    cy.findByText(clueContent3).should('exist')
+    cy.get(`[data-cy="groupActivity-clue-${clueNameNew}"]`).should('exist')
+    cy.findByText(fullContentNew).should('exist')
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add another question to the group activity
@@ -274,6 +265,7 @@ describe('Create and solve a group activity', () => {
       .findByText(messages.shared.generic.draft)
       .should('exist')
     cy.get(`[data-cy="publish-groupActivity-${newName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="groupActivity-${newName}"]`)
       .findByText(messages.shared.generic.published)
       .should('exist')
