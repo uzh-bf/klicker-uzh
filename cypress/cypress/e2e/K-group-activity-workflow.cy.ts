@@ -214,7 +214,7 @@ describe('Create and solve a group activity', () => {
 
     const clueNameNew = 'New Clue ' + random
     const clueDisplayNameNew = 'New Clue Display Name ' + random
-    const clueContentNew = 'New Clue Content ' + random
+    const clueContentNew = random
     const clueUnitNew = 'm'
     const fullContentNew = clueContentNew + ' ' + clueUnitNew
 
