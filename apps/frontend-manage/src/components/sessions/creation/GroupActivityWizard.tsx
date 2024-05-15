@@ -4,6 +4,7 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateGroupActivityDocument,
+  EditGroupActivityDocument,
   ElementStackInput,
   ElementType,
   GetSingleCourseDocument,
@@ -62,7 +63,7 @@ function GroupActivityWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  // const [editMicroSession] = useMutation(EditMicroLearningDocument)
+  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
@@ -136,61 +137,67 @@ function GroupActivityWizard({
   const onSubmit = async (values: GroupActivityFormValues) => {
     try {
       let success = false
-      //   if (initialValues) {
-      //     const result = await editMicroSession({
-      //       variables: {
-      //         id: initialValues?.id || '',
-      //         name: values.name,
-      //         displayName: values.displayName,
-      //         description: values.description,
-      //         stacks: values.questions.map((q: any, ix) => {
-      //           return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-      //         }),
-      //         startDate: dayjs(values.startDate).utc().format(),
-      //         endDate: dayjs(values.endDate).utc().format(),
-      //         multiplier: parseInt(values.multiplier),
-      //         courseId: values.courseId,
-      //       },
-      //       refetchQueries: [
-      //         {
-      //           query: GetSingleCourseDocument,
-      //           variables: {
-      //             courseId: values.courseId,
-      //           },
-      //         },
-      //       ],
-      //     })
-      //     success = Boolean(result.data?.editMicroLearning)
-      //   } else {
-      const result = await createGroupActivity({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId,
-          clues: values.clues,
-          stack: values.questions.reduce<ElementStackInput>(
-            (acc, q, ix) => {
-              acc.elements.push({ elementId: q.id, order: ix })
-              return acc
-            },
-            { order: 0, elements: [] }
-          ),
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
-            },
+      if (initialValues) {
+        const result = await editGroupActivity({
+          variables: {
+            id: initialValues?.id || '',
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            clues: values.clues,
+            stack: values.questions.reduce<ElementStackInput>(
+              (acc, q, ix) => {
+                acc.elements.push({ elementId: q.id, order: ix })
+                return acc
+              },
+              { order: 0, elements: [] }
+            ),
           },
-        ],
-      })
-      success = Boolean(result.data?.createGroupActivity)
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
+        })
+
+        success = Boolean(result.data?.editGroupActivity)
+      } else {
+        const result = await createGroupActivity({
+          variables: {
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            clues: values.clues,
+            stack: values.questions.reduce<ElementStackInput>(
+              (acc, q, ix) => {
+                acc.elements.push({ elementId: q.id, order: ix })
+                return acc
+              },
+              { order: 0, elements: [] }
+            ),
+          },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
+        })
+        success = Boolean(result.data?.createGroupActivity)
+      }
 
       if (success) {
         setSelectedCourseId(values.courseId)
@@ -226,17 +233,27 @@ function GroupActivityWizard({
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
-          clues: [],
-          questions: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => {
-                return {
-                  id: stack.elements![0].elementData.elementId,
-                  title: stack.elements![0].elementData.name,
-                  hasAnswerFeedbacks: true, // TODO - based on questionData options
-                  hasSampleSolution: true, // TODO - based on questionData options
-                }
-              })
-            : [],
+          clues:
+            initialValues?.clues?.map((clue) => {
+              return {
+                name: clue.name,
+                displayName: clue.displayName,
+                type: clue.type,
+                value: clue.value,
+                unit: clue.unit ?? undefined,
+              }
+            }) ?? [],
+          questions:
+            initialValues?.stacks && initialValues?.stacks[0].elements
+              ? initialValues.stacks[0].elements?.map((element) => {
+                  return {
+                    id: element.elementData.elementId,
+                    title: element.elementData.name,
+                    hasAnswerFeedbacks: true, // TODO - based on questionData options
+                    hasSampleSolution: true, // TODO - based on questionData options
+                  }
+                })
+              : [],
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
                 .local()
@@ -514,6 +531,7 @@ function StepTwo(props: StepProps) {
                   <div
                     key={clue.name}
                     className="text-sm rounded flex flex-col w-full"
+                    data-cy={`groupActivity-clue-${clue.name}`}
                   >
                     <div className="font-bold">{clue.name}</div>
                     <div className="group border rounded border-black h-full">
@@ -528,6 +546,7 @@ function StepTwo(props: StepProps) {
                         className={{
                           root: 'h-full hidden p-1 w-full group-hover:flex bg-red-600 items-center justify-center',
                         }}
+                        data={{ cy: `remove-clue-${clue.name}` }}
                       >
                         <Button.Icon>
                           <FontAwesomeIcon

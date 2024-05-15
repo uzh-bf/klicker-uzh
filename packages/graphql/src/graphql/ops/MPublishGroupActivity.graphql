@@ -1,0 +1,8 @@
+mutation PublishGroupActivity($id: String!) {
+  publishGroupActivity(id: $id) {
+    id
+    name
+    displayName
+    status
+  }
+}

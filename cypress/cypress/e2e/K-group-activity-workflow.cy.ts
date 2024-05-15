@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create and solve a group activity', () => {
-  it('create a group activity and solve it', function () {
+  it('create a group activity and edit it', function () {
     const questionTitle = uuid()
     const question = uuid()
 
@@ -22,10 +22,10 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // fill out first step of creation process
@@ -55,10 +55,10 @@ describe('Create and solve a group activity', () => {
     )
     cy.get('[data-cy="select-start-date"]')
       .click()
-      .type(`${currentYear - 1}-01-01T02:00`)
+      .type(`${currentYear + 1}-01-01T02:00`)
     cy.get('[data-cy="select-end-date"]')
       .click()
-      .type(`${currentYear - 1}-12-31T18:00`)
+      .type(`${currentYear + 1}-12-31T18:00`)
 
     // add clues to the group activity
     // create 1 text clue and two numerical clues (one with and one without unit)
@@ -144,10 +144,130 @@ describe('Create and solve a group activity', () => {
     }
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: check the content of the created group activity properly
+    // check if the created group activity exists
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(name).should('exist')
+
+    // publish and unpublish the group activity
+    cy.get(`[data-cy="groupActivity-${name}"]`)
+      .findByText(messages.shared.generic.draft)
+      .should('exist')
+    cy.get(`[data-cy="publish-groupActivity-${name}"]`).click()
+    cy.get('[data-cy="cancel-publish-action"]').click()
+    cy.get(`[data-cy="publish-groupActivity-${name}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="groupActivity-${name}"]`)
+      .findByText(messages.shared.generic.scheduled)
+      .should('exist')
+    cy.get(`[data-cy="unpublish-groupActivity-${name}"]`).click()
+    cy.get(`[data-cy="groupActivity-${name}"]`)
+      .findByText(messages.shared.generic.draft)
+      .should('exist')
+
+    // start editing the group activity
+    const newName = 'Edited ' + name
+    const newDisplayName = 'Edited ' + displayName
+    const newDescription = 'Edited ' + description
+
+    cy.get(`[data-cy="groupActivity-actions-${name}"]`).click()
+    cy.get(`[data-cy="edit-groupActivity-${name}"]`).click()
+
+    cy.get('[data-cy="insert-groupactivity-name"]')
+      .click()
+      .should('have.value', name)
+      .clear()
+      .type(newName)
+    cy.get('[data-cy="insert-groupactivity-display-name"]')
+      .click()
+      .should('have.value', displayName)
+      .clear()
+      .type(newDisplayName)
+    cy.get('[data-cy="insert-groupactivity-description"]')
+      .clear()
+      .type(newDescription)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // fill out the settings of the group activity
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.multiplier2)
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+    ).click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier4
+    )
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .type(`${currentYear + 1}-12-31T18:00`)
+
+    // TODO: also test deletion of old clues
+    // check that clues exist and add a new one
+    cy.findByText(clueName).should('exist')
+    cy.findByText(clueName2).should('exist')
+    cy.findByText(clueName3).should('exist')
+
+    const clueNameNew = 'New Clue ' + random
+    const clueDisplayNameNew = 'New Clue Display Name ' + random
+    const clueContentNew = random
+    const clueUnitNew = 'm'
+    const fullContentNew = clueContentNew + ' ' + clueUnitNew
+
+    cy.get('[data-cy="add-group-activity-clue"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.textClue)
+    cy.get('[data-cy="group-activity-clue-type"]').click()
+    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.numericalClue)
+    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueNameNew)
+    cy.get('[data-cy="group-activity-clue-display-name"]')
+      .click()
+      .type(clueDisplayNameNew)
+    cy.get('[data-cy="group-activity-number-clue-value"]').type(
+      String(clueContentNew)
+    )
+    cy.get('[data-cy="group-activity-number-clue-unit"]')
+      .click()
+      .type(clueUnitNew)
+    cy.get('[data-cy="group-activity-clue-save"]').click()
+    cy.get(`[data-cy="groupActivity-clue-${clueNameNew}"]`).should('exist')
+    cy.findByText(fullContentNew).should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // add another question to the group activity
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check if the created group activity exists
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.findByText(newName).should('exist')
+
+    // publish the group activity and check its status
+    cy.get(`[data-cy="groupActivity-${newName}"]`)
+      .findByText(messages.shared.generic.draft)
+      .should('exist')
+    cy.get(`[data-cy="publish-groupActivity-${newName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="groupActivity-${newName}"]`)
+      .findByText(messages.shared.generic.running)
+      .should('exist')
   })
 
   it('take part in the seeded group activity', function () {

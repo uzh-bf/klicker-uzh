@@ -703,6 +703,7 @@ model GroupActivityClueInstance {
 enum GroupActivityStatus {
   DRAFT
   PUBLISHED
+  GRADED
 }
 
 model GroupActivity {

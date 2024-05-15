@@ -57,6 +57,9 @@ export default {
       draft: 'Draft',
       scheduled: 'Scheduled',
       published: 'Published',
+      grading: 'Grading',
+      completed: 'Completed',
+      running: 'Running',
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
@@ -1279,6 +1282,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteMicrolearning: 'Delete microlearning',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
+      publishItemGROUP_ACTIVITY: 'Publish group activity',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       practicePublishingHint:
         'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
@@ -1298,6 +1302,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
       unpublishPracticeQuiz: 'Unpublish practice quiz',
+      publishGroupActivity: 'Publish group activity',
+      groupActivityPublishingHint:
+        'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
+      editGroupActivity: 'Edit group activity',
+      deleteGroupActivity: 'Delete group activity',
+      confirmDeletionGroupActivity:
+        'Are you sure you want to delete the following group activity?',
+      hintDeletionGroupActivity:
+        'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
+      unpublishGroupActivity: 'Unpublish group activity',
+      gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
     },

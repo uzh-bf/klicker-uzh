@@ -3,19 +3,35 @@ query GetGroupActivity($id: String!) {
     id
     name
     displayName
+    description
+    pointsMultiplier
+    scheduledStartAt
+    scheduledEndAt
+
     clues {
       id
+      type
       name
+      displayName
+      value
+      unit
     }
+
+    stacks {
+      id
+      displayName
+      description
+      elements {
+        id
+        type
+        elementType
+        ...ElementDataWithoutSolutions
+      }
+    }
+
     course {
       id
       displayName
-    }
-    instances {
-      id
-      decisions
-      decisionsSubmittedAt
-      results
     }
   }
 }

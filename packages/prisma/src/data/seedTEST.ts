@@ -427,6 +427,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       status: Prisma.GroupActivityStatus.DRAFT,
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      pointsMultiplier: 2,
       parameters: {},
       clues: {
         connectOrCreate: [

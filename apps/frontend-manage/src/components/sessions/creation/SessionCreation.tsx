@@ -2,10 +2,12 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   Element,
+  GetGroupActivityDocument,
   GetMicroLearningDocument,
   GetPracticeQuizDocument,
   GetSingleLiveSessionDocument,
   GetUserCoursesDocument,
+  GroupActivity,
   MicroLearning,
   PracticeQuiz,
   Session,
@@ -76,6 +78,13 @@ function SessionCreation({
         !sessionId ||
         editMode !== WizardMode.PracticeQuiz ||
         conversionMode === 'microLearningToPracticeQuiz',
+    }
+  )
+  const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
+    GetGroupActivityDocument,
+    {
+      variables: { id: sessionId || '' },
+      skip: !sessionId || editMode !== WizardMode.GroupActivity,
     }
   )
 
@@ -174,9 +183,9 @@ function SessionCreation({
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
-            // initialValues={
-            //   (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ?? undefined
-            // }
+            initialValues={
+              (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
+            }
           />
         )}
       </div>

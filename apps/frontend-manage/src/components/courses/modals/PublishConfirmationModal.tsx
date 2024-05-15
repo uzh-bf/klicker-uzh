@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstanceType,
+  PublishGroupActivityDocument,
   PublishMicroLearningDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,6 +12,7 @@ interface PublishConfirmationModalProps {
   elementType:
     | ElementInstanceType.Microlearning
     | ElementInstanceType.PracticeQuiz
+    | ElementInstanceType.GroupActivity
   elementId: string
   title: string
   publicationHint: string
@@ -37,6 +39,11 @@ function PublishConfirmationModal({
       id: elementId,
     },
   })
+  const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
+    variables: {
+      id: elementId,
+    },
+  })
 
   return (
     <Modal
@@ -48,6 +55,8 @@ function PublishConfirmationModal({
               await publishMicroLearning()
             } else if (elementType === ElementInstanceType.PracticeQuiz) {
               await publishPracticeQuiz()
+            } else if (elementType === ElementInstanceType.GroupActivity) {
+              await publishGroupActivity()
             }
             setOpen(false)
           }}

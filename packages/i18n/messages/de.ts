@@ -57,6 +57,9 @@ export default {
       draft: 'Entwurf',
       scheduled: 'Geplant',
       published: 'Öffentlich',
+      completed: 'Abgeschlossen',
+      running: 'Laufend',
+      grading: 'Bewertung',
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
@@ -1289,6 +1292,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteMicrolearning: 'Microlearning löschen',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
+      publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
       practicePublishingHint:
@@ -1309,6 +1313,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
+      publishGroupActivity: 'Gruppenaktivität veröffentlichen',
+      groupActivityPublishingHint:
+        'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      editGroupActivity: 'Gruppenaktivität bearbeiten',
+      deleteGroupActivity: 'Gruppenaktivität löschen',
+      confirmDeletionGroupActivity:
+        'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
+      hintDeletionGroupActivity:
+        'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishGroupActivity: 'Veröffentlichung aufheben',
+      gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
     },
