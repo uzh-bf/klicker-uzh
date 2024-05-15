@@ -53,10 +53,8 @@ const Index = function () {
   const router = useRouter()
   const t = useTranslations()
 
-  const { value: hasSeenSurvey, setValue: setHasSeenSurvey } = useStickyState(
-    'hasSeenSurvey',
-    'false'
-  )
+  const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
+    useStickyState('hasSeenSurvey', 'false')
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
