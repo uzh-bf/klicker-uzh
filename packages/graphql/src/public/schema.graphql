@@ -371,6 +371,9 @@ type GroupActivityClue {
   displayName: String!
   id: Int!
   name: String!
+  type: ParameterType!
+  unit: String
+  value: String!
 }
 
 type GroupActivityClueAssignment {

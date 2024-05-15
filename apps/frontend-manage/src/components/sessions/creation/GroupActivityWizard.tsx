@@ -62,7 +62,7 @@ function GroupActivityWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  // const [editMicroSession] = useMutation(EditMicroLearningDocument)
+  // const [editGroupActivity] = async () => null // useMutation(EditMicroLearningDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
@@ -136,66 +136,67 @@ function GroupActivityWizard({
   const onSubmit = async (values: GroupActivityFormValues) => {
     try {
       let success = false
-      //   if (initialValues) {
-      //     const result = await editMicroSession({
-      //       variables: {
-      //         id: initialValues?.id || '',
-      //         name: values.name,
-      //         displayName: values.displayName,
-      //         description: values.description,
-      //         stacks: values.questions.map((q: any, ix) => {
-      //           return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-      //         }),
-      //         startDate: dayjs(values.startDate).utc().format(),
-      //         endDate: dayjs(values.endDate).utc().format(),
-      //         multiplier: parseInt(values.multiplier),
-      //         courseId: values.courseId,
-      //       },
-      //       refetchQueries: [
-      //         {
-      //           query: GetSingleCourseDocument,
-      //           variables: {
-      //             courseId: values.courseId,
-      //           },
-      //         },
-      //       ],
-      //     })
-      //     success = Boolean(result.data?.editMicroLearning)
-      //   } else {
-      const result = await createGroupActivity({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
+      if (initialValues) {
+        // const result = await editGroupActivity({
+        //   variables: {
+        //     id: initialValues?.id || '',
+        //     name: values.name,
+        //     displayName: values.displayName,
+        //     description: values.description,
+        //     stacks: values.questions.map((q: any, ix) => {
+        //       return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
+        //     }),
+        //     startDate: dayjs(values.startDate).utc().format(),
+        //     endDate: dayjs(values.endDate).utc().format(),
+        //     multiplier: parseInt(values.multiplier),
+        //     courseId: values.courseId,
+        //   },
+        //   refetchQueries: [
+        //     {
+        //       query: GetSingleCourseDocument,
+        //       variables: {
+        //         courseId: values.courseId,
+        //       },
+        //     },
+        //   ],
+        // })
+        // success = Boolean(result.data?.editMicroLearning)
+      } else {
+        const result = await createGroupActivity({
+          variables: {
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
 
-          startDate: dayjs(values.startDate).utc().format(),
-          endDate: dayjs(values.endDate).utc().format(),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId,
-          clues: values.clues,
-          stack: values.questions.reduce<ElementStackInput>(
-            (acc, q, ix) => {
-              acc.elements.push({ elementId: q.id, order: ix })
-              return acc
-            },
-            { order: 0, elements: [] }
-          ),
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
-            },
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            clues: values.clues,
+            stack: values.questions.reduce<ElementStackInput>(
+              (acc, q, ix) => {
+                acc.elements.push({ elementId: q.id, order: ix })
+                return acc
+              },
+              { order: 0, elements: [] }
+            ),
           },
-        ],
-      })
-      success = Boolean(result.data?.createGroupActivity)
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
+        })
+        success = Boolean(result.data?.createGroupActivity)
 
-      if (success) {
-        setSelectedCourseId(values.courseId)
-        setEditMode(!!initialValues)
-        setIsWizardCompleted(true)
+        if (success) {
+          setSelectedCourseId(values.courseId)
+          setEditMode(!!initialValues)
+          setIsWizardCompleted(true)
+        }
       }
     } catch (error) {
       console.log(error)
@@ -226,17 +227,21 @@ function GroupActivityWizard({
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
-          clues: [],
-          questions: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => {
-                return {
-                  id: stack.elements![0].elementData.elementId,
-                  title: stack.elements![0].elementData.name,
-                  hasAnswerFeedbacks: true, // TODO - based on questionData options
-                  hasSampleSolution: true, // TODO - based on questionData options
-                }
-              })
-            : [],
+          clues:
+            initialValues?.clues?.map((clue) => {
+              return { ...clue, unit: clue.unit ?? undefined }
+            }) ?? [],
+          questions:
+            initialValues?.stacks && initialValues?.stacks[0].elements
+              ? initialValues.stacks[0].elements?.map((element) => {
+                  return {
+                    id: element.elementData.elementId,
+                    title: element.elementData.name,
+                    hasAnswerFeedbacks: true, // TODO - based on questionData options
+                    hasSampleSolution: true, // TODO - based on questionData options
+                  }
+                })
+              : [],
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
                 .local()

@@ -840,6 +840,11 @@ export async function getGroupActivity(
           group: true,
         },
       },
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 

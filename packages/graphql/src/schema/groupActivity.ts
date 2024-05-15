@@ -173,9 +173,11 @@ export const GroupActivityClueRef =
 export const GroupActivityClue = GroupActivityClueRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
+    type: t.expose('type', { type: ParameterType }),
+    value: t.exposeString('value'),
+    unit: t.exposeString('unit', { nullable: true }),
   }),
 })
 
