@@ -134,14 +134,6 @@ export async function manipulateMicroLearning(
       throw new GraphQLError('Cannot edit a published microLearning')
     }
 
-    const oldInstances = oldElement.stacks.flatMap((stack) => stack.elements)
-
-    await ctx.prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: oldInstances.map(({ id }) => id) },
-      },
-    })
-
     await ctx.prisma.microLearning.update({
       where: { id },
       data: {
