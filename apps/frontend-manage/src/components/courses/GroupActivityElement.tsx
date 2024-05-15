@@ -152,7 +152,7 @@ function GroupActivityElement({
               {isFuture && (
                 <Button
                   onClick={async () => await unpublishGroupActivity()}
-                  data-cy={`unpublish-groupActivity-${groupActivity.name}`}
+                  data={{ cy: `unpublish-groupActivity-${groupActivity.name}` }}
                   basic
                 >
                   <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">

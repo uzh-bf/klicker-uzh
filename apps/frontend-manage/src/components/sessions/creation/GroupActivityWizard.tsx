@@ -200,7 +200,6 @@ function GroupActivityWizard({
       }
 
       if (success) {
-        console.log('SETTING SUCCESS STATES')
         setSelectedCourseId(values.courseId)
         setEditMode(!!initialValues)
         setIsWizardCompleted(true)
