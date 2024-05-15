@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.39...v3.1.0-rc.40) (2024-05-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** hide survey notification on mobile and resolve state loading issue ([#4125](https://github.com/uzh-bf/klicker-uzh/issues/4125)) ([8c1e6f0](https://github.com/uzh-bf/klicker-uzh/commit/8c1e6f0db4bf256b5d52828b8a7efe22e743a98c))
+
 ## [3.1.0-rc.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.38...v3.1.0-rc.39) (2024-05-15)
 
 ## [3.1.0-rc.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.37...v3.1.0-rc.38) (2024-05-11)
