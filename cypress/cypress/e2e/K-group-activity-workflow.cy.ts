@@ -257,7 +257,7 @@ describe('Create and solve a group activity', () => {
     // check if the created group activity exists
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.findByText(name).should('exist')
+    cy.findByText(newName).should('exist')
 
     // publish the group activity and check its status
     cy.get(`[data-cy="groupActivity-${newName}"]`)
