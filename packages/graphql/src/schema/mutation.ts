@@ -1076,6 +1076,49 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      createGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      editGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve(_, args, ctx) {
+            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
       publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1151,27 +1194,6 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return MicroLearningService.deleteMicroLearning(args, ctx)
-          },
-        }),
-
-      createGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: GroupActivity,
-          args: {
-            name: t.arg.string({ required: true }),
-            displayName: t.arg.string({ required: true }),
-            description: t.arg.string({ required: false }),
-            courseId: t.arg.string({ required: true }),
-            multiplier: t.arg.int({ required: true }),
-            startDate: t.arg({ type: 'Date', required: true }),
-            endDate: t.arg({ type: 'Date', required: true }),
-            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
-            stack: t.arg({ required: true, type: ElementStackInput }),
-          },
-          resolve(_, args, ctx) {
-            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 

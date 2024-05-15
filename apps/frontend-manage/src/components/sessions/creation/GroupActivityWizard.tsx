@@ -4,6 +4,7 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateGroupActivityDocument,
+  EditGroupActivityDocument,
   ElementStackInput,
   ElementType,
   GetSingleCourseDocument,
@@ -62,7 +63,7 @@ function GroupActivityWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  // const [editGroupActivity] = async () => null // useMutation(EditMicroLearningDocument)
+  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
@@ -137,37 +138,42 @@ function GroupActivityWizard({
     try {
       let success = false
       if (initialValues) {
-        // const result = await editGroupActivity({
-        //   variables: {
-        //     id: initialValues?.id || '',
-        //     name: values.name,
-        //     displayName: values.displayName,
-        //     description: values.description,
-        //     stacks: values.questions.map((q: any, ix) => {
-        //       return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-        //     }),
-        //     startDate: dayjs(values.startDate).utc().format(),
-        //     endDate: dayjs(values.endDate).utc().format(),
-        //     multiplier: parseInt(values.multiplier),
-        //     courseId: values.courseId,
-        //   },
-        //   refetchQueries: [
-        //     {
-        //       query: GetSingleCourseDocument,
-        //       variables: {
-        //         courseId: values.courseId,
-        //       },
-        //     },
-        //   ],
-        // })
-        // success = Boolean(result.data?.editMicroLearning)
+        const result = await editGroupActivity({
+          variables: {
+            id: initialValues?.id || '',
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            clues: values.clues,
+            stack: values.questions.reduce<ElementStackInput>(
+              (acc, q, ix) => {
+                acc.elements.push({ elementId: q.id, order: ix })
+                return acc
+              },
+              { order: 0, elements: [] }
+            ),
+          },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
+        })
+
+        success = Boolean(result.data?.editGroupActivity)
       } else {
         const result = await createGroupActivity({
           variables: {
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-
             startDate: dayjs(values.startDate).utc().format(),
             endDate: dayjs(values.endDate).utc().format(),
             multiplier: parseInt(values.multiplier),
@@ -191,12 +197,13 @@ function GroupActivityWizard({
           ],
         })
         success = Boolean(result.data?.createGroupActivity)
+      }
 
-        if (success) {
-          setSelectedCourseId(values.courseId)
-          setEditMode(!!initialValues)
-          setIsWizardCompleted(true)
-        }
+      if (success) {
+        console.log('SETTING SUCCESS STATES')
+        setSelectedCourseId(values.courseId)
+        setEditMode(!!initialValues)
+        setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log(error)
@@ -229,7 +236,13 @@ function GroupActivityWizard({
           description: initialValues?.description || '',
           clues:
             initialValues?.clues?.map((clue) => {
-              return { ...clue, unit: clue.unit ?? undefined }
+              return {
+                name: clue.name,
+                displayName: clue.displayName,
+                type: clue.type,
+                value: clue.value,
+                unit: clue.unit ?? undefined,
+              }
             }) ?? [],
           questions:
             initialValues?.stacks && initialValues?.stacks[0].elements

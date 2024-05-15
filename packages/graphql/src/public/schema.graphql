@@ -609,6 +609,7 @@ type Mutation {
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
+  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session

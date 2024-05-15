@@ -274,6 +274,42 @@ export async function manipulateGroupActivity(
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
+  if (id) {
+    // delete all old instances and clues as their content might have changed
+    const oldElement = await ctx.prisma.groupActivity.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        stacks: true,
+        clues: true,
+      },
+    })
+
+    if (!oldElement) {
+      throw new GraphQLError('Group Activity not found')
+    }
+    if (
+      oldElement.status === GroupActivityStatus.PUBLISHED ||
+      oldElement.status === GroupActivityStatus.GRADED
+    ) {
+      throw new GraphQLError('Cannot edit a published or graded group activity')
+    }
+
+    await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: {
+        stacks: {
+          deleteMany: {},
+        },
+        clues: {
+          deleteMany: {},
+        },
+      },
+    })
+  }
+
   const elements = stack.elements
     .map((stackElem) => stackElem.elementId)
     .filter(
@@ -307,7 +343,7 @@ export async function manipulateGroupActivity(
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
     parameters: {},
-    pointsMultiplier: 2,
+    pointsMultiplier: multiplier,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

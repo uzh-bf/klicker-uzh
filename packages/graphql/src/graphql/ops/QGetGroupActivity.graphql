@@ -4,6 +4,7 @@ query GetGroupActivity($id: String!) {
     name
     displayName
     description
+    pointsMultiplier
     scheduledStartAt
     scheduledEndAt
 
