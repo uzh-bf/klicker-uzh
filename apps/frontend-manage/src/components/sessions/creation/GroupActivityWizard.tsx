@@ -532,6 +532,7 @@ function StepTwo(props: StepProps) {
                   <div
                     key={clue.name}
                     className="text-sm rounded flex flex-col w-full"
+                    data-cy={`groupActivity-clue-${clue.name}`}
                   >
                     <div className="font-bold">{clue.name}</div>
                     <div className="group border rounded border-black h-full">
@@ -546,6 +547,7 @@ function StepTwo(props: StepProps) {
                         className={{
                           root: 'h-full hidden p-1 w-full group-hover:flex bg-red-600 items-center justify-center',
                         }}
+                        data={{ cy: `remove-clue-${clue.name}` }}
                       >
                         <Button.Icon>
                           <FontAwesomeIcon
