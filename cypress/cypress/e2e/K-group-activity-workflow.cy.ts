@@ -160,7 +160,6 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="groupActivity-${name}"]`)
       .findByText(messages.shared.generic.scheduled)
       .should('exist')
-    cy.get(`[data-cy="groupActivity-actions-${name}"]`).click()
     cy.get(`[data-cy="unpublish-groupActivity-${name}"]`).click()
     cy.get(`[data-cy="groupActivity-${name}"]`)
       .findByText(messages.shared.generic.draft)
