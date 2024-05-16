@@ -63,6 +63,7 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
+
 export const orderStacks = R.sort(
   (
     a: ElementStack & {
@@ -85,13 +86,22 @@ export const orderStacks = R.sort(
     if (aResponses.length === 0) return -1
     if (bResponses.length === 0) return 1
 
+    // only first respose at first -> should be changed for stacks with more than one response
+    const aEarliestDueDate = findEarliestDueDate(aResponses)
+    const bEarliestDueDate = findEarliestDueDate(bResponses)
+
+    // sort first according by dueDate ascending, then by correctCount ascending, then by the lastResponseAt from old to new
+    if (!aEarliestDueDate) return -1
+    if (!bEarliestDueDate) return 1
+    if (aEarliestDueDate < bEarliestDueDate) return -1
+    if (aEarliestDueDate > bEarliestDueDate) return 1
+
     const aResponse = aResponses[0]
     const bResponse = bResponses[0]
 
-    // sort first according by correctCountStreak ascending, then by correctCount ascending, then by the lastResponseAt from old to new
     if (aResponse.correctCountStreak < bResponse.correctCountStreak) return -1
     if (aResponse.correctCountStreak > bResponse.correctCountStreak) return 1
-
+    
     if (aResponse.correctCount < bResponse.correctCount) return -1
     if (aResponse.correctCount > bResponse.correctCount) return 1
 
@@ -102,6 +112,20 @@ export const orderStacks = R.sort(
     return 0
   }
 )
+
+const findEarliestDueDate = (responses: QuestionResponse[]) => {
+  if (!responses || responses.length === 0) return null;
+  let responseDate: Date |null = null
+  for (let response of responses){
+    if (response.nextDueAt === null) {continue}
+    if (responseDate === null) {responseDate = new Date(response.nextDueAt)}
+    else {
+      if (response.nextDueAt < responseDate)
+        {responseDate = response.nextDueAt}
+    }
+  }
+  return responseDate
+};
 
 export async function sendEmailMigrationNotification(
   email: string,

@@ -721,6 +721,48 @@ function evaluateElementResponse(
   }
 }
 
+type SpacedRepetitionResult = {
+  efactor: number;
+  interval: number;
+  nextDueAt: Date;
+};
+
+function updateSpacedRepetition(efactor: number, interval: number, streak: number,  grade: number): SpacedRepetitionResult {
+  if (grade < 0 || grade > 1) {
+      throw new Error("Grade must be between 0 and 1.");
+  }
+
+  grade = grade * 5
+
+  let newEfactor = Math.max(1.3, efactor + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02)));
+  newEfactor = parseFloat(newEfactor.toFixed(2));
+  
+  let newInterval
+
+  if (grade < 3){
+    newInterval = 1; 
+  }
+  
+  else {
+      if (streak === 1) {
+          newInterval = 2;
+      } else if (streak === 2) {
+          newInterval = 6;
+      } else {
+          newInterval = Math.ceil(interval * newEfactor);
+      }
+  }
+
+  let nextDueAt: Date = new Date() 
+  nextDueAt.setDate(nextDueAt.getDate() + interval)
+  
+  return {
+    efactor: newEfactor,
+    interval: newInterval,
+    nextDueAt: nextDueAt
+  };
+}
+
 interface UpdateQuestionResultsInputs {
   instance: ElementInstance
   elementData: AllElementTypeData
@@ -1147,6 +1189,17 @@ export async function respondToQuestion(
       }
     }
 
+    let interval = existingResponse?.interval || 1
+    let eFactor = existingResponse?.eFactor || 2.5
+    let incrementStreak = (correctness === 1) ? 1 : 0
+    let streak = (existingResponse?.correctCountStreak || 0) + incrementStreak
+    
+    let resultSpacedRepetition = updateSpacedRepetition(eFactor, interval, streak, correctness)
+    
+    eFactor = resultSpacedRepetition.efactor
+    interval = resultSpacedRepetition.interval
+    let nextDueAt = resultSpacedRepetition.nextDueAt
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1184,6 +1237,9 @@ export async function respondToQuestion(
             partial: correctness > 0 && correctness < 1,
             incorrect: correctness === 0,
           }),
+          nextDueAt,
+          interval,
+          eFactor,
         },
         update: {
           response: response as QuestionResponse,
@@ -1212,6 +1268,9 @@ export async function respondToQuestion(
             incorrect: correctness === 0,
             existingResponse,
           }),
+          nextDueAt,
+          interval,
+          eFactor,
         },
       }),
       ctx.prisma.questionResponseDetail.create({
