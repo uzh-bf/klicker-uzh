@@ -1355,6 +1355,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionalFeedback:
         'Geben Sie hier ein optionales generelles Feedback zur Gruppenchallenge ein',
       saveGrading: 'Bewertung speichern',
+      optionalQuestionFeedback:
+        'Geben Sie hier ein optionales Feedback zur beantworteten Frage ein.',
+      generalFeedback: 'Generelles Feedback',
     },
   },
   control: {

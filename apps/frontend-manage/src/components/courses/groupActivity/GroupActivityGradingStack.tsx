@@ -9,7 +9,7 @@ import {
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
-import { Button, FormikNumberField, H3 } from '@uzh-bf/design-system'
+import { Button, FormikNumberField, H2, H3 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -127,7 +127,7 @@ function GroupActivityGradingStack({
         return null
       }}
     >
-      {({ errors, touched, isSubmitting, values, isValid, setFieldValue }) => {
+      {({ isSubmitting, values, isValid, setFieldValue, submitForm }) => {
         return (
           <div className="flex flex-col gap-8">
             {elements.map((element, ix) => (
@@ -145,6 +145,35 @@ function GroupActivityGradingStack({
                   hideReadButton
                   disabledInput={true}
                 />
+                <FastField
+                  name={`grading.${ix}.feedback`}
+                  shouldUpdate={(next: any, prev: any) =>
+                    next?.formik.values.grading[ix].feedback !==
+                    prev?.formik.values.grading[ix].feedback
+                  }
+                >
+                  {({ field, meta }: FastFieldProps) => (
+                    <>
+                      <div className="font-bold mt-2">
+                        {t('shared.generic.feedback')}
+                      </div>
+                      <ContentInput
+                        error={meta.error}
+                        touched={meta.touched}
+                        content={field.value || '<br>'}
+                        onChange={(newValue: string) =>
+                          setFieldValue(`grading.${ix}.feedback`, newValue)
+                        }
+                        showToolbarOnFocus={false}
+                        placeholder={t(
+                          'manage.groupActivity.optionalQuestionFeedback'
+                        )}
+                        data_cy={`groupActivity-grading-comment-${ix}`}
+                        className={{ content: 'max-w-none' }}
+                      />
+                    </>
+                  )}
+                </FastField>
                 <div className="flex flex-row items-center gap-3 mt-2 justify-end">
                   <FormikNumberField
                     hideError
@@ -169,7 +198,7 @@ function GroupActivityGradingStack({
               </div>
             ))}
             <div>
-              <H3>{t('shared.generic.feedback')}</H3>
+              <H2>{t('manage.groupActivity.generalFeedback')}</H2>
               <div className="flex flex-row items-center gap-2 mb-3">
                 <div className="flex flex-row">
                   {t('manage.groupActivity.didGroupPass')}
@@ -198,7 +227,6 @@ function GroupActivityGradingStack({
               >
                 {({ field, meta }: FastFieldProps) => (
                   <ContentInput
-                    autoFocus
                     error={meta.error}
                     touched={meta.touched}
                     content={field.value || '<br>'}
@@ -223,6 +251,7 @@ function GroupActivityGradingStack({
                 ),
               }}
               loading={isSubmitting}
+              onClick={() => submitForm()}
             >
               {t('manage.groupActivity.saveGrading')}
             </Button>

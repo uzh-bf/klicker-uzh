@@ -1341,6 +1341,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       optionalFeedback:
         'Enter an optional general feedback for the group challenge here',
       saveGrading: 'Save Grading',
+      optionalQuestionFeedback:
+        'Enter optional feedback for the answered question here.',
+      generalFeedback: 'General Feedback',
     },
   },
   control: {
