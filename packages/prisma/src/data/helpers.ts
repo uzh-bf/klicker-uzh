@@ -397,7 +397,10 @@ export function prepareGroupActivityStack({
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { pointsMultiplier: 1, resetTimeDays: 5 },
+            options: {
+              pointsMultiplier: Math.random() > 0.5 ? 1 : 2,
+              resetTimeDays: 5,
+            },
             results: getInitialElementResults(el),
             ownerId: el.ownerId,
             elementId: el.id,

@@ -163,6 +163,8 @@ export default {
       practice: 'Übungs-Quiz',
       clues: 'Hinweise',
       value: 'Wert',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
     },
     contentInput: {
       boldStyle:
@@ -1338,6 +1340,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       toGrade: 'Zu Bewerten',
       graded: 'Bewertet',
       notSubmitted: 'Nicht abgegeben',
+      grading: 'Bewertung',
+      noSubmissionSelected:
+        'Bitte wählen Sie aus der Liste auf der linken seite eine Abgabe zur Bewertung aus. Bevor die Bewertung final abgeschlossen wird, können Sie die Bewertung jederzeit anpassen.',
+      nPoints: '{number} Punkte',
+      achievedScore: 'Erreichte Punktzahl',
+      maxScoreTooltip:
+        'Die maximale Punktzahl für eine Frage setzt sich aus den Multipliern der Frage und der Gruppenaktivität zusammen.',
+      passedMissingError:
+        'Bitte geben Sie an, ob die Gruppenaktivität bestanden wurde oder nicht.',
+      scoreMissingError:
+        'Bitte stellen Sie sicher, dass alle Fragen mit einer gültigen Punktzahl bewertet wurden.',
+      didGroupPass: 'Wurde die Gruppenaktivität bestanden?',
+      optionalFeedback:
+        'Geben Sie hier ein optionales generelles Feedback zur Gruppenchallenge ein',
+      saveGrading: 'Bewertung speichern',
     },
   },
   control: {

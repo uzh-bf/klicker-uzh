@@ -1,9 +1,13 @@
 import { useQuery } from '@apollo/client'
+import GroupActivityGradingStack from '@components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '@components/courses/groupActivity/GroupActivitySubmission'
 import Layout from '@components/Layout'
-import { GetGradingGroupActivityDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementType,
+  GetGradingGroupActivityDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, H3, UserNotification } from '@uzh-bf/design-system'
+import { H1, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -54,12 +58,14 @@ function GroupActivityGrading() {
 
   return (
     <Layout>
-      <H2 className={{ root: 'mb-4' }}>
+      <H1 className={{ root: 'mb-4' }}>
         {t('manage.groupActivity.gradingTitle', { name: groupActivity.name })}
-      </H2>
+      </H1>
       <div className="flex flex-row">
-        <div className="w-1/2 pr-3">
-          <H3>{t('manage.groupActivity.submissions')}</H3>
+        <div className="w-1/2 pr-6">
+          <H2 className={{ root: 'mb-2' }}>
+            {t('manage.groupActivity.submissions')}
+          </H2>
           <div className="flex flex-col gap-3">
             {!submissions || submissions.length === 0 ? (
               <UserNotification
@@ -78,7 +84,28 @@ function GroupActivityGrading() {
             )}
           </div>
         </div>
-        <div className="w-1/2">GRADING VIEW</div>
+        <div className="w-1/2">
+          <H2 className={{ root: 'mb-2' }}>
+            {t('manage.groupActivity.grading')}
+          </H2>
+          {selectedSubmission ? (
+            <GroupActivityGradingStack
+              elements={(groupActivity.stacks?.[0].elements ?? []).filter(
+                (element) =>
+                  element.elementType !== ElementType.Content &&
+                  element.elementType !== ElementType.Flashcard
+              )}
+              submission={submissions.find(
+                (submission) => submission.id === selectedSubmission
+              )}
+            />
+          ) : (
+            <UserNotification
+              type="warning"
+              message={t('manage.groupActivity.noSubmissionSelected')}
+            />
+          )}
+        </div>
       </div>
     </Layout>
   )

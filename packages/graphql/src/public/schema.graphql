@@ -197,7 +197,13 @@ type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
   id: Int!
+  options: ElementInstanceOptions
   type: ElementInstanceType!
+}
+
+type ElementInstanceOptions {
+  pointsMultiplier: Int
+  resetTimeDays: Int
 }
 
 enum ElementInstanceType {

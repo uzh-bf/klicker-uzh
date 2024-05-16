@@ -163,6 +163,8 @@ export default {
       practice: 'Practice Activities',
       clues: 'Clues',
       value: 'Value',
+      passed: 'Passed',
+      failed: 'Failed',
     },
     contentInput: {
       boldStyle:
@@ -613,8 +615,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       started: 'Started',
       submitted: 'Submitted',
       past: 'Past',
-      passed: 'Passed',
-      failed: 'Failed',
       groupActivityPassed:
         'Congratulations! Your group has passed the group activity.',
       groupActivityFailed:
@@ -1326,6 +1326,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       toGrade: 'To Grade',
       graded: 'Graded',
       notSubmitted: 'Not submitted',
+      grading: 'Grading',
+      noSubmissionSelected:
+        'Please select a submission from the list on the left side for grading. Before the grading is finalized, you can adjust the grading at any time.',
+      nPoints: '{number} Points',
+      achievedScore: 'Achieved score',
+      maxScoreTooltip:
+        'The maximum score for a question is calculated as the product of the question multiplier and the group activity multiplier.',
+      passedMissingError:
+        'Please specify, if the group passed or failed the group challenge.',
+      scoreMissingError:
+        'Plase make sure that all quesitons are graded with a valid value.',
+      didGroupPass: 'Is the group activitied passed?',
+      optionalFeedback:
+        'Enter an optional general feedback for the group challenge here',
+      saveGrading: 'Save Grading',
     },
   },
   control: {

@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { BaseElementData } from '../types/app'
-import { ElementDataRef } from './elementData'
+import { ElementDataRef, ElementInstanceOptions } from './elementData'
 import {
   ElementDisplayMode,
   ElementInstanceType,
@@ -306,6 +306,11 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementData: t.field({
       type: ElementDataRef,
       resolve: (q) => q.elementData,
+    }),
+
+    options: t.expose('options', {
+      type: ElementInstanceOptions,
+      nullable: true,
     }),
   }),
 })

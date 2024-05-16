@@ -554,6 +554,47 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     }
   )
 
+  const groupActivityDecisions2 = groupActivityCompleted.stacks[0].elements.map(
+    (element) => {
+      const baseDecisions = {
+        instanceId: element.id,
+        type: element.elementType,
+      }
+
+      if (element.elementType === Prisma.ElementType.CONTENT) {
+        return {
+          ...baseDecisions,
+          contentResponse: true,
+        }
+      } else if (element.elementType === Prisma.ElementType.SC) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [0, 2],
+        }
+      } else if (element.elementType === Prisma.ElementType.MC) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [0, 2],
+        }
+      } else if (element.elementType === Prisma.ElementType.KPRIM) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [0, 2],
+        }
+      } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
+        return {
+          ...baseDecisions,
+          freeTextResponse: 'This is a new free text response.',
+        }
+      } else if (element.elementType === Prisma.ElementType.NUMERICAL) {
+        return {
+          ...baseDecisions,
+          numericalResponse: 97,
+        }
+      }
+    }
+  )
+
   // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1
   const groupActivityInstance = await prisma.groupActivityInstance.upsert({
@@ -583,7 +624,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: groupActivityInstanceId2,
     },
     create: {
-      decisions: groupActivityDecisions,
+      decisions: groupActivityDecisions2,
       decisionsSubmittedAt: new Date('2020-06-10T11:00:00.000Z'),
       groupActivity: {
         connect: {
@@ -693,7 +734,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: groupActivityInstanceId5,
     },
     create: {
-      decisions: groupActivityDecisions,
+      decisions: groupActivityDecisions2,
       decisionsSubmittedAt: new Date('2020-06-15T11:00:00.000Z'),
       results: groupActivityResults,
       resultsComputedAt: new Date(),

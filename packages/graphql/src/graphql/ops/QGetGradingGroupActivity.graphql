@@ -25,6 +25,9 @@ query GetGradingGroupActivity($id: String!) {
         id
         type
         elementType
+        options {
+          pointsMultiplier
+        }
         ...ElementDataWithoutSolutions
       }
     }

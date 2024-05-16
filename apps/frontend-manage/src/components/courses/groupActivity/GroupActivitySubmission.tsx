@@ -36,7 +36,15 @@ function GroupActivitySubmission({
       onClick={() => selectSubmission(submission.id)}
     >
       <div className="flex flex-col items-start">
-        <div>{submission.groupName}</div>
+        <div>
+          {typeof submission.results?.passed !== 'undefined'
+            ? `${submission.groupName} (${
+                submission.results.passed
+                  ? t('shared.generic.passed')
+                  : t('shared.generic.failed')
+              })`
+            : `${submission.groupName}`}
+        </div>
         {submission.decisions && (
           <div className="text-sm">
             {t('manage.groupActivity.submittedAt', {
