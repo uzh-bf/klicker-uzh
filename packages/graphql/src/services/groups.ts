@@ -954,3 +954,37 @@ export async function deleteGroupActivity(
     throw e
   }
 }
+
+interface GetGradingGroupActivityArgs {
+  id: string
+}
+
+export async function getGradingGroupActivity(
+  { id }: GetGradingGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+      activityInstances: {
+        include: {
+          group: true,
+        },
+      },
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const mappedInstances = groupActivity?.activityInstances.map((instance) => ({
+    ...instance,
+    groupName: instance.group.name,
+  }))
+
+  return { ...groupActivity, activityInstances: mappedInstances }
+}

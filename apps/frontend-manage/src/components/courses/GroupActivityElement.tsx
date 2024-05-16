@@ -138,7 +138,7 @@ function GroupActivityElement({
             <>
               {isPast && (
                 <Link
-                  href={`/courses/${courseId}/grading/groupActivity/${groupActivity.id}`}
+                  href={`/courses/grading/groupActivity/${groupActivity.id}`}
                 >
                   <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
                     <FontAwesomeIcon

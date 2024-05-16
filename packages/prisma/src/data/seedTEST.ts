@@ -554,7 +554,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     }
   )
 
-  // seed group activity instance with decisions
+  // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1
   const groupActivityInstance = await prisma.groupActivityInstance.upsert({
     where: {
@@ -571,6 +571,71 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       group: {
         connect: {
           id: PARTICIPANT_GROUP_IDS[0],
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityInstanceId2 = 2
+  const groupActivityInstance2 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId2,
+    },
+    create: {
+      decisions: groupActivityDecisions,
+      decisionsSubmittedAt: new Date('2020-06-10T11:00:00.000Z'),
+      groupActivity: {
+        connect: {
+          id: groupActivityId3,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[1],
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityInstanceId3 = 3
+  const groupActivityInstance3 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId3,
+    },
+    create: {
+      decisions: groupActivityDecisions,
+      decisionsSubmittedAt: new Date('2020-06-20T11:00:00.000Z'),
+      groupActivity: {
+        connect: {
+          id: groupActivityId3,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[2],
+        },
+      },
+    },
+    update: {},
+  })
+
+  // seed group activity instance without results
+  const groupActivityInstanceId4 = 4
+  const groupActivityInstance4 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId4,
+    },
+    create: {
+      groupActivity: {
+        connect: {
+          id: groupActivityId3,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[3],
         },
       },
     },
@@ -622,14 +687,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   }
 
   // seed group activity instance with decisions and results
-  const groupActivityInstanceId2 = 2
-  const groupActivityInstance2 = await prisma.groupActivityInstance.upsert({
+  const groupActivityInstanceId5 = 5
+  const groupActivityInstance5 = await prisma.groupActivityInstance.upsert({
     where: {
-      id: groupActivityInstanceId2,
+      id: groupActivityInstanceId5,
     },
     create: {
       decisions: groupActivityDecisions,
-      decisionsSubmittedAt: new Date('2020-06-01T11:00:00.000Z'),
+      decisionsSubmittedAt: new Date('2020-06-15T11:00:00.000Z'),
       results: groupActivityResults,
       resultsComputedAt: new Date(),
       groupActivity: {
@@ -639,7 +704,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       group: {
         connect: {
-          id: PARTICIPANT_GROUP_IDS[1],
+          id: PARTICIPANT_GROUP_IDS[4],
         },
       },
     },

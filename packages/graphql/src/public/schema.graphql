@@ -352,12 +352,12 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  activityInstances: [GroupActivityInstance!]
   clues: [GroupActivityClue!]
   course: Course
   description: String
   displayName: String!
   id: ID!
-  instances: [GroupActivityInstance!]
   name: String!
   numOfQuestions: Int
   pointsMultiplier: Int
@@ -438,7 +438,8 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID!
+  groupActivityId: ID
+  groupName: String
   id: Int!
   results: Json
   resultsComputedAt: Date
@@ -858,6 +859,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]

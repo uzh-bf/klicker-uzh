@@ -1316,6 +1316,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
     },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'The group activity you are looking for does not exist or has not yet been completed. Please note that group activities can only be evaluated after their official end date.',
+      gradingTitle: 'Grading Group Activity: {name}',
+      submissions: 'Submissions',
+      noSubmissions: 'No submissions are available for this group activity.',
+      submittedAt: 'Submitted at {datetime}',
+      toGrade: 'To Grade',
+      graded: 'Graded',
+      notSubmitted: 'Not submitted',
+    },
   },
   control: {
     login: {

@@ -63,7 +63,7 @@ export const GroupActivity = GroupActivityRef.implement({
       nullable: true,
     }),
 
-    instances: t.expose('activityInstances', {
+    activityInstances: t.expose('activityInstances', {
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
@@ -144,6 +144,7 @@ export const GroupActivityResults = GroupActivityResultsRef.implement({
 
 export interface IGroupActivityInstance extends DB.GroupActivityInstance {
   clues?: IGroupActivityClueInstance[]
+  groupName?: string
 }
 export const GroupActivityInstanceRef =
   builder.objectRef<IGroupActivityInstance>('GroupActivityInstance')
@@ -164,7 +165,8 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       type: [GroupActivityClueInstanceRef],
       nullable: true,
     }),
-    groupActivityId: t.exposeID('groupActivityId'),
+    groupActivityId: t.exposeID('groupActivityId', { nullable: true }),
+    groupName: t.exposeString('groupName', { nullable: true }),
   }),
 })
 

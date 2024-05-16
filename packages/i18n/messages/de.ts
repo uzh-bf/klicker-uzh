@@ -1327,6 +1327,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
     },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'Die von Ihnen gesuchte Gruppenaktivität existiert nicht oder ist noch nicht beendet. Bitte beachten Sie, dass Gruppenaktivitäten erst nach ihrem offiziellen Enddatum bewertet werden können.',
+      gradingTitle: 'Bewertung Gruppenaktivität: {name}',
+      submissions: 'Abgaben',
+      noSubmissions:
+        'Es sind keine Abgaben für diese Gruppenaktivität vorhanden.',
+      submittedAt: 'Abgegeben am {datetime}',
+      toGrade: 'Zu Bewerten',
+      graded: 'Bewertet',
+      notSubmitted: 'Nicht abgegeben',
+    },
   },
   control: {
     login: {
