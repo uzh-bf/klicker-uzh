@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/prisma'
 import axios from 'axios'
 import dayjs from 'dayjs'
+import minMax from 'dayjs/plugin/minMax'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { GraphQLError } from 'graphql'
@@ -12,6 +13,7 @@ import * as R from 'ramda'
 import { Context } from './context'
 
 dayjs.extend(utc)
+dayjs.extend(minMax)
 dayjs.extend(timezone)
 
 // shuffle an array and return a new copy
@@ -63,32 +65,35 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-
 export const orderStacks = R.sort(
   (
-    a: ElementStack & {
+    stackA: ElementStack & {
       elements: (ElementInstance & { responses?: QuestionResponse[] })[]
     },
-    b: ElementStack & {
+    stackB: ElementStack & {
       elements: (ElementInstance & { responses?: QuestionResponse[] })[]
     }
   ) => {
-    const aResponses = a.elements[0].responses
-    const bResponses = b.elements[0].responses
+    const stackAResponses = stackA.elements
+      .flatMap((e) => e.responses)
+      .filter((response) => !!response)
+    const stackBResponses = stackB.elements
+      .flatMap((e) => e.responses)
+      .filter((response) => !!response)
 
     // place instances, which have never been answered at the front
     if (
-      !aResponses ||
-      !bResponses ||
-      (aResponses.length === 0 && bResponses.length === 0)
+      !stackAResponses ||
+      !stackBResponses ||
+      (stackAResponses.length === 0 && stackBResponses.length === 0)
     )
       return 0
-    if (aResponses.length === 0) return -1
-    if (bResponses.length === 0) return 1
+    if (stackAResponses.length === 0) return -1
+    if (stackBResponses.length === 0) return 1
 
     // only first respose at first -> should be changed for stacks with more than one response
-    const aEarliestDueDate = findEarliestDueDate(aResponses)
-    const bEarliestDueDate = findEarliestDueDate(bResponses)
+    const aEarliestDueDate = findEarliestDueDate(stackAResponses)
+    const bEarliestDueDate = findEarliestDueDate(stackBResponses)
 
     // sort first according by dueDate ascending, then by correctCount ascending, then by the lastResponseAt from old to new
     if (!aEarliestDueDate) return -1
@@ -96,12 +101,13 @@ export const orderStacks = R.sort(
     if (aEarliestDueDate < bEarliestDueDate) return -1
     if (aEarliestDueDate > bEarliestDueDate) return 1
 
-    const aResponse = aResponses[0]
-    const bResponse = bResponses[0]
+    // fallback (old logic) in unprobable case of identical dueDates
+    const aResponse = stackAResponses[0]
+    const bResponse = stackBResponses[0]
 
     if (aResponse.correctCountStreak < bResponse.correctCountStreak) return -1
     if (aResponse.correctCountStreak > bResponse.correctCountStreak) return 1
-    
+
     if (aResponse.correctCount < bResponse.correctCount) return -1
     if (aResponse.correctCount > bResponse.correctCount) return 1
 
@@ -113,19 +119,15 @@ export const orderStacks = R.sort(
   }
 )
 
-const findEarliestDueDate = (responses: QuestionResponse[]) => {
-  if (!responses || responses.length === 0) return null;
-  let responseDate: Date |null = null
-  for (let response of responses){
-    if (response.nextDueAt === null) {continue}
-    if (responseDate === null) {responseDate = new Date(response.nextDueAt)}
-    else {
-      if (response.nextDueAt < responseDate)
-        {responseDate = response.nextDueAt}
-    }
-  }
-  return responseDate
-};
+const findEarliestDueDate = (stackResponses: QuestionResponse[]) => {
+  return dayjs
+    .min(
+      stackResponses.map((response) =>
+        response.nextDueAt === null ? dayjs() : dayjs(response.nextDueAt)
+      )
+    )
+    ?.toDate()
+}
 
 export async function sendEmailMigrationNotification(
   email: string,
