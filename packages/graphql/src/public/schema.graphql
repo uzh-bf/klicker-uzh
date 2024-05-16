@@ -440,6 +440,18 @@ type GroupActivityGrading {
   score: Float!
 }
 
+input GroupActivityGradingDecisionInput {
+  feedback: String
+  instanceId: Int!
+  score: Float!
+}
+
+input GroupActivityGradingInput {
+  comment: String
+  grading: [GroupActivityGradingDecisionInput!]!
+  passed: Boolean!
+}
+
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
@@ -625,6 +637,7 @@ type Mutation {
   flagElement(content: String!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
+  gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup

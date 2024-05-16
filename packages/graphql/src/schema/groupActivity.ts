@@ -294,3 +294,28 @@ export const GroupActivityClueInput = builder.inputType(
     }),
   }
 )
+
+export const GroupActivityGradingDecisionInput = builder.inputType(
+  'GroupActivityGradingDecisionInput',
+  {
+    fields: (t) => ({
+      instanceId: t.int({ required: true }),
+      score: t.float({ required: true }),
+      feedback: t.string({ required: false }),
+    }),
+  }
+)
+
+export const GroupActivityGradingInput = builder.inputType(
+  'GroupActivityGradingInput',
+  {
+    fields: (t) => ({
+      passed: t.boolean({ required: true }),
+      comment: t.string({ required: false }),
+      grading: t.field({
+        type: [GroupActivityGradingDecisionInput],
+        required: true,
+      }),
+    }),
+  }
+)

@@ -28,7 +28,8 @@ function GroupActivitySubmission({
       className={{
         root: twMerge(
           'bg-slate-200 justify-between',
-          submission.results && 'bg-green-200',
+          submission.results && submission.results.passed && 'bg-green-200',
+          submission.results && !submission.results.passed && 'bg-red-200',
           submission.decisions && !submission.results && 'bg-orange-100'
         ),
         active: 'border-2 border-red-500',

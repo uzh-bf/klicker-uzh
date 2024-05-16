@@ -17,6 +17,8 @@ import {
   GroupActivity,
   GroupActivityClueInput,
   GroupActivityDetails,
+  GroupActivityGradingInput,
+  GroupActivityInstance,
 } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
@@ -1233,6 +1235,23 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.deleteGroupActivity(args, ctx)
+          },
+        }),
+
+      gradeGroupActivitySubmission: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivityInstance,
+          args: {
+            id: t.arg.int({ required: true }),
+            gradingDecisions: t.arg({
+              type: GroupActivityGradingInput,
+              required: true,
+            }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.gradeGroupActivitySubmission(args, ctx)
           },
         }),
 

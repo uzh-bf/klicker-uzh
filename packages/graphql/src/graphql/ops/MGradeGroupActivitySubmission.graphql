@@ -1,0 +1,12 @@
+mutation GradeGroupActivitySubmission(
+  $id: Int!
+  $gradingDecisions: GroupActivityGradingInput!
+) {
+  gradeGroupActivitySubmission(id: $id, gradingDecisions: $gradingDecisions) {
+    id
+    decisions
+    decisionsSubmittedAt
+    results
+    resultsComputedAt
+  }
+}

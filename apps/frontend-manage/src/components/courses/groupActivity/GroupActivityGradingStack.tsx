@@ -1,9 +1,11 @@
+import { useMutation } from '@apollo/client'
 import ContentInput from '@components/common/ContentInput'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstance,
   ElementType,
+  GradeGroupActivitySubmissionDocument,
   GroupActivityDecision,
   GroupActivityGrading,
   GroupActivityInstance,
@@ -29,6 +31,10 @@ function GroupActivityGradingStack({
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
   const MAX_POINTS_PER_QUESTION = 25
+
+  const [gradeGroupActivitySubmissions] = useMutation(
+    GradeGroupActivitySubmissionDocument
+  )
 
   const EditingDetector = () => {
     const { touched } = useFormikContext()
@@ -145,9 +151,34 @@ function GroupActivityGradingStack({
           })),
       }}
       validationSchema={gradingSchema}
-      onSubmit={async (values) => {
-        console.log(values)
-        return null
+      onSubmit={async (values, { setSubmitting, resetForm }) => {
+        setSubmitting(true)
+        const result = await gradeGroupActivitySubmissions({
+          variables: {
+            id: submission.id,
+            gradingDecisions: {
+              passed: values.passed,
+              comment: values.comment,
+              grading: values.grading.map(
+                (res: {
+                  instanceId: number
+                  score: number
+                  feedback?: string
+                }) => ({
+                  instanceId: res.instanceId,
+                  score: parseFloat(String(res.score)),
+                  feedback: res.feedback,
+                })
+              ),
+            },
+          },
+        })
+
+        if (result.data?.gradeGroupActivitySubmission) {
+          setSubmitting(false)
+          resetForm()
+          // TODO: show success toast
+        }
       }}
     >
       {({
@@ -239,8 +270,6 @@ function GroupActivityGradingStack({
                       feedback?: string
                     }
                   ) => {
-                    console.log(result.score)
-                    console.log(parseFloat(String(result.score ?? 0)))
                     return (
                       acc +
                       (String(result.score) === ''
@@ -287,8 +316,8 @@ function GroupActivityGradingStack({
                     touched={meta.touched}
                     content={field.value || '<br>'}
                     onChange={(newValue: string) => {
-                      setFieldValue('content', newValue)
-                      setFieldTouched('content', true)
+                      setFieldValue('comment', newValue)
+                      setFieldTouched('comment', true)
                     }}
                     showToolbarOnFocus={false}
                     placeholder={t('manage.groupActivity.optionalFeedback')}

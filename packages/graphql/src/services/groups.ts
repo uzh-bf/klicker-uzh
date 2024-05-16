@@ -13,14 +13,17 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
-import { StackInput } from 'src/types/app'
+import { ElementInstanceOptions } from 'src/ops'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
+import { ResponseCorrectness, StackInput } from '../types/app'
 import {
   RespondToElementStackInput,
   updateQuestionResults,
 } from './practiceQuizzes'
+
+const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 interface CreateParticipantGroupArgs {
   courseId: string
@@ -987,4 +990,69 @@ export async function getGradingGroupActivity(
   }))
 
   return { ...groupActivity, activityInstances: mappedInstances }
+}
+
+interface GradeGroupActivitySubmissionArgs {
+  id: number
+  gradingDecisions: {
+    passed: boolean
+    comment?: string | null
+    grading: {
+      instanceId: number
+      score: number
+      feedback?: string | null
+    }[]
+  }
+}
+
+export async function gradeGroupActivitySubmission(
+  { id, gradingDecisions }: GradeGroupActivitySubmissionArgs,
+  ctx: ContextWithUser
+) {
+  const instanceIds = gradingDecisions.grading.map((res) => res.instanceId)
+
+  // fetch all elementInstances
+  const elementInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      owner: { id: ctx.user.sub },
+      id: { in: instanceIds },
+    },
+  })
+  const elementInstanceMap = elementInstances.reduce<
+    Record<number, ElementInstanceOptions>
+  >((acc, instance) => ({ ...acc, [instance.id]: instance.options }), {})
+
+  const updatedInstance = await ctx.prisma.groupActivityInstance.update({
+    where: { id },
+    data: {
+      results: {
+        passed: gradingDecisions.passed,
+        points: gradingDecisions.grading.reduce(
+          (acc, res) => acc + res.score,
+          0
+        ),
+        comment: gradingDecisions.comment,
+        grading: gradingDecisions.grading.map((res) => {
+          const computedMaxPoints =
+            POINTS_PER_GROUP_ACTIVITY_ELEMENT *
+            (elementInstanceMap[res.instanceId]?.pointsMultiplier ?? 1)
+
+          return {
+            instanceId: res.instanceId,
+            score: Math.min(res.score, computedMaxPoints),
+            maxPoints: computedMaxPoints,
+            feedback: res.feedback,
+            correctness:
+              res.score === 0
+                ? ResponseCorrectness.INCORRECT
+                : res.score < computedMaxPoints
+                ? ResponseCorrectness.PARTIAL
+                : ResponseCorrectness.CORRECT,
+          }
+        }),
+      },
+    },
+  })
+
+  return updatedInstance
 }
