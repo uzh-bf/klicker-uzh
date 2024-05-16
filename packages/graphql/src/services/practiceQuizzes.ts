@@ -188,6 +188,60 @@ function combineCorrectnessParams({
   }
 }
 
+type SpacedRepetitionResult = {
+  efactor: number
+  interval: number
+  nextDueAt: Date
+}
+
+function updateSpacedRepetition({
+  eFactor,
+  interval,
+  streak,
+  grade,
+}: {
+  eFactor: number
+  interval: number
+  streak: number
+  grade: number
+}): SpacedRepetitionResult {
+  if (grade < 0 || grade > 1) {
+    throw new Error('Grade must be between 0 and 1.')
+  }
+
+  // scale grade to 0-5 range (definition of algorithm)
+  const scaledGrade = grade * 5
+
+  // update efactor and interval
+  let newEfactor = Math.max(
+    1.3,
+    eFactor + (0.1 - (5 - scaledGrade) * (0.08 + (5 - scaledGrade) * 0.02))
+  )
+  newEfactor = parseFloat(newEfactor.toFixed(2))
+
+  let newInterval: number
+  if (scaledGrade < 3) {
+    newInterval = 1
+  } else {
+    if (streak === 1) {
+      newInterval = 2
+    } else if (streak === 2) {
+      newInterval = 6
+    } else {
+      newInterval = Math.ceil(interval * newEfactor)
+    }
+  }
+
+  // compute next due date to sort by (=> spaced repetition)
+  const nextDueAt = dayjs().add(newInterval, 'day').toDate()
+
+  return {
+    efactor: newEfactor,
+    interval: newInterval,
+    nextDueAt: nextDueAt,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
@@ -303,6 +357,20 @@ async function respondToFlashcard(
       total: 0,
     }
 
+  const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
+  const correctness =
+    response === FlashcardCorrectness.CORRECT
+      ? 1
+      : response === FlashcardCorrectness.PARTIAL
+      ? 0.5
+      : 0
+  const resultSpacedRepetition = updateSpacedRepetition({
+    eFactor: existingResponse?.eFactor || 2.5,
+    interval: existingResponse?.interval || 1,
+    streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+    grade: correctness,
+  })
+
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
@@ -341,6 +409,10 @@ async function respondToFlashcard(
         partial: response === FlashcardCorrectness.PARTIAL,
         incorrect: response === FlashcardCorrectness.INCORRECT,
       }),
+
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
     update: {
       // RESPONSE
@@ -363,6 +435,10 @@ async function respondToFlashcard(
         incorrect: response === FlashcardCorrectness.INCORRECT,
         existingResponse,
       }),
+
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
   })
 
@@ -465,6 +541,13 @@ async function respondToContent(
       total: 0,
     }
 
+  const resultSpacedRepetition = updateSpacedRepetition({
+    eFactor: existingResponse?.eFactor || 2.5,
+    interval: existingResponse?.interval || 1,
+    streak: (existingResponse?.correctCountStreak || 0) + 1,
+    grade: 1,
+  })
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -504,6 +587,11 @@ async function respondToContent(
       correctCountStreak: 1,
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
+
+      // update spaced repetition parameters
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
     update: {
       // RESPONSE
@@ -528,6 +616,11 @@ async function respondToContent(
       },
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
+
+      // update spaced repetition parameters
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
   })
 
@@ -1147,6 +1240,14 @@ export async function respondToQuestion(
       }
     }
 
+    const streakIncrement = correctness === 1 ? 1 : 0
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor || 2.5,
+      interval: existingResponse?.interval || 1,
+      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      grade: correctness,
+    })
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1179,11 +1280,16 @@ export async function respondToQuestion(
             },
           },
 
+          // compute and store new correctness parameters
           ...combineNewCorrectnessParams({
             correct: correctness === 1,
             partial: correctness > 0 && correctness < 1,
             incorrect: correctness === 0,
           }),
+
+          eFactor: resultSpacedRepetition.efactor,
+          nextDueAt: resultSpacedRepetition.nextDueAt,
+          interval: resultSpacedRepetition.interval,
         },
         update: {
           response: response as QuestionResponse,
@@ -1212,6 +1318,10 @@ export async function respondToQuestion(
             incorrect: correctness === 0,
             existingResponse,
           }),
+
+          eFactor: resultSpacedRepetition.efactor,
+          nextDueAt: resultSpacedRepetition.nextDueAt,
+          interval: resultSpacedRepetition.interval,
         },
       }),
       ctx.prisma.questionResponseDetail.create({
