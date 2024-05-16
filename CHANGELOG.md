@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.40...v3.1.0-rc.41) (2024-05-16)
+
+
+### Features
+
+* **packages/graphql:** introduce spaced repetition logic ([#4127](https://github.com/uzh-bf/klicker-uzh/issues/4127)) ([cf5fab4](https://github.com/uzh-bf/klicker-uzh/commit/cf5fab429540c57fee9eec429273cd78b56da0bf))
+
 ## [3.1.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.39...v3.1.0-rc.40) (2024-05-15)
 
 
