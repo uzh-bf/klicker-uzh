@@ -1056,3 +1056,47 @@ export async function gradeGroupActivitySubmission(
 
   return updatedInstance
 }
+
+export async function finalizeGroupActivityGrading(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // find the group activity and all instances
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      activityInstances: true,
+    },
+  })
+
+  const solvedInstances =
+    groupActivity?.activityInstances.filter((instance) => instance.decisions) ??
+    []
+
+  // check that all instances with decisions have results
+  if (!solvedInstances.every((instance) => instance.results)) {
+    return null
+  }
+
+  // update the status of the group activity and set resultsComputedAt on group activity instances
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.GRADED,
+      activityInstances: {
+        updateMany: {
+          where: {
+            id: {
+              in: solvedInstances.map((instance) => instance.id),
+            },
+          },
+          data: {
+            resultsComputedAt: new Date(),
+          },
+        },
+      },
+    },
+  })
+
+  return updatedGroupActivity
+}

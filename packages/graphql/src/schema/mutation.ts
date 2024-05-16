@@ -1255,6 +1255,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      finalizeGroupActivityGrading: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.finalizeGroupActivityGrading(args, ctx)
+          },
+        }),
+
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----

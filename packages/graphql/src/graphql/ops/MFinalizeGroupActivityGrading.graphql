@@ -1,0 +1,6 @@
+mutation FinalizeGroupActivityGrading($id: String!) {
+  finalizeGroupActivityGrading(id: $id) {
+    id
+    status
+  }
+}

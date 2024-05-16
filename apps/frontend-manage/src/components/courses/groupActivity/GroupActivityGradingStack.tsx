@@ -11,15 +11,15 @@ import {
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
-import { Button, FormikNumberField, H2, H3 } from '@uzh-bf/design-system'
+import { Button, FormikNumberField, H2, H3, Toast } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface GroupActivityGradingStackProps {
-  setEdited: () => void
+  setEdited: (edited: boolean) => void
   elements: ElementInstance[]
   submission?: GroupActivityInstance
 }
@@ -32,6 +32,9 @@ function GroupActivityGradingStack({
   const t = useTranslations()
   const MAX_POINTS_PER_QUESTION = 25
 
+  const [successToast, setSuccessToast] = useState(false)
+  const [errorToast, setErrorToast] = useState(false)
+
   const [gradeGroupActivitySubmissions] = useMutation(
     GradeGroupActivitySubmissionDocument
   )
@@ -41,7 +44,7 @@ function GroupActivityGradingStack({
 
     useEffect(() => {
       if (Object.keys(touched).length > 0) {
-        setEdited()
+        setEdited(true)
       }
     }, [touched])
 
@@ -151,7 +154,7 @@ function GroupActivityGradingStack({
           })),
       }}
       validationSchema={gradingSchema}
-      onSubmit={async (values, { setSubmitting, resetForm }) => {
+      onSubmit={async (values, { setSubmitting, resetForm, setTouched }) => {
         setSubmitting(true)
         const result = await gradeGroupActivitySubmissions({
           variables: {
@@ -174,10 +177,14 @@ function GroupActivityGradingStack({
           },
         })
 
-        if (result.data?.gradeGroupActivitySubmission) {
+        if (result.data?.gradeGroupActivitySubmission?.id) {
           setSubmitting(false)
           resetForm()
-          // TODO: show success toast
+          setSuccessToast(true)
+          setEdited(false)
+        } else {
+          setSubmitting(false)
+          setErrorToast(true)
         }
       }}
     >
@@ -342,6 +349,22 @@ function GroupActivityGradingStack({
               {t('manage.groupActivity.saveGrading')}
             </Button>
             <EditingDetector />
+            <Toast
+              openExternal={successToast}
+              setOpenExternal={setSuccessToast}
+              type="success"
+              duration={4000}
+            >
+              {t('manage.groupActivity.stackGradingSuccess')}
+            </Toast>
+            <Toast
+              openExternal={errorToast}
+              setOpenExternal={setErrorToast}
+              type="error"
+              duration={6000}
+            >
+              {t('manage.groupActivity.stackGradingError')}
+            </Toast>
           </div>
         )
       }}

@@ -1362,6 +1362,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmSubmissionSwitch:
         'Sind Sie sich sicher, dass Sie zu einer anderen Abgabe der Gruppenaktivität wechseln möchten. Sie haben aktuell ungespeicherte Änderungen, welche bei diesem Wechsel verloren gehen.',
       totalAchievedPoints: 'Total: {achieved}/{total} Punkte',
+      finalizeGrading: 'Bewertung abschliessen',
+      confirmFinalizeGrading:
+        'Sind Sie sich sicher, dass Sie die Bewertung der Gruppenaktivität abschliessen möchten? Nach dem Abschluss der Bewertung sind die Resultate für die Teilnehmen sichtbar und es können keine weiteren Änderungen vorgenommen werden.',
+      stackGradingSuccess: 'Die Bewertung wurde erfolgreich gespeichert.',
+      stackGradingError:
+        'Beim Speichern der Bewertung ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob alle erforderlichen Berwertungen vorgenommen wurden.',
+      finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
+      finalizeGradingError:
+        'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
     },
   },
   control: {

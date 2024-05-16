@@ -1348,6 +1348,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmSubmissionSwitch:
         'Are you sure you want to switch to another submission of the group activity? You currently have unsaved changes that will be lost when switching.',
       totalAchievedPoints: 'Total: {achieved}/{total} Points',
+      finalizeGrading: 'Finalize Grading',
+      confirmFinalizeGrading:
+        'Are you sure you want to finalize the grading of the group activity? After finalizing the grading, the results will be visible to the participants and no further changes are possible.',
+      stackGradingSuccess: 'Grading was saved successfully.',
+      stackGradingError:
+        'An error occurred while saving the grading. Please check if all required decisions have been entered.',
+      finalizeGradingSuccess: 'Grading was finalized successfully.',
+      finalizeGradingError:
+        'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
     },
   },
   control: {

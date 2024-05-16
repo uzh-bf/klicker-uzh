@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import FinalizeGradingModal from '@components/courses/groupActivity/FinalizeGradingModal'
 import GroupActivityGradingStack from '@components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '@components/courses/groupActivity/GroupActivitySubmission'
 import SubmissionSwitchModal from '@components/courses/groupActivity/SubmissionSwitchModal'
@@ -8,12 +9,13 @@ import {
   GetGradingGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H1, H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 function GroupActivityGrading() {
   const router = useRouter()
@@ -23,6 +25,7 @@ function GroupActivityGrading() {
   >(undefined)
   const [currentEditing, setCurrentEditing] = useState<boolean>(false)
   const [switchingModal, setSwitchingModal] = useState<boolean>(false)
+  const [finalizeModal, setFinalizeModal] = useState<boolean>(false)
   const [nextSubmission, setNextSubmission] = useState<number>(-1)
 
   const { data, loading } = useQuery(GetGradingGroupActivityDocument, {
@@ -77,21 +80,40 @@ function GroupActivityGrading() {
                 message={t('manage.groupActivity.noSubmissions')}
               />
             ) : (
-              submissions.map((submission) => (
-                <GroupActivitySubmission
-                  key={submission.id}
-                  submission={submission}
-                  selectedSubmission={selectedSubmission}
-                  selectSubmission={(submissionId: number) => {
-                    if (currentEditing) {
-                      setSwitchingModal(true)
-                      setNextSubmission(submissionId)
-                    } else {
-                      setSelectedSubmission(submissionId)
-                    }
+              <>
+                {submissions.map((submission) => (
+                  <GroupActivitySubmission
+                    key={submission.id}
+                    submission={submission}
+                    selectedSubmission={selectedSubmission}
+                    selectSubmission={(submissionId: number) => {
+                      if (currentEditing) {
+                        setSwitchingModal(true)
+                        setNextSubmission(submissionId)
+                      } else {
+                        setSelectedSubmission(submissionId)
+                      }
+                    }}
+                  />
+                ))}
+                <Button
+                  disabled={submissions.some(
+                    (submission) => !submission.results && submission.decisions
+                  )}
+                  className={{
+                    root: twMerge(
+                      'bg-primary-80 font-bold text-white w-max self-end',
+                      submissions.some(
+                        (submission) =>
+                          !submission.results && submission.decisions
+                      ) && 'cursor-not-allowed bg-primary-60'
+                    ),
                   }}
-                />
-              ))
+                  onClick={() => setFinalizeModal(true)}
+                >
+                  {t('manage.groupActivity.finalizeGrading')}
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -101,7 +123,7 @@ function GroupActivityGrading() {
           </H2>
           {selectedSubmission ? (
             <GroupActivityGradingStack
-              setEdited={() => setCurrentEditing(true)}
+              setEdited={(edited: boolean) => setCurrentEditing(edited)}
               elements={(groupActivity.stacks?.[0].elements ?? []).filter(
                 (element) =>
                   element.elementType !== ElementType.Content &&
@@ -125,6 +147,11 @@ function GroupActivityGrading() {
         setSelectedSubmission={setSelectedSubmission}
         setCurrentEditing={setCurrentEditing}
         setSwitchingModal={setSwitchingModal}
+      />
+      <FinalizeGradingModal
+        open={finalizeModal}
+        setOpen={setFinalizeModal}
+        activityId={groupActivity.id}
       />
     </Layout>
   )

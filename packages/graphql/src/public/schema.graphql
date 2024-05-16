@@ -634,6 +634,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
