@@ -12,7 +12,7 @@ import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
 import { Button, FormikNumberField, H2, H3 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -41,6 +41,14 @@ function GroupActivityGradingStack({
 
     return null
   }
+
+  const maxPoints = useMemo(() => {
+    return elements.reduce((acc, element) => {
+      return (
+        acc + (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+      )
+    }, 0)
+  }, [elements])
 
   if (!submission) {
     return <div></div>
@@ -220,7 +228,32 @@ function GroupActivityGradingStack({
                 </div>
               </div>
             ))}
-            <div>
+            <div className="border-t border-black pt-2 self-end font-bold text-lg">
+              {t('manage.groupActivity.totalAchievedPoints', {
+                achieved: values.grading.reduce(
+                  (
+                    acc: number,
+                    result: {
+                      instanceId: number
+                      score: number
+                      feedback?: string
+                    }
+                  ) => {
+                    console.log(result.score)
+                    console.log(parseFloat(String(result.score ?? 0)))
+                    return (
+                      acc +
+                      (String(result.score) === ''
+                        ? 0
+                        : parseFloat(String(result.score ?? 0)))
+                    )
+                  },
+                  0
+                ),
+                total: maxPoints,
+              })}
+            </div>
+            <div className="-mt-4">
               <H2>{t('manage.groupActivity.generalFeedback')}</H2>
               <div className="flex flex-row items-center gap-2 mb-3">
                 <div className="flex flex-row">

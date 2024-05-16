@@ -1361,6 +1361,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       switchSubmission: 'Abgabe wechseln',
       confirmSubmissionSwitch:
         'Sind Sie sich sicher, dass Sie zu einer anderen Abgabe der Gruppenaktivität wechseln möchten. Sie haben aktuell ungespeicherte Änderungen, welche bei diesem Wechsel verloren gehen.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Punkte',
     },
   },
   control: {

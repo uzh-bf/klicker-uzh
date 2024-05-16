@@ -1347,6 +1347,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       switchSubmission: 'Switch Submission',
       confirmSubmissionSwitch:
         'Are you sure you want to switch to another submission of the group activity? You currently have unsaved changes that will be lost when switching.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Points',
     },
   },
   control: {
