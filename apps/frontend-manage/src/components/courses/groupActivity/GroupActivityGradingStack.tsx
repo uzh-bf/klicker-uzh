@@ -10,22 +10,37 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
 import { Button, FormikNumberField, H2, H3 } from '@uzh-bf/design-system'
-import { FastField, FastFieldProps, Formik } from 'formik'
+import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface GroupActivityGradingStackProps {
+  setEdited: () => void
   elements: ElementInstance[]
   submission?: GroupActivityInstance
 }
 
 function GroupActivityGradingStack({
+  setEdited,
   elements,
   submission,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
   const MAX_POINTS_PER_QUESTION = 25
+
+  const EditingDetector = () => {
+    const { touched } = useFormikContext()
+
+    useEffect(() => {
+      if (Object.keys(touched).length > 0) {
+        setEdited()
+      }
+    }, [touched])
+
+    return null
+  }
 
   if (!submission) {
     return <div></div>
@@ -127,12 +142,19 @@ function GroupActivityGradingStack({
         return null
       }}
     >
-      {({ isSubmitting, values, isValid, setFieldValue, submitForm }) => {
+      {({
+        isSubmitting,
+        values,
+        isValid,
+        setFieldValue,
+        setFieldTouched,
+        submitForm,
+      }) => {
         return (
           <div className="flex flex-col gap-8">
             {elements.map((element, ix) => (
               <div key={element.id}>
-                <H3 className={{ root: 'border-b border-gray-400' }}>
+                <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
                   {element.elementData.name}
                 </H3>
                 <StudentElement
@@ -161,9 +183,10 @@ function GroupActivityGradingStack({
                         error={meta.error}
                         touched={meta.touched}
                         content={field.value || '<br>'}
-                        onChange={(newValue: string) =>
+                        onChange={(newValue: string) => {
                           setFieldValue(`grading.${ix}.feedback`, newValue)
-                        }
+                          setFieldTouched(`grading.${ix}.feedback`, true)
+                        }}
                         showToolbarOnFocus={false}
                         placeholder={t(
                           'manage.groupActivity.optionalQuestionFeedback'
@@ -230,9 +253,10 @@ function GroupActivityGradingStack({
                     error={meta.error}
                     touched={meta.touched}
                     content={field.value || '<br>'}
-                    onChange={(newValue: string) =>
+                    onChange={(newValue: string) => {
                       setFieldValue('content', newValue)
-                    }
+                      setFieldTouched('content', true)
+                    }}
                     showToolbarOnFocus={false}
                     placeholder={t('manage.groupActivity.optionalFeedback')}
                     data_cy="groupActivity-general-grading-comment"
@@ -255,6 +279,7 @@ function GroupActivityGradingStack({
             >
               {t('manage.groupActivity.saveGrading')}
             </Button>
+            <EditingDetector />
           </div>
         )
       }}

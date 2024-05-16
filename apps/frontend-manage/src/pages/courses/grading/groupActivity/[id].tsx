@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import GroupActivityGradingStack from '@components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '@components/courses/groupActivity/GroupActivitySubmission'
+import SubmissionSwitchModal from '@components/courses/groupActivity/SubmissionSwitchModal'
 import Layout from '@components/Layout'
 import {
   ElementType,
@@ -20,6 +21,9 @@ function GroupActivityGrading() {
   const [selectedSubmission, setSelectedSubmission] = useState<
     number | undefined
   >(undefined)
+  const [currentEditing, setCurrentEditing] = useState<boolean>(false)
+  const [switchingModal, setSwitchingModal] = useState<boolean>(false)
+  const [nextSubmission, setNextSubmission] = useState<number>(-1)
 
   const { data, loading } = useQuery(GetGradingGroupActivityDocument, {
     variables: {
@@ -78,7 +82,14 @@ function GroupActivityGrading() {
                   key={submission.id}
                   submission={submission}
                   selectedSubmission={selectedSubmission}
-                  selectSubmission={setSelectedSubmission}
+                  selectSubmission={(submissionId: number) => {
+                    if (currentEditing) {
+                      setSwitchingModal(true)
+                      setNextSubmission(submissionId)
+                    } else {
+                      setSelectedSubmission(submissionId)
+                    }
+                  }}
                 />
               ))
             )}
@@ -90,6 +101,7 @@ function GroupActivityGrading() {
           </H2>
           {selectedSubmission ? (
             <GroupActivityGradingStack
+              setEdited={() => setCurrentEditing(true)}
               elements={(groupActivity.stacks?.[0].elements ?? []).filter(
                 (element) =>
                   element.elementType !== ElementType.Content &&
@@ -107,6 +119,13 @@ function GroupActivityGrading() {
           )}
         </div>
       </div>
+      <SubmissionSwitchModal
+        nextSubmission={nextSubmission}
+        switchingModal={switchingModal}
+        setSelectedSubmission={setSelectedSubmission}
+        setCurrentEditing={setCurrentEditing}
+        setSwitchingModal={setSwitchingModal}
+      />
     </Layout>
   )
 }
