@@ -127,6 +127,7 @@ function GroupActivityGrading() {
                     ),
                   }}
                   onClick={() => setFinalizeModal(true)}
+                  data={{ cy: 'finalize-grading' }}
                 >
                   {t('manage.groupActivity.finalizeGrading')}
                 </Button>

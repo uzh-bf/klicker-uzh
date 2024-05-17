@@ -267,7 +267,7 @@ function GroupActivityGradingStack({
                       (element.options?.pointsMultiplier || 1) *
                       pointsPerInstance
                     }
-                    data={{ cy: `grading-${element.id}-score` }}
+                    data={{ cy: `groupActivity-grading-score-${ix}` }}
                     className={{ numberField: { input: 'w-20' } }}
                   />
                   <div>{`/ ${t('manage.groupActivity.nPoints', {
@@ -313,6 +313,7 @@ function GroupActivityGradingStack({
                   onClick={() => setFieldValue('passed', true)}
                   className={{ root: 'text-black', active: 'bg-green-500' }}
                   disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-passed' }}
                 >
                   <FontAwesomeIcon icon={faCheck} />
                 </Button>
@@ -321,6 +322,7 @@ function GroupActivityGradingStack({
                   onClick={() => setFieldValue('passed', false)}
                   className={{ root: 'text-black', active: 'bg-red-500' }}
                   disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-failed' }}
                 >
                   <FontAwesomeIcon icon={faX} />
                 </Button>
@@ -361,6 +363,7 @@ function GroupActivityGradingStack({
               }}
               loading={isSubmitting}
               onClick={() => submitForm()}
+              data={{ cy: 'groupActivity-save-submission-grading' }}
             >
               {t('manage.groupActivity.saveGrading')}
             </Button>

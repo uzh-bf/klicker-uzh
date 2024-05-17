@@ -52,6 +52,7 @@ function GroupActivitySubmission({
         active: 'border-2 border-red-500',
       }}
       onClick={() => selectSubmission(submission.id)}
+      data={{ cy: `group-activity-submission-${submission.id}` }}
     >
       <div className="flex flex-col items-start">
         <div>
