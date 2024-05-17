@@ -4,6 +4,7 @@ query GetGradingGroupActivity($id: String!) {
     name
     displayName
     description
+    status
     pointsMultiplier
     scheduledStartAt
     scheduledEndAt

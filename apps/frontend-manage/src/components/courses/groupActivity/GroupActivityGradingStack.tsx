@@ -11,7 +11,14 @@ import {
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
-import { Button, FormikNumberField, H2, H3, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikNumberField,
+  H2,
+  H3,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -22,12 +29,14 @@ interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void
   elements: ElementInstance[]
   submission?: GroupActivityInstance
+  gradingCompleted: boolean
 }
 
 function GroupActivityGradingStack({
   setEdited,
   elements,
   submission,
+  gradingCompleted,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
   const MAX_POINTS_PER_QUESTION = 25
@@ -198,6 +207,12 @@ function GroupActivityGradingStack({
       }) => {
         return (
           <div className="flex flex-col gap-8">
+            {gradingCompleted && (
+              <UserNotification
+                type="warning"
+                message={t('manage.groupActivity.alreadyGraded')}
+              />
+            )}
             {elements.map((element, ix) => (
               <div key={element.id}>
                 <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
@@ -233,6 +248,7 @@ function GroupActivityGradingStack({
                           setFieldValue(`grading.${ix}.feedback`, newValue)
                           setFieldTouched(`grading.${ix}.feedback`, true)
                         }}
+                        disabled={gradingCompleted}
                         showToolbarOnFocus={false}
                         placeholder={t(
                           'manage.groupActivity.optionalQuestionFeedback'
@@ -247,6 +263,7 @@ function GroupActivityGradingStack({
                   <FormikNumberField
                     hideError
                     required
+                    disabled={gradingCompleted}
                     name={`grading.${ix}.score`}
                     label={t('manage.groupActivity.achievedScore')}
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
@@ -299,14 +316,16 @@ function GroupActivityGradingStack({
                 <Button
                   active={values.passed === true}
                   onClick={() => setFieldValue('passed', true)}
-                  className={{ active: 'bg-green-500' }}
+                  className={{ root: 'text-black', active: 'bg-green-500' }}
+                  disabled={gradingCompleted}
                 >
                   <FontAwesomeIcon icon={faCheck} />
                 </Button>
                 <Button
                   active={values.passed === false}
                   onClick={() => setFieldValue('passed', false)}
-                  className={{ active: 'bg-red-500' }}
+                  className={{ root: 'text-black', active: 'bg-red-500' }}
+                  disabled={gradingCompleted}
                 >
                   <FontAwesomeIcon icon={faX} />
                 </Button>
@@ -326,6 +345,7 @@ function GroupActivityGradingStack({
                       setFieldValue('comment', newValue)
                       setFieldTouched('comment', true)
                     }}
+                    disabled={gradingCompleted}
                     showToolbarOnFocus={false}
                     placeholder={t('manage.groupActivity.optionalFeedback')}
                     data_cy="groupActivity-general-grading-comment"
@@ -335,12 +355,13 @@ function GroupActivityGradingStack({
               </FastField>
             </div>
             <Button
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || gradingCompleted}
               type="submit"
               className={{
                 root: twMerge(
                   '-mt-2 h-10 w-max self-end font-bold bg-primary-80 text-white',
-                  !isValid && 'cursor-not-allowed bg-primary-60'
+                  (!isValid || gradingCompleted) &&
+                    'cursor-not-allowed bg-primary-60'
                 ),
               }}
               loading={isSubmitting}

@@ -978,6 +978,9 @@ export async function getGradingGroupActivity(
         include: {
           group: true,
         },
+        orderBy: {
+          decisionsSubmittedAt: 'asc',
+        },
       },
     },
   })

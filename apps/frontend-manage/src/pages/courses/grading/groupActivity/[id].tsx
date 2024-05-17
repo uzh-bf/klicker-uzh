@@ -7,6 +7,7 @@ import Layout from '@components/Layout'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
+  GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
@@ -132,6 +133,9 @@ function GroupActivityGrading() {
               submission={submissions.find(
                 (submission) => submission.id === selectedSubmission
               )}
+              gradingCompleted={
+                groupActivity.status === GroupActivityStatus.Graded
+              }
             />
           ) : (
             <UserNotification

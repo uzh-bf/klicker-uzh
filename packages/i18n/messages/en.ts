@@ -1357,6 +1357,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       finalizeGradingSuccess: 'Grading was finalized successfully.',
       finalizeGradingError:
         'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
+      alreadyGraded:
+        'The grading for this group activity has already been finalized and can no longer be changed.',
     },
   },
   control: {
