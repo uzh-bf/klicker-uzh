@@ -109,16 +109,21 @@ function GroupActivityGrading() {
                   />
                 ))}
                 <Button
-                  disabled={submissions.some(
-                    (submission) => !submission.results && submission.decisions
-                  )}
+                  disabled={
+                    submissions.some(
+                      (submission) =>
+                        !submission.results && submission.decisions
+                    ) || groupActivity.status === GroupActivityStatus.Graded
+                  }
                   className={{
                     root: twMerge(
                       'bg-primary-80 font-bold text-white w-max self-end',
-                      submissions.some(
+                      (submissions.some(
                         (submission) =>
                           !submission.results && submission.decisions
-                      ) && 'cursor-not-allowed bg-primary-60'
+                      ) ||
+                        groupActivity.status === GroupActivityStatus.Graded) &&
+                        'cursor-not-allowed bg-primary-60'
                     ),
                   }}
                   onClick={() => setFinalizeModal(true)}
@@ -153,7 +158,11 @@ function GroupActivityGrading() {
           ) : (
             <UserNotification
               type="warning"
-              message={t('manage.groupActivity.noSubmissionSelected')}
+              message={
+                groupActivity.status === GroupActivityStatus.Graded
+                  ? t('manage.groupActivity.gradingAlreadyFinalized')
+                  : t('manage.groupActivity.noSubmissionSelected')
+              }
             />
           )}
         </div>

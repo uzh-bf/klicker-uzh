@@ -1360,6 +1360,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       alreadyGraded:
         'The grading for this group activity has already been finalized and can no longer be changed.',
       nOfTotalPoints: '{number}/{total} Points',
+      gradingAlreadyFinalized:
+        'Grading has already been finalized and cannot be changed anymore. Select a submission to view the entered grading.',
     },
   },
   control: {

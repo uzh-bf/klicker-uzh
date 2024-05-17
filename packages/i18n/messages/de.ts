@@ -1374,6 +1374,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       alreadyGraded:
         'Die Bewertungen für diese Gruppenaktivität wurden bereits finalisiert und können nicht mehr geändert werden.',
       nOfTotalPoints: '{number}/{total} Punkte',
+      gradingAlreadyFinalized:
+        'Die Bewertung wurde bereits abgeschlossen und kann nicht mehr geändert werden. Wählen Sie eine Abgabe aus, um sich die eingegebene Bewertung anzusehen.',
     },
   },
   control: {

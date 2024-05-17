@@ -206,7 +206,7 @@ describe('Create and solve a group activity', () => {
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
 
-    // TODO: also test deletion of old clues
+    // TODO: also test editing and deleting clues
     // check that clues exist and add a new one
     cy.findByText(clueName).should('exist')
     cy.findByText(clueName2).should('exist')
