@@ -589,7 +589,12 @@ export async function getGroupActivityDetails(
               }
 
               return {
-                ...R.dissoc('value', clueAssignment.groupActivityClueInstance),
+                ...(groupActivity.status === GroupActivityStatus.GRADED
+                  ? clueAssignment.groupActivityClueInstance
+                  : R.dissoc(
+                      'value',
+                      clueAssignment.groupActivityClueInstance
+                    )),
                 participant: {
                   ...clueAssignment.participant,
                   isSelf: false,
@@ -977,6 +982,9 @@ export async function getGradingGroupActivity(
       activityInstances: {
         include: {
           group: true,
+        },
+        orderBy: {
+          decisionsSubmittedAt: 'asc',
         },
       },
     },

@@ -139,6 +139,7 @@ function GroupActivityElement({
               {isPast && (
                 <Link
                   href={`/courses/grading/groupActivity/${groupActivity.id}`}
+                  data-cy={`grade-groupActivity-${groupActivity.name}`}
                 >
                   <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
                     <FontAwesomeIcon

@@ -11,10 +11,17 @@ import {
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
-import { Button, FormikNumberField, H2, H3, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikNumberField,
+  H2,
+  H3,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -22,15 +29,20 @@ interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void
   elements: ElementInstance[]
   submission?: GroupActivityInstance
+  gradingCompleted: boolean
+  pointsPerInstance: number
+  maxPoints: number
 }
 
 function GroupActivityGradingStack({
   setEdited,
   elements,
   submission,
+  gradingCompleted,
+  pointsPerInstance,
+  maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-  const MAX_POINTS_PER_QUESTION = 25
 
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
@@ -50,14 +62,6 @@ function GroupActivityGradingStack({
 
     return null
   }
-
-  const maxPoints = useMemo(() => {
-    return elements.reduce((acc, element) => {
-      return (
-        acc + (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
-      )
-    }, 0)
-  }, [elements])
 
   if (!submission) {
     return <div></div>
@@ -198,6 +202,12 @@ function GroupActivityGradingStack({
       }) => {
         return (
           <div className="flex flex-col gap-8">
+            {gradingCompleted && (
+              <UserNotification
+                type="warning"
+                message={t('manage.groupActivity.alreadyGraded')}
+              />
+            )}
             {elements.map((element, ix) => (
               <div key={element.id}>
                 <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
@@ -233,6 +243,7 @@ function GroupActivityGradingStack({
                           setFieldValue(`grading.${ix}.feedback`, newValue)
                           setFieldTouched(`grading.${ix}.feedback`, true)
                         }}
+                        disabled={gradingCompleted}
                         showToolbarOnFocus={false}
                         placeholder={t(
                           'manage.groupActivity.optionalQuestionFeedback'
@@ -247,21 +258,22 @@ function GroupActivityGradingStack({
                   <FormikNumberField
                     hideError
                     required
+                    disabled={gradingCompleted}
                     name={`grading.${ix}.score`}
                     label={t('manage.groupActivity.achievedScore')}
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
                     min={0}
                     max={
                       (element.options?.pointsMultiplier || 1) *
-                      MAX_POINTS_PER_QUESTION
+                      pointsPerInstance
                     }
-                    data={{ cy: `grading-${element.id}-score` }}
+                    data={{ cy: `groupActivity-grading-score-${ix}` }}
                     className={{ numberField: { input: 'w-20' } }}
                   />
                   <div>{`/ ${t('manage.groupActivity.nPoints', {
                     number:
                       (element.options?.pointsMultiplier || 1) *
-                      MAX_POINTS_PER_QUESTION,
+                      pointsPerInstance,
                   })}`}</div>
                 </div>
               </div>
@@ -299,14 +311,18 @@ function GroupActivityGradingStack({
                 <Button
                   active={values.passed === true}
                   onClick={() => setFieldValue('passed', true)}
-                  className={{ active: 'bg-green-500' }}
+                  className={{ root: 'text-black', active: 'bg-green-500' }}
+                  disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-passed' }}
                 >
                   <FontAwesomeIcon icon={faCheck} />
                 </Button>
                 <Button
                   active={values.passed === false}
                   onClick={() => setFieldValue('passed', false)}
-                  className={{ active: 'bg-red-500' }}
+                  className={{ root: 'text-black', active: 'bg-red-500' }}
+                  disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-failed' }}
                 >
                   <FontAwesomeIcon icon={faX} />
                 </Button>
@@ -326,6 +342,7 @@ function GroupActivityGradingStack({
                       setFieldValue('comment', newValue)
                       setFieldTouched('comment', true)
                     }}
+                    disabled={gradingCompleted}
                     showToolbarOnFocus={false}
                     placeholder={t('manage.groupActivity.optionalFeedback')}
                     data_cy="groupActivity-general-grading-comment"
@@ -335,16 +352,18 @@ function GroupActivityGradingStack({
               </FastField>
             </div>
             <Button
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || gradingCompleted}
               type="submit"
               className={{
                 root: twMerge(
                   '-mt-2 h-10 w-max self-end font-bold bg-primary-80 text-white',
-                  !isValid && 'cursor-not-allowed bg-primary-60'
+                  (!isValid || gradingCompleted) &&
+                    'cursor-not-allowed bg-primary-60'
                 ),
               }}
               loading={isSubmitting}
               onClick={() => submitForm()}
+              data={{ cy: 'groupActivity-save-submission-grading' }}
             >
               {t('manage.groupActivity.saveGrading')}
             </Button>

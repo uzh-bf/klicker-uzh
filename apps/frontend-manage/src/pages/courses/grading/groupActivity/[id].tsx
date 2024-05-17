@@ -7,6 +7,7 @@ import Layout from '@components/Layout'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
+  GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
@@ -14,10 +15,11 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function GroupActivityGrading() {
+  const MAX_POINTS_PER_QUESTION = 25
   const router = useRouter()
   const t = useTranslations()
   const [selectedSubmission, setSelectedSubmission] = useState<
@@ -35,6 +37,17 @@ function GroupActivityGrading() {
     skip: !router.query.id,
   })
 
+  const groupActivity = data?.getGradingGroupActivity
+  const maxPoints =
+    useMemo(() => {
+      return groupActivity?.stacks?.[0].elements?.reduce((acc, element) => {
+        return (
+          acc +
+          (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+        )
+      }, 0)
+    }, [groupActivity]) ?? 0
+
   if (loading)
     return (
       <Layout>
@@ -42,13 +55,11 @@ function GroupActivityGrading() {
       </Layout>
     )
 
-  if (!data?.getGradingGroupActivity) {
+  if (!groupActivity) {
     return (
       <Layout>{t('manage.groupActivity.activityMissingOrNotCompleted')}</Layout>
     )
   }
-
-  const groupActivity = data.getGradingGroupActivity
 
   // sort invalid submissions last and graded ones to the back
   const submissions = [...(groupActivity.activityInstances || [])].sort(
@@ -94,22 +105,29 @@ function GroupActivityGrading() {
                         setSelectedSubmission(submissionId)
                       }
                     }}
+                    maxPoints={maxPoints}
                   />
                 ))}
                 <Button
-                  disabled={submissions.some(
-                    (submission) => !submission.results && submission.decisions
-                  )}
+                  disabled={
+                    submissions.some(
+                      (submission) =>
+                        !submission.results && submission.decisions
+                    ) || groupActivity.status === GroupActivityStatus.Graded
+                  }
                   className={{
                     root: twMerge(
                       'bg-primary-80 font-bold text-white w-max self-end',
-                      submissions.some(
+                      (submissions.some(
                         (submission) =>
                           !submission.results && submission.decisions
-                      ) && 'cursor-not-allowed bg-primary-60'
+                      ) ||
+                        groupActivity.status === GroupActivityStatus.Graded) &&
+                        'cursor-not-allowed bg-primary-60'
                     ),
                   }}
                   onClick={() => setFinalizeModal(true)}
+                  data={{ cy: 'finalize-grading' }}
                 >
                   {t('manage.groupActivity.finalizeGrading')}
                 </Button>
@@ -132,11 +150,20 @@ function GroupActivityGrading() {
               submission={submissions.find(
                 (submission) => submission.id === selectedSubmission
               )}
+              gradingCompleted={
+                groupActivity.status === GroupActivityStatus.Graded
+              }
+              pointsPerInstance={MAX_POINTS_PER_QUESTION}
+              maxPoints={maxPoints}
             />
           ) : (
             <UserNotification
               type="warning"
-              message={t('manage.groupActivity.noSubmissionSelected')}
+              message={
+                groupActivity.status === GroupActivityStatus.Graded
+                  ? t('manage.groupActivity.gradingAlreadyFinalized')
+                  : t('manage.groupActivity.noSubmissionSelected')
+              }
             />
           )}
         </div>
