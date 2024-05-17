@@ -10,16 +10,34 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import * as yup from 'yup'
 
 interface GroupActivityClueModalProps {
+  initialValues?: {
+    name: string
+    displayName: string
+    type: ParameterType
+    value: string
+    unit?: string
+  }
+  open: boolean
+  setOpen: (open: boolean) => void
   pushClue: (values: any) => void
+  replaceClue: (values: any) => void
+  clueIx?: number
+  unsetClueIx: () => void
 }
 
-function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
+function GroupActivityClueModal({
+  initialValues,
+  pushClue,
+  replaceClue,
+  open,
+  setOpen,
+  clueIx,
+  unsetClueIx,
+}: GroupActivityClueModalProps) {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
 
   return (
     <div className="w-full">
@@ -28,7 +46,10 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
         className={{
           root: 'h-full min-h-20 hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
         }}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          unsetClueIx()
+          setOpen(true)
+        }}
         data={{
           cy: 'add-group-activity-clue',
         }}
@@ -44,6 +65,7 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
         className={{ content: 'w-[40rem] h-max self-center pt-0' }}
       >
         <Formik
+          enableReinitialize
           validationSchema={yup.object().shape({
             name: yup
               .string()
@@ -59,15 +81,19 @@ function GroupActivityClueModal({ pushClue }: GroupActivityClueModalProps) {
               .required(t('manage.sessionForms.clueValueMissing')),
             unit: yup.string().optional(),
           })}
-          initialValues={{
-            name: '',
-            displayName: '',
-            type: ParameterType.String,
-            value: '',
-            unit: undefined,
-          }}
+          initialValues={
+            initialValues ?? {
+              name: '',
+              displayName: '',
+              type: ParameterType.String,
+              value: '',
+              unit: undefined,
+            }
+          }
           onSubmit={(values) => {
-            pushClue(values)
+            typeof clueIx !== 'undefined'
+              ? replaceClue(values)
+              : pushClue(values)
           }}
         >
           {({ values, resetForm, submitForm }) => (

@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
-import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faLightbulb, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateGroupActivityDocument,
@@ -399,6 +399,8 @@ function StepOne(_: StepProps) {
 function StepTwo(props: StepProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField<GroupActivityClueType[]>('clues')
+  const [clueIx, setClueIx] = useState<number | undefined>(undefined)
+  const [clueModal, setClueModal] = useState(false)
 
   return (
     <div className="flex flex-row gap-8">
@@ -508,7 +510,7 @@ function StepTwo(props: StepProps) {
       </div>
       <div className="w-full">
         <FieldArray name="clues">
-          {({ push, remove, move }: FieldArrayRenderProps) => (
+          {({ push, remove, replace }: FieldArrayRenderProps) => (
             <div className="w-full">
               <div className="flex flex-row gap-4">
                 <div className="flex flex-row items-center gap-3">
@@ -530,17 +532,18 @@ function StepTwo(props: StepProps) {
                 {field.value.map((clue, ix) => (
                   <div
                     key={clue.name}
-                    className="text-sm rounded flex flex-col w-full"
+                    className="text-sm rounded flex flex-row justify-between w-full border"
                     data-cy={`groupActivity-clue-${clue.name}`}
                   >
-                    <div className="font-bold">{clue.name}</div>
-                    <div className="group border rounded border-black h-full">
-                      <div className="w-full p-1 group-hover:hidden h-full">
-                        {clue.type === ParameterType.Number && clue.unit
-                          ? `${clue.value} ${clue.unit}`
-                          : clue.value}
-                      </div>
-                      <Button
+                    <div className="flex flex-col p-1">
+                      <div className="font-bold">{clue.name}</div>
+                      <div className="border-black h-full">
+                        <div className="w-full h-full">
+                          {clue.type === ParameterType.Number && clue.unit
+                            ? `${clue.value} ${clue.unit}`
+                            : clue.value}
+                        </div>
+                        {/* <Button
                         basic
                         onClick={() => remove(ix)}
                         className={{
@@ -554,11 +557,49 @@ function StepTwo(props: StepProps) {
                             icon={faTrash}
                           />
                         </Button.Icon>
+                      </Button> */}
+                      </div>
+                    </div>
+                    <div className="h-full flex flex-col">
+                      <Button
+                        className={{ root: 'h-1/2' }}
+                        data={{ cy: `edit-clue-${clue.name}` }}
+                        onClick={() => {
+                          setClueIx(ix)
+                          setClueModal(true)
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faPencil} />
+                      </Button>
+                      <Button
+                        className={{ root: 'h-1/2 bg-red-600 text-white' }}
+                        data={{ cy: `remove-clue-${clue.name}` }}
+                        onClick={() => remove(ix)}
+                      >
+                        <FontAwesomeIcon icon={faTrashCan} />
                       </Button>
                     </div>
                   </div>
                 ))}
-                <GroupActivityClueModal pushClue={push} />
+                <GroupActivityClueModal
+                  open={clueModal}
+                  setOpen={setClueModal}
+                  pushClue={(values) => {
+                    push(values)
+                    setClueIx(undefined)
+                  }}
+                  replaceClue={(values) => {
+                    replace(clueIx ?? -1, values)
+                    setClueIx(undefined)
+                  }}
+                  initialValues={
+                    typeof clueIx !== 'undefined'
+                      ? field.value[clueIx]
+                      : undefined
+                  }
+                  clueIx={clueIx}
+                  unsetClueIx={() => setClueIx(undefined)}
+                />
               </div>
               {meta.error && (
                 <div className="text-sm text-red-400 px-2">
