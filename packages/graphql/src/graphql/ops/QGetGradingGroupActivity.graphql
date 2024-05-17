@@ -1,0 +1,44 @@
+query GetGradingGroupActivity($id: String!) {
+  getGradingGroupActivity(id: $id) {
+    id
+    name
+    displayName
+    description
+    pointsMultiplier
+    scheduledStartAt
+    scheduledEndAt
+
+    clues {
+      id
+      type
+      name
+      displayName
+      value
+      unit
+    }
+
+    stacks {
+      id
+      displayName
+      description
+      elements {
+        id
+        type
+        elementType
+        options {
+          pointsMultiplier
+        }
+        ...ElementDataWithoutSolutions
+      }
+    }
+
+    activityInstances {
+      id
+      decisions
+      decisionsSubmittedAt
+      results
+      resultsComputedAt
+      groupName
+    }
+  }
+}

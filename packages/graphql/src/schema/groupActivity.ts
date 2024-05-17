@@ -63,7 +63,7 @@ export const GroupActivity = GroupActivityRef.implement({
       nullable: true,
     }),
 
-    instances: t.expose('activityInstances', {
+    activityInstances: t.expose('activityInstances', {
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
@@ -144,6 +144,7 @@ export const GroupActivityResults = GroupActivityResultsRef.implement({
 
 export interface IGroupActivityInstance extends DB.GroupActivityInstance {
   clues?: IGroupActivityClueInstance[]
+  groupName?: string
 }
 export const GroupActivityInstanceRef =
   builder.objectRef<IGroupActivityInstance>('GroupActivityInstance')
@@ -164,7 +165,8 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       type: [GroupActivityClueInstanceRef],
       nullable: true,
     }),
-    groupActivityId: t.exposeID('groupActivityId'),
+    groupActivityId: t.exposeID('groupActivityId', { nullable: true }),
+    groupName: t.exposeString('groupName', { nullable: true }),
   }),
 })
 
@@ -289,6 +291,31 @@ export const GroupActivityClueInput = builder.inputType(
       type: t.field({ type: ParameterType, required: true }),
       value: t.string({ required: true }),
       unit: t.string({ required: false }),
+    }),
+  }
+)
+
+export const GroupActivityGradingDecisionInput = builder.inputType(
+  'GroupActivityGradingDecisionInput',
+  {
+    fields: (t) => ({
+      instanceId: t.int({ required: true }),
+      score: t.float({ required: true }),
+      feedback: t.string({ required: false }),
+    }),
+  }
+)
+
+export const GroupActivityGradingInput = builder.inputType(
+  'GroupActivityGradingInput',
+  {
+    fields: (t) => ({
+      passed: t.boolean({ required: true }),
+      comment: t.string({ required: false }),
+      grading: t.field({
+        type: [GroupActivityGradingDecisionInput],
+        required: true,
+      }),
     }),
   }
 )

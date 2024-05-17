@@ -163,6 +163,8 @@ export default {
       practice: 'Practice Activities',
       clues: 'Clues',
       value: 'Value',
+      passed: 'Passed',
+      failed: 'Failed',
     },
     contentInput: {
       boldStyle:
@@ -613,8 +615,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       started: 'Started',
       submitted: 'Submitted',
       past: 'Past',
-      passed: 'Passed',
-      failed: 'Failed',
       groupActivityPassed:
         'Congratulations! Your group has passed the group activity.',
       groupActivityFailed:
@@ -1315,6 +1315,48 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
+    },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'The group activity you are looking for does not exist or has not yet been completed. Please note that group activities can only be evaluated after their official end date.',
+      gradingTitle: 'Grading Group Activity: {name}',
+      submissions: 'Submissions',
+      noSubmissions: 'No submissions are available for this group activity.',
+      submittedAt: 'Submitted at {datetime}',
+      toGrade: 'To Grade',
+      graded: 'Graded',
+      notSubmitted: 'Not submitted',
+      grading: 'Grading',
+      noSubmissionSelected:
+        'Please select a submission from the list on the left side for grading. Before the grading is finalized, you can adjust the grading at any time.',
+      nPoints: '{number} Points',
+      achievedScore: 'Achieved score',
+      maxScoreTooltip:
+        'The maximum score for a question is calculated as the product of the question multiplier and the group activity multiplier.',
+      passedMissingError:
+        'Please specify, if the group passed or failed the group challenge.',
+      scoreMissingError:
+        'Plase make sure that all quesitons are graded with a valid value.',
+      didGroupPass: 'Is the group activitied passed?',
+      optionalFeedback:
+        'Enter an optional general feedback for the group challenge here',
+      saveGrading: 'Save Grading',
+      optionalQuestionFeedback:
+        'Enter optional feedback for the answered question here.',
+      generalFeedback: 'General Feedback',
+      switchSubmission: 'Switch Submission',
+      confirmSubmissionSwitch:
+        'Are you sure you want to switch to another submission of the group activity? You currently have unsaved changes that will be lost when switching.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Points',
+      finalizeGrading: 'Finalize Grading',
+      confirmFinalizeGrading:
+        'Are you sure you want to finalize the grading of the group activity? After finalizing the grading, the results will be visible to the participants and no further changes are possible.',
+      stackGradingSuccess: 'Grading was saved successfully.',
+      stackGradingError:
+        'An error occurred while saving the grading. Please check if all required decisions have been entered.',
+      finalizeGradingSuccess: 'Grading was finalized successfully.',
+      finalizeGradingError:
+        'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
     },
   },
   control: {

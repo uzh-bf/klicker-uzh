@@ -163,6 +163,8 @@ export default {
       practice: 'Übungs-Quiz',
       clues: 'Hinweise',
       value: 'Wert',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
     },
     contentInput: {
       boldStyle:
@@ -1326,6 +1328,49 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
+    },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'Die von Ihnen gesuchte Gruppenaktivität existiert nicht oder ist noch nicht beendet. Bitte beachten Sie, dass Gruppenaktivitäten erst nach ihrem offiziellen Enddatum bewertet werden können.',
+      gradingTitle: 'Bewertung Gruppenaktivität: {name}',
+      submissions: 'Abgaben',
+      noSubmissions:
+        'Es sind keine Abgaben für diese Gruppenaktivität vorhanden.',
+      submittedAt: 'Abgegeben am {datetime}',
+      toGrade: 'Zu Bewerten',
+      graded: 'Bewertet',
+      notSubmitted: 'Nicht abgegeben',
+      grading: 'Bewertung',
+      noSubmissionSelected:
+        'Bitte wählen Sie aus der Liste auf der linken seite eine Abgabe zur Bewertung aus. Bevor die Bewertung final abgeschlossen wird, können Sie die Bewertung jederzeit anpassen.',
+      nPoints: '{number} Punkte',
+      achievedScore: 'Erreichte Punktzahl',
+      maxScoreTooltip:
+        'Die maximale Punktzahl für eine Frage setzt sich aus den Multipliern der Frage und der Gruppenaktivität zusammen.',
+      passedMissingError:
+        'Bitte geben Sie an, ob die Gruppenaktivität bestanden wurde oder nicht.',
+      scoreMissingError:
+        'Bitte stellen Sie sicher, dass alle Fragen mit einer gültigen Punktzahl bewertet wurden.',
+      didGroupPass: 'Wurde die Gruppenaktivität bestanden?',
+      optionalFeedback:
+        'Geben Sie hier ein optionales generelles Feedback zur Gruppenchallenge ein',
+      saveGrading: 'Bewertung speichern',
+      optionalQuestionFeedback:
+        'Geben Sie hier ein optionales Feedback zur beantworteten Frage ein.',
+      generalFeedback: 'Generelles Feedback',
+      switchSubmission: 'Abgabe wechseln',
+      confirmSubmissionSwitch:
+        'Sind Sie sich sicher, dass Sie zu einer anderen Abgabe der Gruppenaktivität wechseln möchten. Sie haben aktuell ungespeicherte Änderungen, welche bei diesem Wechsel verloren gehen.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Punkte',
+      finalizeGrading: 'Bewertung abschliessen',
+      confirmFinalizeGrading:
+        'Sind Sie sich sicher, dass Sie die Bewertung der Gruppenaktivität abschliessen möchten? Nach dem Abschluss der Bewertung sind die Resultate für die Teilnehmen sichtbar und es können keine weiteren Änderungen vorgenommen werden.',
+      stackGradingSuccess: 'Die Bewertung wurde erfolgreich gespeichert.',
+      stackGradingError:
+        'Beim Speichern der Bewertung ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob alle erforderlichen Berwertungen vorgenommen wurden.',
+      finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
+      finalizeGradingError:
+        'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
     },
   },
   control: {

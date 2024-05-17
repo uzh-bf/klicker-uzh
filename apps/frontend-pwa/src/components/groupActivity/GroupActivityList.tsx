@@ -133,7 +133,8 @@ function GroupActivityList({
             {dayjs().isAfter(activity.scheduledEndAt) &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.decisionsSubmittedAt &&
-              !groupActivityInstances[activity.id]?.results && (
+              (!groupActivityInstances[activity.id]?.results ||
+                !groupActivityInstances[activity.id]?.resultsComputedAt) && (
                 <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                   <FontAwesomeIcon icon={faClock} />
                   <div>{t('pwa.groupActivity.submitted')}</div>
@@ -141,6 +142,7 @@ function GroupActivityList({
               )}
 
             {dayjs().isAfter(activity.scheduledEndAt) &&
+              groupActivityInstances[activity.id]?.resultsComputedAt &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.results && (
                 <div className="flex flex-row gap-1.5 h-max items-center">
@@ -153,12 +155,12 @@ function GroupActivityList({
                   {groupActivityInstances[activity.id]?.results.passed ? (
                     <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                       <FontAwesomeIcon icon={faCheck} />
-                      <div>{t('pwa.groupActivity.passed')}</div>
+                      <div>{t('shared.generic.passed')}</div>
                     </div>
                   ) : (
                     <div className="flex flex-row items-center gap-2 py-0.5 bg-red-400 rounded text-sm px-2 h-max">
                       <FontAwesomeIcon icon={faXmark} />
-                      <div>{t('pwa.groupActivity.failed')}</div>
+                      <div>{t('shared.generic.failed')}</div>
                     </div>
                   )}
                 </div>

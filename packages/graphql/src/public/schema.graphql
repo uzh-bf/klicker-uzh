@@ -197,7 +197,13 @@ type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
   id: Int!
+  options: ElementInstanceOptions
   type: ElementInstanceType!
+}
+
+type ElementInstanceOptions {
+  pointsMultiplier: Int
+  resetTimeDays: Int
 }
 
 enum ElementInstanceType {
@@ -352,12 +358,12 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  activityInstances: [GroupActivityInstance!]
   clues: [GroupActivityClue!]
   course: Course
   description: String
   displayName: String!
   id: ID!
-  instances: [GroupActivityInstance!]
   name: String!
   numOfQuestions: Int
   pointsMultiplier: Int
@@ -434,11 +440,24 @@ type GroupActivityGrading {
   score: Float!
 }
 
+input GroupActivityGradingDecisionInput {
+  feedback: String
+  instanceId: Int!
+  score: Float!
+}
+
+input GroupActivityGradingInput {
+  comment: String
+  grading: [GroupActivityGradingDecisionInput!]!
+  passed: Boolean!
+}
+
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID!
+  groupActivityId: ID
+  groupName: String
   id: Int!
   results: Json
   resultsComputedAt: Date
@@ -615,9 +634,11 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
+  gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
@@ -858,6 +879,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]

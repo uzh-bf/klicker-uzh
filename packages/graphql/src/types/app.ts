@@ -321,6 +321,7 @@ export type GroupActivityResults = {
     score: number
     maxPoints: number
     feedback?: string | null
+    correctness?: ResponseCorrectness
   }[]
 }
 

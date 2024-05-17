@@ -4,7 +4,7 @@ import { checkCronToken } from '../lib/util'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
+import * as GroupService from '../services/groups'
 import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
@@ -17,6 +17,8 @@ import {
   GroupActivity,
   GroupActivityClueInput,
   GroupActivityDetails,
+  GroupActivityGradingInput,
+  GroupActivityInstance,
 } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
@@ -204,7 +206,7 @@ export const Mutation = builder.mutationType({
       updateGroupAverageScores: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return ParticipantGroupService.updateGroupAverageScores(ctx)
+          return GroupService.updateGroupAverageScores(ctx)
         },
       }),
 
@@ -273,7 +275,7 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.startGroupActivity(args, ctx)
+          return GroupService.startGroupActivity(args, ctx)
         },
       }),
 
@@ -299,7 +301,7 @@ export const Mutation = builder.mutationType({
           code: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.joinParticipantGroup(args, ctx)
+          return GroupService.joinParticipantGroup(args, ctx)
         },
       }),
 
@@ -343,7 +345,7 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+          return GroupService.leaveParticipantGroup(args, ctx)
         },
       }),
 
@@ -384,7 +386,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
+          return GroupService.submitGroupActivityDecisions(args, ctx)
         },
       }),
 
@@ -426,7 +428,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.createParticipantGroup(args, ctx)
+          return GroupService.createParticipantGroup(args, ctx)
         },
       }),
 
@@ -1093,7 +1095,7 @@ export const Mutation = builder.mutationType({
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
           resolve(_, args, ctx) {
-            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
+            return GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 
@@ -1115,7 +1117,7 @@ export const Mutation = builder.mutationType({
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
           resolve(_, args, ctx) {
-            return ParticipantGroupService.manipulateGroupActivity(args, ctx)
+            return GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 
@@ -1206,7 +1208,7 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return ParticipantGroupService.publishGroupActivity(args, ctx)
+            return GroupService.publishGroupActivity(args, ctx)
           },
         }),
 
@@ -1219,7 +1221,7 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return ParticipantGroupService.unpublishGroupActivity(args, ctx)
+            return GroupService.unpublishGroupActivity(args, ctx)
           },
         }),
 
@@ -1232,7 +1234,37 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return ParticipantGroupService.deleteGroupActivity(args, ctx)
+            return GroupService.deleteGroupActivity(args, ctx)
+          },
+        }),
+
+      gradeGroupActivitySubmission: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivityInstance,
+          args: {
+            id: t.arg.int({ required: true }),
+            gradingDecisions: t.arg({
+              type: GroupActivityGradingInput,
+              required: true,
+            }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.gradeGroupActivitySubmission(args, ctx)
+          },
+        }),
+
+      finalizeGroupActivityGrading: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.finalizeGroupActivityGrading(args, ctx)
           },
         }),
 

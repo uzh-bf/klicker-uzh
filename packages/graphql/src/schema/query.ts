@@ -3,7 +3,7 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
+import * as GroupService from '../services/groups'
 import * as MicroLearningService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
@@ -308,7 +308,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getParticipantGroups(args, ctx)
+          return GroupService.getParticipantGroups(args, ctx)
         },
       }),
 
@@ -429,7 +429,7 @@ export const Query = builder.queryType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+          return GroupService.getGroupActivityDetails(args, ctx)
         },
       }),
 
@@ -467,7 +467,18 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getGroupActivity(args, ctx)
+          return GroupService.getGroupActivity(args, ctx)
+        },
+      }),
+
+      getGradingGroupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGradingGroupActivity(args, ctx)
         },
       }),
 
