@@ -187,7 +187,7 @@ const config = {
         width: 250,
         // height: 51,
       },
-      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department of Banking and Finance (https://www.bf.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
+      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department and Finance (https://www.df.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       links: [
         {
           title: 'Docs',

@@ -2,15 +2,15 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.1.0-rc.37",
+  "version": "3.1.0-rc.41",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
   "license": "AGPL-3.0",
   "main": "apps/func/dist/index.js",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",

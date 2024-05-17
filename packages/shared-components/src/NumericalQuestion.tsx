@@ -67,7 +67,7 @@ function NumericalQuestion({
             setResponse(newValue, valid)
           }}
           valid={existingResponse ? !!existingResponse : valid}
-          accuracy={options.accuracy ? options.accuracy : undefined}
+          accuracy={options.accuracy ?? undefined}
           placeholder={options.placeholder ?? undefined}
           unit={options.unit ?? undefined}
           min={options.restrictions?.min ?? undefined}

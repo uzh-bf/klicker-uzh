@@ -165,6 +165,7 @@ export default {
       value: 'Value',
       passed: 'Passed',
       failed: 'Failed',
+      survey: 'Survey',
     },
     contentInput: {
       boldStyle:
@@ -685,7 +686,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       communityDesc:
         'A place for discussions and questions regarding the KlickerUZH',
       email: 'E-Mail',
-      emailDesc: 'Contact us at klicker@bf.uzh.ch',
+      emailDesc: 'Contact us at klicker@df.uzh.ch',
       aboutProject: 'About the Project',
       projectUpdates: 'Project Updates',
       projectUpdatesDesc:
@@ -769,18 +770,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',

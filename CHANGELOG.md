@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.40...v3.1.0-rc.41) (2024-05-16)
+
+
+### Features
+
+* **packages/graphql:** introduce spaced repetition logic ([#4127](https://github.com/uzh-bf/klicker-uzh/issues/4127)) ([cf5fab4](https://github.com/uzh-bf/klicker-uzh/commit/cf5fab429540c57fee9eec429273cd78b56da0bf))
+
+## [3.1.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.39...v3.1.0-rc.40) (2024-05-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** hide survey notification on mobile and resolve state loading issue ([#4125](https://github.com/uzh-bf/klicker-uzh/issues/4125)) ([8c1e6f0](https://github.com/uzh-bf/klicker-uzh/commit/8c1e6f0db4bf256b5d52828b8a7efe22e743a98c))
+
+## [3.1.0-rc.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.38...v3.1.0-rc.39) (2024-05-15)
+
+## [3.1.0-rc.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.37...v3.1.0-rc.38) (2024-05-11)
+
+
+### Bug Fixes
+
+* ensure that unit is stored and correctly displayed for numerical questions ([#4123](https://github.com/uzh-bf/klicker-uzh/issues/4123)) ([907e257](https://github.com/uzh-bf/klicker-uzh/commit/907e257d1f67b3c1634fe7bb753eadbe730f3303))
+
+
+### Other
+
+* **packages/shared-components:** fix content element styling ([8871e4a](https://github.com/uzh-bf/klicker-uzh/commit/8871e4a88d098501cb59ac5e635a0ccc1a316d45))
+
 ## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
 
 

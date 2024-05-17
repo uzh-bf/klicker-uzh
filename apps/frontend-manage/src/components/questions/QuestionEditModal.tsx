@@ -486,6 +486,7 @@ function QuestionEditModal({
                 options: {
                   hasSampleSolution: values.options?.hasSampleSolution,
                   accuracy: parseInt(values.options?.accuracy),
+                  unit: values.options?.unit,
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
@@ -1434,6 +1435,11 @@ function QuestionEditModal({
                       {errors.options && errors.options.accuracy && (
                         <li>{`${t('shared.generic.precision')}: ${
                           errors.options.accuracy
+                        }`}</li>
+                      )}
+                      {errors.options && errors.options.unit && (
+                        <li>{`${t('shared.generic.unit')}: ${
+                          errors.options.unit
                         }`}</li>
                       )}
                       {errors.options &&
