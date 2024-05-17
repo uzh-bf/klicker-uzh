@@ -15,10 +15,11 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function GroupActivityGrading() {
+  const MAX_POINTS_PER_QUESTION = 25
   const router = useRouter()
   const t = useTranslations()
   const [selectedSubmission, setSelectedSubmission] = useState<
@@ -36,6 +37,17 @@ function GroupActivityGrading() {
     skip: !router.query.id,
   })
 
+  const groupActivity = data?.getGradingGroupActivity
+  const maxPoints =
+    useMemo(() => {
+      return groupActivity?.stacks?.[0].elements?.reduce((acc, element) => {
+        return (
+          acc +
+          (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+        )
+      }, 0)
+    }, [groupActivity]) ?? 0
+
   if (loading)
     return (
       <Layout>
@@ -43,13 +55,11 @@ function GroupActivityGrading() {
       </Layout>
     )
 
-  if (!data?.getGradingGroupActivity) {
+  if (!groupActivity) {
     return (
       <Layout>{t('manage.groupActivity.activityMissingOrNotCompleted')}</Layout>
     )
   }
-
-  const groupActivity = data.getGradingGroupActivity
 
   // sort invalid submissions last and graded ones to the back
   const submissions = [...(groupActivity.activityInstances || [])].sort(
@@ -95,6 +105,7 @@ function GroupActivityGrading() {
                         setSelectedSubmission(submissionId)
                       }
                     }}
+                    maxPoints={maxPoints}
                   />
                 ))}
                 <Button
@@ -136,6 +147,8 @@ function GroupActivityGrading() {
               gradingCompleted={
                 groupActivity.status === GroupActivityStatus.Graded
               }
+              pointsPerInstance={MAX_POINTS_PER_QUESTION}
+              maxPoints={maxPoints}
             />
           ) : (
             <UserNotification

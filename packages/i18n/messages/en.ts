@@ -1359,6 +1359,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
       alreadyGraded:
         'The grading for this group activity has already been finalized and can no longer be changed.',
+      nOfTotalPoints: '{number}/{total} Points',
     },
   },
   control: {

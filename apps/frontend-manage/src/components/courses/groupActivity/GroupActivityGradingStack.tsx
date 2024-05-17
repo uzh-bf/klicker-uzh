@@ -21,7 +21,7 @@ import {
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -30,6 +30,8 @@ interface GroupActivityGradingStackProps {
   elements: ElementInstance[]
   submission?: GroupActivityInstance
   gradingCompleted: boolean
+  pointsPerInstance: number
+  maxPoints: number
 }
 
 function GroupActivityGradingStack({
@@ -37,9 +39,10 @@ function GroupActivityGradingStack({
   elements,
   submission,
   gradingCompleted,
+  pointsPerInstance,
+  maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-  const MAX_POINTS_PER_QUESTION = 25
 
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
@@ -59,14 +62,6 @@ function GroupActivityGradingStack({
 
     return null
   }
-
-  const maxPoints = useMemo(() => {
-    return elements.reduce((acc, element) => {
-      return (
-        acc + (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
-      )
-    }, 0)
-  }, [elements])
 
   if (!submission) {
     return <div></div>
@@ -270,7 +265,7 @@ function GroupActivityGradingStack({
                     min={0}
                     max={
                       (element.options?.pointsMultiplier || 1) *
-                      MAX_POINTS_PER_QUESTION
+                      pointsPerInstance
                     }
                     data={{ cy: `grading-${element.id}-score` }}
                     className={{ numberField: { input: 'w-20' } }}
@@ -278,7 +273,7 @@ function GroupActivityGradingStack({
                   <div>{`/ ${t('manage.groupActivity.nPoints', {
                     number:
                       (element.options?.pointsMultiplier || 1) *
-                      MAX_POINTS_PER_QUESTION,
+                      pointsPerInstance,
                   })}`}</div>
                 </div>
               </div>
