@@ -399,4 +399,67 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="sc-5-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="sc-5-answer-option-5"]').should('be.disabled')
   })
+
+  it('grade the seeded group acivity', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get('[data-cy="course-list-button-Testkurs"]').click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get('[data-cy="grade-groupActivity-Gruppenquest Completed"]').click()
+
+    cy.get('[data-cy="group-activity-submission-1"]').click()
+    cy.get('[data-cy="groupActivity-grading-comment-0"]').type('Test Comment')
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type('20')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type('50')
+    cy.get('[data-cy="groupActivity-grading-comment-2"]').type('Test Comment 2')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type('20')
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="cancel-submission-switch"]').click()
+    cy.get('[data-cy="groupActivity-passed"]').click()
+    cy.get('[data-cy="groupActivity-general-grading-comment"]').type(
+      'Test Comment 3'
+    )
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type('10')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type('10')
+    cy.get('[data-cy="groupActivity-failed"]').click()
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    cy.get('[data-cy="group-activity-submission-3"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('10')
+    cy.get('[data-cy="group-activity-submission-1"]').click()
+    cy.get('[data-cy="confirm-submission-switch"]').click()
+    cy.get('[data-cy="group-activity-submission-3"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type('5')
+    cy.get('[data-cy="groupActivity-failed"]').click()
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    cy.get('[data-cy="finalize-grading"]').click()
+    cy.get('[data-cy="cancel-finalize-grading"]').click()
+    cy.get('[data-cy="finalize-grading"]').click()
+    cy.get('[data-cy="confirm-finalize-grading"]').click()
+
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-failed"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
+      'be.disabled'
+    )
+  })
 })
