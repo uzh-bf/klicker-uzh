@@ -462,4 +462,12 @@ describe('Create and solve a group activity', () => {
       'be.disabled'
     )
   })
+
+  it('students receive feedback for the graded group activity', function () {
+    cy.loginStudent()
+
+    // start the group activity
+    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+  })
 })
