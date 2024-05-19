@@ -311,7 +311,7 @@ Während der Beantwortung der Fragen können Sie, wenn Sie eingeloggt sind, pers
 
 #### Gruppen und Gruppenaktivitäten
 
-Während des Semesters werden Ihnen unter Umständen praktische Gruppenaufgaben gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
+Während des Semesters werden Ihnen unter Umständen praktische Gruppenaktivitäten gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
 
 Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie auch die Leistung der Gruppe mit anderen Gruppen vergleichen. Die kumulierten Punkte aus den Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (im Durchschnitt) die Gesamtpunktzahl der Gruppe.
 
@@ -786,7 +786,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createLiveQuiz: 'Live Quiz erstellen',
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
-      createGroupTask: 'Gruppenaufgabe erstellen',
+      createGroupTask: 'Gruppenaktivität erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
@@ -1043,7 +1043,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
       groupActivityCluesDescription:
         'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
-      groupActivityAddClude: 'Neuen Hinweis hinzufügen',
+      groupActivityAddClue: 'Neuen Hinweis hinzufügen',
       groupActivityClueType: 'Hinweis-Typ',
       textClue: 'Text-Hinweis',
       numericalClue: 'Numerischer Hinweis',
