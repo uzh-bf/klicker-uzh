@@ -130,6 +130,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  const courseTest2 = await prisma.course.upsert(
+    prepareCourse({
+      id: COURSE_ID_TEST,
+      name: 'Abrakadabra',
+      displayName: 'Abrakadabra',
+      description: 'Das ist ein Testkurs. Hier wird getestet. Abrakadabra!',
+      ownerId: USER_ID_TEST,
+      color: '#016273',
+      pinCode: 123456789,
+      startDate: new Date('2023-01-01T00:00'),
+      endDate: new Date('2030-01-01T23:59'),
+      groupDeadlineDate: new Date('2024-01-01T00:01'),
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+    })
+  )
+
   const questionsTest = (await Promise.all(
     DATA_TEST.QUESTIONS.map((data) =>
       prisma.element.upsert(prepareQuestion({ ownerId: USER_ID_TEST, ...data }))
