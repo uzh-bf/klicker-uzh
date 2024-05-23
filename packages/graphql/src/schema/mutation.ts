@@ -926,6 +926,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeLiveQuizName: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.changeLiveQuizName(args, ctx)
+        },
+      }),
+
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,

@@ -2223,3 +2223,26 @@ export async function softDeleteLiveSession(
 
   return deletedLiveSession
 }
+
+export async function changeLiveQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  const updatedSession = await ctx.prisma.liveSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      name,
+      displayName,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id,
+  })
+
+  return updatedSession
+}

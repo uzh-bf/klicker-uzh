@@ -1046,6 +1046,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
+      changeLiveQuizName: 'Änderung Live Quiz Namen',
+      liveQuizNameChangeSuccess:
+        'Der Name des Live Quizzes wurde erfolgreich geändert.',
+      liveQuizNameChangeError:
+        'Der Name des Live Quizzes konnte nicht geändert werden.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Konto-Link',

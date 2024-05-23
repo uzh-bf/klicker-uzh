@@ -1040,6 +1040,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noSessions: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
+      changeLiveQuizName: 'Change live quiz name',
+      liveQuizNameChangeSuccess: 'The name of the live quiz has been changed.',
+      liveQuizNameChangeError:
+        'The name of the live quiz could not be changed.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Account Link',
