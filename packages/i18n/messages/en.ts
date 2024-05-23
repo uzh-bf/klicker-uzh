@@ -821,7 +821,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter the possible answers that students can select for the question here.',
       answerOptionPlaceholder: 'Enter your answer option here...',
       FTOptionsTooltip:
-        'Enter optional settings for the open question here. Note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
+        'Enter optional settings for the open question here. Note that the answer to open questions is graded without checking for upper and lower case.',
+      NUMERICALOptionsTooltip:
+        'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
 
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',

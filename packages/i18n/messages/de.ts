@@ -818,7 +818,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
       FTOptionsTooltip:
-        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
+        'Nehmen Sie hier optionale Einstellungen für die Freitext-Frage vor. Bitte beachten Sie, dass die Antwort auf Freitext-Fragen nicht auf Gross- und Kleinschreibung geprüft wird.',
+      NUMERICALOptionsTooltip:
+        'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
 
       answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',

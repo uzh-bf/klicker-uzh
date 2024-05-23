@@ -850,7 +850,13 @@ function QuestionEditModal({
                             root: 'my-auto mr-2 text-lg font-bold',
                             tooltip: 'text-sm font-normal w-80 md:w-1/2',
                           }}
-                          tooltip={t('manage.questionForms.FTOptionsTooltip')}
+                          tooltip={
+                            values.type === ElementType.Numerical
+                              ? t(
+                                  'manage.questionForms.NUMERICALOptionsTooltip'
+                                )
+                              : t('manage.questionForms.FTOptionsTooltip')
+                          }
                           showTooltipSymbol={true}
                         />
                       </div>
