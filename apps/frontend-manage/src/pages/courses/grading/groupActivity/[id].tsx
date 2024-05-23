@@ -18,8 +18,9 @@ import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+const MAX_POINTS_PER_QUESTION = 25
+
 function GroupActivityGrading() {
-  const MAX_POINTS_PER_QUESTION = 25
   const router = useRouter()
   const t = useTranslations()
   const [selectedSubmission, setSelectedSubmission] = useState<
@@ -40,13 +41,36 @@ function GroupActivityGrading() {
   const groupActivity = data?.getGradingGroupActivity
   const maxPoints =
     useMemo(() => {
-      return groupActivity?.stacks?.[0].elements?.reduce((acc, element) => {
-        return (
-          acc +
-          (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+      return groupActivity?.stacks?.[0].elements
+        ?.filter(
+          (element) =>
+            element.elementType !== ElementType.Content &&
+            element.elementType !== ElementType.Flashcard
         )
-      }, 0)
+        .reduce((acc, element) => {
+          return (
+            acc +
+            (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+          )
+        }, 0)
     }, [groupActivity]) ?? 0
+
+  // sort invalid submissions last and graded ones to the back
+  const submissions = useMemo(
+    () =>
+      [...(groupActivity?.activityInstances || [])].sort((a, b) => {
+        if (a.decisions && !b.decisions) return -1
+        if (!a.decisions && b.decisions) return 1
+        if (a.results && !b.results) return 1
+        if (!a.results && b.results) return -1
+        if (a.decisionsSubmittedAt && b.decisionsSubmittedAt)
+          return dayjs(a.decisionsSubmittedAt).diff(
+            dayjs(b.decisionsSubmittedAt)
+          )
+        return 1
+      }),
+    [groupActivity?.activityInstances]
+  )
 
   if (loading)
     return (
@@ -60,19 +84,6 @@ function GroupActivityGrading() {
       <Layout>{t('manage.groupActivity.activityMissingOrNotCompleted')}</Layout>
     )
   }
-
-  // sort invalid submissions last and graded ones to the back
-  const submissions = [...(groupActivity.activityInstances || [])].sort(
-    (a, b) => {
-      if (a.decisions && !b.decisions) return -1
-      if (!a.decisions && b.decisions) return 1
-      if (a.results && !b.results) return 1
-      if (!a.results && b.results) return -1
-      if (a.decisionsSubmittedAt && b.decisionsSubmittedAt)
-        return dayjs(a.decisionsSubmittedAt).diff(dayjs(b.decisionsSubmittedAt))
-      return 1
-    }
-  )
 
   return (
     <Layout>
