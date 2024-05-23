@@ -1077,8 +1077,10 @@ export async function finalizeGroupActivityGrading(
     },
   })
 
+  if (!groupActivity) return null
+
   const solvedInstances =
-    groupActivity?.activityInstances.filter((instance) => instance.decisions) ??
+    groupActivity.activityInstances.filter((instance) => instance.decisions) ??
     []
 
   // check that all instances with decisions have results
@@ -1104,7 +1106,163 @@ export async function finalizeGroupActivityGrading(
         },
       },
     },
+    include: {
+      activityInstances: {
+        include: {
+          group: {
+            include: {
+              participants: {
+                include: {
+                  leaderboards: {
+                    where: {
+                      type: LeaderboardType.COURSE,
+                      courseId: groupActivity.courseId,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
+
+  if (
+    updatedGroupActivity.activityInstances.length === 0 ||
+    updatedGroupActivity.activityInstances.some(
+      (instance) => instance.decisions && !instance.results
+    )
+  ) {
+    return updatedGroupActivity
+  }
+
+  // distribute points and achievements to the participants
+  let promises: any[] = []
+  const gradedInstances = updatedGroupActivity.activityInstances.filter(
+    (instance) => instance.results
+  )
+
+  // compute the maximum points from the first group activity instance
+  const maxPoints = gradedInstances[0].results!.grading.reduce(
+    (acc, res) => acc + res.maxPoints,
+    0
+  )
+
+  // increment groupActivityScore on participantGroup
+  gradedInstances.forEach((instance) => {
+    promises.push(
+      ctx.prisma.participantGroup.update({
+        where: {
+          id: instance.groupId,
+        },
+        data: {
+          groupActivityScore: {
+            increment: instance.results!.points,
+          },
+        },
+      })
+    )
+  })
+
+  // create a map between participants and achievements
+  const participantAchievementMap = gradedInstances.reduce<
+    Record<string, { leaderboard: boolean; achievements: number[] }>
+  >((acc, instance) => {
+    instance.group.participants.forEach((participant) => {
+      acc[participant.id] = {
+        achievements: [9],
+        leaderboard: participant.leaderboards.length > 0,
+      }
+      if (instance.results!.passed) {
+        acc[participant.id].achievements.push(8)
+      }
+    })
+
+    return acc
+  }, {})
+
+  // award the achievements to the participants
+  Object.entries(participantAchievementMap).forEach(
+    ([participantId, results]) => {
+      results.achievements.forEach((id) => {
+        // create the participant achievement instance
+        promises.push(
+          ctx.prisma.participantAchievementInstance.upsert({
+            where: {
+              participantId_achievementId: {
+                participantId: participantId,
+                achievementId: id,
+              },
+            },
+            create: {
+              participantId: participantId,
+              achievementId: id,
+              achievedAt: new Date(),
+              achievedCount: 1,
+            },
+            update: {
+              achievedCount: {
+                increment: 1,
+              },
+            },
+          })
+        )
+
+        // participants with achievement id 9 should get 250 xp
+        if (id === 9) {
+          promises.push(
+            ctx.prisma.participant.update({
+              where: {
+                id: participantId,
+              },
+              data: {
+                xp: {
+                  increment: 250,
+                },
+              },
+            })
+          )
+        }
+
+        // participants with achievement id 8 should get 1000 xp and 500 points in the leaderboard
+        if (id === 8) {
+          promises.push(
+            ctx.prisma.participant.update({
+              where: {
+                id: participantId,
+              },
+              data: {
+                xp: {
+                  increment: 1000,
+                },
+              },
+            })
+          )
+          if (results.leaderboard) {
+            promises.push(
+              ctx.prisma.leaderboardEntry.update({
+                where: {
+                  type_participantId_courseId: {
+                    type: 'COURSE',
+                    participantId: participantId,
+                    courseId: updatedGroupActivity.courseId,
+                  },
+                },
+                data: {
+                  score: {
+                    increment: 500,
+                  },
+                },
+              })
+            )
+          }
+        }
+      })
+    }
+  )
+
+  await ctx.prisma.$transaction(promises)
 
   return updatedGroupActivity
 }
