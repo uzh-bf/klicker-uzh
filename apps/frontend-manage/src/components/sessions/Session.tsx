@@ -143,6 +143,7 @@ function Session({ session }: SessionProps) {
                   size="sm"
                   onClick={() => setChangeName(true)}
                   className="hover:cursor-pointer"
+                  data-cy={`change-liveQuiz-name-${session.name}`}
                 />
               </div>
               <div className="flex flex-row gap-5">

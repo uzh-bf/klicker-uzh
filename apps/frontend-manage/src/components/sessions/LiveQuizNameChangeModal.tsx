@@ -111,7 +111,7 @@ function LiveQuizNameChangeModal({
                   tooltip: 'z-20 w-80',
                   label: 'w-36',
                 }}
-                data-cy="insert-live-display-name"
+                data-cy="insert-live-quiz-display-name"
               />
               <div className="flex flex-row justify-between mt-3 -mb-4">
                 <Button

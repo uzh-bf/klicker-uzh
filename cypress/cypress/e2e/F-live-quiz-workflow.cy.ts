@@ -60,13 +60,29 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="load-session-list"]').click()
     cy.contains('[data-cy="session-block"]', sessionName)
 
-    // delete this session again
+    // rename the session
+    const newSessionName = uuid()
+    const newSessionDisplayName = uuid()
     cy.findByText(sessionName).should('exist')
-    cy.get(`[data-cy="delete-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="change-liveQuiz-name-${sessionName}"]`).click()
+    cy.get('[data-cy="live-quiz-name-change-confirm"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="live-quiz-name-change-cancel"]').click()
+    cy.get(`[data-cy="change-liveQuiz-name-${sessionName}"]`).click()
+    cy.get('[data-cy="insert-live-quiz-name"]').clear().type(newSessionName)
+    cy.get('[data-cy="insert-live-quiz-display-name"]')
+      .clear()
+      .type(newSessionDisplayName)
+    cy.get('[data-cy="live-quiz-name-change-confirm"]').click()
+
+    // delete this session again
+    cy.findByText(newSessionDisplayName).should('exist')
+    cy.get(`[data-cy="delete-session-${newSessionDisplayName}"]`).click()
     cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
-    cy.get(`[data-cy="delete-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="delete-session-${newSessionDisplayName}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
-    cy.findByText(sessionName).should('not.exist')
+    cy.findByText(newSessionDisplayName).should('not.exist')
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {
