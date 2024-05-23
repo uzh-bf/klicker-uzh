@@ -77,12 +77,12 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="live-quiz-name-change-confirm"]').click()
 
     // delete this session again
-    cy.findByText(newSessionDisplayName).should('exist')
-    cy.get(`[data-cy="delete-session-${newSessionDisplayName}"]`).click()
+    cy.findByText(newSessionName).should('exist')
+    cy.get(`[data-cy="delete-session-${newSessionName}"]`).click()
     cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
-    cy.get(`[data-cy="delete-session-${newSessionDisplayName}"]`).click()
+    cy.get(`[data-cy="delete-session-${newSessionName}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
-    cy.findByText(newSessionDisplayName).should('not.exist')
+    cy.findByText(newSessionName).should('not.exist')
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {
