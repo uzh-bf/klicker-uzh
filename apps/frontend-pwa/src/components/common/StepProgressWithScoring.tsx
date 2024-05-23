@@ -60,17 +60,22 @@ function StepProgressWithScoring({
                 <div className="flex flex-row justify-center w-full px-0.5 md:px-2">
                   <div className="flex flex-row items-center justify-between md:w-full">
                     <div
-                      className={twMerge(element.score && 'hidden md:block')}
+                      className={twMerge(
+                        typeof element.score !== 'undefined' &&
+                          element.score !== null &&
+                          'hidden md:block'
+                      )}
                     >
                       {ix + 1}
                     </div>
 
-                    {element.score && (
-                      <ProgressPoints
-                        score={element.score}
-                        status={element.status}
-                      />
-                    )}
+                    {typeof element.score !== 'undefined' &&
+                      element.score !== null && (
+                        <ProgressPoints
+                          score={element.score}
+                          status={element.status}
+                        />
+                      )}
                     <FontAwesomeIcon
                       icon={ICON_MAP[element.status as StackFeedbackStatus]}
                       className="hidden md:block"
