@@ -1143,12 +1143,6 @@ export async function finalizeGroupActivityGrading(
     (instance) => instance.results
   )
 
-  // compute the maximum points from the first group activity instance
-  const maxPoints = gradedInstances[0].results!.grading.reduce(
-    (acc, res) => acc + res.maxPoints,
-    0
-  )
-
   // increment groupActivityScore on participantGroup
   gradedInstances.forEach((instance) => {
     promises.push(
