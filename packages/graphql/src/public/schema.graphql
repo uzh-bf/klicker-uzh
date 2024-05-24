@@ -547,6 +547,7 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
+  changeLiveQuizName(displayName: String!, id: String!, name: String!): Session
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User

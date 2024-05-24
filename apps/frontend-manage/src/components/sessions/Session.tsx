@@ -30,6 +30,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
+import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import { WizardMode } from './creation/SessionCreation'
 
 interface SessionProps {
@@ -98,6 +99,7 @@ function Session({ session }: SessionProps) {
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [softDeletionModal, setSoftDeletionModal] = useState<boolean>(false)
+  const [changeName, setChangeName] = useState<boolean>(false)
 
   const timeIcon: Record<SessionStatus, IconDefinition> = {
     [SessionStatus.Prepared]: faCalendarDays,
@@ -134,7 +136,16 @@ function Session({ session }: SessionProps) {
               className="flex flex-row justify-between"
               data-cy="session-block"
             >
-              <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
+              <div className="flex flex-row items-center gap-3">
+                <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
+                <FontAwesomeIcon
+                  icon={faPencil}
+                  size="sm"
+                  onClick={() => setChangeName(true)}
+                  className="hover:cursor-pointer"
+                  data-cy={`change-liveQuiz-name-${session.name}`}
+                />
+              </div>
               <div className="flex flex-row gap-5">
                 {session.blocks?.length !== 0 && (
                   <>
@@ -365,6 +376,13 @@ function Session({ session }: SessionProps) {
         setOpen={setSoftDeletionModal}
         primaryData={{ cy: 'confirm-delete-live-quiz' }}
         secondaryData={{ cy: 'cancel-delete-live-quiz' }}
+      />
+      <LiveQuizNameChangeModal
+        quizId={session.id}
+        name={session.name}
+        displayName={session.displayName}
+        open={changeName}
+        setOpen={setChangeName}
       />
     </>
   )
