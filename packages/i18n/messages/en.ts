@@ -428,6 +428,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
+      coursePracticeArea:
+        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -842,7 +844,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter the possible answers that students can select for the question here.',
       answerOptionPlaceholder: 'Enter your answer option here...',
       FTOptionsTooltip:
-        'Enter optional settings for the open question here. Note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
+        'Enter optional settings for the open question here. Note that the answer to open questions is graded without checking for upper and lower case.',
+      NUMERICALOptionsTooltip:
+        'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
 
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
@@ -1102,6 +1106,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noSessions: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
+      changeLiveQuizName: 'Change live quiz name',
+      liveQuizNameChangeSuccess: 'The name of the live quiz has been changed.',
+      liveQuizNameChangeError:
+        'The name of the live quiz could not be changed.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Account Link',

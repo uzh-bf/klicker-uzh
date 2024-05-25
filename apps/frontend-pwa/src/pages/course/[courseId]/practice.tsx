@@ -56,7 +56,12 @@ function PracticePool({ courseId }: Props) {
       course={data.coursePracticeQuiz.course ?? undefined}
     >
       <PracticeQuiz
-        quiz={data?.coursePracticeQuiz}
+        quiz={{
+          ...data?.coursePracticeQuiz,
+          description: t('pwa.courses.coursePracticeArea', {
+            courseName: data?.coursePracticeQuiz.course?.displayName,
+          }),
+        }}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
