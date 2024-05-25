@@ -1,6 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -20,13 +18,11 @@ import {
   FormikNumberField,
   FormikTextField,
   H3,
-  H4,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -36,10 +32,10 @@ import GroupVisualization from '../../../components/participant/GroupVisualizati
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import GroupActivityList from '@components/groupActivity/GroupActivityList'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -484,111 +480,11 @@ function CourseOverview({ courseId }: Props) {
                       </div>
 
                       {(course.groupActivities?.length ?? -1) > 0 && (
-                        <div className="mt-8">
-                          <H4>{t('shared.generic.groupActivities')}</H4>
-                          <div className="flex-col pt-2 border-t gap-1">
-                            {course.groupActivities?.map(
-                              (activity, activityIx) => (
-                                <div
-                                  key={activity.id}
-                                  className="flex flex-row justify-between flex-1 gap-8 border-b last:border-b-0"
-                                >
-                                  <div>
-                                    <div>{activity.displayName}</div>
-                                    <div className="text-xs">
-                                      {dayjs(activity.scheduledStartAt).format(
-                                        'DD.MM.YYYY HH:mm'
-                                      )}{' '}
-                                      -{' '}
-                                      {dayjs(activity.scheduledEndAt).format(
-                                        'DD.MM.YYYY HH:mm'
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {dayjs().isAfter(activity.scheduledEndAt) &&
-                                    indexedGroupActivityInstances[activity.id]
-                                      ?.results && (
-                                      <div>
-                                        {typeof indexedGroupActivityInstances[
-                                          activity.id
-                                        ].results.points === 'number' &&
-                                          typeof indexedGroupActivityInstances[
-                                            activity.id
-                                          ].results.maxPoints === 'number' && (
-                                            <div className="text-sm">
-                                              {t('shared.generic.points')}:{' '}
-                                              {
-                                                indexedGroupActivityInstances[
-                                                  activity.id
-                                                ].results.points
-                                              }
-                                              /
-                                              {
-                                                indexedGroupActivityInstances[
-                                                  activity.id
-                                                ].results.maxPoints
-                                              }
-                                            </div>
-                                          )}
-
-                                        {indexedGroupActivityInstances[
-                                          activity.id
-                                        ].results.message && (
-                                          <DynamicMarkdown
-                                            content={
-                                              indexedGroupActivityInstances[
-                                                activity.id
-                                              ].results.message
-                                            }
-                                            className={{
-                                              root: 'prose-sm prose prose-p:m-0',
-                                            }}
-                                          />
-                                        )}
-                                      </div>
-                                    )}
-
-                                  <div>
-                                    {dayjs().isAfter(
-                                      activity.scheduledStartAt
-                                    ) &&
-                                      dayjs().isBefore(
-                                        activity.scheduledEndAt
-                                      ) && (
-                                        <Link
-                                          href={`/group/${group.id}/activity/${activity.id}`}
-                                          className="inline-flex items-center gap-2 sm:hover:text-orange-700"
-                                        >
-                                          <Button
-                                            className={{
-                                              root: 'gap-4 text-left text-sm',
-                                            }}
-                                            data={{
-                                              cy: `open-group-activity-${activityIx}`,
-                                            }}
-                                          >
-                                            <Button.Icon>
-                                              <FontAwesomeIcon
-                                                icon={faExternalLink}
-                                              />
-                                            </Button.Icon>
-                                            <Button.Label>
-                                              <div>
-                                                {t(
-                                                  'pwa.groupActivity.openGroupActivity'
-                                                )}
-                                              </div>
-                                            </Button.Label>
-                                          </Button>
-                                        </Link>
-                                      )}
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
+                        <GroupActivityList
+                          groupId={group.id}
+                          groupActivities={course.groupActivities}
+                          groupActivityInstances={indexedGroupActivityInstances}
+                        />
                       )}
                     </div>
                   </Tabs.TabContent>

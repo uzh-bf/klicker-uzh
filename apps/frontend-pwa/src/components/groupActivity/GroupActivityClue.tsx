@@ -1,5 +1,6 @@
 import {
   GroupActivityClueInstance,
+  ParameterType,
   Participant,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -40,8 +41,8 @@ function GroupActivityClue({ clue }: GroupActivityClueProps) {
         <div className="font-bold">{clue.displayName}</div>
         {typeof clue.value === 'string' && (
           <div>
-            {clue.type === 'NUMBER' ? (
-              <div>{`${clue.value} ${clue.unit}`}</div>
+            {clue.type === ParameterType.Number ? (
+              <div>{`${clue.value} ${clue.unit ?? ''}`}</div>
             ) : (
               <Markdown
                 withProse

@@ -1686,14 +1686,6 @@ export async function manipulatePracticeQuiz(
       throw new GraphQLError('Cannot edit a published practice quiz')
     }
 
-    const oldInstances = oldElement.stacks.flatMap((stack) => stack.elements)
-
-    await ctx.prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: oldInstances.map(({ id }) => id) },
-      },
-    })
-
     await ctx.prisma.practiceQuiz.update({
       where: { id },
       data: {

@@ -3,14 +3,14 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
+import * as GroupService from '../services/groups'
 import * as MicroLearningService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
-import { GroupActivityDetails } from './groupActivity'
+import { GroupActivity, GroupActivityDetails } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
   Participant,
@@ -308,7 +308,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getParticipantGroups(args, ctx)
+          return GroupService.getParticipantGroups(args, ctx)
         },
       }),
 
@@ -429,7 +429,7 @@ export const Query = builder.queryType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+          return GroupService.getGroupActivityDetails(args, ctx)
         },
       }),
 
@@ -457,6 +457,28 @@ export const Query = builder.queryType({
         type: [UserLogin],
         resolve(_, __, ctx) {
           return AccountService.getUserLogins(ctx)
+        },
+      }),
+
+      groupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivity(args, ctx)
+        },
+      }),
+
+      getGradingGroupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGradingGroupActivity(args, ctx)
         },
       }),
 

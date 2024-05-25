@@ -1,7 +1,4 @@
 import { useQuery } from '@apollo/client'
-import GroupActivityList from '@components/courses/GroupActivityList'
-import MicroLearningList from '@components/courses/MicroLearningList'
-import PracticeQuizList from '@components/courses/PracticeQuizList'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -19,7 +16,10 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
 import CourseSettings from '../../components/courses/CourseSettings'
+import GroupActivityList from '../../components/courses/GroupActivityList'
 import LiveQuizList from '../../components/courses/LiveQuizList'
+import MicroLearningList from '../../components/courses/MicroLearningList'
+import PracticeQuizList from '../../components/courses/PracticeQuizList'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -197,6 +197,7 @@ function CourseOverviewPage() {
               >
                 <GroupActivityList
                   groupActivities={course.groupActivities ?? []}
+                  courseId={course.id}
                   userCatalyst={user?.userProfile?.catalyst}
                 />
               </Tabs.TabContent>

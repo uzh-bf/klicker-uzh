@@ -195,7 +195,15 @@ export async function getCourseOverviewData(
             },
             groupActivities: {
               where: {
-                status: GroupActivityStatus.PUBLISHED,
+                status: {
+                  in: [
+                    GroupActivityStatus.PUBLISHED,
+                    GroupActivityStatus.GRADED,
+                  ],
+                },
+              },
+              orderBy: {
+                scheduledStartAt: 'asc',
               },
             },
           },
@@ -518,8 +526,10 @@ export async function getCourseData(
       },
       groupActivities: {
         include: {
-          _count: {
-            select: { stacks: true },
+          stacks: {
+            include: {
+              elements: true,
+            },
           },
         },
         orderBy: {
@@ -619,7 +629,7 @@ export async function getCourseData(
     (groupActivity) => {
       return {
         ...groupActivity,
-        numOfStacks: groupActivity._count.stacks,
+        numOfQuestions: groupActivity.stacks[0].elements.length,
       }
     }
   )

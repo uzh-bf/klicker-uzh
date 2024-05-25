@@ -98,7 +98,7 @@ export const QUESTIONS = [
   {
     originalId: '3',
     name: 'Multi-Faktor-Modell',
-    content: '<br>',
+    content: 'Welche Aussagen zum Multi-Faktor-Modell sind korrekt?',
     type: ElementType.KPRIM,
     options: {
       hasSampleSolution: true,

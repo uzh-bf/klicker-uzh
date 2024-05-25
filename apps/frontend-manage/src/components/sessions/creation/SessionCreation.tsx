@@ -2,10 +2,12 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   Element,
+  GetGroupActivityDocument,
   GetMicroLearningDocument,
   GetPracticeQuizDocument,
   GetSingleLiveSessionDocument,
   GetUserCoursesDocument,
+  GroupActivity,
   MicroLearning,
   PracticeQuiz,
   Session,
@@ -13,6 +15,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import GroupActivityWizard from './GroupActivityWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroLearningWizard from './MicroLearningWizard'
 import PracticeQuizWizard from './PracticeQuizWizard'
@@ -77,6 +80,13 @@ function SessionCreation({
         conversionMode === 'microLearningToPracticeQuiz',
     }
   )
+  const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
+    GetGroupActivityDocument,
+    {
+      variables: { id: sessionId || '' },
+      skip: !sessionId || editMode !== WizardMode.GroupActivity,
+    }
+  )
 
   const {
     loading: loadingCourses,
@@ -122,7 +132,7 @@ function SessionCreation({
   }
 
   return (
-    <div className="flex flex-col justify-center print-hidden">
+    <div className="flex flex-col justify-center print-hidden h-96">
       <div className="w-full h-full rounded-lg">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
@@ -166,6 +176,16 @@ function SessionCreation({
               initialDataPracticeQuiz
             }
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
+          />
+        )}
+        {creationMode === WizardMode.GroupActivity && (
+          <GroupActivityWizard
+            title={t('shared.generic.groupActivity')}
+            closeWizard={closeWizard}
+            courses={courseSelection || [{ label: '', value: '' }]}
+            initialValues={
+              (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
+            }
           />
         )}
       </div>

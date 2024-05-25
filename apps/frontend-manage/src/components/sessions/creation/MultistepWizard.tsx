@@ -4,7 +4,7 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementOrderType, ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -30,6 +30,21 @@ interface MultistepWizardProps {
     tooltipDisabled?: string
   }[]
 }
+
+export type GroupActivityClueType =
+  | {
+      name: string
+      displayName: string
+      type: ParameterType.String
+      value: string
+    }
+  | {
+      name: string
+      displayName: string
+      type: ParameterType.Number
+      value: string
+      unit: string
+    }
 
 interface CommonFormValues {
   name: string
@@ -75,6 +90,18 @@ export interface PracticeQuizFormValues extends CommonFormValues {
   order: any
   availableFrom?: string
   resetTimeDays: string
+}
+
+export interface GroupActivityFormValues extends CommonFormValues {
+  questions: {
+    id: number
+    title: string
+    hasAnswerFeedbacks: boolean
+    hasSampleSolution: boolean
+  }[]
+  startDate: string
+  endDate: string
+  clues: GroupActivityClueType[]
 }
 
 function Validator({
@@ -139,7 +166,7 @@ function MultistepWizard({
       enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
-        <Form className="border-b h-76 border-uzh-grey-60">
+        <Form className="h-full overflow-y-auto">
           <Validator stepNumber={stepNumber} validateForm={validateForm} />
           <div className="flex flex-row items-end gap-8">
             <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
@@ -161,7 +188,7 @@ function MultistepWizard({
             />
           </div>
 
-          <div className="flex flex-col justify-between gap-1 py-4 md:h-60">
+          <div className="flex flex-col justify-between gap-1 py-4">
             {!isCompleted && <>{step}</>}
 
             {isCompleted && (

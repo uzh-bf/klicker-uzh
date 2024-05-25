@@ -57,6 +57,9 @@ export default {
       draft: 'Entwurf',
       scheduled: 'Geplant',
       published: 'Öffentlich',
+      completed: 'Abgeschlossen',
+      running: 'Laufend',
+      grading: 'Bewertung',
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
@@ -100,6 +103,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
+      groupActivity: 'Gruppenaktivität',
+      groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -118,7 +123,6 @@ export default {
       leave: 'Austreten',
       documentation: 'Dokumentation',
       features: 'Features',
-      groupActivities: 'Gruppenaktivitäten',
       experiencePoints: 'Erfahrungspunkte',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -157,6 +161,10 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
+      clues: 'Hinweise',
+      value: 'Wert',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
       survey: 'Umfrage',
     },
     contentInput: {
@@ -303,7 +311,7 @@ Während der Beantwortung der Fragen können Sie, wenn Sie eingeloggt sind, pers
 
 #### Gruppen und Gruppenaktivitäten
 
-Während des Semesters werden Ihnen unter Umständen praktische Gruppenaufgaben gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
+Während des Semesters werden Ihnen unter Umständen praktische Gruppenaktivitäten gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
 
 Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie auch die Leistung der Gruppe mit anderen Gruppen vergleichen. Die kumulierten Punkte aus den Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (im Durchschnitt) die Gesamtpunktzahl der Gruppe.
 
@@ -601,7 +609,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       notAchievedYet: 'Noch nicht erreicht',
     },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'Ende: {time}',
+      available: 'Verfügbar',
+      started: 'Gestartet',
+      submitted: 'Abgegeben',
+      past: 'Abgeschlossen',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
+      groupActivityPassed:
+        'Gratulation! Deine Gruppe hat die Gruppenaktivität bestanden.',
+      groupActivityFailed:
+        'Oh nein! Deine Gruppe hat die Gruppenaktivität leider nicht bestanden.',
+      groupActivityFeedback: 'Feedback: {feedback}',
+      answerCORRECT: 'Eure Antwort ist korrekt.',
+      answerPARTIAL: 'Eure Antwort ist teilweise korrekt.',
+      answerINCORRECT: 'Eure Antwort ist falsch.',
       openGroupActivity: 'Zur Gruppenaktivität',
+      openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:
         'Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.',
       initialSituation: 'Ausgangslage',
@@ -763,7 +788,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createLiveQuiz: 'Live Quiz erstellen',
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
-      createGroupTask: 'Gruppenaufgabe erstellen',
+      createGroupTask: 'Gruppenaktivität erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
@@ -990,6 +1015,52 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      groupActivityTypes:
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+      groupActivityCreated:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
+      groupActivityEdited:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
+      groupActivityDescription:
+        'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
+      groupActivitySettings:
+        'In diesem Schritt können Sie Einstellungen für Ihre Gruppenaktivität vornehmen und Hinweise definieren, die an Teilnehmende verteilt werden.',
+      groupActivityQuestions:
+        'In diesem Schritt wählen Sie die Fragen für die Gruppenaktivität aus.',
+      groupActivityEditingFailed:
+        'Bearbeiten der Gruppenaktivität fehlgeschlagen...',
+      groupActivityCreationFailed:
+        'Erstellen der Gruppenaktivität fehlgeschlagen...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
+      groupActivityCourse:
+        'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
+      groupActivityStartDate:
+        'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
+      groupActivityEndDate:
+        'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityMultiplier:
+        'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
+      groupActivityUseCase:
+        '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
+      groupActivityCluesDescription:
+        'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
+      groupActivityAddClue: 'Neuen Hinweis hinzufügen',
+      groupActivityClueType: 'Hinweis-Typ',
+      textClue: 'Text-Hinweis',
+      numericalClue: 'Numerischer Hinweis',
+      groupActivityNameError:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
+      groupActivityDisplayNameError:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
+      clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
+      clueDisplayNameMissing:
+        'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
+      clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
+      clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
     },
     formErrors: {
       resolveErrors:
@@ -1233,6 +1304,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteMicrolearning: 'Microlearning löschen',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
+      publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
       practicePublishingHint:
@@ -1253,8 +1325,67 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
+      publishGroupActivity: 'Gruppenaktivität veröffentlichen',
+      groupActivityPublishingHint:
+        'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      editGroupActivity: 'Gruppenaktivität bearbeiten',
+      deleteGroupActivity: 'Gruppenaktivität löschen',
+      confirmDeletionGroupActivity:
+        'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
+      hintDeletionGroupActivity:
+        'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishGroupActivity: 'Veröffentlichung aufheben',
+      gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
+    },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'Die von Ihnen gesuchte Gruppenaktivität existiert nicht oder ist noch nicht beendet. Bitte beachten Sie, dass Gruppenaktivitäten erst nach ihrem offiziellen Enddatum bewertet werden können.',
+      gradingTitle: 'Bewertung Gruppenaktivität: {name}',
+      submissions: 'Abgaben',
+      noSubmissions:
+        'Es sind keine Abgaben für diese Gruppenaktivität vorhanden.',
+      submittedAt: 'Abgegeben am {datetime}',
+      toGrade: 'Zu Bewerten',
+      graded: 'Bewertet',
+      notSubmitted: 'Nicht abgegeben',
+      grading: 'Bewertung',
+      noSubmissionSelected:
+        'Bitte wählen Sie aus der Liste auf der linken seite eine Abgabe zur Bewertung aus. Bevor die Bewertung final abgeschlossen wird, können Sie die Bewertung jederzeit anpassen.',
+      nPoints: '{number} Punkte',
+      achievedScore: 'Erreichte Punktzahl',
+      maxScoreTooltip:
+        'Die maximale Punktzahl für eine Frage setzt sich aus den Multipliern der Frage und der Gruppenaktivität zusammen.',
+      passedMissingError:
+        'Bitte geben Sie an, ob die Gruppenaktivität bestanden wurde oder nicht.',
+      scoreMissingError:
+        'Bitte stellen Sie sicher, dass alle Fragen mit einer gültigen Punktzahl bewertet wurden.',
+      didGroupPass: 'Wurde die Gruppenaktivität bestanden?',
+      optionalFeedback:
+        'Geben Sie hier ein optionales generelles Feedback zur Gruppenchallenge ein',
+      saveGrading: 'Bewertung speichern',
+      optionalQuestionFeedback:
+        'Geben Sie hier ein optionales Feedback zur beantworteten Frage ein.',
+      generalFeedback: 'Generelles Feedback',
+      switchSubmission: 'Abgabe wechseln',
+      confirmSubmissionSwitch:
+        'Sind Sie sich sicher, dass Sie zu einer anderen Abgabe der Gruppenaktivität wechseln möchten. Sie haben aktuell ungespeicherte Änderungen, welche bei diesem Wechsel verloren gehen.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Punkte',
+      finalizeGrading: 'Bewertung abschliessen',
+      confirmFinalizeGrading:
+        'Sind Sie sich sicher, dass Sie die Bewertung der Gruppenaktivität abschliessen möchten? Nach dem Abschluss der Bewertung sind die Resultate für die Teilnehmen sichtbar und es können keine weiteren Änderungen vorgenommen werden.',
+      stackGradingSuccess: 'Die Bewertung wurde erfolgreich gespeichert.',
+      stackGradingError:
+        'Beim Speichern der Bewertung ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob alle erforderlichen Berwertungen vorgenommen wurden.',
+      finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
+      finalizeGradingError:
+        'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
+      alreadyGraded:
+        'Die Bewertungen für diese Gruppenaktivität wurden bereits finalisiert und können nicht mehr geändert werden.',
+      nOfTotalPoints: '{number}/{total} Punkte',
+      gradingAlreadyFinalized:
+        'Die Bewertung wurde bereits abgeschlossen und kann nicht mehr geändert werden. Wählen Sie eine Abgabe aus, um sich die eingegebene Bewertung anzusehen.',
     },
   },
   control: {

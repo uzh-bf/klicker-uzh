@@ -182,7 +182,11 @@ function Markdown({
   }
 
   return (
-    <div className={twMerge('max-w-none', className?.root)}>
+    <div
+      className={twMerge('max-w-none', className?.root)}
+      data-cy={data?.cy}
+      data-test={data?.test}
+    >
       {parsedContent}
     </div>
   )

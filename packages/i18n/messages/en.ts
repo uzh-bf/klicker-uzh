@@ -57,6 +57,9 @@ export default {
       draft: 'Draft',
       scheduled: 'Scheduled',
       published: 'Published',
+      grading: 'Grading',
+      completed: 'Completed',
+      running: 'Running',
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
@@ -100,6 +103,8 @@ export default {
       microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
+      groupActivity: 'Group Activity',
+      groupActivities: 'Group Activities',
       characters: 'characters',
       precision: 'Precision',
       unit: 'Unit',
@@ -118,7 +123,6 @@ export default {
       leave: 'Leave',
       documentation: 'Documentation',
       features: 'Features',
-      groupActivities: 'Group activities',
       experiencePoints: 'Experience points',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -157,6 +161,10 @@ export default {
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
+      clues: 'Clues',
+      value: 'Value',
+      passed: 'Passed',
+      failed: 'Failed',
       survey: 'Survey',
     },
     contentInput: {
@@ -604,7 +612,22 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noAchievements: 'No achievements yet.',
     },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'End: {time}',
+      available: 'Available',
+      started: 'Started',
+      submitted: 'Submitted',
+      past: 'Past',
+      groupActivityPassed:
+        'Congratulations! Your group has passed the group activity.',
+      groupActivityFailed:
+        'Oh no! Your group has unfortunately not passed the group activity.',
+      groupActivityFeedback: 'Feedback: {feedback}',
+      answerCORRECT: 'Your answer is correct.',
+      answerPARTIAL: 'Your answer is partially correct.',
+      answerINCORRECT: 'Your answer is incorrect.',
       openGroupActivity: 'Open Group Activity',
+      openActivityFeedback: 'Open Feedback',
       activityNotYetActive:
         'The group activity is not active or not yet unlocked.',
       initialSituation: 'Situation',
@@ -883,10 +906,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newBlockSelected: 'Add 1 block with {count} questions',
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
-      displayNameTooltip:
-        'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
+      displayNameTooltip: 'The display name is shown to participants.',
       microlearningTypes:
-        'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can only contain content elements, flashcards, single choice, multiple choice, kprim and numerical questions.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
@@ -986,6 +1008,50 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      groupActivityTypes:
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+      groupActivityCreated:
+        'Your group activity <b>{name}</b> has been created successfully.',
+      groupActivityEdited:
+        'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityDescription:
+        'In this step, enter the name and description of the group activity.',
+      groupActivitySettings:
+        'In this step, select the start and end date and define clues that are distributed to the group members.',
+      groupActivityQuestions:
+        'In this step, select the questions for the group activity.',
+      groupActivityEditingFailed: 'Editing the group activity failed...',
+      groupActivityCreationFailed: 'Creating the group activity failed...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Add a description to your group activity that will be displayed to participants at the beginning.',
+      groupActivityCourse:
+        'For the creation of a group activity, the selection of the corresponding course is required.',
+      groupActivityStartDate:
+        'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
+      groupActivityEndDate:
+        'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityMultiplier:
+        'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
+      groupActivityUseCase:
+        '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
+      groupActivityCluesDescription:
+        'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
+      groupActivityAddClue: 'Add new clue',
+      groupActivityClueType: 'Clue type',
+      textClue: 'Text clue',
+      numericalClue: 'Numerical clue',
+      groupActivityNameError: 'Please enter a name for your group activity.',
+      groupActivityDisplayNameError:
+        'Please enter a valid display name for your group activity.',
+      groupActivityMin2Clues:
+        'Please add at least two clues to your group activity.',
+      clueNameMissing: 'Please enter a name for your clue.',
+      clueDisplayNameMissing:
+        'Please enter a valid display name for your clue.',
+      clueContentMissing: 'Please enter a content for your clue.',
+      clueValueMissing: 'Please enter a value for your numerical clue.',
     },
     formErrors: {
       resolveErrors:
@@ -1225,6 +1291,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteMicrolearning: 'Delete microlearning',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
+      publishItemGROUP_ACTIVITY: 'Publish group activity',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       practicePublishingHint:
         'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
@@ -1244,8 +1311,66 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
       unpublishPracticeQuiz: 'Unpublish practice quiz',
+      publishGroupActivity: 'Publish group activity',
+      groupActivityPublishingHint:
+        'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
+      editGroupActivity: 'Edit group activity',
+      deleteGroupActivity: 'Delete group activity',
+      confirmDeletionGroupActivity:
+        'Are you sure you want to delete the following group activity?',
+      hintDeletionGroupActivity:
+        'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
+      unpublishGroupActivity: 'Unpublish group activity',
+      gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
+    },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'The group activity you are looking for does not exist or has not yet been completed. Please note that group activities can only be evaluated after their official end date.',
+      gradingTitle: 'Grading Group Activity: {name}',
+      submissions: 'Submissions',
+      noSubmissions: 'No submissions are available for this group activity.',
+      submittedAt: 'Submitted at {datetime}',
+      toGrade: 'To Grade',
+      graded: 'Graded',
+      notSubmitted: 'Not submitted',
+      grading: 'Grading',
+      noSubmissionSelected:
+        'Please select a submission from the list on the left side for grading. Before the grading is finalized, you can adjust the grading at any time.',
+      nPoints: '{number} Points',
+      achievedScore: 'Achieved score',
+      maxScoreTooltip:
+        'The maximum score for a question is calculated as the product of the question multiplier and the group activity multiplier.',
+      passedMissingError:
+        'Please specify, if the group passed or failed the group challenge.',
+      scoreMissingError:
+        'Plase make sure that all quesitons are graded with a valid value.',
+      didGroupPass: 'Is the group activitied passed?',
+      optionalFeedback:
+        'Enter an optional general feedback for the group challenge here',
+      saveGrading: 'Save Grading',
+      optionalQuestionFeedback:
+        'Enter optional feedback for the answered question here.',
+      generalFeedback: 'General Feedback',
+      switchSubmission: 'Switch Submission',
+      confirmSubmissionSwitch:
+        'Are you sure you want to switch to another submission of the group activity? You currently have unsaved changes that will be lost when switching.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Points',
+      finalizeGrading: 'Finalize Grading',
+      confirmFinalizeGrading:
+        'Are you sure you want to finalize the grading of the group activity? After finalizing the grading, the results will be visible to the participants and no further changes are possible.',
+      stackGradingSuccess: 'Grading was saved successfully.',
+      stackGradingError:
+        'An error occurred while saving the grading. Please check if all required decisions have been entered.',
+      finalizeGradingSuccess: 'Grading was finalized successfully.',
+      finalizeGradingError:
+        'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
+      alreadyGraded:
+        'The grading for this group activity has already been finalized and can no longer be changed.',
+      nOfTotalPoints: '{number}/{total} Points',
+      gradingAlreadyFinalized:
+        'Grading has already been finalized and cannot be changed anymore. Select a submission to view the entered grading.',
     },
   },
   control: {

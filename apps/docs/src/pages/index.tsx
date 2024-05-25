@@ -24,9 +24,9 @@ function TitleImage() {
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
                 <div className="hidden sm:mb-10 sm:flex">
                   <div className="relative rounded-full px-3 py-1 text-md leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                    KlickerUZH v3.0 has been released with brand new use cases{' '}
+                    KlickerUZH v3.1 has been released with brand new features{' '}
                     <a
-                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79"
+                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-1-release-information/310"
                       className="whitespace-nowrap font-semibold"
                       target="_blank"
                       style={{ marginLeft: '0.75rem' }}
@@ -59,8 +59,8 @@ function TitleImage() {
                   </a>
                 </div>
                 <div className="border border-solid rounded-md px-3 py-2 mt-4 bg-slate-100 border-slate-200 shadow">
-                  We are now offering introductory courses through UZH Central
-                  IT. For more details see{' '}
+                  We are now regularly offering introductory courses through UZH
+                  Central IT. For more details see{' '}
                   <a
                     target="_blank"
                     href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257"

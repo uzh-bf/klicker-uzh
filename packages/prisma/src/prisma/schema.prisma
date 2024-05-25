@@ -703,6 +703,7 @@ model GroupActivityClueInstance {
 enum GroupActivityStatus {
   DRAFT
   PUBLISHED
+  GRADED
 }
 
 model GroupActivity {
@@ -711,6 +712,8 @@ model GroupActivity {
   name        String
   displayName String
   status      GroupActivityStatus @default(DRAFT)
+
+  pointsMultiplier Int @default(1)
 
   description      String?
   scheduledStartAt DateTime
@@ -751,6 +754,7 @@ model GroupActivityInstance {
   /// [PrismaGroupActivityDecisions]
   decisions            Json?
   decisionsSubmittedAt DateTime?
+  /// [PrismaGroupActivityResults]
   results              Json?
   resultsComputedAt    DateTime?
 
