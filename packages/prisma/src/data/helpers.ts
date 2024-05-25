@@ -391,20 +391,26 @@ export function prepareGroupActivityStack({
     elements: {
       createMany: {
         data: [
-          ...questions.map((el, ix) => ({
-            migrationId: String(migrationIdOffset + 2 + ix),
-            order: 2 + ix,
-            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: {
-              pointsMultiplier: Math.random() > 0.5 ? 1 : 2,
-              resetTimeDays: 5,
-            },
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
+          ...questions
+            .sort(
+              (q1, q2) =>
+                parseInt(q1.originalId ?? '-1') -
+                parseInt(q2.originalId ?? '-1')
+            )
+            .map((el, ix) => ({
+              migrationId: String(migrationIdOffset + 2 + ix),
+              order: 2 + ix,
+              type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+              elementType: el.type,
+              elementData: processElementData(el),
+              options: {
+                pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
+                resetTimeDays: 5,
+              },
+              results: getInitialElementResults(el),
+              ownerId: el.ownerId,
+              elementId: el.id,
+            })),
           ...contentElements.slice(0, 2).map((el, ix) => ({
             migrationId: String(migrationIdOffset + questions.length + 2 + ix),
             order: questions.length + 2 + ix,
