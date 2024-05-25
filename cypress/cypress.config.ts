@@ -6,10 +6,11 @@ export default defineConfig({
     URL_STUDENT: 'http://127.0.0.1:3001/login',
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
-    LECTURER_EMAIL: 'lecturer@bf.uzh.ch',
+    LECTURER_EMAIL: 'lecturer@df.uzh.ch',
     LECTURER_IDENTIFIER: 'lecturer',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
+    STUDENT_USERNAME2: 'testuser2',
     STUDENT_EMAIL: 'testuser1@test.uzh.ch',
     STUDENT_PASSWORD: 'abcd',
 

@@ -63,6 +63,9 @@ export async function getPracticeQuizData(
           status: PublicationStatus.PUBLISHED,
         },
         {
+          status: PublicationStatus.SCHEDULED,
+        },
+        {
           ownerId: ctx.user?.sub,
         },
       ],
@@ -95,6 +98,11 @@ export async function getPracticeQuizData(
   })
 
   if (!quiz) return null
+
+  // if the quiz is scheduled, return the quiz without the stacks
+  if (quiz.status === PublicationStatus.SCHEDULED) {
+    return { ...quiz, stacks: [] }
+  }
 
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
@@ -177,6 +185,60 @@ function combineCorrectnessParams({
       increment: incorrect ? 1 : 0,
     },
     lastWrongAt: incorrect ? new Date() : undefined,
+  }
+}
+
+type SpacedRepetitionResult = {
+  efactor: number
+  interval: number
+  nextDueAt: Date
+}
+
+function updateSpacedRepetition({
+  eFactor,
+  interval,
+  streak,
+  grade,
+}: {
+  eFactor: number
+  interval: number
+  streak: number
+  grade: number
+}): SpacedRepetitionResult {
+  if (grade < 0 || grade > 1) {
+    throw new Error('Grade must be between 0 and 1.')
+  }
+
+  // scale grade to 0-5 range (definition of algorithm)
+  const scaledGrade = grade * 5
+
+  // update efactor and interval
+  let newEfactor = Math.max(
+    1.3,
+    eFactor + (0.1 - (5 - scaledGrade) * (0.08 + (5 - scaledGrade) * 0.02))
+  )
+  newEfactor = parseFloat(newEfactor.toFixed(2))
+
+  let newInterval: number
+  if (scaledGrade < 3) {
+    newInterval = 1
+  } else {
+    if (streak === 1) {
+      newInterval = 2
+    } else if (streak === 2) {
+      newInterval = 6
+    } else {
+      newInterval = Math.ceil(interval * newEfactor)
+    }
+  }
+
+  // compute next due date to sort by (=> spaced repetition)
+  const nextDueAt = dayjs().add(newInterval, 'day').toDate()
+
+  return {
+    efactor: newEfactor,
+    interval: newInterval,
+    nextDueAt: nextDueAt,
   }
 }
 
@@ -295,6 +357,20 @@ async function respondToFlashcard(
       total: 0,
     }
 
+  const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
+  const correctness =
+    response === FlashcardCorrectness.CORRECT
+      ? 1
+      : response === FlashcardCorrectness.PARTIAL
+      ? 0.5
+      : 0
+  const resultSpacedRepetition = updateSpacedRepetition({
+    eFactor: existingResponse?.eFactor || 2.5,
+    interval: existingResponse?.interval || 1,
+    streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+    grade: correctness,
+  })
+
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
@@ -333,6 +409,10 @@ async function respondToFlashcard(
         partial: response === FlashcardCorrectness.PARTIAL,
         incorrect: response === FlashcardCorrectness.INCORRECT,
       }),
+
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
     update: {
       // RESPONSE
@@ -355,6 +435,10 @@ async function respondToFlashcard(
         incorrect: response === FlashcardCorrectness.INCORRECT,
         existingResponse,
       }),
+
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
   })
 
@@ -457,6 +541,13 @@ async function respondToContent(
       total: 0,
     }
 
+  const resultSpacedRepetition = updateSpacedRepetition({
+    eFactor: existingResponse?.eFactor || 2.5,
+    interval: existingResponse?.interval || 1,
+    streak: (existingResponse?.correctCountStreak || 0) + 1,
+    grade: 1,
+  })
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -496,6 +587,11 @@ async function respondToContent(
       correctCountStreak: 1,
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
+
+      // update spaced repetition parameters
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
     update: {
       // RESPONSE
@@ -520,6 +616,11 @@ async function respondToContent(
       },
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
+
+      // update spaced repetition parameters
+      eFactor: resultSpacedRepetition.efactor,
+      interval: resultSpacedRepetition.interval,
+      nextDueAt: resultSpacedRepetition.nextDueAt,
     },
   })
 
@@ -531,7 +632,7 @@ interface EvaluateAnswerCorrectnessArgs {
   response: ResponseInput
 }
 
-function evaluateAnswerCorrectness({
+export function evaluateAnswerCorrectness({
   elementData,
   response,
 }: EvaluateAnswerCorrectnessArgs) {
@@ -1139,6 +1240,14 @@ export async function respondToQuestion(
       }
     }
 
+    const streakIncrement = correctness === 1 ? 1 : 0
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor || 2.5,
+      interval: existingResponse?.interval || 1,
+      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      grade: correctness,
+    })
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1171,11 +1280,16 @@ export async function respondToQuestion(
             },
           },
 
+          // compute and store new correctness parameters
           ...combineNewCorrectnessParams({
             correct: correctness === 1,
             partial: correctness > 0 && correctness < 1,
             incorrect: correctness === 0,
           }),
+
+          eFactor: resultSpacedRepetition.efactor,
+          nextDueAt: resultSpacedRepetition.nextDueAt,
+          interval: resultSpacedRepetition.interval,
         },
         update: {
           response: response as QuestionResponse,
@@ -1204,6 +1318,10 @@ export async function respondToQuestion(
             incorrect: correctness === 0,
             existingResponse,
           }),
+
+          eFactor: resultSpacedRepetition.efactor,
+          nextDueAt: resultSpacedRepetition.nextDueAt,
+          interval: resultSpacedRepetition.interval,
         },
       }),
       ctx.prisma.questionResponseDetail.create({
@@ -1526,6 +1644,7 @@ interface ManipulatePracticeQuizArgs {
   courseId: string
   multiplier: number
   order: ElementOrderType
+  availableFrom?: Date | null
   resetTimeDays: number
 }
 
@@ -1539,6 +1658,7 @@ export async function manipulatePracticeQuiz(
     courseId,
     multiplier,
     order,
+    availableFrom,
     resetTimeDays,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser
@@ -1565,14 +1685,6 @@ export async function manipulatePracticeQuiz(
     if (oldElement.status === PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published practice quiz')
     }
-
-    const oldInstances = oldElement.stacks.flatMap((stack) => stack.elements)
-
-    await ctx.prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: oldInstances.map(({ id }) => id) },
-      },
-    })
 
     await ctx.prisma.practiceQuiz.update({
       where: { id },
@@ -1608,12 +1720,18 @@ export async function manipulatePracticeQuiz(
     {}
   )
 
+  const availabilityTime =
+    availableFrom && dayjs(availableFrom).isBefore(dayjs())
+      ? null
+      : availableFrom ?? undefined
+
   const createOrUpdateJSON = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
+    availableFrom: availabilityTime,
     resetTimeDays: resetTimeDays,
     stacks: {
       create: stacks.map((stack) => {
@@ -1721,6 +1839,35 @@ export async function getBookmarksPracticeQuiz(
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
+interface UnpublishPracticeQuizArgs {
+  id: string
+}
+
+export async function unpublishPracticeQuiz(
+  { id }: UnpublishPracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.SCHEDULED,
+    },
+    data: {
+      status: PublicationStatus.DRAFT,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  return practiceQuiz
+}
+
 interface DeletePracticeQuizArgs {
   id: string
 }
@@ -1764,31 +1911,123 @@ export async function publishPracticeQuiz(
   { id }: PublishPracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
     },
-    data: {
-      status: PublicationStatus.PUBLISHED,
-    },
-    include: {
-      stacks: true,
-    },
   })
 
-  // connect all elementStacks in the practice quiz to the course
-  const courseId = practiceQuiz.courseId
-  await ctx.prisma.course.update({
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (
+    practiceQuiz.availableFrom &&
+    dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
+  ) {
+    // change the status of the practice quiz to scheduled for the cronjob to identify it and publish it at the given time
+    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return updatedQuiz
+  } else {
+    // publish practice quiz completely and link all stacks to the course
+    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+      },
+      include: {
+        stacks: true,
+      },
+    })
+
+    // connect all elementStacks in the practice quiz to the course
+    const courseId = updatedQuiz.courseId
+    await ctx.prisma.course.update({
+      where: {
+        id: courseId,
+      },
+      data: {
+        elementStacks: {
+          connect: updatedQuiz.stacks.map((stack) => ({ id: stack.id })),
+        },
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return updatedQuiz
+  }
+}
+
+export async function publishScheduledPracticeQuizzes(ctx: Context) {
+  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
     where: {
-      id: courseId,
-    },
-    data: {
-      elementStacks: {
-        connect: practiceQuiz.stacks.map((stack) => ({ id: stack.id })),
+      status: PublicationStatus.SCHEDULED,
+      availableFrom: {
+        lte: new Date(),
       },
     },
   })
 
-  return practiceQuiz
+  const updatedQuizzes = await Promise.all(
+    quizzesToPublish.map((quiz) =>
+      ctx.prisma.practiceQuiz.update({
+        where: {
+          id: quiz.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          stacks: true,
+        },
+      })
+    )
+  )
+
+  await Promise.all(
+    updatedQuizzes.map((quiz) =>
+      ctx.prisma.course.update({
+        where: {
+          id: quiz.courseId,
+        },
+        data: {
+          elementStacks: {
+            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
+          },
+        },
+      })
+    )
+  )
+
+  updatedQuizzes.forEach((quiz) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: quiz.id,
+    })
+  })
+
+  return true
 }

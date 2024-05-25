@@ -73,6 +73,8 @@ export const QUESTIONS = [
     options: {
       hasSampleSolution: true,
       hasAnswerFeedbacks: false,
+      accuracy: 2,
+      unit: '%',
       restrictions: {
         min: -10,
         max: 100,
@@ -96,7 +98,7 @@ export const QUESTIONS = [
   {
     originalId: '3',
     name: 'Multi-Faktor-Modell',
-    content: '<br>',
+    content: 'Welche Aussagen zum Multi-Faktor-Modell sind korrekt?',
     type: ElementType.KPRIM,
     options: {
       hasSampleSolution: true,

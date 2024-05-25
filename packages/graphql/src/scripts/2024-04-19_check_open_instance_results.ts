@@ -35,8 +35,8 @@ async function run() {
 
     // check if the results follow the old logic with value: count instead of hash: {value, count, correct}
     const isOldLogic =
-      Object.keys(responses).length === 0 ||
-      Object.values(responses).every((result) => typeof result === 'number')
+      Object.keys(responses).length > 0 &&
+      Object.values(responses).some((result) => typeof result === 'number')
 
     if (isOldLogic) {
       totalUpdates++

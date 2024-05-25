@@ -71,7 +71,10 @@ export function NUMERICALAnswerOptions({
           data={{ cy: `input-numerical-${elementIx + 1}` }}
         />
         {unit && (
-          <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max">
+          <div
+            className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max"
+            data-cy="input-numerical-unit"
+          >
             {unit}
           </div>
         )}

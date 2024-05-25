@@ -4,7 +4,7 @@ import { checkCronToken } from '../lib/util'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
+import * as GroupService from '../services/groups'
 import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
@@ -13,7 +13,13 @@ import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { GroupActivityDetails } from './groupActivity'
+import {
+  GroupActivity,
+  GroupActivityClueInput,
+  GroupActivityDetails,
+  GroupActivityGradingInput,
+  GroupActivityInstance,
+} from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
   AvatarSettingsInput,
@@ -221,7 +227,7 @@ export const Mutation = builder.mutationType({
       updateGroupAverageScores: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return ParticipantGroupService.updateGroupAverageScores(ctx)
+          return GroupService.updateGroupAverageScores(ctx)
         },
       }),
 
@@ -229,6 +235,13 @@ export const Mutation = builder.mutationType({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      publishScheduledPracticeQuizzes: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
         },
       }),
 
@@ -283,7 +296,7 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.startGroupActivity(args, ctx)
+          return GroupService.startGroupActivity(args, ctx)
         },
       }),
 
@@ -309,7 +322,7 @@ export const Mutation = builder.mutationType({
           code: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.joinParticipantGroup(args, ctx)
+          return GroupService.joinParticipantGroup(args, ctx)
         },
       }),
 
@@ -353,7 +366,7 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+          return GroupService.leaveParticipantGroup(args, ctx)
         },
       }),
 
@@ -394,7 +407,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
+          return GroupService.submitGroupActivityDecisions(args, ctx)
         },
       }),
 
@@ -436,7 +449,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.createParticipantGroup(args, ctx)
+          return GroupService.createParticipantGroup(args, ctx)
         },
       }),
 
@@ -940,6 +953,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeLiveQuizName: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.changeLiveQuizName(args, ctx)
+        },
+      }),
+
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,
@@ -1009,6 +1035,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1036,6 +1063,7 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1084,6 +1112,49 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      createGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      editGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
       publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1107,6 +1178,19 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return MicroLearningService.publishMicroLearning(args, ctx)
+          },
+        }),
+
+      unpublishPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
           },
         }),
 
@@ -1148,6 +1232,76 @@ export const Mutation = builder.mutationType({
             return MicroLearningService.deleteMicroLearning(args, ctx)
           },
         }),
+
+      publishGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.publishGroupActivity(args, ctx)
+          },
+        }),
+
+      unpublishGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.unpublishGroupActivity(args, ctx)
+          },
+        }),
+
+      deleteGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.deleteGroupActivity(args, ctx)
+          },
+        }),
+
+      gradeGroupActivitySubmission: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivityInstance,
+          args: {
+            id: t.arg.int({ required: true }),
+            gradingDecisions: t.arg({
+              type: GroupActivityGradingInput,
+              required: true,
+            }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.gradeGroupActivitySubmission(args, ctx)
+          },
+        }),
+
+      finalizeGroupActivityGrading: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.finalizeGroupActivityGrading(args, ctx)
+          },
+        }),
+
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----

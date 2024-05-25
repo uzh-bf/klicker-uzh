@@ -55,7 +55,11 @@ export default {
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
+      scheduled: 'Geplant',
       published: 'Öffentlich',
+      completed: 'Abgeschlossen',
+      running: 'Laufend',
+      grading: 'Bewertung',
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
@@ -100,6 +104,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
+      groupActivity: 'Gruppenaktivität',
+      groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -118,7 +124,6 @@ export default {
       leave: 'Austreten',
       documentation: 'Dokumentation',
       features: 'Features',
-      groupActivities: 'Gruppenaktivitäten',
       experiencePoints: 'Erfahrungspunkte',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -142,6 +147,7 @@ export default {
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
+      availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
       repetitionInterval: 'Wiederholungszeitraum',
@@ -156,6 +162,11 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
+      clues: 'Hinweise',
+      value: 'Wert',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
+      survey: 'Umfrage',
     },
     contentInput: {
       boldStyle:
@@ -224,6 +235,8 @@ export default {
         'Ihr Magic-Link Login wird verarbeitet. Bitte warten Sie einen Moment.',
       magicLinkLoginFailed:
         'Der Magic-Link Login ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+      surveyInvitation:
+        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst (auch, wenn du den Begriff noch gar nicht kennst 😎). Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',
@@ -307,7 +320,7 @@ Während der Beantwortung der Fragen können Sie, wenn Sie eingeloggt sind, pers
 
 #### Gruppen und Gruppenaktivitäten
 
-Während des Semesters werden Ihnen unter Umständen praktische Gruppenaufgaben gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
+Während des Semesters werden Ihnen unter Umständen praktische Gruppenaktivitäten gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
 
 Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie auch die Leistung der Gruppe mit anderen Gruppen vergleichen. Die kumulierten Punkte aus den Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (im Durchschnitt) die Gesamtpunktzahl der Gruppe.
 
@@ -425,6 +438,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
+      coursePracticeArea:
+        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -485,6 +500,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flagQuestionText:
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       infoStack: 'Informationselement',
+      scheduledAvailableFrom: 'Das Übungs-Quiz {name} ist ab {date} verfügbar.',
       inactiveParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
@@ -602,7 +618,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       notAchievedYet: 'Noch nicht erreicht',
     },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'Ende: {time}',
+      available: 'Verfügbar',
+      started: 'Gestartet',
+      submitted: 'Abgegeben',
+      past: 'Abgeschlossen',
+      passed: 'Bestanden',
+      failed: 'Nicht bestanden',
+      groupActivityPassed:
+        'Gratulation! Deine Gruppe hat die Gruppenaktivität bestanden.',
+      groupActivityFailed:
+        'Oh nein! Deine Gruppe hat die Gruppenaktivität leider nicht bestanden.',
+      groupActivityFeedback: 'Feedback: {feedback}',
+      answerCORRECT: 'Eure Antwort ist korrekt.',
+      answerPARTIAL: 'Eure Antwort ist teilweise korrekt.',
+      answerINCORRECT: 'Eure Antwort ist falsch.',
       openGroupActivity: 'Zur Gruppenaktivität',
+      openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:
         'Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.',
       initialSituation: 'Ausgangslage',
@@ -662,7 +695,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       community: 'Community',
       communityDesc: 'Ein Ort für Diskussionen und Fragen rund um KlickerUZH',
       email: 'E-Mail',
-      emailDesc: 'Kontaktieren Sie uns unter klicker@bf.uzh.ch',
+      emailDesc: 'Kontaktieren Sie uns unter klicker@df.uzh.ch',
       aboutProject: 'Über das Projekt',
       projectUpdates: 'Projekt Updates',
       projectUpdatesDesc: 'Regelmässige Updates zu unserem Projekt',
@@ -747,24 +780,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
       step1Description:
-        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
+        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
       step2Description:
-        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
+        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
       step3Title: 'Schritt 3: Migration starten',
       step3Description:
-        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
+        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
       startMigration: 'Migration starten',
       step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
       step4Description:
-        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
+        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
-      createGroupTask: 'Gruppenaufgabe erstellen',
+      createGroupTask: 'Gruppenaktivität erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
@@ -819,7 +852,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
       FTOptionsTooltip:
-        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
+        'Nehmen Sie hier optionale Einstellungen für die Freitext-Frage vor. Bitte beachten Sie, dass die Antwort auf Freitext-Fragen nicht auf Gross- und Kleinschreibung geprüft wird.',
+      NUMERICALOptionsTooltip:
+        'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
 
       answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',
@@ -952,6 +987,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizAvailableFrom:
+        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -987,6 +1024,52 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      groupActivityTypes:
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+      groupActivityCreated:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
+      groupActivityEdited:
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
+      groupActivityDescription:
+        'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
+      groupActivitySettings:
+        'In diesem Schritt können Sie Einstellungen für Ihre Gruppenaktivität vornehmen und Hinweise definieren, die an Teilnehmende verteilt werden.',
+      groupActivityQuestions:
+        'In diesem Schritt wählen Sie die Fragen für die Gruppenaktivität aus.',
+      groupActivityEditingFailed:
+        'Bearbeiten der Gruppenaktivität fehlgeschlagen...',
+      groupActivityCreationFailed:
+        'Erstellen der Gruppenaktivität fehlgeschlagen...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
+      groupActivityCourse:
+        'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
+      groupActivityStartDate:
+        'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
+      groupActivityEndDate:
+        'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityMultiplier:
+        'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
+      groupActivityUseCase:
+        '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
+      groupActivityCluesDescription:
+        'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
+      groupActivityAddClue: 'Neuen Hinweis hinzufügen',
+      groupActivityClueType: 'Hinweis-Typ',
+      textClue: 'Text-Hinweis',
+      numericalClue: 'Numerischer Hinweis',
+      groupActivityNameError:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
+      groupActivityDisplayNameError:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
+      clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
+      clueDisplayNameMissing:
+        'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
+      clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
+      clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
     },
     formErrors: {
       resolveErrors:
@@ -1043,6 +1126,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
+      changeLiveQuizName: 'Änderung Live Quiz Namen',
+      liveQuizNameChangeSuccess:
+        'Der Name des Live Quizzes wurde erfolgreich geändert.',
+      liveQuizNameChangeError:
+        'Der Name des Live Quizzes konnte nicht geändert werden.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Konto-Link',
@@ -1225,12 +1313,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteMicrolearning: 'Microlearning löschen',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
+      publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
-      publishingHint:
-        'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      practicePublishingHint:
+        'Das Publizieren dieses Übungs-Quizzes macht das Element ab sofort für alle Teilnehmenden über den Zuganglink und die KlickerUZH App sichtbar. Dieser Prozess kann nicht rückgängig gemacht werden.',
+      practiceSchedulingHint:
+        'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
       microPublishingHint:
-        'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
+        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       confirmDeletionMicrolearning:
         'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
       hintDeletionMicrolearning:
@@ -1242,8 +1333,68 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishPracticeQuiz: 'Veröffentlichung aufheben',
+      publishGroupActivity: 'Gruppenaktivität veröffentlichen',
+      groupActivityPublishingHint:
+        'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+      editGroupActivity: 'Gruppenaktivität bearbeiten',
+      deleteGroupActivity: 'Gruppenaktivität löschen',
+      confirmDeletionGroupActivity:
+        'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
+      hintDeletionGroupActivity:
+        'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      unpublishGroupActivity: 'Veröffentlichung aufheben',
+      gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
+    },
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'Die von Ihnen gesuchte Gruppenaktivität existiert nicht oder ist noch nicht beendet. Bitte beachten Sie, dass Gruppenaktivitäten erst nach ihrem offiziellen Enddatum bewertet werden können.',
+      gradingTitle: 'Bewertung Gruppenaktivität: {name}',
+      submissions: 'Abgaben',
+      noSubmissions:
+        'Es sind keine Abgaben für diese Gruppenaktivität vorhanden.',
+      submittedAt: 'Abgegeben am {datetime}',
+      toGrade: 'Zu Bewerten',
+      graded: 'Bewertet',
+      notSubmitted: 'Nicht abgegeben',
+      grading: 'Bewertung',
+      noSubmissionSelected:
+        'Bitte wählen Sie aus der Liste auf der linken seite eine Abgabe zur Bewertung aus. Bevor die Bewertung final abgeschlossen wird, können Sie die Bewertung jederzeit anpassen.',
+      nPoints: '{number} Punkte',
+      achievedScore: 'Erreichte Punktzahl',
+      maxScoreTooltip:
+        'Die maximale Punktzahl für eine Frage setzt sich aus den Multipliern der Frage und der Gruppenaktivität zusammen.',
+      passedMissingError:
+        'Bitte geben Sie an, ob die Gruppenaktivität bestanden wurde oder nicht.',
+      scoreMissingError:
+        'Bitte stellen Sie sicher, dass alle Fragen mit einer gültigen Punktzahl bewertet wurden.',
+      didGroupPass: 'Wurde die Gruppenaktivität bestanden?',
+      optionalFeedback:
+        'Geben Sie hier ein optionales generelles Feedback zur Gruppenchallenge ein',
+      saveGrading: 'Bewertung speichern',
+      optionalQuestionFeedback:
+        'Geben Sie hier ein optionales Feedback zur beantworteten Frage ein.',
+      generalFeedback: 'Generelles Feedback',
+      switchSubmission: 'Abgabe wechseln',
+      confirmSubmissionSwitch:
+        'Sind Sie sich sicher, dass Sie zu einer anderen Abgabe der Gruppenaktivität wechseln möchten. Sie haben aktuell ungespeicherte Änderungen, welche bei diesem Wechsel verloren gehen.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Punkte',
+      finalizeGrading: 'Bewertung abschliessen',
+      confirmFinalizeGrading:
+        'Sind Sie sich sicher, dass Sie die Bewertung der Gruppenaktivität abschliessen möchten? Nach dem Abschluss der Bewertung sind die Resultate für die Teilnehmen sichtbar und es können keine weiteren Änderungen vorgenommen werden.',
+      stackGradingSuccess: 'Die Bewertung wurde erfolgreich gespeichert.',
+      stackGradingError:
+        'Beim Speichern der Bewertung ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob alle erforderlichen Berwertungen vorgenommen wurden.',
+      finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
+      finalizeGradingError:
+        'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
+      alreadyGraded:
+        'Die Bewertungen für diese Gruppenaktivität wurden bereits finalisiert und können nicht mehr geändert werden.',
+      nOfTotalPoints: '{number}/{total} Punkte',
+      gradingAlreadyFinalized:
+        'Die Bewertung wurde bereits abgeschlossen und kann nicht mehr geändert werden. Wählen Sie eine Abgabe aus, um sich die eingegebene Bewertung anzusehen.',
     },
   },
   control: {

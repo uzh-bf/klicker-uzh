@@ -29,7 +29,7 @@ model Migration {
 
 enum PublicationStatus {
   DRAFT
-  // REVIEW
+  SCHEDULED
   PUBLISHED
 }
 
@@ -366,6 +366,7 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
+  availableFrom    DateTime?
 
   stacks ElementStack[]
 
@@ -702,6 +703,7 @@ model GroupActivityClueInstance {
 enum GroupActivityStatus {
   DRAFT
   PUBLISHED
+  GRADED
 }
 
 model GroupActivity {
@@ -710,6 +712,8 @@ model GroupActivity {
   name        String
   displayName String
   status      GroupActivityStatus @default(DRAFT)
+
+  pointsMultiplier Int @default(1)
 
   description      String?
   scheduledStartAt DateTime
@@ -750,6 +754,7 @@ model GroupActivityInstance {
   /// [PrismaGroupActivityDecisions]
   decisions            Json?
   decisionsSubmittedAt DateTime?
+  /// [PrismaGroupActivityResults]
   results              Json?
   resultsComputedAt    DateTime?
 
@@ -1028,6 +1033,8 @@ model QuestionResponse {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  isMigrated Boolean @default(false)
 
   @@unique([participantId, questionInstanceId])
   @@unique([participantId, elementInstanceId])

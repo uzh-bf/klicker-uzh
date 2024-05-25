@@ -2,15 +2,15 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.1.0-rc.33",
+  "version": "3.1.0-rc.41",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
   "license": "AGPL-3.0",
   "main": "apps/func/dist/index.js",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -44,6 +44,7 @@
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
     "dev:offline": "doppler run --config dev -- turbo run dev:offline",
+    "dev:test": "cross-env NODE_ENV=test turbo run dev:test",
     "format": "turbo run format --parallel --continue",
     "format:check": "turbo run format:check --parallel --continue",
     "lint": "turbo run lint --parallel --continue",

@@ -51,6 +51,10 @@
     "dev:docs": {
       "cache": false
     },
+    "dev:test": {
+      "dependsOn": ["^build:test", "build:test"],
+      "outputs": ["dist/**", ".next/**"]
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]

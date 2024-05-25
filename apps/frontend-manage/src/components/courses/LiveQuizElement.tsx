@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faCalculator,
@@ -25,6 +24,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { WizardMode } from '../sessions/creation/SessionCreation'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'

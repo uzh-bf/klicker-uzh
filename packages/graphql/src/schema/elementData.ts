@@ -11,6 +11,19 @@ import {
   NumericalQuestionOptions,
 } from './questionData'
 
+export interface IElementInstanceOptions {
+  pointsMultiplier?: number
+  resetTimeDays?: number
+}
+export const ElementInstanceOptions = builder
+  .objectRef<IElementInstanceOptions>('ElementInstanceOptions')
+  .implement({
+    fields: (t) => ({
+      pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+      resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
+    }),
+  })
+
 // ----- ELEMENT DATA INTERFACE -----
 export const ElementDataRef =
   builder.interfaceRef<BaseElementData>('ElementData')

@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "chart.fullname" . }}-cron-practice-pubs
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron.practiceQuizPublications | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.85.0
+            imagePullPolicy: IfNotPresent
+            args:
+            - -X
+            - POST
+            - -H
+            - "Content-Type: application/json"
+            - -H
+            - "x-token: {{ .Values.cron.token }}"
+            - -H
+            - "x-graphql-yoga-csrf: PublishScheduledPracticeQuizzes"
+            - -d
+            - >
+                {
+                    "operationName": "PublishScheduledPracticeQuizzes",
+                    "variables": {},
+                    "extensions": {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "00c2398a3fc6f182c85f064913a7f43bddbd21762b827ade88b446bcef5e3c12"
+                        }
+                    }
+                }
+            - 'http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql'
+          restartPolicy: OnFailure

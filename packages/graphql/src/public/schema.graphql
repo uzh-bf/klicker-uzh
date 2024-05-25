@@ -197,7 +197,13 @@ type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
   id: Int!
+  options: ElementInstanceOptions
   type: ElementInstanceType!
+}
+
+type ElementInstanceOptions {
+  pointsMultiplier: Int
+  resetTimeDays: Int
 }
 
 enum ElementInstanceType {
@@ -352,23 +358,40 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  activityInstances: [GroupActivityInstance!]
+  clues: [GroupActivityClue!]
+  course: Course
   description: String
   displayName: String!
   id: ID!
   name: String!
-  numOfStacks: Int
+  numOfQuestions: Int
+  pointsMultiplier: Int
   scheduledEndAt: Date!
   scheduledStartAt: Date!
+  stacks: [ElementStack!]
+  status: GroupActivityStatus!
 }
 
 type GroupActivityClue {
   displayName: String!
   id: Int!
   name: String!
+  type: ParameterType!
+  unit: String
+  value: String!
 }
 
 type GroupActivityClueAssignment {
   id: Int!
+}
+
+input GroupActivityClueInput {
+  displayName: String!
+  name: String!
+  type: ParameterType!
+  unit: String
+  value: String!
 }
 
 type GroupActivityClueInstance {
@@ -410,17 +433,51 @@ type GroupActivityDetails {
   stacks: [ElementStack!]!
 }
 
+type GroupActivityGrading {
+  feedback: String
+  instanceId: Int!
+  maxPoints: Float!
+  score: Float!
+}
+
+input GroupActivityGradingDecisionInput {
+  feedback: String
+  instanceId: Int!
+  score: Float!
+}
+
+input GroupActivityGradingInput {
+  comment: String
+  grading: [GroupActivityGradingDecisionInput!]!
+  passed: Boolean!
+}
+
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID!
+  groupActivityId: ID
+  groupName: String
   id: Int!
   results: Json
+  resultsComputedAt: Date
 }
 
 type GroupActivityParameter {
   id: Int!
+}
+
+type GroupActivityResults {
+  comment: String
+  grading: [GroupActivityGrading!]!
+  passed: Boolean!
+  points: Float!
+}
+
+enum GroupActivityStatus {
+  DRAFT
+  GRADED
+  PUBLISHED
 }
 
 type GroupLeaderboardEntry {
@@ -547,21 +604,24 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
+  changeLiveQuizName(displayName: String!, id: String!, name: String!): Session
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
+  createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteGroupActivity(id: String!): GroupActivity
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
@@ -569,14 +629,17 @@ type Mutation {
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
+  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
-  editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
+  gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
@@ -596,8 +659,10 @@ type Mutation {
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
+  publishScheduledPracticeQuizzes: Boolean!
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
@@ -611,7 +676,9 @@ type Mutation {
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
+  unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning
+  unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -774,6 +841,7 @@ type Participation {
 }
 
 type PracticeQuiz {
+  availableFrom: Date
   course: Course
   courseId: String
   description: String
@@ -791,6 +859,7 @@ type PracticeQuiz {
 enum PublicationStatus {
   DRAFT
   PUBLISHED
+  SCHEDULED
 }
 
 type PushSubscription {
@@ -813,10 +882,12 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
@@ -901,6 +972,12 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+enum ResponseCorrectnessType {
+  CORRECT
+  INCORRECT
+  PARTIAL
 }
 
 input ResponseInput {

@@ -1,0 +1,11 @@
+mutation ChangeLiveQuizName(
+  $id: String!
+  $name: String!
+  $displayName: String!
+) {
+  changeLiveQuizName(id: $id, name: $name, displayName: $displayName) {
+    id
+    name
+    displayName
+  }
+}

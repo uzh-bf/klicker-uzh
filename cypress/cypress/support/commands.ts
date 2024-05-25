@@ -38,7 +38,7 @@ const loginFactory = (tokenData) => () => {
 Cypress.Commands.add(
   'loginLecturer',
   loginFactory({
-    email: 'lecturer@bf.uzh.ch',
+    email: 'lecturer@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8821',
     role: 'USER',
     scope: 'ACCOUNT_OWNER',
@@ -50,7 +50,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
   'loginFreeUser',
   loginFactory({
-    email: 'free@bf.uzh.ch',
+    email: 'free@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8822',
     role: 'USER',
     scope: 'ACCOUNT_OWNER',
@@ -62,7 +62,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
   'loginIndividualCatalyst',
   loginFactory({
-    email: 'pro1@bf.uzh.ch',
+    email: 'pro1@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8823',
     role: 'USER',
     scope: 'ACCOUNT_OWNER',
@@ -74,7 +74,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
   'loginInstitutionalCatalyst',
   loginFactory({
-    email: 'pro2@bf.uzh.ch',
+    email: 'pro2@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8824',
     role: 'USER',
     scope: 'ACCOUNT_OWNER',

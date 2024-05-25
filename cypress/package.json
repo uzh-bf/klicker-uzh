@@ -2,15 +2,15 @@
   "private": true,
   "name": "@klicker-uzh/cypress",
   "devDependencies": {
-    "@cypress/code-coverage": "3.12.16",
+    "@cypress/code-coverage": "3.12.39",
     "@testing-library/cypress": "10.0.1",
-    "@types/jsonwebtoken": "^8.0.0",
-    "@types/node": "^20.10.6",
-    "@types/uuid": "^9.0.2",
-    "cypress": "13.6.2",
+    "@types/jsonwebtoken": "^8.5.9",
+    "@types/node": "^20.12.12",
+    "@types/uuid": "^9.0.8",
+    "cypress": "13.9.0",
     "jsonwebtoken": "8.5.1",
-    "typescript": "5.2.2",
-    "uuid": "9.0.0"
+    "typescript": "5.4.5",
+    "uuid": "9.0.1"
   },
   "scripts": {
     "test": "cypress open",

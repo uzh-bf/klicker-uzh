@@ -6,11 +6,13 @@ import GroupActivityElement from './GroupActivityElement'
 interface GroupActivityListProps {
   groupActivities: (Partial<GroupActivity> &
     Pick<GroupActivity, 'id' | 'name'>)[]
+  courseId: string
   userCatalyst?: boolean
 }
 
 function GroupActivityList({
   groupActivities,
+  courseId,
   userCatalyst,
 }: GroupActivityListProps) {
   const t = useTranslations()
@@ -22,6 +24,7 @@ function GroupActivityList({
           {groupActivities.map((groupActivity) => (
             <GroupActivityElement
               groupActivity={groupActivity}
+              courseId={courseId}
               key={groupActivity.id}
             />
           ))}

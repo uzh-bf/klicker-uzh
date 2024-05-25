@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.40...v3.1.0-rc.41) (2024-05-16)
+
+
+### Features
+
+* **packages/graphql:** introduce spaced repetition logic ([#4127](https://github.com/uzh-bf/klicker-uzh/issues/4127)) ([cf5fab4](https://github.com/uzh-bf/klicker-uzh/commit/cf5fab429540c57fee9eec429273cd78b56da0bf))
+
+## [3.1.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.39...v3.1.0-rc.40) (2024-05-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** hide survey notification on mobile and resolve state loading issue ([#4125](https://github.com/uzh-bf/klicker-uzh/issues/4125)) ([8c1e6f0](https://github.com/uzh-bf/klicker-uzh/commit/8c1e6f0db4bf256b5d52828b8a7efe22e743a98c))
+
+## [3.1.0-rc.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.38...v3.1.0-rc.39) (2024-05-15)
+
+## [3.1.0-rc.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.37...v3.1.0-rc.38) (2024-05-11)
+
+
+### Bug Fixes
+
+* ensure that unit is stored and correctly displayed for numerical questions ([#4123](https://github.com/uzh-bf/klicker-uzh/issues/4123)) ([907e257](https://github.com/uzh-bf/klicker-uzh/commit/907e257d1f67b3c1634fe7bb753eadbe730f3303))
+
+
+### Other
+
+* **packages/shared-components:** fix content element styling ([8871e4a](https://github.com/uzh-bf/klicker-uzh/commit/8871e4a88d098501cb59ac5e635a0ccc1a316d45))
+
+## [3.1.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.36...v3.1.0-rc.37) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-control:** add missing js-cookie dependence to control frontend ([f89c544](https://github.com/uzh-bf/klicker-uzh/commit/f89c5445358e776d638a60720f37017435ab62ac))
+
+## [3.1.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.35...v3.1.0-rc.36) (2024-05-08)
+
+
+### Dependencies
+
+* **apps/frontend-*:** add js-cookie and [@types](https://github.com/types) to all frontend apps ([bb77002](https://github.com/uzh-bf/klicker-uzh/commit/bb77002946491ba30df2cd6f677f25eb0bc7950e))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** automatically select correct tab on element overview ([#4112](https://github.com/uzh-bf/klicker-uzh/issues/4112)) ([7b342d5](https://github.com/uzh-bf/klicker-uzh/commit/7b342d5fef59da1747032dc4e775f6b006a36b5c))
+* **apps/frontend-pwa:** show hint for scheduled practice quiz ([#4111](https://github.com/uzh-bf/klicker-uzh/issues/4111)) ([2f683c8](https://github.com/uzh-bf/klicker-uzh/commit/2f683c8cb4d02794a66cb348dc75192e34e1c9ab))
+* **packages/graphql:** seed demo flashcards and content elements ([#4114](https://github.com/uzh-bf/klicker-uzh/issues/4114)) ([2d8e262](https://github.com/uzh-bf/klicker-uzh/commit/2d8e262a1880d7885dfe143449aa4e758814987e))
+
+## [3.1.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.34...v3.1.0-rc.35) (2024-05-06)
+
+
+### Bug Fixes
+
+* ensure that practice quiz cronjob name is shorter than maximum name length ([5ea90b2](https://github.com/uzh-bf/klicker-uzh/commit/5ea90b217fd31101c39aa3cefb213864c3125f8c))
+
+## [3.1.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.33...v3.1.0-rc.34) (2024-05-06)
+
+
+### Features
+
+* add optional start date and cronjob for automated practice quiz publication ([#4109](https://github.com/uzh-bf/klicker-uzh/issues/4109)) ([efd7d16](https://github.com/uzh-bf/klicker-uzh/commit/efd7d1631ecab3d5912c738de969499fe99d78b6))
+
 ## [3.1.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.32...v3.1.0-rc.33) (2024-05-05)
 
 

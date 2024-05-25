@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
-import LinkButton from '@components/common/LinkButton'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
+import LinkButton from '../components/common/LinkButton'
 import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
 
 function Practice() {

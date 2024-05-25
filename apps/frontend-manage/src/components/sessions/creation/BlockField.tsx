@@ -1,3 +1,4 @@
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Label } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -6,9 +7,10 @@ import QuestionBlock from './QuestionBlock'
 import WizardErrorMessage from './WizardErrorMessage'
 interface BlockFieldProps {
   fieldName: string
+  acceptedTypes: ElementType[]
 }
 
-function BlockField({ fieldName }: BlockFieldProps) {
+function BlockField({ fieldName, acceptedTypes }: BlockFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
 
@@ -38,7 +40,7 @@ function BlockField({ fieldName }: BlockFieldProps) {
                   move={move}
                 />
               ))}
-              <AddQuestionField push={push} />
+              <AddQuestionField push={push} acceptedTypes={acceptedTypes} />
             </div>
           )}
         </FieldArray>

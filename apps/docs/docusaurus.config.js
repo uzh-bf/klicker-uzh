@@ -99,7 +99,7 @@ const config = {
     announcementBar: {
       id: 'release_v3',
       content:
-        'We are now offering introductory courses through UZH Central IT. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
+        'We are now regularly offering introductory courses through UZH Central IT. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,
@@ -187,7 +187,7 @@ const config = {
         width: 250,
         // height: 51,
       },
-      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department of Banking and Finance (https://www.bf.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
+      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department and Finance (https://www.df.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       links: [
         {
           title: 'Docs',

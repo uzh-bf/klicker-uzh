@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti",
-  "version": "3.1.0-rc.33",
+  "version": "3.1.0-rc.41",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,7 @@
     "typescript": "5.0.4"
   },
   "peerDependencies": {
-    "@uzh-bf/design-system": "2.5.2",
+    "@uzh-bf/design-system": "2.7.0",
     "next": "14.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"

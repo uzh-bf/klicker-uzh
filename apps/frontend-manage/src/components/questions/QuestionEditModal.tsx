@@ -486,6 +486,7 @@ function QuestionEditModal({
                 options: {
                   hasSampleSolution: values.options?.hasSampleSolution,
                   accuracy: parseInt(values.options?.accuracy),
+                  unit: values.options?.unit,
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
@@ -849,7 +850,13 @@ function QuestionEditModal({
                             root: 'my-auto mr-2 text-lg font-bold',
                             tooltip: 'text-sm font-normal w-80 md:w-1/2',
                           }}
-                          tooltip={t('manage.questionForms.FTOptionsTooltip')}
+                          tooltip={
+                            values.type === ElementType.Numerical
+                              ? t(
+                                  'manage.questionForms.NUMERICALOptionsTooltip'
+                                )
+                              : t('manage.questionForms.FTOptionsTooltip')
+                          }
                           showTooltipSymbol={true}
                         />
                       </div>
@@ -1434,6 +1441,11 @@ function QuestionEditModal({
                       {errors.options && errors.options.accuracy && (
                         <li>{`${t('shared.generic.precision')}: ${
                           errors.options.accuracy
+                        }`}</li>
+                      )}
+                      {errors.options && errors.options.unit && (
+                        <li>{`${t('shared.generic.unit')}: ${
+                          errors.options.unit
                         }`}</li>
                       )}
                       {errors.options &&

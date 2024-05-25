@@ -27,12 +27,17 @@ function ContentElement({
   return (
     <div
       className={twMerge(
-        'px-3 pt-2 border border-solid rounded-lg bg-slate-100',
+        'mt-4 px-3 py-2 border border-solid rounded-lg bg-slate-100',
         !hideReadButton && 'pb-10'
       )}
       data-cy={`content-element-${elementIx + 1}`}
     >
-      <div className="flex flex-row gap-3 -mb-2 prose prose-p:!m-0 prose-img:!m-0 leading-6">
+      <div
+        className={twMerge(
+          'flex flex-row gap-3 prose-p:!m-0 prose-img:!m-0 leading-6',
+          !hideReadButton && 'mb-1'
+        )}
+      >
         <FontAwesomeIcon icon={faBookOpen} className="mt-1.5" />
         <DynamicMarkdown
           content={element.elementData.content}
