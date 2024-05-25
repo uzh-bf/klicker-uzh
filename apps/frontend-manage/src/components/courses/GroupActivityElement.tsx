@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
@@ -167,7 +171,7 @@ function GroupActivityElement({
                 <StatusTag
                   color="bg-green-300"
                   status={t('shared.generic.scheduled')}
-                  icon={faLock}
+                  icon={faClock}
                 />
               )}
               {isPast && (
