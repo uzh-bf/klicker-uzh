@@ -44,7 +44,7 @@ function Index() {
           <div>
             <H4>{t('control.home.selectCourse')}</H4>
             <div className="flex flex-col gap-2">
-              {dataCourses.controlCourses
+              {[...dataCourses?.controlCourses]
                 .sort((a, b) => (a.isArchived ? 1 : -1))
                 .map((course) => (
                   <ListButton
