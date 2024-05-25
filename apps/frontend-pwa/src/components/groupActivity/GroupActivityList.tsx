@@ -74,7 +74,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faPlay} />
@@ -92,7 +91,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faUserGroup} />
@@ -110,7 +108,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faClock} />
@@ -150,7 +147,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openActivityFeedback')}
-                    ix={activityIx}
                   />
                   {groupActivityInstances[activity.id]?.results.passed ? (
                     <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">

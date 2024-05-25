@@ -272,11 +272,12 @@ describe('Create and solve a group activity', () => {
 
   it('take part in the seeded group activity', function () {
     cy.loginStudent()
+    const activityDisplayName = 'Gruppenquest Published'
 
     // start the group activity
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="open-group-activity-0"]').click()
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
     // answer the questions in the group activity
@@ -368,7 +369,7 @@ describe('Create and solve a group activity', () => {
 
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="open-group-activity-0"]').click()
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
 
     cy.get('[data-cy="free-text-input-1"]')
       .should('be.disabled')
@@ -409,11 +410,15 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="grade-groupActivity-Gruppenquest Completed"]').click()
 
     cy.get('[data-cy="group-activity-submission-1"]').click()
-    cy.get('[data-cy="groupActivity-grading-comment-0"]').type('Test Comment')
+    cy.get('[data-cy="groupActivity-grading-comment-0"]')
+      .click()
+      .type('Test Comment')
     cy.get('[data-cy="groupActivity-grading-score-0"]').type('10')
     cy.get('[data-cy="groupActivity-grading-score-1"]').type('20')
     cy.get('[data-cy="groupActivity-grading-score-2"]').type('50')
-    cy.get('[data-cy="groupActivity-grading-comment-2"]').type('Test Comment 2')
+    cy.get('[data-cy="groupActivity-grading-comment-2"]')
+      .click()
+      .type('Test Comment 2')
     cy.get('[data-cy="groupActivity-grading-score-3"]').type('10')
     cy.get('[data-cy="groupActivity-grading-score-4"]').type('20')
     cy.get('[data-cy="group-activity-submission-2"]').click()
@@ -434,7 +439,9 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
 
     cy.get('[data-cy="group-activity-submission-3"]').click()
-    cy.get('[data-cy="groupActivity-grading-comment-0"]').click()
+    cy.get('[data-cy="groupActivity-grading-comment-0"]')
+      .click()
+      .type('Test Comment 2')
     cy.get('[data-cy="groupActivity-grading-score-0"]').clear()
     cy.get('[data-cy="groupActivity-grading-score-0"]').type('15')
     cy.get('[data-cy="group-activity-submission-1"]').click()
@@ -463,14 +470,15 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
       'be.disabled'
     )
-  })
 
-  it.only('students receive feedback for the graded group activity', function () {
+    cy.clearAllCookies()
+    cy.clearLocalStorage()
     cy.loginStudent()
+    const activityDisplayName = 'Gruppenquest Completed'
 
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="open-group-activity-1"]').click()
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
 
     cy.findByText('110/200 Points').should('exist')
   })
