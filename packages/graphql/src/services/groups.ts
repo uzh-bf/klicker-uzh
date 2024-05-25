@@ -886,7 +886,11 @@ export async function getGroupActivity(
       },
       stacks: {
         include: {
-          elements: true,
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
@@ -976,7 +980,11 @@ export async function getGradingGroupActivity(
     include: {
       stacks: {
         include: {
-          elements: true,
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       activityInstances: {

@@ -1,5 +1,4 @@
 import { v4 as uuid } from 'uuid'
-
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create and solve a group activity', () => {
@@ -272,11 +271,12 @@ describe('Create and solve a group activity', () => {
 
   it('take part in the seeded group activity', function () {
     cy.loginStudent()
+    const activityDisplayName = 'Gruppenquest Published'
 
     // start the group activity
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="open-group-activity-0"]').click()
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
     // answer the questions in the group activity
@@ -368,7 +368,7 @@ describe('Create and solve a group activity', () => {
 
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="open-group-activity-0"]').click()
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
 
     cy.get('[data-cy="free-text-input-1"]')
       .should('be.disabled')
@@ -398,5 +398,178 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="sc-5-answer-option-3"]').should('be.disabled')
     cy.get('[data-cy="sc-5-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="sc-5-answer-option-5"]').should('be.disabled')
+  })
+
+  it('grade the seeded group acivity', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get('[data-cy="course-list-button-Testkurs"]').click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get('[data-cy="grade-groupActivity-Gruppenquest Completed"]').click()
+
+    const scores1 = ['10', '20', '50', '10', '20']
+    const comment1_1 = 'Test Comment'
+    const comment1_2 = 'Test Comment 2'
+    const gradingComment1 = 'Test Comment 3'
+    cy.get('[data-cy="group-activity-submission-1"]').click()
+    cy.get('[data-cy="groupActivity-grading-comment-0"]')
+      .click()
+      .type(comment1_1)
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type(scores1[0])
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type(scores1[1])
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type(scores1[2])
+    cy.get('[data-cy="groupActivity-grading-comment-2"]')
+      .click()
+      .type(comment1_2)
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type(scores1[3])
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type(scores1[4])
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="cancel-submission-switch"]').click()
+    cy.get('[data-cy="groupActivity-passed"]').click()
+    cy.get('[data-cy="groupActivity-general-grading-comment"]').type(
+      gradingComment1
+    )
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    const scores2 = ['10', '10', '10', '10', '10']
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type(scores2[0])
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type(scores2[1])
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type(scores2[2])
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type(scores2[3])
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type(scores2[4])
+    cy.get('[data-cy="groupActivity-failed"]').click()
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    cy.get('[data-cy="group-activity-submission-3"]').click()
+    cy.get('[data-cy="groupActivity-grading-comment-0"]')
+      .click()
+      .type('Test Comment 4')
+    cy.get('[data-cy="groupActivity-grading-score-0"]').clear()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('15')
+    cy.get('[data-cy="group-activity-submission-1"]').click()
+    cy.get('[data-cy="confirm-submission-switch"]').click()
+    cy.get('[data-cy="group-activity-submission-3"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').type('5')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').type('5')
+    cy.get('[data-cy="groupActivity-failed"]').click()
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').click()
+
+    cy.get('[data-cy="finalize-grading"]').click()
+    cy.get('[data-cy="cancel-finalize-grading"]').click()
+    cy.get('[data-cy="finalize-grading"]').click()
+    cy.get('[data-cy="confirm-finalize-grading"]').click()
+
+    cy.get('[data-cy="group-activity-submission-2"]').click()
+    cy.get('[data-cy="groupActivity-grading-score-0"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-1"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-2"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-3"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-grading-score-4"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-failed"]').should('be.disabled')
+    cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
+      'be.disabled'
+    )
+
+    // login as a student with passed group activitiy and check the results (group 1)
+    cy.clearAllCookies()
+    cy.clearLocalStorage()
+    cy.loginStudent()
+    const activityDisplayName = 'Gruppenquest Completed'
+
+    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(`[data-cy="group-activity-${activityDisplayName}"]`).should(
+      'contain',
+      messages.shared.generic.passed
+    )
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
+
+    cy.findByText(messages.pwa.groupActivity.groupActivityPassed).should(
+      'exist'
+    )
+    cy.findByText('110/200 Points').should('exist')
+    cy.get('[data-cy="group-activity-grading-feedback-0"]').should(
+      'contain',
+      `${scores1[0]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-0"]').should(
+      'contain',
+      comment1_1
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-1"]').should(
+      'contain',
+      `${scores1[1]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-2"]').should(
+      'contain',
+      `${scores1[2]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-2"]').should(
+      'contain',
+      comment1_2
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-3"]').should(
+      'contain',
+      `${scores1[3]}/25 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-4"]').should(
+      'contain',
+      `${scores1[4]}/25 Points`
+    )
+    cy.get('[data-cy="group-activity-results-comment"]').should(
+      'contain',
+      gradingComment1
+    )
+
+    // Check student view for failed group activity submission (group 2)
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME2'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(`[data-cy="group-activity-${activityDisplayName}"]`).should(
+      'contain',
+      messages.shared.generic.failed
+    )
+    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
+
+    cy.findByText(messages.pwa.groupActivity.groupActivityFailed).should(
+      'exist'
+    )
+    cy.findByText('50/200 Points').should('exist')
+    cy.get('[data-cy="group-activity-grading-feedback-0"]').should(
+      'contain',
+      `${scores2[0]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-1"]').should(
+      'contain',
+      `${scores2[1]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-2"]').should(
+      'contain',
+      `${scores2[2]}/50 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-3"]').should(
+      'contain',
+      `${scores2[3]}/25 Points`
+    )
+    cy.get('[data-cy="group-activity-grading-feedback-4"]').should(
+      'contain',
+      `${scores2[4]}/25 Points`
+    )
   })
 })

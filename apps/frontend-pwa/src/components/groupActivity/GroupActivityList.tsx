@@ -35,10 +35,11 @@ function GroupActivityList({
     <div className="mt-8">
       <H3>{t('shared.generic.groupActivities')}</H3>
       <div className="flex flex-col pt-2 border-t gap-1">
-        {groupActivities?.map((activity, activityIx) => (
+        {groupActivities?.map((activity) => (
           <div
             key={activity.id}
             className="flex flex-col md:flex-row border border-solid rounded-md p-1.5 justify-between gap-2 md:gap-0"
+            data-cy={`group-activity-${activity.displayName}`}
           >
             <div>
               <div>{activity.displayName}</div>
@@ -74,7 +75,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faPlay} />
@@ -92,7 +92,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faUserGroup} />
@@ -110,7 +109,6 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
-                    ix={activityIx}
                   />
                   <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
                     <FontAwesomeIcon icon={faClock} />
@@ -150,15 +148,20 @@ function GroupActivityList({
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openActivityFeedback')}
-                    ix={activityIx}
                   />
                   {groupActivityInstances[activity.id]?.results.passed ? (
-                    <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
+                    <div
+                      className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max"
+                      data-cy="group-activity-passed-tag"
+                    >
                       <FontAwesomeIcon icon={faCheck} />
                       <div>{t('shared.generic.passed')}</div>
                     </div>
                   ) : (
-                    <div className="flex flex-row items-center gap-2 py-0.5 bg-red-400 rounded text-sm px-2 h-max">
+                    <div
+                      className="flex flex-row items-center gap-2 py-0.5 bg-red-400 rounded text-sm px-2 h-max"
+                      data-cy="group-activity-failed-tag"
+                    >
                       <FontAwesomeIcon icon={faXmark} />
                       <div>{t('shared.generic.failed')}</div>
                     </div>

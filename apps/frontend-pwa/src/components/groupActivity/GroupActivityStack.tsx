@@ -181,6 +181,7 @@ function GroupActivityStack({
                       correctness === ResponseCorrectnessType.Incorrect &&
                         '!border-l-red-700'
                     )}
+                    data-cy={`group-activity-grading-feedback-${elementIx}`}
                   >
                     <div
                       className={twMerge(

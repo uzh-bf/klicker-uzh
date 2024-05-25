@@ -19,7 +19,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.17.4",
     "@uzh-bf/design-system": "2.7.0",
-    "azure-functions-core-tools": "4.0.5455",
+    "azure-functions-core-tools": "4.0.5801",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",
