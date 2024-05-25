@@ -429,6 +429,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
+      coursePracticeArea:
+        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -841,7 +843,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
       FTOptionsTooltip:
-        'Nehmen Sie hier optionale Einstellungen für die offene Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
+        'Nehmen Sie hier optionale Einstellungen für die Freitext-Frage vor. Bitte beachten Sie, dass die Antwort auf Freitext-Fragen nicht auf Gross- und Kleinschreibung geprüft wird.',
+      NUMERICALOptionsTooltip:
+        'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
 
       answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',
@@ -1113,6 +1117,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
+      changeLiveQuizName: 'Änderung Live Quiz Namen',
+      liveQuizNameChangeSuccess:
+        'Der Name des Live Quizzes wurde erfolgreich geändert.',
+      liveQuizNameChangeError:
+        'Der Name des Live Quizzes konnte nicht geändert werden.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Konto-Link',

@@ -80,7 +80,7 @@ function PracticeQuiz({
         <StepProgressWithScoring
           items={
             quiz.stacks?.map((stack) => {
-              return progressState?.[stack.id] || { status: 'unanswered' }
+              return progressState?.[stack.id] ?? { status: 'unanswered' }
             }) || []
           }
           currentIx={currentIx}
