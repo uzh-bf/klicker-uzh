@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.41...v3.1.0) (2024-05-25)
+
+
+### Features
+
+* add group activity management for lecturers (publishing, unpublishing, deletion, and editing) ([#4117](https://github.com/uzh-bf/klicker-uzh/issues/4117)) ([b4e3b2f](https://github.com/uzh-bf/klicker-uzh/commit/b4e3b2f5e95c882df893fb2e414ce7413fe8a3ba))
+* add logic for point, xp and achievement distribution on group activity grading ([#4130](https://github.com/uzh-bf/klicker-uzh/issues/4130)) ([09dc01e](https://github.com/uzh-bf/klicker-uzh/commit/09dc01e3975a8e882f8bd444a6f084716ca86b3d))
+* creation of group activities ([#4060](https://github.com/uzh-bf/klicker-uzh/issues/4060)) ([394f208](https://github.com/uzh-bf/klicker-uzh/commit/394f208dbe849365cc078d4c031f4bd4b3724c79))
+* define data structure and implement student frontend for group activities ([#4116](https://github.com/uzh-bf/klicker-uzh/issues/4116)) ([d1e2940](https://github.com/uzh-bf/klicker-uzh/commit/d1e2940e5c32372f6632ece9c5106503fe369981))
+* implement group activity grading ([#4126](https://github.com/uzh-bf/klicker-uzh/issues/4126)) ([eb76668](https://github.com/uzh-bf/klicker-uzh/commit/eb766682acb9b9b8210b1c78a0e0526fa30b2409))
+* introduce group activity management and grading ([#4073](https://github.com/uzh-bf/klicker-uzh/issues/4073)) ([a0b0065](https://github.com/uzh-bf/klicker-uzh/commit/a0b00654aced6c530101e78ea61651891be4eef9))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** exclude content elements and flashcards from maximum point computation ([3f8ba0a](https://github.com/uzh-bf/klicker-uzh/commit/3f8ba0adca861f9ca7f243a511de9538727ccf9c))
+* **apps/frontend-pwa:** ensure that score is displayed correctly on progress bar of practice quiz ([b485a2a](https://github.com/uzh-bf/klicker-uzh/commit/b485a2a9c40c8e2a734f5d547b3306ee0ac931de))
+
+
+### Other
+
+* **cypress:** add tests for group activity grading and feedback ([#4129](https://github.com/uzh-bf/klicker-uzh/issues/4129)) ([6a21ee4](https://github.com/uzh-bf/klicker-uzh/commit/6a21ee4e632d20d57e558c597362a37564a13499))
+
+
+### Enhancements
+
+* add possibility to change live quiz name and displayname independent of status ([#4131](https://github.com/uzh-bf/klicker-uzh/issues/4131)) ([525661c](https://github.com/uzh-bf/klicker-uzh/commit/525661c593ce8fdcef80c4627c8172057b559486))
+* **apps/docs:** extend documentation to cover group activity ([#4132](https://github.com/uzh-bf/klicker-uzh/issues/4132)) ([3400fd5](https://github.com/uzh-bf/klicker-uzh/commit/3400fd5918a5cf363ef966c2fdf4d5c8c857067e))
+* **apps/frontend-pwa:** add description to course practice area ([8069d22](https://github.com/uzh-bf/klicker-uzh/commit/8069d228f655baf1b825458e9d9107de5b83987b))
+* final improvements of group activity student views and grading procedure ([#4128](https://github.com/uzh-bf/klicker-uzh/issues/4128)) ([7d33507](https://github.com/uzh-bf/klicker-uzh/commit/7d33507bda4cf6af63523171f290bd9082fbc8f8))
+
 ## [3.1.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.40...v3.1.0-rc.41) (2024-05-16)
 
 
