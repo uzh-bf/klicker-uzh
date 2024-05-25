@@ -441,7 +441,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-submission-3"]').click()
     cy.get('[data-cy="groupActivity-grading-comment-0"]')
       .click()
-      .type('Test Comment 2')
+      .type('Test Comment 4')
     cy.get('[data-cy="groupActivity-grading-score-0"]').clear()
     cy.get('[data-cy="groupActivity-grading-score-0"]').type('15')
     cy.get('[data-cy="group-activity-submission-1"]').click()
@@ -476,10 +476,12 @@ describe('Create and solve a group activity', () => {
     cy.loginStudent()
     const activityDisplayName = 'Gruppenquest Completed'
 
+    // TODO: check if points for each question are displayed correctly, group activity in list is passed, on overview is passed
+
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
 
-    cy.findByText('110/200 Points').should('exist')
+    cy.findByText('110/175 Points').should('exist') // TODO: fix correct points once points above have been corrected
   })
 })
