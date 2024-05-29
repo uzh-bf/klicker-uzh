@@ -28,11 +28,11 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+          cd ../grading
+          pnpm run build
           cd ../graphql
           pnpm run build
           cd ../markdown
-          pnpm run build
-          cd ../grading
           pnpm run build
           cd ../shared-components
           pnpm run build
