@@ -1,4 +1,4 @@
-name: Check file formatting and linting
+name: Check typescript types
 
 on:
   push:
@@ -31,51 +31,61 @@ jobs:
           cd apps/backend-docker
           pnpm run check
       - name: Check frontend-pwa typescript types
+        if: always() # Run this step even if the previous one fails
         shell: bash
         run: |
           cd apps/frontend-pwa
           pnpm run check
       - name: Check frontend-manage typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/frontend-manage
           pnpm run check
       - name: Check frontend-control typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/frontend-control
           pnpm run check
       - name: Check office-addin typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/office-addin
           pnpm run check
       - name: Check func-response-processor typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/func-response-processor
           pnpm run check
       - name: Check func-incoming-responses typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/func-incoming-responses
           pnpm run check
       - name: Check graphql package typescript types
+        if: always()
         shell: bash
         run: |
           cd packages/graphql
           pnpm run check
       - name: Check lti package typescript types
+        if: always()
         shell: bash
         run: |
           cd packages/lti
           pnpm run check
       - name: Check prisma package typescript types
+        if: always()
         shell: bash
         run: |
           cd packages/prisma
           pnpm run check
       - name: Check shared-components package typescript types
+        if: always()
         shell: bash
         run: |
           cd packages/shared-components
