@@ -1,0 +1,29 @@
+name: Check typescript types for lti package
+
+on:
+  push:
+    branches: ["v3", "v3*"]
+  pull_request:
+    branches: ["v3", "v3*"]
+    types: [opened, synchronize, reopened]
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.14.1
+          run_install: true
+      - name: Check types
+        shell: bash
+        run: |
+          cd packages/lti
+          pnpm run check
