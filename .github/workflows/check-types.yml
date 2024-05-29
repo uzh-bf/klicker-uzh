@@ -24,7 +24,9 @@ jobs:
           run_install: true
       - name: Build all required packages
         run: |
-          cd packages/prisma
+          cd packages/util
+          pnpm run build
+          cd ../prisma
           pnpm run build
           cd ../graphql
           pnpm run build
