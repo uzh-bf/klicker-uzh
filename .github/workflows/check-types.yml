@@ -24,9 +24,9 @@ jobs:
           run_install: true
       - name: Build all required packages
         run: |
-          cd packages/util
-          pnpm run build
           cd ../prisma
+          pnpm run build
+          cd packages/util
           pnpm run build
           cd ../graphql
           pnpm run build
@@ -38,13 +38,12 @@ jobs:
           pnpm run build
 
       - name: Check prisma package typescript types
-        if: always()
         shell: bash
         run: |
           cd packages/prisma
           pnpm run check
       - name: Check graphql package typescript types
-        if: always()
+        if: always() # Run this step even if the previous one fails
         shell: bash
         run: |
           cd packages/graphql
@@ -63,13 +62,14 @@ jobs:
           cd packages/shared-components
           pnpm run check
       - name: Check backend-docker typescript types
+        if: always()
         shell: bash
         run: |
           cd apps/backend-docker
           pnpm run build
           pnpm run check
       - name: Check frontend-pwa typescript types
-        if: always() # Run this step even if the previous one fails
+        if: always()
         shell: bash
         run: |
           cd apps/frontend-pwa
