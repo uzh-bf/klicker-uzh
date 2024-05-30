@@ -48,6 +48,12 @@ jobs:
         run: |
           cd packages/grading
           pnpm run check
+      - name: Check util package typescript types
+        if: always() # Run this step even if the previous one fails
+        shell: bash
+        run: |
+          cd packages/util
+          pnpm run check
       - name: Check graphql package typescript types
         if: always() # Run this step even if the previous one fails
         shell: bash
