@@ -122,7 +122,7 @@ function Histogram({
   }, [data.results, binCount, questionData.options.restrictions])
 
   return (
-    <div className={twMerge('h-[calc(100%-4rem)] mt-1', className?.root)}>
+    <div className={twMerge('mt-1 h-[calc(100%-4rem)]', className?.root)}>
       <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={processedData.data}
@@ -155,12 +155,12 @@ function Histogram({
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 return (
-                  <div className="p-2 bg-white border border-solid rounded-md border-uzh-grey-100">
+                  <div className="rounded-md border border-solid border-uzh-grey-100 bg-white p-2">
                     <div>
                       {t('manage.evaluation.histogramRange')}:{' '}
                       {payload[0].payload.label}
                     </div>
-                    <div className="font-bold text-primary">
+                    <div className="text-primary font-bold">
                       {t('manage.evaluation.count')}: {payload[0].payload.count}
                     </div>
                   </div>
@@ -287,7 +287,7 @@ function Histogram({
       </ResponsiveContainer>
 
       {!hideBins && (
-        <div className="flex flex-row items-center float-right gap-2 mr-4">
+        <div className="float-right mr-4 flex flex-row items-center gap-2">
           <NumberField
             precision={0}
             id="histogramBins"

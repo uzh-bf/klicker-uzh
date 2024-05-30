@@ -5,8 +5,8 @@ import {
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import { error } from 'console'
 import md5 from 'md5'
-import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops'
-import { AllElementTypeData, QuestionResultsOpen } from 'src/types/app'
+import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops.js'
+import { AllElementTypeData, QuestionResultsOpen } from 'src/types/app.js'
 
 async function run() {
   const prisma = new PrismaClient()

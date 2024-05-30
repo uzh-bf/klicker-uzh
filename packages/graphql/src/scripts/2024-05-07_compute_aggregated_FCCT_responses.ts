@@ -6,7 +6,7 @@ import {
   FlashcardInstanceResults,
   QuestionResponseContent,
   QuestionResponseFlashcard,
-} from 'src/types/app'
+} from 'src/types/app.js'
 
 async function run() {
   const prisma = new PrismaClient()

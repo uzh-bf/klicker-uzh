@@ -4,13 +4,13 @@ import {
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { StackInput } from 'src/types/app'
+import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 interface GetMicroLearningArgs {
   id: string

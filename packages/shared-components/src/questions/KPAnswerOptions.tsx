@@ -48,7 +48,7 @@ export function KPAnswerOptions({
         <div key={`kp-choice-${index}-${choice.value}`}>
           <div
             className={twMerge(
-              'flex flex-row items-center justify-between gap-4 p-2 border rounded',
+              'flex flex-row items-center justify-between gap-4 rounded border p-2',
               !hideFeedbacks &&
                 feedbacks &&
                 feedbacks[index] &&
@@ -61,7 +61,7 @@ export function KPAnswerOptions({
                 withProse
                 content={choice.value}
                 className={{
-                  root: 'p-1 pt-2 prose-img:!m-0 max-w-none prose-p:!m-0',
+                  root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
                 }}
               />
             </div>
@@ -69,7 +69,7 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                    'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
                   ),
                 }}
                 active={value?.[index] === true}
@@ -86,7 +86,7 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                    'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
                   ),
                 }}
                 active={value?.[index] === false}
