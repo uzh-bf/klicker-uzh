@@ -246,7 +246,7 @@ const serviceBusTrigger = async function (
             firstResponseReceivedAt,
             responseTimestamp,
             maxBonus: MAX_BONUS_POINTS,
-            getsMaxPoints: parsedSolutions && answerCorrect,
+            getsMaxPoints: parsedSolutions && answerCorrect === 1,
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
