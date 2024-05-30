@@ -7,5 +7,5 @@ export default defineConfig({
       : ['src/index.ts'],
   format: 'esm',
   clean: true,
-  target: 'node22',
+  target: 'node20',
 })
