@@ -47,9 +47,7 @@ const legacyConnection = mongoose.createConnection(
 )
 
 process.on('SIGINT', function () {
-  legacyConnection.close(function () {
-    process.exit(0)
-  })
+  legacyConnection.close()
 })
 
 const LegacyQuestionInstanceModel = legacyConnection.model(
