@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   ChoicesElementData,
   ElementInstance,
@@ -8,7 +9,7 @@ import {
   NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import React, { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'

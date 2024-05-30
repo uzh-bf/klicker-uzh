@@ -5,12 +5,12 @@ import {
 } from '@klicker-uzh/prisma'
 import axios from 'axios'
 import dayjs from 'dayjs'
-import minMax from 'dayjs/plugin/minMax'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
+import minMax from 'dayjs/plugin/minMax.js'
+import timezone from 'dayjs/plugin/timezone.js'
+import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import { Context } from './context'
+import { Context } from './context.js'
 
 dayjs.extend(utc)
 dayjs.extend(minMax)

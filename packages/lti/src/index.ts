@@ -1,6 +1,6 @@
 import bodyParser from 'body-parser'
 import crypto from 'crypto'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 
 interface Args {
   ctx: GetServerSidePropsContext

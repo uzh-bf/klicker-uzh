@@ -1,12 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import builder from '../builder'
-import { AllElementTypeData, QuestionResults } from '../types/app'
-import type { ICourse } from './course'
-import { CourseRef } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstanceRef } from './question'
-import { QuestionDataRef } from './questionData'
+import builder from '../builder.js'
+import { AllElementTypeData, QuestionResults } from '../types/app.js'
+import type { ICourse } from './course.js'
+import { CourseRef } from './course.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstanceRef } from './question.js'
+import { QuestionDataRef } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),

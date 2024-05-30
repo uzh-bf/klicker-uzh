@@ -4,7 +4,7 @@ import {
   AllElementTypeData,
   QuestionResults,
   QuestionResultsChoices,
-} from '../types/app'
+} from '../types/app.js'
 
 const RELEVANT_KEYS = [
   'id',

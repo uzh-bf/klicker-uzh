@@ -6,11 +6,11 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import * as R from 'ramda'
-import { GroupLeaderboardEntry } from 'src/ops'
-import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { GroupLeaderboardEntry } from 'src/ops.js'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { orderStacks } from '../lib/util.js'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },

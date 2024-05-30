@@ -1,22 +1,22 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import builder from '../builder'
-import { GroupActivityRef, IGroupActivity } from './groupActivity'
-import { IMicroLearning, MicroLearningRef } from './microLearning'
+import builder from '../builder.js'
+import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
+import { IMicroLearning, MicroLearningRef } from './microLearning.js'
 import type {
   IParticipant,
   IParticipantGroup,
   IParticipation,
-} from './participant'
+} from './participant.js'
 import {
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
-} from './participant'
-import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
-import type { ISession } from './session'
-import { SessionRef } from './session'
-import { IUser, UserRef } from './user'
+} from './participant.js'
+import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
+import type { ISession } from './session.js'
+import { SessionRef } from './session.js'
+import { IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number

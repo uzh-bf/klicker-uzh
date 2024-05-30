@@ -1,28 +1,28 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import * as AccountService from '../services/accounts'
-import * as CourseService from '../services/courses'
-import * as FeedbackService from '../services/feedbacks'
-import * as GroupService from '../services/groups'
-import * as MicroLearningService from '../services/microLearning'
-import * as ParticipantService from '../services/participants'
-import * as PracticeQuizService from '../services/practiceQuizzes'
-import * as QuestionService from '../services/questions'
-import * as SessionService from '../services/sessions'
-import { Course, LeaderboardEntry, StudentCourse } from './course'
-import { GroupActivity, GroupActivityDetails } from './groupActivity'
-import { MicroLearning } from './microLearning'
+import builder from '../builder.js'
+import * as AccountService from '../services/accounts.js'
+import * as CourseService from '../services/courses.js'
+import * as FeedbackService from '../services/feedbacks.js'
+import * as GroupService from '../services/groups.js'
+import * as MicroLearningService from '../services/microLearning.js'
+import * as ParticipantService from '../services/participants.js'
+import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as QuestionService from '../services/questions.js'
+import * as SessionService from '../services/sessions.js'
+import { Course, LeaderboardEntry } from './course.js'
+import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
+import { MicroLearning } from './microLearning.js'
 import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
   Participation,
-} from './participant'
-import { ElementStack, PracticeQuiz } from './practiceQuizzes'
-import { Element, Tag } from './question'
-import { Feedback, Session, SessionEvaluation } from './session'
-import { MediaFile, User, UserLogin, UserLoginScope } from './user'
+} from './participant.js'
+import { ElementStack, PracticeQuiz } from './practiceQuizzes.js'
+import { Element, Tag } from './question.js'
+import { Feedback, Session, SessionEvaluation } from './session.js'
+import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
   fields(t) {
