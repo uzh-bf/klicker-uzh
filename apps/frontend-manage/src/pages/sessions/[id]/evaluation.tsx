@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementType,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
@@ -62,14 +63,14 @@ function Evaluation() {
     instanceIx: 0,
     participants: 0,
     questionData: {
-      id: 0,
+      id: '',
       name: '',
       content: '',
-      type: 'SC',
+      type: ElementType.Sc,
       options: { choices: [] },
     },
     results: {},
-    statistics: {},
+    statistics: undefined,
     status: SessionBlockStatus.Executed,
   })
 
@@ -214,7 +215,7 @@ function Evaluation() {
       {router.query.hideControls !== 'true' && (
         <div className="z-20 flex-none h-11">
           <EvaluationControlBar
-            blocks={blocks || []}
+            blocks={blocks ?? []}
             selectedBlock={selectedBlockIndex}
             setSelectedBlock={setSelectedBlockIndex}
             setSelectedInstanceIndex={setSelectedInstanceIndex}

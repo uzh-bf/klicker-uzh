@@ -240,13 +240,13 @@ function LiveSessionWizard({
           blocks: initialValues?.blocks?.map((block) => {
             return {
               questionIds: block.instances?.map(
-                (instance) => instance.questionData.questionId
+                (instance) => instance.questionData!.questionId
               ),
               titles: block.instances?.map(
-                (instance) => instance.questionData.name
+                (instance) => instance.questionData!.name
               ),
               types: block.instances?.map(
-                (instance) => instance.questionData.type
+                (instance) => instance.questionData!.type
               ),
               timeLimit: block.timeLimit ?? undefined,
             }
@@ -397,7 +397,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
-  const { values, setFieldValue } = useFormikContext()
+  const { values, setFieldValue } = useFormikContext<LiveSessionFormValues>()
 
   useEffect(() => {
     if (values.courseId === '') {

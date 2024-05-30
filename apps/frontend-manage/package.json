@@ -63,6 +63,7 @@
     "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
     "@types/d3": "^7.4.0",
+    "@types/is-hotkey": "^0.1.10",
     "@types/js-cookie": "^3.0.3",
     "@types/js-search": "^1.4.0",
     "@types/lodash": "^4.14.196",
