@@ -11,7 +11,7 @@ export const POSITIONS = [
 
 interface GroupVisualizationProps {
   groupName: string
-  participants: Partial<Participant>[]
+  participants: Omit<Participant, 'isActive' | 'locale' | 'xp'>[]
   scaleFactor?: number
 }
 

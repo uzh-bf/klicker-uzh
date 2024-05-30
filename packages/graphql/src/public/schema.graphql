@@ -456,7 +456,7 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID
+  groupActivityId: ID!
   groupName: String
   id: Int!
   results: Json
@@ -538,7 +538,7 @@ type LeaderboardEntry {
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int!
-  level: Int
+  level: Int!
   participant: Participant
   participantId: String!
   participation: Participation!

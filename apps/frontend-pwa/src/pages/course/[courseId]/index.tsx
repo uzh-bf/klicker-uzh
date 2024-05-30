@@ -227,7 +227,7 @@ function CourseOverview({ courseId }: Props) {
 
                         {participant?.id && participation?.isActive && (
                           <Leaderboard
-                            leaderboard={leaderboard || []}
+                            leaderboard={leaderboard ?? []}
                             onJoin={joinCourse}
                             onLeave={() => setIsLeaveCourseModalOpen(true)}
                             participant={participant ?? undefined}
@@ -430,10 +430,17 @@ function CourseOverview({ courseId }: Props) {
                             )}
                           </div>
                           <Leaderboard
-                            courseName={course.displayName}
-                            leaderboard={group.participants}
+                            leaderboard={
+                              group.participants?.map((participant) => {
+                                return {
+                                  ...participant,
+                                  score: participant.score ?? 0,
+                                  rank: participant.rank ?? 1,
+                                  level: participant.level ?? 1,
+                                }
+                              }) ?? []
+                            }
                             participant={participant}
-                            activeParticipation={participation?.isActive}
                             onLeave={
                               course.isGroupDeadlinePassed
                                 ? undefined
@@ -475,7 +482,7 @@ function CourseOverview({ courseId }: Props) {
                         </div>
                         <GroupVisualization
                           groupName={group.name}
-                          participants={group.participants}
+                          participants={group.participants!}
                         />
                       </div>
 

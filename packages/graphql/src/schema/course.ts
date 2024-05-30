@@ -141,7 +141,7 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   rank: number
   lastBlockOrder: number
   isSelf?: boolean
-  level?: number
+  level: number
   participant: IParticipant
   participation: IParticipation
 }
@@ -159,9 +159,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
-    level: t.exposeInt('level', {
-      nullable: true,
-    }),
+    level: t.exposeInt('level'),
 
     participant: t.expose('participant', {
       type: ParticipantRef,

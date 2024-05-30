@@ -15,7 +15,7 @@ interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
   course?:
-    | Partial<Omit<Course, 'awards' | 'owner'>>
+    | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
   mobileMenuItems?: {
     icon: React.ReactElement

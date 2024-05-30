@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
+  ElementStack as ElementStackType,
   GetMicroLearningDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -60,7 +61,7 @@ function MicrolearningInstance() {
             parentId={microlearning.id}
             courseId={microlearning.course!.id}
             // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
-            stack={currentStack}
+            stack={currentStack as ElementStackType}
             currentStep={ix + 1}
             totalSteps={microlearning.stacks?.length ?? 0}
             handleNextElement={() =>
