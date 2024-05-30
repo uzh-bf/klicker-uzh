@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.11.3
+RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
 
 COPY . .
 
@@ -22,7 +22,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.11.3
+RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
