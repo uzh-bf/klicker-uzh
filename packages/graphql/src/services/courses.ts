@@ -312,8 +312,8 @@ export async function getCourseOverviewData(
       )
 
       const sortByScoreAndUsername = R.curry(R.sortWith)([
-        R.descend(R.prop<number>('score')),
-        R.ascend(R.prop<string>('username')),
+        R.descend(R.prop('score')),
+        R.ascend(R.prop('username')),
       ])
 
       const sortedEntries: typeof allEntries.mapped = sortByScoreAndUsername(
@@ -643,7 +643,7 @@ export async function getCourseData(
     (groupActivity) => {
       return {
         ...groupActivity,
-        numOfQuestions: groupActivity.stacks[0].elements.length,
+        numOfQuestions: groupActivity.stacks[0]!.elements.length,
       }
     }
   )

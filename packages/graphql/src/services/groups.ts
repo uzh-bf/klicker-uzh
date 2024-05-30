@@ -375,7 +375,7 @@ export async function manipulateGroupActivity(
         options: {},
         elements: {
           create: stack.elements.map((elem) => {
-            const element = elementMap[elem.elementId]
+            const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
 
             return {
@@ -841,6 +841,8 @@ export async function submitGroupActivityDecisions(
           response: response,
         })
 
+        if (!updatedResults.results) return
+
         // update the instance with the new results
         await prisma.elementInstance.update({
           where: { id: instanceId },
@@ -1177,7 +1179,7 @@ export async function finalizeGroupActivityGrading(
         leaderboard: participant.leaderboards.length > 0,
       }
       if (instance.results!.passed) {
-        acc[participant.id].achievements.push(8)
+        acc[participant.id]!.achievements.push(8)
       }
     })
 
