@@ -1,4 +1,5 @@
 import {
+  ChoiceQuestionOptions,
   ChoicesQuestionData,
   ElementType,
   FreeTextQuestionData,
@@ -52,7 +53,11 @@ function QuestionArea({
     inputValue: QUESTION_GROUPS.CHOICES.includes(
       questions[remainingQuestions[0]]?.type
     )
-      ? new Array(questions[remainingQuestions[0]]?.options.length, false)
+      ? new Array(
+          (
+            questions[remainingQuestions[0]].options as ChoiceQuestionOptions
+          ).choices.length
+        ).fill(false)
       : '',
   })
 
@@ -119,7 +124,11 @@ function QuestionArea({
     const { instanceId, type } = questions[activeQuestion]
 
     // save the response, if one was given before the time expired
-    if (typeof inputValue !== 'undefined' && inputValid) {
+    if (
+      typeof inputValue !== 'undefined' &&
+      inputValue.length !== 0 &&
+      inputValid
+    ) {
       answerQuestion(inputValue, type, instanceId)
     }
 
@@ -132,7 +141,7 @@ function QuestionArea({
     setInputState({
       inputEmpty: true,
       inputValid: false,
-      inputValue: undefined,
+      inputValue: '',
     })
     setRemainingQuestions([])
     push(['trackEvent', 'Live Quiz', 'Time expired'])

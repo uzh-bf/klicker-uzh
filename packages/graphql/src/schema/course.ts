@@ -42,7 +42,7 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    color: t.exposeString('color', { nullable: true }),
+    color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
@@ -112,6 +112,25 @@ export const Course = builder.objectType(CourseRef, {
     owner: t.expose('owner', {
       type: UserRef,
       nullable: true,
+    }),
+  }),
+})
+
+export interface IStudentCourse extends DB.Course {
+  owner: IUser
+}
+export const StudentCourseRef =
+  builder.objectRef<IStudentCourse>('StudentCourse')
+export const StudentCourse = builder.objectType(StudentCourseRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    displayName: t.exposeString('displayName'),
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    color: t.exposeString('color'),
+    description: t.exposeString('description', { nullable: true }),
+
+    owner: t.expose('owner', {
+      type: UserRef,
     }),
   }),
 })

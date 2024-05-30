@@ -9,7 +9,7 @@ import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
-import { Course, LeaderboardEntry } from './course'
+import { Course, LeaderboardEntry, StudentCourse } from './course'
 import { GroupActivity, GroupActivityDetails } from './groupActivity'
 import { MicroLearning } from './microLearning'
 import {
@@ -85,7 +85,7 @@ export const Query = builder.queryType({
 
       basicCourseInformation: t.field({
         nullable: true,
-        type: Course,
+        type: StudentCourse,
         args: {
           courseId: t.arg.string({ required: true }),
         },

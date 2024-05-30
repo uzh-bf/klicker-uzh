@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AddConfusionTimestepDocument,
   CreateFeedbackDocument,
+  Feedback,
   FeedbackAddedDocument,
   FeedbackRemovedDocument,
   FeedbackUpdatedDocument,
@@ -27,14 +28,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import PublicFeedback from './PublicFeedback'
 
-function Subscriber({ subscribeToMore, sessionId }) {
+interface SubscriberProps {
+  sessionId: string
+  subscribeToMore: any
+}
+
+function Subscriber({ subscribeToMore, sessionId }: SubscriberProps) {
   useEffect(() => {
     if (!sessionId) return
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackAddedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackAdded: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackAdded
         if (prev.feedbacks?.map((item) => item.id).includes(newItem.id))
@@ -46,7 +57,12 @@ function Subscriber({ subscribeToMore, sessionId }) {
     const feedbackRemoved = subscribeToMore({
       document: FeedbackRemovedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackRemoved: string } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const removedItem = subscriptionData.data.feedbackRemoved
         return {
@@ -61,7 +77,12 @@ function Subscriber({ subscribeToMore, sessionId }) {
     const feedbackUpdated = subscribeToMore({
       document: FeedbackUpdatedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackUpdated: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const updatedItem = subscriptionData.data.feedbackUpdated
         return {
@@ -222,7 +243,7 @@ function FeedbackArea({
           'Confusion Interacted',
           `speed=${speed}, difficulty=${difficulty}`,
         ])
-      } catch ({ message }) {
+      } catch ({ message }: any) {
         console.error(message)
       } finally {
         // disable confusion voting for 1 minute

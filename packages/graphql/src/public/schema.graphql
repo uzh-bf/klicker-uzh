@@ -130,7 +130,7 @@ type Course {
   averageActiveScore: Float
   averageScore: Float
   awards: [AwardEntry!]
-  color: String
+  color: String!
   createdAt: Date!
   description: String
   displayName: String!
@@ -866,7 +866,7 @@ type PushSubscription {
 }
 
 type Query {
-  basicCourseInformation(courseId: String!): Course
+  basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
@@ -1097,6 +1097,15 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentCourse {
+  color: String!
+  description: String
+  displayName: String!
+  id: ID!
+  owner: User!
+  pinCode: Int
 }
 
 type Subscription {
