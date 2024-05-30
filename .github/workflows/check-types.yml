@@ -73,6 +73,20 @@ jobs:
         run: |
           cd packages/shared-components
           pnpm run check
+      - name: Check v2 export function typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-migration-v2-export
+          pnpm run build
+          pnpm run check
+      - name: Check v3 import function typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-migration-v3-import
+          pnpm run build
+          pnpm run check
       - name: Check backend-docker typescript types
         if: always()
         shell: bash
