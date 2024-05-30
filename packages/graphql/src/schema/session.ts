@@ -308,7 +308,7 @@ export const TabData = builder.objectRef<ITabData>('TabData').implement({
 })
 
 export interface IEvaluationBlock {
-  blockIx?: number | null
+  blockIx: number
   blockStatus: DB.SessionBlockStatus
   tabData: ITabData[]
 }
@@ -316,7 +316,7 @@ export const EvaluationBlock = builder
   .objectRef<IEvaluationBlock>('EvaluationBlock')
   .implement({
     fields: (t) => ({
-      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      blockIx: t.exposeInt('blockIx'),
       blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
       tabData: t.expose('tabData', { type: [TabData] }),
     }),
