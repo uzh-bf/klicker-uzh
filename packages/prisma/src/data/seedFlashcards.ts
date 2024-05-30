@@ -5,9 +5,9 @@ import Prisma, {
   ElementStackType,
   ElementType,
   PublicationStatus,
-} from '../../dist'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants'
-import { prepareFlashcardsFromFile, processQuizInfo } from './helpers'
+} from '../../dist/index.js'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import { prepareFlashcardsFromFile, processQuizInfo } from './helpers.js'
 
 async function seedFlashcardSet(
   prismaClient: Prisma.PrismaClient,
