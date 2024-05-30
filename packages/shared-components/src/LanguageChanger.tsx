@@ -1,5 +1,4 @@
 import { Select } from '@uzh-bf/design-system'
-import React from 'react'
 
 function LanguageChanger({
   value,

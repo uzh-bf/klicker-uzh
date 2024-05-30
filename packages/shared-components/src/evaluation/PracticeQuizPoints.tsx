@@ -1,7 +1,6 @@
 import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 
 interface PracticeQuizPointsProps {
   evaluation: InstanceEvaluation

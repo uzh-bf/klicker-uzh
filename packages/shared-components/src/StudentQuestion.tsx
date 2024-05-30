@@ -12,7 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'

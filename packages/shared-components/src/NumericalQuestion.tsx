@@ -3,7 +3,6 @@ import {
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import NREvaluation from './evaluation/NREvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'

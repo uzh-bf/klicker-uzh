@@ -2,7 +2,7 @@ import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import { FormikTextField, TextFieldWithNameProps } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DebouncedUsernameFieldProps {

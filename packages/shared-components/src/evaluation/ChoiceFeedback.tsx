@@ -2,7 +2,6 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface ChoiceFeedbackProps {
