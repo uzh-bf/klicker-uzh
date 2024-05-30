@@ -159,12 +159,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       prisma.liveSession.upsert(
         await prepareSession({
           ...data,
+          status: data.status ?? 'PREPARED',
           blocks: data.blocks.map((block, ix) => ({
-            ...block,
             order: ix,
-            questions: questionsTest
-              .filter((q) => block.questions.includes(parseInt(q.originalId!)))
-              .map(async (q) => q),
+            expiresAt: undefined,
+            timeLimit: block.timeLimit,
+            questions: questionsTest.filter((q) =>
+              block.questions.includes(parseInt(q.originalId!))
+            ),
           })),
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
@@ -1025,6 +1027,7 @@ Mehr bla bla...
 
 const prismaClient = new Prisma.PrismaClient()
 
+// @ts-ignore
 await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)

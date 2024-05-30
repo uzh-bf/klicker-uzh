@@ -1,17 +1,17 @@
 import Prisma from '../../dist'
-import { USER_ID_BF2 } from './constants'
+// import { USER_ID_BF2 } from './constants'
 // import * as R from 'ramda'
 // import { prepareQuestionInstance } from './helpers.js'
 
 async function seed(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
-  const questions = await prisma.element.findMany({
-    orderBy: { id: 'desc' },
-    where: {
-      ownerId: USER_ID_BF2,
-    },
-  })
+  // const questions = await prisma.element.findMany({
+  //   orderBy: { id: 'desc' },
+  //   where: {
+  //     ownerId: USER_ID_BF2,
+  //   },
+  // })
 
   // const GROUP_ACTIVITY_ID = 'b83657a5-4d19-449d-b378-208b7cb2e8e0'
   // const groupActivity1BF2 = await prisma.groupActivity.upsert({

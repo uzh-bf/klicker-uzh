@@ -1,6 +1,6 @@
 import Prisma from '../../../dist'
 import { AchievementType } from '../../client'
-const { ElementType, SessionStatus, OrderType } = Prisma
+const { ElementType, SessionStatus } = Prisma
 
 export const QUESTIONS = [
   {
@@ -183,9 +183,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [2, 4],
+        timeLimit: undefined,
       },
       {
         questions: [4, 2],
+        timeLimit: undefined,
       },
     ],
   },
@@ -201,9 +203,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
     ],
   },
@@ -219,9 +223,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: 30,
       },
     ],
   },

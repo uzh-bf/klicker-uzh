@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import Prisma, {
   ElementInstanceType,
   ElementOrderType,
@@ -45,7 +46,7 @@ async function seedFlashcardSet(
             createMany: {
               data: [
                 {
-                  migrationId: el.originalId,
+                  migrationId: el.originalId ?? uuidv4(),
                   originalId: el.originalId,
                   order: ix,
                   type: ElementInstanceType.PRACTICE_QUIZ,
@@ -280,6 +281,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
 // if main module, run this
 const prismaClient = new Prisma.PrismaClient()
+// @ts-ignore
 await seedFlashcards(prismaClient)
   .then((res) => {
     console.log('res', res)

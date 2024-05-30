@@ -921,13 +921,13 @@ export function prepareGroupActivityClues({
   ]
 }
 
-export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
-  const turndown = Turndown()
+export function extractQuizInfo(doc: any, formulaTagId?: number) {
+  const turndown = new Turndown()
 
   return {
     title: doc.box.title[0],
     description: doc.box.description[0],
-    elements: doc.box.cards[0].card.map((card) => {
+    elements: doc.box.cards[0].card.map((card: any) => {
       const hasFormula =
         card.question[0].text[0].includes('\\(') ||
         card.answer[0].text[0].includes('\\(')
@@ -990,6 +990,7 @@ export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
 }
 
 export async function processQuizInfo(fileName: string, formulaTagId?: number) {
+  // @ts-ignore
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
@@ -1011,7 +1012,7 @@ export async function prepareFlashcardsFromFile(
   const quizInfo = await processQuizInfo(fileName, formulaTagId)
 
   const elementsFC = await Promise.allSettled(
-    quizInfo.elements.map(async (data) => {
+    quizInfo.elements.map(async (data: any) => {
       const flashcard = await prismaClient.element.upsert({
         where: {
           originalId: data.originalId,
@@ -1037,11 +1038,13 @@ export async function prepareFlashcardsFromFile(
     })
   )
 
-  if (elementsFC.some((el) => el.status === 'rejected')) {
+  if (
+    elementsFC.some((el: PromiseSettledResult<any>) => el.status === 'rejected')
+  ) {
     throw new Error('Failed to seed some flashcard elements')
   }
 
-  const elements = elementsFC.map((el) => el.value)
+  const elements = elementsFC.map((el: any) => el.value)
 
   return elements
 }
@@ -1074,7 +1077,7 @@ export async function prepareContentElements(
     throw new Error('Failed to seed some content elements')
   }
 
-  const elements = elementsCE.map((el) => el.value)
+  const elements = elementsCE.map((el: any) => el.value)
 
   return elements
 }

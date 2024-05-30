@@ -18,6 +18,12 @@ async function seedUser(prisma: Prisma.PrismaClient) {
       name: '',
       displayName: '',
       ownerId: user.id,
+      pinCode: 483726,
+      startDate: new Date(),
+      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 10)),
+      groupDeadlineDate: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 5)
+      ),
     })
   )
 }

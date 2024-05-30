@@ -11,5 +11,6 @@
       "src/data/*": "esm",
       "src/scripts/*": "esm"
     }
-  }
+  },
+  "exclude": ["src/client", "src/scripts"]
 }
