@@ -139,7 +139,7 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
   avatar?: string | null
   rank: number
-  lastBlockOrder: number
+  lastBlockOrder?: number
   isSelf?: boolean
   level: number
   participant: IParticipant
@@ -155,7 +155,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     username: t.exposeString('username'),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
-    lastBlockOrder: t.exposeInt('lastBlockOrder'),
+    lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),

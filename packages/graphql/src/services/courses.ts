@@ -9,6 +9,7 @@ import {
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops.js'
+import { ILeaderboardEntry } from 'src/schema/course.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 
@@ -581,10 +582,9 @@ export async function getCourseData(
     }
   })
 
-  // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
     course?.leaderboard.reduce<{
-      activeLBEntries: LeaderboardEntry[]
+      activeLBEntries: ILeaderboardEntry[]
       activeSum: number
       activeCount: number
     }>(
@@ -598,12 +598,14 @@ export async function getCourseData(
               score: entry.score,
               rank: acc.activeCount + 1,
               courseId: entry.courseId,
-              email: entry.participation?.participant.email,
-              username: entry.participation?.participant.username,
-              avatar: entry.participation?.participant.avatar,
+              level: levelFromXp(entry.participation!.participant.xp),
+              email: entry.participation!.participant.email,
+              username: entry.participation!.participant.username,
+              avatar: entry.participation!.participant.avatar,
               participation: entry.participation,
               type: LeaderboardType.COURSE,
               participantId: entry.participantId,
+              participant: entry.participation!.participant,
               sessionParticipationId: null,
               sessionBlockId: null,
               sessionId: null,
