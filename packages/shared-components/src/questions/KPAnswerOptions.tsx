@@ -1,11 +1,7 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Choice,
-  ElementDisplayMode,
-  ElementType,
-  QuestionFeedback,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
@@ -105,7 +101,7 @@ export function KPAnswerOptions({
             </div>
           </div>
           {!hideFeedbacks && feedbacks && feedbacks[index] && (
-            <ChoiceFeedback feedback={feedbacks[index]} />
+            <ChoiceFeedback feedback={feedbacks[index]!} />
           )}
         </div>
       ))}

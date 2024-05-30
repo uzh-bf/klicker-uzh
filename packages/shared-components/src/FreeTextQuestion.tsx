@@ -1,5 +1,5 @@
 import React from 'react'
-import {
+import type {
   FreeTextQuestionOptions,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'

@@ -1,6 +1,6 @@
-import {
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type {
   ChoiceQuestionOptions,
-  ElementType,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'

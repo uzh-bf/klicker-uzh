@@ -1,4 +1,4 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import type { Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'

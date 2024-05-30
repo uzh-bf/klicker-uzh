@@ -1,8 +1,5 @@
-import {
-  Choice,
-  ElementDisplayMode,
-  QuestionFeedback,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
@@ -70,7 +67,7 @@ export function MCAnswerOptions({
               </Button.Label>
             </Button>
             {!hideFeedbacks && feedbacks && feedbacks[index] && (
-              <ChoiceFeedback feedback={feedbacks[index]} />
+              <ChoiceFeedback feedback={feedbacks[index]!} />
             )}
           </div>
         )
