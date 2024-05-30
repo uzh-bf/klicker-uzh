@@ -260,7 +260,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.5
       '@types/node':
-        specifier: ^20.12.12
+        specifier: ^20.12.13
         version: 20.12.13
       '@types/passport':
         specifier: ^1.0.10
