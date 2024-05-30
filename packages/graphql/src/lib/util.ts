@@ -21,7 +21,7 @@ export function shuffle<T>(array: Array<T>): Array<T> {
   const a = [...array]
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
+    ;[a[i], a[j]] = [a[j]!, a[i]!]
   }
   return a
 }
@@ -102,8 +102,8 @@ export const orderStacks = R.sort(
     if (aEarliestDueDate > bEarliestDueDate) return 1
 
     // fallback (old logic) in unprobable case of identical dueDates
-    const aResponse = stackAResponses[0]
-    const bResponse = stackBResponses[0]
+    const aResponse = stackAResponses[0]!
+    const bResponse = stackBResponses[0]!
 
     if (aResponse.correctCountStreak < bResponse.correctCountStreak) return -1
     if (aResponse.correctCountStreak > bResponse.correctCountStreak) return 1
@@ -119,11 +119,13 @@ export const orderStacks = R.sort(
   }
 )
 
-const findEarliestDueDate = (stackResponses: QuestionResponse[]) => {
+const findEarliestDueDate = (
+  stackResponses: (QuestionResponse | undefined)[]
+) => {
   return dayjs
     .min(
       stackResponses.map((response) =>
-        response.nextDueAt === null ? dayjs() : dayjs(response.nextDueAt)
+        response!.nextDueAt === null ? dayjs() : dayjs(response!.nextDueAt)
       )
     )
     ?.toDate()
