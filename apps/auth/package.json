@@ -47,7 +47,7 @@
   "scripts": {
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
-    "check": "tsc",
+    "check": "tsc --no-emit",
     "dev": "next dev --port 3010",
     "dev:offline": "next dev --port 3010",
     "dev:test": "cross-env NODE_ENV=test next dev --port 3010",
