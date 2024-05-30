@@ -33,7 +33,7 @@ export function SCAnswerOptionsOLD({
             fluid
             className={{
               root: twMerge(
-                'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
               ),
             }}
             onClick={onChange(index)}
@@ -46,7 +46,7 @@ export function SCAnswerOptionsOLD({
                 withProse
                 content={choice.value}
                 className={{
-                  root: 'p-1 pt-2 prose-img:!m-0 max-w-none prose-p:!m-0',
+                  root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
                 }}
               />
             </Button.Label>
