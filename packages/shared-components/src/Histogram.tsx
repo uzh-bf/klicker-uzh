@@ -2,11 +2,10 @@ import {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
-import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useMemo, useState } from 'react'
-// TODO: replace lodash with ramda
 import { NumberField } from '@uzh-bf/design-system'
+import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useTranslations } from 'next-intl'
+import React, { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,

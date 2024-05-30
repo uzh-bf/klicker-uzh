@@ -147,6 +147,8 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
+  [ElementType.Flashcard]: [],
+  [ElementType.Content]: [],
 }
 
 export const STATISTICS_ORDER: string[] = [
