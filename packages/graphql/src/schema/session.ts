@@ -108,7 +108,7 @@ export const SessionBlock = SessionBlockRef.implement({
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
 
     status: t.expose('status', { type: SessionBlockStatus }),
-    order: t.exposeInt('order', { nullable: true }),
+    order: t.exposeInt('order'),
     expiresAt: t.expose('expiresAt', { type: 'Date', nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),

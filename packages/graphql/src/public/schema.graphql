@@ -1024,7 +1024,7 @@ type SessionBlock {
   id: Int!
   instances: [QuestionInstance!]
   numOfParticipants: Int
-  order: Int
+  order: Int!
   randomSelection: Int
   status: SessionBlockStatus!
   timeLimit: Int
