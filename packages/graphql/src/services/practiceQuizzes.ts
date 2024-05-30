@@ -27,7 +27,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import {
-  ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   QuestionResponse as QuestionResponseType,
@@ -640,7 +639,7 @@ export function evaluateAnswerCorrectness({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const elementOptions = elementData.options
       const solution = elementOptions.choices.reduce<number[]>(
         (acc, choice) => {
           if (choice.correct) return [...acc, choice.ix]
@@ -726,7 +725,7 @@ function evaluateElementResponse(
       //   response.choices!.includes(choice.ix)
       // )
 
-      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const elementOptions = elementData.options
       const feedbacks = elementOptions.choices
 
       if (elementData.type === ElementType.SC) {
@@ -839,7 +838,7 @@ export function updateQuestionResults({
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
-          [ix]: acc[ix] + 1,
+          [ix]: acc[ix]! + 1,
         }),
         results.choices
       )
@@ -880,7 +879,7 @@ export function updateQuestionResults({
           ...results.responses,
           [hashedValue]: {
             ...results.responses[hashedValue],
-            count: results.responses[hashedValue].count + 1,
+            count: results.responses[hashedValue]!.count + 1,
           },
         }
       } else {
@@ -915,7 +914,7 @@ export function updateQuestionResults({
           ...results.responses,
           [hashedValue]: {
             ...results.responses[hashedValue],
-            count: results.responses[hashedValue].count + 1,
+            count: results.responses[hashedValue]!.count + 1,
           },
         }
       } else {
@@ -1033,6 +1032,15 @@ export async function respondToQuestion(
         correct: correctness === 1,
       })
 
+      if (!updatedResults.results) {
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
+      }
+
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
         data: {
@@ -1087,8 +1095,8 @@ export async function respondToQuestion(
 
     if (hasPreviousResponse) {
       const previousResponseOutsideTimeframe =
-        !instance.responses[0].lastAwardedAt ||
-        dayjs(instance.responses[0].lastAwardedAt).isBefore(
+        !instance.responses[0]!.lastAwardedAt ||
+        dayjs(instance.responses[0]!.lastAwardedAt).isBefore(
           dayjs().subtract(
             instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
             'days'
@@ -1102,8 +1110,8 @@ export async function respondToQuestion(
       }
 
       const previousXpResponseOutsideTimeframe =
-        !instance.responses[0].lastXpAwardedAt ||
-        dayjs(instance.responses[0].lastXpAwardedAt).isBefore(
+        !instance.responses[0]!.lastXpAwardedAt ||
+        dayjs(instance.responses[0]!.lastXpAwardedAt).isBefore(
           dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
         )
 
@@ -1115,10 +1123,10 @@ export async function respondToQuestion(
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0].lastAwardedAt
+        : instance.responses[0]!.lastAwardedAt
       lastXpAwardedAt = previousXpResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0].lastXpAwardedAt
+        : instance.responses[0]!.lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(
           instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
@@ -1179,7 +1187,7 @@ export async function respondToQuestion(
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
-          [ix]: acc[ix] + 1,
+          [ix]: acc[ix]! + 1,
         }),
         newAggResponses.choices
       )
@@ -1200,7 +1208,7 @@ export async function respondToQuestion(
             ...newAggResponses.responses,
             [hashedValue]: {
               ...newAggResponses.responses[hashedValue],
-              count: newAggResponses.responses[hashedValue].count + 1,
+              count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
         } else {
@@ -1223,7 +1231,7 @@ export async function respondToQuestion(
             ...newAggResponses.responses,
             [hashedValue]: {
               ...newAggResponses.responses[hashedValue],
-              count: newAggResponses.responses[hashedValue].count + 1,
+              count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
         } else {
@@ -1424,8 +1432,14 @@ export async function respondToQuestion(
           newPointsFrom,
           xpAwarded,
           newXpFrom,
-          solutions: elementData.options.solutions,
-          solutionRanges: elementData.options.solutionRanges,
+          solutions:
+            elementData.type === 'FREE_TEXT'
+              ? elementData.options.solutions
+              : null,
+          solutionRanges:
+            elementData.type === 'NUMERICAL'
+              ? elementData.options.solutionRanges
+              : null,
         }
       : undefined,
     status: status,
@@ -1743,7 +1757,7 @@ export async function manipulatePracticeQuiz(
           options: {},
           elements: {
             create: stack.elements.map((elem) => {
-              const element = elementMap[elem.elementId]
+              const element = elementMap[elem.elementId]!
 
               const processedElementData = processElementData(element)
 
