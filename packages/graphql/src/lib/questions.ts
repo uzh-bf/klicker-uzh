@@ -1,4 +1,4 @@
-import { Element, ElementType } from '@klicker-uzh/prisma'
+import { ElementType, type Element } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllElementTypeData,
@@ -14,13 +14,16 @@ const RELEVANT_KEYS = [
   'pointsMultiplier',
   'type',
   'options',
-]
+] as const
 
 export function processQuestionData(question: Element) {
-  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
+  const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
   return {
-    ...extractRelevantKeys(question),
+    ...(extractRelevantKeys(question) as Pick<
+      Element,
+      (typeof RELEVANT_KEYS)[number]
+    >),
     id: `${question.id}-v${question.version}`,
     questionId: question.id,
   }

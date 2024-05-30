@@ -10,15 +10,18 @@ const RELEVANT_KEYS = [
   'pointsMultiplier',
   'type',
   'options',
-]
+] as const
 
 const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
 export function processQuestionData(question: Element) {
   return {
-    ...extractRelevantKeys(question),
+    ...(extractRelevantKeys(question) as Pick<
+      Element,
+      (typeof RELEVANT_KEYS)[number]
+    >),
     id: `${question.id}-v${question.version}`,
-    questionId: question.id,
+    elementId: question.id,
   }
 }
 
