@@ -111,7 +111,7 @@ export async function createSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
@@ -253,7 +253,7 @@ export async function editSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
@@ -680,7 +680,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                       where: {
                         participantId_achievementId: {
                           participantId: id,
-                          achievementId: newAchievements[id],
+                          achievementId: newAchievements[id]!,
                         },
                       },
                       create: {
@@ -688,7 +688,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                         achievedCount: 1,
                         achievement: {
                           connect: {
-                            id: newAchievements[id],
+                            id: newAchievements[id]!,
                           },
                         },
                       },
@@ -1388,8 +1388,8 @@ export async function getLeaderboard(
   })
 
   const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop<number>('score')),
-    R.ascend(R.prop<string>('username')),
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
   ])
 
   const sortedEntries: typeof preparedEntries =
