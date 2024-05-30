@@ -65,7 +65,6 @@ jobs:
         shell: bash
         run: |
           cd packages/lti
-          pnpm run build
           pnpm run check
       - name: Check shared-components package typescript types
         if: always()
@@ -78,61 +77,52 @@ jobs:
         shell: bash
         run: |
           cd apps/func-migration-v2-export
-          pnpm run build
           pnpm run check
       - name: Check v3 import function typescript types
         if: always()
         shell: bash
         run: |
           cd apps/func-migration-v3-import
-          pnpm run build
           pnpm run check
       - name: Check backend-docker typescript types
         if: always()
         shell: bash
         run: |
           cd apps/backend-docker
-          pnpm run build
           pnpm run check
       - name: Check frontend-pwa typescript types
         if: always()
         shell: bash
         run: |
           cd apps/frontend-pwa
-          pnpm run build
           pnpm run check
       - name: Check frontend-manage typescript types
         if: always()
         shell: bash
         run: |
           cd apps/frontend-manage
-          pnpm run build
           pnpm run check
       - name: Check frontend-control typescript types
         if: always()
         shell: bash
         run: |
           cd apps/frontend-control
-          pnpm run build
           pnpm run check
       - name: Check office-addin typescript types
         if: always()
         shell: bash
         run: |
           cd apps/office-addin
-          pnpm run build
           pnpm run check
       - name: Check func-response-processor typescript types
         if: always()
         shell: bash
         run: |
           cd apps/func-response-processor
-          pnpm run build
           pnpm run check
       - name: Check func-incoming-responses typescript types
         if: always()
         shell: bash
         run: |
           cd apps/func-incoming-responses
-          pnpm run build
           pnpm run check
