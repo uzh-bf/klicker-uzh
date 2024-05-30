@@ -4,7 +4,7 @@ on:
   push:
     branches: ["v3", "v3*"]
   pull_request:
-    branches: ["v3", "v3*"]
+    # branches: ["v3", "v3*"]
     types: [opened, synchronize, reopened]
 
 env:
