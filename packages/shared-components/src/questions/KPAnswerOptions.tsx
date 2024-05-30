@@ -101,7 +101,7 @@ export function KPAnswerOptions({
             </div>
           </div>
           {!hideFeedbacks && feedbacks && feedbacks[index] && (
-            <ChoiceFeedback feedback={feedbacks[index]} />
+            <ChoiceFeedback feedback={feedbacks[index]!} />
           )}
         </div>
       ))}

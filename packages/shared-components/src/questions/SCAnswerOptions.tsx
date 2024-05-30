@@ -71,7 +71,7 @@ export function SCAnswerOptions({
               </Button.Label>
             </Button>
             {!hideFeedbacks && feedbacks && feedbacks[index] && (
-              <ChoiceFeedback feedback={feedbacks[index]} />
+              <ChoiceFeedback feedback={feedbacks[index]!} />
             )}
           </div>
         )

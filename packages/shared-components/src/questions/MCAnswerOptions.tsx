@@ -67,7 +67,7 @@ export function MCAnswerOptions({
               </Button.Label>
             </Button>
             {!hideFeedbacks && feedbacks && feedbacks[index] && (
-              <ChoiceFeedback feedback={feedbacks[index]} />
+              <ChoiceFeedback feedback={feedbacks[index]!} />
             )}
           </div>
         )
