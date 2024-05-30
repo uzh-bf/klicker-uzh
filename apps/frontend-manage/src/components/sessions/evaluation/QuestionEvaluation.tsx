@@ -153,6 +153,7 @@ function QuestionEvaluation({
               <div className="mt-4 font-bold">
                 {t('manage.evaluation.statistics')}:
               </div>
+              {console.log(currentInstance.statistics)}
               {currentInstance.statistics ? (
                 Object.entries(currentInstance.statistics)
                   .slice(1)
@@ -163,11 +164,12 @@ function QuestionEvaluation({
                   )
                   .map((statistic) => {
                     const statisticName = statistic[0]
+                    const statisticValue = statistic[1] as number
                     return (
                       <Statistic
                         key={statisticName}
                         statisticName={statisticName}
-                        value={statistic[1]}
+                        value={statisticValue}
                         hasCheckbox={
                           !(statisticName === 'min' || statisticName === 'max')
                         }

@@ -64,6 +64,7 @@ function Evaluation() {
       name: '',
       content: '',
       type: ElementType.Sc,
+      options: { choices: [] },
     },
     results: {},
     statistics: undefined,
