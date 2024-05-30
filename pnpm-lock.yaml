@@ -17,6 +17,9 @@ importers:
       husky:
         specifier: 8.0.3
         version: 8.0.3
+      prettier-plugin-organize-imports:
+        specifier: 3.2.3
+        version: 3.2.3(prettier@2.8.8)(typescript@5.4.5)
       standard-version:
         specifier: 9.5.0
         version: 9.5.0
