@@ -9,7 +9,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
-import { Course, LeaderboardEntry } from './course.js'
+import { Course, LeaderboardEntry, StudentCourse } from './course.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
 import {
