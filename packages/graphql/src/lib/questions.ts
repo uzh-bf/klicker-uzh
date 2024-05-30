@@ -16,9 +16,16 @@ const RELEVANT_KEYS = [
   'options',
 ] as const
 
-export function processQuestionData(question: Element) {
-  const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
+const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
+type ExtendedElement =
+  | Pick<Element, (typeof RELEVANT_KEYS)[number]>
+  | {
+      id: string
+      questionId: number
+    }
+
+export function processQuestionData(question: Element): ExtendedElement {
   return {
     ...(extractRelevantKeys(question) as Pick<
       Element,
@@ -47,6 +54,11 @@ export function prepareInitialInstanceResults(
     case ElementType.FREE_TEXT: {
       return { responses: {}, total: 0 }
     }
+
+    // case ElementType.FLASHCARD:
+    // case ElementType.CONTENT: {
+    //   return { responses: {}, total: 0 }
+    // }
 
     // ! QuestionInstances do not support Flashcards / Content elements at this point
     // case ElementType.FLASHCARD: {
