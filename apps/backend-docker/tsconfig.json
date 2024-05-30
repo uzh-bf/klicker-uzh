@@ -1,4 +1,10 @@
 {
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "instrumented/"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
