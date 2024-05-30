@@ -21,7 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import md5 from 'md5'
+import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
@@ -826,6 +826,8 @@ export function updateQuestionResults({
   response,
   correct,
 }: UpdateQuestionResultsInputs) {
+  const MD5 = createHash('md5')
+
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -872,13 +874,14 @@ export function updateQuestionResults({
       }
 
       const value = String(parsedValue)
-      const hashedValue = md5(value)
+      MD5.update(value)
+      const hashedValue = MD5.digest('hex')
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
-            ...results.responses[hashedValue],
+            ...results.responses[hashedValue]!,
             count: results.responses[hashedValue]!.count + 1,
           },
         }
@@ -907,13 +910,14 @@ export function updateQuestionResults({
       }
 
       const value = R.toLower(R.trim(response.value))
-      const hashedValue = md5(value)
+      MD5.update(value)
+      const hashedValue = MD5.digest('hex')
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
-            ...results.responses[hashedValue],
+            ...results.responses[hashedValue]!,
             count: results.responses[hashedValue]!.count + 1,
           },
         }
@@ -944,6 +948,7 @@ export async function respondToQuestion(
   }: { courseId: string; id: number; response: ResponseInput },
   ctx: Context
 ) {
+  const MD5 = createHash('md5')
   let treatAnonymous = false
 
   const participation = ctx.user?.sub
@@ -1201,13 +1206,14 @@ export async function respondToQuestion(
       // update aggregated responses for open questions
       if (instance.elementType === ElementType.NUMERICAL) {
         const value = String(parseFloat(response.value!))
-        const hashedValue = md5(value)
+        MD5.update(value)
+        const hashedValue = MD5.digest('hex')
 
         if (Object.keys(newAggResponses.responses).includes(value)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
-              ...newAggResponses.responses[hashedValue],
+              ...newAggResponses.responses[hashedValue]!,
               count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
@@ -1224,13 +1230,14 @@ export async function respondToQuestion(
         newAggResponses.total = newAggResponses.total + 1
       } else {
         const value = R.toLower(R.trim(response.value!))
-        const hashedValue = md5(value)
+        MD5.update(value)
+        const hashedValue = MD5.digest('hex')
 
         if (Object.keys(newAggResponses.responses).includes(value)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
-              ...newAggResponses.responses[hashedValue],
+              ...newAggResponses.responses[hashedValue]!,
               count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
