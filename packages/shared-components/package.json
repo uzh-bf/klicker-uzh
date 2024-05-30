@@ -26,9 +26,12 @@
     "prettier-plugin-organize-imports": "3.2.3",
     "prettier-plugin-tailwindcss": "0.4.1",
     "recharts": "2.7.2",
+    "remark-parse": "10.0.2",
+    "remark-slate": "1.8.6",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "typescript": "5.0.4"
+    "typescript": "5.0.4",
+    "unified": "10.1.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.2",
