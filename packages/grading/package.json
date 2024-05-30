@@ -41,7 +41,7 @@
     "test": "jest"
   },
   "engines": {
-    "node": "=20"
+    "node": "=22"
   },
   "volta": {
     "extends": "../../package.json"

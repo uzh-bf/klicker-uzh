@@ -61,7 +61,7 @@
     "@types/ramda": "^0.29.3",
     "@types/uuid": "^9.0.8",
     "@types/validator": "^13.9.0",
-    "@types/web-push": "^3.3.2",
+    "@types/web-push": "^3.6.3",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",
@@ -79,7 +79,7 @@
     "tsup": "7.2.0",
     "tsx": "4.9.1",
     "typescript": "5.4.5",
-    "web-push": "3.6.1"
+    "web-push": "3.6.7"
   },
   "scripts": {
     "analyze": "size-limit --why",
@@ -101,7 +101,7 @@
     "size": "size-limit"
   },
   "engines": {
-    "node": "=20"
+    "node": "=22"
   },
   "volta": {
     "extends": "../../package.json"
