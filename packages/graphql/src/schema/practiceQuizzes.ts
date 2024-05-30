@@ -1,16 +1,16 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
+import builder from '../builder.js'
 import {
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
-} from '../types/app'
-import { CourseRef, ICourse } from './course'
+} from '../types/app.js'
+import { CourseRef, ICourse } from './course.js'
 import {
   ElementInstanceRef,
   IInstanceEvaluation,
   InstanceEvaluation,
-} from './question'
-import { ElementType } from './questionData'
+} from './question.js'
+import { ElementType } from './questionData.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),

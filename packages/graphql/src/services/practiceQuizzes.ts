@@ -17,23 +17,23 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import md5 from 'md5'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { orderStacks } from '../lib/util.js'
 import {
   ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   QuestionResponse as QuestionResponseType,
   ResponseInput,
-} from '../ops'
-import { IInstanceEvaluation } from '../schema/question'
+} from '../ops.js'
+import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   ContentResults,
@@ -45,7 +45,7 @@ import {
   QuestionResponseChoices,
   StackFeedbackStatus,
   StackInput,
-} from '../types/app'
+} from '../types/app.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6

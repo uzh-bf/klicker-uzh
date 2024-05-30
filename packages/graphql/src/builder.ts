@@ -9,7 +9,7 @@ import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import './types/app'
 
-import { Context, ContextWithUser } from './lib/context'
+import { Context, ContextWithUser } from './lib/context.js'
 
 const prisma = new PrismaClient({})
 

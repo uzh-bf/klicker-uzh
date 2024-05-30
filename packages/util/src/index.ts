@@ -1,4 +1,4 @@
-import { Element, ElementType } from '@klicker-uzh/prisma'
+import { ElementType, type Element } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
 const RELEVANT_KEYS = [
