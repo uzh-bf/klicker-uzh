@@ -2,13 +2,11 @@ import { Element, ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllElementTypeData,
-  BaseElementDataKeys,
-  FlashcardCorrectness,
   QuestionResults,
   QuestionResultsChoices,
 } from '../types/app'
 
-const RELEVANT_KEYS: BaseElementDataKeys = [
+const RELEVANT_KEYS = [
   'id',
   'name',
   'content',
@@ -47,18 +45,19 @@ export function prepareInitialInstanceResults(
       return { responses: {}, total: 0 }
     }
 
-    case ElementType.FLASHCARD: {
-      return {
-        [FlashcardCorrectness.CORRECT]: 0,
-        [FlashcardCorrectness.PARTIAL]: 0,
-        [FlashcardCorrectness.INCORRECT]: 0,
-        total: 0,
-      }
-    }
+    // ! QuestionInstances do not support Flashcards / Content elements at this point
+    // case ElementType.FLASHCARD: {
+    //   return {
+    //     [FlashcardCorrectness.CORRECT]: 0,
+    //     [FlashcardCorrectness.PARTIAL]: 0,
+    //     [FlashcardCorrectness.INCORRECT]: 0,
+    //     total: 0,
+    //   }
+    // }
 
-    case ElementType.CONTENT: {
-      return {}
-    }
+    // case ElementType.CONTENT: {
+    //   return { total: 0 }
+    // }
 
     default:
       throw new Error('Unknown question type')

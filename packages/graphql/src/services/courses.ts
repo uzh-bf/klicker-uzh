@@ -2,6 +2,7 @@ import {
   ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
+  LeaderboardType,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
@@ -582,7 +583,11 @@ export async function getCourseData(
 
   // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
-    course?.leaderboard.reduce(
+    course?.leaderboard.reduce<{
+      activeLBEntries: LeaderboardEntry[]
+      activeSum: number
+      activeCount: number
+    }>(
       (acc, entry) => {
         return {
           ...acc,
@@ -592,10 +597,17 @@ export async function getCourseData(
               id: entry.id,
               score: entry.score,
               rank: acc.activeCount + 1,
+              courseId: entry.courseId,
               email: entry.participation?.participant.email,
               username: entry.participation?.participant.username,
               avatar: entry.participation?.participant.avatar,
               participation: entry.participation,
+              type: LeaderboardType.COURSE,
+              participantId: entry.participantId,
+              sessionParticipationId: null,
+              sessionBlockId: null,
+              sessionId: null,
+              liveQuizId: null,
             },
           ],
           activeSum: acc.activeSum + entry.score,
@@ -603,7 +615,7 @@ export async function getCourseData(
         }
       },
       {
-        activeLBEntries: [] as Partial<typeof course.leaderboard>,
+        activeLBEntries: [] as LeaderboardEntry[],
         activeSum: 0,
         activeCount: 0,
       }

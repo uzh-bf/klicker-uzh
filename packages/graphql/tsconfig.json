@@ -7,5 +7,6 @@
   },
   "ts-node": {
     "transpileOnly": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "instrumented", "src/scripts"]
 }
