@@ -1,9 +1,9 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches: ["v3", "v3*"]
+    branches: ['v3', 'v3*']
   pull_request:
-    branches: ["v3", "v3*"]
+    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
   # workflow_dispatch:
 
@@ -63,7 +63,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.14.1
+          version: 9.1.3
           run_install: false
 
       - name: Get pnpm store directory
@@ -130,7 +130,7 @@ jobs:
         timeout-minutes: 20
         with:
           install: false
-          wait-on: "http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010"
+          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
           record: true
           browser: electron

@@ -3,7 +3,7 @@ name: Build and deploy func-migration-v3-import to Azure Function App (Productio
 on:
   push:
     branches:
-      - "v3"
+      - 'v3'
       # - 'CI'
     # paths:
     #   - 'apps/func-migration-v3/**'
@@ -11,14 +11,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "apps/func-migration-v3-import"
-  NODE_VERSION: "20.11.0" # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-migration-v3-import'
+  NODE_VERSION: '20.11.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build-and-deploy:
     runs-on: windows-latest
     steps:
-      - name: "Checkout GitHub Action"
+      - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
@@ -28,9 +28,9 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.14.1
+          version: 9.1.3
 
-      - name: "Resolve Project Dependencies Using Npm"
+      - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
           pnpm dlx turbo prune --scope @klicker-uzh/func-migration-v3-import
@@ -44,10 +44,10 @@ jobs:
           cp packages/prisma/dist/*.so.node apps/func/dist/
           popd
 
-      - name: "Run Azure Functions Action"
+      - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: "klickeruzhprod-migration-import"
+          app-name: 'klickeruzhprod-migration-import'
           package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DD28D6A97D214920903D9DA7C06D7C96 }}
