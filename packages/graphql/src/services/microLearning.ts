@@ -185,7 +185,7 @@ export async function manipulateMicroLearning(
           options: {},
           elements: {
             create: stack.elements.map((elem) => {
-              const element = elementMap[elem.elementId]
+              const element = elementMap[elem.elementId]!
 
               const processedElementData = processElementData(element)
 

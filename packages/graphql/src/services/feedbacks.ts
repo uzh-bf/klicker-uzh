@@ -107,7 +107,7 @@ export async function respondToFeedback(
     },
   })
 
-  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
 
   const feedbackPublished = feedback.isPublished
   const updatedFeedback = await ctx.prisma.feedback.update({
@@ -185,7 +185,7 @@ export async function publishFeedback(
     },
   })
 
-  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
@@ -225,7 +225,7 @@ export async function pinFeedback(
     },
   })
 
-  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
@@ -261,7 +261,7 @@ export async function resolveFeedback(
     },
   })
 
-  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
@@ -296,7 +296,7 @@ export async function deleteFeedback(
     },
   })
 
-  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
 
   const deletedFeedback = await ctx.prisma.feedback.delete({
     where: { id },
@@ -330,7 +330,7 @@ export async function deleteFeedbackResponse(
 
   if (
     !feedbackResponse ||
-    feedbackResponse.feedback.session.ownerId !== ctx.user.sub
+    feedbackResponse.feedback.session!.ownerId !== ctx.user.sub
   )
     return null
 

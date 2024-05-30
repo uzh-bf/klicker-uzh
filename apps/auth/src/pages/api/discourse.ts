@@ -45,9 +45,9 @@ export default async function handler(
   const nonce = ssoURL.searchParams.get('nonce')
   const redirectURL = ssoURL.searchParams.get('return_sso_url')
 
-  const userEmail = session.email
+  const userEmail = session.email!
   const userId = session.sub
-  const userShortname = session.shortname
+  const userShortname = session.shortname as string
   const userRole = session.role
 
   let payload = `nonce=${nonce}&email=${encodeURIComponent(
