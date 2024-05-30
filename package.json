@@ -29,7 +29,6 @@
     "@prisma/nextjs-monorepo-workaround-plugin": "5.9.1",
     "cross-env": "7.0.3",
     "husky": "8.0.3",
-    "prettier-plugin-organize-imports": "3.2.3",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
     "turbo": "1.13.3",
