@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   ChoicesQuestionData,
   ElementType,
@@ -237,14 +238,14 @@ export const StudentQuestion = ({
       {currentQuestion.content !== '<br>' && (
         <div
           className={twMerge(
-            'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
+            'bg-primary-10 prose mt-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
           )}
         >
           <Markdown content={currentQuestion.content} />
         </div>
       )}
 
-      <div className="flex-1 mt-4">
+      <div className="mt-4 flex-1">
         {typeof currentQuestion.type !== 'undefined' && (
           <div className="mb-2">
             <span className="font-bold">

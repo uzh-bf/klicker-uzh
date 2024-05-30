@@ -17,6 +17,7 @@ import {
   validateMcResponse,
   validateScResponse,
 } from './utils/validateResponse'
+import React from 'react'
 
 interface ChoicesQuestionProps {
   content: string
@@ -47,7 +48,7 @@ function ChoicesQuestion({
         {content !== '<br>' && (
           <div
             className={twMerge(
-              'mt-4 mb-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
+              'bg-primary-10 prose mb-4 mt-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
             )}
           >
             <Markdown content={content} />
@@ -107,7 +108,7 @@ function ChoicesQuestion({
 
       {evaluation && (
         <div
-          className="col-span-1 px-2 py-4 mr-2 border border-solid rounded-md md:w-64 lg:w-80 md:px-0 md:ml-2 md:mr-0 bg-slate-50"
+          className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
         >
           <div className="flex flex-col gap-4 md:px-4">

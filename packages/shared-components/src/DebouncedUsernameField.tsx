@@ -4,6 +4,7 @@ import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import React from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string
@@ -76,12 +77,12 @@ function DebouncedUsernameField({
       labelType={labelType}
       className={{
         ...className,
-        label: twMerge('font-bold text-md text-black', className?.label),
+        label: twMerge('text-md font-bold text-black', className?.label),
         icon: twMerge(
           typeof valid === 'undefined'
-            ? 'animate-spin !py-0 bg-transparent'
+            ? 'animate-spin bg-transparent !py-0'
             : !valid || typeof meta.error !== 'undefined'
-            ? 'text-red-600 bg-red-50'
+            ? 'bg-red-50 text-red-600'
             : 'text-green-600',
           className?.icon
         ),
