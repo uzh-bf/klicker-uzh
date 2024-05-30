@@ -1,4 +1,5 @@
-import { ElementType, type Element } from '@klicker-uzh/prisma'
+import type { Element } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
 const RELEVANT_KEYS = [
@@ -11,9 +12,9 @@ const RELEVANT_KEYS = [
   'options',
 ]
 
-export function processQuestionData(question: Element) {
-  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
+const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
+export function processQuestionData(question: Element) {
   return {
     ...extractRelevantKeys(question),
     id: `${question.id}-v${question.version}`,
@@ -38,12 +39,12 @@ const QUESTION_KEYS = [
   'options',
 ]
 
+const extractContentKeys = R.pick<any>(CONTENT_KEYS)
+const extractFlashcardKeys = R.pick<any>(FLASHCARD_KEYS)
+const extractQuestionKeys = R.pick<any>(QUESTION_KEYS)
+
 // TODO: add union type for return value as pick removes the properties
 export function processElementData(element: Element) {
-  const extractContentKeys = R.pick(CONTENT_KEYS)
-  const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)
-  const extractQuestionKeys = R.pick(QUESTION_KEYS)
-
   if (element.type === ElementType.FLASHCARD) {
     return {
       ...extractFlashcardKeys(element),
