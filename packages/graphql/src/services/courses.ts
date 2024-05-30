@@ -602,7 +602,7 @@ export async function getCourseData(
               email: entry.participation!.participant.email,
               username: entry.participation!.participant.username,
               avatar: entry.participation!.participant.avatar,
-              participation: entry.participation,
+              participation: entry.participation!,
               type: LeaderboardType.COURSE,
               participantId: entry.participantId,
               participant: entry.participation!.participant,
@@ -617,7 +617,7 @@ export async function getCourseData(
         }
       },
       {
-        activeLBEntries: [] as LeaderboardEntry[],
+        activeLBEntries: [] as ILeaderboardEntry[],
         activeSum: 0,
         activeCount: 0,
       }
