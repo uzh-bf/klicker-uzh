@@ -589,7 +589,7 @@ export type LeaderboardEntry = {
   avatar?: Maybe<Scalars['String']['output']>;
   id: Scalars['Int']['output'];
   isSelf?: Maybe<Scalars['Boolean']['output']>;
-  lastBlockOrder: Scalars['Int']['output'];
+  lastBlockOrder?: Maybe<Scalars['Int']['output']>;
   level: Scalars['Int']['output'];
   participant?: Maybe<Participant>;
   participantId: Scalars['String']['output'];
@@ -2994,7 +2994,7 @@ export type GetSessionLeaderboardQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, lastBlockOrder: number }> | null };
+export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, lastBlockOrder?: number | null }> | null };
 
 export type GetSingleCourseQueryVariables = Exact<{
   courseId: Scalars['String']['input'];
