@@ -10,13 +10,13 @@ import * as R from 'ramda'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
-import Prisma from '../../dist'
+import Prisma from '../../dist/index.js'
 import {
-  Element,
   ElementType,
   QuestionInstanceType,
   UserLoginScope,
-} from '../client'
+  type Element,
+} from '../client/index.js'
 
 export async function prepareUser({
   name,
@@ -684,12 +684,12 @@ export function prepareStackVariety({
               ),
               order: 0,
               type: elementInstanceType,
-              elementType: flashcards[0].type,
-              elementData: processElementData(flashcards[0]),
+              elementType: flashcards[0]!.type,
+              elementData: processElementData(flashcards[0]!),
               options: { resetTimeDays: 5 },
-              results: getInitialElementResults(flashcards[0]),
-              ownerId: flashcards[0].ownerId,
-              elementId: flashcards[0].id,
+              results: getInitialElementResults(flashcards[0]!),
+              ownerId: flashcards[0]!.ownerId,
+              elementId: flashcards[0]!.id,
             },
             {
               migrationId: String(
@@ -702,12 +702,12 @@ export function prepareStackVariety({
               ),
               order: 1,
               type: elementInstanceType,
-              elementType: questions[0].type,
-              elementData: processElementData(questions[0]),
+              elementType: questions[0]!.type,
+              elementData: processElementData(questions[0]!),
               options: { pointsMultiplier: 3, resetTimeDays: 6 },
-              results: getInitialElementResults(questions[0]),
-              ownerId: questions[0].ownerId,
-              elementId: questions[0].id,
+              results: getInitialElementResults(questions[0]!),
+              ownerId: questions[0]!.ownerId,
+              elementId: questions[0]!.id,
             },
             {
               migrationId: String(
@@ -720,12 +720,12 @@ export function prepareStackVariety({
               ),
               order: 2,
               type: elementInstanceType,
-              elementType: contentElements[0].type,
-              elementData: processElementData(contentElements[0]),
+              elementType: contentElements[0]!.type,
+              elementData: processElementData(contentElements[0]!),
               options: {},
-              results: getInitialElementResults(contentElements[0]),
-              ownerId: contentElements[0].ownerId,
-              elementId: contentElements[0].id,
+              results: getInitialElementResults(contentElements[0]!),
+              ownerId: contentElements[0]!.ownerId,
+              elementId: contentElements[0]!.id,
             },
           ],
         },
