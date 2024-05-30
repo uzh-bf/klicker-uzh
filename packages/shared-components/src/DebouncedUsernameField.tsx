@@ -1,5 +1,6 @@
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { FormikTextField, TextFieldWithNameProps } from '@uzh-bf/design-system'
+import { FormikTextField } from '@uzh-bf/design-system'
+import type { TextFieldWithNameProps } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'

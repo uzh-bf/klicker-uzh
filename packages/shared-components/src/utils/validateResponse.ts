@@ -1,4 +1,4 @@
-import {
+import type {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'

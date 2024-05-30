@@ -1,7 +1,5 @@
-import {
-  IconDefinition,
-  faHandPointer,
-} from '@fortawesome/free-regular-svg-icons'
+import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
+import type { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
