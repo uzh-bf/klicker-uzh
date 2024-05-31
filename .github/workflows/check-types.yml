@@ -108,6 +108,12 @@ jobs:
         run: |
           cd apps/frontend-control
           pnpm run check
+      - name: Check frontend-auth typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/frontend-auth
+          pnpm run check
       - name: Check office-addin typescript types
         if: always()
         shell: bash
