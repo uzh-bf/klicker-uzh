@@ -33,7 +33,7 @@
     "passport": "0.6.0",
     "passport-jwt": "4.0.1",
     "ramda": "0.29.0",
-    "ws": "8.13.0"
+    "ws": "8.17.1"
   },
   "devDependencies": {
     "@cypress/code-coverage": "3.12.16",
