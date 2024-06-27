@@ -3,21 +3,21 @@ name: Build and deploy func-migration-v2-export to Azure Function App (Productio
 on:
   push:
     branches:
-      - "v3"
+      - 'v3'
     # paths:
     #   - 'apps/func-migration-v2-export/**'
     #   - '.github/workflows/v3_klickeruzhprod-migration-export**'
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "apps/func-migration-v2-export"
-  NODE_VERSION: "20.11.0" # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-migration-v2-export'
+  NODE_VERSION: '20.11.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: "Checkout GitHub Action"
+      - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
@@ -29,10 +29,10 @@ jobs:
         with:
           version: 8.14.1
 
-      - name: "Resolve Project Dependencies Using Npm"
+      - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm dlx turbo prune --scope @klicker-uzh/func-migration-v2-export
+          pnpm dlx turbo@1.11.3 prune --scope @klicker-uzh/func-migration-v2-export
           pushd out
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
@@ -41,10 +41,10 @@ jobs:
           mv apps/func/host.json .
           popd
 
-      - name: "Run Azure Functions Action"
+      - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: "klickeruzhprod-migration-export"
+          app-name: 'klickeruzhprod-migration-export'
           package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1286111D936B447EA24EDB53EE84C138 }}
