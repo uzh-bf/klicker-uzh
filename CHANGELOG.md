@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0...v3.1.1) (2024-06-27)
+
+
+### Bug Fixes
+
+* **ci:** use a pinned version of turbo for azure functions deployment ([d9e1df0](https://github.com/uzh-bf/klicker-uzh/commit/d9e1df03ede5df19add23b3d10b887253a30001a))
+* **ci:** use pinned turbo for azure funcs for migration ([699bb2a](https://github.com/uzh-bf/klicker-uzh/commit/699bb2a2972d13e0226c855b8f18a217961eb24f))
+
 ## [3.1.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.41...v3.1.0) (2024-05-25)
 
 
