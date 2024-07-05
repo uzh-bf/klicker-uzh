@@ -15,7 +15,7 @@ function FormikAvatarEditor() {
 
   return (
     <div className="col-span-2 space-y-2 rounded md:bg-slate-50 md:p-4">
-      <H3 className={{ root: 'border-b' }}>Avatar</H3>
+      <H3 className={{ root: 'border-b' }}>{t('shared.generic.avatar')}</H3>
       <div className="flex flex-col gap-4 md:flex-row md:gap-8">
         <div className="flex-1">
           <BigHead

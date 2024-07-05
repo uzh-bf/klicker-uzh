@@ -1,4 +1,4 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import type { Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
@@ -10,7 +10,7 @@ export interface LeaderboardCombinedEntry {
   isMember?: boolean
   username: string
   avatar?: string | null
-  score: number
+  score?: number
   rank: number
   level?: number
   isSelf?: boolean | null
@@ -21,7 +21,10 @@ interface LeaderboardProps {
   onJoin?: () => void
   onLeave?: () => void
   onParticipantClick?: (participantId: string, isSelf: boolean) => void
-  participant?: Partial<Participant> | null
+  participant?: Omit<
+    Participant,
+    'isActive' | 'locale' | 'participantGroups'
+  > | null
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {

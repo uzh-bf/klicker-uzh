@@ -2,12 +2,14 @@ import {
   ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
+  LeaderboardType,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops.js'
+import { ILeaderboardEntry } from 'src/schema/course.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 
@@ -310,8 +312,8 @@ export async function getCourseOverviewData(
       )
 
       const sortByScoreAndUsername = R.curry(R.sortWith)([
-        R.descend(R.prop<number>('score')),
-        R.ascend(R.prop<string>('username')),
+        R.descend(R.prop('score')),
+        R.ascend(R.prop('username')),
       ])
 
       const sortedEntries: typeof allEntries.mapped = sortByScoreAndUsername(
@@ -580,9 +582,12 @@ export async function getCourseData(
     }
   })
 
-  // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
-    course?.leaderboard.reduce(
+    course?.leaderboard.reduce<{
+      activeLBEntries: ILeaderboardEntry[]
+      activeSum: number
+      activeCount: number
+    }>(
       (acc, entry) => {
         return {
           ...acc,
@@ -592,10 +597,19 @@ export async function getCourseData(
               id: entry.id,
               score: entry.score,
               rank: acc.activeCount + 1,
-              email: entry.participation?.participant.email,
-              username: entry.participation?.participant.username,
-              avatar: entry.participation?.participant.avatar,
-              participation: entry.participation,
+              courseId: entry.courseId,
+              level: levelFromXp(entry.participation!.participant.xp),
+              email: entry.participation!.participant.email,
+              username: entry.participation!.participant.username,
+              avatar: entry.participation!.participant.avatar,
+              participation: entry.participation!,
+              type: LeaderboardType.COURSE,
+              participantId: entry.participantId,
+              participant: entry.participation!.participant,
+              sessionParticipationId: null,
+              sessionBlockId: null,
+              sessionId: null,
+              liveQuizId: null,
             },
           ],
           activeSum: acc.activeSum + entry.score,
@@ -603,7 +617,7 @@ export async function getCourseData(
         }
       },
       {
-        activeLBEntries: [] as Partial<typeof course.leaderboard>,
+        activeLBEntries: [] as ILeaderboardEntry[],
         activeSum: 0,
         activeCount: 0,
       }
@@ -629,7 +643,7 @@ export async function getCourseData(
     (groupActivity) => {
       return {
         ...groupActivity,
-        numOfQuestions: groupActivity.stacks[0].elements.length,
+        numOfQuestions: groupActivity.stacks[0]!.elements.length,
       }
     }
   )

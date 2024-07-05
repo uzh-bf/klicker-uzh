@@ -130,7 +130,7 @@ type Course {
   averageActiveScore: Float
   averageScore: Float
   awards: [AwardEntry!]
-  color: String
+  color: String!
   createdAt: Date!
   description: String
   displayName: String!
@@ -252,7 +252,7 @@ enum ElementType {
 }
 
 type EvaluationBlock {
-  blockIx: Int
+  blockIx: Int!
   blockStatus: SessionBlockStatus!
   tabData: [TabData!]!
 }
@@ -456,7 +456,7 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID
+  groupActivityId: ID!
   groupName: String
   id: Int!
   results: Json
@@ -537,8 +537,8 @@ type LeaderboardEntry {
   avatar: String
   id: Int!
   isSelf: Boolean
-  lastBlockOrder: Int!
-  level: Int
+  lastBlockOrder: Int
+  level: Int!
   participant: Participant
   participantId: String!
   participation: Participation!
@@ -866,7 +866,7 @@ type PushSubscription {
 }
 
 type Query {
-  basicCourseInformation(courseId: String!): Course
+  basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
@@ -1024,7 +1024,7 @@ type SessionBlock {
   id: Int!
   instances: [QuestionInstance!]
   numOfParticipants: Int
-  order: Int
+  order: Int!
   randomSelection: Int
   status: SessionBlockStatus!
   timeLimit: Int
@@ -1097,6 +1097,15 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentCourse {
+  color: String!
+  description: String
+  displayName: String!
+  id: ID!
+  owner: User!
+  pinCode: Int
 }
 
 type Subscription {

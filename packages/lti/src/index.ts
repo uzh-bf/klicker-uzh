@@ -6,15 +6,15 @@ interface Args {
   ctx: GetServerSidePropsContext
 }
 
-export async function extractLtiData({ ctx, key, secret }: Args) {
+export async function extractLtiData({ ctx }: Args) {
   const { req, res } = ctx
 
-  const { request, response } = await new Promise((resolve) => {
+  const { request }: { request: any } = await new Promise((resolve) => {
     // @ts-ignore
     bodyParser.urlencoded({ extended: true })(req, res, () => {
       // @ts-ignore
       bodyParser.json()(req, res, () => {
-        resolve({ request: req, response: res })
+        resolve({ request: req })
       })
     })
   })
@@ -38,12 +38,13 @@ export async function extractLtiData({ ctx, key, secret }: Args) {
   return signed
 }
 
-const clean_request_body = function (body) {
-  const out: any[] = []
+const clean_request_body = function (body: any) {
+  const out: string[] = []
 
-  const encodeParam = (key, val) => `${key}=${special_encode(val)}`
+  const encodeParam = (key: string, val: string) =>
+    `${key}=${special_encode(val)}`
 
-  const cleanParams = function (params) {
+  const cleanParams = function (params: Record<string, string>) {
     if (typeof params !== 'object') {
       return
     }
@@ -57,7 +58,7 @@ const clean_request_body = function (body) {
         for (let val of Array.from(vals)) {
           out.push(encodeParam(key, val))
         }
-      } else {
+      } else if (typeof vals !== 'undefined') {
         out.push(encodeParam(key, vals))
       }
     }
@@ -68,7 +69,7 @@ const clean_request_body = function (body) {
   return special_encode(out.sort().join('&'))
 }
 
-const special_encode = (string) =>
+const special_encode = (string: string) =>
   encodeURIComponent(string)
     .replace(/[!'()]/g, escape)
     .replace(/\*/g, '%2A')

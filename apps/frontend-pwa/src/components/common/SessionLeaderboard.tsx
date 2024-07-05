@@ -60,7 +60,7 @@ function SessionLeaderboard({
           selfEntry
         )
 
-        if (selfEntry.lastBlockOrder > 0) {
+        if (selfEntry.lastBlockOrder && selfEntry.lastBlockOrder > 0) {
           try {
             const prevStoredEntry: BlockResult = await localforage.getItem(
               `${selfEntry.participantId}-score-block${

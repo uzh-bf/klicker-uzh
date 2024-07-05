@@ -1,5 +1,5 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos.ts'
+import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos.js'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
@@ -33,6 +33,7 @@ const builder = new SchemaBuilder<{
     scope?: UserLoginScope
     catalyst?: boolean
   }
+  // @ts-expect-error
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {

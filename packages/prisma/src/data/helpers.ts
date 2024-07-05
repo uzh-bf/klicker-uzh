@@ -10,13 +10,13 @@ import * as R from 'ramda'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
-import Prisma from '../../dist'
+import Prisma from '../../dist/index.js'
 import {
-  Element,
   ElementType,
   QuestionInstanceType,
   UserLoginScope,
-} from '../client'
+  type Element,
+} from '../client/index.js'
 
 export async function prepareUser({
   name,
@@ -684,12 +684,12 @@ export function prepareStackVariety({
               ),
               order: 0,
               type: elementInstanceType,
-              elementType: flashcards[0].type,
-              elementData: processElementData(flashcards[0]),
+              elementType: flashcards[0]!.type,
+              elementData: processElementData(flashcards[0]!),
               options: { resetTimeDays: 5 },
-              results: getInitialElementResults(flashcards[0]),
-              ownerId: flashcards[0].ownerId,
-              elementId: flashcards[0].id,
+              results: getInitialElementResults(flashcards[0]!),
+              ownerId: flashcards[0]!.ownerId,
+              elementId: flashcards[0]!.id,
             },
             {
               migrationId: String(
@@ -702,12 +702,12 @@ export function prepareStackVariety({
               ),
               order: 1,
               type: elementInstanceType,
-              elementType: questions[0].type,
-              elementData: processElementData(questions[0]),
+              elementType: questions[0]!.type,
+              elementData: processElementData(questions[0]!),
               options: { pointsMultiplier: 3, resetTimeDays: 6 },
-              results: getInitialElementResults(questions[0]),
-              ownerId: questions[0].ownerId,
-              elementId: questions[0].id,
+              results: getInitialElementResults(questions[0]!),
+              ownerId: questions[0]!.ownerId,
+              elementId: questions[0]!.id,
             },
             {
               migrationId: String(
@@ -720,12 +720,12 @@ export function prepareStackVariety({
               ),
               order: 2,
               type: elementInstanceType,
-              elementType: contentElements[0].type,
-              elementData: processElementData(contentElements[0]),
+              elementType: contentElements[0]!.type,
+              elementData: processElementData(contentElements[0]!),
               options: {},
-              results: getInitialElementResults(contentElements[0]),
-              ownerId: contentElements[0].ownerId,
-              elementId: contentElements[0].id,
+              results: getInitialElementResults(contentElements[0]!),
+              ownerId: contentElements[0]!.ownerId,
+              elementId: contentElements[0]!.id,
             },
           ],
         },
@@ -921,13 +921,13 @@ export function prepareGroupActivityClues({
   ]
 }
 
-export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
-  const turndown = Turndown()
+export function extractQuizInfo(doc: any, formulaTagId?: number) {
+  const turndown = new Turndown()
 
   return {
     title: doc.box.title[0],
     description: doc.box.description[0],
-    elements: doc.box.cards[0].card.map((card) => {
+    elements: doc.box.cards[0].card.map((card: any) => {
       const hasFormula =
         card.question[0].text[0].includes('\\(') ||
         card.answer[0].text[0].includes('\\(')
@@ -990,6 +990,7 @@ export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
 }
 
 export async function processQuizInfo(fileName: string, formulaTagId?: number) {
+  // @ts-ignore
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
@@ -1011,7 +1012,7 @@ export async function prepareFlashcardsFromFile(
   const quizInfo = await processQuizInfo(fileName, formulaTagId)
 
   const elementsFC = await Promise.allSettled(
-    quizInfo.elements.map(async (data) => {
+    quizInfo.elements.map(async (data: any) => {
       const flashcard = await prismaClient.element.upsert({
         where: {
           originalId: data.originalId,
@@ -1037,11 +1038,13 @@ export async function prepareFlashcardsFromFile(
     })
   )
 
-  if (elementsFC.some((el) => el.status === 'rejected')) {
+  if (
+    elementsFC.some((el: PromiseSettledResult<any>) => el.status === 'rejected')
+  ) {
     throw new Error('Failed to seed some flashcard elements')
   }
 
-  const elements = elementsFC.map((el) => el.value)
+  const elements = elementsFC.map((el: any) => el.value)
 
   return elements
 }
@@ -1074,7 +1077,7 @@ export async function prepareContentElements(
     throw new Error('Failed to seed some content elements')
   }
 
-  const elements = elementsCE.map((el) => el.value)
+  const elements = elementsCE.map((el: any) => el.value)
 
   return elements
 }

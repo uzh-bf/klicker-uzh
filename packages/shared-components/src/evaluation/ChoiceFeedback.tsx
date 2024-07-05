@@ -1,7 +1,7 @@
 import React from 'react'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
+import type { QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { twMerge } from 'tailwind-merge'
 

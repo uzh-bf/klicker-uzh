@@ -1,15 +1,17 @@
 import React from 'react'
-import {
+import type {
   ChoicesElementData,
   ElementInstance,
-  ElementType,
-  FlashcardCorrectnessType,
   FreeTextElementData,
   InstanceEvaluation,
   NumericalElementData,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementType,
+  FlashcardCorrectnessType,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'

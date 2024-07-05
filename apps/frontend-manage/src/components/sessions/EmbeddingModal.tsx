@@ -24,7 +24,7 @@ function LazyHMACLink({
   })
 
   if (sessionHMAC.loading || !sessionHMAC.data?.sessionHMAC) {
-    return ''
+    return <></>
   }
 
   const link = `${
@@ -103,9 +103,9 @@ function EmbeddingModal({
             <div key={question.id}>
               <div className="font-bold">
                 {ix + 1}{' '}
-                {question.questionData.name.length > 25
-                  ? `${question.questionData.name.substring(0, 25)}...`
-                  : question.questionData.name}
+                {question.questionData!.name.length > 25
+                  ? `${question.questionData!.name.substring(0, 25)}...`
+                  : question.questionData!.name}
               </div>
               <LazyHMACLink
                 sessionId={sessionId}

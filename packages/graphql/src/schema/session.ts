@@ -108,7 +108,7 @@ export const SessionBlock = SessionBlockRef.implement({
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
 
     status: t.expose('status', { type: SessionBlockStatus }),
-    order: t.exposeInt('order', { nullable: true }),
+    order: t.exposeInt('order'),
     expiresAt: t.expose('expiresAt', { type: 'Date', nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
@@ -308,7 +308,7 @@ export const TabData = builder.objectRef<ITabData>('TabData').implement({
 })
 
 export interface IEvaluationBlock {
-  blockIx?: number | null
+  blockIx: number
   blockStatus: DB.SessionBlockStatus
   tabData: ITabData[]
 }
@@ -316,7 +316,7 @@ export const EvaluationBlock = builder
   .objectRef<IEvaluationBlock>('EvaluationBlock')
   .implement({
     fields: (t) => ({
-      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      blockIx: t.exposeInt('blockIx'),
       blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
       tabData: t.expose('tabData', { type: [TabData] }),
     }),

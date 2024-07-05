@@ -1,12 +1,11 @@
-import {
+import type {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
-import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useMemo, useState } from 'react'
-// TODO: replace lodash with ramda
 import { NumberField } from '@uzh-bf/design-system'
+import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useTranslations } from 'next-intl'
+import React, { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -96,7 +95,7 @@ function Histogram({
 
     dataArray = dataArray.map((bin) => {
       const binWidth =
-        dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
+        dataArray.length > 1 ? dataArray[1]!.value - dataArray[0]!.value : 1
       const count = sumBy(
         mappedData.filter((result) => {
           return (
@@ -153,15 +152,16 @@ function Histogram({
           <CartesianGrid strokeDasharray="5 5" />
           <Tooltip
             content={({ active, payload }) => {
-              if (active && payload && payload.length) {
+              if (active && payload && payload.length > 0) {
                 return (
                   <div className="rounded-md border border-solid border-uzh-grey-100 bg-white p-2">
                     <div>
                       {t('manage.evaluation.histogramRange')}:{' '}
-                      {payload[0].payload.label}
+                      {payload[0]!.payload.label}
                     </div>
                     <div className="text-primary font-bold">
-                      {t('manage.evaluation.count')}: {payload[0].payload.count}
+                      {t('manage.evaluation.count')}:{' '}
+                      {payload[0]!.payload.count}
                     </div>
                   </div>
                 )

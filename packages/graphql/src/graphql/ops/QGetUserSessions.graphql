@@ -3,6 +3,8 @@ query GetUserSessions {
     id
     name
     displayName
+    namespace
+    pointsMultiplier
     accessMode
     status
     createdAt
@@ -11,6 +13,10 @@ query GetUserSessions {
     finishedAt
     numOfBlocks
     numOfQuestions
+    isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
     blocks {
       id
       instances {

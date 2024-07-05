@@ -196,8 +196,24 @@ export const importSessions = async (
                       id: sessionExists.id,
                     },
                     data: prismaData.data,
+                    include: {
+                      blocks: {
+                        include: {
+                          instances: true,
+                        },
+                      },
+                    },
                   })
-                : await prisma.liveSession.create(prismaData)
+                : await prisma.liveSession.create({
+                    data: prismaData.data,
+                    include: {
+                      blocks: {
+                        include: {
+                          instances: true,
+                        },
+                      },
+                    },
+                  })
               mappedSessionIds[createdSession.originalId] = createdSession.id
 
               // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances

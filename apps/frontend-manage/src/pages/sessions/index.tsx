@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import {
   GetUserSessionsDocument,
   SessionStatus,
+  Session as SessionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
@@ -63,7 +64,7 @@ function SessionList() {
             <H2>{t('manage.sessions.runningSessions')}</H2>
             <div className="flex flex-col gap-2">
               {runningSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -73,7 +74,7 @@ function SessionList() {
             <H2>{t('manage.sessions.plannedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -83,7 +84,7 @@ function SessionList() {
             <H2>{t('manage.sessions.preparedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {preparedSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -93,7 +94,7 @@ function SessionList() {
             <H2>{t('manage.sessions.completedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {completedSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>

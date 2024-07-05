@@ -78,6 +78,7 @@ function ElementStack({
     } else {
       return false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentResponse])
 
   // initialize student responses

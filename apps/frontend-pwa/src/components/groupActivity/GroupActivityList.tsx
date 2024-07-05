@@ -20,7 +20,7 @@ import ActivityInstanceLink from './ActivityInstanceLink'
 
 interface GroupActivityListProps {
   groupId: string
-  groupActivities?: GroupActivity[] | null
+  groupActivities?: Omit<GroupActivity, 'name' | 'status'>[] | null
   groupActivityInstances: Record<string, GroupActivityInstance>
 }
 

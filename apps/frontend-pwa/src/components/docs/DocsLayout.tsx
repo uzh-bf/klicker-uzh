@@ -9,9 +9,8 @@ import Layout from '../Layout'
 
 interface BasicCourseData {
   id: string
-  name: string
   displayName: string
-  description: string
+  description?: string | null
   color: string
   owner: {
     shortname: string

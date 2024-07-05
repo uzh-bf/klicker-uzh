@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
+  Course,
   GetBookmarksPracticeQuizDocument,
   PracticeQuiz as PracticeQuizType,
   SelfDocument,
@@ -22,7 +23,7 @@ export function resetPracticeQuizLocalStorage(id: string) {
 }
 
 interface PracticeQuizProps {
-  quiz: PracticeQuizType
+  quiz: Omit<PracticeQuizType, 'course'> & { course: Pick<Course, 'id'> }
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void

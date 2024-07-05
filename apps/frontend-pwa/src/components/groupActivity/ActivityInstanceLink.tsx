@@ -11,7 +11,7 @@ function ActivityInstanceLink({
   label,
 }: {
   groupId: string
-  activity: GroupActivity
+  activity: Omit<GroupActivity, 'name' | 'status'>
   label: string
 }) {
   return (

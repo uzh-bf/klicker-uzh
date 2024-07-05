@@ -1,12 +1,13 @@
+import { v4 as uuidv4 } from 'uuid'
 import Prisma, {
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   ElementType,
   PublicationStatus,
-} from '../../dist'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants'
-import { prepareFlashcardsFromFile, processQuizInfo } from './helpers'
+} from '../../dist/index.js'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import { prepareFlashcardsFromFile, processQuizInfo } from './helpers.js'
 
 async function seedFlashcardSet(
   prismaClient: Prisma.PrismaClient,
@@ -45,7 +46,7 @@ async function seedFlashcardSet(
             createMany: {
               data: [
                 {
-                  migrationId: el.originalId,
+                  migrationId: el.originalId ?? uuidv4(),
                   originalId: el.originalId,
                   order: ix,
                   type: ElementInstanceType.PRACTICE_QUIZ,
@@ -280,6 +281,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
 // if main module, run this
 const prismaClient = new Prisma.PrismaClient()
+// @ts-ignore
 await seedFlashcards(prismaClient)
   .then((res) => {
     console.log('res', res)

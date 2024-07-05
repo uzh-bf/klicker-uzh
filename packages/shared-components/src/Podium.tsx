@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { LeaderboardCombinedEntry } from './Leaderboard'
+import type { LeaderboardCombinedEntry } from './Leaderboard'
 import { ParticipantOther } from './Participant'
 
 const rankHeights: Record<number, string> = {

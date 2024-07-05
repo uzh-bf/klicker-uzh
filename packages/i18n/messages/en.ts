@@ -166,6 +166,7 @@ export default {
       passed: 'Passed',
       failed: 'Failed',
       survey: 'Survey',
+      avatar: 'Avatar',
     },
     contentInput: {
       boldStyle:

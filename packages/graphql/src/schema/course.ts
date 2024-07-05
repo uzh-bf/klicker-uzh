@@ -42,7 +42,7 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    color: t.exposeString('color', { nullable: true }),
+    color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
@@ -116,13 +116,32 @@ export const Course = builder.objectType(CourseRef, {
   }),
 })
 
+export interface IStudentCourse extends DB.Course {
+  owner: IUser
+}
+export const StudentCourseRef =
+  builder.objectRef<IStudentCourse>('StudentCourse')
+export const StudentCourse = builder.objectType(StudentCourseRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    displayName: t.exposeString('displayName'),
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    color: t.exposeString('color'),
+    description: t.exposeString('description', { nullable: true }),
+
+    owner: t.expose('owner', {
+      type: UserRef,
+    }),
+  }),
+})
+
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
   avatar?: string | null
   rank: number
-  lastBlockOrder: number
+  lastBlockOrder?: number
   isSelf?: boolean
-  level?: number
+  level: number
   participant: IParticipant
   participation: IParticipation
 }
@@ -136,13 +155,11 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     username: t.exposeString('username'),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
-    lastBlockOrder: t.exposeInt('lastBlockOrder'),
+    lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
-    level: t.exposeInt('level', {
-      nullable: true,
-    }),
+    level: t.exposeInt('level'),
 
     participant: t.expose('participant', {
       type: ParticipantRef,

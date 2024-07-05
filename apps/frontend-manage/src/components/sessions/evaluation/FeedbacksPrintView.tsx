@@ -17,17 +17,14 @@ function FeedbacksPrintView({
   if (typeof feedbacks === 'undefined' || feedbacks.length === 0) return <></>
 
   return (
-    feedbacks &&
-    feedbacks.length > 0 && (
-      <div className="hidden print:block space-y-3">
-        <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
-          {t('manage.cockpit.printTitle', { name: sessionName })}
-        </H2>
-        {feedbacks.map((feedback) => (
-          <SingleFeedback key={feedback.id} feedback={feedback} />
-        ))}
-      </div>
-    )
+    <div className="hidden print:block space-y-3">
+      <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
+        {t('manage.cockpit.printTitle', { name: sessionName })}
+      </H2>
+      {feedbacks.map((feedback) => (
+        <SingleFeedback key={feedback.id} feedback={feedback} />
+      ))}
+    </div>
   )
 }
 

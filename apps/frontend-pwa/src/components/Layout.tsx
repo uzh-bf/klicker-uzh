@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { Course, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  SelfDocument,
+  StudentCourse,
+} from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -10,7 +14,9 @@ import MobileMenuBar from './common/MobileMenuBar'
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
-  course?: Partial<Omit<Course, 'awards' | 'owner'>>
+  course?:
+    | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
+    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
