@@ -33,7 +33,7 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm dlx turbo prune --scope @klicker-uzh/func-migration-v3-import
+          pnpm dlx turbo@1.11.3 prune --scope @klicker-uzh/func-migration-v3-import
           pushd out
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
