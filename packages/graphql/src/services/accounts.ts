@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import { v4 as uuidv4 } from 'uuid'
+// import nodemailer from 'nodemailer'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -104,6 +104,27 @@ export function createParticipantToken(participantId: string) {
   )
 }
 
+async function doParticipantLogin(
+  {
+    participantId,
+    participantLocale,
+  }: { participantId: string; participantLocale: DB.Locale },
+  ctx: Context
+) {
+  await ctx.prisma.participant.update({
+    where: { id: participantId },
+    data: { lastLoginAt: new Date() },
+  })
+
+  const jwt = createParticipantToken(participantId)
+
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
+
+  return jwt
+}
+
 interface LoginParticipantArgs {
   usernameOrEmail: string
   password: string
@@ -127,16 +148,13 @@ export async function loginParticipant(
 
   if (!isLoginValid) return null
 
-  ctx.prisma.participant.update({
-    where: { id: participant.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = createParticipantToken(participant.id)
-
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
-  ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+  await doParticipantLogin(
+    {
+      participantId: participant.id,
+      participantLocale: participant.locale,
+    },
+    ctx
+  )
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
@@ -150,69 +168,75 @@ export async function sendMagicLink(
   { usernameOrEmail }: SendMagicLinkArgs,
   ctx: Context
 ) {
-  const participantWithUsername = await ctx.prisma.participant.findUnique({
-    where: { username: usernameOrEmail.trim() },
-  })
-  const participantWithEmail = await ctx.prisma.participant.findUnique({
-    where: { email: usernameOrEmail.trim().toLowerCase() },
-  })
+  const trimmedUsernameOrEmail = usernameOrEmail.trim()
 
-  const participant = participantWithUsername || participantWithEmail
-
-  // participant does not exist, return early
-  if (!participant) return true
-
-  const magicLinkToken = uuidv4()
-  const magicLinkExpiration = dayjs().add(15, 'minute').toDate()
-
-  // set loginToken and loginTokenExpiresAt
-  await ctx.prisma.participant.update({
-    where: { id: participant.id },
-    data: {
-      magicLinkToken: magicLinkToken,
-      magicLinkExpiresAt: magicLinkExpiration,
+  // the returned count can never be more than one, as the username cannot be a valid email (and vice versa)
+  const participantWithUsername = await ctx.prisma.participant.findMany({
+    where: {
+      OR: [
+        { username: trimmedUsernameOrEmail },
+        { email: trimmedUsernameOrEmail.toLowerCase() },
+      ],
     },
   })
 
-  // TODO: send email to user with magic link
-  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkToken}&username=${participant.username}`
+  if (participantWithUsername.length === 0) return true
+
+  const participantData = participantWithUsername[0]
+
+  const magicLinkJWT = JWT.sign(
+    {
+      sub: participantData.id,
+      role: UserRole.PARTICIPANT,
+      scope: UserLoginScope.OTP,
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '30 minutes',
+    }
+  )
+
+  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
   console.log(magicLink)
+
+  // // TODO: send email to user with magic link
+  // nodemailer
+  //   .transport
+  //   // TODO smtp params
+  //   ()
 
   return true
 }
 
 export async function loginParticipantMagicLink(
-  { username, token }: { username: string; token: string },
+  { token }: { token: string },
   ctx: Context
 ) {
-  if (!username || !token) return null
+  //
+  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+    sub: string
+  }
+
   const participant = await ctx.prisma.participant.findUnique({
     where: {
-      username: username,
-      magicLinkToken: token,
-      magicLinkExpiresAt: {
-        gte: new Date(),
+      id: tokenData.sub,
+    },
+  })
+
+  if (participant) {
+    await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
       },
-    },
-  })
+      ctx
+    )
 
-  if (!participant) return null
+    return participant.id
+  }
 
-  // reset magic link token and expiration
-  await ctx.prisma.participant.update({
-    where: { id: participant.id },
-    data: {
-      lastLoginAt: new Date(),
-      magicLinkToken: null,
-      magicLinkExpiresAt: null,
-    },
-  })
-
-  const jwt = createParticipantToken(participant.id)
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-  ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
-
-  return participant.id
+  return null
 }
 
 export async function logoutParticipant(_: any, ctx: ContextWithUser) {
@@ -370,11 +394,13 @@ export async function createParticipantAccount(
         },
       })
 
-      const jwt = createParticipantToken(account.participant.id)
-
-      ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
-      ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+      const jwt = await doParticipantLogin(
+        {
+          participantId: account.participant.id,
+          participantLocale: account.participant.locale,
+        },
+        ctx
+      )
 
       return {
         participant: account.participant,
@@ -399,11 +425,13 @@ export async function createParticipantAccount(
       },
     })
 
-    const jwt = createParticipantToken(participant.id)
-
-    ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
-    ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+    const jwt = await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
+      },
+      ctx
+    )
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
@@ -445,11 +473,13 @@ export async function loginParticipantWithLti(
 
   if (!account?.participant) return null
 
-  const jwt = createParticipantToken(account.participant.id)
-
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
-  ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+  const jwt = await doParticipantLogin(
+    {
+      participantId: account.participant.id,
+      participantLocale: account.participant.locale,
+    },
+    ctx
+  )
 
   return {
     participant: account.participant,

@@ -163,7 +163,6 @@ export const Mutation = builder.mutationType({
       loginParticipantMagicLink: t.id({
         nullable: true,
         args: {
-          username: t.arg.string({ required: true }),
           token: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -177,6 +176,7 @@ export const Mutation = builder.mutationType({
           usernameOrEmail: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
           return AccountService.sendMagicLink(args, ctx)
         },
       }),

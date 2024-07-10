@@ -26,13 +26,12 @@ function MagicLogin() {
 
   // set timeout of 2 seconds to show the loader and then login in timeout callback
   useEffect(() => {
-    if (token && username) {
+    if (token) {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
       loginTimeout.current = setTimeout(async () => {
         const result = await loginWithMagicLink({
           variables: {
-            username: username as string,
             token: token as string,
           },
         })
@@ -55,7 +54,7 @@ function MagicLogin() {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
     }
-  }, [router.query])
+  }, [router.query.token])
 
   return (
     <div className="m-auto">
