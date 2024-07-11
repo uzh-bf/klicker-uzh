@@ -85,7 +85,7 @@ export default {
       usernameError: 'Bitte geben Sie Ihren Nutzernamen oder E-Mail ein.',
       passwordError: 'Bitte geben Sie Ihr Passwort ein.',
       studentLoginError:
-        'Nutyername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "Magic Link Login" Funktion.',
+        'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "Magic Link Login" Funktion.',
       systemError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
       error: 'Fehler',
       back: 'Zurück',
