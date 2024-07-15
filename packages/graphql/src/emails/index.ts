@@ -34,4 +34,5 @@ const sendMail = buildSendMail({
   configPath: './mailing.config.json',
 })
 
-export default sendMail
+export { default as MagicLinkEmailTemplate } from './MagicLink'
+export { sendMail }

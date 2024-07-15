@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import sendMail from 'src/emails'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -168,6 +167,8 @@ export async function sendMagicLink(
   { usernameOrEmail }: SendMagicLinkArgs,
   ctx: Context
 ) {
+  const emails = await import('src/emails')
+
   const trimmedUsernameOrEmail = usernameOrEmail.trim()
 
   // the returned count can never be more than one, as the username cannot be a valid email (and vice versa)
@@ -200,11 +201,14 @@ export async function sendMagicLink(
   const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
   console.log(magicLink)
 
-  await sendMail({
+  await emails.sendMail({
     to: 'test@test.ch',
     subject: 'KlickerUZH - Magic Link',
     text: `Please click on the following link to log in to KlickerUZH: ${magicLink}`,
-    html: `Please click on the following link to log in to KlickerUZH: <a href="${magicLink}">${magicLink}</a>`,
+    component: emails.MagicLinkEmailTemplate({
+      baseUrl: process.env.APP_STUDENT_SUBDOMAIN as string,
+      magicLinkJWT: magicLinkJWT,
+    }),
   })
 
   return true
