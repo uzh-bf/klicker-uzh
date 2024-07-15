@@ -101,7 +101,7 @@
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:test": "pnpm run dev",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
-    "dev:mailing": "mailing --typescript",
+    "dev:mailing": "doppler run --config dev -- mailing --typescript",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "format": "prettier --write .",

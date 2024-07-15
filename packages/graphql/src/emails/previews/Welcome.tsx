@@ -1,6 +1,5 @@
-import React from "react";
-import Welcome from "../Welcome";
+import Welcome from '../Welcome'
 
 export function preview() {
-  return <Welcome includeUnsubscribe />;
+  return <Welcome includeUnsubscribe />
 }

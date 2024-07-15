@@ -15,7 +15,7 @@ const transport = nodemailer.createTransport({
 
 const sendMail = buildSendMail({
   transport,
-  defaultFrom: 'klicker@df.uzh.ch',
+  defaultFrom: 'Team KlickerUZH <noreply-klicker@df.uzh.ch>',
   configPath: './mailing.config.json',
 })
 

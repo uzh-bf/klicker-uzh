@@ -7,7 +7,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "sourceMap": true,
-    "jsx": "react"
+    "jsx": "react-jsx"
   },
   "ts-node": {
     "transpileOnly": true

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import nodemailer from 'nodemailer'
+import sendMail from 'src/emails'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -200,18 +200,7 @@ export async function sendMagicLink(
   const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
   console.log(magicLink)
 
-  const emailTransport = nodemailer.createTransport({
-    host: 'localhost',
-    port: 1025,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER as string,
-      pass: process.env.SMTP_PASS as string,
-    },
-  })
-
-  await emailTransport.sendMail({
-    from: 'KlickerUZH <noreply-klicker@df.uzh.ch>',
+  await sendMail({
     to: 'test@test.ch',
     subject: 'KlickerUZH - Magic Link',
     text: `Please click on the following link to log in to KlickerUZH: ${magicLink}`,
