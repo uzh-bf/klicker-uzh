@@ -3,6 +3,7 @@ import { Element } from '../client'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
+  COURSE_ID_TEST3,
   USER_ID_TEST,
   USER_ID_TEST2,
   USER_ID_TEST3,
@@ -143,6 +144,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+    })
+  )
+
+  const courseTest3 = await prisma.course.upsert(
+    prepareCourse({
+      id: COURSE_ID_TEST3,
+      name: 'Non-Gamified Course',
+      displayName: 'Non-Gamified Course',
+      description: 'This is a course without gamification.',
+      ownerId: USER_ID_TEST,
+      color: '#016274',
+      pinCode: 482748273,
+      startDate: new Date('2023-01-01T00:00'),
+      endDate: new Date('2030-01-01T23:59'),
+      groupDeadlineDate: new Date('2025-01-01T00:01'),
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )

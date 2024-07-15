@@ -96,10 +96,13 @@ function SessionCreation({
 
   const courseSelection = useMemo(
     () =>
-      dataCourses?.userCourses?.map((course: Partial<Course>) => ({
-        label: course.displayName || '',
-        value: course.id || '',
-      })),
+      dataCourses?.userCourses?.map(
+        (course: Pick<Course, 'id' | 'name' | 'isGamificationEnabled'>) => ({
+          label: course.name,
+          value: course.id,
+          isGamified: course.isGamificationEnabled,
+        })
+      ),
     [dataCourses]
   )
 
@@ -138,7 +141,9 @@ function SessionCreation({
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            courses={
+              courseSelection || [{ label: '', value: '', isGamified: false }]
+            }
             initialValues={
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz

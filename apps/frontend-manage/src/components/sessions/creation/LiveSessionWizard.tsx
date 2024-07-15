@@ -33,6 +33,7 @@ interface LiveSessionWizardProps {
   courses?: {
     label: string
     value: string
+    isGamified: boolean
   }[]
   initialValues?: Partial<Session>
   selection: Record<number, Element>
@@ -319,6 +320,7 @@ interface StepProps {
   courses?: {
     label: string
     value: string
+    isGamified: boolean
   }[]
   selection?: Record<number, Element>
   resetSelection?: () => void
@@ -403,6 +405,12 @@ function StepTwo(props: StepProps) {
     if (values.courseId === '') {
       setFieldValue('isGamificationEnabled', false)
       setFieldValue('multiplier', '1')
+    } else {
+      setFieldValue(
+        'isGamificationEnabled',
+        props.courses?.find((course) => course.value === values.courseId)
+          ?.isGamified
+      )
     }
   }, [values.courseId])
 
@@ -454,7 +462,7 @@ function StepTwo(props: StepProps) {
 
           <div>
             <FormikSwitchField
-              disabled={values.courseId === ''}
+              disabled
               name="isGamificationEnabled"
               label={t('shared.generic.gamification')}
               tooltip={t('manage.sessionForms.liveQuizGamification')}
