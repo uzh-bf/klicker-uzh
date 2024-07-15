@@ -13,6 +13,21 @@ const transport = nodemailer.createTransport({
   },
 })
 
+// const transport = nodemailer.createTransport({
+//   pool: true,
+//   host: 'smtp.office365.com',
+//   port: 587,
+//   secure: false,
+//   auth: {
+//     type: 'OAuth2',
+//     clientId: AZURE_CLIENT_ID,
+//     clientSecret: AZURE_CLIENT_SECRET,
+//     tenantId: AZURE_TENANT_ID,
+//     user: 'user@example.com',
+//     refreshToken: REFRESH_TOKEN,
+//   },
+// })
+
 const sendMail = buildSendMail({
   transport,
   defaultFrom: 'Team KlickerUZH <noreply-klicker@df.uzh.ch>',
