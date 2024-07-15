@@ -2115,17 +2115,9 @@ export async function cancelSession(
           blocks: {
             include: {
               instances: true,
-              leaderboard: true,
               activeInSession: true,
             },
           },
-        },
-      }),
-
-      ctx.prisma.leaderboardEntry.deleteMany({
-        where: {
-          type: 'SESSION',
-          sessionId: id,
         },
       }),
 
