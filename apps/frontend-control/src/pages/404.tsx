@@ -15,7 +15,7 @@ function MissingPage() {
           Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum{' '}
           <Link
             href="/"
-            className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+            className="text-uzh-blue-60 hover:text-uzh-blue-100"
             legacyBehavior
             passHref
           >

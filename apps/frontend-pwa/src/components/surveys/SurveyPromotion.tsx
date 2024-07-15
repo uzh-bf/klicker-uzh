@@ -6,7 +6,7 @@ function SurveyPromotion({ courseId }: { courseId: string }) {
         ihr 5min Zeit habt, sind wir euch sehr dankbar für ein kurzes (anonymes)
         Feedback unter diesem{' '}
         <a
-          className="font-bold text-orange-700 sm:hover:text-orange-900"
+          className="font-bold text-orange-700 hover:text-orange-900"
           target="_blank"
           href="https://uzhwwf.qualtrics.com/jfe/form/SV_8pHFUATTc1LhOvA"
           rel="noreferrer"
@@ -25,7 +25,7 @@ function SurveyPromotion({ courseId }: { courseId: string }) {
         ihr 5min Zeit habt, sind wir euch sehr dankbar für ein kurzes (anonymes)
         Feedback unter diesem{' '}
         <a
-          className="font-bold text-orange-700 sm:hover:text-orange-900"
+          className="font-bold text-orange-700 hover:text-orange-900"
           target="_blank"
           href="https://uzhwwf.qualtrics.com/jfe/form/SV_0TySKaHM9p7r3qC"
           rel="noreferrer"

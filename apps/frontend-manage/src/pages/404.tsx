@@ -20,7 +20,7 @@ function MissingPage() {
             link: (linkText) => (
               <Link
                 href="/"
-                className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+                className="text-uzh-blue-60 hover:text-uzh-blue-100"
                 legacyBehavior
                 passHref
               >
