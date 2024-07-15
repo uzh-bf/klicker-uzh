@@ -162,18 +162,42 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
-    // cy.get('[data-cy="set-gamification"]').should('be.disabled') // TODO: figure out way how to check if switch is disabled and checked / unchecked
-    // cy.get('[data-cy="set-gamification"]').should('be.checked')
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${nonGamifiedCourseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(nonGamifiedCourseName)
-    // cy.get('[data-cy="set-gamification"]').should('be.disabled')
-    // cy.get('[data-cy="set-gamification"]').should('not.be.checked')
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
-    // cy.get('[data-cy="set-gamification"]').should('be.disabled')
-    // cy.get('[data-cy="set-gamification"]').should('be.checked')
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
