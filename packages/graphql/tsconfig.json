@@ -1,9 +1,13 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src", "src/types/app.ts"],
+  "include": [
+    "src",
+    "src/types/app.ts"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
-    "sourceMap": true
+    "sourceMap": true,
+    "jsx": "react"
   },
   "ts-node": {
     "transpileOnly": true

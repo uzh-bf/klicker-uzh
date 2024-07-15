@@ -14,4 +14,4 @@ grep -qxF 'alias pn=pnpm' ~/.zshrc || echo 'alias pn=pnpm' >> ~/.zshrc
 # sudo grep -qxF '127.0.0.1 func-response-processor.klicker.com' ~/.zshrc || sudo echo '127.0.0.1 func-response-processor.klicker.com' >> ~/.zshrc
 
 # start postgres, redis, and reverse proxy
-docker compose up postgres redis_exec redis_cache reverse_proxy_docker
+docker compose up postgres redis_exec redis_cache reverse_proxy_docker mailhog
