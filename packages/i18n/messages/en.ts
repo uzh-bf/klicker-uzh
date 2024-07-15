@@ -962,7 +962,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveQuizGamification:
-        'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
+        'The quiz automatically adopts the gamification setting of the course. If the quiz is not assigned to a course, gamification cannot be activated.',
       liveQuizLiveQA:
         'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizModeration:
