@@ -46,7 +46,7 @@ function MagicLinkEmailTemplate({
       <MjmlWrapper backgroundColor={colors.black}>
         <MjmlSection paddingBottom={spacing.s11} cssClass="gutter">
           <MjmlColumn>
-            <Heading maxWidth={420} cssClass="h1" fontFamily={fontFamily.serif}>
+            <Heading maxWidth={420} cssClass="h1" fontFamily={fontFamily.sans}>
               Login with Magic Link
             </Heading>
           </MjmlColumn>

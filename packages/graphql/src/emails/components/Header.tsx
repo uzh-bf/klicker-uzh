@@ -1,8 +1,12 @@
-import React from "react";
-import { MjmlColumn, MjmlGroup, MjmlSection, MjmlWrapper } from "@faire/mjml-react";
-import Text from "./Text";
-import Link from "./Link";
-import { colors, fontSize, lineHeight, fontWeight } from "../theme";
+import {
+  MjmlColumn,
+  MjmlGroup,
+  MjmlSection,
+  MjmlWrapper,
+} from '@faire/mjml-react'
+import { colors, fontSize, fontWeight, lineHeight } from '../theme'
+import Link from './Link'
+import Text from './Text'
 
 export default function Header() {
   return (
@@ -15,16 +19,16 @@ export default function Header() {
                 color={colors.white}
                 fontSize={fontSize.xl}
                 fontWeight={fontWeight.bold}
-                href="https://mailing.run"
+                href="https://www.klicker.uzh.ch"
                 textDecoration="none"
               >
                 <img
                   height={24}
                   width={112}
-                  src={"https://mailing.run/welcome-template/logo-full.png"}
+                  src={'https://www.df.uzh.ch/docroot/logos/uzh_logo_d_pos.svg'}
                   alt=""
                   style={{
-                    verticalAlign: "text-bottom",
+                    verticalAlign: 'text-bottom',
                     paddingRight: 10,
                     paddingBottom: 2,
                   }}
@@ -35,17 +39,15 @@ export default function Header() {
           <MjmlColumn width="58%">
             <Text
               align="right"
-              fontSize={fontSize.xs}
+              fontSize={fontSize.lg}
               lineHeight={lineHeight.tight}
               fontWeight={fontWeight.bold}
             >
-              The open source email
-              <br />
-              platform for teams that code
+              KlickerUZH
             </Text>
           </MjmlColumn>
         </MjmlGroup>
       </MjmlSection>
     </MjmlWrapper>
-  );
+  )
 }
