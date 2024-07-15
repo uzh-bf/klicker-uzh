@@ -18,6 +18,9 @@ module.exports = {
       },
     },
   },
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   corePlugins: {
     preflight: false,
     aspectRatio: false,

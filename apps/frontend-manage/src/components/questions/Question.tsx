@@ -104,7 +104,7 @@ function Question({
 
       <div
         className={twMerge(
-          'flex flex-col md:flex-row w-full p-3 gap-2 border border-solid rounded-lg cursor-[grab] sm:hover:shadow-md',
+          'flex flex-col md:flex-row w-full p-3 gap-2 border border-solid rounded-lg cursor-[grab] hover:shadow-md',
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
@@ -113,7 +113,7 @@ function Question({
           <div className="flex flex-col flex-1 gap-1">
             <div className="flex flex-row items-center flex-none gap-2 text-lg">
               <a
-                className="inline-flex items-center flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
+                className="inline-flex items-center flex-1 text-xl font-bold cursor-pointer text-primary-strong hover:text-uzh-blue-100"
                 role="button"
                 tabIndex={0}
                 type="button"

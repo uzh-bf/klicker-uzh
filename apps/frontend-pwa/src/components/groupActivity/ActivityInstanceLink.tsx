@@ -17,7 +17,7 @@ function ActivityInstanceLink({
   return (
     <Link
       href={`/group/${groupId}/activity/${activity.id}`}
-      className="inline-flex items-center sm:hover:text-orange-700"
+      className="inline-flex items-center hover:text-orange-700"
     >
       <Button
         className={{
