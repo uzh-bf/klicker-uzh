@@ -24,7 +24,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
@@ -98,7 +98,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                         router.push({
                           pathname: '/',
                           query: {
-                            sessionId: session.id,
+                            elementId: session.id,
                             editMode: WizardMode.LiveQuiz,
                           },
                         }),

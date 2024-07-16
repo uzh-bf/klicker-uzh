@@ -27,10 +27,10 @@ export enum WizardMode {
   GroupActivity = 'groupActivity',
 }
 
-interface SessionCreationProps {
+interface ElementCreationProps {
   creationMode: WizardMode
   closeWizard: () => void
-  sessionId?: string
+  elementId?: string
   editMode?: string
   duplicationMode?: string
   conversionMode?: string
@@ -38,23 +38,23 @@ interface SessionCreationProps {
   resetSelection: () => void
 }
 
-function SessionCreation({
+function ElementCreation({
   creationMode,
   closeWizard,
-  sessionId,
+  elementId,
   editMode,
   duplicationMode,
   conversionMode,
   selection,
   resetSelection,
-}: SessionCreationProps) {
+}: ElementCreationProps) {
   const t = useTranslations()
   const { data: dataLiveSession, loading: liveLoading } = useQuery(
     GetSingleLiveSessionDocument,
     {
-      variables: { sessionId: sessionId || '' },
+      variables: { sessionId: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         (editMode !== WizardMode.LiveQuiz &&
           duplicationMode !== WizardMode.LiveQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
@@ -63,9 +63,9 @@ function SessionCreation({
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
     GetMicroLearningDocument,
     {
-      variables: { id: sessionId || '' },
+      variables: { id: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         (editMode !== WizardMode.Microlearning &&
           conversionMode !== 'microLearningToPracticeQuiz'),
     }
@@ -73,9 +73,9 @@ function SessionCreation({
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetPracticeQuizDocument,
     {
-      variables: { id: sessionId || '' },
+      variables: { id: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         editMode !== WizardMode.PracticeQuiz ||
         conversionMode === 'microLearningToPracticeQuiz',
     }
@@ -83,8 +83,8 @@ function SessionCreation({
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
     GetGroupActivityDocument,
     {
-      variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== WizardMode.GroupActivity,
+      variables: { id: elementId || '' },
+      skip: !elementId || editMode !== WizardMode.GroupActivity,
     }
   )
 
@@ -96,22 +96,28 @@ function SessionCreation({
 
   const courseSelection = useMemo(
     () =>
-      dataCourses?.userCourses?.map((course: Partial<Course>) => ({
-        label: course.displayName || '',
-        value: course.id || '',
-      })),
+      dataCourses?.userCourses?.map(
+        (course: Pick<Course, 'id' | 'name' | 'isGamificationEnabled'>) => ({
+          label: course.name,
+          value: course.id,
+          isGamified: course.isGamificationEnabled,
+        })
+      ),
     [dataCourses]
   )
 
   if (
     (!errorCourses && loadingCourses) ||
-    (sessionId &&
+    (elementId &&
       (editMode === WizardMode.LiveQuiz ||
         duplicationMode === WizardMode.LiveQuiz) &&
       liveLoading) ||
-    (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
-    (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
-    (sessionId &&
+    (elementId && editMode === WizardMode.Microlearning && microLoading) ||
+    (elementId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
+    (elementId &&
+      editMode === WizardMode.GroupActivity &&
+      groupActivityLoading) ||
+    (elementId &&
       conversionMode === 'microLearningToPracticeQuiz' &&
       microLoading)
   ) {
@@ -138,7 +144,9 @@ function SessionCreation({
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            courses={
+              courseSelection || [{ label: '', value: '', isGamified: false }]
+            }
             initialValues={
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz
@@ -193,4 +201,4 @@ function SessionCreation({
   )
 }
 
-export default SessionCreation
+export default ElementCreation

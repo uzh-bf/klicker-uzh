@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
 import CreationButton from '../../sessions/creation/CreationButton'
-import { WizardMode } from './SessionCreation'
+import { WizardMode } from './ElementCreation'
 
 interface CreationButtonsProps {
   setCreationMode: (mode: WizardMode) => void

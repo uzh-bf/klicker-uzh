@@ -1269,7 +1269,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                         }}
                                         data={{
                                           cy: `delete-solution-range-ix-${index}`,
@@ -1347,7 +1347,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                       }}
                                       data={{
                                         cy: `delete-solution-ix-${index}`,

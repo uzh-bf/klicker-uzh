@@ -17,11 +17,13 @@ module.exports = {
       },
     },
   },
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   corePlugins: {
     preflight: false,
     aspectRatio: false,
   },
-
   plugins: [
     function ({ addUtilities }) {
       const newUtilities = {

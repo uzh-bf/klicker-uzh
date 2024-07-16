@@ -111,7 +111,7 @@ function FeedbackSearchAndFilters({
                   <FontAwesomeIcon
                     icon={faFilter}
                     className={twMerge(
-                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md sm:hover:shadow-none hover:bg-primary-20',
+                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md hover:shadow-none hover:bg-primary-20',
                       disabled?.filters && 'hover:bg-white shadow-none'
                     )}
                   />

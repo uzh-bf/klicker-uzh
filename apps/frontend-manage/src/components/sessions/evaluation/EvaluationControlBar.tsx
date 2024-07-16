@@ -163,7 +163,7 @@ function EvaluationControlBar({
             className={twMerge(
               'flex flex-row items-center h-full px-2 hover:bg-primary-20',
               (blocks.length <= 2 * width + 1 || selectedBlock - width <= 0) &&
-                'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
             )}
           >
             <FontAwesomeIcon icon={faChevronLeft} size="lg" />
@@ -225,7 +225,7 @@ function EvaluationControlBar({
               'flex flex-row items-center h-full px-2 hover:bg-primary-20',
               (blocks.length <= 2 * width + 1 ||
                 selectedBlock + width >= blocks.length - 1) &&
-                'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
             )}
           >
             <FontAwesomeIcon icon={faChevronRight} size="lg" />

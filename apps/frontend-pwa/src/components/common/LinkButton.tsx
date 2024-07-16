@@ -34,8 +34,8 @@ function LinkButton({
         fluid
         className={{
           root: twMerge(
-            'gap-5 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
-            disabled && 'cursor-not-allowed sm:hover:bg-slate-200',
+            'gap-5 px-4 py-2 text-lg shadow bg-slate-200 hover:bg-slate-300 border-slate-300',
+            disabled && 'cursor-not-allowed hover:bg-slate-200',
             className?.root
           ),
         }}

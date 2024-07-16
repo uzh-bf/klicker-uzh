@@ -116,7 +116,7 @@ function FlagElementModal({
             <Button.Icon>
               <FontAwesomeIcon
                 icon={faWarning}
-                className="text-red-600 sm:hover:text-red-500"
+                className="text-red-600 hover:text-red-500"
               />
             </Button.Icon>
           </Button>

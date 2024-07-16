@@ -25,7 +25,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
@@ -131,7 +131,7 @@ function MicroLearningElement({
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: microLearning.id,
+                          elementId: microLearning.id,
                           editMode: WizardMode.Microlearning,
                         },
                       }),
@@ -223,7 +223,7 @@ function MicroLearningElement({
                             router.push({
                               pathname: '/',
                               query: {
-                                sessionId: microLearning.id,
+                                elementId: microLearning.id,
                                 conversionMode: 'microLearningToPracticeQuiz',
                               },
                             }),

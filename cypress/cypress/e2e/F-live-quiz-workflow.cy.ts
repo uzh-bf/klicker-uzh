@@ -124,7 +124,11 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-session"]').click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
-    cy.get('[data-cy="confirm-cancel-session"]').click()
+    cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
+    cy.get('[data-cy="abort-enter-name"]').type(sessionName)
+    cy.get('[data-cy="confirm-cancel-session"]')
+      .should('not.be.disabled')
+      .click()
 
     // start session and then skip through the blocks
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
@@ -139,6 +143,7 @@ describe('Different live-quiz workflows', () => {
     const questionTitle = uuid()
     const question = uuid()
     const courseName = 'Testkurs'
+    const nonGamifiedCourseName = 'Non-Gamified Course'
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
@@ -161,8 +166,42 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
-    cy.get('[data-cy="set-gamification"]').should('not.be.checked')
-    cy.get('[data-cy="set-gamification"]').click()
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${nonGamifiedCourseName}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(nonGamifiedCourseName)
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseName)
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -173,7 +212,6 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
-    // cy.get('[data-cy="set-gamification"]').should('be.checked'); // TODO: This does not work properly as it should be checked after a click
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
