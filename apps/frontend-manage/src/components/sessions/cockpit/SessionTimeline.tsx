@@ -273,7 +273,7 @@ function SessionTimeline({
               )}
             />
           </div>
-          <div className="flex flex-row justify-end w-full gap-2 mt-2">
+          <div className="flex flex-row justify-between w-full gap-2 mt-2">
             <Button
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}

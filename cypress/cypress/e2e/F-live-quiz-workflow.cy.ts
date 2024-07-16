@@ -124,7 +124,11 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-session"]').click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
-    cy.get('[data-cy="confirm-cancel-session"]').click()
+    cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
+    cy.get('[data-cy="abort-enter-name"]').type(sessionName)
+    cy.get('[data-cy="confirm-cancel-session"]')
+      .should('not.be.disabled')
+      .click()
 
     // start session and then skip through the blocks
     cy.get(`[data-cy="start-session-${sessionName}"]`).click()
