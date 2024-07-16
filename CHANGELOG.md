@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.2-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.1...v3.1.2-rc.0) (2024-07-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** disable reinitialization of element creation forms as this is not required ([#4146](https://github.com/uzh-bf/klicker-uzh/issues/4146)) ([c1bdca5](https://github.com/uzh-bf/klicker-uzh/commit/c1bdca55c0795858697146cf408b48d71ec845cd))
+* ensure that hover styles are only shown on devices supporting cursors ([#4144](https://github.com/uzh-bf/klicker-uzh/issues/4144)) ([5c74c63](https://github.com/uzh-bf/klicker-uzh/commit/5c74c6373bf825ead2e4edd229878d9211e4ce11))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** ensure that course gamification setting is automatically applied to live quiz ([#4143](https://github.com/uzh-bf/klicker-uzh/issues/4143)) ([442ac56](https://github.com/uzh-bf/klicker-uzh/commit/442ac562f613b842324d996e12922815fd48b19b))
+
 ### [3.1.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0...v3.1.1) (2024-06-27)
 
 
