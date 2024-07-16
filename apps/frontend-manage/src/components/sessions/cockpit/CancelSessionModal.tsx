@@ -83,6 +83,7 @@ function CancelSessionModal({
             value={enteredName}
             onChange={(newValue) => setEnteredName(newValue)}
             className={{ input: '!w-80' }}
+            data={{ cy: 'abort-enter-name' }}
           />
         </div>
       </div>
