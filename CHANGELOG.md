@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.2-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.0...v3.1.2-rc.1) (2024-07-16)
+
+
+### Bug Fixes
+
+* ensure that MC and KPRIM practice quiz evaluation show correct statistics ([#4148](https://github.com/uzh-bf/klicker-uzh/issues/4148)) ([662675b](https://github.com/uzh-bf/klicker-uzh/commit/662675b0c88dfe352ab471004e08c11ad62d6cbc))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** strongly highlight the effects of session abortion and require confirmation ([#4147](https://github.com/uzh-bf/klicker-uzh/issues/4147)) ([d95b275](https://github.com/uzh-bf/klicker-uzh/commit/d95b27581798aa7283c70124e6434bad45b0e792))
+
 ### [3.1.2-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.1...v3.1.2-rc.0) (2024-07-16)
 
 
