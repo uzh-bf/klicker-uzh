@@ -135,6 +135,7 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
