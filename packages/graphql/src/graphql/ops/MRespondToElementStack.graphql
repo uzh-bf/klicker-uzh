@@ -22,6 +22,7 @@ mutation RespondToElementStack(
         value
       }
       choices
+      numAnswers
       answers
       score
       pointsAwarded
