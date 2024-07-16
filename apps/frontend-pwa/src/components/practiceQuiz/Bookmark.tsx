@@ -78,14 +78,11 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
       >
         {isBookmarked ? (
           <FontAwesomeIcon
-            className="text-red-600 sm:hover:text-red-500"
+            className="text-red-600 hover:text-red-500"
             icon={faBookmarkFilled}
           />
         ) : (
-          <FontAwesomeIcon
-            className="sm:hover:text-red-400"
-            icon={faBookmark}
-          />
+          <FontAwesomeIcon className="hover:text-red-400" icon={faBookmark} />
         )}
       </Button>
     </div>

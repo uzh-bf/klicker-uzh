@@ -145,7 +145,7 @@ function SessionBlock({
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData.questionId}`}
-            className="text-sm sm:hover:text-slate-700"
+            className="text-sm hover:text-slate-700"
             target="_blank"
             legacyBehavior
             passHref

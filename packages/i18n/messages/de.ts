@@ -967,7 +967,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveQuizGamification:
-        'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
+        'Das Quiz übernimmt automatisch die Gamifizierungseinstellung des Kurses. Wird das Quiz keinem Kurs zugeordnet, kann die Gamifizierung nicht aktiviert werden.',
       liveQuizLiveQA:
         'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveQuizModeration:
@@ -1136,11 +1136,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endSession: 'Session beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
-      abortSession: 'Session abbrechen',
-      confirmAbortSession:
-        'Sind Sie sich sicher, dass Sie die folgende Session abbrechen möchten?',
+      abortSession: 'Quiz abbrechen',
+      confirmAbortSession: 'Live Quiz {title} abbrechen?',
       abortSessionHint:
-        'Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks, usw. verloren gehen.',
+        'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
+      abortEnterName:
+        'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
       blockN: 'Block {number}',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',

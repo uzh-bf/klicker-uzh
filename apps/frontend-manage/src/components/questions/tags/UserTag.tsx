@@ -43,7 +43,7 @@ function UserTag({
               basic
               onClick={(): void => handleTagClick(tag.name)}
               className={{
-                root: 'flex-1 sm:hover:text-primary whitespace-nowrap overflow-hidden',
+                root: 'flex-1 hover:text-primary whitespace-nowrap overflow-hidden',
               }}
               data={{ cy: `user-tag-${tag.name}` }}
             >

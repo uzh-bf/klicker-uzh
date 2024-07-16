@@ -117,7 +117,7 @@ function SessionCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'px-1 sm:hover:text-primary ',
+              root: 'px-1 hover:text-primary ',
             }}
             data={{ cy: `open-block-${index}-settings` }}
           >
@@ -129,7 +129,7 @@ function SessionCreationBlock({
             basic
             onClick={() => remove(index)}
             className={{
-              root: 'px-1  sm:hover:text-red-600',
+              root: 'px-1  hover:text-red-600',
             }}
             data={{ cy: 'delete-block' }}
           >

@@ -35,9 +35,9 @@ import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
-import SessionCreation, {
+import ElementCreation, {
   WizardMode,
-} from '../components/sessions/creation/SessionCreation'
+} from '../components/sessions/creation/ElementCreation'
 import SuspendedCreationButtons from '../components/sessions/creation/SuspendedCreationButtons'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 
@@ -87,11 +87,11 @@ function Index() {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
 
-    if (router.query.sessionId && router.query.editMode) {
+    if (router.query.elementId && router.query.editMode) {
       setCreationMode(router.query.editMode as any)
-    } else if (router.query.sessionId && router.query.duplicationMode) {
+    } else if (router.query.elementId && router.query.duplicationMode) {
       setCreationMode(router.query.duplicationMode as any)
-    } else if (router.query.sessionId && router.query.conversionMode) {
+    } else if (router.query.elementId && router.query.conversionMode) {
       setCreationMode(router.query.conversionMode as any)
     }
   }, [router])
@@ -144,13 +144,13 @@ function Index() {
 
       {creationMode && (
         <>
-          <SessionCreation
+          <ElementCreation
             creationMode={creationMode}
             closeWizard={() => {
               router.push('/')
               setCreationMode(() => undefined)
             }}
-            sessionId={router.query.sessionId as string}
+            elementId={router.query.elementId as string}
             editMode={router.query.editMode as string}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as string}
