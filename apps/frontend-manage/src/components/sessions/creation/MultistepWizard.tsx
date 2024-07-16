@@ -163,7 +163,6 @@ function MultistepWizard({
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
       isInitialValid={initialValid}
-      enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
         <Form className="h-full overflow-y-auto">

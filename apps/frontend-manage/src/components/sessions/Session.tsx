@@ -31,7 +31,7 @@ import { useState } from 'react'
 import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
-import { WizardMode } from './creation/SessionCreation'
+import { WizardMode } from './creation/ElementCreation'
 
 interface SessionProps {
   session: SessionType
@@ -244,7 +244,7 @@ function Session({ session }: SessionProps) {
                   router.push({
                     pathname: '/',
                     query: {
-                      sessionId: session.id,
+                      elementId: session.id,
                       duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
@@ -267,7 +267,7 @@ function Session({ session }: SessionProps) {
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: session.id,
+                          elementId: session.id,
                           editMode: WizardMode.LiveQuiz,
                         },
                       })

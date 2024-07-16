@@ -29,7 +29,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import DeletionModal from './modals/DeletionModal'
@@ -107,7 +107,7 @@ function GroupActivityElement({
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: groupActivity.id,
+                          elementId: groupActivity.id,
                           editMode: WizardMode.GroupActivity,
                         },
                       }),
