@@ -1136,11 +1136,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endSession: 'Session beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
-      abortSession: 'Session abbrechen',
-      confirmAbortSession:
-        'Sind Sie sich sicher, dass Sie die folgende Session abbrechen möchten?',
+      abortSession: 'Quiz abbrechen',
+      confirmAbortSession: 'Live Quiz {title} abbrechen?',
       abortSessionHint:
-        'Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks, usw. verloren gehen.',
+        'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
+      abortEnterName:
+        'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
       blockN: 'Block {number}',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',

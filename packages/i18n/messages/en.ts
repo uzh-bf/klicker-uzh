@@ -1125,10 +1125,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
-      confirmAbortSession:
-        'Are you sure you want to abort the following live quiz?',
+      confirmAbortSession: 'Abort live quiz {title}?',
       abortSessionHint:
-        'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
+        'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
+      abortEnterName:
+        'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
       blockN: 'Block {number}',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',

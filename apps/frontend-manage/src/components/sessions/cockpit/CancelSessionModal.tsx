@@ -4,9 +4,11 @@ import {
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H2, Modal, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface CancelSessionModalProps {
   sessionId: string
@@ -21,6 +23,10 @@ function CancelSessionModal({
   isCancellationModalOpen,
   setIsCancellationModalOpen,
 }: CancelSessionModalProps) {
+  const router = useRouter()
+  const t = useTranslations()
+  const [enteredName, setEnteredName] = useState('')
+
   const [cancelSession] = useMutation(CancelSessionDocument, {
     variables: { id: sessionId },
     refetchQueries: [
@@ -32,8 +38,6 @@ function CancelSessionModal({
       },
     ],
   })
-  const router = useRouter()
-  const t = useTranslations()
 
   return (
     <Modal
@@ -43,8 +47,14 @@ function CancelSessionModal({
             await cancelSession()
             router.push('/sessions')
           }}
-          className={{ root: 'bg-red-600 font-bold text-white' }}
+          className={{
+            root: twMerge(
+              'bg-red-600 font-bold text-white',
+              enteredName !== title && 'opacity-60 cursor-not-allowed'
+            ),
+          }}
           data={{ cy: 'confirm-cancel-session' }}
+          disabled={enteredName !== title}
         >
           {t('shared.generic.confirm')}
         </Button>
@@ -60,16 +70,20 @@ function CancelSessionModal({
       onClose={(): void => setIsCancellationModalOpen(false)}
       open={isCancellationModalOpen}
       hideCloseButton={true}
-      className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+      className={{ content: 'w-[48rem] min-h-max h-max self-center !pt-0' }}
     >
       <div>
-        <H2>{t('manage.cockpit.abortSession')}</H2>
-        <div>{t('manage.cockpit.confirmAbortSession')}</div>
-        <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
-          <H3>{title}</H3>
-        </div>
-        <div className="mt-6 mb-2 text-sm italic">
+        <H2>{t('manage.cockpit.confirmAbortSession', { title: title })}</H2>
+        <div className="my-2 italic">
           {t('manage.cockpit.abortSessionHint')}
+        </div>
+        <div>
+          <div className="font-bold">{t('manage.cockpit.abortEnterName')}</div>
+          <TextField
+            value={enteredName}
+            onChange={(newValue) => setEnteredName(newValue)}
+            className={{ input: '!w-80' }}
+          />
         </div>
       </div>
     </Modal>
