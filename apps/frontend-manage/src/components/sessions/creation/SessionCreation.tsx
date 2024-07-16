@@ -115,6 +115,9 @@ function SessionCreation({
     (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
     (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
     (sessionId &&
+      editMode === WizardMode.GroupActivity &&
+      groupActivityLoading) ||
+    (sessionId &&
       conversionMode === 'microLearningToPracticeQuiz' &&
       microLoading)
   ) {
