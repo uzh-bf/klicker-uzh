@@ -496,24 +496,13 @@ type InstanceEvaluation {
   instanceId: Int!
   newPointsFrom: Date
   newXpFrom: Date
+  numAnswers: Int
   percentile: Float
   pointsAwarded: Float
   pointsMultiplier: Int
   score: Float!
   solutionRanges: Json
   solutions: Json
-  xpAwarded: Int
-}
-
-type InstanceEvaluationOLD {
-  answers: Json
-  choices: Json
-  feedbacks: [QuestionFeedback!]
-  newPointsFrom: Date
-  newXpFrom: Date
-  percentile: Float
-  pointsAwarded: Float
-  score: Float!
   xpAwarded: Int
 }
 
@@ -934,7 +923,6 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  evaluation: InstanceEvaluationOLD
   id: Int!
   pointsMultiplier: Int!
   questionData: QuestionData
