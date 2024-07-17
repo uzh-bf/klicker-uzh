@@ -811,7 +811,10 @@ export async function enableGamification(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       isGamificationEnabled: true,
     },
