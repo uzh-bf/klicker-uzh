@@ -1325,6 +1325,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
+      enableGamification: 'Enable gamification',
+      enableGamificationWarning:
+        'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
