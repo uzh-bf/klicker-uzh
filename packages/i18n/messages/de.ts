@@ -166,6 +166,8 @@ export default {
       passed: 'Bestanden',
       failed: 'Nicht bestanden',
       survey: 'Umfrage',
+      gamified: 'Gamifiziert',
+      nonGamified: 'Nicht gamifiziert',
     },
     contentInput: {
       boldStyle:
