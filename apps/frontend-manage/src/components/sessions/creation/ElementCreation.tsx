@@ -194,6 +194,8 @@ function ElementCreation({
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
@@ -205,6 +207,8 @@ function ElementCreation({
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
@@ -217,6 +221,8 @@ function ElementCreation({
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined

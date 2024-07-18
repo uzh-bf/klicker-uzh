@@ -9,14 +9,16 @@ import {
   GetSingleCourseDocument,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
+import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
   FormikDateField,
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { ErrorMessage } from 'formik'
+import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -24,10 +26,13 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
+import { ElementSelectCourse } from './ElementCreation'
 import MultistepWizard, { PracticeQuizFormValues } from './MultistepWizard'
 
 interface PracticeQuizWizardProps {
   title: string
+  gamifiedCourses: ElementSelectCourse[]
+  nonGamifiedCourses: ElementSelectCourse[]
   closeWizard: () => void
   courses: {
     label: string
@@ -39,6 +44,8 @@ interface PracticeQuizWizardProps {
 
 function PracticeQuizWizard({
   title,
+  gamifiedCourses,
+  nonGamifiedCourses,
   closeWizard,
   courses,
   initialValues,
@@ -214,7 +221,7 @@ function PracticeQuizWizard({
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
-          courseId: initialValues?.course?.id || courses?.[0]?.value,
+          courseId: initialValues?.course?.id || undefined,
           order: initialValues?.orderType || ElementOrderType.SpacedRepetition,
           availableFrom: initialValues?.availableFrom
             ? dayjs(initialValues?.availableFrom)
@@ -251,7 +258,12 @@ function PracticeQuizWizard({
         ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
-        <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
+        <StepTwo
+          validationSchema={stepTwoValidationSchema}
+          courses={courses}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+        />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
       <ElementCreationErrorToast
@@ -272,6 +284,8 @@ export default PracticeQuizWizard
 interface StepProps {
   onSubmit?: () => void
   validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
   isInitialValid?: boolean
   courses?: {
     label: string
@@ -353,6 +367,10 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
+  const { values } = useFormikContext<{
+    courseId?: string
+    [key: string]: any
+  }>()
 
   // const { validateField } = useFormikContext()
 
@@ -363,27 +381,25 @@ function StepTwo(props: StepProps) {
   //   validator()
   // }, [validateField, props.courses])
 
+  const groupedCourses = useGamifiedCourseGrouping({
+    gamifiedCourses: props.gamifiedCourses ?? [],
+    nonGamifiedCourses: props.nonGamifiedCourses ?? [],
+  })
+
   return (
     <div className="flex flex-col md:flex-row gap-2 md:gap-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-4">
           <FormikSelectField
+            required
+            hideError
             placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
             name="courseId"
-            items={
-              props.courses?.map((course) => {
-                return {
-                  ...course,
-                  data: { cy: `select-course-${course.label}` },
-                }
-              }) || [{ label: '', value: '' }]
-            }
-            required
+            groups={groupedCourses}
             tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}
             label={t('shared.generic.course')}
             data={{ cy: 'select-course' }}
             className={{ tooltip: 'z-20' }}
-            hideError
           />
           <ErrorMessage
             name="courseId"
@@ -391,131 +407,146 @@ function StepTwo(props: StepProps) {
             className="text-sm text-red-400"
           />
         </div>
+        {values.courseId ? (
+          <>
+            <div className="flex flex-row items-center gap-4">
+              <FormikSelectField
+                label={t('shared.generic.multiplier')}
+                required
+                tooltip={t('manage.sessionForms.practiceQuizMultiplier')}
+                name="multiplier"
+                placeholder={t('manage.sessionForms.multiplierDefault')}
+                items={[
+                  {
+                    label: t('manage.sessionForms.multiplier1'),
+                    value: '1',
+                    data: {
+                      cy: `select-multiplier-${t(
+                        'manage.sessionForms.multiplier1'
+                      )}`,
+                    },
+                  },
+                  {
+                    label: t('manage.sessionForms.multiplier2'),
+                    value: '2',
+                    data: {
+                      cy: `select-multiplier-${t(
+                        'manage.sessionForms.multiplier2'
+                      )}`,
+                    },
+                  },
+                  {
+                    label: t('manage.sessionForms.multiplier3'),
+                    value: '3',
+                    data: {
+                      cy: `select-multiplier-${t(
+                        'manage.sessionForms.multiplier3'
+                      )}`,
+                    },
+                  },
+                  {
+                    label: t('manage.sessionForms.multiplier4'),
+                    value: '4',
+                    data: {
+                      cy: `select-multiplier-${t(
+                        'manage.sessionForms.multiplier4'
+                      )}`,
+                    },
+                  },
+                ]}
+                data={{ cy: 'select-multiplier' }}
+                className={{ tooltip: 'z-20' }}
+              />
+              <ErrorMessage
+                name="multiplier"
+                component="div"
+                className="text-sm text-red-400"
+              />
+            </div>
 
-        <div className="flex flex-row items-center gap-4">
-          <FormikSelectField
-            label={t('shared.generic.multiplier')}
-            required
-            tooltip={t('manage.sessionForms.practiceQuizMultiplier')}
-            name="multiplier"
-            placeholder={t('manage.sessionForms.multiplierDefault')}
-            items={[
-              {
-                label: t('manage.sessionForms.multiplier1'),
-                value: '1',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier1'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier2'),
-                value: '2',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier2'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier3'),
-                value: '3',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier3'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier4'),
-                value: '4',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier4'
-                  )}`,
-                },
-              },
-            ]}
-            data={{ cy: 'select-multiplier' }}
-            className={{ tooltip: 'z-20' }}
-          />
-          <ErrorMessage
-            name="multiplier"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
-
-        <div className="flex flex-row items-center gap-4">
-          <FormikDateField
-            label={t('shared.generic.availableFrom')}
-            name="availableFrom"
-            tooltip={t('manage.sessionForms.practiceQuizAvailableFrom')}
-            className={{
-              root: 'w-[24rem]',
-              input: 'bg-uzh-grey-20',
-              tooltip: 'z-20 w-80 md:w-max',
-            }}
-            data={{ cy: 'select-available-from' }}
-          />
-          <ErrorMessage
-            name="availableFrom"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
+            <div className="flex flex-row items-center gap-4">
+              <FormikDateField
+                label={t('shared.generic.availableFrom')}
+                name="availableFrom"
+                tooltip={t('manage.sessionForms.practiceQuizAvailableFrom')}
+                className={{
+                  root: 'w-[24rem]',
+                  input: 'bg-uzh-grey-20',
+                  tooltip: 'z-20 w-80 md:w-max',
+                }}
+                data={{ cy: 'select-available-from' }}
+              />
+              <ErrorMessage
+                name="availableFrom"
+                component="div"
+                className="text-sm text-red-400"
+              />
+            </div>
+          </>
+        ) : (
+          <UserNotification
+            type="info"
+            className={{ root: 'w-max max-w-[40rem]' }}
+          >
+            {/* // TODO: the case where no gamified course exists should be caught before starting the wizard - otherwise title and description already entered will be lost! */}
+            {props.gamifiedCourses?.length === 0
+              ? t('manage.sessionForms.missingGamifiedCourses')
+              : t('manage.sessionForms.selectGamifiedCourse')}
+          </UserNotification>
+        )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row items-center gap-4">
-          <FormikNumberField
-            name="resetTimeDays"
-            label={t('shared.generic.repetitionInterval')}
-            tooltip={t('manage.sessionForms.practiceQuizRepetition')}
-            className={{
-              root: '!w-80',
-              tooltip: 'z-20',
-            }}
-            required
-            hideError={true}
-            data={{ cy: 'insert-reset-time-days' }}
-          />
-          <ErrorMessage
-            name="resetTimeDays"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
+      {values.courseId && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-row items-center gap-4">
+            <FormikNumberField
+              name="resetTimeDays"
+              label={t('shared.generic.repetitionInterval')}
+              tooltip={t('manage.sessionForms.practiceQuizRepetition')}
+              className={{
+                root: '!w-80',
+                tooltip: 'z-20',
+              }}
+              required
+              hideError={true}
+              data={{ cy: 'insert-reset-time-days' }}
+            />
+            <ErrorMessage
+              name="resetTimeDays"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
 
-        <div className="flex flex-row items-center gap-4">
-          <FormikSelectField
-            label={t('shared.generic.order')}
-            tooltip={t('manage.sessionForms.practiceQuizOrder')}
-            name="order"
-            placeholder={t('manage.sessionForms.practiceQuizSelectOrder')}
-            items={Object.values(ElementOrderType).map((order) => {
-              return {
-                value: order,
-                label: t(`manage.sessionForms.practiceQuiz${order}`),
-                data: {
-                  cy: `select-order-${t(
-                    `manage.sessionForms.practiceQuiz${order}`
-                  )}`,
-                },
-              }
-            })}
-            required
-            data={{ cy: 'select-order' }}
-            className={{ tooltip: 'z-20' }}
-          />
-          <ErrorMessage
-            name="order"
-            component="div"
-            className="text-sm text-red-400"
-          />
+          <div className="flex flex-row items-center gap-4">
+            <FormikSelectField
+              label={t('shared.generic.order')}
+              tooltip={t('manage.sessionForms.practiceQuizOrder')}
+              name="order"
+              placeholder={t('manage.sessionForms.practiceQuizSelectOrder')}
+              items={Object.values(ElementOrderType).map((order) => {
+                return {
+                  value: order,
+                  label: t(`manage.sessionForms.practiceQuiz${order}`),
+                  data: {
+                    cy: `select-order-${t(
+                      `manage.sessionForms.practiceQuiz${order}`
+                    )}`,
+                  },
+                }
+              })}
+              required
+              data={{ cy: 'select-order' }}
+              className={{ tooltip: 'z-20' }}
+            />
+            <ErrorMessage
+              name="order"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
