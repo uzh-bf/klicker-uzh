@@ -8,13 +8,15 @@ import {
   GetSingleCourseDocument,
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
+import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
   FormikDateField,
   FormikSelectField,
   FormikTextField,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { ErrorMessage } from 'formik'
+import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -22,11 +24,14 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
+import { ElementSelectCourse } from './ElementCreation'
 import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
 
 interface MicroLearningWizardProps {
   title: string
   closeWizard: () => void
+  gamifiedCourses: ElementSelectCourse[]
+  nonGamifiedCourses: ElementSelectCourse[]
   courses?: {
     label: string
     value: string
@@ -37,6 +42,8 @@ interface MicroLearningWizardProps {
 function MicroLearningWizard({
   title,
   closeWizard,
+  gamifiedCourses,
+  nonGamifiedCourses,
   courses,
   initialValues,
 }: MicroLearningWizardProps) {
@@ -214,7 +221,7 @@ function MicroLearningWizard({
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
-          courseId: initialValues?.course?.id || courses?.[0]?.value,
+          courseId: initialValues?.course?.id || undefined,
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
@@ -244,7 +251,12 @@ function MicroLearningWizard({
         ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
-        <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
+        <StepTwo
+          validationSchema={stepTwoValidationSchema}
+          courses={courses}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+        />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
       <ElementCreationErrorToast
@@ -265,6 +277,8 @@ export default MicroLearningWizard
 interface StepProps {
   onSubmit?: () => void
   validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
   courses?: {
     label: string
     value: string
@@ -345,26 +359,29 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
+  const { values } = useFormikContext<{
+    courseId?: string
+    [key: string]: any
+  }>()
+
+  const groupedCourses = useGamifiedCourseGrouping({
+    gamifiedCourses: props.gamifiedCourses ?? [],
+    nonGamifiedCourses: props.nonGamifiedCourses ?? [],
+  })
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row items-center gap-4 text-left">
         <FormikSelectField
-          name="courseId"
-          items={
-            props.courses?.map((course) => {
-              return {
-                ...course,
-                data: { cy: `select-course-${course.label}` },
-              }
-            }) || []
-          }
           required
+          hideError
+          name="courseId"
+          groups={groupedCourses}
+          placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
           tooltip={t('manage.sessionForms.microlearningCourse')}
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
-          hideError
         />
         <ErrorMessage
           name="courseId"
@@ -372,76 +389,101 @@ function StepTwo(props: StepProps) {
           className="text-sm text-red-400"
         />
       </div>
-      <FormikDateField
-        label={t('shared.generic.startDate')}
-        name="startDate"
-        tooltip={t('manage.sessionForms.microlearningStartDate')}
-        required
-        className={{
-          root: 'w-[24rem]',
-          input: 'bg-uzh-grey-20',
-          tooltip: 'z-20',
-        }}
-        data={{ cy: 'select-start-date' }}
-      />
-      <FormikDateField
-        label={t('shared.generic.endDate')}
-        name="endDate"
-        tooltip={t('manage.sessionForms.microlearningEndDate')}
-        required
-        className={{
-          root: 'w-[24rem]',
-          input: 'bg-uzh-grey-20',
-          tooltip: 'z-20',
-        }}
-        data={{ cy: 'select-end-date' }}
-      />
-      <div className="flex flex-row items-center gap-4">
-        <FormikSelectField
-          name="multiplier"
-          placeholder={t('manage.sessionForms.multiplierDefault')}
-          label={t('shared.generic.multiplier')}
-          tooltip={t('manage.sessionForms.microlearningMultiplier')}
-          required
-          items={[
-            {
-              label: t('manage.sessionForms.multiplier1'),
-              value: '1',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier1')}`,
+      {values.courseId ? (
+        <>
+          <FormikDateField
+            label={t('shared.generic.startDate')}
+            name="startDate"
+            tooltip={t('manage.sessionForms.microlearningStartDate')}
+            required
+            className={{
+              root: 'w-[24rem]',
+              input: 'bg-uzh-grey-20',
+              tooltip: 'z-20',
+            }}
+            data={{ cy: 'select-start-date' }}
+          />
+          <FormikDateField
+            label={t('shared.generic.endDate')}
+            name="endDate"
+            tooltip={t('manage.sessionForms.microlearningEndDate')}
+            required
+            className={{
+              root: 'w-[24rem]',
+              input: 'bg-uzh-grey-20',
+              tooltip: 'z-20',
+            }}
+            data={{ cy: 'select-end-date' }}
+          />
+        </>
+      ) : (
+        <UserNotification
+          type="info"
+          className={{ root: 'w-max max-w-[40rem]' }}
+        >
+          {/* // TODO: the case where no gamified course exists should be caught before starting the wizard - otherwise title and description already entered will be lost! */}
+          {props.gamifiedCourses?.length === 0
+            ? t('manage.sessionForms.missingGamifiedCourses')
+            : t('manage.sessionForms.selectGamifiedCourse')}
+        </UserNotification>
+      )}
+
+      {values.courseId && (
+        <div className="flex flex-row items-center gap-4">
+          <FormikSelectField
+            name="multiplier"
+            placeholder={t('manage.sessionForms.multiplierDefault')}
+            label={t('shared.generic.multiplier')}
+            tooltip={t('manage.sessionForms.microlearningMultiplier')}
+            required
+            items={[
+              {
+                label: t('manage.sessionForms.multiplier1'),
+                value: '1',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier1'
+                  )}`,
+                },
               },
-            },
-            {
-              label: t('manage.sessionForms.multiplier2'),
-              value: '2',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier2')}`,
+              {
+                label: t('manage.sessionForms.multiplier2'),
+                value: '2',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier2'
+                  )}`,
+                },
               },
-            },
-            {
-              label: t('manage.sessionForms.multiplier3'),
-              value: '3',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier3')}`,
+              {
+                label: t('manage.sessionForms.multiplier3'),
+                value: '3',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier3'
+                  )}`,
+                },
               },
-            },
-            {
-              label: t('manage.sessionForms.multiplier4'),
-              value: '4',
-              data: {
-                cy: `select-multiplier-${t('manage.sessionForms.multiplier4')}`,
+              {
+                label: t('manage.sessionForms.multiplier4'),
+                value: '4',
+                data: {
+                  cy: `select-multiplier-${t(
+                    'manage.sessionForms.multiplier4'
+                  )}`,
+                },
               },
-            },
-          ]}
-          data={{ cy: 'select-multiplier' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
+            ]}
+            data={{ cy: 'select-multiplier' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="multiplier"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+      )}
     </div>
   )
 }

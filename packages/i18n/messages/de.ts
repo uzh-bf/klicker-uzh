@@ -166,6 +166,8 @@ export default {
       passed: 'Bestanden',
       failed: 'Nicht bestanden',
       survey: 'Umfrage',
+      gamified: 'Gamifiziert',
+      nonGamified: 'Nicht gamifiziert',
     },
     contentInput: {
       boldStyle:
@@ -1015,6 +1017,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      missingGamifiedCourses:
+        'Für die Erstellung dieses Elementtyps ist ein gamifizierter Kurs erforderlich. Bitte aktivieren Sie die Gamifizierung in einem Ihrer bestehenden Kurse oder erstellen Sie einen neuen gamifizierten Kurs.',
+      selectGamifiedCourse:
+        'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityTypes:
         'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       groupActivityCreated:
