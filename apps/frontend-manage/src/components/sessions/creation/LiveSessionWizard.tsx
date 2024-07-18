@@ -12,12 +12,12 @@ import {
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import useLiveQuizCourseGrouping from '@lib/hooks/useLiveQuizCourseGrouping'
 import {
   Button,
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
-  Group,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -422,29 +422,10 @@ function StepTwo(props: StepProps) {
     }
   }, [values.isGamificationEnabled])
 
-  const groupedCourses: Group[] = [
-    {
-      items: [
-        {
-          label: t('manage.sessionForms.liveQuizNoCourse'),
-          value: '',
-          data: {
-            cy: `select-course-${t('manage.sessionForms.liveQuizNoCourse')}`,
-          },
-        },
-      ],
-    },
-    {
-      items: props.gamifiedCourses ?? [],
-      showSeparator: true,
-      label: t('shared.generic.gamified'),
-    },
-    {
-      items: props.nonGamifiedCourses ?? [],
-      showSeparator: true,
-      label: t('shared.generic.nonGamified'),
-    },
-  ]
+  const groupedCourses = useLiveQuizCourseGrouping({
+    gamifiedCourses: props.gamifiedCourses ?? [],
+    nonGamifiedCourses: props.nonGamifiedCourses ?? [],
+  })
 
   return (
     <div className="flex flex-row gap-16">
