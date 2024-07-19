@@ -170,6 +170,8 @@ export default {
       survey: 'Umfrage',
       gamified: 'Gamifiziert',
       nonGamified: 'Nicht gamifiziert',
+      blockN: 'Block {number}',
+      questionN: 'Frage {number}',
     },
     contentInput: {
       boldStyle:
@@ -1161,7 +1163,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
       abortEnterName:
         'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
-      blockN: 'Block {number}',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',
@@ -1468,7 +1469,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endSession: 'Session beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.',
-      blockN: 'Block {number}',
     },
   },
 }

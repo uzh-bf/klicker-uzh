@@ -170,6 +170,8 @@ export default {
       survey: 'Survey',
       gamified: 'Gamified',
       nonGamified: 'Non-Gamified',
+      blockN: 'Block {number}',
+      questionN: 'Question {number}',
     },
     contentInput: {
       boldStyle:
@@ -1149,7 +1151,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
       abortEnterName:
         'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
-      blockN: 'Block {number}',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -1453,7 +1454,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endSession: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
-      blockN: 'Block {number}',
     },
   },
 }

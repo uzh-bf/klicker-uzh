@@ -4,6 +4,7 @@ import {
   faArrowRight,
   faArrowUp,
   faBars,
+  faCircleExclamation,
   faGears,
   faPlus,
   faTrash,
@@ -11,30 +12,31 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Modal, NumberField } from '@uzh-bf/design-system'
+import { Button, Modal, NumberField, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import {
+  LiveQuizBlockErrorValues,
+  LiveQuizBlockFormValues,
+} from '../MultistepWizard'
+import LiveQuizBlocksError from './LiveQuizBlocksError'
 
-interface SessionCreationBlockProps {
+interface LiveQuizCreationBlockProps {
   index: number
-  block: {
-    questionIds: number[]
-    titles: string[]
-    types: ElementType[]
-    timeLimit: string
-  }
+  block: LiveQuizBlockFormValues
   numOfBlocks: number
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
+  error?: LiveQuizBlockErrorValues[]
 }
 
-function SessionCreationBlock({
+function LiveQuizCreationBlock({
   index,
   block,
   numOfBlocks,
@@ -43,7 +45,8 @@ function SessionCreationBlock({
   replace,
   selection,
   resetSelection,
-}: SessionCreationBlockProps): React.ReactElement {
+  error,
+}: LiveQuizCreationBlockProps): React.ReactElement {
   const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
 
@@ -78,10 +81,26 @@ function SessionCreationBlock({
   )
 
   return (
-    <div key={index} className="flex flex-col md:w-56">
+    <div key={index} className="flex flex-col md:w-56 w-full">
       <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
-        <div data-cy="block-container-header">
-          {t('control.session.blockN', { number: index + 1 })}
+        <div className="flex flex-row items-center gap-2">
+          <div data-cy="block-container-header">
+            {t('shared.generic.blockN', { number: index + 1 })}
+          </div>
+          {error &&
+            error.length > index &&
+            typeof error[index] !== 'undefined' && (
+              <Tooltip
+                tooltip={<LiveQuizBlocksError errors={error[index]} />}
+                delay={0}
+                className={{ tooltip: 'text-sm z-20' }}
+              >
+                <FontAwesomeIcon
+                  icon={faCircleExclamation}
+                  className="mr-1 text-red-600"
+                />
+              </Tooltip>
+            )}
         </div>
         <div className="flex flex-row gap-1 text-xs">
           <Button
@@ -139,10 +158,10 @@ function SessionCreationBlock({
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1 my-2 md:overflow-y-auto">
+      <div className="flex flex-col flex-1 my-2 md:overflow-y-auto max-h-[7.5rem]">
         {block.titles.map((title, questionIdx) => (
           <div
-            key={title}
+            key={`${questionIdx}-${title}`}
             className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
           >
             <div className="flex-1">
@@ -336,4 +355,4 @@ function SessionCreationBlock({
   )
 }
 
-export default SessionCreationBlock
+export default LiveQuizCreationBlock

@@ -4,7 +4,11 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType, ParameterType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementOrderType,
+  ElementType,
+  ParameterType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -54,13 +58,22 @@ interface CommonFormValues {
   multiplier: string
 }
 
+export interface LiveQuizBlockFormValues {
+  questionIds: number[]
+  titles: string[]
+  types: ElementType[]
+  timeLimit: number
+}
+
+export interface LiveQuizBlockErrorValues {
+  questionIds: string[]
+  titles: string[]
+  types: string[]
+  timeLimit: string
+}
+
 export interface LiveSessionFormValues extends CommonFormValues {
-  blocks: {
-    questionIds: number[]
-    titles: string[]
-    types: []
-    timeLimit: number
-  }[]
+  blocks: LiveQuizBlockFormValues[]
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
