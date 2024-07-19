@@ -196,7 +196,7 @@ function MultistepWizard({
               minimal
               showTooltipSymbols
               className={{
-                item: 'last:rounded-r-md first:rounded-l-md',
+                item: 'last:rounded-r-md first:rounded-l-md hidden md:flex',
               }}
             />
           </div>

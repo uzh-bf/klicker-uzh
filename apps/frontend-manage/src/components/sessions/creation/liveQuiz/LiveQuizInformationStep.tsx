@@ -29,7 +29,6 @@ function LiveQuizInformationStep(_: LiveQuizWizardStepProps) {
             label: 'text-base mb-0.5',
           }}
           data-cy="insert-live-quiz-name"
-          shouldValidate={() => true}
         />
       </div>
       <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md">

@@ -1,6 +1,6 @@
 import { Markdown } from '@klicker-uzh/markdown'
 import { H2, H3, NewFormikTextField } from '@uzh-bf/design-system'
-import { ErrorMessage, useFormikContext } from 'formik'
+import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import EditorField from '../EditorField'
 import { LiveSessionFormValues } from '../MultistepWizard'
@@ -12,7 +12,7 @@ function LiveQuizDescriptionStep(_: LiveQuizWizardStepProps) {
 
   return (
     <div className="flex flex-row -mt-2">
-      <div className="flex-1 w-3/5 mr-6">
+      <div className="flex-1 w-3/5 md:mr-6">
         <NewFormikTextField
           required
           autoComplete="off"
@@ -34,15 +34,8 @@ function LiveQuizDescriptionStep(_: LiveQuizWizardStepProps) {
           showToolbarOnFocus={false}
           className={{ label: 'text-base mb-0.5' }}
         />
-        <div className="w-full text-right">
-          <ErrorMessage
-            name="description"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
       </div>
-      <div className="flex flex-col gap-1 w-2/5">
+      <div className="hidden md:flex flex-col gap-1 w-2/5">
         <H2>{t('shared.generic.preview')}</H2>
         <div className="h-full w-full border border-solid rounded-md overflow-y-auto">
           <div className="p-4">

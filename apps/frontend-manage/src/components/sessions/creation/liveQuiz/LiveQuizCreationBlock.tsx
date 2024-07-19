@@ -81,7 +81,7 @@ function LiveQuizCreationBlock({
   )
 
   return (
-    <div key={index} className="flex flex-col md:w-56 w-full">
+    <div key={index} className="flex flex-col w-56">
       <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="block-container-header">
@@ -158,7 +158,7 @@ function LiveQuizCreationBlock({
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1 my-2 md:overflow-y-auto max-h-[7.5rem]">
+      <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">
         {block.titles.map((title, questionIdx) => (
           <div
             key={`${questionIdx}-${title}`}

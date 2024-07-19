@@ -10,7 +10,7 @@ function LiveQuizQuestionsStep(props: LiveQuizWizardStepProps) {
     <div className="mt-1 md:mt-0 md:overflow-x-auto">
       <FieldArray name="blocks" className="w-fit">
         {({ push, remove, move, replace }: FieldArrayRenderProps) => (
-          <div className="flex flex-col md:flex-row gap-4 overflow-x-auto w-fit">
+          <div className="flex flex-row gap-4 overflow-x-auto w-fit">
             {field.value.map((block: any, index: number) => (
               <LiveQuizCreationBlock
                 key={`${index}-${block.questionIds.join('')}`}
