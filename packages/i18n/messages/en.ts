@@ -143,6 +143,8 @@ export default {
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
       finishedAt: 'Finished at {time}',
+      introduction: 'Introduction',
+      information: 'Information',
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
@@ -945,6 +947,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
       liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizInformation:
+        'In this step, enter the name and description of the live quiz and find helpful information for creating the element.',
       liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
       liveQuizSettings:
@@ -971,8 +975,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+      liveQuizIntroductionName:
+        'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       liveQuizUseCase:
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
+      liveQuizLecturerDocs:
+        'For more information on the creation and execution of live quizzes, visit the <link>Lecturer Documentation</link>.',
+      liveQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      liveQuizStartNow: 'Start now',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:

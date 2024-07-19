@@ -143,6 +143,8 @@ export default {
       updatedAt: 'Editiert am {date}',
       startAt: 'Start am {time}',
       finishedAt: 'Beendet am {time}',
+      introduction: 'Einführung',
+      information: 'Information',
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
@@ -950,6 +952,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Frageblock muss mindestens eine Frage enthalten.',
       liveQuizCreated: 'Live Quiz <b>{name}</b> erfolgreich erstellt.',
       liveQuizUpdated: 'Live Quiz <b>{name}</b> erfolgreich modifiziert.',
+      liveQuizInformation:
+        'Geben Sie in diesem Schritt den Namen für das Live Quiz ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       liveQuizDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Live Quizzes ein.',
       liveQuizSettings:
@@ -976,8 +980,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveQuizFeedbackChannel:
         'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+      liveQuizIntroductionName:
+        'Bitte geben Sie einen Namen für Ihr Live-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       liveQuizUseCase:
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
+      liveQuizLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Live-Quizzes, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      liveQuizStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
+      liveQuizStartNow: 'Jetzt starten',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:

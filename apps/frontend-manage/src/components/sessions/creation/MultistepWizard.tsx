@@ -142,7 +142,8 @@ function MultistepWizard({
     values:
       | LiveSessionFormValues
       | MicroLearningFormValues
-      | PracticeQuizFormValues,
+      | PracticeQuizFormValues
+      | GroupActivityFormValues,
     bag: any
   ) => {
     if (step.props.onSubmit) {
@@ -165,9 +166,9 @@ function MultistepWizard({
       isInitialValid={initialValid}
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
-        <Form className="h-full overflow-y-auto">
+        <Form className="h-full w-full flex flex-col">
           <Validator stepNumber={stepNumber} validateForm={validateForm} />
-          <div className="flex flex-row items-end gap-8">
+          <div className="flex flex-row items-end gap-8 h-6">
             <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
               {editMode
                 ? t('manage.questionForms.editElement', { element: title })
@@ -187,8 +188,43 @@ function MultistepWizard({
             />
           </div>
 
-          <div className="flex flex-col justify-between gap-1 py-4">
-            {!isCompleted && <>{step}</>}
+          <div className="flex flex-1 w-full justify-between gap-1 py-4">
+            {!isCompleted && (
+              <div className="flex flex-col justify-between w-full h-full">
+                <div>{step}</div>
+                <div className="flex flex-row justify-between pt-2">
+                  <Button
+                    className={{ root: 'border-red-400' }}
+                    onClick={() => onCloseWizard()}
+                    data={{ cy: 'cancel-session-creation' }}
+                  >
+                    <FontAwesomeIcon icon={faCancel} />
+                    <div>
+                      {editMode
+                        ? t('manage.questionForms.cancelEditing')
+                        : t('manage.questionForms.cancelCreation')}
+                    </div>
+                  </Button>
+                  <Button
+                    disabled={isSubmitting || !isValid}
+                    type="submit"
+                    data={{ cy: 'next-or-submit' }}
+                    className={{ root: 'w-max self-end' }}
+                  >
+                    {stepNumber === steps.length - 1 ? (
+                      <FontAwesomeIcon icon={faSave} />
+                    ) : (
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    )}
+                    {stepNumber === steps.length - 1
+                      ? editMode
+                        ? t('shared.generic.save')
+                        : t('shared.generic.create')
+                      : t('shared.generic.continue')}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isCompleted && (
               <CompletionStep
@@ -202,40 +238,6 @@ function MultistepWizard({
               >
                 {customCompletionAction}
               </CompletionStep>
-            )}
-
-            {!isCompleted && (
-              <div className="flex flex-row justify-between pt-2">
-                <Button
-                  className={{ root: 'border-red-400' }}
-                  onClick={() => onCloseWizard()}
-                  data={{ cy: 'cancel-session-creation' }}
-                >
-                  <FontAwesomeIcon icon={faCancel} />
-                  <div>
-                    {editMode
-                      ? t('manage.questionForms.cancelEditing')
-                      : t('manage.questionForms.cancelCreation')}
-                  </div>
-                </Button>
-                <Button
-                  disabled={isSubmitting || !isValid}
-                  type="submit"
-                  data={{ cy: 'next-or-submit' }}
-                  className={{ root: 'w-max self-end' }}
-                >
-                  {stepNumber === steps.length - 1 ? (
-                    <FontAwesomeIcon icon={faSave} />
-                  ) : (
-                    <FontAwesomeIcon icon={faArrowRight} />
-                  )}
-                  {stepNumber === steps.length - 1
-                    ? editMode
-                      ? t('shared.generic.save')
-                      : t('shared.generic.create')
-                    : t('shared.generic.continue')}
-                </Button>
-              </div>
             )}
           </div>
         </Form>

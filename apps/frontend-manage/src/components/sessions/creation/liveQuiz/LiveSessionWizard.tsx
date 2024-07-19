@@ -24,11 +24,21 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
-import EditorField from './EditorField'
-import { ElementSelectCourse } from './ElementCreation'
-import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
-import SessionBlockField from './SessionBlockField'
+import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import EditorField from '../EditorField'
+import { ElementSelectCourse } from '../ElementCreation'
+import MultistepWizard, { LiveSessionFormValues } from '../MultistepWizard'
+import SessionBlockField from '../SessionBlockField'
+import LiveQuizInformationStep from './LiveQuizInformationStep'
+
+export interface LiveQuizWizardStepProps {
+  onSubmit?: () => void
+  validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
+  selection?: Record<number, Element>
+  resetSelection?: () => void
+}
 
 interface LiveSessionWizardProps {
   title: string
@@ -61,15 +71,18 @@ function LiveSessionWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
 
-  const stepOneValidationSchema = yup.object().shape({
+  const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
+  })
+
+  const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
       .required(t('manage.sessionForms.sessionDisplayName')),
     description: yup.string(),
   })
 
-  const stepTwoValidationSchema = yup.object().shape({
+  const settingsValidationSchema = yup.object().shape({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
@@ -79,7 +92,7 @@ function LiveSessionWizard({
       .required(t('manage.sessionForms.liveQuizGamified')),
   })
 
-  const stepThreeValidationSchema = yup.object().shape({
+  const questionsValidationSchema = yup.object().shape({
     blocks: yup.array().of(
       yup.object().shape({
         ids: yup.array().of(yup.number()),
@@ -230,7 +243,9 @@ function LiveSessionWizard({
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
               </Button.Icon>
-              <Button.Label>Start now</Button.Label>
+              <Button.Label>
+                {t('manage.sessionForms.liveQuizStartNow')}
+              </Button.Label>
             </Button>
           )
         }
@@ -241,13 +256,13 @@ function LiveSessionWizard({
           blocks: initialValues?.blocks?.map((block) => {
             return {
               questionIds: block.instances?.map(
-                (instance) => instance.questionData.questionId
+                (instance) => instance.questionData!.questionId
               ),
               titles: block.instances?.map(
-                (instance) => instance.questionData.name
+                (instance) => instance.questionData!.name
               ),
               types: block.instances?.map(
-                (instance) => instance.questionData.type
+                (instance) => instance.questionData!.type
               ),
               timeLimit: block.timeLimit ?? undefined,
             }
@@ -276,8 +291,13 @@ function LiveSessionWizard({
         }}
         workflowItems={[
           {
+            title: t('shared.generic.information'),
+            tooltip: t('manage.sessionForms.liveQuizInformation'),
+          },
+          {
             title: t('shared.generic.description'),
             tooltip: t('manage.sessionForms.liveQuizDescription'),
+            tooltipDisabled: t('manage.sessionForms.liveQuizDescription'),
           },
           {
             title: t('shared.generic.settings'),
@@ -291,14 +311,15 @@ function LiveSessionWizard({
           },
         ]}
       >
-        <StepOne validationSchema={stepOneValidationSchema} />
+        <LiveQuizInformationStep validationSchema={nameValidationSchema} />
+        <StepOne validationSchema={descriptionValidationSchema} />
         <StepTwo
-          validationSchema={stepTwoValidationSchema}
+          validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
         <StepThree
-          validationSchema={stepThreeValidationSchema}
+          validationSchema={questionsValidationSchema}
           selection={selection}
           resetSelection={resetSelection}
         />
@@ -318,16 +339,7 @@ function LiveSessionWizard({
 
 export default LiveSessionWizard
 
-interface StepProps {
-  onSubmit?: () => void
-  validationSchema: any
-  gamifiedCourses?: ElementSelectCourse[]
-  nonGamifiedCourses?: ElementSelectCourse[]
-  selection?: Record<number, Element>
-  resetSelection?: () => void
-}
-
-function StepOne(_: StepProps) {
+function StepOne(_: LiveQuizWizardStepProps) {
   const t = useTranslations()
 
   return (
@@ -398,9 +410,9 @@ function StepOne(_: StepProps) {
   )
 }
 
-function StepTwo(props: StepProps) {
+function StepTwo(props: LiveQuizWizardStepProps) {
   const t = useTranslations()
-  const { values, setFieldValue } = useFormikContext()
+  const { values, setFieldValue } = useFormikContext<LiveSessionFormValues>()
 
   useEffect(() => {
     if (values.courseId === '') {
@@ -414,12 +426,14 @@ function StepTwo(props: StepProps) {
         )?.isGamified
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.courseId])
 
   useEffect(() => {
     if (values.isGamificationEnabled === false) {
       setFieldValue('multiplier', '1')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.isGamificationEnabled])
 
   const groupedCourses = useLiveQuizCourseGrouping({
@@ -571,7 +585,7 @@ function StepTwo(props: StepProps) {
   )
 }
 
-function StepThree(props: StepProps) {
+function StepThree(props: LiveQuizWizardStepProps) {
   return (
     <SessionBlockField
       fieldName="blocks"
