@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -17,7 +16,6 @@ import {
   Button,
   FormikSelectField,
   FormikSwitchField,
-  FormikTextField,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -25,12 +23,12 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
-import EditorField from '../EditorField'
 import { ElementSelectCourse } from '../ElementCreation'
 import MultistepWizard, { LiveSessionFormValues } from '../MultistepWizard'
 import SessionBlockField from '../SessionBlockField'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
+import LiveQuizSettingsStep from './LiveQuizSettingsStep'
 
 export interface LiveQuizWizardStepProps {
   onSubmit?: () => void
@@ -316,8 +314,7 @@ function LiveSessionWizard({
         <LiveQuizDescriptionStep
           validationSchema={descriptionValidationSchema}
         />
-        <StepOne validationSchema={descriptionValidationSchema} />
-        <StepTwo
+        <LiveQuizSettingsStep
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
@@ -342,77 +339,6 @@ function LiveSessionWizard({
 }
 
 export default LiveSessionWizard
-
-function StepOne(_: LiveQuizWizardStepProps) {
-  const t = useTranslations()
-
-  return (
-    <div className="flex flex-row gap-6">
-      <div className="flex-1">
-        <div className="flex flex-col gap-4 md:flex-row">
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="name"
-            label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.liveQuizName')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-live-quiz-name"
-            shouldValidate={() => true}
-          />
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="displayName"
-            label={t('manage.sessionForms.displayName')}
-            tooltip={t('manage.sessionForms.displayNameTooltip')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-live-display-name"
-          />
-        </div>
-        <EditorField
-          // key={fieldName.value}
-          label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.liveQuizDescField')}
-          fieldName="description"
-          showToolbarOnFocus={false}
-        />
-        <div className="w-full text-right">
-          <ErrorMessage
-            name="description"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
-      </div>
-      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
-        <FontAwesomeIcon
-          icon={faLightbulb}
-          className="mr-2 text-orange-400"
-          size="lg"
-        />
-        {t.rich('manage.sessionForms.liveQuizUseCase', {
-          link: (text) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
-              target="_blank"
-            >
-              {text}
-            </a>
-          ),
-        })}
-      </div>
-    </div>
-  )
-}
 
 function StepTwo(props: LiveQuizWizardStepProps) {
   const t = useTranslations()

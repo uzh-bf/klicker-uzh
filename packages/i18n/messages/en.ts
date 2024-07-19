@@ -965,6 +965,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizDescCourse: 'You can assign your live quiz to a course.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      liveQuizEnableGamification:
+        'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveQuizGamification:

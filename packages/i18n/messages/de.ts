@@ -970,6 +970,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizDescCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
+      liveQuizEnableGamification:
+        'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveQuizGamification:
