@@ -16,9 +16,9 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import GroupActivityWizard from './GroupActivityWizard'
-import LiveSessionWizard from './LiveSessionWizard'
 import MicroLearningWizard from './MicroLearningWizard'
 import PracticeQuizWizard from './PracticeQuizWizard'
+import LiveSessionWizard from './liveQuiz/LiveSessionWizard'
 
 export enum WizardMode {
   LiveQuiz = 'liveQuiz',
@@ -145,8 +145,8 @@ function ElementCreation({
   }
 
   const { gamifiedCourses, nonGamifiedCourses } = courseSelection?.reduce<{
-    gamifiedCourses: SelectCourse[]
-    nonGamifiedCourses: SelectCourse[]
+    gamifiedCourses: ElementSelectCourse[]
+    nonGamifiedCourses: ElementSelectCourse[]
   }>(
     (acc, course) => {
       if (course.isGamified) {
@@ -166,8 +166,8 @@ function ElementCreation({
   ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
 
   return (
-    <div className="flex flex-col justify-center print-hidden h-96">
-      <div className="w-full h-full rounded-lg">
+    <div className="flex flex-col justify-center print-hidden md:h-[38.5rem]">
+      <div className="w-full h-full">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}

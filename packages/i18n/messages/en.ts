@@ -143,6 +143,8 @@ export default {
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
       finishedAt: 'Finished at {time}',
+      introduction: 'Introduction',
+      information: 'Information',
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
@@ -168,6 +170,8 @@ export default {
       survey: 'Survey',
       gamified: 'Gamified',
       nonGamified: 'Non-Gamified',
+      blockN: 'Block {number}',
+      questionN: 'Question {number}',
     },
     contentInput: {
       boldStyle:
@@ -945,6 +949,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
       liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizInformation:
+        'In this step, enter the name and description of the live quiz and find helpful information for creating the element.',
       liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
       liveQuizSettings:
@@ -961,6 +967,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizDescCourse: 'You can assign your live quiz to a course.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      liveQuizEnableGamification:
+        'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveQuizGamification:
@@ -971,8 +979,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+      liveQuizIntroductionName:
+        'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       liveQuizUseCase:
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
+      liveQuizLecturerDocs:
+        'For more information on the creation and execution of live quizzes, visit the <link>Lecturer Documentation</link>.',
+      liveQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      liveQuizStartNow: 'Start now',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
@@ -1136,7 +1151,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
       abortEnterName:
         'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
-      blockN: 'Block {number}',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -1440,7 +1454,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endSession: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
-      blockN: 'Block {number}',
     },
   },
 }

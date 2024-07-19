@@ -15,6 +15,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="cancel-session-creation"]').click()
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -26,7 +27,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
   })
 
-  it('creates a session with one block and deletes it', () => {
+  it('creates a session with one block while testing all settings and deletes it afterwards', () => {
     const questionTitle = uuid()
     const question = uuid()
     const sessionName = uuid()
@@ -41,7 +42,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -101,6 +105,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -156,6 +161,7 @@ describe('Different live-quiz workflows', () => {
     // step 1
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -163,45 +169,19 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(messages.manage.sessionForms.liveQuizNoCourse)
+    cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
+    cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${nonGamifiedCourseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(nonGamifiedCourseName)
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'data-state',
-      'unchecked'
-    )
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
+    cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'data-state',
-      'checked'
-    )
-    cy.get('[data-cy="set-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
+    cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -341,6 +321,7 @@ describe('Different live-quiz workflows', () => {
     // TODO - once this is possible, create an empty live quiz here
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(sessionName)
     cy.get('[data-cy="next-or-submit"]').click()
 

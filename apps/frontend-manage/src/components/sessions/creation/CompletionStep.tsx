@@ -30,7 +30,7 @@ function CompletionStep({
   const router = useRouter()
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4">
+    <div className="flex flex-col items-center gap-4 p-4 mx-auto">
       <div>
         {completionSuccessMessage
           ? completionSuccessMessage(name)
