@@ -188,13 +188,13 @@ function MultistepWizard({
                 : t('manage.questionForms.createElement', { element: title })}
             </H2>
             <Workflow
+              minimal
+              showTooltipSymbols
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
-              minimal
-              showTooltipSymbols
               className={{
                 item: 'last:rounded-r-md first:rounded-l-md hidden md:flex',
               }}
