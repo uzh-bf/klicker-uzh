@@ -27,6 +27,405 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
   })
 
+  it('creates a session with two questions and edits it', () => {
+    const questionTitle1 = 'Title ' + uuid()
+    const question1 = 'Content ' + uuid()
+    const questionTitle2 = 'Title ' + uuid()
+    const question2 = 'Content ' + uuid()
+    const sessionName = uuid()
+    const session = uuid()
+
+    const courseGamified = 'Testkurs'
+    const courseNonGamified = 'Non-Gamified Course'
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle1)
+    cy.get('[data-cy="insert-question-text"]').click().type(question1)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click()
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
+    cy.get('[data-cy="insert-question-text"]').click().type(question2)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click()
+
+    cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // course settings
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.liveQuizNoCourse)
+    cy.get('[data-cy="select-multiplier"]').should('not.exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
+    cy.get('[data-cy="select-multiplier"]').should('exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseNonGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseNonGamified)
+    cy.get('[data-cy="select-multiplier"]').should('not.exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
+    cy.get('[data-cy="select-multiplier"]').should('exist')
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.multiplier1)
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier2
+    )
+
+    // toggle settings
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').click()
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').click()
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').click()
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle1}"]`)
+      .contains(questionTitle1)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
+      .contains(questionTitle2)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="add-block"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+
+    // test sorting of blocks
+    cy.get('[data-cy="move-block-1-left"]').click()
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="move-block-0-right"]').click()
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+
+    // add time limits
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').type('10')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').type('20')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '10')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
+    cy.get('[data-cy="close-block-settings"]').click()
+
+    // switch questions and check if settings persist
+    cy.get('[data-cy="move-block-1-left"]').click()
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '10')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="move-block-0-right"]').click()
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '10')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // EDITING - check if the same values as before has been stored and modify them
+    const newSessionName = uuid()
+    const newSessionDisplayName = uuid()
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.contains('[data-cy="session-block"]', sessionName)
+    cy.get(`[data-cy="edit-session-${sessionName}"]`).click()
+    cy.get('[data-cy="insert-live-quiz-name"]').should(
+      'have.value',
+      sessionName
+    )
+    cy.get('[data-cy="insert-live-quiz-name"]').clear().type(newSessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="insert-live-display-name"]').should('have.value', session)
+    cy.get('[data-cy="insert-live-display-name"]')
+      .clear()
+      .type(newSessionDisplayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check settings and modify them
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier2
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+    ).click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier4
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').click()
+    cy.get('[data-cy="set-liveqa-enabled"]').click()
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check questions and modify them
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '10')
+    cy.get('[data-cy="block-time-limit"]').clear().type('15')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '15')
+    cy.get('[data-cy="close-block-settings"]').click()
+
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
+    cy.get('[data-cy="block-time-limit"]').clear().type('25')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '25')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="move-block-1-left"]').click()
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // TODO: start editing again and check if correct values were saved
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.contains('[data-cy="session-block"]', newSessionName)
+    cy.get(`[data-cy="edit-session-${newSessionName}"]`).click()
+    cy.get('[data-cy="insert-live-quiz-name"]').should(
+      'have.value',
+      newSessionName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="insert-live-display-name"]').should(
+      'have.value',
+      newSessionDisplayName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier4
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="set-feedback-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="set-liveqa-moderation"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle1.substring(0, 20))
+    cy.get('[data-cy="open-block-0-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '25')
+    cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="open-block-1-settings"]').click()
+    cy.get('[data-cy="block-time-limit"]').should('have.value', '15')
+    cy.get('[data-cy="close-block-settings"]').click()
+  })
+
   it('creates a session with one block while testing all settings and deletes it afterwards', () => {
     const questionTitle = uuid()
     const question = uuid()
