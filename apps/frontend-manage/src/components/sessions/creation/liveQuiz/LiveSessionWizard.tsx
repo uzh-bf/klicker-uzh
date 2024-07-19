@@ -29,6 +29,7 @@ import EditorField from '../EditorField'
 import { ElementSelectCourse } from '../ElementCreation'
 import MultistepWizard, { LiveSessionFormValues } from '../MultistepWizard'
 import SessionBlockField from '../SessionBlockField'
+import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 
 export interface LiveQuizWizardStepProps {
@@ -312,6 +313,9 @@ function LiveSessionWizard({
         ]}
       >
         <LiveQuizInformationStep validationSchema={nameValidationSchema} />
+        <LiveQuizDescriptionStep
+          validationSchema={descriptionValidationSchema}
+        />
         <StepOne validationSchema={descriptionValidationSchema} />
         <StepTwo
           validationSchema={settingsValidationSchema}
