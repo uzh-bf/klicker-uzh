@@ -81,7 +81,7 @@ function LiveQuizCreationBlock({
   )
 
   return (
-    <div key={index} className="flex flex-col w-56">
+    <div key={index} className="flex flex-col w-56" data-cy={`block-${index}`}>
       <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="block-container-header">
@@ -163,6 +163,7 @@ function LiveQuizCreationBlock({
           <div
             key={`${questionIdx}-${title}`}
             className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
+            data-cy={`question-${questionIdx}-block-${index}`}
           >
             <div className="flex-1">
               <Ellipsis
@@ -343,10 +344,12 @@ function LiveQuizCreationBlock({
             })
           }}
           placeholder={t('manage.sessionForms.optionalTimeLimit')}
+          data={{ cy: 'block-time-limit' }}
         />
         <Button
           className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
           onClick={() => setOpenSettings(false)}
+          data={{ cy: 'close-block-settings' }}
         >
           {t('shared.generic.ok')}
         </Button>
