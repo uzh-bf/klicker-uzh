@@ -492,8 +492,7 @@ model SessionBlock {
 
   execution Int @default(0)
 
-  instances   QuestionInstance[]
-  leaderboard LeaderboardEntry[]
+  instances QuestionInstance[]
 
   activeInSession LiveSession[] @relation(name: "ActiveSessionBlock")
 
@@ -939,7 +938,6 @@ model Participation {
 }
 
 enum LeaderboardType {
-  SESSION_BLOCK
   SESSION
   COURSE
 }
@@ -960,10 +958,6 @@ model LeaderboardEntry {
   sessionParticipationId Int?
 
   // TODO: remove after migration
-  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId Int?
-
-  // TODO: remove after migration
   session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?      @db.Uuid
 
@@ -973,7 +967,6 @@ model LeaderboardEntry {
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 
-  @@unique([type, participantId, sessionBlockId])
   @@unique([type, participantId, sessionId])
   @@unique([type, participantId, courseId])
   @@unique([type, participantId, liveQuizId])
