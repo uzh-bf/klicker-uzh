@@ -1,0 +1,6 @@
+mutation EnableCourseGamification($courseId: String!) {
+  enableCourseGamification(courseId: $courseId) {
+    id
+    isGamificationEnabled
+  }
+}

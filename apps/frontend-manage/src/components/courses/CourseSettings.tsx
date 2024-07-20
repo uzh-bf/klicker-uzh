@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import CourseDescription from './CourseDescription'
+import EnableGamificationModal from './modals/EnableGamificationModal'
 
 interface CourseSettingsProps {
   id: string
@@ -47,6 +48,7 @@ function CourseSettings({
   const [editEndDate, setEditEndDate] = useState(false)
   const [dateToastSuccess, setDateToastSuccess] = useState(false)
   const [dateToastError, setDateToastError] = useState(false)
+  const [enableGamificationModal, setEnableGamificationModal] = useState(false)
 
   return (
     <>
@@ -90,10 +92,15 @@ function CourseSettings({
       <div className="flex flex-row items-center gap-8 pt-1 h-11">
         <div>
           <Switch
-            disabled
+            disabled={isGamificationEnabled}
             label="Gamification"
             checked={isGamificationEnabled}
-            onCheckedChange={() => null}
+            onCheckedChange={async (newValue) => {
+              if (newValue) {
+                setEnableGamificationModal(true)
+              }
+            }}
+            data={{ cy: 'course-gamification-switch' }}
           />
         </div>
         <div className="flex flex-row">
@@ -174,6 +181,11 @@ function CourseSettings({
         >
           {t('manage.course.dateChangeFailed')}
         </Toast>
+        <EnableGamificationModal
+          courseId={id}
+          open={enableGamificationModal}
+          setOpen={setEnableGamificationModal}
+        />
       </div>
     </>
   )

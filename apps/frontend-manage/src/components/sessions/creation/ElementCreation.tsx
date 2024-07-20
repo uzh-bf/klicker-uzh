@@ -27,6 +27,13 @@ export enum WizardMode {
   GroupActivity = 'groupActivity',
 }
 
+export type ElementSelectCourse = {
+  label: string
+  value: string
+  isGamified: boolean
+  data: { cy: string }
+}
+
 interface ElementCreationProps {
   creationMode: WizardMode
   closeWizard: () => void
@@ -137,6 +144,27 @@ function ElementCreation({
     } as PracticeQuiz
   }
 
+  const { gamifiedCourses, nonGamifiedCourses } = courseSelection?.reduce<{
+    gamifiedCourses: SelectCourse[]
+    nonGamifiedCourses: SelectCourse[]
+  }>(
+    (acc, course) => {
+      if (course.isGamified) {
+        acc.gamifiedCourses.push({
+          ...course,
+          data: { cy: `select-course-${course.label}` },
+        })
+      } else {
+        acc.nonGamifiedCourses.push({
+          ...course,
+          data: { cy: `select-course-${course.label}` },
+        })
+      }
+      return acc
+    },
+    { gamifiedCourses: [], nonGamifiedCourses: [] }
+  ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
+
   return (
     <div className="flex flex-col justify-center print-hidden h-96">
       <div className="w-full h-full rounded-lg">
@@ -144,9 +172,8 @@ function ElementCreation({
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
-            courses={
-              courseSelection || [{ label: '', value: '', isGamified: false }]
-            }
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz
@@ -167,6 +194,8 @@ function ElementCreation({
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
@@ -178,6 +207,8 @@ function ElementCreation({
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
@@ -190,6 +221,8 @@ function ElementCreation({
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined

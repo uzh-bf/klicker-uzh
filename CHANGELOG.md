@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.2-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.1...v3.1.2-rc.2) (2024-07-19)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** allow to enable course gamification after course creation ([#4149](https://github.com/uzh-bf/klicker-uzh/issues/4149)) ([096f76a](https://github.com/uzh-bf/klicker-uzh/commit/096f76a1148af6fede7e571e5c1d7c75a97aac81))
+* **apps/frontend-manage:** structure course selection during element creation ([#4150](https://github.com/uzh-bf/klicker-uzh/issues/4150)) ([6b00153](https://github.com/uzh-bf/klicker-uzh/commit/6b00153af26cb420f098f8020a5e4701f1a03a4d))
+
 ### [3.1.2-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.0...v3.1.2-rc.1) (2024-07-16)
 
 
