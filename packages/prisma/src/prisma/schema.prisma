@@ -938,7 +938,6 @@ model Participation {
 }
 
 enum LeaderboardType {
-  SESSION_BLOCK
   SESSION
   COURSE
 }
