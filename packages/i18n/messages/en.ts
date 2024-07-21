@@ -172,6 +172,7 @@ export default {
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',
       questionN: 'Question {number}',
+      availability: 'Availability',
     },
     contentInput: {
       boldStyle:
@@ -931,6 +932,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In this step, enter the name and description of the microlearning.',
       microlearningSettings:
         'In this step, select the start and end date and make further settings.',
+      microLearningMissingCourse:
+        'Microlearnings must be assigned to a course.',
+      microLearningCourseNotGamified:
+        'With the current course selection the microlearning will not be gamified.',
       microlearningQuestions:
         'In this step, select the questions for the microlearning.',
       microlearningEditingFailed: 'Editing the Microlearning failed...',
@@ -940,7 +945,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
       microlearningCourse:
-        'For the creation of a microlearning, the selection of the corresponding course is required.',
+        'For the creation of a microlearning, the selection of the corresponding course is required. The microlearning will automatially assume the gamification settings of the course.',
       microlearningStartDate:
         'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
       microlearningEndDate:

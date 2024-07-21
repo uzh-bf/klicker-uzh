@@ -172,6 +172,7 @@ export default {
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
       questionN: 'Frage {number}',
+      availability: 'Verfügbarkeit',
     },
     contentInput: {
       boldStyle:
@@ -932,6 +933,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Microlearnings ein.',
       microlearningSettings:
         'Wählen Sie in diesem Schritt das Start- und Enddatum und nehmen Sie weitere Einstellungen vor.',
+      microLearningMissingCourse:
+        'Microlearnings müssen einem Kurs zugewiesen werden.',
+      microLearningCourseNotGamified:
+        'Mit der aktuellen Kursauswahl wird das Microlearning nicht gamifiziert sein.',
       microlearningQuestions:
         'Wählen Sie in diesem Schritt die Fragen für das Microlearning aus.',
       microlearningEditingFailed:
@@ -943,7 +948,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microlearningDescField:
         'Fügen Sie eine Beschreibung zu Ihrem Microlearning hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
       microlearningCourse:
-        'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich.',
+        'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich. Das Microlearning wird automatisch die Gamification-Einstellungen des Kursed übernehmen.',
       microlearningStartDate:
         'Wählen Sie das Startdatum des Microlearnings aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:

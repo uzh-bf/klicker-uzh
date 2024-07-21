@@ -24,6 +24,7 @@ import { ElementSelectCourse } from './../ElementCreation'
 import MultistepWizard, { MicroLearningFormValues } from './../MultistepWizard'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
+import MicroLearningSettingsStep from './MicroLearningSettingsStep'
 
 export interface MicroLearningWizardStepProps {
   onSubmit?: () => void
@@ -53,7 +54,6 @@ function MicroLearningWizard({
   closeWizard,
   gamifiedCourses,
   nonGamifiedCourses,
-  courses,
   initialValues,
 }: MicroLearningWizardProps) {
   const router = useRouter()
@@ -270,9 +270,8 @@ function MicroLearningWizard({
         <MicroLearningDescriptionStep
           validationSchema={descriptionValidationSchema}
         />
-        <StepTwo
+        <MicroLearningSettingsStep
           validationSchema={stepTwoValidationSchema}
-          courses={courses}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
