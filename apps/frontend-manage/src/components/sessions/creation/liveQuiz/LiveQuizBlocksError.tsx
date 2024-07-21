@@ -14,7 +14,6 @@ function LiveQuizBlocksError({ errors }: LiveQuizBlocksErrorProps) {
         ...(errors.questionIds ?? []),
         ...(errors.titles ?? []),
         ...(errors.types ?? []),
-        errors.timeLimit,
       ].flatMap(
         (error: string, ix: number) =>
           error && (
@@ -23,6 +22,7 @@ function LiveQuizBlocksError({ errors }: LiveQuizBlocksErrorProps) {
             })}: ${error}`}</li>
           )
       )}
+      {errors.timeLimit && <li>{errors.timeLimit}</li>}
     </ul>
   )
 }

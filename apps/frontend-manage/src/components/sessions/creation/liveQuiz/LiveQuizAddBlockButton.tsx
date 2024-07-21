@@ -8,17 +8,17 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
-interface AddBlockButtonProps {
+interface LiveQuizAddBlockButtonProps {
   push: (value: any) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
 }
 
-function AddBlockButton({
+function LiveQuizAddBlockButton({
   push,
   selection,
   resetSelection,
-}: AddBlockButtonProps) {
+}: LiveQuizAddBlockButtonProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -150,4 +150,4 @@ function AddBlockButton({
   )
 }
 
-export default AddBlockButton
+export default LiveQuizAddBlockButton

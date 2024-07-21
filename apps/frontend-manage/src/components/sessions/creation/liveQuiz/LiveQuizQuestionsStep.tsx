@@ -1,5 +1,5 @@
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
-import AddBlockButton from '../AddBlockButton'
+import AddLiveQuizBlockButton from './LiveQuizAddBlockButton'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
 import { LiveQuizWizardStepProps } from './LiveSessionWizard'
 
@@ -25,7 +25,7 @@ function LiveQuizQuestionsStep(props: LiveQuizWizardStepProps) {
                 error={meta.error as any}
               />
             ))}
-            <AddBlockButton
+            <AddLiveQuizBlockButton
               push={push}
               selection={props.selection}
               resetSelection={props.resetSelection}
