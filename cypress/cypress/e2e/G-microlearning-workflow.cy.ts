@@ -225,10 +225,6 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // answer NR question
-    cy.get('[data-cy="input-numerical-1"]').clear().type('50')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-
     // answer FC and CT
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="flashcard-front-1"]').click()
