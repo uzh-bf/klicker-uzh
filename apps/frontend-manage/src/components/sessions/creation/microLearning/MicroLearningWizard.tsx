@@ -116,6 +116,7 @@ function MicroLearningWizard({
                   t('manage.sessionForms.microlearningTypes')
                 )
             ),
+          // TODO: this part of the validation does not seem to work yet
           hasSampleSolution: yup
             .array()
             .of(
@@ -220,26 +221,18 @@ function MicroLearningWizard({
                 displayName: stack.displayName,
                 description: stack.description,
                 ...stack.elements!.reduce(
-                  (
-                    acc: {
-                      id: number
-                      title: string
-                      type: ElementType
-                      hasSampleSolution: boolean
-                    },
-                    element
-                  ) => {
-                    acc.id = element.id
-                    acc.title = element.elementData.name
-                    acc.type = element.elementData.type
-                    acc.hasSampleSolution = true // TODO: obtain from element
+                  (acc: ElementStackFormValues, element) => {
+                    acc.elementIds.push(element.id)
+                    acc.titles.push(element.elementData.name)
+                    acc.types.push(element.elementData.type)
+                    acc.hasSampleSolutions.push(true) // TODO: get value from element instance
                     return acc
                   },
                   {
-                    id: 0,
-                    title: '',
-                    type: ElementType.Sc,
-                    hasSampleSolution: false,
+                    elementIds: [],
+                    titles: [],
+                    types: [],
+                    hasSampleSolutions: [],
                   }
                 ),
               }))

@@ -950,9 +950,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningCourse:
         'For the creation of a microlearning, the selection of the corresponding course is required. The microlearning will automatially assume the gamification settings of the course.',
       microlearningStartDate:
-        'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
+        'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
-        'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
+        'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:

@@ -920,7 +920,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       microlearningTypes:
-        'Microlearnings kann alle Elemente ausser Freitext-Fragen enthalten.',
+        'Microlearnings können alle Elemente ausser Freitext-Fragen enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
       microlearningEdited:
         'Microlearning <b>{name}</b> erfolgreich modifiziert.',
@@ -953,9 +953,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microlearningCourse:
         'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich. Das Microlearning wird automatisch die Gamification-Einstellungen des Kursed übernehmen.',
       microlearningStartDate:
-        'Wählen Sie das Startdatum des Microlearnings aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
+        'Wählen Sie das Startdatum des Microlearnings aus. Es wird den Teilnehmenden nach Publikation ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:
-        'Wählen Sie das Enddatum des Microlearnings aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+        'Wählen Sie das Enddatum des Microlearnings aus. Es wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
       microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
