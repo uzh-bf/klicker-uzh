@@ -6,6 +6,7 @@ import EditorField from './EditorField'
 interface DescriptionStepProps {
   displayName: string
   description?: string
+  displayNameTooltip: string
   descriptionTooltip: string
   dataDisplayName?: { test?: string; cy?: string }
   dataDescription?: { test?: string; cy?: string }
@@ -15,6 +16,7 @@ interface DescriptionStepProps {
 function DescriptionStep({
   displayName,
   description,
+  displayNameTooltip,
   descriptionTooltip,
   dataDisplayName,
   dataDescription,
@@ -29,7 +31,7 @@ function DescriptionStep({
           autoComplete="off"
           name="displayName"
           label={t('manage.sessionForms.displayName')}
-          tooltip={t('manage.sessionForms.displayNameTooltip')}
+          tooltip={displayNameTooltip}
           className={{
             root: 'mb-1 w-full md:w-1/2',
             tooltip: 'z-20',

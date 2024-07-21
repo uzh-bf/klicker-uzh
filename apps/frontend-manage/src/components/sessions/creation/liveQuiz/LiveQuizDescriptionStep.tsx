@@ -12,6 +12,7 @@ function LiveQuizDescriptionStep(props: LiveQuizWizardStepProps) {
     <DescriptionStep
       displayName={values.displayName}
       description={values.description}
+      displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
       descriptionTooltip={t('manage.sessionForms.liveQuizDescField')}
       dataDisplayName={{ cy: 'insert-live-display-name' }}
       dataDescription={{ cy: 'insert-live-description' }}
