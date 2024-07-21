@@ -332,7 +332,7 @@ function StepOne(_: StepProps) {
           label={t('shared.generic.description')}
           tooltip={t('manage.sessionForms.practiceQuizDescField')}
           fieldName="description"
-          data_cy="insert-practice-quiz-description"
+          data={{ cy: 'insert-practice-quiz-description' }}
           showToolbarOnFocus={false}
         />
 

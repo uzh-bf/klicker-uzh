@@ -18,7 +18,10 @@ interface EditorFieldProps {
     label?: string
     tooltip?: string
   }
-  data_cy?: string
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function EditorField({
@@ -29,7 +32,7 @@ function EditorField({
   tooltip,
   showToolbarOnFocus = true,
   className,
-  data_cy,
+  data,
 }: EditorFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
@@ -76,7 +79,7 @@ function EditorField({
             root: 'w-full',
             content: 'pb-1',
           }}
-          data_cy={data_cy}
+          data={data}
         />
         {meta.error && meta.touched && (
           <Tooltip

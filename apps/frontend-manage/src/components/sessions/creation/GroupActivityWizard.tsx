@@ -378,7 +378,7 @@ function StepOne(_: StepProps) {
           label={t('shared.generic.description')}
           tooltip={t('manage.sessionForms.groupActivityDescField')}
           fieldName="description"
-          data_cy="insert-groupactivity-description"
+          data={{ cy: 'insert-groupactivity-description' }}
           showToolbarOnFocus={false}
         />
 

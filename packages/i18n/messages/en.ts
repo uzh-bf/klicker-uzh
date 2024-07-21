@@ -919,6 +919,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
+      microLearningIntroductionName:
+        'Please enter a name for your microlearning. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      microLearningInformation:
+        'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
+      microLearningLecturerDocs:
+        'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
+      microLearningStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
       microlearningSettings:

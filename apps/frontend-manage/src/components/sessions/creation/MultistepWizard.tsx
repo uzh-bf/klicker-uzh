@@ -193,6 +193,7 @@ function MultistepWizard({
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
+              // TODO: validation on mount potentially broken for description step
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
               className={{

@@ -21,11 +21,23 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
-import BlockField from './BlockField'
-import EditorField from './EditorField'
-import { ElementSelectCourse } from './ElementCreation'
-import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
+import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import BlockField from './../BlockField'
+import EditorField from './../EditorField'
+import { ElementSelectCourse } from './../ElementCreation'
+import MultistepWizard, { MicroLearningFormValues } from './../MultistepWizard'
+import MicroLearningInformationStep from './MicroLearningInformationStep'
+
+export interface MicroLearningWizardStepProps {
+  onSubmit?: () => void
+  validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
+  courses?: {
+    label: string
+    value: string
+  }[]
+}
 
 interface MicroLearningWizardProps {
   title: string
@@ -58,6 +70,10 @@ function MicroLearningWizard({
   const [editMicroLearning] = useMutation(EditMicroLearningDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
+
+  const nameValidationSchema = yup.object().shape({
+    name: yup.string().required(t('manage.sessionForms.sessionName')),
+  })
 
   const stepOneValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -235,6 +251,10 @@ function MicroLearningWizard({
         }}
         workflowItems={[
           {
+            title: t('shared.generic.information'),
+            tooltip: t('manage.sessionForms.microLearningInformation'),
+          },
+          {
             title: t('shared.generic.description'),
             tooltip: t('manage.sessionForms.microlearningDescription'),
           },
@@ -250,6 +270,7 @@ function MicroLearningWizard({
           },
         ]}
       >
+        <MicroLearningInformationStep validationSchema={nameValidationSchema} />
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo
           validationSchema={stepTwoValidationSchema}
@@ -274,18 +295,7 @@ function MicroLearningWizard({
 
 export default MicroLearningWizard
 
-interface StepProps {
-  onSubmit?: () => void
-  validationSchema: any
-  gamifiedCourses?: ElementSelectCourse[]
-  nonGamifiedCourses?: ElementSelectCourse[]
-  courses?: {
-    label: string
-    value: string
-  }[]
-}
-
-function StepOne(_: StepProps) {
+function StepOne(_: MicroLearningWizardStepProps) {
   const t = useTranslations()
 
   return (
@@ -324,7 +334,7 @@ function StepOne(_: StepProps) {
           label={t('shared.generic.description')}
           tooltip={t('manage.sessionForms.microlearningDescField')}
           fieldName="description"
-          data_cy="insert-microlearning-description"
+          data={{ cy: 'insert-microlearning-description' }}
           showToolbarOnFocus={false}
         />
 
@@ -357,7 +367,7 @@ function StepOne(_: StepProps) {
   )
 }
 
-function StepTwo(props: StepProps) {
+function StepTwo(props: MicroLearningWizardStepProps) {
   const t = useTranslations()
   const { values } = useFormikContext<{
     courseId?: string
@@ -488,7 +498,7 @@ function StepTwo(props: StepProps) {
   )
 }
 
-function StepThree(_: StepProps) {
+function StepThree(_: MicroLearningWizardStepProps) {
   return (
     <div className="mt-2 mb-2">
       <BlockField
