@@ -10,8 +10,6 @@ describe('Different microlearning workflows', () => {
   // get current year
   const currentYear = new Date().getFullYear()
 
-  // TODO: first test case: test reordering of blocks as well!
-
   it('creates and publishes a micro learning that should be visible to students', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
@@ -167,6 +165,25 @@ describe('Different microlearning workflows', () => {
       dataTransfer4,
     })
     cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+
+    // move stacks around
+    cy.get('[data-cy="move-stack-0-right"]').click()
+    cy.get('[data-cy="question-0-stack-1"]').contains(questionTitle)
+    cy.get('[data-cy="question-0-stack-0"]').contains(FCtitle)
+    cy.get('[data-cy="question-1-stack-0"]').contains(CTtitle)
+    cy.get('[data-cy="move-stack-1-left"]').click()
+    cy.get('[data-cy="question-0-stack-0"]').contains(questionTitle)
+    cy.get('[data-cy="question-0-stack-1"]').contains(FCtitle)
+    cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+
+    // move questions in stack
+    cy.get('[data-cy="move-question-0-stack-1-down"]').click()
+    cy.get('[data-cy="question-0-stack-1"]').contains(CTtitle)
+    cy.get('[data-cy="question-1-stack-1"]').contains(FCtitle)
+    cy.get('[data-cy="move-question-1-stack-1-up"]').click()
+    cy.get('[data-cy="question-0-stack-1"]').contains(FCtitle)
+    cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
     cy.get('[data-cy="next-or-submit"]').click()
 
