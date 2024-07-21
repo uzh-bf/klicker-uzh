@@ -166,6 +166,8 @@ export default {
       passed: 'Passed',
       failed: 'Failed',
       survey: 'Survey',
+      gamified: 'Gamified',
+      nonGamified: 'Non-Gamified',
     },
     contentInput: {
       boldStyle:
@@ -1008,6 +1010,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      missingGamifiedCourses:
+        'For the creation of this type of element, a gamified course is required. Please enable gamification in one of your existing courses or create a new gamified course.',
+      selectGamifiedCourse:
+        'Please select a gamified course for the creation of this element.',
       groupActivityTypes:
         'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
       groupActivityCreated:
@@ -1325,6 +1331,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
+      enableGamification: 'Enable gamification',
+      enableGamificationWarning:
+        'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
