@@ -87,7 +87,7 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.newBlockSelected', {
+              {t('manage.sessionForms.newStackSelected', {
                 count: Object.keys(selection).length,
               })}
             </Button.Label>
@@ -145,7 +145,7 @@ function AddStackButton({
         ref={drop}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
-        <div>{t('manage.sessionForms.newBlock')}</div>
+        <div>{t('manage.sessionForms.newStack')}</div>
       </div>
     </div>
   )

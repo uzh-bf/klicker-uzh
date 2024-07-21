@@ -196,10 +196,12 @@ function ElementCreation({
             closeWizard={closeWizard}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
-            courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
             }
+            selection={selection}
+            resetSelection={resetSelection}
+            editMode={editMode === WizardMode.Microlearning}
           />
         )}
         {(creationMode === WizardMode.PracticeQuiz ||

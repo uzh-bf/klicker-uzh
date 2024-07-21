@@ -911,12 +911,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       optionalTimeLimit: 'Optional time limit',
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
+      newStack: 'New stack',
       newBlockSelected: 'Add 1 block with {count} questions',
+      newStackSelected: 'Add {count} blocks with 1 question',
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip: 'The display name is shown to participants.',
       microlearningTypes:
-        'A microlearning can only contain content elements, flashcards, single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can contain all element types except from free-text questions.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:

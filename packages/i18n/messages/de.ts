@@ -912,13 +912,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionalTimeLimit: 'Optionales Zeit-Limit',
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
+      newStack: 'Neuer Stack',
       newBlockSelected: '1 Block mit {count} Fragen anfügen',
+      newStackSelected: '1 Stack mit {count} Fragen hinzufügen',
       pasteSelection: '{count} Fragen hinzufügen',
       pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       microlearningTypes:
-        'Microlearnings können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
+        'Microlearnings kann alle Elemente ausser Freitext-Fragen enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
       microlearningEdited:
         'Microlearning <b>{name}</b> erfolgreich modifiziert.',
