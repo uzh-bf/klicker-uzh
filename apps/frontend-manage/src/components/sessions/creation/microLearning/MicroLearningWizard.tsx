@@ -104,7 +104,10 @@ function MicroLearningWizard({
         yup.object().shape({
           displayName: yup.string(),
           description: yup.string(),
-          elementIds: yup.array().of(yup.number()),
+          elementIds: yup
+            .array()
+            .of(yup.number())
+            .min(1, t('manage.sessionForms.minOneElementPerStack')),
           titles: yup.array().of(yup.string()),
           types: yup
             .array()

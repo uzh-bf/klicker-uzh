@@ -12,17 +12,23 @@ function StackCreationErrors({ errors }: StackCreationErrorsProps) {
     <ul>
       {errors.displayName && <li>{errors.displayName}</li>}
       {errors.description && <li>{errors.description}</li>}
+      {typeof errors.elementIds === 'string' && <li>{errors.elementIds}</li>}
       {[
-        ...(errors.elementIds ?? []),
+        ...(errors.elementIds && typeof errors.elementIds !== 'string'
+          ? errors.elementIds
+          : []),
         ...(errors.titles ?? []),
         ...(errors.types ?? []),
         ...(errors.hasSampleSolutions ?? []),
       ].flatMap(
         (error: string, ix: number) =>
           error && (
-            <li key={`error-questionId-${ix}`}>{`${t('shared.generic.blockN', {
-              number: ix + 1,
-            })}: ${error}`}</li>
+            <li key={`error-questionId-${ix}`}>{`${t(
+              'shared.generic.elementN',
+              {
+                number: ix + 1,
+              }
+            )}: ${error}`}</li>
           )
       )}
     </ul>

@@ -171,6 +171,7 @@ export default {
       gamified: 'Gamifiziert',
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
+      elementN: 'Element {number}',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       availability: 'Verfügbarkeit',
@@ -960,6 +961,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
+      minOneElementPerStack:
+        'Jeder Stack muss mindestens ein Element enthalten.',
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:

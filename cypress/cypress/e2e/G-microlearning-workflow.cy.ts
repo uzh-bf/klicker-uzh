@@ -10,17 +10,22 @@ describe('Different microlearning workflows', () => {
   // get current year
   const currentYear = new Date().getFullYear()
 
-  // TODO: extend this test with stacks and test reordering of questions
-  // TODO: extend this test s.t. free text questions are checked to be rejected
   it('creates and publishes a micro learning that should be visible to students', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
+    const FTquestionTitle = 'FT ' + uuid()
+    const FTquestion = 'FT ' + uuid()
+    const FCtitle = 'FC ' + uuid()
+    const FCquestion = 'FC ' + uuid()
+    const FCanswer = 'FC ' + uuid()
+    const CTtitle = 'CT ' + uuid()
+    const CTquestion = 'CT ' + uuid()
     const microLearningName = uuid()
     const microLearningDisplayName = microLearningName
     const description = uuid()
 
-    // set up question
+    // set up SC question
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)
@@ -30,7 +35,48 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
-    //
+
+    // create FT question
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.FREE_TEXT.typeLabel)
+    cy.get('[data-cy="insert-question-title"]').click().type(FTquestionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(FTquestion)
+    cy.get('[data-cy="set-free-text-length"]').click().type('100')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    // create Flashcard
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.FLASHCARD.typeLabel)
+    cy.get('[data-cy="insert-question-title"]').type(FCtitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(FCquestion)
+    cy.get('[data-cy="insert-question-explanation"]').click().type(FCanswer)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    // create content element
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CONTENT.typeLabel)
+    cy.get('[data-cy="insert-question-title"]').type(CTtitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(CTquestion)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
     // create a microlearning
     cy.get('[data-cy="create-microlearning"]').click()
     cy.get('[data-cy="cancel-session-creation"]').click()
@@ -71,28 +117,58 @@ describe('Different microlearning workflows', () => {
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // step 3
+    // step 3 - add questions
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     const dataTransfer = new DataTransfer()
     cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
+    cy.get('[data-cy="question-0-stack-0"]').contains(questionTitle)
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
+    cy.get(`[data-cy="question-item-${FTquestionTitle}"]`)
+      .contains(FTquestionTitle)
       .trigger('dragstart', {
-        dataTransfer,
+        dataTransfer2,
+      })
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+      dataTransfer2,
+    })
+    cy.get('[data-cy="question-1-stack-0"]').should('not.exist') // question is rejected
+
+    // add final stack with flashcard and content element
+    const dataTransfer3 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${FCtitle}"]`)
+      .contains(FCtitle)
+      .trigger('dragstart', {
+        dataTransfer3,
       })
     cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
-      dataTransfer,
+      dataTransfer3,
     })
+    cy.get('[data-cy="question-0-stack-1"]').contains(FCtitle)
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+
+    const dataTransfer4 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${CTtitle}"]`)
+      .contains(CTtitle)
+      .trigger('dragstart', {
+        dataTransfer4,
+      })
+    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
+      dataTransfer4,
+    })
+    cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
     cy.get('[data-cy="next-or-submit"]').click()
 
+    // navigate to list of microlearnings
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
@@ -127,7 +203,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // sign in as a student on a mobile device and respond to the first question
+    // sign in as a student on a mobile device and respond to the all questions
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
@@ -147,8 +223,21 @@ describe('Different microlearning workflows', () => {
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
-
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer NR question
+    cy.get('[data-cy="input-numerical-1"]').clear().type('50')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer FC and CT
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-front-1"]').click()
+    cy.get('[data-cy="flashcard-response-1-No"]').click()
+    cy.get('[data-cy="flashcard-response-1-Yes"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="read-content-element-2"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
     cy.viewport('macbook-16')
   })
 
@@ -216,7 +305,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -328,7 +417,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -428,7 +517,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()

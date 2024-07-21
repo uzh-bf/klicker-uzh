@@ -171,6 +171,7 @@ export default {
       gamified: 'Gamified',
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',
+      elementN: 'Element {number}',
       stackN: 'Stack {number}',
       questionN: 'Question {number}',
       availability: 'Availability',
@@ -957,6 +958,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
+      minOneElementPerStack: 'Every stack must contain at least one element.',
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:

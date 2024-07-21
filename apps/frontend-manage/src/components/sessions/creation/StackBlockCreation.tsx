@@ -331,7 +331,7 @@ function StackBlockCreation({
           'w-full text-center p-0.5 border border-solid rounded',
           isOver && 'bg-primary-20'
         )}
-        data-cy={`drop-elements-block-${index}`}
+        data-cy={`drop-elements-stack-${index}`}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
