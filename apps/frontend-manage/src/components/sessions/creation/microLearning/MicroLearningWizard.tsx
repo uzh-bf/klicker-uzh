@@ -119,8 +119,7 @@ function MicroLearningWizard({
                   t('manage.sessionForms.microlearningTypes')
                 )
             ),
-          // TODO: this part of the validation does not seem to work yet
-          hasSampleSolution: yup
+          hasSampleSolutions: yup
             .array()
             .of(
               yup.boolean().isTrue(t('manage.sessionForms.elementSolutionReq'))
