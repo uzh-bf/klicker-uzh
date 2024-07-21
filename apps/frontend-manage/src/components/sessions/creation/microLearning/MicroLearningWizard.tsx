@@ -2,24 +2,18 @@ import { useMutation } from '@apollo/client'
 import {
   CreateMicroLearningDocument,
   EditMicroLearningDocument,
+  Element,
   ElementType,
   GetSingleCourseDocument,
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
-import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
-import {
-  FormikDateField,
-  FormikSelectField,
-  UserNotification,
-} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
-import BlockField from './../BlockField'
+import StackCreationStep from '../StackCreationStep'
 import { ElementSelectCourse } from './../ElementCreation'
 import MultistepWizard, { MicroLearningFormValues } from './../MultistepWizard'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
@@ -31,42 +25,49 @@ export interface MicroLearningWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  courses?: {
-    label: string
-    value: string
-  }[]
 }
 
 interface MicroLearningWizardProps {
   title: string
-  closeWizard: () => void
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
-  courses?: {
-    label: string
-    value: string
-  }[]
   initialValues?: MicroLearning
+  selection: Record<number, Element>
+  resetSelection: () => void
+  closeWizard: () => void
+  editMode: boolean
 }
 
 function MicroLearningWizard({
   title,
-  closeWizard,
   gamifiedCourses,
   nonGamifiedCourses,
   initialValues,
+  selection,
+  resetSelection,
+  closeWizard,
+  editMode,
 }: MicroLearningWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
   const [editMicroLearning] = useMutation(EditMicroLearningDocument)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
+
+  // TODO: add free text questions to accepted types?
+  const acceptedTypes = [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
+    ElementType.Flashcard,
+    ElementType.Content,
+  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -93,29 +94,32 @@ function MicroLearningWizard({
       .required(t('manage.sessionForms.microlearningCourse')),
   })
 
-  const stepThreeValidationSchema = yup.object().shape({
-    questions: yup
+  const stackValiationSchema = yup.object().shape({
+    stacks: yup
       .array()
       .of(
         yup.object().shape({
-          id: yup.string(),
-          title: yup.string(),
-          type: yup
-            .string()
-            .oneOf(
-              [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-                ElementType.Flashcard,
-                ElementType.Content,
-              ],
-              t('manage.sessionForms.microlearningTypes')
+          displayName: yup.string(),
+          description: yup.string(),
+          elementIds: yup.array().of(yup.number()),
+          titles: yup.array().of(yup.string()),
+          types: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf(
+                  acceptedTypes,
+                  t('manage.sessionForms.microlearningTypes')
+                )
             ),
           hasSampleSolution: yup
-            .boolean()
-            .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
+            .array()
+            .of(
+              yup
+                .boolean()
+                .isTrue(t('manage.sessionForms.practiceQuizSolutionReq'))
+            ),
         })
       )
       .min(1),
@@ -132,7 +136,8 @@ function MicroLearningWizard({
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            stacks: values.questions.map((q: any, ix) => {
+            // TODO: update
+            stacks: values.stacks.map((q: any, ix) => {
               return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
             }),
             startDate: dayjs(values.startDate).utc().format(),
@@ -156,7 +161,8 @@ function MicroLearningWizard({
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            stacks: values.questions.map((q: any, ix) => {
+            // TODO: update
+            stacks: values.stacks.map((q: any, ix) => {
               return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
             }),
             startDate: dayjs(values.startDate).utc().format(),
@@ -178,12 +184,10 @@ function MicroLearningWizard({
 
       if (success) {
         setSelectedCourseId(values.courseId)
-        setEditMode(!!initialValues)
         setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log(error)
-      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -210,16 +214,44 @@ function MicroLearningWizard({
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
-          questions: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => {
-                return {
-                  id: stack.elements![0].elementData.elementId,
-                  title: stack.elements![0].elementData.name,
-                  hasAnswerFeedbacks: true, // TODO - based on questionData options
-                  hasSampleSolution: true, // TODO - based on questionData options
-                }
-              })
-            : [],
+          stacks: initialValues?.stacks
+            ? initialValues.stacks.map((stack) => ({
+                displayName: stack.displayName,
+                description: stack.description,
+                ...stack.elements!.reduce(
+                  (
+                    acc: {
+                      id: number
+                      title: string
+                      type: ElementType
+                      hasSampleSolution: boolean
+                    },
+                    element
+                  ) => {
+                    acc.id = element.id
+                    acc.title = element.elementData.name
+                    acc.type = element.elementData.type
+                    acc.hasSampleSolution = true // TODO: obtain from element
+                    return acc
+                  },
+                  {
+                    id: 0,
+                    title: '',
+                    type: ElementType.Sc,
+                    hasSampleSolution: false,
+                  }
+                ),
+              }))
+            : [
+                {
+                  displayName: undefined,
+                  description: undefined,
+                  elementIds: [],
+                  titles: [],
+                  types: [],
+                  hasSampleSolutions: [],
+                },
+              ],
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
                 .local()
@@ -275,7 +307,12 @@ function MicroLearningWizard({
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
-        <StepThree validationSchema={stepThreeValidationSchema} />
+        <StackCreationStep
+          selection={selection}
+          resetSelection={resetSelection}
+          validationSchema={stackValiationSchema}
+          acceptedTypes={acceptedTypes}
+        />
       </MultistepWizard>
       <ElementCreationErrorToast
         open={errorToastOpen}
@@ -291,152 +328,3 @@ function MicroLearningWizard({
 }
 
 export default MicroLearningWizard
-
-function StepTwo(props: MicroLearningWizardStepProps) {
-  const t = useTranslations()
-  const { values } = useFormikContext<{
-    courseId?: string
-    [key: string]: any
-  }>()
-
-  const groupedCourses = useGamifiedCourseGrouping({
-    gamifiedCourses: props.gamifiedCourses ?? [],
-    nonGamifiedCourses: props.nonGamifiedCourses ?? [],
-  })
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row items-center gap-4 text-left">
-        <FormikSelectField
-          required
-          hideError
-          name="courseId"
-          groups={groupedCourses}
-          placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
-          tooltip={t('manage.sessionForms.microlearningCourse')}
-          label={t('shared.generic.course')}
-          data={{ cy: 'select-course' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="courseId"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-      {values.courseId ? (
-        <>
-          <FormikDateField
-            label={t('shared.generic.startDate')}
-            name="startDate"
-            tooltip={t('manage.sessionForms.microlearningStartDate')}
-            required
-            className={{
-              root: 'w-[24rem]',
-              input: 'bg-uzh-grey-20',
-              tooltip: 'z-20',
-            }}
-            data={{ cy: 'select-start-date' }}
-          />
-          <FormikDateField
-            label={t('shared.generic.endDate')}
-            name="endDate"
-            tooltip={t('manage.sessionForms.microlearningEndDate')}
-            required
-            className={{
-              root: 'w-[24rem]',
-              input: 'bg-uzh-grey-20',
-              tooltip: 'z-20',
-            }}
-            data={{ cy: 'select-end-date' }}
-          />
-        </>
-      ) : (
-        <UserNotification
-          type="info"
-          className={{ root: 'w-max max-w-[40rem]' }}
-        >
-          {/* // TODO: the case where no gamified course exists should be caught before starting the wizard - otherwise title and description already entered will be lost! */}
-          {props.gamifiedCourses?.length === 0
-            ? t('manage.sessionForms.missingGamifiedCourses')
-            : t('manage.sessionForms.selectGamifiedCourse')}
-        </UserNotification>
-      )}
-
-      {values.courseId && (
-        <div className="flex flex-row items-center gap-4">
-          <FormikSelectField
-            name="multiplier"
-            placeholder={t('manage.sessionForms.multiplierDefault')}
-            label={t('shared.generic.multiplier')}
-            tooltip={t('manage.sessionForms.microlearningMultiplier')}
-            required
-            items={[
-              {
-                label: t('manage.sessionForms.multiplier1'),
-                value: '1',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier1'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier2'),
-                value: '2',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier2'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier3'),
-                value: '3',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier3'
-                  )}`,
-                },
-              },
-              {
-                label: t('manage.sessionForms.multiplier4'),
-                value: '4',
-                data: {
-                  cy: `select-multiplier-${t(
-                    'manage.sessionForms.multiplier4'
-                  )}`,
-                },
-              },
-            ]}
-            data={{ cy: 'select-multiplier' }}
-            className={{ tooltip: 'z-20' }}
-          />
-          <ErrorMessage
-            name="multiplier"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-function StepThree(_: MicroLearningWizardStepProps) {
-  return (
-    <div className="mt-2 mb-2">
-      <BlockField
-        fieldName="questions"
-        acceptedTypes={[
-          ElementType.Sc,
-          ElementType.Mc,
-          ElementType.Kprim,
-          ElementType.Numerical,
-          ElementType.Flashcard,
-          ElementType.Content,
-        ]}
-      />
-    </div>
-  )
-}

@@ -66,10 +66,28 @@ export interface LiveQuizBlockFormValues {
 }
 
 export interface LiveQuizBlockErrorValues {
-  questionIds: string[]
+  questionIds?: string[]
+  titles?: string[]
+  types?: string[]
+  timeLimit?: string
+}
+
+export interface ElementStackFormValues {
+  displayName?: string
+  description?: string
+  elementIds: number[]
+  titles: string[]
+  types: ElementType[]
+  hasSampleSolutions: boolean[]
+}
+
+export interface ElementStackErrorValues {
+  displayName: string
+  description: string
+  elementIds: string[]
   titles: string[]
   types: string[]
-  timeLimit: string
+  hasSampleSolutions: string[]
 }
 
 export interface LiveSessionFormValues extends CommonFormValues {
@@ -81,12 +99,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
 }
 
 export interface MicroLearningFormValues extends CommonFormValues {
-  questions: {
-    id: number
-    title: string
-    hasAnswerFeedbacks: boolean
-    hasSampleSolution: boolean
-  }[]
+  stacks: ElementStackFormValues[]
   startDate: string
   endDate: string
   order: ElementOrderType

@@ -171,6 +171,7 @@ export default {
       gamified: 'Gamifiziert',
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
+      stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       availability: 'Verfügbarkeit',
     },
