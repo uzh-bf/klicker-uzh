@@ -10,6 +10,8 @@ describe('Different microlearning workflows', () => {
   // get current year
   const currentYear = new Date().getFullYear()
 
+  // TODO: extend this test with stacks and test reordering of questions
+  // TODO: extend this test s.t. free text questions are checked to be rejected
   it('creates and publishes a micro learning that should be visible to students', () => {
     const courseName = 'Testkurs'
     const questionTitle = uuid()
@@ -70,17 +72,25 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
         dataTransfer,
       })
-    }
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+      dataTransfer,
+    })
+
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -206,7 +216,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -318,7 +328,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -418,7 +428,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -454,6 +464,7 @@ describe('Different microlearning workflows', () => {
       'not.exist'
     )
 
+    // TODO: change values as well
     // switch back to the lecturer and unpublish the micro learning
     cy.clearAllCookies()
     cy.loginLecturer()
@@ -512,7 +523,7 @@ describe('Different microlearning workflows', () => {
       .trigger('dragstart', {
         dataTransfer2,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer2,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -523,6 +534,8 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
     )
+
+    // TODO: recheck if the changes have been saved
 
     // publish the microlearning
     cy.get(`[data-cy="publish-microlearning-${microLearningName}"]`)

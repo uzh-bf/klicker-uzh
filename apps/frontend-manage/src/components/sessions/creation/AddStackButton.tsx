@@ -141,7 +141,7 @@ function AddStackButton({
             hasSampleSolutions: [],
           })
         }
-        data-cy="add-stack"
+        data-cy="drop-elements-add-stack"
         ref={drop}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />

@@ -222,7 +222,7 @@ function MicroLearningWizard({
                 description: stack.description,
                 ...stack.elements!.reduce(
                   (acc: ElementStackFormValues, element) => {
-                    acc.elementIds.push(element.id)
+                    acc.elementIds.push(parseInt(element.elementData.id))
                     acc.titles.push(element.elementData.name)
                     acc.types.push(element.elementData.type)
                     acc.hasSampleSolutions.push(true) // TODO: get value from element instance
