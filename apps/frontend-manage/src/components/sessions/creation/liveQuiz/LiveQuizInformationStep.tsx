@@ -31,7 +31,7 @@ function LiveQuizInformationStep(_: LiveQuizWizardStepProps) {
           data-cy="insert-live-quiz-name"
         />
       </div>
-      <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md">
+      <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md h-max">
         <PropertyList
           elements={[
             {

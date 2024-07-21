@@ -293,8 +293,15 @@ function MicroLearningWizard({
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
         ]}
+        continueDisabled={
+          gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+        }
       >
-        <MicroLearningInformationStep validationSchema={nameValidationSchema} />
+        <MicroLearningInformationStep
+          validationSchema={nameValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+        />
         <MicroLearningDescriptionStep
           validationSchema={descriptionValidationSchema}
         />

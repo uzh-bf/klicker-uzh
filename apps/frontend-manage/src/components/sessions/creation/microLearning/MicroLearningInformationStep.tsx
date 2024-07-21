@@ -3,17 +3,27 @@ import {
   faLightbulb,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
-import { NewFormikTextField } from '@uzh-bf/design-system'
+import { NewFormikTextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import PropertyList from '../PropertyList'
 import { MicroLearningWizardStepProps } from './MicroLearningWizard'
 
-function MicroLearningInformationStep(_: MicroLearningWizardStepProps) {
+function MicroLearningInformationStep(props: MicroLearningWizardStepProps) {
   const t = useTranslations()
+  const noCourse =
+    props.gamifiedCourses?.length === 0 &&
+    props.nonGamifiedCourses?.length === 0
 
   return (
     <div className="flex flex-row">
       <div className="w-full md:w-1/2">
+        {noCourse ? (
+          <UserNotification
+            type="error"
+            message={t('manage.sessionForms.microLearningNoCourse')}
+            className={{ root: 'mb-2' }}
+          />
+        ) : null}
         <div className="w-full md:pr-14">
           {t('manage.sessionForms.microLearningIntroductionName')}
         </div>
@@ -31,7 +41,7 @@ function MicroLearningInformationStep(_: MicroLearningWizardStepProps) {
           data-cy="insert-microlearning-name"
         />
       </div>
-      <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md">
+      <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md h-max">
         <PropertyList
           elements={[
             {

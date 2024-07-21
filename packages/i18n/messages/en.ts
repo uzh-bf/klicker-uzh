@@ -928,6 +928,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a name for your microlearning. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       microLearningInformation:
         'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
+      microLearningNoCourse:
+        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       microLearningLecturerDocs:
         'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
       microLearningStudentDocs:
