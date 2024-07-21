@@ -73,6 +73,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
       .type(microlearningName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
       .type(microlearningName)
