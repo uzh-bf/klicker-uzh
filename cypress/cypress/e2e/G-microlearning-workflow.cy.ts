@@ -243,13 +243,16 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer FC and CT
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should(
+      'not.be.disabled'
+    )
     cy.get('[data-cy="read-content-element-2"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
