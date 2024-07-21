@@ -1017,7 +1017,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
         'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen sowie Inhaltselemente und Flashcards enthalten.',
-      practiceQuizSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
+      elementSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
       practiceQuizCreated: 'Übungs-Quiz <b>{name}</b> erfolgreich erstellt.',
       practiceQuizUpdated: 'Übungs-Quiz <b>{name}</b> erfolgreich modifiziert.',
       practiceQuizDescription:
@@ -1030,7 +1030,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Anpassen des Übungs-Quizzes fehlgeschlagen...',
       practiceQuizEditingFailed:
         'Erstellen des Übungs-Quizzes fehlgeschlagen...',
-      practiceQuizCoursePlaceholder: 'Kurs auswählen...',
+      selectCourse: 'Kurs auswählen...',
       practiceQuizName:
         'Der Name soll Ihnen ermöglichen, dieses Übungs-Quiz von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
       practiceQuizDescField:

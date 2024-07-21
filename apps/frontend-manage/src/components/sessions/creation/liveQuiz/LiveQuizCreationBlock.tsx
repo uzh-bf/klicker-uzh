@@ -31,7 +31,7 @@ interface LiveQuizCreationBlockProps {
   numOfBlocks: number
   remove: (index: number) => void
   move: (from: number, to: number) => void
-  replace: (index: number, value: any) => void
+  replace: (index: number, value: LiveQuizBlockFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
   error?: LiveQuizBlockErrorValues[]

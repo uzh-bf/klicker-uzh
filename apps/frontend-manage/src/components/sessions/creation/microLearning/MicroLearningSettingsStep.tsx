@@ -60,7 +60,7 @@ function MicroLearningSettingsStep(props: MicroLearningWizardStepProps) {
           name="courseId"
           label={t('shared.generic.course')}
           tooltip={t('manage.sessionForms.microlearningCourse')}
-          placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
+          placeholder={t('manage.sessionForms.selectCourse')}
           groups={groupedCourses}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}

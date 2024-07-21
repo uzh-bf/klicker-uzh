@@ -1,4 +1,5 @@
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
+import { LiveQuizBlockFormValues } from '../MultistepWizard'
 import LiveQuizAddBlockButton from './LiveQuizAddBlockButton'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
 import { LiveQuizWizardStepProps } from './LiveSessionWizard'
@@ -11,20 +12,22 @@ function LiveQuizQuestionsStep(props: LiveQuizWizardStepProps) {
       <FieldArray name="blocks" className="w-fit">
         {({ push, remove, move, replace }: FieldArrayRenderProps) => (
           <div className="flex flex-row gap-4 overflow-x-auto w-fit">
-            {field.value.map((block: any, index: number) => (
-              <LiveQuizCreationBlock
-                key={`${index}-${block.questionIds.join('')}`}
-                index={index}
-                block={block}
-                numOfBlocks={field.value.length}
-                remove={remove}
-                move={move}
-                replace={replace}
-                selection={props.selection}
-                resetSelection={props.resetSelection}
-                error={meta.error as any}
-              />
-            ))}
+            {field.value.map(
+              (block: LiveQuizBlockFormValues, index: number) => (
+                <LiveQuizCreationBlock
+                  key={`${index}-${block.questionIds.join('')}`}
+                  index={index}
+                  block={block}
+                  numOfBlocks={field.value.length}
+                  remove={remove}
+                  move={move}
+                  replace={replace}
+                  selection={props.selection}
+                  resetSelection={props.resetSelection}
+                  error={meta.error as any}
+                />
+              )
+            )}
             <LiveQuizAddBlockButton
               push={push}
               selection={props.selection}

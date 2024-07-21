@@ -35,7 +35,7 @@ interface MultistepWizardProps {
   }[]
 }
 
-export type GroupActivityClueType =
+export type GroupActivityClueFormValues =
   | {
       name: string
       displayName: string
@@ -62,7 +62,7 @@ export interface LiveQuizBlockFormValues {
   questionIds: number[]
   titles: string[]
   types: ElementType[]
-  timeLimit: number
+  timeLimit?: number
 }
 
 export interface LiveQuizBlockErrorValues {
@@ -127,7 +127,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
   }[]
   startDate: string
   endDate: string
-  clues: GroupActivityClueType[]
+  clues: GroupActivityClueFormValues[]
 }
 
 function Validator({

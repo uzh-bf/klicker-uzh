@@ -1012,7 +1012,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
-      practiceQuizSolutionReq: 'Please only add questions with solution.',
+      elementSolutionReq: 'Please only add questions with solution.',
       practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
       practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
       practiceQuizDescription:
@@ -1021,7 +1021,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In this step, make settings for your practice quiz.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      practiceQuizCoursePlaceholder: 'Select course...',
+      selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
       practiceQuizName:

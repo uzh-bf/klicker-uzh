@@ -8,9 +8,10 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../../questions/Question'
+import { LiveQuizBlockFormValues } from '../MultistepWizard'
 
 interface LiveQuizAddBlockButtonProps {
-  push: (value: any) => void
+  push: (value: LiveQuizBlockFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
 }

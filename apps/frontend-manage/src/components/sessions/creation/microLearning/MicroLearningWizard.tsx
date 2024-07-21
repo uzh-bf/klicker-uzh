@@ -15,7 +15,10 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import StackCreationStep from '../StackCreationStep'
 import { ElementSelectCourse } from './../ElementCreation'
-import MultistepWizard, { MicroLearningFormValues } from './../MultistepWizard'
+import MultistepWizard, {
+  ElementStackFormValues,
+  MicroLearningFormValues,
+} from './../MultistepWizard'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
 import MicroLearningSettingsStep from './MicroLearningSettingsStep'
@@ -116,9 +119,7 @@ function MicroLearningWizard({
           hasSampleSolution: yup
             .array()
             .of(
-              yup
-                .boolean()
-                .isTrue(t('manage.sessionForms.practiceQuizSolutionReq'))
+              yup.boolean().isTrue(t('manage.sessionForms.elementSolutionReq'))
             ),
         })
       )
@@ -129,21 +130,31 @@ function MicroLearningWizard({
     try {
       let success = false
 
+      const createUpdateJSON = {
+        name: values.name,
+        displayName: values.displayName,
+        description: values.description,
+        stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
+          return {
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: stack.elementIds.map((elementId, ix) => {
+              return { elementId, order: ix }
+            }),
+          }
+        }),
+        startDate: dayjs(values.startDate).utc().format(),
+        endDate: dayjs(values.endDate).utc().format(),
+        multiplier: parseInt(values.multiplier),
+        courseId: values.courseId,
+      }
+
       if (initialValues) {
         const result = await editMicroLearning({
           variables: {
             id: initialValues?.id || '',
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            // TODO: update
-            stacks: values.stacks.map((q: any, ix) => {
-              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-            }),
-            startDate: dayjs(values.startDate).utc().format(),
-            endDate: dayjs(values.endDate).utc().format(),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
+            ...createUpdateJSON,
           },
           refetchQueries: [
             {
@@ -158,17 +169,7 @@ function MicroLearningWizard({
       } else {
         const result = await createMicroLearning({
           variables: {
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            // TODO: update
-            stacks: values.stacks.map((q: any, ix) => {
-              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-            }),
-            startDate: dayjs(values.startDate).utc().format(),
-            endDate: dayjs(values.endDate).utc().format(),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
+            ...createUpdateJSON,
           },
           refetchQueries: [
             {
