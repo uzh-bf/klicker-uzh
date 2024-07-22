@@ -12,6 +12,7 @@ interface EditorFieldProps {
   required?: boolean
   fieldName: string
   tooltip?: string
+  placeholder?: string
   showToolbarOnFocus?: boolean
   className?: {
     root?: string
@@ -30,6 +31,7 @@ function EditorField({
   required,
   fieldName,
   tooltip,
+  placeholder,
   showToolbarOnFocus = true,
   className,
   data,
@@ -73,7 +75,7 @@ function EditorField({
             helpers.setTouched(true)
           }}
           showToolbarOnFocus={showToolbarOnFocus}
-          placeholder={t('manage.sessionForms.enterContentHere')}
+          placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
           className={{
             editor: '!leading-5 h-16 overflow-x-auto',
             root: 'w-full',

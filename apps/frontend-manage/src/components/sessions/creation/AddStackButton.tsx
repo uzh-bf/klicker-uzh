@@ -29,8 +29,8 @@ function AddStackButton({
       accept: acceptedTypes,
       drop: (item: QuestionDragDropTypes) => {
         push({
-          displayName: undefined,
-          description: undefined,
+          displayName: '',
+          description: '',
           elementIds: [item.id],
           titles: [item.title],
           types: [item.questionType],
@@ -71,8 +71,8 @@ function AddStackButton({
                 )
 
               push({
-                displayName: undefined,
-                description: undefined,
+                displayName: '',
+                description: '',
                 elementIds: elementIds,
                 titles: titles,
                 types: types,
@@ -100,8 +100,8 @@ function AddStackButton({
             onClick={() => {
               Object.values(selection).forEach((question) => {
                 push({
-                  displayName: undefined,
-                  description: undefined,
+                  displayName: '',
+                  description: '',
                   elementIds: [question.id],
                   titles: [question.name],
                   types: [question.type],
@@ -133,8 +133,8 @@ function AddStackButton({
         )}
         onClick={() =>
           push({
-            displayName: undefined,
-            description: undefined,
+            displayName: '',
+            description: '',
             elementIds: [],
             titles: [],
             types: [],

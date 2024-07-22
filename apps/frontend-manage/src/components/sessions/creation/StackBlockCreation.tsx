@@ -1,3 +1,4 @@
+import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
   faArrowLeft,
@@ -5,7 +6,6 @@ import {
   faArrowUp,
   faBars,
   faCircleExclamation,
-  faGears,
   faPlus,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
@@ -24,6 +24,7 @@ import {
   ElementStackFormValues,
 } from './MultistepWizard'
 import StackCreationErrors from './StackCreationErrors'
+import StackDescriptionModal from './StackDescriptionModal'
 
 interface StackBlockCreationProps {
   index: number
@@ -51,7 +52,7 @@ function StackBlockCreation({
   error,
 }: StackBlockCreationProps): React.ReactElement {
   const t = useTranslations()
-  const [openSettings, setOpenSettings] = useState(false)
+  const [stackDescriptionModal, setStackDescriptionModal] = useState(false)
 
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -129,14 +130,14 @@ function StackBlockCreation({
 
           <Button
             basic
-            onClick={() => setOpenSettings(true)}
+            onClick={() => setStackDescriptionModal(true)}
             className={{
               root: 'px-1 hover:text-primary ',
             }}
-            data={{ cy: `open-stack-${index}-settings` }}
+            data={{ cy: `open-stack-${index}-description` }}
           >
             <Button.Icon>
-              <FontAwesomeIcon icon={faGears} />
+              <FontAwesomeIcon icon={faCommentDots} size="lg" />
             </Button.Icon>
           </Button>
           <Button
@@ -335,42 +336,12 @@ function StackBlockCreation({
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
-      {/* 
-      // TODO: introduce modal to define displayname and description of stacks
-      <Modal
-        open={openSettings}
-        onClose={() => setOpenSettings(false)}
-        title={t('manage.sessionForms.blockSettingsTitle', {
-          blockIx: index + 1,
-        })}
-        className={{
-          content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
-        }}
-      >
-        <NumberField
-          label={t('manage.sessionForms.timeLimit')}
-          tooltip={t('manage.sessionForms.timeLimitTooltip', {
-            blockIx: index + 1,
-          })}
-          id={`timeLimits.${index}`}
-          value={stack.timeLimit || ''}
-          onChange={(newValue: string) => {
-            replace(index, {
-              ...stack,
-              timeLimit: newValue === '' ? undefined : parseInt(newValue),
-            })
-          }}
-          placeholder={t('manage.sessionForms.optionalTimeLimit')}
-          data={{ cy: 'block-time-limit' }}
-        />
-        <Button
-          className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
-          onClick={() => setOpenSettings(false)}
-          data={{ cy: 'close-stack-settings' }}
-        >
-          {t('shared.generic.ok')}
-        </Button>
-      </Modal> */}
+
+      <StackDescriptionModal
+        stackIx={index}
+        modalOpen={stackDescriptionModal}
+        setModalOpen={setStackDescriptionModal}
+      />
     </div>
   )
 }

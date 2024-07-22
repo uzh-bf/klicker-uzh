@@ -920,6 +920,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
+      stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',
+      stackDisplayName: 'Stack-Titel',
+      stackDisplayNameTooltip:
+        'Der Titel des Stacks wird oberhalb der Beschreibung am oberen Ende des Stacks angezeigt.',
+      stackDescription: 'Beschreibung',
+      stackDescriptionTooltip:
+        'Die Beschreibung des Stacks wird oberhalb der Fragen im Stack angezeigt.',
+      stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       microlearningTypes:
         'Microlearnings können alle Elemente ausser Freitext-Fragen enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',

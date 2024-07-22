@@ -918,6 +918,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip: 'The display name is shown to participants.',
+      stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
+      stackDisplayName: 'Stack title',
+      stackDisplayNameTooltip:
+        'The title of the stack is displayed above the description at the top of the stack.',
+      stackDescription: 'Description',
+      stackDescriptionTooltip:
+        'The description of the stack is displayed above the questions in the stack.',
+      stackDescriptionPlaceholder: 'Enter description here...',
       microlearningTypes:
         'A microlearning can contain all element types except from free-text questions.',
       microlearningCreated:

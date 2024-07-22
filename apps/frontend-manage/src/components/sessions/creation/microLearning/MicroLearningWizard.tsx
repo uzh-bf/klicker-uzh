@@ -54,6 +54,8 @@ function MicroLearningWizard({
   const router = useRouter()
   const t = useTranslations()
 
+  console.log(initialValues)
+
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
@@ -140,8 +142,14 @@ function MicroLearningWizard({
         stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
           return {
             order: ix,
-            displayName: stack.displayName,
-            description: stack.description,
+            displayName:
+              stack.displayName && stack.displayName.length > 0
+                ? stack.displayName
+                : undefined,
+            description:
+              stack.description && stack.description.length > 0
+                ? stack.description
+                : undefined,
             elements: stack.elementIds.map((elementId, ix) => {
               return { elementId, order: ix }
             }),
@@ -219,29 +227,33 @@ function MicroLearningWizard({
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
           stacks: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => ({
-                displayName: stack.displayName,
-                description: stack.description,
-                ...stack.elements!.reduce(
-                  (acc: ElementStackFormValues, element) => {
-                    acc.elementIds.push(parseInt(element.elementData.id))
-                    acc.titles.push(element.elementData.name)
-                    acc.types.push(element.elementData.type)
-                    acc.hasSampleSolutions.push(true) // TODO: get value from element instance
-                    return acc
-                  },
-                  {
-                    elementIds: [],
-                    titles: [],
-                    types: [],
-                    hasSampleSolutions: [],
-                  }
-                ),
-              }))
+            ? initialValues.stacks.map((stack) => {
+                console.log(stack)
+
+                return {
+                  displayName: stack.displayName,
+                  description: stack.description,
+                  ...stack.elements!.reduce(
+                    (acc: ElementStackFormValues, element) => {
+                      acc.elementIds.push(parseInt(element.elementData.id))
+                      acc.titles.push(element.elementData.name)
+                      acc.types.push(element.elementData.type)
+                      acc.hasSampleSolutions.push(true) // TODO: get value from element instance
+                      return acc
+                    },
+                    {
+                      elementIds: [],
+                      titles: [],
+                      types: [],
+                      hasSampleSolutions: [],
+                    }
+                  ),
+                }
+              })
             : [
                 {
-                  displayName: undefined,
-                  description: undefined,
+                  displayName: '',
+                  description: '',
                   elementIds: [],
                   titles: [],
                   types: [],
