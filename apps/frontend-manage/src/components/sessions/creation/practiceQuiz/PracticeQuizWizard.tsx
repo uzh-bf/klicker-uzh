@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
@@ -15,7 +13,6 @@ import {
   FormikDateField,
   FormikNumberField,
   FormikSelectField,
-  FormikTextField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -26,9 +23,9 @@ import { useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import BlockField from '../BlockField'
-import EditorField from '../EditorField'
 import { ElementSelectCourse } from '../ElementCreation'
 import MultistepWizard, { PracticeQuizFormValues } from '../MultistepWizard'
+import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 
 export interface PracticeQuizWizardStepProps {
@@ -73,8 +70,7 @@ function PracticeQuizWizard({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
   })
 
-  const stepOneValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.sessionForms.sessionName')),
+  const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
       .required(t('manage.sessionForms.sessionDisplayName')),
@@ -278,7 +274,9 @@ function PracticeQuizWizard({
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
-        <StepOne validationSchema={stepOneValidationSchema} />
+        <PracticeQuizDescriptionStep
+          validationSchema={descriptionValidationSchema}
+        />
         <StepTwo
           validationSchema={stepTwoValidationSchema}
           courses={[{ label: '', value: '' }]}
@@ -312,78 +310,6 @@ interface StepProps {
     label: string
     value: string
   }[]
-}
-
-function StepOne(_: StepProps) {
-  const t = useTranslations()
-
-  return (
-    <div className="flex flex-row gap-6">
-      <div className="flex-1">
-        <div className="flex flex-col w-full gap-4 md:flex-row">
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="name"
-            label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.practiceQuizName')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-practice-quiz-name"
-          />
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="displayName"
-            label={t('manage.sessionForms.displayName')}
-            tooltip={t('manage.sessionForms.displayNameTooltip')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-practice-quiz-display-name"
-          />
-        </div>
-
-        <EditorField
-          label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.practiceQuizDescField')}
-          fieldName="description"
-          data={{ cy: 'insert-practice-quiz-description' }}
-          showToolbarOnFocus={false}
-        />
-
-        <div className="w-full text-right">
-          <ErrorMessage
-            name="description"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
-      </div>
-      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
-        <FontAwesomeIcon
-          icon={faLightbulb}
-          className="mr-2 text-orange-400"
-          size="lg"
-        />
-        {t.rich('manage.sessionForms.practiceQuizUseCase', {
-          link: (text) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/practice_quiz/"
-              target="_blank"
-            >
-              {text}
-            </a>
-          ),
-        })}
-      </div>
-    </div>
-  )
 }
 
 function StepTwo(props: StepProps) {
