@@ -1017,6 +1017,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizStudentDocs:
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
+      practiceQuizNoCourse:
+        'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      practiceQuizIntroductionName:
+        'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      practiceQuizLecturerDocs:
+        'For more information on the creation and execution of practice quizzes, visit the <link>Lecturer Documentation</link>.',
+      practiceQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:

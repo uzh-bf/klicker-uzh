@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
+  Element,
   ElementOrderType,
   ElementType,
   GetSingleCourseDocument,
@@ -23,22 +24,28 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
-import BlockField from './BlockField'
-import EditorField from './EditorField'
-import { ElementSelectCourse } from './ElementCreation'
-import MultistepWizard, { PracticeQuizFormValues } from './MultistepWizard'
+import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import BlockField from '../BlockField'
+import EditorField from '../EditorField'
+import { ElementSelectCourse } from '../ElementCreation'
+import MultistepWizard, { PracticeQuizFormValues } from '../MultistepWizard'
+import PracticeQuizInformationStep from './PracticeQuizInformationStep'
+
+export interface PracticeQuizWizardStepProps {
+  onSubmit?: () => void
+  validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
+}
 
 interface PracticeQuizWizardProps {
   title: string
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
   closeWizard: () => void
-  courses: {
-    label: string
-    value: string
-  }[]
   initialValues?: PracticeQuiz
+  selection: Record<number, Element>
+  resetSelection: () => void
   conversion?: boolean
 }
 
@@ -47,8 +54,9 @@ function PracticeQuizWizard({
   gamifiedCourses,
   nonGamifiedCourses,
   closeWizard,
-  courses,
   initialValues,
+  selection,
+  resetSelection,
   conversion = false,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
@@ -60,6 +68,10 @@ function PracticeQuizWizard({
   const [editMode, setEditMode] = useState(!!initialValues && !conversion)
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
+
+  const nameValidationSchema = yup.object().shape({
+    name: yup.string().required(t('manage.sessionForms.sessionName')),
+  })
 
   const stepOneValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -242,6 +254,10 @@ function PracticeQuizWizard({
         }}
         workflowItems={[
           {
+            title: t('shared.generic.information'),
+            tooltip: t('manage.sessionForms.microLearningInformation'),
+          },
+          {
             title: t('shared.generic.description'),
             tooltip: t('manage.sessionForms.practiceQuizDescription'),
           },
@@ -257,10 +273,15 @@ function PracticeQuizWizard({
           },
         ]}
       >
+        <PracticeQuizInformationStep
+          validationSchema={nameValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+        />
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo
           validationSchema={stepTwoValidationSchema}
-          courses={courses}
+          courses={[{ label: '', value: '' }]}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
