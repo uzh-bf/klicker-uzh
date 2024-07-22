@@ -2,14 +2,15 @@ import { NewFormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface MultiplierSelectorProps {
-  disabled: boolean
+  disabled?: boolean
 }
 
-function MultiplierSelector({ disabled }: MultiplierSelectorProps) {
+function MultiplierSelector({ disabled = false }: MultiplierSelectorProps) {
   const t = useTranslations()
 
   return (
     <NewFormikSelectField
+      required
       disabled={disabled}
       name="multiplier"
       label={t('shared.generic.multiplier')}

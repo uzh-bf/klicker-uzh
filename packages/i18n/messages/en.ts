@@ -171,7 +171,10 @@ export default {
       gamified: 'Gamified',
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',
+      elementN: 'Element {number}',
+      stackN: 'Stack {number}',
       questionN: 'Question {number}',
+      availability: 'Availability',
     },
     contentInput: {
       boldStyle:
@@ -909,20 +912,44 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       optionalTimeLimit: 'Optional time limit',
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
+      newStack: 'New stack',
       newBlockSelected: 'Add 1 block with {count} questions',
+      newStackSelected: 'Add {count} blocks with 1 question',
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip: 'The display name is shown to participants.',
+      stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
+      stackDisplayName: 'Stack title',
+      stackDisplayNameTooltip:
+        'The title of the stack is displayed above the description at the top of the stack.',
+      stackDescription: 'Description',
+      stackDescriptionTooltip:
+        'The description of the stack is displayed above the questions in the stack.',
+      stackDescriptionPlaceholder: 'Enter description here...',
       microlearningTypes:
-        'A microlearning can only contain content elements, flashcards, single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can contain all element types except from free-text questions.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
+      microLearningIntroductionName:
+        'Please enter a name for your microlearning. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      microLearningInformation:
+        'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
+      microLearningNoCourse:
+        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      microLearningLecturerDocs:
+        'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
+      microLearningStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
       microlearningSettings:
         'In this step, select the start and end date and make further settings.',
+      microLearningMissingCourse:
+        'Microlearnings must be assigned to a course.',
+      microLearningCourseNotGamified:
+        'With the current course selection the microlearning will not be gamified.',
       microlearningQuestions:
         'In this step, select the questions for the microlearning.',
       microlearningEditingFailed: 'Editing the Microlearning failed...',
@@ -932,15 +959,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
       microlearningCourse:
-        'For the creation of a microlearning, the selection of the corresponding course is required.',
+        'For the creation of a microlearning, the selection of the corresponding course is required. The microlearning will automatially assume the gamification settings of the course.',
       microlearningStartDate:
-        'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
+        'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
-        'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
+        'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
+      minOneElementPerStack: 'Every stack must contain at least one element.',
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
@@ -996,7 +1024,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
-      practiceQuizSolutionReq: 'Please only add questions with solution.',
+      elementSolutionReq: 'Please only add questions with solution.',
       practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
       practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
       practiceQuizDescription:
@@ -1005,7 +1033,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In this step, make settings for your practice quiz.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      practiceQuizCoursePlaceholder: 'Select course...',
+      selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
       practiceQuizName:

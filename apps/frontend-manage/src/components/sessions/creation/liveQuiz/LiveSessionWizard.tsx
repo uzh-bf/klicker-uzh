@@ -88,7 +88,7 @@ function LiveSessionWizard({
   const questionsValidationSchema = yup.object().shape({
     blocks: yup.array().of(
       yup.object().shape({
-        ids: yup.array().of(yup.number()),
+        questionIds: yup.array().of(yup.number()),
         titles: yup.array().of(yup.string()),
         types: yup
           .array()
@@ -109,7 +109,6 @@ function LiveSessionWizard({
         timeLimit: yup
           .number()
           .min(1, t('manage.sessionForms.liveQuizTimeRestriction')),
-        questionIds: yup.array(),
       })
     ),
   })

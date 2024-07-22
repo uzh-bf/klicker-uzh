@@ -33,9 +33,10 @@ interface MultistepWizardProps {
     tooltip?: string
     tooltipDisabled?: string
   }[]
+  continueDisabled?: boolean
 }
 
-export type GroupActivityClueType =
+export type GroupActivityClueFormValues =
   | {
       name: string
       displayName: string
@@ -62,14 +63,32 @@ export interface LiveQuizBlockFormValues {
   questionIds: number[]
   titles: string[]
   types: ElementType[]
-  timeLimit: number
+  timeLimit?: number
 }
 
 export interface LiveQuizBlockErrorValues {
-  questionIds: string[]
+  questionIds?: string[]
+  titles?: string[]
+  types?: string[]
+  timeLimit?: string
+}
+
+export interface ElementStackFormValues {
+  displayName?: string
+  description?: string
+  elementIds: number[]
+  titles: string[]
+  types: ElementType[]
+  hasSampleSolutions: boolean[]
+}
+
+export interface ElementStackErrorValues {
+  displayName: string
+  description: string
+  elementIds: string[]
   titles: string[]
   types: string[]
-  timeLimit: string
+  hasSampleSolutions: string[]
 }
 
 export interface LiveSessionFormValues extends CommonFormValues {
@@ -81,12 +100,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
 }
 
 export interface MicroLearningFormValues extends CommonFormValues {
-  questions: {
-    id: number
-    title: string
-    hasAnswerFeedbacks: boolean
-    hasSampleSolution: boolean
-  }[]
+  stacks: ElementStackFormValues[]
   startDate: string
   endDate: string
   order: ElementOrderType
@@ -114,7 +128,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
   }[]
   startDate: string
   endDate: string
-  clues: GroupActivityClueType[]
+  clues: GroupActivityClueFormValues[]
 }
 
 function Validator({
@@ -145,6 +159,7 @@ function MultistepWizard({
   onRestartForm,
   onCloseWizard,
   workflowItems,
+  continueDisabled,
 }: MultistepWizardProps) {
   const t = useTranslations()
   const [stepNumber, setStepNumber] = useState(0)
@@ -193,8 +208,11 @@ function MultistepWizard({
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
+              // TODO: validation on mount potentially broken for description step
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
-              disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
+              disabledFrom={
+                continueDisabled ? 1 : isValid ? stepNumber + 2 : stepNumber + 1
+              }
               className={{
                 item: 'last:rounded-r-md first:rounded-l-md hidden md:flex',
               }}
@@ -219,7 +237,7 @@ function MultistepWizard({
                     </div>
                   </Button>
                   <Button
-                    disabled={isSubmitting || !isValid}
+                    disabled={isSubmitting || !isValid || continueDisabled}
                     type="submit"
                     data={{ cy: 'next-or-submit' }}
                     className={{ root: 'w-max self-end' }}

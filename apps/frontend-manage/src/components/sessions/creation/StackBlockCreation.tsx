@@ -1,3 +1,4 @@
+import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
   faArrowLeft,
@@ -5,67 +6,67 @@ import {
   faArrowUp,
   faBars,
   faCircleExclamation,
-  faGears,
   faPlus,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Modal, NumberField, Tooltip } from '@uzh-bf/design-system'
+import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import { QuestionDragDropTypes } from '../../../questions/Question'
+import { QuestionDragDropTypes } from '../../questions/Question'
 import {
-  LiveQuizBlockErrorValues,
-  LiveQuizBlockFormValues,
-} from '../MultistepWizard'
-import LiveQuizBlocksError from './LiveQuizBlocksError'
+  ElementStackErrorValues,
+  ElementStackFormValues,
+} from './MultistepWizard'
+import StackCreationErrors from './StackCreationErrors'
+import StackDescriptionModal from './StackDescriptionModal'
 
-interface LiveQuizCreationBlockProps {
+interface StackBlockCreationProps {
   index: number
-  block: LiveQuizBlockFormValues
-  numOfBlocks: number
+  stack: ElementStackFormValues
+  numOfStacks: number
+  acceptedTypes: ElementType[]
   remove: (index: number) => void
   move: (from: number, to: number) => void
-  replace: (index: number, value: LiveQuizBlockFormValues) => void
+  replace: (index: number, value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
-  error?: LiveQuizBlockErrorValues[]
+  error?: ElementStackErrorValues[]
 }
 
-function LiveQuizCreationBlock({
+function StackBlockCreation({
   index,
-  block,
-  numOfBlocks,
+  stack,
+  numOfStacks,
+  acceptedTypes,
   remove,
   move,
   replace,
   selection,
   resetSelection,
   error,
-}: LiveQuizCreationBlockProps): React.ReactElement {
+}: StackBlockCreationProps): React.ReactElement {
   const t = useTranslations()
-  const [openSettings, setOpenSettings] = useState(false)
+  const [stackDescriptionModal, setStackDescriptionModal] = useState(false)
 
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: [
-        ElementType.Sc,
-        ElementType.Mc,
-        ElementType.Kprim,
-        ElementType.FreeText,
-        ElementType.Numerical,
-      ],
+      accept: acceptedTypes,
       drop: (item: QuestionDragDropTypes) => {
         replace(index, {
-          ...block,
-          questionIds: [...block.questionIds, item.id],
-          titles: [...block.titles, item.title],
-          types: [...block.types, item.questionType],
+          ...stack,
+          elementIds: [...stack.elementIds, item.id],
+          titles: [...stack.titles, item.title],
+          types: [...stack.types, item.questionType],
+          hasSampleSolutions: [
+            ...stack.hasSampleSolutions,
+            item.hasSampleSolution,
+          ],
         })
       },
       collect: (monitor) => ({
@@ -76,17 +77,17 @@ function LiveQuizCreationBlock({
   )
 
   return (
-    <div key={index} className="flex flex-col w-56" data-cy={`block-${index}`}>
+    <div key={index} className="flex flex-col w-56" data-cy={`stack-${index}`}>
       <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div className="flex flex-row items-center gap-2">
-          <div data-cy="block-container-header">
-            {t('shared.generic.blockN', { number: index + 1 })}
+          <div data-cy="stack-container-header">
+            {t('shared.generic.stackN', { number: index + 1 })}
           </div>
           {error &&
             error.length > index &&
             typeof error[index] !== 'undefined' && (
               <Tooltip
-                tooltip={<LiveQuizBlocksError errors={error[index]} />}
+                tooltip={<StackCreationErrors errors={error[index]} />}
                 delay={0}
                 className={{ tooltip: 'text-sm z-20' }}
               >
@@ -103,9 +104,9 @@ function LiveQuizCreationBlock({
             className={{
               root: 'disabled:hidden hover:bg-primary-20 px-1',
             }}
-            disabled={numOfBlocks === 1}
+            disabled={numOfStacks === 1}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
-            data={{ cy: `move-block-${index}-left` }}
+            data={{ cy: `move-stack-${index}-left` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowLeft} />
@@ -116,11 +117,11 @@ function LiveQuizCreationBlock({
             className={{
               root: 'disabled:hidden hover:bg-primary-20 px-1',
             }}
-            disabled={numOfBlocks === 1}
+            disabled={numOfStacks === 1}
             onClick={() =>
-              move(index, index !== numOfBlocks ? index + 1 : index)
+              move(index, index !== numOfStacks ? index + 1 : index)
             }
-            data={{ cy: `move-block-${index}-right` }}
+            data={{ cy: `move-stack-${index}-right` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowRight} />
@@ -129,14 +130,14 @@ function LiveQuizCreationBlock({
 
           <Button
             basic
-            onClick={() => setOpenSettings(true)}
+            onClick={() => setStackDescriptionModal(true)}
             className={{
               root: 'px-1 hover:text-primary ',
             }}
-            data={{ cy: `open-block-${index}-settings` }}
+            data={{ cy: `open-stack-${index}-description` }}
           >
             <Button.Icon>
-              <FontAwesomeIcon icon={faGears} />
+              <FontAwesomeIcon icon={faCommentDots} size="lg" />
             </Button.Icon>
           </Button>
           <Button
@@ -145,7 +146,7 @@ function LiveQuizCreationBlock({
             className={{
               root: 'px-1  hover:text-red-600',
             }}
-            data={{ cy: 'delete-block' }}
+            data={{ cy: 'delete-stack' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
@@ -154,11 +155,11 @@ function LiveQuizCreationBlock({
         </div>
       </div>
       <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">
-        {block.titles.map((title, questionIdx) => (
+        {stack.titles.map((title, questionIdx) => (
           <div
             key={`${questionIdx}-${title}`}
             className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
-            data-cy={`question-${questionIdx}-block-${index}`}
+            data-cy={`question-${questionIdx}-stack-${index}`}
           >
             <div className="flex-1">
               <Ellipsis
@@ -175,26 +176,31 @@ function LiveQuizCreationBlock({
                 className={{
                   root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
                 }}
-                disabled={block.questionIds.length === 1}
+                disabled={stack.elementIds.length === 1}
                 onClick={() => {
-                  if (!(questionIdx === 0 || block.questionIds.length === 1)) {
+                  if (!(questionIdx === 0 || stack.elementIds.length === 1)) {
                     replace(index, {
-                      ...block,
-                      questionIds: R.move(
+                      ...stack,
+                      elementIds: R.move(
                         questionIdx,
                         questionIdx - 1,
-                        block.questionIds
+                        stack.elementIds
                       ),
                       titles: R.move(
                         questionIdx,
                         questionIdx - 1,
-                        block.titles
+                        stack.titles
                       ),
-                      types: R.move(questionIdx, questionIdx - 1, block.types),
+                      types: R.move(questionIdx, questionIdx - 1, stack.types),
+                      hasSampleSolutions: R.move(
+                        questionIdx,
+                        questionIdx - 1,
+                        stack.hasSampleSolutions
+                      ),
                     })
                   }
                 }}
-                data={{ cy: `move-question-${questionIdx}-block-${index}-up` }}
+                data={{ cy: `move-question-${questionIdx}-stack-${index}-up` }}
               >
                 <FontAwesomeIcon icon={faArrowUp} />
               </Button>
@@ -203,32 +209,37 @@ function LiveQuizCreationBlock({
                 className={{
                   root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
                 }}
-                disabled={block.questionIds.length === 1}
+                disabled={stack.elementIds.length === 1}
                 onClick={() => {
                   if (
                     !(
-                      block.questionIds.length === questionIdx - 1 ||
-                      block.questionIds.length === 1
+                      stack.elementIds.length === questionIdx - 1 ||
+                      stack.elementIds.length === 1
                     )
                   ) {
                     replace(index, {
-                      ...block,
-                      questionIds: R.move(
+                      ...stack,
+                      elementIds: R.move(
                         questionIdx,
                         questionIdx + 1,
-                        block.questionIds
+                        stack.elementIds
                       ),
                       titles: R.move(
                         questionIdx,
                         questionIdx + 1,
-                        block.titles
+                        stack.titles
                       ),
-                      types: R.move(questionIdx, questionIdx + 1, block.types),
+                      types: R.move(questionIdx, questionIdx + 1, stack.types),
+                      hasSampleSolutions: R.move(
+                        questionIdx,
+                        questionIdx + 1,
+                        stack.hasSampleSolutions
+                      ),
                     })
                   }
                 }}
                 data={{
-                  cy: `move-question-${questionIdx}-block-${index}-down`,
+                  cy: `move-question-${questionIdx}-stack-${index}-down`,
                 }}
               >
                 <FontAwesomeIcon icon={faArrowDown} />
@@ -241,19 +252,22 @@ function LiveQuizCreationBlock({
               }}
               onClick={() => {
                 replace(index, {
-                  ...block,
-                  questionIds: block.questionIds
+                  ...stack,
+                  elementIds: stack.elementIds
                     .slice(0, questionIdx)
-                    .concat(block.questionIds.slice(questionIdx + 1)),
-                  titles: block.titles
+                    .concat(stack.elementIds.slice(questionIdx + 1)),
+                  titles: stack.titles
                     .slice(0, questionIdx)
-                    .concat(block.titles.slice(questionIdx + 1)),
-                  types: block.types
+                    .concat(stack.titles.slice(questionIdx + 1)),
+                  types: stack.types
                     .slice(0, questionIdx)
-                    .concat(block.types.slice(questionIdx + 1)),
+                    .concat(stack.types.slice(questionIdx + 1)),
+                  hasSampleSolutions: stack.hasSampleSolutions
+                    .slice(0, questionIdx)
+                    .concat(stack.hasSampleSolutions.slice(questionIdx + 1)),
                 })
               }}
-              data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
+              data={{ cy: `delete-question-${questionIdx}-stack-${index}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrash} />
@@ -269,27 +283,34 @@ function LiveQuizCreationBlock({
             root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
           }}
           onClick={() => {
-            const { questionIds, titles, types } = Object.values(
-              selection
-            ).reduce<{
-              questionIds: number[]
-              titles: string[]
-              types: ElementType[]
-            }>(
-              (acc, question) => {
-                acc.questionIds.push(question.id)
-                acc.titles.push(question.name)
-                acc.types.push(question.type)
-                return acc
-              },
-              { questionIds: [], titles: [], types: [] }
-            )
+            const { elementIds, titles, types, hasSampleSolutions } =
+              Object.values(selection).reduce<ElementStackFormValues>(
+                (acc, question) => {
+                  acc.elementIds.push(question.id)
+                  acc.titles.push(question.name)
+                  acc.types.push(question.type)
+                  acc.hasSampleSolutions.push(
+                    question.options.hasSampleSolution
+                  )
+                  return acc
+                },
+                {
+                  elementIds: [],
+                  titles: [],
+                  types: [],
+                  hasSampleSolutions: [],
+                }
+              )
 
             replace(index, {
-              ...block,
-              questionIds: [...block.questionIds, ...questionIds],
-              titles: [...block.titles, ...titles],
-              types: [...block.types, ...types],
+              ...stack,
+              elementIds: [...stack.elementIds, ...elementIds],
+              titles: [...stack.titles, ...titles],
+              types: [...stack.types, ...types],
+              hasSampleSolutions: [
+                ...stack.hasSampleSolutions,
+                ...hasSampleSolutions,
+              ],
             })
             resetSelection?.()
           }}
@@ -311,46 +332,18 @@ function LiveQuizCreationBlock({
           'w-full text-center p-0.5 border border-solid rounded',
           isOver && 'bg-primary-20'
         )}
-        data-cy="drop-questions-here"
+        data-cy={`drop-elements-stack-${index}`}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
-      <Modal
-        open={openSettings}
-        onClose={() => setOpenSettings(false)}
-        title={t('manage.sessionForms.blockSettingsTitle', {
-          blockIx: index + 1,
-        })}
-        className={{
-          content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
-        }}
-      >
-        <NumberField
-          label={t('manage.sessionForms.timeLimit')}
-          tooltip={t('manage.sessionForms.timeLimitTooltip', {
-            blockIx: index + 1,
-          })}
-          id={`timeLimits.${index}`}
-          value={block.timeLimit || ''}
-          onChange={(newValue: string) => {
-            replace(index, {
-              ...block,
-              timeLimit: newValue === '' ? undefined : parseInt(newValue),
-            })
-          }}
-          placeholder={t('manage.sessionForms.optionalTimeLimit')}
-          data={{ cy: 'block-time-limit' }}
-        />
-        <Button
-          className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
-          onClick={() => setOpenSettings(false)}
-          data={{ cy: 'close-block-settings' }}
-        >
-          {t('shared.generic.ok')}
-        </Button>
-      </Modal>
+
+      <StackDescriptionModal
+        stackIx={index}
+        modalOpen={stackDescriptionModal}
+        setModalOpen={setStackDescriptionModal}
+      />
     </div>
   )
 }
 
-export default LiveQuizCreationBlock
+export default StackBlockCreation

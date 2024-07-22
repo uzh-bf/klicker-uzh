@@ -20,9 +20,7 @@ function useGamifiedCourseGrouping({
       label: t('shared.generic.gamified'),
     },
     {
-      items: nonGamifiedCourses.map((course) => {
-        return { ...course, disabled: true }
-      }),
+      items: nonGamifiedCourses,
       showSeparator: true,
       label: t('shared.generic.nonGamified'),
     },

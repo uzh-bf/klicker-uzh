@@ -107,7 +107,7 @@ function PracticeQuizWizard({
             ),
           hasSampleSolution: yup
             .boolean()
-            .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
+            .isTrue(t('manage.sessionForms.elementSolutionReq')),
           // hasAnswerFeedbacks: yup.boolean().when('type', {
           //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
           //   then: yup.boolean().isTrue(),
@@ -332,7 +332,7 @@ function StepOne(_: StepProps) {
           label={t('shared.generic.description')}
           tooltip={t('manage.sessionForms.practiceQuizDescField')}
           fieldName="description"
-          data_cy="insert-practice-quiz-description"
+          data={{ cy: 'insert-practice-quiz-description' }}
           showToolbarOnFocus={false}
         />
 
@@ -393,7 +393,7 @@ function StepTwo(props: StepProps) {
           <FormikSelectField
             required
             hideError
-            placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
+            placeholder={t('manage.sessionForms.selectCourse')}
             name="courseId"
             groups={groupedCourses}
             tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}

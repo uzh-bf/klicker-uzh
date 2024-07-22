@@ -38,7 +38,7 @@ import EditorField from './EditorField'
 import { ElementSelectCourse } from './ElementCreation'
 import GroupActivityClueModal from './GroupActivityClueModal'
 import MultistepWizard, {
-  GroupActivityClueType,
+  GroupActivityClueFormValues,
   GroupActivityFormValues,
 } from './MultistepWizard'
 import WizardErrorMessage from './WizardErrorMessage'
@@ -378,7 +378,7 @@ function StepOne(_: StepProps) {
           label={t('shared.generic.description')}
           tooltip={t('manage.sessionForms.groupActivityDescField')}
           fieldName="description"
-          data_cy="insert-groupactivity-description"
+          data={{ cy: 'insert-groupactivity-description' }}
           showToolbarOnFocus={false}
         />
 
@@ -413,7 +413,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
-  const [field, meta, helpers] = useField<GroupActivityClueType[]>('clues')
+  const [field, meta, _] = useField<GroupActivityClueFormValues[]>('clues')
   const [clueIx, setClueIx] = useState<number | undefined>(undefined)
   const [clueModal, setClueModal] = useState(false)
   const { values } = useFormikContext<{
@@ -435,7 +435,7 @@ function StepTwo(props: StepProps) {
             hideError
             name="courseId"
             groups={groupedCourses}
-            placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
+            placeholder={t('manage.sessionForms.selectCourse')}
             tooltip={t('manage.sessionForms.groupActivityCourse')}
             label={t('shared.generic.course')}
             data={{ cy: 'select-course' }}

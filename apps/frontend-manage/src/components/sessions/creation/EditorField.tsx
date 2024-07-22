@@ -12,13 +12,17 @@ interface EditorFieldProps {
   required?: boolean
   fieldName: string
   tooltip?: string
+  placeholder?: string
   showToolbarOnFocus?: boolean
   className?: {
     root?: string
     label?: string
     tooltip?: string
   }
-  data_cy?: string
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function EditorField({
@@ -27,9 +31,10 @@ function EditorField({
   required,
   fieldName,
   tooltip,
+  placeholder,
   showToolbarOnFocus = true,
   className,
-  data_cy,
+  data,
 }: EditorFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
@@ -70,13 +75,13 @@ function EditorField({
             helpers.setTouched(true)
           }}
           showToolbarOnFocus={showToolbarOnFocus}
-          placeholder={t('manage.sessionForms.enterContentHere')}
+          placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
           className={{
             editor: '!leading-5 h-16 overflow-x-auto',
             root: 'w-full',
             content: 'pb-1',
           }}
-          data_cy={data_cy}
+          data={data}
         />
         {meta.error && meta.touched && (
           <Tooltip
