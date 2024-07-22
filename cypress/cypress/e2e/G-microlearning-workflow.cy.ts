@@ -1092,8 +1092,8 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if any questions are contained in the question step and create quiz
-    cy.get('[data-cy="move-block-1-left"]').should('exist').click()
-    cy.get('[data-cy="move-block-1-right"]').should('exist').click()
+    cy.get('[data-cy="move-stack-1-left"]').should('exist').click()
+    cy.get('[data-cy="move-stack-1-right"]').should('exist').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the practice quiz is listed in the course overview
