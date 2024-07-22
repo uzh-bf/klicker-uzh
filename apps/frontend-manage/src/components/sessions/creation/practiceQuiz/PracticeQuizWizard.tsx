@@ -24,7 +24,11 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import BlockField from '../BlockField'
 import { ElementSelectCourse } from '../ElementCreation'
-import MultistepWizard, { PracticeQuizFormValues } from '../MultistepWizard'
+import MultistepWizard, {
+  ElementStackFormValues,
+  PracticeQuizFormValues,
+} from '../MultistepWizard'
+import StackCreationStep from '../StackCreationStep'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 
@@ -66,6 +70,16 @@ function PracticeQuizWizard({
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
+  // TODO: add free text questions to accepted types?
+  const acceptedTypes = [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
+    ElementType.Flashcard,
+    ElementType.Content,
+  ]
+
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
   })
@@ -77,7 +91,6 @@ function PracticeQuizWizard({
     description: yup.string(),
   })
 
-  //TODO: adjust validation
   const stepTwoValidationSchema = yup.object().shape({
     multiplier: yup
       .string()
@@ -85,7 +98,13 @@ function PracticeQuizWizard({
     courseId: yup
       .string()
       .required(t('manage.sessionForms.practiceQuizSelectCourse')),
-    order: yup.string(),
+    order: yup
+      .string()
+      .required()
+      .oneOf(
+        Object.values(ElementOrderType),
+        t('manage.sessionForms.practiceQuizOrder')
+      ),
     availableFrom: yup.date(),
     resetTimeDays: yup
       .string()
@@ -93,33 +112,33 @@ function PracticeQuizWizard({
       .matches(/^[0-9]+$/, t('manage.sessionForms.practiceQuizValidResetDays')),
   })
 
-  const stepThreeValidationSchema = yup.object().shape({
-    questions: yup
+  const stackValiationSchema = yup.object().shape({
+    stacks: yup
       .array()
       .of(
         yup.object().shape({
-          id: yup.string(),
-          title: yup.string(),
-          type: yup
-            .string()
-            .oneOf(
-              [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-                ElementType.Flashcard,
-                ElementType.Content,
-              ],
-              t('manage.sessionForms.practiceQuizElementTypes')
+          displayName: yup.string(),
+          description: yup.string(),
+          elementIds: yup
+            .array()
+            .of(yup.number())
+            .min(1, t('manage.sessionForms.minOneElementPerStack')),
+          titles: yup.array().of(yup.string()),
+          types: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf(
+                  acceptedTypes,
+                  t('manage.sessionForms.practiceQuizTypes')
+                )
             ),
-          hasSampleSolution: yup
-            .boolean()
-            .isTrue(t('manage.sessionForms.elementSolutionReq')),
-          // hasAnswerFeedbacks: yup.boolean().when('type', {
-          //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
-          //   then: yup.boolean().isTrue(),
-          // }),
+          hasSampleSolutions: yup
+            .array()
+            .of(
+              yup.boolean().isTrue(t('manage.sessionForms.elementSolutionReq'))
+            ),
         })
       )
       .min(1),
@@ -127,21 +146,38 @@ function PracticeQuizWizard({
 
   const onSubmit = async (values: PracticeQuizFormValues) => {
     try {
+      const createOrUpdateJSON = {
+        name: values.name,
+        displayName: values.displayName,
+        description: values.description,
+        stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
+          return {
+            order: ix,
+            displayName:
+              stack.displayName && stack.displayName.length > 0
+                ? stack.displayName
+                : undefined,
+            description:
+              stack.description && stack.description.length > 0
+                ? stack.description
+                : undefined,
+            elements: stack.elementIds.map((elementId, ix) => {
+              return { elementId, order: ix }
+            }),
+          }
+        }),
+        multiplier: parseInt(values.multiplier),
+        courseId: values.courseId,
+        order: values.order,
+        availableFrom: dayjs(values.availableFrom).utc().format(),
+        resetTimeDays: parseInt(values.resetTimeDays),
+      }
+
       if (initialValues && !conversion) {
         const result = await editPracticeQuiz({
           variables: {
             id: initialValues.id,
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            stacks: values.questions.map((q: any, ix) => {
-              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-            }),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
-            order: values.order,
-            availableFrom: dayjs(values.availableFrom).utc().format(),
-            resetTimeDays: parseInt(values.resetTimeDays),
+            ...createOrUpdateJSON,
           },
           refetchQueries: [
             {
@@ -159,19 +195,7 @@ function PracticeQuizWizard({
         setSelectedCourseId(values.courseId)
       } else {
         const result = await createPracticeQuiz({
-          variables: {
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            stacks: values.questions.map((q: any, ix) => {
-              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
-            }),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
-            order: values.order,
-            availableFrom: dayjs(values.availableFrom).utc().format(),
-            resetTimeDays: parseInt(values.resetTimeDays),
-          },
+          variables: createOrUpdateJSON,
           refetchQueries: [
             {
               query: GetSingleCourseDocument,
@@ -216,16 +240,38 @@ function PracticeQuizWizard({
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
-          questions: initialValues?.stacks
+          stacks: initialValues?.stacks
             ? initialValues.stacks.map((stack) => {
                 return {
-                  id: stack.elements![0].elementData.elementId,
-                  title: stack.elements![0].elementData.name,
-                  hasAnswerFeedbacks: true, // TODO - based on questionData options
-                  hasSampleSolution: true, // TODO - based on questionData options
+                  displayName: stack.displayName,
+                  description: stack.description,
+                  ...stack.elements!.reduce(
+                    (acc: ElementStackFormValues, element) => {
+                      acc.elementIds.push(parseInt(element.elementData.id))
+                      acc.titles.push(element.elementData.name)
+                      acc.types.push(element.elementData.type)
+                      acc.hasSampleSolutions.push(true) // TODO: get value from element instance
+                      return acc
+                    },
+                    {
+                      elementIds: [],
+                      titles: [],
+                      types: [],
+                      hasSampleSolutions: [],
+                    }
+                  ),
                 }
               })
-            : [],
+            : [
+                {
+                  displayName: '',
+                  description: '',
+                  elementIds: [],
+                  titles: [],
+                  types: [],
+                  hasSampleSolutions: [],
+                },
+              ],
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
@@ -283,7 +329,12 @@ function PracticeQuizWizard({
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
-        <StepThree validationSchema={stepThreeValidationSchema} />
+        <StackCreationStep
+          selection={selection}
+          resetSelection={resetSelection}
+          validationSchema={stackValiationSchema}
+          acceptedTypes={acceptedTypes}
+        />
       </MultistepWizard>
       <ElementCreationErrorToast
         open={errorToastOpen}

@@ -1060,6 +1060,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSelectOrder: 'Select order',
       practiceQuizSEQUENTIAL: 'Sequential',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizTypes:
+        'Practice quizzes can contain all elements except free-text questions.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
       missingGamifiedCourses:
