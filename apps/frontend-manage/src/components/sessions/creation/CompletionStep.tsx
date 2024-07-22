@@ -1,5 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
+import { faSync, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -14,6 +14,7 @@ interface CompletionStepProps {
   onRestartForm: () => void
   resetForm: () => void
   setStepNumber: (stepNumber: number) => void
+  onCloseWizard: () => void
 }
 
 function CompletionStep({
@@ -25,6 +26,7 @@ function CompletionStep({
   onRestartForm,
   resetForm,
   setStepNumber,
+  onCloseWizard,
 }: CompletionStepProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -50,23 +52,32 @@ function CompletionStep({
           </Button.Icon>
           <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
         </Button>
-        <Button
-          onClick={() => {
-            onRestartForm()
-            resetForm()
-            setStepNumber(0)
-            router.push({ pathname: '/' }, undefined, { shallow: true })
-          }}
-          className={{ root: 'space-x-1' }}
-          data={{ cy: 'create-new-element' }}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faSync} />
-          </Button.Icon>
-          <Button.Label>
-            {t('manage.sessionForms.createNewElement')}
-          </Button.Label>
-        </Button>
+        {editMode ? (
+          <Button onClick={onCloseWizard}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faXmark} />
+            </Button.Icon>
+            <Button.Label>{t('manage.sessionForms.closeWizard')}</Button.Label>
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              onRestartForm()
+              resetForm()
+              setStepNumber(0)
+              router.push({ pathname: '/' }, undefined, { shallow: true })
+            }}
+            className={{ root: 'space-x-1' }}
+            data={{ cy: 'create-new-element' }}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faSync} />
+            </Button.Icon>
+            <Button.Label>
+              {t('manage.sessionForms.createNewElement')}
+            </Button.Label>
+          </Button>
+        )}
       </div>
     </div>
   )

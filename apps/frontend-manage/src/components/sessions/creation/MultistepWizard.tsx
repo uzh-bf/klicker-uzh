@@ -266,6 +266,7 @@ function MultistepWizard({
                 onRestartForm={onRestartForm}
                 resetForm={resetForm}
                 setStepNumber={setStepNumber}
+                onCloseWizard={onCloseWizard}
               >
                 {customCompletionAction}
               </CompletionStep>

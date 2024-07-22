@@ -893,6 +893,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       validMultiplicator: 'Please enter a valid multiplicator.',
       checkValues:
         'Please check your entries in the previous step before proceeding.',
+      closeWizard: 'Close wizard',
       name: 'Name',
       displayName: 'Display Name',
       multiplierDefault: 'Default: 1x',

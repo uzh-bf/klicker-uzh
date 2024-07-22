@@ -54,8 +54,6 @@ function MicroLearningWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  console.log(initialValues)
-
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
@@ -228,8 +226,6 @@ function MicroLearningWizard({
           description: initialValues?.description || '',
           stacks: initialValues?.stacks
             ? initialValues.stacks.map((stack) => {
-                console.log(stack)
-
                 return {
                   displayName: stack.displayName,
                   description: stack.description,

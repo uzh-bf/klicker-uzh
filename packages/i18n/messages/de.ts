@@ -894,6 +894,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
       checkValues:
         'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+      closeWizard: 'Wizard schliessen',
       name: 'Name',
       displayName: 'Anzeigename',
       multiplierDefault: 'Default: 1x',
