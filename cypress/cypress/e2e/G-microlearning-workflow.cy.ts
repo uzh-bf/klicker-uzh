@@ -166,15 +166,40 @@ describe('Different microlearning workflows', () => {
     })
     cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
 
+    // add displayname and description to stacks
+    // TODO: extend test with description as soon as these fields work
+    const title1 = 'Stack 1 Description Title'
+    const title2 = 'Stack 2 Description Title'
+    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="stack-0-displayname"]').click().type(title1)
+    cy.get('[data-cy="stack-0-displayname"]').should('have.value', title1)
+    cy.get('[data-cy="close-stack-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="stack-1-displayname"]').click().type(title2)
+    cy.get('[data-cy="stack-1-displayname"]').should('have.value', title2)
+    cy.get('[data-cy="close-stack-description"]').click()
+
     // move stacks around
     cy.get('[data-cy="move-stack-0-right"]').click()
     cy.get('[data-cy="question-0-stack-1"]').contains(questionTitle)
     cy.get('[data-cy="question-0-stack-0"]').contains(FCtitle)
     cy.get('[data-cy="question-1-stack-0"]').contains(CTtitle)
+    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="stack-0-displayname"]').should('have.value', title2)
+    cy.get('[data-cy="close-stack-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="stack-1-displayname"]').should('have.value', title1)
+    cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="move-stack-1-left"]').click()
     cy.get('[data-cy="question-0-stack-0"]').contains(questionTitle)
     cy.get('[data-cy="question-0-stack-1"]').contains(FCtitle)
     cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="stack-0-displayname"]').should('have.value', title1)
+    cy.get('[data-cy="close-stack-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="stack-1-displayname"]').should('have.value', title2)
+    cy.get('[data-cy="close-stack-description"]').click()
 
     // move questions in stack
     cy.get('[data-cy="move-question-0-stack-1-down"]').click()
@@ -478,6 +503,7 @@ describe('Different microlearning workflows', () => {
     const microLearningDisplayName = microLearningName
     const description = uuid()
     const courseName = 'Testkurs'
+    const stackTitle = 'Stack 1'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -538,6 +564,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
+    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="stack-0-displayname"]').click().type(stackTitle)
+    cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle)
+    cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -586,6 +616,7 @@ describe('Different microlearning workflows', () => {
     // edit the micro learning and add new values
     const newMicroLearningName = uuid()
     const newMicroLearningDisplayName = uuid()
+    const newStackTitle = 'Stack 1 New'
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${microLearningName}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
@@ -643,6 +674,17 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer2,
     })
+    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle)
+    cy.get('[data-cy="stack-0-displayname"]')
+      .click()
+      .clear()
+      .type(newStackTitle)
+    cy.get('[data-cy="stack-0-displayname"]').should(
+      'have.value',
+      newStackTitle
+    )
+    cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state

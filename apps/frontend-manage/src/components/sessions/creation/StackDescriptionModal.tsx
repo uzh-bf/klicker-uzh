@@ -45,7 +45,7 @@ function StackDescriptionModal({
       <Button
         className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
         onClick={() => setModalOpen(false)}
-        data={{ cy: 'close-stack-settings' }}
+        data={{ cy: 'close-stack-description' }}
       >
         {t('shared.generic.ok')}
       </Button>
