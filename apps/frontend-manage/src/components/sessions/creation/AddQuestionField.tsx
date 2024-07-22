@@ -4,6 +4,7 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import { QuestionDragDropTypes } from '../../questions/Question'
 
 interface AddQuestionFieldProps {
   push: (value: any) => void
@@ -15,15 +16,7 @@ function AddQuestionField({ push, acceptedTypes }: AddQuestionFieldProps) {
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
-      drop: (item: {
-        id: number
-        type: string
-        questionType: string
-        title: string
-        content: string
-        hasAnswerFeedbacks: boolean
-        hasSampleSolution: boolean
-      }) => {
+      drop: (item: QuestionDragDropTypes) => {
         push({
           id: item.id,
           title: item.title,

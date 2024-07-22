@@ -38,7 +38,17 @@ const ElementIcons: Record<ElementType, IconDefinition> = {
   NUMERICAL: faQuestionRegular,
 }
 
-interface Props {
+export interface QuestionDragDropTypes {
+  id: number
+  type: ElementType
+  questionType: ElementType
+  title: string
+  content: string
+  hasAnswerFeedbacks: boolean
+  hasSampleSolution: boolean
+}
+
+interface QuestionProps {
   checked: boolean
   id: number
   isArchived?: boolean
@@ -72,7 +82,7 @@ function Question({
   tagfilter = [],
   createdAt,
   updatedAt,
-}: Props): React.ReactElement {
+}: QuestionProps): React.ReactElement {
   const t = useTranslations()
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
@@ -101,7 +111,6 @@ function Question({
       data-cy={`question-item-${title}`}
     >
       <Checkbox checked={checked} onCheck={onCheck} />
-
       <div
         className={twMerge(
           'flex flex-col md:flex-row w-full p-3 gap-2 border border-solid rounded-lg cursor-[grab] hover:shadow-md',

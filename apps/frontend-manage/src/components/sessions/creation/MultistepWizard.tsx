@@ -4,7 +4,11 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType, ParameterType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementOrderType,
+  ElementType,
+  ParameterType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -29,9 +33,10 @@ interface MultistepWizardProps {
     tooltip?: string
     tooltipDisabled?: string
   }[]
+  continueDisabled?: boolean
 }
 
-export type GroupActivityClueType =
+export type GroupActivityClueFormValues =
   | {
       name: string
       displayName: string
@@ -54,13 +59,40 @@ interface CommonFormValues {
   multiplier: string
 }
 
+export interface LiveQuizBlockFormValues {
+  questionIds: number[]
+  titles: string[]
+  types: ElementType[]
+  timeLimit?: number
+}
+
+export interface LiveQuizBlockErrorValues {
+  questionIds?: string[]
+  titles?: string[]
+  types?: string[]
+  timeLimit?: string
+}
+
+export interface ElementStackFormValues {
+  displayName?: string
+  description?: string
+  elementIds: number[]
+  titles: string[]
+  types: ElementType[]
+  hasSampleSolutions: boolean[]
+}
+
+export interface ElementStackErrorValues {
+  displayName: string
+  description: string
+  elementIds: string[]
+  titles: string[]
+  types: string[]
+  hasSampleSolutions: string[]
+}
+
 export interface LiveSessionFormValues extends CommonFormValues {
-  blocks: {
-    questionIds: number[]
-    titles: string[]
-    types: []
-    timeLimit: number
-  }[]
+  blocks: LiveQuizBlockFormValues[]
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -68,26 +100,14 @@ export interface LiveSessionFormValues extends CommonFormValues {
 }
 
 export interface MicroLearningFormValues extends CommonFormValues {
-  questions: {
-    id: number
-    title: string
-    hasAnswerFeedbacks: boolean
-    hasSampleSolution: boolean
-  }[]
+  stacks: ElementStackFormValues[]
   startDate: string
   endDate: string
-  order: ElementOrderType
-  resetTimeDays: string
 }
 
 export interface PracticeQuizFormValues extends CommonFormValues {
-  questions: {
-    id: number
-    title: string
-    hasAnswerFeedbacks: boolean
-    hasSampleSolution: boolean
-  }[]
-  order: any
+  stacks: ElementStackFormValues[]
+  order: ElementOrderType
   availableFrom?: string
   resetTimeDays: string
 }
@@ -101,7 +121,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
   }[]
   startDate: string
   endDate: string
-  clues: GroupActivityClueType[]
+  clues: GroupActivityClueFormValues[]
 }
 
 function Validator({
@@ -132,6 +152,7 @@ function MultistepWizard({
   onRestartForm,
   onCloseWizard,
   workflowItems,
+  continueDisabled,
 }: MultistepWizardProps) {
   const t = useTranslations()
   const [stepNumber, setStepNumber] = useState(0)
@@ -142,7 +163,8 @@ function MultistepWizard({
     values:
       | LiveSessionFormValues
       | MicroLearningFormValues
-      | PracticeQuizFormValues,
+      | PracticeQuizFormValues
+      | GroupActivityFormValues,
     bag: any
   ) => {
     if (step.props.onSubmit) {
@@ -165,30 +187,68 @@ function MultistepWizard({
       isInitialValid={initialValid}
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
-        <Form className="h-full overflow-y-auto">
+        <Form className="h-full w-full flex flex-col">
           <Validator stepNumber={stepNumber} validateForm={validateForm} />
-          <div className="flex flex-row items-end gap-8">
+          <div className="flex flex-row items-end gap-8 h-6">
             <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
               {editMode
                 ? t('manage.questionForms.editElement', { element: title })
                 : t('manage.questionForms.createElement', { element: title })}
             </H2>
             <Workflow
+              minimal
+              showTooltipSymbols
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
+              // TODO: validation on mount potentially broken for description step
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
-              disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
-              minimal
-              showTooltipSymbols
+              disabledFrom={
+                continueDisabled ? 1 : isValid ? stepNumber + 2 : stepNumber + 1
+              }
               className={{
-                item: 'last:rounded-r-md first:rounded-l-md',
+                item: 'last:rounded-r-md first:rounded-l-md hidden md:flex',
               }}
             />
           </div>
 
-          <div className="flex flex-col justify-between gap-1 py-4">
-            {!isCompleted && <>{step}</>}
+          <div className="flex flex-1 w-full justify-between gap-1 py-4">
+            {!isCompleted && (
+              <div className="flex flex-col justify-between w-full h-full">
+                <div>{step}</div>
+                <div className="flex flex-row justify-between pt-2">
+                  <Button
+                    className={{ root: 'border-red-400' }}
+                    onClick={() => onCloseWizard()}
+                    data={{ cy: 'cancel-session-creation' }}
+                  >
+                    <FontAwesomeIcon icon={faCancel} />
+                    <div>
+                      {editMode
+                        ? t('manage.questionForms.cancelEditing')
+                        : t('manage.questionForms.cancelCreation')}
+                    </div>
+                  </Button>
+                  <Button
+                    disabled={isSubmitting || !isValid || continueDisabled}
+                    type="submit"
+                    data={{ cy: 'next-or-submit' }}
+                    className={{ root: 'w-max self-end' }}
+                  >
+                    {stepNumber === steps.length - 1 ? (
+                      <FontAwesomeIcon icon={faSave} />
+                    ) : (
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    )}
+                    {stepNumber === steps.length - 1
+                      ? editMode
+                        ? t('shared.generic.save')
+                        : t('shared.generic.create')
+                      : t('shared.generic.continue')}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isCompleted && (
               <CompletionStep
@@ -199,43 +259,10 @@ function MultistepWizard({
                 onRestartForm={onRestartForm}
                 resetForm={resetForm}
                 setStepNumber={setStepNumber}
+                onCloseWizard={onCloseWizard}
               >
                 {customCompletionAction}
               </CompletionStep>
-            )}
-
-            {!isCompleted && (
-              <div className="flex flex-row justify-between pt-2">
-                <Button
-                  className={{ root: 'border-red-400' }}
-                  onClick={() => onCloseWizard()}
-                  data={{ cy: 'cancel-session-creation' }}
-                >
-                  <FontAwesomeIcon icon={faCancel} />
-                  <div>
-                    {editMode
-                      ? t('manage.questionForms.cancelEditing')
-                      : t('manage.questionForms.cancelCreation')}
-                  </div>
-                </Button>
-                <Button
-                  disabled={isSubmitting || !isValid}
-                  type="submit"
-                  data={{ cy: 'next-or-submit' }}
-                  className={{ root: 'w-max self-end' }}
-                >
-                  {stepNumber === steps.length - 1 ? (
-                    <FontAwesomeIcon icon={faSave} />
-                  ) : (
-                    <FontAwesomeIcon icon={faArrowRight} />
-                  )}
-                  {stepNumber === steps.length - 1
-                    ? editMode
-                      ? t('shared.generic.save')
-                      : t('shared.generic.create')
-                    : t('shared.generic.continue')}
-                </Button>
-              </div>
             )}
           </div>
         </Form>

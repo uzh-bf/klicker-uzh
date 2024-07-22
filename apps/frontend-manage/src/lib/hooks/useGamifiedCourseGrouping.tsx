@@ -1,4 +1,4 @@
-import { Group } from '@uzh-bf/design-system'
+import { SelectGroup } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementSelectCourse } from '../../components/sessions/creation/ElementCreation'
 
@@ -10,7 +10,7 @@ interface useGamifiedCourseGroupingProps {
 function useGamifiedCourseGrouping({
   gamifiedCourses,
   nonGamifiedCourses,
-}: useGamifiedCourseGroupingProps): Group[] {
+}: useGamifiedCourseGroupingProps): SelectGroup[] {
   const t = useTranslations()
 
   return [
@@ -20,9 +20,7 @@ function useGamifiedCourseGrouping({
       label: t('shared.generic.gamified'),
     },
     {
-      items: nonGamifiedCourses.map((course) => {
-        return { ...course, disabled: true }
-      }),
+      items: nonGamifiedCourses,
       showSeparator: true,
       label: t('shared.generic.nonGamified'),
     },
