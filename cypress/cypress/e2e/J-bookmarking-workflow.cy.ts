@@ -42,6 +42,7 @@ describe('Question bookmarking and flagging workflow', () => {
     // step 1
     cy.get('[data-cy="create-practice-quiz"]').click()
     cy.get('[data-cy="insert-practice-quiz-name"]').type(quizName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]').type(quizName)
     cy.get('[data-cy="next-or-submit"]').click()
 
