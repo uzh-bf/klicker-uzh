@@ -303,6 +303,15 @@ describe('Different practice quiz workflows', () => {
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      practiceQuizName3
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      practiceQuizDisplayName3
+    )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-available-from"]')
       .click()
@@ -427,6 +436,15 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
+    )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      practiceQuizName2
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      practiceQuizDisplayName2
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
