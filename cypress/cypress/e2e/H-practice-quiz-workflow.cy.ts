@@ -104,7 +104,15 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer2,
     })
-
+    const dataTransfer3 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer3,
+      })
+    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
+      dataTransfer3,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -137,13 +145,14 @@ describe('Different practice quiz workflows', () => {
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]')
       .should('not.be.disabled')
       .click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
@@ -158,7 +167,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-reset"]').click()
 
     cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
+    cy.get('[data-cy="sc-2-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-2-answer-option-2"]').should('exist')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
@@ -497,7 +513,7 @@ describe('Different practice quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer3,
       })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer3,
     })
     const dataTransfer4 = new DataTransfer()

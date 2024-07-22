@@ -45,7 +45,6 @@ function MicroLearningInformationStep(props: MicroLearningWizardStepProps) {
         <PropertyList
           elements={[
             {
-              key: 'microLearningUseCase',
               icon: faLightbulb,
               iconColor: 'text-orange-400',
               richText: t.rich('manage.sessionForms.microlearningUseCase', {
@@ -61,7 +60,6 @@ function MicroLearningInformationStep(props: MicroLearningWizardStepProps) {
               }),
             },
             {
-              key: 'microLearningLecturerDocs',
               icon: faBookOpen,
               iconColor: 'text-uzh-blue-100',
               richText: t.rich(
@@ -80,7 +78,6 @@ function MicroLearningInformationStep(props: MicroLearningWizardStepProps) {
               ),
             },
             {
-              key: 'microLearningStudentDocs',
               icon: faUsers,
               iconColor: 'text-black',
               richText: t.rich('manage.sessionForms.microLearningStudentDocs', {

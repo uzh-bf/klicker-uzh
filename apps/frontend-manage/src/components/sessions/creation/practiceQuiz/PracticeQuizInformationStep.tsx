@@ -45,7 +45,6 @@ function PracticeQuizInformationStep(props: PracticeQuizWizardStepProps) {
         <PropertyList
           elements={[
             {
-              key: 'practiceQuizUseCase',
               icon: faLightbulb,
               iconColor: 'text-orange-400',
               richText: t.rich('manage.sessionForms.practiceQuizUseCase', {
@@ -61,7 +60,6 @@ function PracticeQuizInformationStep(props: PracticeQuizWizardStepProps) {
               }),
             },
             {
-              key: 'practiceQuizLecturerDocs',
               icon: faBookOpen,
               iconColor: 'text-uzh-blue-100',
               richText: t.rich('manage.sessionForms.practiceQuizLecturerDocs', {
@@ -77,7 +75,6 @@ function PracticeQuizInformationStep(props: PracticeQuizWizardStepProps) {
               }),
             },
             {
-              key: 'practiceQuizStudentDocs',
               icon: faUsers,
               iconColor: 'text-black',
               richText: t.rich('manage.sessionForms.practiceQuizStudentDocs', {
