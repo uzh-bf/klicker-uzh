@@ -1039,7 +1039,7 @@ describe('Different microlearning workflows', () => {
 
   it('converts a seeded past microlearning into a practice quiz', () => {
     const courseName = 'Testkurs'
-    const microLearningName = 'Test Microlearning Past'
+    const microLearningName = 'Test Microlearning Past No FT'
     const practiceQuizName = 'Practice Quiz Converted'
     const practiceQuizDisplayName = 'Practice Quiz Converted Displayname'
 
@@ -1063,6 +1063,7 @@ describe('Different microlearning workflows', () => {
       .should('have.value', `${microLearningName} (converted)`)
       .clear()
       .type(practiceQuizName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .should('have.value', microLearningName)
@@ -1091,8 +1092,8 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if any questions are contained in the question step and create quiz
-    cy.get('[data-cy="move-block-1-left"]').should('exist').click()
-    cy.get('[data-cy="move-block-1-right"]').should('exist').click()
+    cy.get('[data-cy="move-stack-1-left"]').should('exist').click()
+    cy.get('[data-cy="move-stack-1-right"]').should('exist').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the practice quiz is listed in the course overview

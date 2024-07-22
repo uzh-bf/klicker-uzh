@@ -5,7 +5,6 @@ import { twMerge } from 'tailwind-merge'
 
 interface PropertyListProps {
   elements: {
-    key: string
     icon: IconDefinition
     iconColor: string
     richText: string | React.ReactNode
@@ -15,10 +14,10 @@ interface PropertyListProps {
 function PropertyList({ elements }: PropertyListProps) {
   return (
     <>
-      {elements.map((element) => (
+      {elements.map((element, ix) => (
         <div
           className="flex flex-row items-center text-[0.95rem]"
-          key={element.key}
+          key={`property-list-element-${ix}`}
         >
           <div className="w-fit">
             <FontAwesomeIcon

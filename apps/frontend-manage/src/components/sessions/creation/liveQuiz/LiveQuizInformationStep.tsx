@@ -35,7 +35,6 @@ function LiveQuizInformationStep(_: LiveQuizWizardStepProps) {
         <PropertyList
           elements={[
             {
-              key: 'liveQuizUseCase',
               icon: faLightbulb,
               iconColor: 'text-orange-400',
               richText: t.rich('manage.sessionForms.liveQuizUseCase', {
@@ -51,7 +50,6 @@ function LiveQuizInformationStep(_: LiveQuizWizardStepProps) {
               }),
             },
             {
-              key: 'liveQuizLecturerDocs',
               icon: faBookOpen,
               iconColor: 'text-uzh-blue-100',
               richText: t.rich('manage.sessionForms.liveQuizLecturerDocs', {
@@ -67,7 +65,6 @@ function LiveQuizInformationStep(_: LiveQuizWizardStepProps) {
               }),
             },
             {
-              key: 'liveQuizStudentDocs',
               icon: faUsers,
               iconColor: 'text-black',
               richText: t.rich('manage.sessionForms.liveQuizStudentDocs', {

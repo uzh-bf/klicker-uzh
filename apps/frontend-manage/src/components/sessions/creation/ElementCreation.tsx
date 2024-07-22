@@ -16,9 +16,9 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import GroupActivityWizard from './GroupActivityWizard'
-import PracticeQuizWizard from './PracticeQuizWizard'
 import LiveSessionWizard from './liveQuiz/LiveSessionWizard'
 import MicroLearningWizard from './microLearning/MicroLearningWizard'
+import PracticeQuizWizard from './practiceQuiz/PracticeQuizWizard'
 
 export enum WizardMode {
   LiveQuiz = 'liveQuiz',
@@ -211,11 +211,12 @@ function ElementCreation({
             closeWizard={closeWizard}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
-            courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
               initialDataPracticeQuiz
             }
+            selection={selection}
+            resetSelection={resetSelection}
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
           />
         )}

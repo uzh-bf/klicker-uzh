@@ -1041,6 +1041,49 @@ Mehr bla bla...
     },
     update: {},
   })
+
+  const microlearningId4 = '4a87f88d-5fb9-4eef-afce-9f5ed6edcc38'
+  const microlearningPastNoFT = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId4,
+    },
+    create: {
+      id: microlearningId4,
+      name: 'Test Microlearning Past No FT',
+      displayName: 'Test Microlearning Past No FT',
+      description: `Dieses Microlearning ist bereits vorbei und enthält keine Freitext fragen (-> aktuelle Validierung)...`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 600,
+            flashcards: flashcards,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.FREE_TEXT
+            ),
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()

@@ -1023,10 +1023,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizStudentDocs:
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
+      practiceQuizNoCourse:
+        'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+      practiceQuizIntroductionName:
+        'Bitte geben Sie einen Namen für Ihr Übungs-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      practiceQuizLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Übungs-Quizzes, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      practiceQuizStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
-        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
+        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1038,6 +1046,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Übungs-Quizzes ein.',
       practiceQuizSettings:
         'Nehmen Sie in diesem Schritt Einstellungen für Ihr Übungs-Quiz vor.',
+      practiceQuizMissingCourse:
+        'Übungs-Quizzes müssen einem Kurs zugewiesen werden.',
+      practiceQuizCourseNotGamified:
+        'Mit der aktuellen Kursauswahl wird das Übugns-Quiz nicht gamifiziert sein.',
+      practiceQuizAvailabilityOptional: 'Verfügbarkeit (optional)',
       practiceQuizContent:
         'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
       practiceQuizCreationFailed:
@@ -1060,6 +1073,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSelectOrder: 'Reihenfolge wählen',
       practiceQuizSEQUENTIAL: 'Sequenziell',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizTypes:
+        'Übungs-Quizzes können alle Elemente ausser Freitext-Fragen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       missingGamifiedCourses:
