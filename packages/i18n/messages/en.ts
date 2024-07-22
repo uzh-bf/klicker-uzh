@@ -1028,7 +1028,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
-        'Specify an optional start date from which the practice quiz is available after publication. If you do not change the date, the quiz is available on the course overview immediately after publication.',
+        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1040,8 +1040,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In this step, enter the name and description of the practice quiz.',
       practiceQuizSettings:
         'In this step, make settings for your practice quiz.',
+      practiceQuizMissingCourse:
+        'Practice quizzes must be assigned to a course.',
+      practiceQuizCourseNotGamified:
+        'With the current course selection the practice quiz will not be gamified.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
+      practiceQuizAvailabilityOptional: 'Availability (optional)',
       selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',

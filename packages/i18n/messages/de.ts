@@ -1034,7 +1034,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
-        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
+        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1046,6 +1046,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Übungs-Quizzes ein.',
       practiceQuizSettings:
         'Nehmen Sie in diesem Schritt Einstellungen für Ihr Übungs-Quiz vor.',
+      practiceQuizMissingCourse:
+        'Übungs-Quizzes müssen einem Kurs zugewiesen werden.',
+      practiceQuizCourseNotGamified:
+        'Mit der aktuellen Kursauswahl wird das Übugns-Quiz nicht gamifiziert sein.',
+      practiceQuizAvailabilityOptional: 'Verfügbarkeit (optional)',
       practiceQuizContent:
         'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
       practiceQuizCreationFailed:
