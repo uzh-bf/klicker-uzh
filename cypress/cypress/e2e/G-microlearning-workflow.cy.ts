@@ -1039,7 +1039,7 @@ describe('Different microlearning workflows', () => {
 
   it('converts a seeded past microlearning into a practice quiz', () => {
     const courseName = 'Testkurs'
-    const microLearningName = 'Test Microlearning Past'
+    const microLearningName = 'Test Microlearning Past No FT'
     const practiceQuizName = 'Practice Quiz Converted'
     const practiceQuizDisplayName = 'Practice Quiz Converted Displayname'
 
