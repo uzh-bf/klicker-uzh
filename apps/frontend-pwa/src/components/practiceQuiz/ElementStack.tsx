@@ -90,7 +90,7 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
-        {!hideBookmark && (
+        {!hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark
@@ -99,6 +99,8 @@ function ElementStack({
               stackId={stack.id}
             />
           </div>
+        ) : (
+          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
         )}
 
         {stack.description && (
