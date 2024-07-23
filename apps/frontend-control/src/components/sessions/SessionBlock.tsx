@@ -66,7 +66,7 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
         )}
       >
         <div className="font-bold">
-          {t('control.session.blockN', { number: block.order + 1 })}
+          {t('shared.generic.blockN', { number: block.order + 1 })}
         </div>
         <div className="flex flex-row items-center gap-2">
           {block.expiresAt && untilExpiration && (

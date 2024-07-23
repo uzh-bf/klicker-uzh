@@ -1,4 +1,4 @@
-import { Group } from '@uzh-bf/design-system'
+import { SelectGroup } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementSelectCourse } from '../../components/sessions/creation/ElementCreation'
 
@@ -10,7 +10,7 @@ interface useLiveQuizCourseGroupingProps {
 function useLiveQuizCourseGrouping({
   gamifiedCourses,
   nonGamifiedCourses,
-}: useLiveQuizCourseGroupingProps): Group[] {
+}: useLiveQuizCourseGroupingProps): SelectGroup[] {
   const t = useTranslations()
 
   return [

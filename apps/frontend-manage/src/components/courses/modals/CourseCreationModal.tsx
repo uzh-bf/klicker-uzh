@@ -164,7 +164,7 @@ function CourseCreationModal({
                     setFieldValue('description', newValue)
                   }
                   className={{ editor: 'h-20' }}
-                  data_cy="create-course-description"
+                  data={{ cy: 'create-course-description' }}
                 />
               </div>
 
