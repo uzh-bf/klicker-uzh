@@ -112,7 +112,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          cd apps/frontend-auth
+          cd apps/auth
           pnpm run check
       - name: Check office-addin typescript types
         if: always()
