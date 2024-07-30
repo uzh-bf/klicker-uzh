@@ -1,13 +1,6 @@
 {
-  "include": [
-    "./**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "instrumented",
-    "src/scripts",
-  ],
+  "include": ["./**/*"],
+  "exclude": ["node_modules", "dist", "instrumented", "src/scripts"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
@@ -33,8 +26,6 @@
     "composite": false,
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */
-    "lib": [
-      "es2022"
-    ]
-  },
+    "lib": ["es2022"]
+  }
 }
