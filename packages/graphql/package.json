@@ -95,8 +95,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
-    "script": "ENV=development doppler run --config dev -- bun run",
-    "script:prod": "ENV=production doppler run --config prd -- bun run",
+    "script": "ENV=development doppler run --config dev -- tsx",
+    "script:prod": "ENV=production doppler run --config prd -- tsx",
     "size": "size-limit"
   },
   "engines": {
