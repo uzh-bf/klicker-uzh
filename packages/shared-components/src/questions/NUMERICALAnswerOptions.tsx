@@ -61,7 +61,6 @@ export function NUMERICALAnswerOptions({
           disabled={disabled}
           precision={accuracy}
           className={{
-            root: 'w-full',
             input: twMerge(
               'focus:border-primary-80',
               unit && '!rounded-r-none',

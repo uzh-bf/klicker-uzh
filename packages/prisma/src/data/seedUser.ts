@@ -24,6 +24,7 @@ async function seedUser(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date(
         new Date().setFullYear(new Date().getFullYear() + 5)
       ),
+      isGamificationEnabled: true,
     })
   )
 }

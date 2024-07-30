@@ -210,7 +210,7 @@ function Index({ id }: Props) {
               handleNewResponse={handleNewResponse}
               sessionId={id}
               timeLimit={activeBlock?.timeLimit as number}
-              execution={activeBlock?.execution || 0}
+              execution={activeBlock?.execution ?? 0}
             />
           )}
         </div>
