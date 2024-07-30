@@ -4,7 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
+  LocaleType,
   Participant,
+  StudentCourse,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -17,7 +19,9 @@ import { twMerge } from 'tailwind-merge'
 interface HeaderProps {
   participant?: Partial<Participant>
   title?: string
-  course?: Partial<Course>
+  course?:
+    | Partial<Course>
+    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
 }
 
 function Header({
@@ -63,11 +67,21 @@ function Header({
           <Select
             value={router.locale}
             items={[
-              { value: 'de', label: 'DE', data: { cy: 'language-de' } },
-              { value: 'en', label: 'EN', data: { cy: 'language-en' } },
+              {
+                value: LocaleType.De,
+                label: 'DE',
+                data: { cy: 'language-de' },
+              },
+              {
+                value: LocaleType.En,
+                label: 'EN',
+                data: { cy: 'language-en' },
+              },
             ]}
             onChange={(newValue: string) => {
-              changeParticipantLocale({ variables: { locale: newValue } })
+              changeParticipantLocale({
+                variables: { locale: newValue as LocaleType },
+              })
               router.push({ pathname, query }, asPath, {
                 locale: newValue,
               })

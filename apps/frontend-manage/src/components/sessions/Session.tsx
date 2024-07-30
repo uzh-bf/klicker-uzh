@@ -165,9 +165,12 @@ function Session({ session }: SessionProps) {
                       open={embedModalOpen}
                       onClose={() => setEmbedModalOpen(false)}
                       sessionId={session.id}
-                      questions={session.blocks?.flatMap(
-                        (block: SessionBlock) => block.instances
-                      )}
+                      questions={session.blocks
+                        ?.flatMap((block: SessionBlock) => block.instances)
+                        .filter(
+                          (instance) =>
+                            typeof instance !== 'undefined' && instance !== null
+                        )}
                     />
                   </>
                 )}
@@ -335,18 +338,18 @@ function Session({ session }: SessionProps) {
                         className={{ markdown: 'font-bold' }}
                         maxLength={20}
                       >
-                        {instance.questionData.name}
+                        {instance.questionData!.name}
                       </Ellipsis>
 
                       <div className="italic">
-                        ({t(`shared.${instance.questionData.type}.short`)})
+                        ({t(`shared.${instance.questionData!.type}.short`)})
                       </div>
                     </div>
                     <Ellipsis
                       maxLength={50}
                       className={{ markdown: 'px-1 text-sm' }}
                     >
-                      {instance.questionData.content}
+                      {instance.questionData!.content}
                     </Ellipsis>
                   </div>
                 ))}

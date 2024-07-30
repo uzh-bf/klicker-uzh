@@ -61,7 +61,14 @@ const Index = function () {
   ) {
     await subscribeToPush({
       variables: {
-        subscriptionObject,
+        subscriptionObject: {
+          endpoint: subscriptionObject.endpoint,
+          expirationTime: subscriptionObject.expirationTime,
+          keys: {
+            auth: subscriptionObject.toJSON().keys!.auth,
+            p256dh: subscriptionObject.toJSON().keys!.p256dh,
+          },
+        },
         courseId,
       },
       refetchQueries: [

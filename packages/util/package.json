@@ -1,7 +1,8 @@
 {
   "name": "@klicker-uzh/util",
-  "version": "3.1.0-beta.36",
+  "version": "3.1.0",
   "license": "AGPL-3.0",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -14,7 +15,7 @@
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.12.12",
     "@types/ramda": "^0.29.3",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
@@ -23,8 +24,8 @@
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
     "size-limit": "8.2.4",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "tsup": "7.2.0",
+    "typescript": "5.4.5"
   },
   "peerDependencies": {
     "ramda": "0.29.0"

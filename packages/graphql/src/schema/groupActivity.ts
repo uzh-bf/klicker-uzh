@@ -165,7 +165,7 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       type: [GroupActivityClueInstanceRef],
       nullable: true,
     }),
-    groupActivityId: t.exposeID('groupActivityId', { nullable: true }),
+    groupActivityId: t.exposeID('groupActivityId'),
     groupName: t.exposeString('groupName', { nullable: true }),
   }),
 })

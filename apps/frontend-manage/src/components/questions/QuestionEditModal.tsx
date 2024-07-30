@@ -69,21 +69,8 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function QuestionEditModal({
-  isOpen,
-  handleSetIsOpen,
-  questionId,
-  mode,
-}: QuestionEditModalProps): React.ReactElement {
-  const isDuplication = mode === QuestionEditMode.DUPLICATE
-  const t = useTranslations()
-  const [updateInstances, setUpdateInstances] = useState(false)
-  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
-    {}
-  )
-
-  // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
-  const questionManipulationSchema = Yup.object().shape({
+function createValidationSchema(t) {
+  return Yup.object().shape({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
@@ -264,6 +251,26 @@ function QuestionEditModal({
       }
     }),
   })
+}
+
+function QuestionEditModal({
+  isOpen,
+  handleSetIsOpen,
+  questionId,
+  mode,
+}: QuestionEditModalProps): React.ReactElement {
+  const t = useTranslations()
+
+  const isDuplication = mode === QuestionEditMode.DUPLICATE
+  const [updateInstances, setUpdateInstances] = useState(false)
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
+
+  const questionManipulationSchema = useMemo(
+    () => createValidationSchema(t),
+    [t]
+  )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -865,8 +872,11 @@ function QuestionEditModal({
                       <Switch
                         checked={values.options?.hasSampleSolution || false}
                         onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('options.hasSampleSolution', newValue)
-                          validateForm()
+                          setFieldValue(
+                            'options.hasSampleSolution',
+                            newValue,
+                            true
+                          )
                         }}
                         label={t('shared.generic.sampleSolution')}
                         data={{ cy: 'configure-sample-solution' }}
@@ -876,8 +886,11 @@ function QuestionEditModal({
                       <Switch
                         checked={values.options?.hasAnswerFeedbacks || false}
                         onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('options.hasAnswerFeedbacks', newValue)
-                          validateForm()
+                          setFieldValue(
+                            'options.hasAnswerFeedbacks',
+                            newValue,
+                            true
+                          )
                         }}
                         label={t('manage.questionPool.answerFeedbacks')}
                         disabled={!values.options?.hasSampleSolution}

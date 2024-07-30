@@ -1,11 +1,11 @@
 import { faBookOpen, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
+import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
+import React from 'react'
 
 interface ContentelementProps {
   element: ElementInstance
@@ -27,14 +27,14 @@ function ContentElement({
   return (
     <div
       className={twMerge(
-        'mt-4 px-3 py-2 border border-solid rounded-lg bg-slate-100',
+        'mt-4 rounded-lg border border-solid bg-slate-100 px-3 py-2',
         !hideReadButton && 'pb-10'
       )}
       data-cy={`content-element-${elementIx + 1}`}
     >
       <div
         className={twMerge(
-          'flex flex-row gap-3 prose-p:!m-0 prose-img:!m-0 leading-6',
+          'flex flex-row gap-3 leading-6 prose-p:!m-0 prose-img:!m-0',
           !hideReadButton && 'mb-1'
         )}
       >

@@ -35,7 +35,7 @@ function LecturerView() {
     if (
       data?.pinnedFeedbacks &&
       data?.pinnedFeedbacks.confusionSummary &&
-      data?.pinnedFeedbacks.confusionSummary.numberOfParticipants > 0
+      (data?.pinnedFeedbacks.confusionSummary.numberOfParticipants ?? -1) > 0
     ) {
       return Math.max(
         Math.abs(data?.pinnedFeedbacks.confusionSummary.speed),
@@ -65,12 +65,11 @@ function LecturerView() {
     return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
   }
 
-  const {
-    isLiveQAEnabled,
-    isConfusionFeedbackEnabled,
-    confusionSummary,
-    feedbacks,
-  } = data?.pinnedFeedbacks
+  const isLiveQAEnabled = data?.pinnedFeedbacks?.isLiveQAEnabled
+  const isConfusionFeedbackEnabled =
+    data?.pinnedFeedbacks?.isConfusionFeedbackEnabled
+  const confusionSummary = data?.pinnedFeedbacks?.confusionSummary
+  const feedbacks = data?.pinnedFeedbacks?.feedbacks
 
   if (!isLiveQAEnabled && !isConfusionFeedbackEnabled) {
     return (
@@ -118,7 +117,7 @@ function LecturerView() {
             </div>
           )}
 
-          {feedbacks.map(({ id, content, createdAt, votes }: Feedback) => (
+          {feedbacks?.map(({ id, content, createdAt, votes }: Feedback) => (
             <div
               className="mt-4 flex items-center border border-solid bg-primary-10% border-primary"
               key={id}
@@ -143,7 +142,7 @@ function LecturerView() {
       {isConfusionFeedbackEnabled && (
         <div className="flex-initial">
           <div className="flex-initial p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
-            <ConfusionCharts confusionValues={confusionSummary} />
+            <ConfusionCharts confusionValues={confusionSummary ?? undefined} />
           </div>
         </div>
       )}

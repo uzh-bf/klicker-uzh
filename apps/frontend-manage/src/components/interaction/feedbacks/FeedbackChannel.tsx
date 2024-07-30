@@ -16,6 +16,7 @@ import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
+  sessionName: string
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: (feedbackId: number) => void
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function FeedbackChannel({
+  sessionName,
   feedbacks = [],
   isActive = false,
   isPublic = false,
@@ -63,7 +65,10 @@ function FeedbackChannel({
 
   return (
     <>
-      <FeedbacksPrintView feedbacks={sortedFeedbacks} sessionName={'TODO'} />
+      <FeedbacksPrintView
+        feedbacks={sortedFeedbacks}
+        sessionName={sessionName}
+      />
       <FeedbackSearchAndFilters
         disabled={{
           sorting: sortedFeedbacks?.length === 0,

@@ -1,5 +1,6 @@
 {
   "name": "@klicker-uzh/i18n",
+  "type": "module",
   "files": [
     "index.ts",
     "messages/"
@@ -7,7 +8,7 @@
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@tsconfig/recommended": "^1.0.2",
-    "typescript": "5.0.4"
+    "typescript": "5.4.5"
   },
   "peerDependencies": {
     "next-intl": "3.5.4"

@@ -2,7 +2,7 @@ import markdown from 'remark-parse'
 import slate, { serialize } from 'remark-slate'
 import { unified } from 'unified'
 
-export const convertToMd = (slateObj) => {
+export const convertToMd = (slateObj: any) => {
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
   const result = slateObjCopy.map((line: any) => {
     if (line.type === 'block-quote') {
@@ -67,7 +67,7 @@ export const convertToMd = (slateObj) => {
   return result.join('\n')
 }
 
-export const convertToSlate = (mdObj) => {
+export const convertToSlate = (mdObj: string) => {
   const trimmedMdObj = mdObj.trim() === '' ? '<br>' : mdObj
 
   const result = unified()
@@ -138,7 +138,7 @@ export const convertToSlate = (mdObj) => {
   })
 }
 
-const formatText = (input) => {
+const formatText = (input: any) => {
   if (input.text === '') {
     return ''
   }

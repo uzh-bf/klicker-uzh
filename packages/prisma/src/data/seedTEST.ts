@@ -1,5 +1,5 @@
-import Prisma from '../../dist'
-import { Element } from '../client'
+import Prisma from '../../dist/index.js'
+import { type Element } from '../client/index.js'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -9,7 +9,7 @@ import {
   USER_ID_TEST3,
   USER_ID_TEST4,
 } from './constants.js'
-import * as DATA_TEST from './data/TEST'
+import * as DATA_TEST from './data/TEST.js'
 import {
   prepareContentElements,
   prepareCourse,
@@ -22,8 +22,8 @@ import {
   prepareStackVariety,
   prepareUser,
 } from './helpers.js'
-import { seedAchievements } from './seedAchievements'
-import { seedLevels } from './seedLevels'
+import { seedAchievements } from './seedAchievements.js'
+import { seedLevels } from './seedLevels.js'
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',
@@ -179,12 +179,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       prisma.liveSession.upsert(
         await prepareSession({
           ...data,
+          status: data.status ?? 'PREPARED',
           blocks: data.blocks.map((block, ix) => ({
-            ...block,
             order: ix,
-            questions: questionsTest
-              .filter((q) => block.questions.includes(parseInt(q.originalId!)))
-              .map(async (q) => q),
+            expiresAt: undefined,
+            timeLimit: block.timeLimit,
+            questions: questionsTest.filter((q) =>
+              block.questions.includes(parseInt(q.originalId!))
+            ),
           })),
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
@@ -362,7 +364,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     await prisma.participantAchievementInstance.upsert({
       where: {
         participantId_achievementId: {
-          participantId: PARTICIPANT_IDS[0],
+          participantId: PARTICIPANT_IDS[0]!,
           achievementId: achievementId,
         },
       },
@@ -521,9 +523,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 200,
-            flashcards: [flashcards[0]],
+            flashcards: [flashcards[0]!],
             questions: questionsTest,
-            contentElements: [contentElements[0]],
+            contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
             connectStackToCourse: true,
           }),
@@ -550,7 +552,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
   })
 
-  const groupActivityDecisions = groupActivityCompleted.stacks[0].elements.map(
+  const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {
       const baseDecisions = {
         instanceId: element.id,
@@ -591,8 +593,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     }
   )
 
-  const groupActivityDecisions2 = groupActivityCompleted.stacks[0].elements.map(
-    (element) => {
+  const groupActivityDecisions2 =
+    groupActivityCompleted.stacks[0]!.elements.map((element) => {
       const baseDecisions = {
         instanceId: element.id,
         type: element.elementType,
@@ -629,8 +631,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           numericalResponse: 97,
         }
       }
-    }
-  )
+    })
 
   // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1
@@ -724,7 +725,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     passed: true,
     points: 43,
     comment: 'This is an optional comment by the lecturer.',
-    grading: groupActivityCompleted.stacks[0].elements.reduce<
+    grading: groupActivityCompleted.stacks[0]!.elements.reduce<
       {
         instanceId: number
         correctness: string
@@ -737,7 +738,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       const maxPoints = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
-      ]
+      ] as 'INCORRECT' | 'PARTIAL' | 'CORRECT'
 
       return [
         ...acc,
@@ -849,9 +850,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: [
           ...prepareStackVariety({
             migrationIdOffset: 300,
-            flashcards: [flashcards[0]],
-            questions: [questionsTest[0]],
-            contentElements: [contentElements[0]],
+            flashcards: [flashcards[0]!],
+            questions: [questionsTest[0]!],
+            contentElements: [contentElements[0]!],
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
@@ -890,9 +891,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: [
           ...prepareStackVariety({
             migrationIdOffset: 400,
-            flashcards: [flashcards[0]],
-            questions: [questionsTest[0]],
-            contentElements: [contentElements[0]],
+            flashcards: [flashcards[0]!],
+            questions: [questionsTest[0]!],
+            contentElements: [contentElements[0]!],
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
@@ -1088,6 +1089,7 @@ Mehr bla bla...
 
 const prismaClient = new Prisma.PrismaClient()
 
+// @ts-ignore
 await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)

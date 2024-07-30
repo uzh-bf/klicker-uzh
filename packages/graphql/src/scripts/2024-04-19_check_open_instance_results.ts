@@ -4,9 +4,9 @@ import {
 } from '@klicker-uzh/grading'
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import { error } from 'console'
-import md5 from 'md5'
-import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops'
-import { AllElementTypeData, QuestionResultsOpen } from 'src/types/app'
+import { createHash } from 'node:crypto'
+import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops.js'
+import { AllElementTypeData, QuestionResultsOpen } from 'src/types/app.js'
 
 async function run() {
   const prisma = new PrismaClient()
@@ -104,6 +104,7 @@ function convertNumericalResponses(
   elementData: AllElementTypeData,
   responses: Record<string, number>
 ): QuestionResultsOpen {
+  const MD5 = createHash('md5')
   let newResults: QuestionResultsOpen = { total: 0, responses: {} }
 
   // loop over responses and convert them to the new format
@@ -114,7 +115,8 @@ function convertNumericalResponses(
       response: parseFloat(value),
       solutionRanges: solutionRanges ?? [],
     })
-    const hashValue = md5(value)
+    MD5.update(value)
+    const hashValue = MD5.digest('hex')
 
     newResults.responses[hashValue] = {
       value: value,
@@ -131,6 +133,7 @@ function convertFreeTextResponses(
   elementData: AllElementTypeData,
   responses: Record<string, number>
 ): QuestionResultsOpen {
+  const MD5 = createHash('md5')
   let newResults: QuestionResultsOpen = { total: 0, responses: {} }
 
   // loop over responses and convert them to the new format
@@ -140,7 +143,8 @@ function convertFreeTextResponses(
       response: value,
       solutions: solutions ?? [],
     })
-    const hashValue = md5(value)
+    MD5.update(value)
+    const hashValue = MD5.digest('hex')
 
     newResults.responses[hashValue] = {
       value: value,

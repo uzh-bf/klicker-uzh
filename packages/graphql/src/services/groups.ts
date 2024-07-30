@@ -7,21 +7,21 @@ import {
   LeaderboardType,
   ParameterType,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
-import { ElementInstanceOptions } from 'src/ops'
+import { ElementInstanceOptions } from 'src/ops.js'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context'
-import { shuffle } from '../lib/util'
-import { ResponseCorrectness, StackInput } from '../types/app'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { shuffle } from '../lib/util.js'
+import { ResponseCorrectness, StackInput } from '../types/app.js'
 import {
   RespondToElementStackInput,
   updateQuestionResults,
-} from './practiceQuizzes'
+} from './practiceQuizzes.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
@@ -375,7 +375,7 @@ export async function manipulateGroupActivity(
         options: {},
         elements: {
           create: stack.elements.map((elem) => {
-            const element = elementMap[elem.elementId]
+            const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
 
             return {
@@ -841,6 +841,8 @@ export async function submitGroupActivityDecisions(
           response: response,
         })
 
+        if (!updatedResults.results) return
+
         // update the instance with the new results
         await prisma.elementInstance.update({
           where: { id: instanceId },
@@ -1177,7 +1179,7 @@ export async function finalizeGroupActivityGrading(
         leaderboard: participant.leaderboards.length > 0,
       }
       if (instance.results!.passed) {
-        acc[participant.id].achievements.push(8)
+        acc[participant.id]!.achievements.push(8)
       }
     })
 

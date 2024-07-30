@@ -438,7 +438,7 @@ model Course {
   name                  String
   displayName           String
   description           String?
-  color                 String?   @default("#eaa07d")
+  color                 String    @default("#eaa07d")
   startDate             DateTime
   endDate               DateTime
   groupDeadlineDate     DateTime?
@@ -482,7 +482,7 @@ model SessionBlock {
 
   originalId String? @unique
 
-  order  Int?
+  order  Int
   status SessionBlockStatus @default(SCHEDULED)
 
   expiresAt       DateTime?

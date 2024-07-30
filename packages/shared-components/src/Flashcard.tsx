@@ -1,7 +1,5 @@
-import {
-  IconDefinition,
-  faHandPointer,
-} from '@fortawesome/free-regular-svg-icons'
+import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
+import type { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
@@ -39,9 +37,9 @@ function Flashcard({
 
   return (
     <div>
-      <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
+      <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
         <div
-          className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
+          className={`flex flex-col rounded-lg border border-gray-300 p-4 shadow transform-style-preserve-3d transition-transform-0_6s ${
             isFlipped
               ? 'transform-rotateY-180'
               : 'cursor-pointer hover:shadow-xl'
@@ -63,7 +61,7 @@ function Flashcard({
               elementIx={elementIx}
             />
           ) : (
-            <div className="flex flex-row items-center self-end gap-2 mt-2 text-sm text-gray-500">
+            <div className="mt-2 flex flex-row items-center gap-2 self-end text-sm text-gray-500">
               <FontAwesomeIcon icon={faHandPointer} />
               {t('pwa.practiceQuiz.flashcardClick')}
             </div>
@@ -90,9 +88,9 @@ function FlashcardFront({
       content={content}
       className={{
         root: twMerge(
-          'mx-auto text-center flex-none prose prose-p:!m-0 prose-img:!m-0',
+          'prose mx-auto flex-none text-center prose-p:!m-0 prose-img:!m-0',
           isFlipped &&
-            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4 backface-hidden'
+            'mb-4 w-full rounded border bg-slate-100 px-4 py-2 transform-rotateY-180 backface-hidden prose-p:mb-0'
         ),
       }}
     />
@@ -117,15 +115,15 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col flex-1 w-full transform-rotateY-180">
-      <div className="flex flex-1 prose prose-p:!m-0 prose-img:!m-0">
+    <div className="flex w-full flex-1 flex-col transform-rotateY-180">
+      <div className="prose flex flex-1 prose-p:!m-0 prose-img:!m-0">
         <DynamicMarkdown content={explanation} withProse />
       </div>
-      <div className="flex flex-col items-center justify-center flex-shrink-0 w-full gap-1 pt-4 border-t border-gray-300">
+      <div className="flex w-full flex-shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">
         <p className="font-bold">
           {t('pwa.practiceQuiz.studentFlashcardResponse')}
         </p>
-        <div className="flex flex-row w-full mt-2 space-x-2 justify-evenly">
+        <div className="mt-2 flex w-full flex-row justify-evenly space-x-2">
           <FlashcardButton
             active={
               response === FlashcardCorrectnessType.Incorrect ||
@@ -200,7 +198,7 @@ function FlashcardButton({
         root: twMerge(
           'w-full justify-center rounded px-3 py-2 hover:shadow hover:brightness-95',
           disabled &&
-            'opacity-70 cursor-not-allowed hover:brightness-100 hover:shadow-none',
+            'cursor-not-allowed opacity-70 hover:shadow-none hover:brightness-100',
           active ? `text-white opacity-100 ${activeColor}` : color
         ),
       }}

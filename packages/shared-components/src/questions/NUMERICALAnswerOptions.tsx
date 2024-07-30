@@ -61,7 +61,6 @@ export function NUMERICALAnswerOptions({
           disabled={disabled}
           precision={accuracy}
           className={{
-            root: 'w-full',
             input: twMerge(
               'focus:border-primary-80',
               unit && '!rounded-r-none',
@@ -72,7 +71,7 @@ export function NUMERICALAnswerOptions({
         />
         {unit && (
           <div
-            className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max"
+            className="flex min-w-max flex-col items-center justify-center rounded-r bg-slate-600 px-4 text-white"
             data-cy="input-numerical-unit"
           >
             {unit}
@@ -83,7 +82,7 @@ export function NUMERICALAnswerOptions({
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
-            className="mr-1.5 ml-0.5 text-red-700"
+            className="ml-0.5 mr-1.5 text-red-700"
           />
           {t('shared.questions.numInvalidValue')}
         </div>

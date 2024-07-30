@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { LeaderboardCombinedEntry } from './Leaderboard'
+import type { LeaderboardCombinedEntry } from './Leaderboard'
 import { ParticipantOther } from './Participant'
 
 const rankHeights: Record<number, string> = {
@@ -33,13 +33,13 @@ function SinglePodium({
     return (
       <div
         className={twMerge(
-          'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-md text-sm',
+          'flex-1 rounded-t-md bg-slate-300 text-sm md:border-b-4 md:border-slate-500',
           rankHeights[rank],
           className
         )}
       >
         <ParticipantOther
-          className="bg-white shadow border-slate-400"
+          className="border-slate-400 bg-white shadow"
           pseudonym={username}
           avatar={avatar}
           points={score ?? 0}
@@ -85,7 +85,7 @@ function SinglePodium({
         />
       )}
 
-      <div className="absolute bottom-0 w-full mx-auto text-xs lg:text-lg text-slate-700">
+      <div className="absolute bottom-0 mx-auto w-full text-xs text-slate-700 lg:text-lg">
         {username}
       </div>
     </div>

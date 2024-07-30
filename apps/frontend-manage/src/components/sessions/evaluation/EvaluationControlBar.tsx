@@ -15,8 +15,9 @@ import {
   ConfusionTimestep,
   Feedback,
   InstanceResult,
+  SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { EvaluationBlock } from '@pages/sessions/[id]/evaluation'
+import { EvaluationTabData } from '@pages/sessions/[id]/evaluation'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
@@ -29,7 +30,11 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 }
 
 interface EvaluationControlBarProps {
-  blocks: EvaluationBlock[]
+  blocks: {
+    blockIx: number
+    blockStatus: SessionBlockStatus
+    tabData: EvaluationTabData[]
+  }[]
   selectedBlock: number
   setSelectedBlock: (block: number) => void
   setSelectedInstanceIndex: (index: number) => void
@@ -67,7 +72,11 @@ function EvaluationControlBar({
 }: EvaluationControlBarProps) {
   const t = useTranslations()
   const width = 1
-  const tabs = useEvaluationTabs({ blocks, selectedBlock, width })
+  const tabs = useEvaluationTabs({
+    blocks: blocks,
+    selectedBlock,
+    width,
+  })
 
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
@@ -196,7 +205,7 @@ function EvaluationControlBar({
             <div className="flex flex-row items-center justify-center w-full gap-2">
               <FontAwesomeIcon
                 size="xs"
-                icon={INSTANCE_STATUS_ICON[blocks[tab.value].tabData[0].status]}
+                icon={INSTANCE_STATUS_ICON[blocks[tab.value].blockStatus]}
               />
               <div>{tab.label}</div>
             </div>

@@ -1,5 +1,5 @@
-import { Select } from '@uzh-bf/design-system'
 import React from 'react'
+import { Select } from '@uzh-bf/design-system'
 
 function LanguageChanger({
   value,

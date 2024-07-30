@@ -1,14 +1,14 @@
 import axios from 'axios'
 import JWT from 'jsonwebtoken'
-import normalizeEmail from 'validator/lib/normalizeEmail'
+import normalizeEmail from 'validator/lib/normalizeEmail.js'
 
 import { ServiceBusClient } from '@azure/service-bus'
-import { ContextWithUser } from '../lib/context'
-import getMongoDB from '../lib/mongo'
+import { ContextWithUser } from '../lib/context.js'
+import getMongoDB from '../lib/mongo.js'
 import {
   sendEmailMigrationNotification,
   sendTeamsNotifications,
-} from '../lib/util'
+} from '../lib/util.js'
 
 interface RequestMigrationTokenArgs {
   email: string

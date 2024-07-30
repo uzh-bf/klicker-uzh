@@ -63,10 +63,11 @@
     "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
     "@types/d3": "^7.4.0",
+    "@types/is-hotkey": "^0.1.10",
     "@types/js-cookie": "^3.0.3",
     "@types/js-search": "^1.4.0",
     "@types/lodash": "^4.14.196",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.12.12",
     "@types/ramda": "^0.29.3",
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
@@ -84,7 +85,7 @@
     "prettier-plugin-tailwindcss": "0.4.1",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "typescript": "5.0.4"
+    "typescript": "5.4.5"
   },
   "scripts": {
     "build": "next build",

@@ -105,7 +105,9 @@ function AvatarUpdateForm({
             <div className="rounded md:bg-slate-50 md:p-4 md:h-full">
               <div className="flex flex-col justify-between md:h-full">
                 <div>
-                  <H3 className={{ root: 'border-b' }}>Avatar</H3>
+                  <H3 className={{ root: 'border-b' }}>
+                    {t('shared.generic.avatar')}
+                  </H3>
                   <BigHead
                     // @ts-ignore
                     className="w-full border-b-4 md:h-48 border-primary-80"
@@ -140,7 +142,7 @@ function AvatarUpdateForm({
                           },
                         }}
                         key={key}
-                        label={t(`pwa.avatar.${key}`)}
+                        label={t(`pwa.avatar.${key as AVATAR_OPTIONS_KEY}`)}
                         labelType="small"
                         name={key}
                         items={AVATAR_OPTIONS[key as AVATAR_OPTIONS_KEY].map(

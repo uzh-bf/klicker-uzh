@@ -82,7 +82,10 @@ function PracticeQuizPage({ courseId, id }: Props) {
       course={data.practiceQuiz.course ?? undefined}
     >
       <PracticeQuiz
-        quiz={data.practiceQuiz as PracticeQuizType}
+        quiz={{
+          ...(data.practiceQuiz as PracticeQuizType),
+          course: data.practiceQuiz.course!,
+        }}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
