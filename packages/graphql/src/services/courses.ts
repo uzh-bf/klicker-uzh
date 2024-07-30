@@ -805,3 +805,20 @@ export async function getCoursePracticeQuiz(
     updatedAt: course.updatedAt,
   }
 }
+
+export async function enableGamification(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isGamificationEnabled: true,
+    },
+  })
+
+  return course
+}

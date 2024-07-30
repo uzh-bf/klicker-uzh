@@ -16,9 +16,9 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import GroupActivityWizard from './GroupActivityWizard'
-import LiveSessionWizard from './LiveSessionWizard'
-import MicroLearningWizard from './MicroLearningWizard'
-import PracticeQuizWizard from './PracticeQuizWizard'
+import LiveSessionWizard from './liveQuiz/LiveSessionWizard'
+import MicroLearningWizard from './microLearning/MicroLearningWizard'
+import PracticeQuizWizard from './practiceQuiz/PracticeQuizWizard'
 
 export enum WizardMode {
   LiveQuiz = 'liveQuiz',
@@ -27,10 +27,17 @@ export enum WizardMode {
   GroupActivity = 'groupActivity',
 }
 
-interface SessionCreationProps {
+export type ElementSelectCourse = {
+  label: string
+  value: string
+  isGamified: boolean
+  data: { cy: string }
+}
+
+interface ElementCreationProps {
   creationMode: WizardMode
   closeWizard: () => void
-  sessionId?: string
+  elementId?: string
   editMode?: string
   duplicationMode?: string
   conversionMode?: string
@@ -38,23 +45,23 @@ interface SessionCreationProps {
   resetSelection: () => void
 }
 
-function SessionCreation({
+function ElementCreation({
   creationMode,
   closeWizard,
-  sessionId,
+  elementId,
   editMode,
   duplicationMode,
   conversionMode,
   selection,
   resetSelection,
-}: SessionCreationProps) {
+}: ElementCreationProps) {
   const t = useTranslations()
   const { data: dataLiveSession, loading: liveLoading } = useQuery(
     GetSingleLiveSessionDocument,
     {
-      variables: { sessionId: sessionId || '' },
+      variables: { sessionId: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         (editMode !== WizardMode.LiveQuiz &&
           duplicationMode !== WizardMode.LiveQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
@@ -63,9 +70,9 @@ function SessionCreation({
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
     GetMicroLearningDocument,
     {
-      variables: { id: sessionId || '' },
+      variables: { id: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         (editMode !== WizardMode.Microlearning &&
           conversionMode !== 'microLearningToPracticeQuiz'),
     }
@@ -73,9 +80,9 @@ function SessionCreation({
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetPracticeQuizDocument,
     {
-      variables: { id: sessionId || '' },
+      variables: { id: elementId || '' },
       skip:
-        !sessionId ||
+        !elementId ||
         editMode !== WizardMode.PracticeQuiz ||
         conversionMode === 'microLearningToPracticeQuiz',
     }
@@ -83,8 +90,8 @@ function SessionCreation({
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
     GetGroupActivityDocument,
     {
-      variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== WizardMode.GroupActivity,
+      variables: { id: elementId || '' },
+      skip: !elementId || editMode !== WizardMode.GroupActivity,
     }
   )
 
@@ -96,22 +103,28 @@ function SessionCreation({
 
   const courseSelection = useMemo(
     () =>
-      dataCourses?.userCourses?.map((course: Partial<Course>) => ({
-        label: course.displayName || '',
-        value: course.id || '',
-      })),
+      dataCourses?.userCourses?.map(
+        (course: Pick<Course, 'id' | 'name' | 'isGamificationEnabled'>) => ({
+          label: course.name,
+          value: course.id,
+          isGamified: course.isGamificationEnabled,
+        })
+      ),
     [dataCourses]
   )
 
   if (
     (!errorCourses && loadingCourses) ||
-    (sessionId &&
+    (elementId &&
       (editMode === WizardMode.LiveQuiz ||
         duplicationMode === WizardMode.LiveQuiz) &&
       liveLoading) ||
-    (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
-    (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
-    (sessionId &&
+    (elementId && editMode === WizardMode.Microlearning && microLoading) ||
+    (elementId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
+    (elementId &&
+      editMode === WizardMode.GroupActivity &&
+      groupActivityLoading) ||
+    (elementId &&
       conversionMode === 'microLearningToPracticeQuiz' &&
       microLoading)
   ) {
@@ -131,14 +144,36 @@ function SessionCreation({
     } as PracticeQuiz
   }
 
+  const { gamifiedCourses, nonGamifiedCourses } = courseSelection?.reduce<{
+    gamifiedCourses: ElementSelectCourse[]
+    nonGamifiedCourses: ElementSelectCourse[]
+  }>(
+    (acc, course) => {
+      if (course.isGamified) {
+        acc.gamifiedCourses.push({
+          ...course,
+          data: { cy: `select-course-${course.label}` },
+        })
+      } else {
+        acc.nonGamifiedCourses.push({
+          ...course,
+          data: { cy: `select-course-${course.label}` },
+        })
+      }
+      return acc
+    },
+    { gamifiedCourses: [], nonGamifiedCourses: [] }
+  ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
+
   return (
-    <div className="flex flex-col justify-center print-hidden h-96">
-      <div className="w-full h-full rounded-lg">
+    <div className="flex flex-col justify-center print-hidden md:h-[32rem]">
+      <div className="w-full h-full">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz
@@ -159,10 +194,14 @@ function SessionCreation({
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
               (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
             }
+            selection={selection}
+            resetSelection={resetSelection}
+            editMode={editMode === WizardMode.Microlearning}
           />
         )}
         {(creationMode === WizardMode.PracticeQuiz ||
@@ -170,11 +209,14 @@ function SessionCreation({
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
               (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
               initialDataPracticeQuiz
             }
+            selection={selection}
+            resetSelection={resetSelection}
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
           />
         )}
@@ -182,6 +224,8 @@ function SessionCreation({
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
@@ -193,4 +237,4 @@ function SessionCreation({
   )
 }
 
-export default SessionCreation
+export default ElementCreation

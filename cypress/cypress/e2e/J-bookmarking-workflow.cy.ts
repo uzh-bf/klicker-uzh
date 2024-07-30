@@ -42,6 +42,7 @@ describe('Question bookmarking and flagging workflow', () => {
     // step 1
     cy.get('[data-cy="create-practice-quiz"]').click()
     cy.get('[data-cy="insert-practice-quiz-name"]').type(quizName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]').type(quizName)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -58,7 +59,7 @@ describe('Question bookmarking and flagging workflow', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -73,6 +74,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="insert-microlearning-name"]')
       .click()
       .type(microlearningName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
       .type(microlearningName)
@@ -107,7 +109,7 @@ describe('Question bookmarking and flagging workflow', () => {
       .trigger('dragstart', {
         dataTransfer2,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer2,
     })
     cy.get('[data-cy="next-or-submit"]').click()

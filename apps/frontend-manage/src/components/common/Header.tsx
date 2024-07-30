@@ -91,7 +91,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             icon={
               <FontAwesomeIcon
                 icon={faPlayCircle}
-                className="h-7 sm:group-hover:text-white"
+                className="h-7 group-hover:text-white"
               />
             }
             dropdownWidth="w-[12rem]"
@@ -130,7 +130,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           label=""
           icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-7" />}
           className={{
-            root: 'hidden md:block h-7 sm:group-hover:text-white bg-transparent hover:bg-transparent text-white hover:text-uzh-blue-40 -mt-1',
+            root: 'hidden md:block h-7 group-hover:text-white bg-transparent hover:bg-transparent text-white hover:text-uzh-blue-40 -mt-1',
           }}
         />
         <Navigation.TriggerItem

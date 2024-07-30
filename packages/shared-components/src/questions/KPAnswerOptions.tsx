@@ -69,7 +69,7 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                    'min-h-[2.5rem] border-slate-400 hover:bg-unset'
                   ),
                 }}
                 active={value?.[index] === true}
@@ -86,7 +86,7 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                    'min-h-[2.5rem] border-slate-400 hover:bg-unset'
                   ),
                 }}
                 active={value?.[index] === false}

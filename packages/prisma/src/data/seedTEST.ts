@@ -3,6 +3,7 @@ import { Element } from '../client'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
+  COURSE_ID_TEST3,
   USER_ID_TEST,
   USER_ID_TEST2,
   USER_ID_TEST3,
@@ -121,6 +122,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Testkurs',
       displayName: 'Testkurs',
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
+      isGamificationEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -137,12 +139,30 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Abrakadabra',
       displayName: 'Abrakadabra',
       description: 'Das ist ein Testkurs. Hier wird getestet. Abrakadabra!',
+      isGamificationEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016273',
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+    })
+  )
+
+  const courseTest3 = await prisma.course.upsert(
+    prepareCourse({
+      id: COURSE_ID_TEST3,
+      name: 'Non-Gamified Course',
+      displayName: 'Non-Gamified Course',
+      description: 'This is a course without gamification.',
+      isGamificationEnabled: false,
+      ownerId: USER_ID_TEST,
+      color: '#016274',
+      pinCode: 482748273,
+      startDate: new Date('2023-01-01T00:00'),
+      endDate: new Date('2030-01-01T23:59'),
+      groupDeadlineDate: new Date('2025-01-01T00:01'),
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -1011,6 +1031,49 @@ Mehr bla bla...
             migrationIdOffset: 500,
             flashcards: flashcards,
             questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const microlearningId4 = '4a87f88d-5fb9-4eef-afce-9f5ed6edcc38'
+  const microlearningPastNoFT = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId4,
+    },
+    create: {
+      id: microlearningId4,
+      name: 'Test Microlearning Past No FT',
+      displayName: 'Test Microlearning Past No FT',
+      description: `Dieses Microlearning ist bereits vorbei und enthält keine Freitext fragen (-> aktuelle Validierung)...`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 600,
+            flashcards: flashcards,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.FREE_TEXT
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,

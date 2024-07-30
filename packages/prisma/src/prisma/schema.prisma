@@ -315,7 +315,6 @@ model ElementStack {
   type  ElementStackType
   order Int?
 
-  // TODO: we needed the two below for the stacked practice quizzes (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles. however, this would add a lot of content elements to the question pool that cannot "stand on their own", and we might want to use content elements primarily for short snippets of content to repeat, not for some intro text to an element stack. this would mean we keep displayName and description here and as optional fields.
   displayName String?
   description String?
 
@@ -492,8 +491,7 @@ model SessionBlock {
 
   execution Int @default(0)
 
-  instances   QuestionInstance[]
-  leaderboard LeaderboardEntry[]
+  instances QuestionInstance[]
 
   activeInSession LiveSession[] @relation(name: "ActiveSessionBlock")
 
@@ -939,7 +937,6 @@ model Participation {
 }
 
 enum LeaderboardType {
-  SESSION_BLOCK
   SESSION
   COURSE
 }
@@ -960,10 +957,6 @@ model LeaderboardEntry {
   sessionParticipationId Int?
 
   // TODO: remove after migration
-  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId Int?
-
-  // TODO: remove after migration
   session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?      @db.Uuid
 
@@ -973,7 +966,6 @@ model LeaderboardEntry {
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 
-  @@unique([type, participantId, sessionBlockId])
   @@unique([type, participantId, sessionId])
   @@unique([type, participantId, courseId])
   @@unique([type, participantId, liveQuizId])

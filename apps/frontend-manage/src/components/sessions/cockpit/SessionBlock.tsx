@@ -99,7 +99,7 @@ function SessionBlock({
         block.numOfParticipants !== null ? (
           <div className="flex flex-row items-center">
             <span className="font-bold">
-              {t('manage.cockpit.blockN', {
+              {t('shared.generic.blockN', {
                 number: block.order! + 1,
               })}
             </span>
@@ -107,7 +107,7 @@ function SessionBlock({
             <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
           </div>
         ) : (
-          <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
+          <div>{t('shared.generic.blockN', { number: block.order! + 1 })}</div>
         )}
 
         {block.timeLimit && (
@@ -145,7 +145,7 @@ function SessionBlock({
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData.questionId}`}
-            className="text-sm sm:hover:text-slate-700"
+            className="text-sm hover:text-slate-700"
             target="_blank"
             legacyBehavior
             passHref

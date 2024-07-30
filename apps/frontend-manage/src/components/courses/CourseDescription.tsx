@@ -66,7 +66,7 @@ function CourseDescription({
               onChange={(newValue: string) =>
                 setFieldValue('description', newValue)
               }
-              data_cy="course-description-input"
+              data={{ cy: 'course-description-input' }}
             />
 
             <div className="flex flex-row justify-between mt-1">
