@@ -44,7 +44,7 @@ export function SCAnswerOptions({
               fluid
               className={{
                 root: twMerge(
-                  'sm:hover:bg-unset min-h-[2.5rem] border-slate-400',
+                  'hover:bg-unset min-h-[2.5rem] border-slate-400',
                   !hideFeedbacks &&
                     feedbacks &&
                     feedbacks[index] &&

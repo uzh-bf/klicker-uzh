@@ -143,6 +143,8 @@ export default {
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
       finishedAt: 'Finished at {time}',
+      introduction: 'Introduction',
+      information: 'Information',
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
@@ -167,6 +169,13 @@ export default {
       failed: 'Failed',
       survey: 'Survey',
       avatar: 'Avatar',
+      gamified: 'Gamified',
+      nonGamified: 'Non-Gamified',
+      blockN: 'Block {number}',
+      elementN: 'Element {number}',
+      stackN: 'Stack {number}',
+      questionN: 'Question {number}',
+      availability: 'Availability',
     },
     contentInput: {
       boldStyle:
@@ -885,6 +894,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       validMultiplicator: 'Please enter a valid multiplicator.',
       checkValues:
         'Please check your entries in the previous step before proceeding.',
+      closeWizard: 'Close wizard',
       name: 'Name',
       displayName: 'Display Name',
       multiplierDefault: 'Default: 1x',
@@ -904,20 +914,44 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       optionalTimeLimit: 'Optional time limit',
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
+      newStack: 'New stack',
       newBlockSelected: 'Add 1 block with {count} questions',
+      newStackSelected: 'Add {count} blocks with 1 question',
       pasteSelection: 'Add {count} questions',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip: 'The display name is shown to participants.',
+      stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
+      stackDisplayName: 'Stack title',
+      stackDisplayNameTooltip:
+        'The title of the stack is displayed above the description at the top of the stack.',
+      stackDescription: 'Description',
+      stackDescriptionTooltip:
+        'The description of the stack is displayed above the questions in the stack.',
+      stackDescriptionPlaceholder: 'Enter description here...',
       microlearningTypes:
-        'A microlearning can only contain content elements, flashcards, single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can contain all element types except from free-text questions.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
+      microLearningIntroductionName:
+        'Please enter a name for your microlearning. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      microLearningInformation:
+        'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
+      microLearningNoCourse:
+        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      microLearningLecturerDocs:
+        'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
+      microLearningStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
       microlearningSettings:
         'In this step, select the start and end date and make further settings.',
+      microLearningMissingCourse:
+        'Microlearnings must be assigned to a course.',
+      microLearningCourseNotGamified:
+        'With the current course selection the microlearning will not be gamified.',
       microlearningQuestions:
         'In this step, select the questions for the microlearning.',
       microlearningEditingFailed: 'Editing the Microlearning failed...',
@@ -927,15 +961,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
       microlearningCourse:
-        'For the creation of a microlearning, the selection of the corresponding course is required.',
+        'For the creation of a microlearning, the selection of the corresponding course is required. The microlearning will automatially assume the gamification settings of the course.',
       microlearningStartDate:
-        'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
+        'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
-        'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
+        'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
+      minOneElementPerStack: 'Every stack must contain at least one element.',
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
@@ -944,6 +979,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
       liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizInformation:
+        'In this step, enter the name and description of the live quiz and find helpful information for creating the element.',
       liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
       liveQuizSettings:
@@ -960,36 +997,58 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizDescCourse: 'You can assign your live quiz to a course.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      liveQuizEnableGamification:
+        'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveQuizGamification:
-        'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
+        'The quiz automatically adopts the gamification setting of the course. If the quiz is not assigned to a course, gamification cannot be activated.',
       liveQuizLiveQA:
         'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizModeration:
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+      liveQuizIntroductionName:
+        'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       liveQuizUseCase:
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
+      liveQuizLecturerDocs:
+        'For more information on the creation and execution of live quizzes, visit the <link>Lecturer Documentation</link>.',
+      liveQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      liveQuizStartNow: 'Start now',
+      practiceQuizNoCourse:
+        'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      practiceQuizIntroductionName:
+        'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      practiceQuizLecturerDocs:
+        'For more information on the creation and execution of practice quizzes, visit the <link>Lecturer Documentation</link>.',
+      practiceQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
-        'Specify an optional start date from which the practice quiz is available after publication. If you do not change the date, the quiz is available on the course overview immediately after publication.',
+        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
-      practiceQuizSolutionReq: 'Please only add questions with solution.',
+      elementSolutionReq: 'Please only add questions with solution.',
       practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
       practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
       practiceQuizDescription:
         'In this step, enter the name and description of the practice quiz.',
       practiceQuizSettings:
         'In this step, make settings for your practice quiz.',
+      practiceQuizMissingCourse:
+        'Practice quizzes must be assigned to a course.',
+      practiceQuizCourseNotGamified:
+        'With the current course selection the practice quiz will not be gamified.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      practiceQuizCoursePlaceholder: 'Select course...',
+      practiceQuizAvailabilityOptional: 'Availability (optional)',
+      selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
       practiceQuizName:
@@ -1007,8 +1066,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSelectOrder: 'Select order',
       practiceQuizSEQUENTIAL: 'Sequential',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizTypes:
+        'Practice quizzes can contain all elements except free-text questions.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      missingGamifiedCourses:
+        'For the creation of this type of element, a gamified course is required. Please enable gamification in one of your existing courses or create a new gamified course.',
+      selectGamifiedCourse:
+        'Please select a gamified course for the creation of this element.',
       groupActivityTypes:
         'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
       groupActivityCreated:
@@ -1126,11 +1191,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
-      confirmAbortSession:
-        'Are you sure you want to abort the following live quiz?',
+      confirmAbortSession: 'Abort live quiz {title}?',
       abortSessionHint:
-        'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
-      blockN: 'Block {number}',
+        'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
+      abortEnterName:
+        'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -1325,6 +1390,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
+      enableGamification: 'Enable gamification',
+      enableGamificationWarning:
+        'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
@@ -1431,7 +1499,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endSession: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
-      blockN: 'Block {number}',
     },
   },
 }

@@ -7,39 +7,34 @@ import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import { QuestionDragDropTypes } from '../../questions/Question'
+import { ElementStackFormValues } from './MultistepWizard'
 
-interface AddBlockButtonProps {
-  push: (value: any) => void
+interface AddStackButtonProps {
+  push: (value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
+  acceptedTypes: ElementType[]
 }
 
-function AddBlockButton({
+function AddStackButton({
   push,
   selection,
   resetSelection,
-}: AddBlockButtonProps) {
+  acceptedTypes,
+}: AddStackButtonProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: [
-        ElementType.Sc,
-        ElementType.Mc,
-        ElementType.Kprim,
-        ElementType.FreeText,
-        ElementType.Numerical,
-      ],
-      drop: (item: {
-        id: number
-        questionType: ElementType
-        title: string
-        content: string
-      }) => {
+      accept: acceptedTypes,
+      drop: (item: QuestionDragDropTypes) => {
         push({
-          questionIds: [item.id],
+          displayName: '',
+          description: '',
+          elementIds: [item.id],
           titles: [item.title],
           types: [item.questionType],
-          timeLimit: undefined,
+          hasSampleSolutions: [item.hasSampleSolution],
         })
       },
       collect: (monitor) => ({
@@ -59,38 +54,40 @@ function AddBlockButton({
               root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-1 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
             }}
             onClick={() => {
-              const { questionIds, titles, types } = Object.values(
-                selection
-              ).reduce<{
-                questionIds: number[]
-                titles: string[]
-                types: ElementType[]
-              }>(
-                (acc, question) => {
-                  acc.questionIds.push(question.id)
-                  acc.titles.push(question.name)
-                  acc.types.push(question.type)
-                  return acc
-                },
-                { questionIds: [], titles: [], types: [] }
-              )
+              const { elementIds, titles, types, hasSampleSolutions } =
+                Object.values(selection).reduce<ElementStackFormValues>(
+                  (acc, question) => {
+                    acc.elementIds.push(question.id)
+                    acc.titles.push(question.name)
+                    acc.types.push(question.type)
+                    return acc
+                  },
+                  {
+                    elementIds: [],
+                    titles: [],
+                    types: [],
+                    hasSampleSolutions: [],
+                  }
+                )
 
               push({
-                questionIds: questionIds,
+                displayName: '',
+                description: '',
+                elementIds: elementIds,
                 titles: titles,
                 types: types,
-                timeLimit: undefined,
+                hasSampleSolutions: hasSampleSolutions,
               })
               resetSelection?.()
             }}
-            data={{ cy: 'add-block-with-selected' }}
+            data={{ cy: 'add-stack-with-selected' }}
             ref={drop}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faSquare} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.newBlockSelected', {
+              {t('manage.sessionForms.newStackSelected', {
                 count: Object.keys(selection).length,
               })}
             </Button.Label>
@@ -103,15 +100,17 @@ function AddBlockButton({
             onClick={() => {
               Object.values(selection).forEach((question) => {
                 push({
-                  questionIds: [question.id],
+                  displayName: '',
+                  description: '',
+                  elementIds: [question.id],
                   titles: [question.name],
                   types: [question.type],
-                  timeLimit: undefined,
+                  hasSampleSolutions: [question.options.hasSampleSolution],
                 })
               })
               resetSelection?.()
             }}
-            data={{ cy: 'add-block-with-selected' }}
+            data={{ cy: 'add-stack-with-selected' }}
             ref={drop}
           >
             <div className="flex flex-row gap-1">
@@ -134,20 +133,22 @@ function AddBlockButton({
         )}
         onClick={() =>
           push({
-            questionIds: [],
+            displayName: '',
+            description: '',
+            elementIds: [],
             titles: [],
             types: [],
-            timeLimit: undefined,
+            hasSampleSolutions: [],
           })
         }
-        data-cy="add-block"
+        data-cy="drop-elements-add-stack"
         ref={drop}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
-        <div>{t('manage.sessionForms.newBlock')}</div>
+        <div>{t('manage.sessionForms.newStack')}</div>
       </div>
     </div>
   )
 }
 
-export default AddBlockButton
+export default AddStackButton

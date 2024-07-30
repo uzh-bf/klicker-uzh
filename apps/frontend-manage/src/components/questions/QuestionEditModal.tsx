@@ -780,7 +780,7 @@ function QuestionEditModal({
                               'manage.questionForms.questionPlaceholder'
                             )}
                             key={`${values.type}-content`}
-                            data_cy="insert-question-text"
+                            data={{ cy: 'insert-question-text' }}
                             className={{ content: 'max-w-none' }}
                           />
                         )}
@@ -824,7 +824,7 @@ function QuestionEditModal({
                                 'manage.questionForms.explanationPlaceholder'
                               )}
                               key={`${values.type}-explanation`}
-                              data_cy="insert-question-explanation"
+                              data={{ cy: 'insert-question-explanation' }}
                             />
                           )}
                         </FastField>
@@ -983,7 +983,9 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy={`insert-answer-field-${index}`}
+                                          data={{
+                                            cy: `insert-answer-field-${index}`,
+                                          }}
                                         />
                                       )}
                                     </FastField>
@@ -1282,7 +1284,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                         }}
                                         data={{
                                           cy: `delete-solution-range-ix-${index}`,
@@ -1360,7 +1362,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                       }}
                                       data={{
                                         cy: `delete-solution-ix-${index}`,

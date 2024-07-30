@@ -22,7 +22,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
@@ -124,7 +124,7 @@ function PracticeQuizElement({
                         router.push({
                           pathname: '/',
                           query: {
-                            sessionId: practiceQuiz.id,
+                            elementId: practiceQuiz.id,
                             editMode: WizardMode.PracticeQuiz,
                           },
                         }),

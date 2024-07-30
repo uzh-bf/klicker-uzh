@@ -47,9 +47,7 @@ export function KPAnswerOptionsOLD({
           <div className="flex flex-row gap-2">
             <Button
               className={{
-                root: twMerge(
-                  'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
-                ),
+                root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
               }}
               active={value?.[index] === true}
               onClick={onChange(index, true)}
@@ -61,9 +59,7 @@ export function KPAnswerOptionsOLD({
             </Button>
             <Button
               className={{
-                root: twMerge(
-                  'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
-                ),
+                root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
               }}
               active={value?.[index] === false}
               onClick={onChange(index, false)}

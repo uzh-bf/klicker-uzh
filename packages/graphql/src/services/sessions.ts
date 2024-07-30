@@ -2060,10 +2060,10 @@ export async function cancelSession(
       blocks: {
         include: {
           instances: true,
-          leaderboard: true,
           activeInSession: true,
         },
       },
+      leaderboard: true,
     },
   })
 
@@ -2074,9 +2074,6 @@ export async function cancelSession(
       throw new Error('Session is not running')
     }
 
-    const leaderboardEntries = session.blocks.flatMap(
-      (block) => block.leaderboard
-    )
     const instances = session.blocks.flatMap((block) => block.instances)
 
     const [updatedSession] = await ctx.prisma.$transaction([
@@ -2120,17 +2117,8 @@ export async function cancelSession(
           blocks: {
             include: {
               instances: true,
-              leaderboard: true,
               activeInSession: true,
             },
-          },
-        },
-      }),
-
-      ctx.prisma.leaderboardEntry.deleteMany({
-        where: {
-          id: {
-            in: leaderboardEntries.map((entry) => entry.id),
           },
         },
       }),

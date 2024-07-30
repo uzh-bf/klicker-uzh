@@ -31,7 +31,7 @@ function Header({ title }: HeaderProps) {
           }
           className={{
             trigger:
-              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+              'text-white border-b border-solid p-0.5 pb-0 rounded-none hover:bg-transparent hover:text-white',
           }}
           data={{ cy: 'language-select' }}
           basic

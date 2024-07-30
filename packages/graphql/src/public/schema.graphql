@@ -496,24 +496,13 @@ type InstanceEvaluation {
   instanceId: Int!
   newPointsFrom: Date
   newXpFrom: Date
+  numAnswers: Int
   percentile: Float
   pointsAwarded: Float
   pointsMultiplier: Int
   score: Float!
   solutionRanges: Json
   solutions: Json
-  xpAwarded: Int
-}
-
-type InstanceEvaluationOLD {
-  answers: Json
-  choices: Json
-  feedbacks: [QuestionFeedback!]
-  newPointsFrom: Date
-  newXpFrom: Date
-  percentile: Float
-  pointsAwarded: Float
-  score: Float!
   xpAwarded: Int
 }
 
@@ -634,6 +623,7 @@ type Mutation {
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
+  enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementInstanceId: Int!): String
@@ -934,7 +924,6 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  evaluation: InstanceEvaluationOLD
   id: Int!
   pointsMultiplier: Int!
   questionData: QuestionData

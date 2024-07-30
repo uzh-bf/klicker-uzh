@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
-  faBullhorn,
   faChalkboard,
   faCheck,
   faCirclePlus,
@@ -10,7 +9,6 @@ import {
   faLink,
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroLearning,
   ParticipationsDocument,
@@ -20,12 +18,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
-import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
@@ -53,8 +49,8 @@ const Index = function () {
   const router = useRouter()
   const t = useTranslations()
 
-  const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
-    useStickyState('hasSeenSurvey', 'false')
+  // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
+  //   useStickyState('hasSeenSurvey', 'false')
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
@@ -230,7 +226,7 @@ const Index = function () {
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
-        {hasSeenSurvey === 'false' && (
+        {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
             target="_blank"
@@ -249,7 +245,7 @@ const Index = function () {
               <div>{t('pwa.general.surveyInvitation')}</div>
             </Button>
           </Link>
-        )}
+        )} */}
 
         {activeSessions.length !== 0 && (
           <div>

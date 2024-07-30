@@ -512,6 +512,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      enableCourseGamification: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.enableGamification(args, ctx)
+        },
+      }),
+
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,

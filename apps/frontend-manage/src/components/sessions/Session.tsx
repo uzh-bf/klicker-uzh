@@ -31,7 +31,7 @@ import { useState } from 'react'
 import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
-import { WizardMode } from './creation/SessionCreation'
+import { WizardMode } from './creation/ElementCreation'
 
 interface SessionProps {
   session: SessionType
@@ -153,7 +153,7 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
+                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary',
                       }}
                       data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
@@ -182,7 +182,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary"
                       data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -197,7 +197,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary"
                       data-cy={`session-evaluation-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -215,7 +215,7 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: `start-session-${session.name}` }}
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
                       <div>{t('manage.sessions.startSession')}</div>
                     </div>
@@ -247,7 +247,7 @@ function Session({ session }: SessionProps) {
                   router.push({
                     pathname: '/',
                     query: {
-                      sessionId: session.id,
+                      elementId: session.id,
                       duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
@@ -270,7 +270,7 @@ function Session({ session }: SessionProps) {
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: session.id,
+                          elementId: session.id,
                           editMode: WizardMode.LiveQuiz,
                         },
                       })

@@ -4,7 +4,6 @@ import builder from '../builder.js'
 import { AllElementTypeData, QuestionResults } from '../types/app.js'
 import type { ICourse } from './course.js'
 import { CourseRef } from './course.js'
-import type { IQuestionInstance } from './question.js'
 import { QuestionInstanceRef } from './question.js'
 import { QuestionDataRef } from './questionData.js'
 
@@ -99,7 +98,7 @@ export const Session = SessionRef.implement({
 
 export interface ISessionBlock extends DB.SessionBlock {
   numOfParticipants?: number
-  instances?: IQuestionInstance[]
+  instances?: DB.QuestionInstance[]
 }
 export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
 export const SessionBlock = SessionBlockRef.implement({

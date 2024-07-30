@@ -32,9 +32,7 @@ export function SCAnswerOptionsOLD({
           <Button
             fluid
             className={{
-              root: twMerge(
-                'sm:hover:bg-unset min-h-[2.5rem] border-slate-400'
-              ),
+              root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
             }}
             onClick={onChange(index)}
             key={`${choice.value}-${index}`}

@@ -143,6 +143,8 @@ export default {
       updatedAt: 'Editiert am {date}',
       startAt: 'Start am {time}',
       finishedAt: 'Beendet am {time}',
+      introduction: 'Einführung',
+      information: 'Information',
       description: 'Beschreibung',
       settings: 'Einstellungen',
       course: 'Kurs',
@@ -167,6 +169,13 @@ export default {
       failed: 'Nicht bestanden',
       survey: 'Umfrage',
       avatar: 'Avatar',
+      gamified: 'Gamifiziert',
+      nonGamified: 'Nicht gamifiziert',
+      blockN: 'Block {number}',
+      elementN: 'Element {number}',
+      stackN: 'Stack {number}',
+      questionN: 'Frage {number}',
+      availability: 'Verfügbarkeit',
     },
     contentInput: {
       boldStyle:
@@ -886,6 +895,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
       checkValues:
         'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+      closeWizard: 'Wizard schliessen',
       name: 'Name',
       displayName: 'Anzeigename',
       multiplierDefault: 'Default: 1x',
@@ -905,20 +915,44 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionalTimeLimit: 'Optionales Zeit-Limit',
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
+      newStack: 'Neuer Stack',
       newBlockSelected: '1 Block mit {count} Fragen anfügen',
+      newStackSelected: '1 Stack mit {count} Fragen hinzufügen',
       pasteSelection: '{count} Fragen hinzufügen',
       pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
+      stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',
+      stackDisplayName: 'Stack-Titel',
+      stackDisplayNameTooltip:
+        'Der Titel des Stacks wird oberhalb der Beschreibung am oberen Ende des Stacks angezeigt.',
+      stackDescription: 'Beschreibung',
+      stackDescriptionTooltip:
+        'Die Beschreibung des Stacks wird oberhalb der Fragen im Stack angezeigt.',
+      stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       microlearningTypes:
-        'Microlearnings können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
+        'Microlearnings können alle Elemente ausser Freitext-Fragen enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
       microlearningEdited:
         'Microlearning <b>{name}</b> erfolgreich modifiziert.',
+      microLearningIntroductionName:
+        'Bitte geben Sie einen Namen für Ihr Microlearning ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      microLearningInformation:
+        'Geben Sie in diesem Schritt den Namen für das Microlearning ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
+      microLearningNoCourse:
+        'Microlearnings müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+      microLearningLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Microlearnings, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      microLearningStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       microlearningDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Microlearnings ein.',
       microlearningSettings:
         'Wählen Sie in diesem Schritt das Start- und Enddatum und nehmen Sie weitere Einstellungen vor.',
+      microLearningMissingCourse:
+        'Microlearnings müssen einem Kurs zugewiesen werden.',
+      microLearningCourseNotGamified:
+        'Mit der aktuellen Kursauswahl wird das Microlearning nicht gamifiziert sein.',
       microlearningQuestions:
         'Wählen Sie in diesem Schritt die Fragen für das Microlearning aus.',
       microlearningEditingFailed:
@@ -930,15 +964,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microlearningDescField:
         'Fügen Sie eine Beschreibung zu Ihrem Microlearning hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
       microlearningCourse:
-        'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich.',
+        'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich. Das Microlearning wird automatisch die Gamification-Einstellungen des Kursed übernehmen.',
       microlearningStartDate:
-        'Wählen Sie das Startdatum des Microlearnings aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
+        'Wählen Sie das Startdatum des Microlearnings aus. Es wird den Teilnehmenden nach Publikation ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:
-        'Wählen Sie das Enddatum des Microlearnings aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+        'Wählen Sie das Enddatum des Microlearnings aus. Es wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
       microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
+      minOneElementPerStack:
+        'Jeder Stack muss mindestens ein Element enthalten.',
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
@@ -949,6 +985,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Frageblock muss mindestens eine Frage enthalten.',
       liveQuizCreated: 'Live Quiz <b>{name}</b> erfolgreich erstellt.',
       liveQuizUpdated: 'Live Quiz <b>{name}</b> erfolgreich modifiziert.',
+      liveQuizInformation:
+        'Geben Sie in diesem Schritt den Namen für das Live Quiz ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       liveQuizDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Live Quizzes ein.',
       liveQuizSettings:
@@ -965,40 +1003,62 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizDescCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
+      liveQuizEnableGamification:
+        'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveQuizGamification:
-        'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
+        'Das Quiz übernimmt automatisch die Gamifizierungseinstellung des Kurses. Wird das Quiz keinem Kurs zugeordnet, kann die Gamifizierung nicht aktiviert werden.',
       liveQuizLiveQA:
         'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveQuizModeration:
         'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveQuizFeedbackChannel:
         'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+      liveQuizIntroductionName:
+        'Bitte geben Sie einen Namen für Ihr Live-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       liveQuizUseCase:
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
+      liveQuizLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Live-Quizzes, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      liveQuizStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
+      liveQuizStartNow: 'Jetzt starten',
+      practiceQuizNoCourse:
+        'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+      practiceQuizIntroductionName:
+        'Bitte geben Sie einen Namen für Ihr Übungs-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      practiceQuizLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Übungs-Quizzes, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      practiceQuizStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
-        'Spezifizieren Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist. Wenn Sie das Datum nicht ändern, ist das Quiz unmittelbar nach Veröffentlichung auf der Kursübersicht verfügbar.',
+        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
         'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen sowie Inhaltselemente und Flashcards enthalten.',
-      practiceQuizSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
+      elementSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
       practiceQuizCreated: 'Übungs-Quiz <b>{name}</b> erfolgreich erstellt.',
       practiceQuizUpdated: 'Übungs-Quiz <b>{name}</b> erfolgreich modifiziert.',
       practiceQuizDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Übungs-Quizzes ein.',
       practiceQuizSettings:
         'Nehmen Sie in diesem Schritt Einstellungen für Ihr Übungs-Quiz vor.',
+      practiceQuizMissingCourse:
+        'Übungs-Quizzes müssen einem Kurs zugewiesen werden.',
+      practiceQuizCourseNotGamified:
+        'Mit der aktuellen Kursauswahl wird das Übugns-Quiz nicht gamifiziert sein.',
+      practiceQuizAvailabilityOptional: 'Verfügbarkeit (optional)',
       practiceQuizContent:
         'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
       practiceQuizCreationFailed:
         'Anpassen des Übungs-Quizzes fehlgeschlagen...',
       practiceQuizEditingFailed:
         'Erstellen des Übungs-Quizzes fehlgeschlagen...',
-      practiceQuizCoursePlaceholder: 'Kurs auswählen...',
+      selectCourse: 'Kurs auswählen...',
       practiceQuizName:
         'Der Name soll Ihnen ermöglichen, dieses Übungs-Quiz von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
       practiceQuizDescField:
@@ -1014,8 +1074,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSelectOrder: 'Reihenfolge wählen',
       practiceQuizSEQUENTIAL: 'Sequenziell',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizTypes:
+        'Übungs-Quizzes können alle Elemente ausser Freitext-Fragen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      missingGamifiedCourses:
+        'Für die Erstellung dieses Elementtyps ist ein gamifizierter Kurs erforderlich. Bitte aktivieren Sie die Gamifizierung in einem Ihrer bestehenden Kurse oder erstellen Sie einen neuen gamifizierten Kurs.',
+      selectGamifiedCourse:
+        'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityTypes:
         'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       groupActivityCreated:
@@ -1137,12 +1203,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endSession: 'Session beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
-      abortSession: 'Session abbrechen',
-      confirmAbortSession:
-        'Sind Sie sich sicher, dass Sie die folgende Session abbrechen möchten?',
+      abortSession: 'Quiz abbrechen',
+      confirmAbortSession: 'Live Quiz {title} abbrechen?',
       abortSessionHint:
-        'Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks, usw. verloren gehen.',
-      blockN: 'Block {number}',
+        'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
+      abortEnterName:
+        'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',
@@ -1339,6 +1405,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',
+      enableGamification: 'Gamifizierung aktivieren',
+      enableGamificationWarning:
+        'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
@@ -1446,7 +1515,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endSession: 'Session beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.',
-      blockN: 'Block {number}',
     },
   },
 }

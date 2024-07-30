@@ -248,7 +248,7 @@ function GroupActivityGradingStack({
                         placeholder={t(
                           'manage.groupActivity.optionalQuestionFeedback'
                         )}
-                        data_cy={`groupActivity-grading-comment-${ix}`}
+                        data={{ cy: `groupActivity-grading-comment-${ix}` }}
                         className={{ content: 'max-w-none' }}
                       />
                     </>
@@ -345,7 +345,7 @@ function GroupActivityGradingStack({
                     disabled={gradingCompleted}
                     showToolbarOnFocus={false}
                     placeholder={t('manage.groupActivity.optionalFeedback')}
-                    data_cy="groupActivity-general-grading-comment"
+                    data={{ cy: 'groupActivity-general-grading-comment' }}
                     className={{ content: 'max-w-none' }}
                   />
                 )}

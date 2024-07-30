@@ -701,6 +701,7 @@ export function evaluateAnswerCorrectness({
 
 interface EvaluatedQuestionResponses {
   feedbacks: any[]
+  numAnswers: number
   choices?: Record<string, number>
   answers?: Record<string, number>
   score: number
@@ -731,6 +732,7 @@ function evaluateElementResponse(
       if (elementData.type === ElementType.SC) {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -747,6 +749,7 @@ function evaluateElementResponse(
       } else if (elementData.type === ElementType.MC) {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -763,6 +766,7 @@ function evaluateElementResponse(
       } else {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -783,6 +787,7 @@ function evaluateElementResponse(
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
+        numAnswers: results.total,
         answers: results?.responses ?? {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
@@ -797,6 +802,7 @@ function evaluateElementResponse(
     case ElementType.FREE_TEXT: {
       return {
         feedbacks: [],
+        numAnswers: results.total,
         answers: results.responses ?? {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({

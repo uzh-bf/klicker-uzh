@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
-import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
@@ -9,7 +8,6 @@ import {
   Participant,
   StudentCourse,
 } from '@klicker-uzh/graphql/dist/ops'
-import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
 import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -35,8 +33,8 @@ function Header({
   const { pathname, asPath, query } = router
   const t = useTranslations()
 
-  const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
-    useStickyState('hasSeenSurvey', 'false')
+  // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
+  //   useStickyState('hasSeenSurvey', 'false')
 
   const [changeParticipantLocale] = useMutation(ChangeParticipantLocaleDocument)
 
@@ -90,13 +88,13 @@ function Header({
             }}
             className={{
               trigger:
-                'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+                'text-white border-b border-solid p-0.5 pb-0 rounded-none hover:bg-transparent hover:text-white',
             }}
             data={{ cy: 'language-select' }}
             basic
           />
         </div>
-        {hasSeenSurvey === 'false' && (
+        {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
             target="_blank"
@@ -113,12 +111,12 @@ function Header({
               <div>{t('shared.generic.survey')}</div>
             </Button>
           </Link>
-        )}
+        )} */}
         {course?.id && (
           <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
-                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 sm:hover:text-primary',
+                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 hover:text-primary',
               }}
               basic
               data={{ cy: 'course-docs' }}
@@ -186,7 +184,7 @@ function Header({
               width="35"
               height="35"
               className={twMerge(
-                'bg-white cursor-pointer rounded-full sm:hover:bg-uzh-red-20',
+                'bg-white cursor-pointer rounded-full hover:bg-uzh-red-20',
                 participant?.avatar ? '' : 'p-1'
               )}
             />
