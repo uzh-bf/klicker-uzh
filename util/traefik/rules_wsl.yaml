@@ -46,34 +46,34 @@ http:
     api:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3000"
+          - url: "http://172.25.8.0:3000"
 
     pwa:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3001"
+          - url: "http://172.25.8.0:3001"
 
     manage:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3002"
+          - url: "http://172.25.8.0:3002"
 
     control:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3003"
+          - url: "http://172.25.8.0:3003"
 
     auth:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3010"
+          - url: "http://172.25.8.0:3010"
 
     func-responses:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:7072"
+          - url: "http://172.25.8.0:7072"
 
     func-response-processor:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:7073"
+          - url: "http://172.25.8.0:7073"
