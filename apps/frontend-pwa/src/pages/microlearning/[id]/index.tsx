@@ -183,7 +183,6 @@ export async function getStaticProps(ctx: GetStaticPropsContext) {
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
-    revalidate: 60,
   })
 }
 

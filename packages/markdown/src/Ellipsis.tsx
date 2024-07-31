@@ -1,7 +1,7 @@
 import { Prose, Tooltip } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import Markdown from './Markdown'
+import Markdown from './Markdown.js'
 
 export interface EllipsisBaseProps {
   children: string

@@ -144,14 +144,14 @@ function SessionBlock({
       {block.instances?.map((instance: QuestionInstance) => (
         <div key={instance.id}>
           <Link
-            href={`/questions/${instance.questionData.questionId}`}
+            href={`/questions/${instance.questionData!.questionId}`}
             className="text-sm hover:text-slate-700"
             target="_blank"
             legacyBehavior
             passHref
           >
             <a data-cy={`open-embedding-link-session-${instance.id}`}>
-              {instance.questionData.name}{' '}
+              {instance.questionData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
             </a>
           </Link>

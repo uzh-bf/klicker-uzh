@@ -28,7 +28,10 @@ function PublicFeedback({
 
   // structure for upvotes element: { upvote: true/false, responseId1: 1, 0 or -1, responseId2: 1, 0 or -1, ...}
   // upvote true meaning feadback is upvoted, responseId value for upvote, no vote or downvote
-  const [upvotes, setUpvotes] = useState({
+  const [upvotes, setUpvotes] = useState<{
+    upvote: boolean
+    [key: number]: -1 | 0 | 1
+  }>({
     upvote: false,
     ...feedback.responses
       ?.map((response) => response?.id)

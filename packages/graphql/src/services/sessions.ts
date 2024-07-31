@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import {
   AccessMode,
   ConfusionTimestep,
@@ -8,7 +10,7 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -16,17 +18,17 @@ import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { ISession } from 'src/schema/session'
-import { Context, ContextWithUser } from '../lib/context'
+import { ISession } from 'src/schema/session.js'
+import { Context, ContextWithUser } from '../lib/context.js'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
-} from '../lib/questions'
-import { sendTeamsNotifications } from '../lib/util'
+} from '../lib/questions.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 import {
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
-} from '../types/app'
+} from '../types/app.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -111,7 +113,7 @@ export async function createSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
@@ -253,7 +255,7 @@ export async function editSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
@@ -680,7 +682,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                       where: {
                         participantId_achievementId: {
                           participantId: id,
-                          achievementId: newAchievements[id],
+                          achievementId: newAchievements[id]!,
                         },
                       },
                       create: {
@@ -688,7 +690,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                         achievedCount: 1,
                         achievement: {
                           connect: {
-                            id: newAchievements[id],
+                            id: newAchievements[id]!,
                           },
                         },
                       },
@@ -1388,8 +1390,8 @@ export async function getLeaderboard(
   })
 
   const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop<number>('score')),
-    R.ascend(R.prop<string>('username')),
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
   ])
 
   const sortedEntries: typeof preparedEntries =

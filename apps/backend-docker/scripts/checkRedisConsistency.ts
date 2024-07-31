@@ -1,5 +1,5 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
-import Redis from 'ioredis'
+import { Redis } from 'ioredis'
 
 async function run() {
   const prisma = new PrismaClient()

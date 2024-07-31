@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface StatisticProps {
   statisticName: string
-  value: string
+  value: number
   hasCheckbox: boolean
   checked: boolean
   onCheck: () => void
@@ -42,7 +42,7 @@ function Statistic({
         )}
         {statisticName}
       </span>
-      <span>{Math.round(parseFloat(value) * 100) / 100}</span>
+      <span>{Math.round(parseFloat(String(value)) * 100) / 100}</span>
     </div>
   )
 }

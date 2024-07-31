@@ -1,4 +1,5 @@
-import {
+// @ts-ignore
+import type {
   Element,
   ElementStackType,
   ElementType,

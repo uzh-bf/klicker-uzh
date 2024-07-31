@@ -168,6 +168,7 @@ export default {
       passed: 'Passed',
       failed: 'Failed',
       survey: 'Survey',
+      avatar: 'Avatar',
       gamified: 'Gamified',
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',

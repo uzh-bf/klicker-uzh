@@ -1,9 +1,9 @@
-import {
+import React from 'react'
+import type {
   FreeTextQuestionOptions,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 
 interface Props {
   options: FreeTextQuestionOptions
@@ -33,7 +33,8 @@ function FTEvaluation({ options, evaluation }: Props) {
         <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
         <div>
           {Object.keys(answers)
-            .map((key) => `${key} (${answers[key].count})`)
+            .map((key) => `${key} (${answers[key]?.count})`)
+            .filter((count) => typeof count !== 'undefined')
             .join(', ')}
         </div>
       </div>

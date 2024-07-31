@@ -1,27 +1,27 @@
 import * as DB from '@klicker-uzh/prisma'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure'
-import builder from '../builder'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
+import builder from '../builder.js'
 import {
   AchievementRef,
   IAchievement,
   IParticipantAchievementInstance,
   ParticipantAchievementInstanceRef,
-} from './achievement'
+} from './achievement.js'
 import type {
   ICourse,
   IGroupLeaderboardEntry,
   ILeaderboardEntry,
   ILeaderboardStatistics,
-} from './course'
+} from './course.js'
 import {
   CourseRef,
   GroupLeaderboardEntry,
   LeaderboardEntryRef,
   LeaderboardStatistics,
-} from './course'
-import type { IGroupActivityInstance } from './groupActivity'
-import { GroupActivityInstanceRef } from './groupActivity'
-import { LocaleType } from './user'
+} from './course.js'
+import type { IGroupActivityInstance } from './groupActivity.js'
+import { GroupActivityInstanceRef } from './groupActivity.js'
+import { LocaleType } from './user.js'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({

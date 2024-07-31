@@ -14,7 +14,8 @@
     "sourceMap": true,
     "target": "es5",
     "lib": ["es7", "dom"],
-    "pretty": true
+    "pretty": true,
+    "skipLibCheck": true
   },
   "compileOnSave": false,
   "buildOnSave": false,

@@ -121,9 +121,15 @@ export const AVATAR_OPTIONS: Record<
   // body: ['breasts', 'chest'],
 }
 
+export type CHART_LABELS =
+  | 'manage.evaluation.table'
+  | 'manage.evaluation.wordCloud'
+  | 'manage.evaluation.histogram'
+  | 'manage.evaluation.barChart'
+
 export const ACTIVE_CHART_TYPES: Record<
   ElementType,
-  { label: string; value: string }[]
+  { label: CHART_LABELS; value: string }[]
 > = {
   [ElementType.FreeText]: [
     { label: 'manage.evaluation.table', value: 'table' },
@@ -147,6 +153,8 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
+  [ElementType.Flashcard]: [],
+  [ElementType.Content]: [],
 }
 
 export const STATISTICS_ORDER: string[] = [

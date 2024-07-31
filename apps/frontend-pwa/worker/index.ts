@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use strict'
 
 self.addEventListener('push', function (event) {

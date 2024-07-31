@@ -1,5 +1,5 @@
-import Prisma from '../../dist'
-import * as DATA_TEST from './data/TEST'
+import Prisma from '../../dist/index.js'
+import * as DATA_TEST from './data/TEST.js'
 
 export async function seedAchievements(prisma: Prisma.PrismaClient) {
   const achievements = await Promise.all(

@@ -2,6 +2,7 @@
   "name": "@klicker-uzh/graphql",
   "version": "3.1.2-rc.2",
   "license": "AGPL-3.0",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -27,11 +28,10 @@
     "graphql-yoga": "3.9.1",
     "jsonwebtoken": "9.0.1",
     "mathjs": "11.9.1",
-    "md5": "2.3.0",
     "mongodb": "5.7.0",
     "node-schedule": "2.1.1",
     "ramda": "0.29.0",
-    "uuid": "9.0.0",
+    "uuid": "9.0.1",
     "validator": "13.11.0",
     "zod": "3.21.4"
   },
@@ -55,12 +55,12 @@
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.3",
     "@types/jsonwebtoken": "^9.0.2",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.12.12",
     "@types/node-schedule": "^2.1.0",
     "@types/ramda": "^0.29.3",
-    "@types/uuid": "^9.0.2",
+    "@types/uuid": "^9.0.8",
     "@types/validator": "^13.9.0",
-    "@types/web-push": "^3.3.2",
+    "@types/web-push": "^3.6.3",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",
@@ -77,8 +77,8 @@
     "ts-node-dev": "2.0.0",
     "tsup": "7.2.0",
     "tsx": "4.9.1",
-    "typescript": "5.1.6",
-    "web-push": "3.6.1"
+    "typescript": "5.4.5",
+    "web-push": "3.6.7"
   },
   "scripts": {
     "analyze": "size-limit --why",
@@ -95,8 +95,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
-    "script": "ENV=development doppler run --config dev -- bun run",
-    "script:prod": "ENV=production doppler run --config prd -- bun run",
+    "script": "ENV=development doppler run --config dev -- tsx",
+    "script:prod": "ENV=production doppler run --config prd -- tsx",
     "size": "size-limit"
   },
   "engines": {

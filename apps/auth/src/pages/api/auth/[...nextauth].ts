@@ -13,9 +13,19 @@ import prisma from 'src/lib/prisma'
 
 export const COOKIE_NAME = 'next-auth.session-token'
 
-interface ExtendedProfile extends Profile {
+export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
+}
+
+export interface ExtendedUser {
+  id: string
+  email: string
+  role: UserRole
+  shortname: string
+  scope: string
+  catalystInstitutional: boolean
+  catalystIndividual: boolean
 }
 
 function reduceCatalyst(acc: boolean, affiliation: string) {
@@ -207,12 +217,13 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile, email }) {
-      if (profile?.sub && account?.provider) {
+      const profileData = profile as ExtendedProfile
+      if (profileData?.sub && account?.provider) {
         const userAccount = await prisma.account.findUnique({
           where: {
             provider_providerAccountId: {
               provider: account.provider,
-              providerAccountId: profile.sub,
+              providerAccountId: profileData.sub,
             },
           },
         })
@@ -221,11 +232,11 @@ export const authOptions: NextAuthOptions = {
           const user = await prisma.user.update({
             where: { id: userAccount.userId },
             data: {
-              email: profile.email,
+              email: profileData.email,
               lastLoginAt: new Date(),
               catalystInstitutional:
-                (profile.email?.endsWith('uzh.ch') ||
-                  profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
+                (profileData.email?.endsWith('uzh.ch') ||
+                  profileData.swissEduIDLinkedAffiliation?.reduce<boolean>(
                     reduceCatalyst,
                     false
                   )) ??
@@ -246,17 +257,20 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account, profile, trigger }) {
-      if (typeof user !== 'undefined') {
-        token.shortname = user.shortname
+      const profileData = profile as ExtendedProfile
+      const userData = user as ExtendedUser
 
-        if (typeof profile?.swissEduPersonUniqueID === 'string') {
+      if (typeof user !== 'undefined') {
+        token.shortname = userData.shortname
+
+        if (typeof profileData?.swissEduPersonUniqueID === 'string') {
           token.scope = UserLoginScope.ACCOUNT_OWNER
         } else {
           token.scope = (user as any).scope as UserLoginScope
         }
 
-        token.catalystInstitutional = user.catalystInstitutional
-        token.catalystIndividual = user.catalystIndividual
+        token.catalystInstitutional = userData.catalystInstitutional
+        token.catalystIndividual = userData.catalystIndividual
 
         token.role = UserRole.USER
       }
