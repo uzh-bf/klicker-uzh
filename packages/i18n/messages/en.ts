@@ -82,7 +82,7 @@ export default {
       token: 'Token',
       passwordRepetition: 'Password (repetition)',
       signin: 'Login',
-      usernameError: 'Please enter your username.',
+      usernameError: 'Please enter your username or email.',
       passwordError: 'Please enter your password.',
       studentLoginError:
         'The username or password are incorrect. If you have forgotten your password, please use the "Magic link login" function.',
@@ -227,10 +227,10 @@ export default {
   },
   pwa: {
     general: {
-      magicLinkLogin: 'Magic Link Login',
-      passwordLogin: 'Password Login',
+      magicLinkLogin: 'Login with Magic-Link',
+      passwordLogin: 'Login with Password',
       magicLinkSent:
-        'If an account exists, a magic link has been sent to the e-mail address.',
+        'If an account exists, a one-time login link has been sent to the e-mail address.',
       processingLogin:
         'Your magic link login is being processed. Please wait a moment.',
       magicLinkLoginFailed:

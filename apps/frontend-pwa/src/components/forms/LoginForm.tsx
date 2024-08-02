@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
+import { faKey, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
@@ -120,29 +120,34 @@ export function LoginForm({
               />
 
               {magicLinkLogin && setMagicLinkLogin && (
-                <div className="flex flex-col md:flex-row mt-3 md:mt-2 gap-2">
+                <div className="flex flex-col mt-3 md:mt-2 gap-2">
                   <Button
                     fluid
-                    className={{ root: 'flex flex-row gap-2' }}
+                    className={{ root: 'gap-4 justify-start' }}
                     type="submit"
                     disabled={isSubmitting}
                     data={{ cy: 'magic-link-login' }}
                   >
-                    <div>
-                      <FontAwesomeIcon
-                        icon={faWandMagicSparkles}
-                        className="text-orange-400"
-                      />
-                    </div>
-                    <div>{t('pwa.general.magicLinkLogin')}</div>
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faWandMagicSparkles} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('pwa.general.magicLinkLogin')}
+                    </Button.Label>
                   </Button>
                   <Button
                     fluid
+                    className={{ root: 'gap-4 justify-start' }}
                     type="button"
                     onClick={() => setMagicLinkLogin(false)}
                     data={{ cy: 'password-login' }}
                   >
-                    {t('pwa.general.passwordLogin')}
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faKey} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('pwa.general.passwordLogin')}
+                    </Button.Label>
                   </Button>
                 </div>
               )}
@@ -161,7 +166,18 @@ export function LoginForm({
                     type={passwordHidden ? 'password' : 'text'}
                   />
 
-                  <div className="flex flex-row justify-end w-full">
+                  <div className="flex flex-row justify-between w-full">
+                    {setMagicLinkLogin && (
+                      <Button
+                        className={{
+                          root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                        }}
+                        onClick={() => setMagicLinkLogin(true)}
+                      >
+                        Back
+                      </Button>
+                    )}
+
                     <Button
                       className={{
                         root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',

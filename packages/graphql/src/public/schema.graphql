@@ -646,7 +646,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, usernameOrEmail: String!): ID
-  loginParticipantMagicLink(token: String!, username: String!): ID
+  loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
@@ -1162,6 +1162,7 @@ type UserLogin {
 enum UserLoginScope {
   ACCOUNT_OWNER
   FULL_ACCESS
+  OTP
   READ_ONLY
   SESSION_EXEC
 }
