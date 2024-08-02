@@ -13,6 +13,7 @@ import useSortingAndFiltering, {
 
 import {
   faArchive,
+  faArrowUpFromBracket,
   faInbox,
   faMagnifyingGlass,
   faSort,
@@ -32,6 +33,7 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
+import ExportElementsDialogue from '../components/qti/ExportElementsDialogue'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
@@ -54,6 +56,7 @@ function Index() {
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
+  const [exportOpen, setExportOpen] = useState(false)
 
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, Element | undefined>
@@ -355,6 +358,25 @@ function Index() {
                           <FontAwesomeIcon icon={faInbox} />
                         </Button>
                       </Tooltip>
+                      <Tooltip
+                        tooltip={'TODO'} // TODO
+                      >
+                        <Button
+                          className={{
+                            root: 'h-10 ml-1',
+                          }}
+                          onClick={() => {
+                            setExportOpen(true)
+                          }}
+                          data={{ cy: 'open-export-dialogue' }}
+                        >
+                          <Button.Icon>
+                            <FontAwesomeIcon icon={faArrowUpFromBracket} />
+                          </Button.Icon>
+                          <Button.Label>Export Questions</Button.Label>{' '}
+                          {/* // TODO: translate */}
+                        </Button>
+                      </Tooltip>
                     </>
                   )}
                 </div>
@@ -408,6 +430,11 @@ function Index() {
           mode={QuestionEditModal.Mode.CREATE}
         />
       )}
+      <ExportElementsDialogue
+        elements={Object.values(selectedQuestions)}
+        open={exportOpen}
+        setOpen={setExportOpen}
+      />
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>
