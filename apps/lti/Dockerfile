@@ -40,9 +40,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-COPY --from=installer /app/apps/frontend-manage/package.json .
+COPY --from=installer --chown=nodejs:nodejs /app/apps/frontend-manage/package.json .
 
-COPY --chown=nodejs:nodejs dist ./dist
+COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/dist ./dist
 
 ARG NODE_ENV="production"
 
