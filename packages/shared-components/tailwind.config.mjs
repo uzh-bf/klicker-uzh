@@ -4,7 +4,7 @@ import {
   TailwindFonts,
 } from '@uzh-bf/design-system/dist/constants'
 
-export default{
+export default {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
