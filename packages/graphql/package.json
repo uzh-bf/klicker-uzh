@@ -62,7 +62,7 @@
     "@types/validator": "^13.9.0",
     "@types/web-push": "^3.6.3",
     "cross-env": "7.0.3",
-    "dotenv": "16.0.3",
+    "dotenv": "16.4.5",
     "eslint": "8.45.0",
     "graphql-codegen-persisted-query-ids": "0.1.2",
     "ioredis": "5.3.2",

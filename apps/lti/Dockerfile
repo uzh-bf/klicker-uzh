@@ -1,0 +1,51 @@
+FROM docker.io/library/node:20-alpine AS base
+
+
+FROM base AS builder
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+RUN apk update
+
+RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
+
+COPY . .
+
+RUN turbo prune --scope=@klicker-uzh/lti --docker
+
+
+FROM base AS installer
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+RUN apk update
+
+RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
+
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm* .
+
+RUN pnpm i --frozen-lockfile
+
+ARG NODE_ENV="production"
+
+COPY --from=builder /app/out/full/ .
+RUN pnpm run build --filter=@klicker-uzh/lti
+
+
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+USER nodejs
+
+COPY --from=installer /app/apps/frontend-manage/package.json .
+
+COPY --chown=nodejs:nodejs dist ./dist
+
+ARG NODE_ENV="production"
+
+EXPOSE 4000
+
+CMD npm start
