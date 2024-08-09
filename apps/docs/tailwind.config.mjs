@@ -1,10 +1,10 @@
-const {
-  TailwindColorsUZH,
+import {
   TailwindAnimations,
-} = require('@uzh-bf/design-system/dist/constants')
-const { fontFamily } = require('tailwindcss/defaultTheme')
+  TailwindColorsUZH,
+} from '@uzh-bf/design-system/dist/constants'
+import { fontFamily } from 'tailwindcss/defaultTheme'
 
-module.exports = {
+export default {
   darkMode: ['class', '[data-theme="dark"]'],
   content: ['./src/**/*.tsx', './docs/**/*.mdx'],
   theme: {

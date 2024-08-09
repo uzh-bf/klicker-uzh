@@ -72,20 +72,12 @@
   margin-bottom: 1rem
 }
 
-.ml-0 {
-  margin-left: 0px
-}
-
 .ml-0\.5 {
   margin-left: 0.125rem
 }
 
 .ml-1 {
   margin-left: 0.25rem
-}
-
-.mr-1 {
-  margin-right: 0.25rem
 }
 
 .mr-1\.5 {
@@ -854,12 +846,6 @@
   margin: 0px !important
 }
 
-@media print {
-  .print\:hidden {
-    display: none
-  }
-}
-
 @media (min-width: 768px) {
   .md\:order-1 {
     order: 1
@@ -930,5 +916,11 @@
   .lg\:text-lg {
     font-size: 1.125rem;
     line-height: 1.75rem
+  }
+}
+
+@media print {
+  .print\:hidden {
+    display: none
   }
 }
