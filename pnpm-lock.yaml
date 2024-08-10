@@ -227,8 +227,8 @@ importers:
         version: 8.13.0
     devDependencies:
       '@cypress/code-coverage':
-        specifier: 3.12.16
-        version: 3.12.16(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(babel-loader@9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20)))(cypress@13.13.2)(webpack@5.93.0(esbuild@0.18.20))
+        specifier: 3.12.44
+        version: 3.12.44(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(babel-loader@9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20)))(cypress@13.13.2)(webpack@5.93.0(esbuild@0.18.20))
       '@istanbuljs/nyc-config-typescript':
         specifier: 1.0.2
         version: 1.0.2(nyc@15.1.0)
@@ -3273,15 +3273,6 @@ packages:
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
-
-  '@cypress/code-coverage@3.12.16':
-    resolution: {integrity: sha512-15/zoCVljS4npV/FyYzcDTeCsOMdKxwC5xgMt2oyD1SL0SgvkDzG+YWHOAuPivuGX8y8OqKdCjFROO69FFbeKg==}
-    peerDependencies:
-      '@babel/core': ^7.0.1
-      '@babel/preset-env': ^7.0.0
-      babel-loader: ^8.3 || ^9
-      cypress: '*'
-      webpack: ^4 || ^5
 
   '@cypress/code-coverage@3.12.44':
     resolution: {integrity: sha512-5Eau3tnJqZJo1OddOOEMyWs1HCwlAOgDs1rFPaCXJ4a5Y2BR4PH4fAzCdMvIqpBnCiVSL8gOYv6JfND3aUuJJQ==}
@@ -8629,9 +8620,6 @@ packages:
 
   dateformat@3.0.3:
     resolution: {integrity: sha512-jyCETtSl3VMZMWeRo7iY1FL19ges1t55hMo5yaam4Jrsm5EPL89UQkoQRyiI+Yf4k8r2ZpdngkV8hr1lIdjb3Q==}
-
-  dayjs@1.11.10:
-    resolution: {integrity: sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==}
 
   dayjs@1.11.12:
     resolution: {integrity: sha512-Rt2g+nTbLlDWZTwwrIXjy9MeiZmSDI375FvZs72ngxx8PDC6YXOeR3q5LAuPzjZQxhiWdRKac7RKV+YyQYfYIg==}
@@ -17342,7 +17330,7 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@cypress/code-coverage@3.12.16(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(babel-loader@9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20)))(cypress@13.13.2)(webpack@5.93.0(esbuild@0.18.20))':
+  '@cypress/code-coverage@3.12.44(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(babel-loader@9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20)))(cypress@13.13.2)(webpack@5.93.0(esbuild@0.18.20))':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/preset-env': 7.25.3(@babel/core@7.25.2)
@@ -17350,8 +17338,8 @@ snapshots:
       babel-loader: 9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20))
       chalk: 4.1.2
       cypress: 13.13.2
-      dayjs: 1.11.10
-      debug: 4.3.4
+      dayjs: 1.11.12
+      debug: 4.3.5
       execa: 4.1.0
       globby: 11.1.0
       istanbul-lib-coverage: 3.2.2
@@ -17407,7 +17395,7 @@ snapshots:
       '@babel/preset-env': 7.25.3(@babel/core@7.25.2)
       babel-loader: 9.1.3(@babel/core@7.25.2)(webpack@5.93.0(esbuild@0.18.20))
       bluebird: 3.7.1
-      debug: 4.3.4
+      debug: 4.3.6(supports-color@8.1.1)
       lodash: 4.17.21
       webpack: 5.93.0(esbuild@0.18.20)
     transitivePeerDependencies:
@@ -17419,7 +17407,7 @@ snapshots:
       '@babel/preset-env': 7.25.3(@babel/core@7.25.2)
       babel-loader: 9.1.3(@babel/core@7.25.2)(webpack@5.93.0)
       bluebird: 3.7.1
-      debug: 4.3.4
+      debug: 4.3.6(supports-color@8.1.1)
       lodash: 4.17.21
       webpack: 5.93.0
     transitivePeerDependencies:
@@ -24655,8 +24643,6 @@ snapshots:
   date-fns@3.6.0: {}
 
   dateformat@3.0.3: {}
-
-  dayjs@1.11.10: {}
 
   dayjs@1.11.12: {}
 

@@ -36,7 +36,7 @@
     "ws": "8.13.0"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.12.16",
+    "@cypress/code-coverage": "3.12.44",
     "@istanbuljs/nyc-config-typescript": "1.0.2",
     "@types/cookie-parser": "^1.4.3",
     "@types/cors": "^2.8.12",
