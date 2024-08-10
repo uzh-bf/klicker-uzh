@@ -11,8 +11,16 @@ packages = [{include = "@klicker_uzh"}]
 python = "^3.12"
 pandas = "^2.2.2"
 prisma = "^0.14.0"
+asyncio = "^3.4.3"
 
+[tool.poetry.dev-dependencies]
+poethepoet = "^0.27.0"
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+generate = "prisma generate"
+main = "doppler run --config dev -- python main.py"
