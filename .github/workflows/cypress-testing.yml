@@ -142,11 +142,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
 
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v3
-        with:
-          name: code-coverage
-          path: cypress/coverage
+      # - name: Archive code coverage results
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: code-coverage
+      #     path: cypress/coverage
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
