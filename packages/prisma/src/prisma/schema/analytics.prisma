@@ -1,0 +1,17 @@
+model AnalyticsDaily {
+  id Int @id @default(autoincrement())
+
+  timestamp     DateTime @db.Date
+  responseCount Int
+  totalScore    Float
+  totalPoints   Float
+  totalXp       Float
+
+  collectedAchievements String[]
+
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+}
