@@ -1,26 +1,3 @@
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
-  output          = "../client"
-  binaryTargets   = ["native", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
-}
-
-generator pothos {
-  provider     = "prisma-pothos-types"
-  clientOutput = "@klicker-uzh/prisma"
-  output       = "../client/pothos.ts"
-}
-
-generator json {
-  provider = "prisma-json-types-generator"
-}
-
-datasource db {
-  provider          = "postgres"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-}
-
 model Migration {
   id String @id
 

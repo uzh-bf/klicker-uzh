@@ -1,15 +1,3 @@
-generator client {
-  provider             = "prisma-client-py"
-  interface            = "sync"
-  recursive_type_depth = 5
-}
-
-datasource db {
-  provider          = "postgres"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-}
-
 model Migration {
   id String @id
 
