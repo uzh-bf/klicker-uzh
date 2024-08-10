@@ -33,7 +33,7 @@
     "dev:run": "nodemon -w dist/ --exec 'node --env-file=.env ./dist/index.js'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "node --env-file=.env dist/index.js",
+    "start": "node --env-file=.env dist/index.js"
   },
   "engines": {
     "node": "=20"
