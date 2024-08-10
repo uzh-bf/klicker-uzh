@@ -24,6 +24,7 @@
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "tsup",
     "build:test": "run-s build:instrument build:ts",
+    "build:instrument": "nyc instrument --compact=false src instrumented",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "tsup --watch",
@@ -33,7 +34,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node --env-file=.env dist/index.js",
-    "start:test": "nyc --silent node --env-file=.env dist/index.js"
   },
   "engines": {
     "node": "=20"
