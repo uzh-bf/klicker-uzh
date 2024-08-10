@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.8
+          version: 9.7.0
           run_install: true
       - name: Build all required packages
         run: |
@@ -131,4 +131,10 @@ jobs:
         shell: bash
         run: |
           cd apps/func-incoming-responses
+          pnpm run check
+      - name: Check apps/lti typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/lti
           pnpm run check
