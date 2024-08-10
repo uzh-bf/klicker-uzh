@@ -28,7 +28,8 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build"
-      ]
+      ],
+      "persistent": true
     },
     "dev:offline": {
       "cache": false,
@@ -37,7 +38,8 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build"
-      ]
+      ],
+      "persistent": true
     },
     "dev:migration": {
       "cache": false,
@@ -46,14 +48,17 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build"
-      ]
+      ],
+      "persistent": true
     },
     "dev:docs": {
-      "cache": false
+      "cache": false,
+      "persistent": true
     },
     "dev:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "persistent": true
     },
     "publish": {
       "cache": false,
