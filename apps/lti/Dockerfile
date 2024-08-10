@@ -38,13 +38,18 @@ WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
-USER nodejs
 
-COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/package.json .
-COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/dist ./dist
+RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
+
+COPY --from=builder /app/out/json/ .
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts
+
+COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
+
+USER nodejs
 
 ARG NODE_ENV="production"
 
 EXPOSE 4000
 
-CMD npm start
+CMD ["node", "--experimental-default-type=module", "apps/lti/dist/index.js"]

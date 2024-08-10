@@ -10,9 +10,7 @@
   ],
   "dependencies": {
     "cross-env": "7.0.3",
-    "dotenv": "16.4.5",
-    "ltijs": "5.9.4",
-    "ltijs-sequelize": "2.4.4"
+    "ltijs": "5.9.4"
   },
   "devDependencies": {
     "@types/ltijs": "^4.0.11",
@@ -34,8 +32,8 @@
     "dev:run": "nodemon -w dist/ --exec 'node --env-file=.env ./dist/index.js'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config dist/index.js"
+    "start": "node --env-file=.env dist/index.js",
+    "start:test": "nyc --silent node --env-file=.env dist/index.js"
   },
   "engines": {
     "node": "=20"

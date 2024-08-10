@@ -1,27 +1,8 @@
 // @ts-nocheck
 
-import 'dotenv/config'
-
 import { Provider } from 'ltijs'
-// import LTIDB from 'ltijs-sequelize'
 
-
-// // Initialize database connection
-// const db = new LTIDB.Database(
-//   process.env.LTI_DB_NAME,
-//   process.env.LTI_DB_USER,
-//   process.env.LTI_DB_PASS,
-//   {
-//     // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
-//     host: process.env.LTI_DB_HOST,
-//     dialect: 'postgres',
-//     dialectOptions: {
-//       ssl: process.env.NODE_ENV !== 'development',
-//     },
-//   }
-// )
-
-// Setup LTI provider (postgres)
+// Setup LTI provider
 Provider.setup(
   process.env.LTI_ENCRYPTION_KEY as string,
   {
