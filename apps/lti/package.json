@@ -1,5 +1,5 @@
 {
-  "name": "@klicker-uzh/lti",
+  "name": "@klicker-uzh/lti-service",
   "version": "3.1.2-rc.2",
   "license": "AGPL-3.0",
   "type": "module",

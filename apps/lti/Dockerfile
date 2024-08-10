@@ -11,7 +11,7 @@ RUN npm i -g --ignore-scripts pnpm@8.15.8 turbo@1.13.3
 
 COPY . .
 
-RUN turbo prune --scope=@klicker-uzh/lti --docker
+RUN turbo prune --scope=@klicker-uzh/lti-service --docker
 
 
 FROM base AS installer
@@ -30,7 +30,7 @@ RUN pnpm i --frozen-lockfile
 ARG NODE_ENV="production"
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm run build --filter=@klicker-uzh/lti
+RUN pnpm run build --filter=@klicker-uzh/lti-service
 
 
 FROM base AS runner
@@ -40,8 +40,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-COPY --from=installer --chown=nodejs:nodejs /app/apps/frontend-manage/package.json .
-
+COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/package.json .
 COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/dist ./dist
 
 ARG NODE_ENV="production"
