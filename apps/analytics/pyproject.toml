@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "@klicker-uzh/analytics"
+version = "0.0.1"
+description = ""
+authors = ["Roland Schlaefli <roland.schlaefli@df.uzh.ch>"]
+license = "AGPL-3.0"
+readme = "README.md"
+packages = [{include = "@klicker_uzh"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.2"
+prisma = "^0.14.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
