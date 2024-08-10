@@ -1,15 +1,23 @@
-name: Build Docker image for lti-service (Production)
+name: Build Docker image for lti (QA)
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'v3*'
+      - 'CI'
     paths:
-      - 'apps/lti-service/**'
-      - '.github/workflows/v3_lti-service**'
+      - 'apps/lti/**'
+      - '.github/workflows/v3_lti**'
+  pull_request:
+    # branches: [ "v3" ]
+    paths:
+      - 'apps/lti/**'
+      - '.github/workflows/v3_lti**'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/lti-service
+  IMAGE_NAME: ${{ github.repository }}/lti
 
 jobs:
   build:
@@ -44,7 +52,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: apps/lti-service/Dockerfile
-          push: true
+          file: apps/lti/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
