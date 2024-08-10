@@ -39,7 +39,9 @@ Provider.onConnect((token, req, res) => {
 
 // setup function
 const setup = async () => {
-  const result = await Provider.deploy({ port: Number(process.env.LTI_PORT) ?? 4000 })
+  const result = await Provider.deploy({
+    port: Number(process.env.LTI_PORT) ?? 4000,
+  })
   console.log(result)
 
   // Optional: Register platform if you're setting this up for the first time
