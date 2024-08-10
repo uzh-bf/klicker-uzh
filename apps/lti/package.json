@@ -28,7 +28,7 @@
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
-    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node --env-file=.env ./dist/index.js'",
+    "dev:run": "nodemon -w dist/ --exec 'node --env-file=.env ./dist/index.js'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
