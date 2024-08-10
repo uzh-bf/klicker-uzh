@@ -1,16 +1,16 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "pipeline": {
+  "tasks": {
     "format": {},
     "format:check": {
-      "outputMode": "errors-only"
+      "outputLogs": "errors-only"
     },
     "lint": {
-      "outputMode": "errors-only"
+      "outputLogs": "errors-only"
     },
     "check": {
       "cache": false,
-      "outputMode": "errors-only",
+      "outputLogs": "errors-only",
       "dependsOn": ["^build"]
     },
     "build": {
