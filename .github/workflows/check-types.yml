@@ -132,3 +132,9 @@ jobs:
         run: |
           cd apps/func-incoming-responses
           pnpm run check
+      - name: Check apps/lti typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/lti
+          pnpm run check
