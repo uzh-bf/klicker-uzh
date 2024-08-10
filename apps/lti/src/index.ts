@@ -1,28 +1,31 @@
-require('dotenv').config()
+// @ts-nocheck
 
-const lti = require('ltijs').Provider
-const Database = require('ltijs-sequelize')
+import 'dotenv/config'
 
-// Initialize database connection
-const db = new Database(
-  process.env.LTI_DB_NAME,
-  process.env.LTI_DB_USER,
-  process.env.LTI_DB_PASS,
-  {
-    // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
-    host: process.env.LTI_DB_HOST,
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: process.env.NODE_ENV !== 'development',
-    },
-  }
-)
+import { Provider } from 'ltijs'
+// import LTIDB from 'ltijs-sequelize'
+
+
+// // Initialize database connection
+// const db = new LTIDB.Database(
+//   process.env.LTI_DB_NAME,
+//   process.env.LTI_DB_USER,
+//   process.env.LTI_DB_PASS,
+//   {
+//     // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
+//     host: process.env.LTI_DB_HOST,
+//     dialect: 'postgres',
+//     dialectOptions: {
+//       ssl: process.env.NODE_ENV !== 'development',
+//     },
+//   }
+// )
 
 // Setup LTI provider (postgres)
-lti.setup(
-  process.env.LTI_ENCRYPTION_KEY,
+Provider.setup(
+  process.env.LTI_ENCRYPTION_KEY as string,
   {
-    plugin: db,
+    url: process.env.LTI_DB_CONNECTION_STRING as string,
   },
   {
     // Options
@@ -37,17 +40,17 @@ lti.setup(
 )
 
 // LTI launch callback (token has been verified by ltijs beforehand)
-lti.onConnect((token, req, res) => {
+Provider.onConnect((token, req, res) => {
   console.log(token)
   const ltik = res.locals.ltik
 
   res.cookie('ltik', ltik, {
     secure: true,
     sameSite: 'None',
-    domain: process.env.COOKIE_DOMAIN,
+    domain: process.env.COOKIE_DOMAIN as string,
   })
 
-  const url = process.env.LTI_REDIRECT_URL
+  const url = process.env.LTI_REDIRECT_URL as string
   console.log('Redirecting to:', url)
 
   res.redirect(url)
@@ -55,14 +58,14 @@ lti.onConnect((token, req, res) => {
 
 // setup function
 const setup = async () => {
-  const result = await lti.deploy({ port: process.env.PORT || 4000 })
+  const result = await Provider.deploy({ port: Number(process.env.LTI_PORT) ?? 4000 })
   console.log(result)
 
   // Optional: Register platform if you're setting this up for the first time
-  const platform = await lti.registerPlatform({
+  const platform = await Provider.registerPlatform({
     url: 'https://lms.uzh.ch',
     name: 'OLAT UZH',
-    clientId: process.env.LTI_CLIENT_ID,
+    clientId: process.env.LTI_CLIENT_ID as string,
     authenticationEndpoint: 'https://lms.uzh.ch/lti/auth',
     accesstokenEndpoint: 'https://lms.uzh.ch/lti/token',
     authConfig: { method: 'JWK_SET', key: 'https://lms.uzh.ch/lti/keys' },
@@ -72,7 +75,7 @@ const setup = async () => {
 }
 
 // Get user and context information
-lti.app.get('/info', async (req, res) => {
+Provider.app.get('/info', async (req, res) => {
   console.log('GET-request to /info: ')
 
   const token = res.locals.token

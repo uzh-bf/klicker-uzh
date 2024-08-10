@@ -253,6 +253,18 @@ lti:
 
   replicaCount: 2
 
+  clientId:
+  redirectURL:
+  cookieDomain:
+  encryptionKey:
+
+  db:
+    host:
+    port:
+    name:
+    username:
+    password:
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti
     pullPolicy: Always

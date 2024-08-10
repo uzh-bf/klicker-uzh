@@ -122,6 +122,18 @@ services:
     volumes:
       - klicker_data:/var/lib/postgresql/data
 
+  lti_db:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker
+    volumes:
+      - lti_data:/data/db
+
     # redis instance to support session execution
   redis_exec:
     image: docker.io/library/redis:7
@@ -202,3 +214,4 @@ volumes:
   listmonk_data:
   klicker_data:
   redis_data:
+  lti_data:
