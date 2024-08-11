@@ -1,0 +1,203 @@
+<assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="mc6cfa5580504adb90cce95acb105bed"
+  title="Flying Animals" adaptive="false" timeDependent="false" toolName="OpenOLAT"
+  toolVersion="6.1.0"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+  <responseDeclaration identifier="RESPONSE_1" cardinality="multiple" baseType="identifier">
+    <correctResponse>
+      <value>mcd906eaa1214f52ad8f4747215971e0</value>
+      <value>mcc6478a88624395a9a2b0ab8de2bd55</value>
+    </correctResponse>
+  </responseDeclaration>
+  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
+    view="testConstructor">
+    <defaultValue>
+      <value>none</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <outcomeDeclaration identifier="FEEDBACKMODAL" cardinality="multiple" baseType="identifier"
+    view="testConstructor" />
+  <outcomeDeclaration identifier="SOLUTIONMODAL" cardinality="single" baseType="identifier"
+    view="testConstructor" />
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float"
+    view="testConstructor">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>1.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <itemBody>
+    <div>
+      <div>Which animals can fly?</div>
+    </div>
+    <choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="0" minChoices="0"
+      orientation="vertical">
+      <simpleChoice identifier="mc7f417a92f1481ba8791288b4e16ca3"><p>Crocodiles</p></simpleChoice>
+      <simpleChoice identifier="mcd906eaa1214f52ad8f4747215971e0"><p>Eagles</p></simpleChoice>
+      <simpleChoice identifier="mc9b5c341fc5422a8f42961de1cf8548"><p>Kangaroos</p></simpleChoice>
+      <simpleChoice identifier="mcc6478a88624395a9a2b0ab8de2bd55"><p>Butterflies</p></simpleChoice>
+      <simpleChoice identifier="mc223481d4334f5b83fdac7bf7eab556"><p>Dogs</p></simpleChoice>
+    </choiceInteraction>
+  </itemBody>
+  <responseProcessing>
+    <responseCondition>
+      <responseIf>
+        <match>
+          <variable identifier="RESPONSE_1" />
+          <correct identifier="RESPONSE_1" />
+        </match>
+        <setOutcomeValue identifier="SCORE">
+          <sum>
+            <variable identifier="SCORE" />
+            <variable identifier="MAXSCORE" />
+          </sum>
+        </setOutcomeValue>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">correct</baseValue>
+        </setOutcomeValue>
+      </responseIf>
+      <responseElse>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">incorrect</baseValue>
+        </setOutcomeValue>
+      </responseElse>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <match>
+            <baseValue baseType="identifier">incorrect</baseValue>
+            <variable identifier="FEEDBACKBASIC" />
+          </match>
+        </and>
+        <setOutcomeValue identifier="SOLUTIONMODAL">
+          <baseValue baseType="identifier">Feedback110172931061981</baseValue>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <member>
+            <baseValue baseType="identifier">mc7f417a92f1481ba8791288b4e16ca3</baseValue>
+            <variable identifier="RESPONSE_1" />
+          </member>
+        </and>
+        <setOutcomeValue identifier="FEEDBACKMODAL">
+          <multiple>
+            <variable identifier="FEEDBACKMODAL" />
+            <baseValue baseType="identifier">Feedback110172931059216</baseValue>
+          </multiple>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <member>
+            <baseValue baseType="identifier">mcd906eaa1214f52ad8f4747215971e0</baseValue>
+            <variable identifier="RESPONSE_1" />
+          </member>
+        </and>
+        <setOutcomeValue identifier="FEEDBACKMODAL">
+          <multiple>
+            <variable identifier="FEEDBACKMODAL" />
+            <baseValue baseType="identifier">Feedback110172931060013</baseValue>
+          </multiple>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <member>
+            <baseValue baseType="identifier">mc9b5c341fc5422a8f42961de1cf8548</baseValue>
+            <variable identifier="RESPONSE_1" />
+          </member>
+        </and>
+        <setOutcomeValue identifier="FEEDBACKMODAL">
+          <multiple>
+            <variable identifier="FEEDBACKMODAL" />
+            <baseValue baseType="identifier">Feedback110172931060162</baseValue>
+          </multiple>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <member>
+            <baseValue baseType="identifier">mcc6478a88624395a9a2b0ab8de2bd55</baseValue>
+            <variable identifier="RESPONSE_1" />
+          </member>
+        </and>
+        <setOutcomeValue identifier="FEEDBACKMODAL">
+          <multiple>
+            <variable identifier="FEEDBACKMODAL" />
+            <baseValue baseType="identifier">Feedback110172931060373</baseValue>
+          </multiple>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <and>
+          <member>
+            <baseValue baseType="identifier">mc223481d4334f5b83fdac7bf7eab556</baseValue>
+            <variable identifier="RESPONSE_1" />
+          </member>
+        </and>
+        <setOutcomeValue identifier="FEEDBACKMODAL">
+          <multiple>
+            <variable identifier="FEEDBACKMODAL" />
+            <baseValue baseType="identifier">Feedback110172931060528</baseValue>
+          </multiple>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <lt>
+          <variable identifier="SCORE" />
+          <variable identifier="MINSCORE" />
+        </lt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MINSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+    <responseCondition>
+      <responseIf>
+        <gt>
+          <variable identifier="SCORE" />
+          <variable identifier="MAXSCORE" />
+        </gt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MAXSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+  </responseProcessing>
+  <modalFeedback showHide="show" outcomeIdentifier="SOLUTIONMODAL"
+    identifier="Feedback110172931061981" title="Explanation"><p>The eagle and butterfly have wings
+    and can fly. The other animals are land animals that cannot fly.</p></modalFeedback>
+  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
+    identifier="Feedback110172931059216" title="Crocodile Feedback"><p>No, crocodiles cannot fly!</p></modalFeedback>
+  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
+    identifier="Feedback110172931060013" title="Eagles Feedback"><p>Yes, eagles can fly!</p></modalFeedback>
+  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
+    identifier="Feedback110172931060162" title="Kangaroos Feedback"><p>No kangaroos cannot fly!</p></modalFeedback>
+  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
+    identifier="Feedback110172931060373" title="Butterflies Feedback"><p>Yes, butterflies can fly!</p></modalFeedback>
+  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
+    identifier="Feedback110172931060528" title="Dogs Feedback"><p>No, dogs cannot fly!</p></modalFeedback>
+</assessmentItem>

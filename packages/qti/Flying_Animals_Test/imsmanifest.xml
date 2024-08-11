@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<manifest xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+    xmlns:imsmd="http://www.imsglobal.org/xsd/imsmd_v1p2"
+    xmlns:imsqti="http://www.imsglobal.org/xsd/imsqti_metadata_v2p1"
+    xmlns:ns4="http://www.openolat.org/xsd/oomd_v1p1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 http://www.imsglobal.org/xsd/imscp_v1p2.xsd
+                        http://www.imsglobal.org/xsd/imsmd_v1p2 http://www.imsglobal.org/xsd/imsmd_v1p2p4.xsd
+                        http://www.imsglobal.org/xsd/imsqti_metadata_v2p1 http://www.imsglobal.org/xsd/qti/qtiv2p1/imsqti_metadata_v2p1.xsd">
+    <metadata>
+        <schema>QTIv2.1 Package</schema>
+        <schemaversion>1.0.0</schemaversion>
+        <imsmd:lom />
+    </metadata>
+    <resources>
+        <resource identifier="testd8161129-6019-48e0-af45-858955ab9964" type="imsqti_test_xmlv2p1"
+            href="testd9d2d1e8-e0bf-4f23-8bd7-664fa4340943.xml">
+            <file href="testd9d2d1e8-e0bf-4f23-8bd7-664fa4340943.xml" />
+        </resource>
+        <resource identifier="item4ffe25344d5c8226839cd2efc273" type="imsqti_item_xmlv2p1"
+            href="mc92939851b04c8b932486f5e3487621.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+                <ns4:ooMetadata>
+                    <ns4:questionType>mc</ns4:questionType>
+                </ns4:ooMetadata>
+            </metadata>
+            <file href="mc92939851b04c8b932486f5e3487621.xml" />
+        </resource>
+    </resources>
+</manifest>

@@ -1,0 +1,47 @@
+<assessmentTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="test8003858f45408af9592a5be26e5c"
+  title="test" toolName="OpenOLAT" toolVersion="6.1.0"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>1.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float" />
+  <testPart identifier="tp41f6eefe3d419f93cda51446822ae4" navigationMode="nonlinear"
+    submissionMode="individual">
+    <itemSessionControl maxAttempts="0" showFeedback="false" allowReview="false"
+      showSolution="false" allowComment="true" allowSkipping="false" />
+    <assessmentSection identifier="sectf4e2e2e940e2a9c9ab32fe32ea8a" fixed="true" title="Section"
+      visible="true">
+      <itemSessionControl />
+      <ordering shuffle="false" />
+      <rubricBlock view="candidate" />
+      <assessmentItemRef identifier="mc92939851b04c8b932486f5e3487621"
+        href="mc92939851b04c8b932486f5e3487621.xml" />
+    </assessmentSection>
+  </testPart>
+  <outcomeProcessing>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <testVariables variableIdentifier="SCORE" />
+      </sum>
+    </setOutcomeValue>
+    <outcomeCondition>
+      <outcomeIf>
+        <lt>
+          <variable identifier="SCORE" />
+          <variable identifier="MINSCORE" />
+        </lt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MINSCORE" />
+        </setOutcomeValue>
+      </outcomeIf>
+    </outcomeCondition>
+  </outcomeProcessing>
+</assessmentTest>
