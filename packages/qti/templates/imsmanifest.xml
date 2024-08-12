@@ -57,6 +57,23 @@
             <file href="itemMC.xml" />
         </resource>
 
+        <resource identifier="itemKPRIM" type="imsqti_item_xmlv2p1"
+            href="itemKPRIM.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+            </metadata>
+            <file href="itemKPRIM.xml" />
+        </resource>
+
     </resources>
 
 </manifest>

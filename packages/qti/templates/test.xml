@@ -27,8 +27,9 @@
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
-      <assessmentItemRef identifier="itemMC" href="itemSC.xml" />
+      <assessmentItemRef identifier="itemSC" href="itemSC.xml" />
       <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
+      <assessmentItemRef identifier="itemKPRIM" href="itemKPRIM.xml" />
     </assessmentSection>
 
   </testPart>
