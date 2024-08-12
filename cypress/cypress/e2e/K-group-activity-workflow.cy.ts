@@ -30,6 +30,7 @@ describe('Create and solve a group activity', () => {
     // fill out first step of creation process
     cy.get('[data-cy="create-group-activity"]').click()
     cy.get('[data-cy="insert-groupactivity-name"]').click().type(name)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
       .type(displayName)
@@ -177,6 +178,7 @@ describe('Create and solve a group activity', () => {
       .should('have.value', name)
       .clear()
       .type(newName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
       .should('have.value', displayName)
