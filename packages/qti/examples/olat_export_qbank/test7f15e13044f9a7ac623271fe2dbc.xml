@@ -1,0 +1,31 @@
+<assessmentTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1"
+  identifier="test7f15e13044f9a7ac623271fe2dbc"
+  title="Assessment test from pool"
+  toolName="OpenOLAT"
+  toolVersion="6.1.0"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float" />
+  <testPart identifier="tp1b997ac05647b7923d1cb42a26645c" navigationMode="nonlinear"
+    submissionMode="individual">
+    <itemSessionControl maxAttempts="0" showFeedback="false" allowReview="false"
+      showSolution="false"
+      allowComment="true"
+      allowSkipping="false" />
+    <assessmentSection identifier="sect05675f764c0f8317e2e8063c9ccc" fixed="true" title="Section"
+      visible="true">
+      <itemSessionControl />
+      <ordering shuffle="false" />
+      <rubricBlock view="candidate" />
+      <assessmentItemRef identifier="ai2881c13934468389be7c4128f78d39"
+        href="16975364097/mcf5965d5ed44544bdf3d08a9079fe52.xml" />
+    </assessmentSection>
+  </testPart>
+  <outcomeProcessing>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <testVariables variableIdentifier="SCORE" />
+      </sum>
+    </setOutcomeValue>
+  </outcomeProcessing>
+</assessmentTest>

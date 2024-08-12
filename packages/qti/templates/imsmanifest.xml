@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<manifest identifier="test" xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+    xmlns:imsmd="http://www.imsglobal.org/xsd/imsmd_v1p2"
+    xmlns:imsqti="http://www.imsglobal.org/xsd/imsqti_metadata_v2p1"
+    xmlns:ns4="http://www.openolat.org/xsd/oomd_v1p1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 http://www.imsglobal.org/xsd/imscp_v1p2.xsd
+                        http://www.imsglobal.org/xsd/imsmd_v1p2 http://www.imsglobal.org/xsd/imsmd_v1p2p4.xsd
+                        http://www.imsglobal.org/xsd/imsqti_metadata_v2p1 http://www.imsglobal.org/xsd/qti/qtiv2p1/imsqti_metadata_v2p1.xsd">
+
+    <metadata>
+        <schema>QTIv2.1 Package</schema>
+        <schemaversion>1.0.0</schemaversion>
+        <imsmd:lom />
+    </metadata>
+
+    <organizations />
+
+    <resources>
+
+        <resource identifier="test1" type="imsqti_test_xmlv2p1"
+            href="assessmentTest.xml">
+            <file href="assessmentTest.xml" />
+        </resource>
+
+        <resource identifier="item1" type="imsqti_item_xmlv2p1"
+            href="assessmentItem.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+            </metadata>
+            <file href="assessmentItem.xml" />
+        </resource>
+
+    </resources>
+
+</manifest>
