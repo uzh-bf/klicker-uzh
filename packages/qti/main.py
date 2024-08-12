@@ -1,4 +1,28 @@
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from lxml import etree
+from pathlib import Path
+
+# xsd_parser = etree.XMLParser()
+
+# current_dir = Path(__file__).parent
+# schema_path = current_dir / "imsqti_v2p1p2.xsd"
+
+# schema_root = etree.parse(str(schema_path), parser=xsd_parser)
+# schema = etree.XMLSchema(schema_root)
+
+
+# def validate_xml(string):
+#     tree = etree.fromstring(string, parser=xsd_parser)
+#     is_valid = schema.validate(tree)
+#     return is_valid
+
+
+def persist_output(string, output_file):
+    # if validate_xml(string) is False:
+    #     raise Exception("Invalid XML")
+
+    with open(output_file, "w") as f:
+        f.write(string)
 
 
 def process_sc_item(item):
@@ -98,7 +122,7 @@ ITEMS = [
         ],
     },
     {
-        "identifier": "itemTEXT",
+        "identifier": "itemFREE_TEXT",
         "type": "FREE_TEXT",
         "title": "Best Canton",
         "content": "What is the best canton of Switzerland?",
@@ -126,28 +150,23 @@ env = Environment(
     loader=FileSystemLoader("./templates"), autoescape=select_autoescape()
 )
 
-template = env.get_template("imsmanifest.xml.jinja")
+template_manifest = env.get_template("imsmanifest.xml.jinja")
 
-out_manifest = template.render(items=ITEMS)
+out_manifest = template_manifest.render(items=ITEMS)
 print(out_manifest)
 
-with open("out/imsmanifest.xml", "w") as f:
-    f.write(out_manifest)
+persist_output(out_manifest, "out/imsmanifest.xml")
 
-template = env.get_template("test.xml.jinja")
+template_test = env.get_template("test.xml.jinja")
 
-out_test = template.render(items=ITEMS)
+out_test = template_test.render(items=ITEMS)
 print(out_test)
 
-with open("out/test.xml", "w") as f:
-    f.write(out_manifest)
-
-template = env.get_template("itemSC.xml.jinja")
+persist_output(out_test, "out/test.xml")
 
 for item in ITEMS:
-    template = env.get_template(f"item{item['type']}.xml.jinja")
-    out_item = template.render(item=item)
+    template_item = env.get_template(f"item{item['type']}.xml.jinja")
+    out_item = template_item.render(item=item)
     print(out_item)
 
-    with open(f"out/item{item['type']}.xml", "w") as f:
-        f.write(out_item)
+    persist_output(out_item, f"out/item{item['type']}.xml")
