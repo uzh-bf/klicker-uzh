@@ -21,7 +21,7 @@
             <file href="test.xml" />
         </resource>
 
-        
+
         <resource identifier="itemSC" type="imsqti_item_xmlv2p1"
             href="itemSC.xml">
             <metadata>
@@ -32,14 +32,14 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    
+
                     <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
-                    
+
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemSC.xml" />
         </resource>
-        
+
         <resource identifier="itemMC" type="imsqti_item_xmlv2p1"
             href="itemMC.xml">
             <metadata>
@@ -50,14 +50,14 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    
+
                     <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
-                    
+
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemMC.xml" />
         </resource>
-        
+
         <resource identifier="itemKPRIM" type="imsqti_item_xmlv2p1"
             href="itemKPRIM.xml">
             <metadata>
@@ -68,14 +68,14 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    
+
                     <imsqti:interactionType>matchInteraction</imsqti:interactionType>
-                    
+
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemKPRIM.xml" />
         </resource>
-        
+
         <resource identifier="itemFREE_TEXT" type="imsqti_item_xmlv2p1"
             href="itemFREE_TEXT.xml">
             <metadata>
@@ -86,14 +86,14 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    
+
                     <imsqti:interactionType>extendedTextInteraction</imsqti:interactionType>
-                    
+
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemFREE_TEXT.xml" />
         </resource>
-        
+
         <resource identifier="itemNUMERICAL" type="imsqti_item_xmlv2p1"
             href="itemNUMERICAL.xml">
             <metadata>
@@ -104,14 +104,14 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    
+
                     <imsqti:interactionType>textEntryInteraction</imsqti:interactionType>
-                    
+
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemNUMERICAL.xml" />
         </resource>
-        
+
     </resources>
 
 </manifest>

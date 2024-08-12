@@ -27,17 +27,17 @@
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
-      
+
       <assessmentItemRef identifier="itemSC" href="itemSC.xml" />
-      
+
       <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
-      
+
       <assessmentItemRef identifier="itemKPRIM" href="itemKPRIM.xml" />
-      
+
       <assessmentItemRef identifier="itemFREE_TEXT" href="itemFREE_TEXT.xml" />
-      
+
       <assessmentItemRef identifier="itemNUMERICAL" href="itemNUMERICAL.xml" />
-      
+
     </assessmentSection>
 
   </testPart>
