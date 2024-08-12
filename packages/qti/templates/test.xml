@@ -30,6 +30,8 @@
       <assessmentItemRef identifier="itemSC" href="itemSC.xml" />
       <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
       <assessmentItemRef identifier="itemKPRIM" href="itemKPRIM.xml" />
+      <assessmentItemRef identifier="itemTEXT" href="itemTEXT.xml" />
+      <assessmentItemRef identifier="itemNUMERICAL" href="itemNUMERICAL.xml" />
     </assessmentSection>
 
   </testPart>

@@ -68,10 +68,40 @@
                     <imsmd:educational />
                 </imsmd:lom>
                 <imsqti:qtiMetadata>
-                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                    <imsqti:interactionType>matchInteraction</imsqti:interactionType>
                 </imsqti:qtiMetadata>
             </metadata>
             <file href="itemKPRIM.xml" />
+        </resource>
+
+        <resource identifier="itemTEXT" type="imsqti_item_xmlv2p1"
+            href="itemTEXT.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+            </metadata>
+            <file href="itemTEXT.xml" />
+        </resource>
+
+        <resource identifier="itemNUMERICAL" type="imsqti_item_xmlv2p1"
+            href="itemNUMERICAL.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>textEntryInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+            </metadata>
+            <file href="itemNUMERICAL.xml" />
         </resource>
 
     </resources>
