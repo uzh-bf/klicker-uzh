@@ -1,6 +1,6 @@
 <assessmentTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="test8003858f45408af9592a5be26e5c"
-  title="test" toolName="OpenOLAT" toolVersion="6.1.0"
+  title="{{title}}" toolName="OpenOLAT" toolVersion="6.1.0"
   xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
 
   <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float">
@@ -11,7 +11,7 @@
 
   <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
     <defaultValue>
-      <value>2.0</value>
+      <value>{{items | length}}.0</value>
     </defaultValue>
   </outcomeDeclaration>
 
@@ -27,11 +27,9 @@
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
-      <assessmentItemRef identifier="itemSC" href="itemSC.xml" />
-      <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
-      <assessmentItemRef identifier="itemKPRIM" href="itemKPRIM.xml" />
-      <assessmentItemRef identifier="itemTEXT" href="itemTEXT.xml" />
-      <assessmentItemRef identifier="itemNUMERICAL" href="itemNUMERICAL.xml" />
+      {% for item in items %}
+      <assessmentItemRef identifier="{{item.identifier}}" href="{{item.identifier}}.xml" />
+      {% endfor %}
     </assessmentSection>
 
   </testPart>
