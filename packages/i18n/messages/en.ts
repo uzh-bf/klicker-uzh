@@ -1074,12 +1074,22 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For the creation of this type of element, a gamified course is required. Please enable gamification in one of your existing courses or create a new gamified course.',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
+      groupActivityInformation:
+        'In this step, enter the name and description of the group activity and find helpful information for creating the element.',
       groupActivityTypes:
         'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
       groupActivityCreated:
         'Your group activity <b>{name}</b> has been created successfully.',
       groupActivityEdited:
         'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityNoCourse:
+        'Group activities must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      groupActivityIntroductionName:
+        'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      groupActivityLecturerDocs:
+        'For more information on the creation and execution of group activities, visit the <link>Lecturer Documentation</link>.',
+      groupActivityStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       groupActivityDescription:
         'In this step, enter the name and description of the group activity.',
       groupActivitySettings:

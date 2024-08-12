@@ -1082,12 +1082,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die Erstellung dieses Elementtyps ist ein gamifizierter Kurs erforderlich. Bitte aktivieren Sie die Gamifizierung in einem Ihrer bestehenden Kurse oder erstellen Sie einen neuen gamifizierten Kurs.',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
+      groupActivityInformation:
+        'Geben Sie in diesem Schritt den Namen für die Gruppenaktivität ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       groupActivityTypes:
         'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       groupActivityCreated:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
+      groupActivityNoCourse:
+        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+      groupActivityIntroductionName:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      groupActivityLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Gruppenaktivitäten, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      groupActivityStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       groupActivityDescription:
         'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
       groupActivitySettings:

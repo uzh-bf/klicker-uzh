@@ -1,5 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { faLightbulb, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -16,7 +16,6 @@ import {
   Button,
   FormikDateField,
   FormikSelectField,
-  FormikTextField,
   Label,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -32,16 +31,24 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
-import BlockField from './BlockField'
-import EditorField from './EditorField'
-import { ElementSelectCourse } from './ElementCreation'
-import GroupActivityClueModal from './GroupActivityClueModal'
+import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import BlockField from '../BlockField'
+import { ElementSelectCourse } from '../ElementCreation'
 import MultistepWizard, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
-} from './MultistepWizard'
-import WizardErrorMessage from './WizardErrorMessage'
+} from '../MultistepWizard'
+import WizardErrorMessage from '../WizardErrorMessage'
+import GroupActivityClueModal from './GroupActivityClueModal'
+import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
+import GroupActivityInformationStep from './GroupActivityInformationStep'
+
+export interface GroupActivityWizardStepProps {
+  onSubmit?: () => void
+  validationSchema: any
+  gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
+}
 
 interface GroupActivityWizardProps {
   title: string
@@ -75,10 +82,13 @@ function GroupActivityWizard({
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
-  const stepOneValidationSchema = yup.object().shape({
+  const nameValidationSchema = yup.object().shape({
     name: yup
       .string()
       .required(t('manage.sessionForms.groupActivityNameError')),
+  })
+
+  const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
       .required(t('manage.sessionForms.groupActivityDisplayNameError')),
@@ -289,6 +299,10 @@ function GroupActivityWizard({
         }}
         workflowItems={[
           {
+            title: t('shared.generic.information'),
+            tooltip: t('manage.sessionForms.groupActivityInformation'),
+          },
+          {
             title: t('shared.generic.description'),
             tooltip: t('manage.sessionForms.groupActivityDescription'),
           },
@@ -304,7 +318,14 @@ function GroupActivityWizard({
           },
         ]}
       >
-        <StepOne validationSchema={stepOneValidationSchema} />
+        <GroupActivityInformationStep
+          validationSchema={nameValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+        />
+        <GroupActivityDescriptionStep
+          validationSchema={descriptionValidationSchema}
+        />
         <StepTwo
           validationSchema={stepTwoValidationSchema}
           courses={courses}
@@ -337,78 +358,6 @@ interface StepProps {
     label: string
     value: string
   }[]
-}
-
-function StepOne(_: StepProps) {
-  const t = useTranslations()
-
-  return (
-    <div className="flex flex-row gap-6">
-      <div className="flex-1">
-        <div className="flex flex-col w-full gap-4 md:flex-row">
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="name"
-            label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.groupActivityName')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-groupactivity-name"
-          />
-          <FormikTextField
-            required
-            autoComplete="off"
-            name="displayName"
-            label={t('manage.sessionForms.displayName')}
-            tooltip={t('manage.sessionForms.displayNameTooltip')}
-            className={{
-              root: 'mb-2 w-full md:w-1/2',
-              tooltip: 'z-20',
-              label: 'w-36',
-            }}
-            data-cy="insert-groupactivity-display-name"
-          />
-        </div>
-
-        <EditorField
-          label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.groupActivityDescField')}
-          fieldName="description"
-          data={{ cy: 'insert-groupactivity-description' }}
-          showToolbarOnFocus={false}
-        />
-
-        <div className="w-full text-right">
-          <ErrorMessage
-            name="description"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
-      </div>
-      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
-        <FontAwesomeIcon
-          icon={faLightbulb}
-          className="mr-2 text-orange-400"
-          size="lg"
-        />
-        {t.rich('manage.sessionForms.groupActivityUseCase', {
-          link: (text) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/group_activity/"
-              target="_blank"
-            >
-              {text}
-            </a>
-          ),
-        })}
-      </div>
-    </div>
-  )
 }
 
 function StepTwo(props: StepProps) {
