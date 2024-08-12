@@ -1,18 +1,16 @@
 {% extends "item.xml.jinja" %}
 
 {% block responseDeclaration %}
-<responseDeclaration identifier="KPRIM_RESPONSE_1" cardinality="multiple" baseType="directedPair">
+<responseDeclaration identifier="RESPONSE_1" cardinality="multiple" baseType="directedPair">
   <correctResponse>
-    <value>kp1 wrong</value>
-    <value>kp2 correct</value>
-    <value>kp3 wrong</value>
-    <value>kp4 correct</value>
+    {% for correct_response in item.correct_response %}
+    <value>{{correct_response}}</value>
+    {% endfor %}
   </correctResponse>
   <mapping defaultValue="-0.25">
-    <mapEntry mapKey="kp1 wrong" mappedValue="0.25" />
-    <mapEntry mapKey="kp2 correct" mappedValue="0.25" />
-    <mapEntry mapKey="kp3 wrong" mappedValue="0.25" />
-    <mapEntry mapKey="kp4 correct" mappedValue="0.25" />
+    {% for correct_response in item.correct_response %}
+    <mapEntry mapKey="{{correct_response}}" mappedValue="0.25" />
+    {% endfor %}
   </mapping>
 </responseDeclaration>
 {% endblock %}
@@ -25,7 +23,7 @@
   <div>Which animals can fly?</div>
 </div>
 
-<matchInteraction class="match_krpim" responseIdentifier="KPRIM_RESPONSE_1" shuffle="false"
+<matchInteraction class="match_krpim" responseIdentifier="RESPONSE_1" shuffle="false"
   maxAssociations="4">
   <simpleMatchSet>
     <simpleAssociableChoice identifier="kp1" matchMax="1" matchMin="1"><p>New answer a</p></simpleAssociableChoice>
@@ -44,7 +42,7 @@
 <responseCondition>
   <responseIf>
     <isNull>
-      <variable identifier="KPRIM_RESPONSE_1" />
+      <variable identifier="RESPONSE_1" />
     </isNull>
     <setOutcomeValue identifier="FEEDBACKBASIC">
       <baseValue baseType="identifier">empty</baseValue>
@@ -54,19 +52,19 @@
     <not>
       <equal toleranceMode="exact">
         <containerSize>
-          <variable identifier="KPRIM_RESPONSE_1" />
+          <variable identifier="RESPONSE_1" />
         </containerSize>
         <baseValue baseType="integer">4</baseValue>
       </equal>
     </not>
     <setOutcomeValue identifier="SCORE">
       <sum>
-        <mapResponse identifier="KPRIM_RESPONSE_1" />
+        <mapResponse identifier="RESPONSE_1" />
         <product>
           <subtract>
             <baseValue baseType="integer">4</baseValue>
             <containerSize>
-              <variable identifier="KPRIM_RESPONSE_1" />
+              <variable identifier="RESPONSE_1" />
             </containerSize>
           </subtract>
           <baseValue baseType="float">-0.25</baseValue>
@@ -76,8 +74,8 @@
   </responseElseIf>
   <responseElseIf>
     <match>
-      <variable identifier="KPRIM_RESPONSE_1" />
-      <correct identifier="KPRIM_RESPONSE_1" />
+      <variable identifier="RESPONSE_1" />
+      <correct identifier="RESPONSE_1" />
     </match>
     <setOutcomeValue identifier="SCORE">
       <sum>
@@ -92,37 +90,13 @@
   <responseElse>
     <setOutcomeValue identifier="SCORE">
       <sum>
-        <mapResponse identifier="KPRIM_RESPONSE_1" />
+        <mapResponse identifier="RESPONSE_1" />
       </sum>
     </setOutcomeValue>
     <setOutcomeValue identifier="FEEDBACKBASIC">
       <baseValue baseType="identifier">incorrect</baseValue>
     </setOutcomeValue>
   </responseElse>
-</responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <lt>
-      <variable identifier="SCORE" />
-      <variable identifier="MINSCORE" />
-    </lt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MINSCORE" />
-    </setOutcomeValue>
-  </responseIf>
-</responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <gt>
-      <variable identifier="SCORE" />
-      <variable identifier="MAXSCORE" />
-    </gt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MAXSCORE" />
-    </setOutcomeValue>
-  </responseIf>
 </responseCondition>
 {% endblock %}
 

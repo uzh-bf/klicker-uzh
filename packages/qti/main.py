@@ -35,6 +35,50 @@ def process_sc_item(item):
 
 
 def process_item(item):
+    if item["type"] == "SC" or item["type"] == "MC":
+        options = list(
+            map(
+                lambda item: {**item[1], "identifier": f"opt{item[0]}"},
+                enumerate(item["options"]),
+            )
+        )
+
+        correct_response = list(
+            map(
+                lambda item: item["identifier"],
+                filter(lambda option: option["correct"], options),
+            )
+        )
+
+        return {**item, "options": options, "correct_response": correct_response}
+
+    if item["type"] == "KPRIM":
+        options = list(
+            map(
+                lambda item: {**item[1], "identifier": f"opt{item[0]}"},
+                enumerate(item["options"]),
+            )
+        )
+
+        correct_response = list(
+            map(
+                lambda item: f"{item["identifier"]} {'correct' if item['correct'] else 'wrong'}",
+                options,
+            )
+        )
+
+        return {
+            **item,
+            "options": options,
+            "correct_response": correct_response,
+        }
+
+    if item["type"] == "NUMERICAL":
+        return {**item}
+
+    if item["type"] == "FREE_TEXT":
+        return {**item}
+
     return {**item}
 
 
@@ -159,14 +203,15 @@ persist_output(out_manifest, "out/imsmanifest.xml")
 
 template_test = env.get_template("test.xml.jinja")
 
-out_test = template_test.render(items=ITEMS)
+out_test = template_test.render(title="Test", items=ITEMS)
 print(out_test)
 
 persist_output(out_test, "out/test.xml")
 
 for item in ITEMS:
     template_item = env.get_template(f"item{item['type']}.xml.jinja")
-    out_item = template_item.render(item=item)
+    processed_item = process_item(item)
+    out_item = template_item.render(item=processed_item)
     print(out_item)
 
     persist_output(out_item, f"out/item{item['type']}.xml")

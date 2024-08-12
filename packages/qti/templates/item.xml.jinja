@@ -38,6 +38,44 @@
   </itemBody>
 
   <responseProcessing>
+    <responseCondition>
+      <responseIf>
+        <lt>
+          <variable identifier="SCORE" />
+          <variable identifier="MINSCORE" />
+        </lt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MINSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+
+    <responseCondition>
+      <responseIf>
+        <gt>
+          <variable identifier="SCORE" />
+          <variable identifier="MAXSCORE" />
+        </gt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MAXSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+
+    {# <responseCondition>
+      <responseIf>
+        <and>
+          <match>
+            <baseValue baseType="identifier">incorrect</baseValue>
+            <variable identifier="FEEDBACKBASIC" />
+          </match>
+        </and>
+        <setOutcomeValue identifier="SOLUTIONMODAL">
+          <baseValue baseType="identifier">fbIncorrect</baseValue>
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition> #}
+
     {% block responseProcessing %}{% endblock %}
   </responseProcessing>
 

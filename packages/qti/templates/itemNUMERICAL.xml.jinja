@@ -40,30 +40,6 @@
     </setOutcomeValue>
   </responseElse>
 </responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <lt>
-      <variable identifier="SCORE" />
-      <variable identifier="MINSCORE" />
-    </lt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MINSCORE" />
-    </setOutcomeValue>
-  </responseIf>
-</responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <gt>
-      <variable identifier="SCORE" />
-      <variable identifier="MAXSCORE" />
-    </gt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MAXSCORE" />
-    </setOutcomeValue>
-  </responseIf>
-</responseCondition>
 {% endblock %}
 
 {% block feedbackModals %}

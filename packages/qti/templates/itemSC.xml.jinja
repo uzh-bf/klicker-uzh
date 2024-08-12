@@ -3,7 +3,9 @@
 {% block responseDeclaration %}
 <responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="identifier">
   <correctResponse>
-    <value>sc1</value>
+    {% for correct_response in item.correct_response %}
+    <value>{{correct_response}}</value>
+    {% endfor %}
   </correctResponse>
 </responseDeclaration>
 {% endblock %}
@@ -18,9 +20,9 @@
 
 <choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="1"
   orientation="vertical">
-  <simpleChoice identifier="sc1"><p><span class="math">\frac{1}{2}</span></p></simpleChoice>
-  <simpleChoice identifier="sc2"><p>B</p></simpleChoice>
-  <simpleChoice identifier="sc3"><p>C</p></simpleChoice>
+  {% for option in item.options %}
+  <simpleChoice identifier="{{option.identifier}}"><p>{{option.content}}</p></simpleChoice>
+  {% endfor %}
 </choiceInteraction>
 {% endblock %}
 
@@ -54,30 +56,6 @@
       <baseValue baseType="identifier">incorrect</baseValue>
     </setOutcomeValue>
   </responseElse>
-</responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <lt>
-      <variable identifier="SCORE" />
-      <variable identifier="MINSCORE" />
-    </lt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MINSCORE" />
-    </setOutcomeValue>
-  </responseIf>
-</responseCondition>
-
-<responseCondition>
-  <responseIf>
-    <gt>
-      <variable identifier="SCORE" />
-      <variable identifier="MAXSCORE" />
-    </gt>
-    <setOutcomeValue identifier="SCORE">
-      <variable identifier="MAXSCORE" />
-    </setOutcomeValue>
-  </responseIf>
 </responseCondition>
 {% endblock %}
 
