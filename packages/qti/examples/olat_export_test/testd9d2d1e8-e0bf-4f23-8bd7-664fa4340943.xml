@@ -9,7 +9,7 @@
   </outcomeDeclaration>
   <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
     <defaultValue>
-      <value>1.0</value>
+      <value>5.0</value>
     </defaultValue>
   </outcomeDeclaration>
   <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float" />
@@ -22,8 +22,16 @@
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
+      <assessmentItemRef identifier="sc01e799a0dd486a931b0a709bf7c057"
+        href="sc01e799a0dd486a931b0a709bf7c057.xml" />
       <assessmentItemRef identifier="mc92939851b04c8b932486f5e3487621"
         href="mc92939851b04c8b932486f5e3487621.xml" />
+      <assessmentItemRef identifier="kprim95cec9c440d8eb7ea2ab82c3545"
+        href="kprim95cec9c440d8eb7ea2ab82c3545.xml" />
+      <assessmentItemRef identifier="essaye774ea34441a913a3da06362d0f"
+        href="essaye774ea34441a913a3da06362d0f.xml" />
+      <assessmentItemRef identifier="fibaa240103141babaed7c756d57ae6f"
+        href="fibaa240103141babaed7c756d57ae6f.xml" />
     </assessmentSection>
   </testPart>
   <outcomeProcessing>

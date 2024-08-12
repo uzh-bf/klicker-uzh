@@ -23,6 +23,7 @@
                 <imsmd:lom>
                     <imsmd:technical>
 
+
                         <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
                     </imsmd:technical>
                     <imsmd:educational />
@@ -35,6 +36,69 @@
                 </ns4:ooMetadata>
             </metadata>
             <file href="mc92939851b04c8b932486f5e3487621.xml" />
+        </resource>
+        <resource identifier="item0ec97b08448d81d03fbb19d4e258" type="imsqti_item_xmlv2p1"
+            href="sc01e799a0dd486a931b0a709bf7c057.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+                <ns4:ooMetadata>
+                    <ns4:questionType>sc</ns4:questionType>
+                </ns4:ooMetadata>
+            </metadata>
+            <file href="sc01e799a0dd486a931b0a709bf7c057.xml" />
+        </resource>
+        <resource identifier="item5398e3df46f2be522d0840b4a44f" type="imsqti_item_xmlv2p1"
+            href="kprim95cec9c440d8eb7ea2ab82c3545.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>matchInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+                <ns4:ooMetadata>
+                    <ns4:questionType>kprim</ns4:questionType>
+                </ns4:ooMetadata>
+            </metadata>
+            <file href="kprim95cec9c440d8eb7ea2ab82c3545.xml" />
+        </resource>
+        <resource identifier="item6c03a07c4f4ebe041893c3c9ef98" type="imsqti_item_xmlv2p1"
+            href="essaye774ea34441a913a3da06362d0f.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:educational />
+                </imsmd:lom>
+            </metadata>
+            <file href="essaye774ea34441a913a3da06362d0f.xml" />
+        </resource>
+        <resource identifier="item65f9fdf44a06a9a1ebbae066d53e" type="imsqti_item_xmlv2p1"
+            href="fibaa240103141babaed7c756d57ae6f.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>textEntryInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+                <ns4:ooMetadata>
+                    <ns4:questionType>fib</ns4:questionType>
+                </ns4:ooMetadata>
+            </metadata>
+            <file href="fibaa240103141babaed7c756d57ae6f.xml" />
         </resource>
     </resources>
 </manifest>
