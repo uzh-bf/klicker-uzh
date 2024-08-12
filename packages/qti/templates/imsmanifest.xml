@@ -23,6 +23,23 @@
             <file href="test.xml" />
         </resource>
 
+        <resource identifier="itemSC" type="imsqti_item_xmlv2p1"
+            href="itemSC.xml">
+            <metadata>
+                <imsmd:lom>
+                    <imsmd:technical>
+
+                        <imsmd:format>text/x-imsqti-item-xml</imsmd:format>
+                    </imsmd:technical>
+                    <imsmd:educational />
+                </imsmd:lom>
+                <imsqti:qtiMetadata>
+                    <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
+                </imsqti:qtiMetadata>
+            </metadata>
+            <file href="itemSC.xml" />
+        </resource>
+
         <resource identifier="itemMC" type="imsqti_item_xmlv2p1"
             href="itemMC.xml">
             <metadata>

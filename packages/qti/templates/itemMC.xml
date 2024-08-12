@@ -1,5 +1,5 @@
 <assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="item1"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemMC"
   title="Flying Animals" adaptive="false" timeDependent="false" toolName="OpenOLAT"
   toolVersion="6.1.0"
   xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">

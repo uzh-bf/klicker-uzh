@@ -11,7 +11,7 @@
 
   <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
     <defaultValue>
-      <value>1.0</value>
+      <value>2.0</value>
     </defaultValue>
   </outcomeDeclaration>
 
@@ -27,6 +27,7 @@
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
+      <assessmentItemRef identifier="itemMC" href="itemSC.xml" />
       <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
     </assessmentSection>
 

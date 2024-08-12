@@ -1,28 +1,13 @@
 <assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="item1"
-  title="Flying Animals" adaptive="false" timeDependent="false" toolName="OpenOLAT"
-  toolVersion="6.1.0"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemSC"
+  title="SC Question" adaptive="false" timeDependent="false" toolName="OpenOLAT" toolVersion="6.1.0"
   xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
 
-  <responseDeclaration identifier="RESPONSE_1" cardinality="multiple" baseType="identifier">
+  <responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="identifier">
     <correctResponse>
-      <value>mc2</value>
-      <value>mc4</value>
+      <value>sc1</value>
     </correctResponse>
   </responseDeclaration>
-
-  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
-    view="testConstructor">
-    <defaultValue>
-      <value>none</value>
-    </defaultValue>
-  </outcomeDeclaration>
-
-  <outcomeDeclaration identifier="FEEDBACKMODAL" cardinality="multiple" baseType="identifier"
-    view="testConstructor" />
-
-  <outcomeDeclaration identifier="SOLUTIONMODAL" cardinality="single" baseType="identifier"
-    view="testConstructor" />
 
   <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
     <defaultValue>
@@ -43,26 +28,38 @@
     </defaultValue>
   </outcomeDeclaration>
 
+  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
+    view="testConstructor">
+    <defaultValue>
+      <value>none</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
   <itemBody>
     <div>
       <div>Which animals can fly?</div>
     </div>
 
-    <choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="0" minChoices="0"
+    <choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="1"
       orientation="vertical">
-      <simpleChoice identifier="mc1"><p>Crocodiles</p></simpleChoice>
-      <simpleChoice identifier="mc2"><p>Eagles</p></simpleChoice>
-      <simpleChoice identifier="mc3"><p>Kangaroos</p></simpleChoice>
-      <simpleChoice identifier="mc4"><p>Butterflies</p></simpleChoice>
-      <simpleChoice identifier="mc5"><p>Dogs</p></simpleChoice>
+      <simpleChoice identifier="sc1"><p><span class="math">\frac{1}{2}</span></p></simpleChoice>
+      <simpleChoice identifier="sc2"><p>B</p></simpleChoice>
+      <simpleChoice identifier="sc3"><p>C</p></simpleChoice>
     </choiceInteraction>
-
   </itemBody>
 
   <responseProcessing>
 
     <responseCondition>
       <responseIf>
+        <isNull>
+          <variable identifier="RESPONSE_1" />
+        </isNull>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">empty</baseValue>
+        </setOutcomeValue>
+      </responseIf>
+      <responseElseIf>
         <match>
           <variable identifier="RESPONSE_1" />
           <correct identifier="RESPONSE_1" />
@@ -76,111 +73,12 @@
         <setOutcomeValue identifier="FEEDBACKBASIC">
           <baseValue baseType="identifier">correct</baseValue>
         </setOutcomeValue>
-      </responseIf>
+      </responseElseIf>
       <responseElse>
         <setOutcomeValue identifier="FEEDBACKBASIC">
           <baseValue baseType="identifier">incorrect</baseValue>
         </setOutcomeValue>
       </responseElse>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <match>
-            <baseValue baseType="identifier">incorrect</baseValue>
-            <variable identifier="FEEDBACKBASIC" />
-          </match>
-        </and>
-        <setOutcomeValue identifier="SOLUTIONMODAL">
-          <baseValue baseType="identifier">fbIncorrect</baseValue>
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <member>
-            <baseValue baseType="identifier">mc1</baseValue>
-            <variable identifier="RESPONSE_1" />
-          </member>
-        </and>
-        <setOutcomeValue identifier="FEEDBACKMODAL">
-          <multiple>
-            <variable identifier="FEEDBACKMODAL" />
-            <baseValue baseType="identifier">fb1</baseValue>
-          </multiple>
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <member>
-            <baseValue baseType="identifier">mc2</baseValue>
-            <variable identifier="RESPONSE_1" />
-          </member>
-        </and>
-        <setOutcomeValue identifier="FEEDBACKMODAL">
-          <multiple>
-            <variable identifier="FEEDBACKMODAL" />
-            <baseValue baseType="identifier">fb2</baseValue>
-          </multiple>
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <member>
-            <baseValue baseType="identifier">mc3</baseValue>
-            <variable identifier="RESPONSE_1" />
-          </member>
-        </and>
-        <setOutcomeValue identifier="FEEDBACKMODAL">
-          <multiple>
-            <variable identifier="FEEDBACKMODAL" />
-            <baseValue baseType="identifier">fb3</baseValue>
-          </multiple>
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <member>
-            <baseValue baseType="identifier">mc4</baseValue>
-            <variable identifier="RESPONSE_1" />
-          </member>
-        </and>
-        <setOutcomeValue identifier="FEEDBACKMODAL">
-          <multiple>
-            <variable identifier="FEEDBACKMODAL" />
-            <baseValue baseType="identifier">fb4</baseValue>
-          </multiple>
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <member>
-            <baseValue baseType="identifier">mc5</baseValue>
-            <variable identifier="RESPONSE_1" />
-          </member>
-        </and>
-        <setOutcomeValue identifier="FEEDBACKMODAL">
-          <multiple>
-            <variable identifier="FEEDBACKMODAL" />
-            <baseValue baseType="identifier">fb5</baseValue>
-          </multiple>
-        </setOutcomeValue>
-      </responseIf>
     </responseCondition>
 
     <responseCondition>
@@ -208,24 +106,5 @@
     </responseCondition>
 
   </responseProcessing>
-
-  <modalFeedback showHide="show" outcomeIdentifier="SOLUTIONMODAL"
-    identifier="fbIncorrect" title="Explanation"><p>The eagle and butterfly have wings and can fly.
-    The other animals are land animals that cannot fly.</p></modalFeedback>
-
-  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
-    identifier="fb1" title="Crocodile Feedback"><p>No, crocodiles cannot fly!</p></modalFeedback>
-
-  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
-    identifier="fb2" title="Eagles Feedback"><p>Yes, eagles can fly!</p></modalFeedback>
-
-  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
-    identifier="fb3" title="Kangaroos Feedback"><p>No kangaroos cannot fly!</p></modalFeedback>
-
-  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
-    identifier="fb4" title="Butterflies Feedback"><p>Yes, butterflies can fly!</p></modalFeedback>
-
-  <modalFeedback showHide="show" outcomeIdentifier="FEEDBACKMODAL"
-    identifier="fb5" title="Dogs Feedback"><p>No, dogs cannot fly!</p></modalFeedback>
 
 </assessmentItem>
