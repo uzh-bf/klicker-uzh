@@ -1,0 +1,151 @@
+<assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemKPRIM"
+  title="Kprim" adaptive="false" timeDependent="false" toolName="OpenOLAT" toolVersion="6.1.0"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+
+  <responseDeclaration identifier="KPRIM_RESPONSE_1" cardinality="multiple" baseType="directedPair">
+    <correctResponse>
+      <value>kp1 wrong</value>
+      <value>kp2 correct</value>
+      <value>kp3 wrong</value>
+      <value>kp4 correct</value>
+    </correctResponse>
+    <mapping defaultValue="-0.25">
+      <mapEntry mapKey="kp1 wrong" mappedValue="0.25" />
+      <mapEntry mapKey="kp2 correct" mappedValue="0.25" />
+      <mapEntry mapKey="kp3 wrong" mappedValue="0.25" />
+      <mapEntry mapKey="kp4 correct" mappedValue="0.25" />
+    </mapping>
+  </responseDeclaration>
+
+  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
+    view="testConstructor">
+    <defaultValue>
+      <value>none</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float"
+    view="testConstructor">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>1.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <itemBody>
+    <matchInteraction class="match_krpim" responseIdentifier="KPRIM_RESPONSE_1" shuffle="false"
+      maxAssociations="4">
+      <simpleMatchSet>
+        <simpleAssociableChoice identifier="kp1" matchMax="1" matchMin="1"><p>New answer a</p></simpleAssociableChoice>
+        <simpleAssociableChoice identifier="kp2" matchMax="1" matchMin="1"><p>New answer b</p></simpleAssociableChoice>
+        <simpleAssociableChoice identifier="kp3" matchMax="1" matchMin="1"><p>New answer c</p></simpleAssociableChoice>
+        <simpleAssociableChoice identifier="kp4" matchMax="1" matchMin="1"><p>New answer d</p></simpleAssociableChoice>
+      </simpleMatchSet>
+      <simpleMatchSet>
+        <simpleAssociableChoice identifier="correct" fixed="true" matchMax="4">+</simpleAssociableChoice>
+        <simpleAssociableChoice identifier="wrong" fixed="true" matchMax="4">-</simpleAssociableChoice>
+      </simpleMatchSet>
+    </matchInteraction>
+  </itemBody>
+
+  <responseProcessing>
+
+    <responseCondition>
+      <responseIf>
+        <isNull>
+          <variable identifier="KPRIM_RESPONSE_1" />
+        </isNull>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">empty</baseValue>
+        </setOutcomeValue>
+      </responseIf>
+      <responseElseIf>
+        <not>
+          <equal toleranceMode="exact">
+            <containerSize>
+              <variable identifier="KPRIM_RESPONSE_1" />
+            </containerSize>
+            <baseValue baseType="integer">4</baseValue>
+          </equal>
+        </not>
+        <setOutcomeValue identifier="SCORE">
+          <sum>
+            <mapResponse identifier="KPRIM_RESPONSE_1" />
+            <product>
+              <subtract>
+                <baseValue baseType="integer">4</baseValue>
+                <containerSize>
+                  <variable identifier="KPRIM_RESPONSE_1" />
+                </containerSize>
+              </subtract>
+              <baseValue baseType="float">-0.25</baseValue>
+            </product>
+          </sum>
+        </setOutcomeValue>
+      </responseElseIf>
+      <responseElseIf>
+        <match>
+          <variable identifier="KPRIM_RESPONSE_1" />
+          <correct identifier="KPRIM_RESPONSE_1" />
+        </match>
+        <setOutcomeValue identifier="SCORE">
+          <sum>
+            <variable identifier="SCORE" />
+            <variable identifier="MAXSCORE" />
+          </sum>
+        </setOutcomeValue>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">correct</baseValue>
+        </setOutcomeValue>
+      </responseElseIf>
+      <responseElse>
+        <setOutcomeValue identifier="SCORE">
+          <sum>
+            <mapResponse identifier="KPRIM_RESPONSE_1" />
+          </sum>
+        </setOutcomeValue>
+        <setOutcomeValue identifier="FEEDBACKBASIC">
+          <baseValue baseType="identifier">incorrect</baseValue>
+        </setOutcomeValue>
+      </responseElse>
+    </responseCondition>
+
+    <responseCondition>
+      <responseIf>
+        <lt>
+          <variable identifier="SCORE" />
+          <variable identifier="MINSCORE" />
+        </lt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MINSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+
+    <responseCondition>
+      <responseIf>
+        <gt>
+          <variable identifier="SCORE" />
+          <variable identifier="MAXSCORE" />
+        </gt>
+        <setOutcomeValue identifier="SCORE">
+          <variable identifier="MAXSCORE" />
+        </setOutcomeValue>
+      </responseIf>
+    </responseCondition>
+
+  </responseProcessing>
+
+</assessmentItem>
