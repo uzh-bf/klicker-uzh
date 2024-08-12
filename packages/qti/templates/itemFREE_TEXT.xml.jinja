@@ -1,73 +1,52 @@
-<assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemTEXT"
-  title="Essay" adaptive="false" timeDependent="false" toolName="OpenOLAT" toolVersion="6.1.0"
-  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+{% extends "item.xml.jinja" %}
 
-  <responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="string" />
+{% block responseDeclaration %}
+<responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="string" />
+{% endblock %}
 
-  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
-    <defaultValue>
-      <value>0.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block outcomeDeclarations %}
+{% endblock %}
 
-  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
-    <defaultValue>
-      <value>1.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block itemBody %}
+<div>
+  <div>Which animals can fly?</div>
+</div>
 
-  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float"
-    view="testConstructor">
-    <defaultValue>
-      <value>0.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+<extendedTextInteraction responseIdentifier="RESPONSE_1" />
+{% endblock %}
 
-  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
-    view="testConstructor">
-    <defaultValue>
-      <value>none</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block responseProcessing %}
+<responseCondition>
+  <responseIf>
+    <isNull>
+      <variable identifier="RESPONSE_1" />
+    </isNull>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">empty</baseValue>
+    </setOutcomeValue>
+  </responseIf>
+  <responseElseIf>
+    <match>
+      <variable identifier="RESPONSE_1" />
+      <correct identifier="RESPONSE_1" />
+    </match>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <variable identifier="SCORE" />
+        <variable identifier="MAXSCORE" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">correct</baseValue>
+    </setOutcomeValue>
+  </responseElseIf>
+  <responseElse>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">incorrect</baseValue>
+    </setOutcomeValue>
+  </responseElse>
+</responseCondition>
+{% endblock %}
 
-  <itemBody>
-    <extendedTextInteraction responseIdentifier="RESPONSE_1" />
-  </itemBody>
-
-  <responseProcessing>
-
-    <responseCondition>
-      <responseIf>
-        <isNull>
-          <variable identifier="RESPONSE_1" />
-        </isNull>
-        <setOutcomeValue identifier="FEEDBACKBASIC">
-          <baseValue baseType="identifier">empty</baseValue>
-        </setOutcomeValue>
-      </responseIf>
-      <responseElseIf>
-        <match>
-          <variable identifier="RESPONSE_1" />
-          <correct identifier="RESPONSE_1" />
-        </match>
-        <setOutcomeValue identifier="SCORE">
-          <sum>
-            <variable identifier="SCORE" />
-            <variable identifier="MAXSCORE" />
-          </sum>
-        </setOutcomeValue>
-        <setOutcomeValue identifier="FEEDBACKBASIC">
-          <baseValue baseType="identifier">correct</baseValue>
-        </setOutcomeValue>
-      </responseElseIf>
-      <responseElse>
-        <setOutcomeValue identifier="FEEDBACKBASIC">
-          <baseValue baseType="identifier">incorrect</baseValue>
-        </setOutcomeValue>
-      </responseElse>
-    </responseCondition>
-
-  </responseProcessing>
-
-</assessmentItem>
+{% block modalFeedbacks %}
+{% endblock %}

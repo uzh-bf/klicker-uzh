@@ -1,96 +1,70 @@
-<assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemNUMERICAL"
-  title="Numerical input" adaptive="false" timeDependent="false" toolName="OpenOLAT"
-  toolVersion="6.1.0"
-  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+{% extends "item.xml.jinja" %}
 
-  <responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="float">
-    <correctResponse>
-      <value>42.0</value>
-    </correctResponse>
-  </responseDeclaration>
+{% block responseDeclaration %}
+<responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="float">
+  <correctResponse>
+    <value>42.0</value>
+  </correctResponse>
+</responseDeclaration>
+{% endblock %}
 
-  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
-    <defaultValue>
-      <value>0.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block outcomeDeclarations %}
+{% endblock %}
 
-  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float"
-    view="testConstructor">
-    <defaultValue>
-      <value>0.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block itemBody %}
+<p>New text <textEntryInteraction responseIdentifier="RESPONSE_1" /></p>
+{% endblock %}
 
-  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
-    <defaultValue>
-      <value>1.0</value>
-    </defaultValue>
-  </outcomeDeclaration>
+{% block responseProcessing %}
+<responseCondition>
+  <responseIf>
+    <and>
+      <equal toleranceMode="exact" includeLowerBound="true" includeUpperBound="true">
+        <correct identifier="RESPONSE_1" />
+        <variable identifier="RESPONSE_1" />
+      </equal>
+    </and>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <variable identifier="SCORE" />
+        <variable identifier="MAXSCORE" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">correct</baseValue>
+    </setOutcomeValue>
+  </responseIf>
+  <responseElse>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">incorrect</baseValue>
+    </setOutcomeValue>
+  </responseElse>
+</responseCondition>
 
-  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
-    view="testConstructor">
-    <defaultValue>
-      <value>none</value>
-    </defaultValue>
-  </outcomeDeclaration>
+<responseCondition>
+  <responseIf>
+    <lt>
+      <variable identifier="SCORE" />
+      <variable identifier="MINSCORE" />
+    </lt>
+    <setOutcomeValue identifier="SCORE">
+      <variable identifier="MINSCORE" />
+    </setOutcomeValue>
+  </responseIf>
+</responseCondition>
 
-  <itemBody>
-    <p>New text <textEntryInteraction responseIdentifier="RESPONSE_1" /></p>
-  </itemBody>
+<responseCondition>
+  <responseIf>
+    <gt>
+      <variable identifier="SCORE" />
+      <variable identifier="MAXSCORE" />
+    </gt>
+    <setOutcomeValue identifier="SCORE">
+      <variable identifier="MAXSCORE" />
+    </setOutcomeValue>
+  </responseIf>
+</responseCondition>
+{% endblock %}
 
-  <responseProcessing>
-
-    <responseCondition>
-      <responseIf>
-        <and>
-          <equal toleranceMode="exact" includeLowerBound="true" includeUpperBound="true">
-            <correct identifier="RESPONSE_1" />
-            <variable identifier="RESPONSE_1" />
-          </equal>
-        </and>
-        <setOutcomeValue identifier="SCORE">
-          <sum>
-            <variable identifier="SCORE" />
-            <variable identifier="MAXSCORE" />
-          </sum>
-        </setOutcomeValue>
-        <setOutcomeValue identifier="FEEDBACKBASIC">
-          <baseValue baseType="identifier">correct</baseValue>
-        </setOutcomeValue>
-      </responseIf>
-      <responseElse>
-        <setOutcomeValue identifier="FEEDBACKBASIC">
-          <baseValue baseType="identifier">incorrect</baseValue>
-        </setOutcomeValue>
-      </responseElse>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <lt>
-          <variable identifier="SCORE" />
-          <variable identifier="MINSCORE" />
-        </lt>
-        <setOutcomeValue identifier="SCORE">
-          <variable identifier="MINSCORE" />
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-    <responseCondition>
-      <responseIf>
-        <gt>
-          <variable identifier="SCORE" />
-          <variable identifier="MAXSCORE" />
-        </gt>
-        <setOutcomeValue identifier="SCORE">
-          <variable identifier="MAXSCORE" />
-        </setOutcomeValue>
-      </responseIf>
-    </responseCondition>
-
-  </responseProcessing>
-
-</assessmentItem>
+{% block feedbackModals %}
+{% endblock %}

@@ -1,0 +1,46 @@
+<assessmentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="itemSC"
+  title="{{item.title}}" adaptive="false" timeDependent="false" toolName="KlickerUZH" toolVersion="3.2.0"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
+
+  {% block responseDeclaration %}{% endblock %}
+
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float"
+    view="testConstructor">
+    <defaultValue>
+      <value>0.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="MAXSCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>1.0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="FEEDBACKBASIC" cardinality="single" baseType="identifier"
+    view="testConstructor">
+    <defaultValue>
+      <value>none</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  {% block outcomeDeclarations %}{% endblock %}
+
+  <itemBody>
+    {% block itemBody %}{% endblock %}
+  </itemBody>
+
+  <responseProcessing>
+    {% block responseProcessing %}{% endblock %}
+  </responseProcessing>
+
+  {% block modalFeedbacks %}{% endblock %}
+
+</assessmentItem>
