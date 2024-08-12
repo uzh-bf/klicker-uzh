@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<manifest identifier="test" xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+<manifest identifier="manifest" xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
     xmlns:imsmd="http://www.imsglobal.org/xsd/imsmd_v1p2"
     xmlns:imsqti="http://www.imsglobal.org/xsd/imsqti_metadata_v2p1"
     xmlns:ns4="http://www.openolat.org/xsd/oomd_v1p1"
@@ -18,13 +18,13 @@
 
     <resources>
 
-        <resource identifier="test1" type="imsqti_test_xmlv2p1"
-            href="assessmentTest.xml">
-            <file href="assessmentTest.xml" />
+        <resource identifier="test" type="imsqti_test_xmlv2p1"
+            href="test.xml">
+            <file href="test.xml" />
         </resource>
 
-        <resource identifier="item1" type="imsqti_item_xmlv2p1"
-            href="assessmentItem.xml">
+        <resource identifier="itemMC" type="imsqti_item_xmlv2p1"
+            href="itemMC.xml">
             <metadata>
                 <imsmd:lom>
                     <imsmd:technical>
@@ -37,7 +37,7 @@
                     <imsqti:interactionType>choiceInteraction</imsqti:interactionType>
                 </imsqti:qtiMetadata>
             </metadata>
-            <file href="assessmentItem.xml" />
+            <file href="itemMC.xml" />
         </resource>
 
     </resources>
