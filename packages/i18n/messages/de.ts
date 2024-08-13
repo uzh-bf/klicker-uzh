@@ -175,6 +175,7 @@ export default {
       elementN: 'Element {number}',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
+      clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',
     },
     contentInput: {
