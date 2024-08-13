@@ -35,8 +35,8 @@ describe('Create and solve a group activity', () => {
       .click()
       .type(displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .click()
-      .type(description)
+      .focus()
+      .type(description, { force: true })
     cy.get('[data-cy="next-or-submit"]').click()
 
     // fill out the settings of the group activity
@@ -138,7 +138,7 @@ describe('Create and solve a group activity', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
         dataTransfer,
       })
     }
@@ -185,6 +185,7 @@ describe('Create and solve a group activity', () => {
       .clear()
       .type(newDisplayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
+      .focus()
       .clear()
       .type(newDescription)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -250,7 +251,7 @@ describe('Create and solve a group activity', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()

@@ -41,8 +41,7 @@ function DescriptionStep({
             tooltip: 'z-20',
             label: 'text-base mb-0.5 mt-0',
           }}
-          data-test={dataDisplayName?.test}
-          data-cy={dataDisplayName?.cy}
+          data={dataDisplayName}
         />
         <EditorField
           // key={fieldName.value}
