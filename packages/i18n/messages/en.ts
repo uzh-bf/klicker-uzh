@@ -971,6 +971,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       minOneElementPerStack: 'Every stack must contain at least one element.',
+      minOneQuestionGroupActivity:
+        'A group activity must contain at least one question.',
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
@@ -1076,6 +1078,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:
         'In this step, enter the name and description of the group activity and find helpful information for creating the element.',
+      groupActivityMissingCourse:
+        'Group activities must be assigned to a course.',
       groupActivityTypes:
         'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
       groupActivityCreated:

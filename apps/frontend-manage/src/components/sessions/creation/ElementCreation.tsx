@@ -226,7 +226,8 @@ function ElementCreation({
             closeWizard={closeWizard}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            selection={selection}
+            resetSelection={resetSelection}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }

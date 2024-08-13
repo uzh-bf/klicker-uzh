@@ -83,8 +83,8 @@ export interface ElementStackFormValues {
 }
 
 export interface ElementStackErrorValues {
-  displayName: string
-  description: string
+  displayName?: string
+  description?: string
   elementIds: string[]
   titles: string[]
   types: string[]
@@ -113,12 +113,7 @@ export interface PracticeQuizFormValues extends CommonFormValues {
 }
 
 export interface GroupActivityFormValues extends CommonFormValues {
-  questions: {
-    id: number
-    title: string
-    hasAnswerFeedbacks: boolean
-    hasSampleSolution: boolean
-  }[]
+  stack: ElementStackFormValues
   startDate: string
   endDate: string
   clues: GroupActivityClueFormValues[]

@@ -59,6 +59,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-end-date"]')
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // add clues to the group activity
     // create 1 text clue and two numerical clues (one with and one without unit)
@@ -128,7 +129,6 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.findByText(clueName3).should('exist')
     cy.findByText(clueContent3).should('exist')
-    cy.get('[data-cy="next-or-submit"]').click()
 
     // add questions to the group activity
     for (let i = 0; i < 2; i++) {
@@ -206,6 +206,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-end-date"]')
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // TODO: also test editing and deleting clues
     // check that clues exist and add a new one
@@ -241,7 +242,6 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.get(`[data-cy="groupActivity-clue-${clueNameNew}"]`).should('exist')
     cy.findByText(fullContentNew).should('exist')
-    cy.get('[data-cy="next-or-submit"]').click()
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()

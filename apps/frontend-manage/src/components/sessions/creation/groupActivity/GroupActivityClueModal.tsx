@@ -44,7 +44,7 @@ function GroupActivityClueModal({
       <Button
         fluid
         className={{
-          root: 'h-full min-h-20 hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+          root: 'h-16 hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
         }}
         onClick={() => {
           unsetClueIx()

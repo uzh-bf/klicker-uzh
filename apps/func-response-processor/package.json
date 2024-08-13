@@ -21,7 +21,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^20.12.12",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "3.0.0-alpha.11",
+    "@uzh-bf/design-system": "3.0.0-alpha.13",
     "azure-functions-core-tools": "4.0.5801",
     "cross-env": "7.0.3",
     "dotenv": "16.4.5",

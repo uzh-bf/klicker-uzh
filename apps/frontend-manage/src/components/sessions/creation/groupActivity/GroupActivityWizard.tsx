@@ -5,11 +5,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateGroupActivityDocument,
   EditGroupActivityDocument,
-  ElementStackInput,
+  Element,
   ElementType,
   GetSingleCourseDocument,
   GroupActivity,
   ParameterType,
+  StackElementsInput,
 } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
@@ -35,6 +36,7 @@ import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast
 import BlockField from '../BlockField'
 import { ElementSelectCourse } from '../ElementCreation'
 import MultistepWizard, {
+  ElementStackFormValues,
   GroupActivityClueFormValues,
   GroupActivityFormValues,
 } from '../MultistepWizard'
@@ -42,6 +44,8 @@ import WizardErrorMessage from '../WizardErrorMessage'
 import GroupActivityClueModal from './GroupActivityClueModal'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
 import GroupActivityInformationStep from './GroupActivityInformationStep'
+import GroupActivitySettingsStep from './GroupActivitySettingsStep'
+import GroupActivityStackClues from './GroupActivityStackClues'
 
 export interface GroupActivityWizardStepProps {
   onSubmit?: () => void
@@ -55,10 +59,8 @@ interface GroupActivityWizardProps {
   closeWizard: () => void
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
-  courses?: {
-    label: string
-    value: string
-  }[]
+  selection: Record<number, Element>
+  resetSelection: () => void
   initialValues?: GroupActivity
 }
 
@@ -67,7 +69,8 @@ function GroupActivityWizard({
   closeWizard,
   gamifiedCourses,
   nonGamifiedCourses,
-  courses,
+  selection,
+  resetSelection,
   initialValues,
 }: GroupActivityWizardProps) {
   const router = useRouter()
@@ -76,11 +79,19 @@ function GroupActivityWizard({
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
+  const [selectedCourseId, setSelectedCourseId] = useState('')
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
   const [editGroupActivity] = useMutation(EditGroupActivityDocument)
 
-  const [selectedCourseId, setSelectedCourseId] = useState('')
+  const acceptedTypes = [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
+    ElementType.FreeText,
+    ElementType.Content,
+  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -95,7 +106,7 @@ function GroupActivityWizard({
     description: yup.string(),
   })
 
-  const stepTwoValidationSchema = yup.object().shape({
+  const settingsValidationSchema = yup.object().shape({
     startDate: yup.date().required(t('manage.sessionForms.startDate')),
     endDate: yup
       .date()
@@ -107,6 +118,23 @@ function GroupActivityWizard({
     courseId: yup
       .string()
       .required(t('manage.sessionForms.groupActivityCourse')),
+  })
+
+  const stackCluesValiationSchema = yup.object().shape({
+    stack: yup.object().shape({
+      elementIds: yup
+        .array()
+        .of(yup.number())
+        .min(1, t('manage.sessionForms.minOneQuestionGroupActivity')),
+      titles: yup.array().of(yup.string()),
+      types: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf(acceptedTypes, t('manage.sessionForms.groupActivityTypes'))
+        ),
+    }),
     clues: yup
       .array()
       .of(
@@ -127,31 +155,6 @@ function GroupActivityWizard({
       .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
   })
 
-  const stepThreeValidationSchema = yup.object().shape({
-    questions: yup
-      .array()
-      .of(
-        yup.object().shape({
-          id: yup.string(),
-          title: yup.string(),
-          type: yup
-            .string()
-            .oneOf(
-              [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-                ElementType.FreeText,
-                ElementType.Content,
-              ],
-              t('manage.sessionForms.groupActivityTypes')
-            ),
-        })
-      )
-      .min(1),
-  })
-
   const onSubmit = async (values: GroupActivityFormValues) => {
     try {
       let success = false
@@ -167,13 +170,15 @@ function GroupActivityWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
             clues: values.clues,
-            stack: values.questions.reduce<ElementStackInput>(
-              (acc, q, ix) => {
-                acc.elements.push({ elementId: q.id, order: ix })
-                return acc
-              },
-              { order: 0, elements: [] }
-            ),
+            stack: {
+              elements: values.stack.elementIds.map<StackElementsInput>(
+                (id, ix) => ({
+                  elementId: id,
+                  order: ix,
+                })
+              ),
+              order: 0,
+            },
           },
           refetchQueries: [
             {
@@ -197,13 +202,15 @@ function GroupActivityWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
             clues: values.clues,
-            stack: values.questions.reduce<ElementStackInput>(
-              (acc, q, ix) => {
-                acc.elements.push({ elementId: q.id, order: ix })
-                return acc
-              },
-              { order: 0, elements: [] }
-            ),
+            stack: {
+              elements: values.stack.elementIds.map<StackElementsInput>(
+                (id, ix) => ({
+                  elementId: id,
+                  order: ix,
+                })
+              ),
+              order: 0,
+            },
           },
           refetchQueries: [
             {
@@ -261,17 +268,34 @@ function GroupActivityWizard({
                 unit: clue.unit ?? undefined,
               }
             }) ?? [],
-          questions:
-            initialValues?.stacks && initialValues?.stacks[0].elements
-              ? initialValues.stacks[0].elements?.map((element) => {
-                  return {
-                    id: element.elementData.elementId,
-                    title: element.elementData.name,
-                    hasAnswerFeedbacks: true, // TODO - based on questionData options
-                    hasSampleSolution: true, // TODO - based on questionData options
+          stack: initialValues?.stacks
+            ? {
+                displayName: initialValues?.stacks[0].displayName,
+                description: initialValues?.stacks[0].description,
+                ...initialValues?.stacks[0].elements!.reduce(
+                  (acc: ElementStackFormValues, element) => {
+                    acc.elementIds.push(parseInt(element.elementData.id))
+                    acc.titles.push(element.elementData.name)
+                    acc.types.push(element.elementData.type)
+                    return acc
+                  },
+                  {
+                    elementIds: [],
+                    titles: [],
+                    types: [],
+                    hasSampleSolutions: [],
                   }
-                })
-              : [],
+                ),
+              }
+            : {
+                displayName: '',
+                description: '',
+                elementIds: [],
+                titles: [],
+                types: [],
+                hasSampleSolutions: [],
+              },
+
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
                 .local()
@@ -326,13 +350,17 @@ function GroupActivityWizard({
         <GroupActivityDescriptionStep
           validationSchema={descriptionValidationSchema}
         />
-        <StepTwo
-          validationSchema={stepTwoValidationSchema}
-          courses={courses}
+        <GroupActivitySettingsStep
+          validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />
-        <StepThree validationSchema={stepThreeValidationSchema} />
+        <GroupActivityStackClues
+          selection={selection}
+          resetSelection={resetSelection}
+          acceptedTypes={acceptedTypes}
+          validationSchema={stackCluesValiationSchema}
+        />
       </MultistepWizard>
       <ElementCreationErrorToast
         open={errorToastOpen}
@@ -354,10 +382,6 @@ interface StepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  courses?: {
-    label: string
-    value: string
-  }[]
 }
 
 function StepTwo(props: StepProps) {
@@ -482,7 +506,6 @@ function StepTwo(props: StepProps) {
             type="info"
             className={{ root: 'w-max max-w-[40rem]' }}
           >
-            {/* // TODO: the case where no gamified course exists should be caught before starting the wizard - otherwise title and description already entered will be lost! */}
             {props.gamifiedCourses?.length === 0
               ? t('manage.sessionForms.missingGamifiedCourses')
               : t('manage.sessionForms.selectGamifiedCourse')}
