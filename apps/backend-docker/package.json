@@ -73,6 +73,7 @@
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",

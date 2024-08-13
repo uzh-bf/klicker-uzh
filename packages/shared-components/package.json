@@ -53,6 +53,7 @@
     "build:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css",
     "check": "tsc --noEmit",
     "dev": "run-p dev:tw:*",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "run-p dev:tw:*",
     "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
     "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w",

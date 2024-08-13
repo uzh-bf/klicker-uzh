@@ -37,6 +37,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7073 --verbose --javascript",
     "dev:ts": "tsup --watch",
     "format": "prettier --write .",

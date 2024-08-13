@@ -60,6 +60,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "run-p dev:tw:* dev:ts",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsup --watch",
     "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",

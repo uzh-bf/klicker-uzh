@@ -49,6 +49,7 @@
     "build:test": "cross-env NODE_ENV=test next build",
     "check": "tsc --noEmit",
     "dev": "next dev --port 3010",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "next dev --port 3010",
     "dev:test": "cross-env NODE_ENV=test next dev --port 3010",
     "format": "prettier --write .",
