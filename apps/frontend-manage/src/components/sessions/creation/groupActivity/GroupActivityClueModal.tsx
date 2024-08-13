@@ -4,9 +4,9 @@ import { ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   Modal,
+  NewFormikNumberField,
   NewFormikSelectField,
   NewFormikTextField,
-  NewFromikNumberField,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -150,7 +150,7 @@ function GroupActivityClueModal({
               )}
               {values.type === ParameterType.Number && (
                 <div className="flex flex-row gap-2 w-full">
-                  <NewFromikNumberField
+                  <NewFormikNumberField
                     name="value"
                     label={t('shared.generic.value')}
                     labelType="small"
