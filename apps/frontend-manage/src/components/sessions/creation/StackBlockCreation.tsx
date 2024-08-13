@@ -29,20 +29,32 @@ import StackDescriptionModal from './StackDescriptionModal'
 interface StackBlockCreationProps {
   index: number
   stack: ElementStackFormValues
-  numOfStacks: number
   acceptedTypes: ElementType[]
-  remove: (index: number) => void
-  move: (from: number, to: number) => void
   replace: (index: number, value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
+  singleStackMode?: boolean
+  className?: string
+}
+
+interface StackBlockCreationMultipleProps extends StackBlockCreationProps {
+  numOfStacks: number
+  remove: (index: number) => void
+  move: (from: number, to: number) => void
   error?: ElementStackErrorValues[]
+}
+
+interface StackBlockCreationSingleProps extends StackBlockCreationProps {
+  numOfStacks?: never
+  remove?: never
+  move?: never
+  error?: ElementStackErrorValues
 }
 
 function StackBlockCreation({
   index,
   stack,
-  numOfStacks,
+  numOfStacks = 1,
   acceptedTypes,
   remove,
   move,
@@ -50,7 +62,11 @@ function StackBlockCreation({
   selection,
   resetSelection,
   error,
-}: StackBlockCreationProps): React.ReactElement {
+  singleStackMode = false,
+  className,
+}:
+  | StackBlockCreationMultipleProps
+  | StackBlockCreationSingleProps): React.ReactElement {
   const t = useTranslations()
   const [stackDescriptionModal, setStackDescriptionModal] = useState(false)
 
@@ -77,13 +93,21 @@ function StackBlockCreation({
   )
 
   return (
-    <div key={index} className="flex flex-col w-56" data-cy={`stack-${index}`}>
+    <div
+      key={index}
+      className={twMerge('flex flex-col w-56', className)}
+      data-cy={`stack-${index}`}
+    >
       <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="stack-container-header">
-            {t('shared.generic.stackN', { number: index + 1 })}
+            {singleStackMode
+              ? t('shared.generic.questions')
+              : t('shared.generic.stackN', { number: index + 1 })}
           </div>
           {error &&
+            !singleStackMode &&
+            Array.isArray(error) &&
             error.length > index &&
             typeof error[index] !== 'undefined' && (
               <Tooltip
@@ -97,61 +121,80 @@ function StackBlockCreation({
                 />
               </Tooltip>
             )}
+          {error && !Array.isArray(error) && singleStackMode && (
+            <Tooltip
+              tooltip={<StackCreationErrors errors={error} />}
+              delay={0}
+              className={{ tooltip: 'text-sm z-20' }}
+            >
+              <FontAwesomeIcon
+                icon={faCircleExclamation}
+                className="mr-1 text-red-600"
+              />
+            </Tooltip>
+          )}
         </div>
         <div className="flex flex-row gap-1 text-xs">
-          <Button
-            basic
-            className={{
-              root: 'disabled:hidden hover:bg-primary-20 px-1',
-            }}
-            disabled={numOfStacks === 1}
-            onClick={() => move(index, index !== 0 ? index - 1 : index)}
-            data={{ cy: `move-stack-${index}-left` }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowLeft} />
-            </Button.Icon>
-          </Button>
-          <Button
-            basic
-            className={{
-              root: 'disabled:hidden hover:bg-primary-20 px-1',
-            }}
-            disabled={numOfStacks === 1}
-            onClick={() =>
-              move(index, index !== numOfStacks ? index + 1 : index)
-            }
-            data={{ cy: `move-stack-${index}-right` }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button.Icon>
-          </Button>
-
-          <Button
-            basic
-            onClick={() => setStackDescriptionModal(true)}
-            className={{
-              root: 'px-1 hover:text-primary ',
-            }}
-            data={{ cy: `open-stack-${index}-description` }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faCommentDots} size="lg" />
-            </Button.Icon>
-          </Button>
-          <Button
-            basic
-            onClick={() => remove(index)}
-            className={{
-              root: 'px-1  hover:text-red-600',
-            }}
-            data={{ cy: 'delete-stack' }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faTrash} />
-            </Button.Icon>
-          </Button>
+          {!singleStackMode && typeof move !== 'undefined' && (
+            <Button
+              basic
+              className={{
+                root: 'disabled:hidden hover:bg-primary-20 px-1',
+              }}
+              disabled={numOfStacks === 1}
+              onClick={() => move(index, index !== 0 ? index - 1 : index)}
+              data={{ cy: `move-stack-${index}-left` }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowLeft} />
+              </Button.Icon>
+            </Button>
+          )}
+          {!singleStackMode && typeof move !== 'undefined' && (
+            <Button
+              basic
+              className={{
+                root: 'disabled:hidden hover:bg-primary-20 px-1',
+              }}
+              disabled={numOfStacks === 1}
+              onClick={() =>
+                move(index, index !== numOfStacks ? index + 1 : index)
+              }
+              data={{ cy: `move-stack-${index}-right` }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button.Icon>
+            </Button>
+          )}
+          {!singleStackMode && (
+            <Button
+              basic
+              onClick={() => setStackDescriptionModal(true)}
+              className={{
+                root: 'px-1 hover:text-primary ',
+              }}
+              data={{ cy: `open-stack-${index}-description` }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faCommentDots} size="lg" />
+              </Button.Icon>
+            </Button>
+          )}
+          {!singleStackMode && typeof remove !== 'undefined' && (
+            <Button
+              basic
+              onClick={() => remove(index)}
+              className={{
+                root: 'px-1  hover:text-red-600',
+              }}
+              data={{ cy: 'delete-stack' }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrash} />
+              </Button.Icon>
+            </Button>
+          )}
         </div>
       </div>
       <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">

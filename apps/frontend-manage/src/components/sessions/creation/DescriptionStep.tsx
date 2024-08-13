@@ -8,8 +8,10 @@ interface DescriptionStepProps {
   description?: string
   displayNameTooltip: string
   descriptionTooltip: string
+  descriptionLabel?: string
   dataDisplayName?: { test?: string; cy?: string }
   dataDescription?: { test?: string; cy?: string }
+  descriptionRequired?: boolean
   [key: string]: any
 }
 
@@ -18,8 +20,10 @@ function DescriptionStep({
   description,
   displayNameTooltip,
   descriptionTooltip,
+  descriptionLabel,
   dataDisplayName,
   dataDescription,
+  descriptionRequired = false,
 }: DescriptionStepProps) {
   const t = useTranslations()
 
@@ -37,12 +41,12 @@ function DescriptionStep({
             tooltip: 'z-20',
             label: 'text-base mb-0.5 mt-0',
           }}
-          data-test={dataDisplayName?.test}
-          data-cy={dataDisplayName?.cy}
+          data={dataDisplayName}
         />
         <EditorField
           // key={fieldName.value}
-          label={t('shared.generic.description')}
+          required={descriptionRequired}
+          label={descriptionLabel ?? t('shared.generic.description')}
           tooltip={descriptionTooltip}
           fieldName="description"
           showToolbarOnFocus={false}

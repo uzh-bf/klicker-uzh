@@ -17,9 +17,12 @@ function LiveQuizBlocksError({ errors }: LiveQuizBlocksErrorProps) {
       ].flatMap(
         (error: string, ix: number) =>
           error && (
-            <li key={`error-questionId-${ix}`}>{`${t('shared.generic.blockN', {
-              number: ix + 1,
-            })}: ${error}`}</li>
+            <li key={`error-questionId-${ix}`}>{`${t(
+              'shared.generic.elementN',
+              {
+                number: ix + 1,
+              }
+            )}: ${error}`}</li>
           )
       )}
       {errors.timeLimit && <li>{errors.timeLimit}</li>}

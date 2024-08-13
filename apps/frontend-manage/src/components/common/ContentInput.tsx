@@ -96,6 +96,7 @@ function ContentInput({
         disabled && 'pointer-events-none opacity-70',
         'border border-solid rounded flex-1 relative',
         showToolbarOnFocus && 'group',
+        error && touched && 'border-red-500',
         className?.root
       )}
     >

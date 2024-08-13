@@ -15,7 +15,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import GroupActivityWizard from './GroupActivityWizard'
+import GroupActivityWizard from './groupActivity/GroupActivityWizard'
 import LiveSessionWizard from './liveQuiz/LiveSessionWizard'
 import MicroLearningWizard from './microLearning/MicroLearningWizard'
 import PracticeQuizWizard from './practiceQuiz/PracticeQuizWizard'
@@ -226,7 +226,8 @@ function ElementCreation({
             closeWizard={closeWizard}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            selection={selection}
+            resetSelection={resetSelection}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }

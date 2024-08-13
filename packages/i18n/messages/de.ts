@@ -175,7 +175,9 @@ export default {
       elementN: 'Element {number}',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
+      clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',
+      taskDescription: 'Aufgabenstellung',
     },
     contentInput: {
       boldStyle:
@@ -975,6 +977,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       minOneElementPerStack:
         'Jeder Stack muss mindestens ein Element enthalten.',
+      minOneQuestionGroupActivity:
+        'Eine Gruppenaktivität muss mindestens eine Frage enthalten.',
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
@@ -1082,12 +1086,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die Erstellung dieses Elementtyps ist ein gamifizierter Kurs erforderlich. Bitte aktivieren Sie die Gamifizierung in einem Ihrer bestehenden Kurse oder erstellen Sie einen neuen gamifizierten Kurs.',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
+      groupActivityInformation:
+        'Geben Sie in diesem Schritt den Namen für die Gruppenaktivität ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
+      groupActivityMissingCourse:
+        'Gruppenaktivitäten müssen einem Kurs zugewiesen werden.',
       groupActivityTypes:
         'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       groupActivityCreated:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
+      groupActivityNoCourse:
+        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+      groupActivityIntroductionName:
+        'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      groupActivityLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Gruppenaktivitäten, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      groupActivityStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       groupActivityDescription:
         'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
       groupActivitySettings:
@@ -1101,7 +1117,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityName:
         'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
       groupActivityDescField:
-        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, welche alle Informationen enthält, die für das Lösen aller Fragen mit den bereitgestellten Hinweisen erforderlich sind.',
       groupActivityCourse:
         'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
       groupActivityStartDate:
@@ -1115,6 +1131,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityCluesDescription:
         'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
       groupActivityAddClue: 'Neuen Hinweis hinzufügen',
+      groupActivityCluesUniqueNames:
+        'Alle Hinweise müssen eindeutige Namen haben.',
       groupActivityClueType: 'Hinweis-Typ',
       textClue: 'Text-Hinweis',
       numericalClue: 'Numerischer Hinweis',
@@ -1122,6 +1140,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
       groupActivityDisplayNameError:
         'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityDescriptionError:
+        'Bitte geben Sie eine Aufgabenstellung für Ihre Gruppenaktivität ein.',
       groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
       clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
       clueDisplayNameMissing:

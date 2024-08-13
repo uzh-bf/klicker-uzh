@@ -5,8 +5,8 @@ import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
   NewFormikDateField,
+  NewFormikNumberField,
   NewFormikSelectField,
-  NewFromikNumberField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormikContext } from 'formik'
@@ -92,7 +92,7 @@ function PracticeQuizSettingsStep(props: PracticeQuizWizardStepProps) {
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <NewFromikNumberField
+          <NewFormikNumberField
             name="resetTimeDays"
             label={t('shared.generic.repetitionInterval')}
             tooltip={t('manage.sessionForms.practiceQuizRepetition')}
