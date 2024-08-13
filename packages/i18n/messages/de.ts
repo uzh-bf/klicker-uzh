@@ -1129,6 +1129,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityCluesDescription:
         'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
       groupActivityAddClue: 'Neuen Hinweis hinzufügen',
+      groupActivityCluesUniqueNames:
+        'Alle Hinweise müssen eindeutige Namen haben.',
       groupActivityClueType: 'Hinweis-Typ',
       textClue: 'Text-Hinweis',
       numericalClue: 'Numerischer Hinweis',

@@ -1119,6 +1119,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityCluesDescription:
         'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
       groupActivityAddClue: 'Add new clue',
+      groupActivityCluesUniqueNames: 'All clues must have unique names.',
       groupActivityClueType: 'Clue type',
       textClue: 'Text clue',
       numericalClue: 'Numerical clue',

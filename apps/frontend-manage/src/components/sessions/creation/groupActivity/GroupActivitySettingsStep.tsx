@@ -37,7 +37,7 @@ function GroupActivitySettingsStep(props: GroupActivityWizardStepProps) {
       <div
         className={twMerge(
           'border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md',
-          typeof values.courseId === 'undefined' && 'border-orange-400'
+          typeof values.courseId !== 'undefined' && 'border-orange-400'
         )}
       >
         <div className="flex flex-row gap-2 items-center justify-center">
