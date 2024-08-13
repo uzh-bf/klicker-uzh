@@ -36,7 +36,7 @@ describe('Create and solve a group activity', () => {
       .type(displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
       .focus()
-      .type(description, { force: true })
+      .type(description)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // fill out the settings of the group activity
@@ -209,11 +209,39 @@ describe('Create and solve a group activity', () => {
       .type(`${currentYear + 1}-12-31T18:00`)
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: also test editing and deleting clues
     // check that clues exist and add a new one
     cy.findByText(clueName).should('exist')
     cy.findByText(clueName2).should('exist')
     cy.findByText(clueName3).should('exist')
+
+    // edit existing clue
+    const clueNameEdited = 'Edited ' + clueName
+    const clueDisplayNameEdited = 'Edited ' + clueDisplayName
+    const clueContentEdited = 'Edited ' + clueContent
+    cy.get(`[data-cy="edit-clue-${clueName}"]`).click()
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .should('have.value', clueName)
+      .clear()
+      .type(clueNameEdited)
+    cy.get('[data-cy="group-activity-clue-display-name"]')
+      .click()
+      .should('have.value', clueDisplayName)
+      .clear()
+      .type(clueDisplayNameEdited)
+    cy.get('[data-cy="group-activity-string-clue-value"]')
+      .click()
+      .should('have.value', clueContent)
+      .clear()
+      .type(clueContentEdited)
+    cy.get('[data-cy="group-activity-clue-save"]').click()
+    cy.findByText(clueNameEdited).should('exist')
+    cy.findByText(clueContentEdited).should('exist')
+
+    // delete existing clue
+    cy.get(`[data-cy="remove-clue-${clueNameEdited}"]`).click()
+    cy.findByText(clueNameEdited).should('not.exist')
+    cy.findByText(clueContentEdited).should('not.exist')
 
     const clueNameNew = 'New Clue ' + random
     const clueDisplayNameNew = 'New Clue Display Name ' + random
