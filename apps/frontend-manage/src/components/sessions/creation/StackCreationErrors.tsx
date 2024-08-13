@@ -17,13 +17,43 @@ function StackCreationErrors({ errors }: StackCreationErrorsProps) {
         ...(errors.elementIds && typeof errors.elementIds !== 'string'
           ? errors.elementIds
           : []),
-        ...(errors.titles ?? []),
-        ...(errors.types ?? []),
-        ...(errors.hasSampleSolutions ?? []),
       ].flatMap(
         (error: string, ix: number) =>
           error && (
-            <li key={`error-questionId-${ix}`}>{`${t(
+            <li key={`error-questionId-elementId-${ix}`}>{`${t(
+              'shared.generic.elementN',
+              {
+                number: ix + 1,
+              }
+            )}: ${error}`}</li>
+          )
+      )}
+      {[...(errors.titles ?? [])].flatMap(
+        (error: string, ix: number) =>
+          error && (
+            <li key={`error-questionId-titles-${ix}`}>{`${t(
+              'shared.generic.elementN',
+              {
+                number: ix + 1,
+              }
+            )}: ${error}`}</li>
+          )
+      )}
+      {[...(errors.types ?? [])].flatMap(
+        (error: string, ix: number) =>
+          error && (
+            <li key={`error-questionId-types-${ix}`}>{`${t(
+              'shared.generic.elementN',
+              {
+                number: ix + 1,
+              }
+            )}: ${error}`}</li>
+          )
+      )}
+      {[...(errors.hasSampleSolutions ?? [])].flatMap(
+        (error: string, ix: number) =>
+          error && (
+            <li key={`error-questionId-hasSampleSolutions-${ix}`}>{`${t(
               'shared.generic.elementN',
               {
                 number: ix + 1,
