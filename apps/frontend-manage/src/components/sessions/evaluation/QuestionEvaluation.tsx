@@ -153,7 +153,6 @@ function QuestionEvaluation({
               <div className="mt-4 font-bold">
                 {t('manage.evaluation.statistics')}:
               </div>
-              {console.log(currentInstance.statistics)}
               {currentInstance.statistics ? (
                 Object.entries(currentInstance.statistics)
                   .slice(1)

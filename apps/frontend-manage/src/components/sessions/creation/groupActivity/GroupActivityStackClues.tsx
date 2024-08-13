@@ -53,21 +53,19 @@ function GroupActivityStackClues({
         <FieldArray name="clues">
           {({ push, remove, replace }: FieldArrayRenderProps) => (
             <div className="w-full">
-              <div className="flex flex-row gap-4">
-                <div className="flex flex-row items-center gap-3">
-                  <Label
-                    required
-                    tooltip={t(
-                      'manage.sessionForms.groupActivityCluesDescription'
-                    )}
-                    label={t('shared.generic.clues')}
-                    showTooltipSymbol
-                    className={{
-                      root: 'font-bold',
-                      tooltip: 'font-normal text-sm !z-30',
-                    }}
-                  />
-                </div>
+              <div className="flex flex-row items-center gap-3">
+                <Label
+                  required
+                  tooltip={t(
+                    'manage.sessionForms.groupActivityCluesDescription'
+                  )}
+                  label={t('shared.generic.clues')}
+                  showTooltipSymbol
+                  className={{
+                    root: 'font-bold -mb-2',
+                    tooltip: 'font-normal text-sm !z-30',
+                  }}
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3 w-full max-h-32 overflow-y-auto">
                 {values.clues.map((clue, ix) => (

@@ -1081,7 +1081,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityMissingCourse:
         'Group activities must be assigned to a course.',
       groupActivityTypes:
-        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, and free-text questions.',
       groupActivityCreated:
         'Your group activity <b>{name}</b> has been created successfully.',
       groupActivityEdited:
