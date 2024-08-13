@@ -274,7 +274,6 @@ function LiveSessionWizard({
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         editMode={editMode}
-        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}

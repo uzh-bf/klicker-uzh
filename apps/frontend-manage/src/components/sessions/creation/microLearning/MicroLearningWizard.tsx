@@ -274,7 +274,6 @@ function MicroLearningWizard({
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         editMode={!!initialValues}
-        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}

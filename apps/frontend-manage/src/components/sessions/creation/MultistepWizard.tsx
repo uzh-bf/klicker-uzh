@@ -20,7 +20,6 @@ interface MultistepWizardProps {
   title: string
   isCompleted: boolean
   editMode: boolean
-  initialValid: boolean
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   children: React.ReactNode[]
   initialValues?: any
@@ -141,7 +140,6 @@ function MultistepWizard({
   onSubmit,
   isCompleted,
   editMode,
-  initialValid,
   completionSuccessMessage,
   onViewElement,
   onRestartForm,
@@ -179,7 +177,7 @@ function MultistepWizard({
       initialValues={initialValues}
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
-      isInitialValid={initialValid}
+      validateOnMount
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
         <Form className="h-full w-full flex flex-col">
@@ -196,7 +194,6 @@ function MultistepWizard({
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
-              // TODO: validation on mount potentially broken for description step
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={
                 continueDisabled ? 1 : isValid ? stepNumber + 2 : stepNumber + 1

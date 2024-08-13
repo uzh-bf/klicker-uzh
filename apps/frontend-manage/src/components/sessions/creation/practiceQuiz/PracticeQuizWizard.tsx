@@ -279,7 +279,6 @@ function PracticeQuizWizard({
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         editMode={!!initialValues && !conversion}
-        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
