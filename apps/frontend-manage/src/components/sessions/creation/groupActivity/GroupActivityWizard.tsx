@@ -82,7 +82,9 @@ function GroupActivityWizard({
     displayName: yup
       .string()
       .required(t('manage.sessionForms.groupActivityDisplayNameError')),
-    description: yup.string(),
+    description: yup
+      .string()
+      .required(t('manage.sessionForms.groupActivityDescriptionError')),
   })
 
   const settingsValidationSchema = yup.object().shape({

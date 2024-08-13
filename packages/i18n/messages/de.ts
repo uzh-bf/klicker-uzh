@@ -177,6 +177,7 @@ export default {
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',
+      taskDescription: 'Aufgabenstellung',
     },
     contentInput: {
       boldStyle:
@@ -1116,7 +1117,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityName:
         'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
       groupActivityDescField:
-        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, welche alle Informationen enthält, die für das Lösen aller Fragen mit den bereitgestellten Hinweisen erforderlich sind.',
       groupActivityCourse:
         'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
       groupActivityStartDate:
@@ -1139,6 +1140,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein.',
       groupActivityDisplayNameError:
         'Bitte geben Sie einen Anzeigenamen für Ihre Gruppenaktivität ein.',
+      groupActivityDescriptionError:
+        'Bitte geben Sie eine Aufgabenstellung für Ihre Gruppenaktivität ein.',
       groupActivityMin2Clues: 'Bitte fügen Sie mindestens zwei Hinweise hinzu.',
       clueNameMissing: 'Bitte geben Sie einen Namen für Ihren Hinweis ein.',
       clueDisplayNameMissing:

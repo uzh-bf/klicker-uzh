@@ -177,6 +177,7 @@ export default {
       questionN: 'Question {number}',
       clueN: 'Clue {number}',
       availability: 'Availability',
+      taskDescription: 'Task description',
     },
     contentInput: {
       boldStyle:
@@ -1106,7 +1107,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityName:
         'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
       groupActivityDescField:
-        'Add a description to your group activity that will be displayed to participants at the beginning.',
+        'Add a task description to your group activity that contains all information necessary to solve all questions with the provided clues.',
       groupActivityCourse:
         'For the creation of a group activity, the selection of the corresponding course is required.',
       groupActivityStartDate:
@@ -1127,6 +1128,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityNameError: 'Please enter a name for your group activity.',
       groupActivityDisplayNameError:
         'Please enter a valid display name for your group activity.',
+      groupActivityDescriptionError:
+        'Please enter a task description for your group activity.',
       groupActivityMin2Clues:
         'Please add at least two clues to your group activity.',
       clueNameMissing: 'Please enter a name for your clue.',
