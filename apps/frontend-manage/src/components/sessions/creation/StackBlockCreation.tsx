@@ -107,7 +107,7 @@ function StackBlockCreation({
           </div>
           {error &&
             !singleStackMode &&
-            error instanceof Array &&
+            Array.isArray(error) &&
             error.length > index &&
             typeof error[index] !== 'undefined' && (
               <Tooltip
@@ -121,7 +121,7 @@ function StackBlockCreation({
                 />
               </Tooltip>
             )}
-          {error && !(error instanceof Array) && singleStackMode && (
+          {error && !Array.isArray(error) && singleStackMode && (
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
