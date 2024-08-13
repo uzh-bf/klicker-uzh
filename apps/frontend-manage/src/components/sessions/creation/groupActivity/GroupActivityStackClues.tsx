@@ -38,8 +38,6 @@ function GroupActivityStackClues({
   const [clueIx, setClueIx] = useState<number | undefined>(undefined)
   const [clueModal, setClueModal] = useState(false)
 
-  console.log(metaClues.error)
-
   return (
     <div className="flex flex-row gap-3">
       <StackBlockCreation
