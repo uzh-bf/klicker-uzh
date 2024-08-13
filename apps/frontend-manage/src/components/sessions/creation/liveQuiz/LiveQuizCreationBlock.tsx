@@ -173,10 +173,7 @@ function LiveQuizCreationBlock({
           return (
             <div
               key={`${questionIdx}-${title}`}
-              className={twMerge(
-                'flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5',
-                isInvalid && 'bg-orange-200'
-              )}
+              className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
               data-cy={`question-${questionIdx}-block-${index}`}
             >
               <div className="flex-1">
