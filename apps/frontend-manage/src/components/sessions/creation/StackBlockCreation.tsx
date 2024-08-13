@@ -204,32 +204,16 @@ function StackBlockCreation({
               ? error.length > index && error[index]
               : error
 
-          let isInvalid = false
-          if (errors) {
-            isInvalid =
-              !!(
-                errors.elementIds &&
-                errors.elementIds.length > questionIdx &&
-                errors.elementIds[questionIdx]
-              ) ||
-              !!(
-                errors.titles &&
-                errors.titles.length > questionIdx &&
-                errors.titles[questionIdx]
-              ) ||
-              !!(
-                errors.types &&
-                errors.types.length > questionIdx &&
-                errors.types[questionIdx]
-              ) ||
-              !!(
-                errors.hasSampleSolutions &&
-                errors.hasSampleSolutions.length > questionIdx &&
-                errors.hasSampleSolutions[questionIdx]
-              )
-          } else {
-            isInvalid = false
-          }
+          const isInvalid =
+            errors &&
+            (
+              ['elementIds', 'titles', 'types', 'hasSampleSolutions'] as (
+                | 'elementIds'
+                | 'titles'
+                | 'types'
+                | 'hasSampleSolutions'
+              )[]
+            ).some((key) => errors[key] && errors[key][questionIdx])
 
           return (
             <div

@@ -160,27 +160,15 @@ function LiveQuizCreationBlock({
               ? error.length > index && error[index]
               : error
 
-          let isInvalid = false
-          if (errors) {
-            isInvalid =
-              !!(
-                errors.questionIds &&
-                errors.questionIds.length > questionIdx &&
-                errors.questionIds[questionIdx]
-              ) ||
-              !!(
-                errors.titles &&
-                errors.titles.length > questionIdx &&
-                errors.titles[questionIdx]
-              ) ||
-              !!(
-                errors.types &&
-                errors.types.length > questionIdx &&
-                errors.types[questionIdx]
-              )
-          } else {
-            isInvalid = false
-          }
+          const isInvalid =
+            errors &&
+            (
+              ['questionIds', 'titles', 'types'] as (
+                | 'questionIds'
+                | 'titles'
+                | 'types'
+              )[]
+            ).some((key) => errors[key] && errors[key][questionIdx])
 
           return (
             <div
