@@ -11,13 +11,13 @@
     "@azure/functions": "4.1.0",
     "@azure/service-bus": "7.9.0",
     "@sentry/node": "7.103.0",
-    "jsonwebtoken": "9.0.1"
+    "jsonwebtoken": "9.0.2"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@tsconfig/recommended": "^1.0.2",
-    "@types/jsonwebtoken": "^9.0.2",
-    "@types/node": "^20.12.12",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.12.13",
     "@uzh-bf/design-system": "3.0.0-alpha.13",
     "azure-functions-core-tools": "4.0.5801",
     "cross-env": "7.0.3",
@@ -34,6 +34,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7072 --verbose --javascript",
     "dev:ts": "tsup --watch",
     "format": "prettier --write .",

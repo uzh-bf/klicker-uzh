@@ -14,10 +14,10 @@ export default defineConfig({
     STUDENT_EMAIL: 'testuser1@test.uzh.ch',
     STUDENT_PASSWORD: 'abcd',
 
-    codeCoverage: {
-      expectBackendCoverageOnly: true,
-      url: 'http://127.0.0.1:3000/__coverage__',
-    },
+    // codeCoverage: {
+    //   expectBackendCoverageOnly: true,
+    //   url: 'http://127.0.0.1:3000/__coverage__',
+    // },
   },
 
   e2e: {
