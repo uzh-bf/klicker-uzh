@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import CreationFormValidator from './CreationFormValidator'
 import EditorField from './EditorField'
 import WizardNavigation from './WizardNavigation'
+import { GroupActivityWizardStepProps } from './groupActivity/GroupActivityWizard'
 import { LiveQuizWizardStepProps } from './liveQuiz/LiveSessionWizard'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
 import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
@@ -37,6 +38,16 @@ interface LiveQuizDescriptionStepProps extends LiveQuizWizardStepProps {
   descriptionRequired?: boolean
 }
 
+interface GroupActivityDescriptionStepProps
+  extends GroupActivityWizardStepProps {
+  displayNameTooltip: string
+  descriptionTooltip: string
+  descriptionLabel?: string
+  dataDisplayName?: { test?: string; cy?: string }
+  dataDescription?: { test?: string; cy?: string }
+  descriptionRequired?: boolean
+}
+
 function DescriptionStep({
   displayNameTooltip,
   descriptionTooltip,
@@ -57,7 +68,8 @@ function DescriptionStep({
 }:
   | MicroLearningDescriptionStepProps
   | PracticeQuizDescriptionStepProps
-  | LiveQuizDescriptionStepProps) {
+  | LiveQuizDescriptionStepProps
+  | GroupActivityDescriptionStepProps) {
   const t = useTranslations()
 
   return (

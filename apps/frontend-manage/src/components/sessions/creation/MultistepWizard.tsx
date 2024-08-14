@@ -35,20 +35,13 @@ interface MultistepWizardProps {
   continueDisabled?: boolean
 }
 
-export type GroupActivityClueFormValues =
-  | {
-      name: string
-      displayName: string
-      type: ParameterType.String
-      value: string
-    }
-  | {
-      name: string
-      displayName: string
-      type: ParameterType.Number
-      value: string
-      unit: string
-    }
+export type GroupActivityClueFormValues = {
+  name: string
+  displayName: string
+  type: ParameterType.String | ParameterType.Number
+  value: string
+  unit?: string
+}
 
 interface CommonFormValues {
   name: string

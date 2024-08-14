@@ -6,20 +6,13 @@ import {
 import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-export type GroupActivityClueFormValues =
-  | {
-      name: string
-      displayName: string
-      type: ParameterType.String
-      value: string
-    }
-  | {
-      name: string
-      displayName: string
-      type: ParameterType.Number
-      value: string
-      unit: string
-    }
+export type GroupActivityClueFormValues = {
+  name: string
+  displayName: string
+  type: ParameterType.String | ParameterType.Number
+  value: string
+  unit?: string
+}
 
 interface CommonFormValues {
   name: string

@@ -1,15 +1,20 @@
 import { FormikErrors, FormikTouched } from 'formik'
 import { useEffect } from 'react'
-import { MicroLearningFormValues } from '../WizardLayout'
+import {
+  GroupActivityFormValues,
+  MicroLearningFormValues,
+} from './WizardLayout'
 
 function DateChangeMonitor({
   values,
   setTouched,
 }: {
-  values: MicroLearningFormValues
+  values: MicroLearningFormValues | GroupActivityFormValues
   setTouched: (
-    touched: FormikTouched<MicroLearningFormValues>
-  ) => Promise<void | FormikErrors<MicroLearningFormValues>>
+    touched: FormikTouched<MicroLearningFormValues | GroupActivityFormValues>
+  ) => Promise<void | FormikErrors<
+    MicroLearningFormValues | GroupActivityFormValues
+  >>
 }) {
   useEffect(() => {
     setTouched({ startDate: true, endDate: true })

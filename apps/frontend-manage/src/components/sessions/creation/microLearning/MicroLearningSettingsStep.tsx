@@ -13,9 +13,9 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CourseSelectionMonitor from '../CourseSelectMonitor'
 import CreationFormValidator from '../CreationFormValidator'
+import DateChangeMonitor from '../DateChangeMonitor'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
-import DateChangeMonitor from './DateChangeMonitor'
 import { MicroLearningWizardStepProps } from './MicroLearningWizard'
 
 function MicroLearningSettingsStep({
