@@ -16,7 +16,6 @@ interface MicroLearningDescriptionStepProps
   dataDisplayName?: { test?: string; cy?: string }
   dataDescription?: { test?: string; cy?: string }
   descriptionRequired?: boolean
-  [key: string]: any
 }
 
 interface PracticeQuizDescriptionStepProps extends PracticeQuizWizardStepProps {
@@ -26,7 +25,6 @@ interface PracticeQuizDescriptionStepProps extends PracticeQuizWizardStepProps {
   dataDisplayName?: { test?: string; cy?: string }
   dataDescription?: { test?: string; cy?: string }
   descriptionRequired?: boolean
-  [key: string]: any
 }
 
 function DescriptionStep({
@@ -52,8 +50,8 @@ function DescriptionStep({
   return (
     <Formik
       validateOnMount
-      initialValues={formData}
-      onSubmit={onNextStep!}
+      initialValues={formData as any} // FIXME: types are defined correctly, but typescript does not infer them correctly
+      onSubmit={onNextStep! as any} // FIXME: types are defined correctly, but typescript does not infer them correctly
       innerRef={formRef}
       validationSchema={validationSchema}
     >
