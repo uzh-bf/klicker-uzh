@@ -1,33 +1,39 @@
-import { useMutation } from '@apollo/client'
 import {
-  CreateMicroLearningDocument,
-  EditMicroLearningDocument,
   Element,
   ElementType,
-  GetSingleCourseDocument,
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
-import StackCreationStep from '../StackCreationStep'
+import CompletionStep from '../CompletionStep'
+import WizardLayout from '../WizardLayout'
 import { ElementSelectCourse } from './../ElementCreation'
-import MultistepWizard, {
+import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from './../MultistepWizard'
-import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
-import MicroLearningSettingsStep from './MicroLearningSettingsStep'
+import submitMicrolearningForm from './submitMicrolearningForm'
 
 export interface MicroLearningWizardStepProps {
-  onSubmit?: () => void
+  editMode: boolean
+  formRef: any
+  formData: MicroLearningFormValues
+  continueDisabled: boolean
+  activeStep: number
+  stepValidity: boolean[]
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  onSubmit?: () => void
+  setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onNextStep?: (newValues: MicroLearningFormValues) => void
+  closeWizard: () => void
 }
 
 interface MicroLearningWizardProps {
@@ -56,11 +62,10 @@ function MicroLearningWizard({
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-
-  const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
-  const [editMicroLearning] = useMutation(EditMicroLearningDocument)
-
   const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [activeStep, setActiveStep] = useState(0)
+  const [stepValidity, setStepValidity] = useState([false, false, false, false])
+  const formRef = useRef<any>(null) // TODO: types
 
   // TODO: add free text questions to accepted types?
   const acceptedTypes = [
@@ -130,81 +135,171 @@ function MicroLearningWizard({
   })
 
   const onSubmit = async (values: MicroLearningFormValues) => {
-    try {
-      let success = false
-
-      const createUpdateJSON = {
-        name: values.name,
-        displayName: values.displayName,
-        description: values.description,
-        stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
-          return {
-            order: ix,
-            displayName:
-              stack.displayName && stack.displayName.length > 0
-                ? stack.displayName
-                : undefined,
-            description:
-              stack.description && stack.description.length > 0
-                ? stack.description
-                : undefined,
-            elements: stack.elementIds.map((elementId, ix) => {
-              return { elementId, order: ix }
-            }),
-          }
-        }),
-        startDate: dayjs(values.startDate).utc().format(),
-        endDate: dayjs(values.endDate).utc().format(),
-        multiplier: parseInt(values.multiplier),
-        courseId: values.courseId,
-      }
-
-      if (initialValues) {
-        const result = await editMicroLearning({
-          variables: {
-            id: initialValues?.id || '',
-            ...createUpdateJSON,
-          },
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
-        success = Boolean(result.data?.editMicroLearning)
-      } else {
-        const result = await createMicroLearning({
-          variables: {
-            ...createUpdateJSON,
-          },
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
-        success = Boolean(result.data?.createMicroLearning)
-      }
-
-      if (success) {
-        setSelectedCourseId(values.courseId)
-        setIsWizardCompleted(true)
-      }
-    } catch (error) {
-      console.log(error)
-      setErrorToastOpen(true)
-    }
+    submitMicrolearningForm({
+      id: initialValues?.id,
+      values,
+      setSelectedCourseId,
+      setIsWizardCompleted,
+      setErrorToastOpen,
+    })
   }
+
+  const workflowItems = [
+    {
+      title: t('shared.generic.information'),
+      tooltip: t('manage.sessionForms.microLearningInformation'),
+    },
+    {
+      title: t('shared.generic.description'),
+      tooltip: t('manage.sessionForms.microlearningDescription'),
+      tooltipDisabled: t('manage.sessionForms.microlearningDescription'),
+    },
+    {
+      title: t('shared.generic.settings'),
+      tooltip: t('manage.sessionForms.microlearningSettings'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+    {
+      title: t('shared.generic.questions'),
+      tooltip: t('manage.sessionForms.microlearningQuestions'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+  ]
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elementIds: [],
+        titles: [],
+        types: [],
+        hasSampleSolutions: [],
+      },
+    ],
+    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: '',
+  }
+
+  const [formData, setFormData] = useState<MicroLearningFormValues>({
+    name: initialValues?.name || formDefaultValues.name,
+    displayName: initialValues?.displayName || formDefaultValues.displayName,
+    description: initialValues?.description || formDefaultValues.description,
+    stacks: initialValues?.stacks
+      ? initialValues.stacks.map((stack) => {
+          return {
+            displayName: stack.displayName ?? '',
+            description: stack.description ?? '',
+            ...stack.elements!.reduce(
+              (acc: ElementStackFormValues, element) => {
+                acc.elementIds.push(parseInt(element.elementData.id))
+                acc.titles.push(element.elementData.name)
+                acc.types.push(element.elementData.type)
+                acc.hasSampleSolutions.push(true) // TODO: get value from element instance
+                return acc
+              },
+              {
+                elementIds: [],
+                titles: [],
+                types: [],
+                hasSampleSolutions: [],
+              }
+            ),
+          }
+        })
+      : formDefaultValues.stacks,
+    startDate: initialValues?.scheduledStartAt
+      ? dayjs(initialValues?.scheduledStartAt)
+          .local()
+          .format('YYYY-MM-DDTHH:mm')
+      : formDefaultValues.startDate,
+    endDate: initialValues?.scheduledEndAt
+      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      : formDefaultValues.endDate,
+    multiplier: initialValues?.pointsMultiplier
+      ? String(initialValues?.pointsMultiplier)
+      : formDefaultValues.multiplier,
+    courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
+  })
+
+  useEffect(() => {
+    if (formRef.current) {
+      let newValidity = stepValidity
+      newValidity[activeStep] = formRef.current.isValid
+      setStepValidity(newValidity)
+    }
+  }, [formRef.current])
 
   return (
     <>
-      <MultistepWizard
+      <WizardLayout
+        title={title}
+        editMode={editMode}
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+        workflowItems={workflowItems}
+        isCompleted={isWizardCompleted}
+        completionStep={
+          <CompletionStep
+            completionSuccessMessage={(elementName) => (
+              <div>
+                {editMode
+                  ? t.rich('manage.sessionForms.microlearningCreated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })
+                  : t.rich('manage.sessionForms.microlearningEdited', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })}
+              </div>
+            )}
+            name={formData.name}
+            editMode={editMode}
+            onViewElement={() => {
+              router.push(`/courses/${selectedCourseId}?tab=microLearnings`)
+            }}
+            onRestartForm={() => {
+              setIsWizardCompleted(false)
+            }}
+            resetForm={() => setFormData(formDefaultValues)}
+            setStepNumber={setActiveStep}
+            onCloseWizard={closeWizard}
+          />
+        }
+        steps={[
+          <MicroLearningInformationStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={
+              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+            }
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={nameValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: MicroLearningFormValues) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+        ]} // TODO
+        saveFormData={() => {
+          console.log(formRef.current.values) // TODO: remove
+          setFormData((prev) => ({ ...prev, ...formRef.current.values })) // TODO: fix
+        }}
+      />
+      {/* <MultistepWizard
         title={title}
         onCloseWizard={closeWizard}
         completionSuccessMessage={(elementName) => (
@@ -220,57 +315,7 @@ function MicroLearningWizard({
                 })}
           </div>
         )}
-        initialValues={{
-          name: initialValues?.name || '',
-          displayName: initialValues?.displayName || '',
-          description: initialValues?.description || '',
-          stacks: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => {
-                return {
-                  displayName: stack.displayName,
-                  description: stack.description,
-                  ...stack.elements!.reduce(
-                    (acc: ElementStackFormValues, element) => {
-                      acc.elementIds.push(parseInt(element.elementData.id))
-                      acc.titles.push(element.elementData.name)
-                      acc.types.push(element.elementData.type)
-                      acc.hasSampleSolutions.push(true) // TODO: get value from element instance
-                      return acc
-                    },
-                    {
-                      elementIds: [],
-                      titles: [],
-                      types: [],
-                      hasSampleSolutions: [],
-                    }
-                  ),
-                }
-              })
-            : [
-                {
-                  displayName: '',
-                  description: '',
-                  elementIds: [],
-                  titles: [],
-                  types: [],
-                  hasSampleSolutions: [],
-                },
-              ],
-          startDate: initialValues?.scheduledStartAt
-            ? dayjs(initialValues?.scheduledStartAt)
-                .local()
-                .format('YYYY-MM-DDTHH:mm')
-            : dayjs().local().format('YYYY-MM-DDTHH:mm'),
-          endDate: initialValues?.scheduledEndAt
-            ? dayjs(initialValues?.scheduledEndAt)
-                .local()
-                .format('YYYY-MM-DDTHH:mm')
-            : dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-          multiplier: initialValues?.pointsMultiplier
-            ? String(initialValues?.pointsMultiplier)
-            : '1',
-          courseId: initialValues?.course?.id || undefined,
-        }}
+        initialValues={formData}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         editMode={!!initialValues}
@@ -323,7 +368,7 @@ function MicroLearningWizard({
           validationSchema={stackValiationSchema}
           acceptedTypes={acceptedTypes}
         />
-      </MultistepWizard>
+      </MultistepWizard> */}
       <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
