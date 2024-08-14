@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  CreateMicroLearningDocument,
-  EditMicroLearningDocument,
-  GetSingleCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import {
   ElementStackFormValues,
@@ -13,7 +8,9 @@ import {
 interface MicroLearningFormProps {
   id?: string
   values: MicroLearningFormValues
-  setSelectedCourseId: (courseId: string) => void
+  createMicroLearning: any
+  editMicroLearning: any
+  setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   setErrorToastOpen: (isOpen: boolean) => void
 }
@@ -21,13 +18,12 @@ interface MicroLearningFormProps {
 async function submitMicrolearningForm({
   id,
   values,
+  createMicroLearning,
+  editMicroLearning,
   setSelectedCourseId,
   setIsWizardCompleted,
   setErrorToastOpen,
 }: MicroLearningFormProps) {
-  const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
-  const [editMicroLearning] = useMutation(EditMicroLearningDocument)
-
   try {
     let success = false
 

@@ -150,12 +150,8 @@ function WizardLayout({
         />
       </div>
 
-      <div className="flex flex-1 w-full justify-between gap-1 py-4">
-        {!isCompleted && (
-          <div className="flex flex-col justify-between w-full h-full">
-            <div>{steps[activeStep]}</div>
-          </div>
-        )}
+      <div className="flex flex-col flex-1 h-full w-full justify-between gap-1 pt-4">
+        {!isCompleted && steps[activeStep]}
         {isCompleted && completionStep}
       </div>
     </div>

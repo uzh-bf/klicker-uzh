@@ -1,4 +1,7 @@
+import { useMutation } from '@apollo/client'
 import {
+  CreateMicroLearningDocument,
+  EditMicroLearningDocument,
   Element,
   ElementType,
   MicroLearning,
@@ -11,6 +14,7 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
+import StackCreationStep from '../StackCreationStep'
 import WizardLayout, {
   ElementStackFormValues,
   MicroLearningFormValues,
@@ -31,7 +35,7 @@ export interface MicroLearningWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  onSubmit?: () => void
+  onSubmit?: (newValues: MicroLearningFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: MicroLearningFormValues) => void
   closeWizard: () => void
@@ -63,10 +67,14 @@ function MicroLearningWizard({
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
+    undefined
+  )
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState([false, false, false, false])
-  const formRef = useRef<any>(null) // TODO: types
+  const [stepValidity, setStepValidity] = useState(
+    Array(4).fill(!!initialValues)
+  )
+  const formRef = useRef<any>(null)
 
   // TODO: add free text questions to accepted types?
   const acceptedTypes = [
@@ -134,16 +142,6 @@ function MicroLearningWizard({
       )
       .min(1),
   })
-
-  const onSubmit = async (values: MicroLearningFormValues) => {
-    submitMicrolearningForm({
-      id: initialValues?.id,
-      values,
-      setSelectedCourseId,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-    })
-  }
 
   const workflowItems = [
     {
@@ -227,6 +225,20 @@ function MicroLearningWizard({
       : formDefaultValues.multiplier,
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
+
+  const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
+  const [editMicroLearning] = useMutation(EditMicroLearningDocument)
+  const handleSubmit = async (values: MicroLearningFormValues) => {
+    submitMicrolearningForm({
+      id: initialValues?.id,
+      values,
+      createMicroLearning,
+      editMicroLearning,
+      setSelectedCourseId,
+      setIsWizardCompleted,
+      setErrorToastOpen,
+    })
+  }
 
   useEffect(() => {
     if (formRef.current) {
@@ -326,81 +338,28 @@ function MicroLearningWizard({
             }}
             closeWizard={closeWizard}
           />,
-        ]} // TODO
+          <StackCreationStep
+            editMode={editMode}
+            selection={selection}
+            resetSelection={resetSelection}
+            acceptedTypes={acceptedTypes}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={stackValiationSchema}
+            setStepValidity={setStepValidity}
+            onSubmit={(newValues) =>
+              handleSubmit({ ...formData, ...newValues })
+            }
+            closeWizard={closeWizard}
+          />,
+        ]}
         saveFormData={() => {
           setFormData((prev) => ({ ...prev, ...formRef.current.values }))
         }}
       />
-      {/* <MultistepWizard
-        title={title}
-        onCloseWizard={closeWizard}
-        completionSuccessMessage={(elementName) => (
-          <div>
-            {editMode
-              ? t.rich('manage.sessionForms.microlearningCreated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })
-              : t.rich('manage.sessionForms.microlearningEdited', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })}
-          </div>
-        )}
-        initialValues={formData}
-        onSubmit={onSubmit}
-        isCompleted={isWizardCompleted}
-        editMode={!!initialValues}
-        onRestartForm={() => {
-          setIsWizardCompleted(false)
-        }}
-        onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}?tab=microLearnings`)
-        }}
-        workflowItems={[
-          {
-            title: t('shared.generic.information'),
-            tooltip: t('manage.sessionForms.microLearningInformation'),
-          },
-          {
-            title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.microlearningDescription'),
-          },
-          {
-            title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.microlearningSettings'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
-          {
-            title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.microlearningQuestions'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
-        ]}
-        continueDisabled={
-          gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
-        }
-      >
-        <MicroLearningInformationStep
-          validationSchema={nameValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <MicroLearningDescriptionStep
-          validationSchema={descriptionValidationSchema}
-        />
-        <MicroLearningSettingsStep
-          validationSchema={settingsValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <StackCreationStep
-          selection={selection}
-          resetSelection={resetSelection}
-          validationSchema={stackValiationSchema}
-          acceptedTypes={acceptedTypes}
-        />
-      </MultistepWizard> */}
       <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
