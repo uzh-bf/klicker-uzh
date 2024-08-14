@@ -130,7 +130,7 @@ function GroupActivityStackClues({
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3 w-full max-h-32 overflow-y-auto">
                         {values.clues.map((clue, ix) => (
                           <div
-                            key={clue.name}
+                            key={`${clue.name}-position-${ix}`}
                             className={twMerge(
                               'text-sm rounded flex flex-row justify-between w-full border',
                               Array.isArray(errors.clues) &&
