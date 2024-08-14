@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
@@ -7,6 +9,7 @@ import {
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -243,7 +246,29 @@ function LiveSessionWizard({
             resetForm={() => setFormData(formDefaultValues)}
             setStepNumber={setActiveStep}
             onCloseWizard={closeWizard}
-          />
+          >
+            {!editMode && data?.createSession?.id && (
+              <Button
+                data={{ cy: 'quick-start' }}
+                onClick={async () => {
+                  await startSession({
+                    variables: {
+                      id: data?.createSession?.id as string,
+                    },
+                  })
+                  router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+                }}
+                className={{ root: 'space-x-1' }}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faPlay} />
+                </Button.Icon>
+                <Button.Label>
+                  {t('manage.sessionForms.liveQuizStartNow')}
+                </Button.Label>
+              </Button>
+            )}
+          </CompletionStep>
         }
         steps={[
           <LiveQuizInformationStep
