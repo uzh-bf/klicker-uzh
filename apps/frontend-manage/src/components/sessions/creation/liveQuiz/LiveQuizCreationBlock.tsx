@@ -22,7 +22,7 @@ import { QuestionDragDropTypes } from '../../../questions/Question'
 import {
   LiveQuizBlockErrorValues,
   LiveQuizBlockFormValues,
-} from '../MultistepWizard'
+} from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
 
 interface LiveQuizCreationBlockProps {

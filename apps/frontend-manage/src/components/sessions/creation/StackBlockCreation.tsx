@@ -19,12 +19,9 @@ import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
-import {
-  ElementStackErrorValues,
-  ElementStackFormValues,
-} from './MultistepWizard'
 import StackCreationErrors from './StackCreationErrors'
 import StackDescriptionModal from './StackDescriptionModal'
+import { ElementStackErrorValues, ElementStackFormValues } from './WizardLayout'
 
 interface StackBlockCreationProps {
   index: number

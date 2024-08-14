@@ -1,5 +1,5 @@
 import { useTranslations } from 'next-intl'
-import { ElementStackErrorValues } from './MultistepWizard'
+import { ElementStackErrorValues } from './WizardLayout'
 
 interface StackCreationErrorsProps {
   errors: ElementStackErrorValues

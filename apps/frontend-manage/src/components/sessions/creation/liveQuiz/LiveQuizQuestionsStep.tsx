@@ -1,7 +1,7 @@
 import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
 import CreationFormValidator from '../CreationFormValidator'
-import { LiveQuizBlockFormValues } from '../MultistepWizard'
+import { LiveQuizBlockFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
 import LiveQuizAddBlockButton from './LiveQuizAddBlockButton'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
