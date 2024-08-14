@@ -17,6 +17,7 @@ import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from './../MultistepWizard'
+import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
 import submitMicrolearningForm from './submitMicrolearningForm'
 
@@ -286,6 +287,23 @@ function MicroLearningWizard({
             validationSchema={nameValidationSchema}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: MicroLearningFormValues) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <MicroLearningDescriptionStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={
+              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+            }
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={descriptionValidationSchema}
             setStepValidity={setStepValidity}
             onNextStep={(newValues: MicroLearningFormValues) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
