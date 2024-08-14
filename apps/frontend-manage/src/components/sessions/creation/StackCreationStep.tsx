@@ -40,8 +40,8 @@ function StackCreationStep({
   return (
     <Formik
       validateOnMount
-      initialValues={formData}
-      onSubmit={onSubmit!}
+      initialValues={formData as any} // FIXME: Types are defined correctly, but typescript inference does not work
+      onSubmit={onSubmit! as any} // FIXME: Types are defined correctly, but typescript inference does not work
       innerRef={formRef}
       validationSchema={validationSchema}
     >
