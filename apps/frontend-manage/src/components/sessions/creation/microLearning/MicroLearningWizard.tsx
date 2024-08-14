@@ -11,14 +11,14 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
-import WizardLayout from '../WizardLayout'
-import { ElementSelectCourse } from './../ElementCreation'
-import {
+import WizardLayout, {
   ElementStackFormValues,
   MicroLearningFormValues,
-} from './../MultistepWizard'
+} from '../WizardLayout'
+import { ElementSelectCourse } from './../ElementCreation'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
+import MicroLearningSettingsStep from './MicroLearningSettingsStep'
 import submitMicrolearningForm from './submitMicrolearningForm'
 
 export interface MicroLearningWizardStepProps {
@@ -89,7 +89,7 @@ function MicroLearningWizard({
     description: yup.string(),
   })
 
-  const stepTwoValidationSchema = yup.object().shape({
+  const settingsValidationSchema = yup.object().shape({
     startDate: yup.date().required(t('manage.sessionForms.startDate')),
     endDate: yup
       .date()
@@ -184,7 +184,7 @@ function MicroLearningWizard({
     startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
     endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
     multiplier: '1',
-    courseId: '',
+    courseId: undefined,
   }
 
   const [formData, setFormData] = useState<MicroLearningFormValues>({
@@ -298,9 +298,7 @@ function MicroLearningWizard({
             editMode={editMode}
             formRef={formRef}
             formData={formData}
-            continueDisabled={
-              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
-            }
+            continueDisabled={false}
             activeStep={activeStep}
             stepValidity={stepValidity}
             validationSchema={descriptionValidationSchema}
@@ -311,10 +309,26 @@ function MicroLearningWizard({
             }}
             closeWizard={closeWizard}
           />,
+          <MicroLearningSettingsStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={settingsValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: MicroLearningFormValues) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
         ]} // TODO
         saveFormData={() => {
-          console.log(formRef.current.values) // TODO: remove
-          setFormData((prev) => ({ ...prev, ...formRef.current.values })) // TODO: fix
+          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
         }}
       />
       {/* <MultistepWizard
@@ -376,7 +390,7 @@ function MicroLearningWizard({
           validationSchema={descriptionValidationSchema}
         />
         <MicroLearningSettingsStep
-          validationSchema={stepTwoValidationSchema}
+          validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
         />

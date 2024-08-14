@@ -7,27 +7,29 @@ import {
   NewFormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { useFormikContext } from 'formik'
+import { Form, Formik, FormikErrors, FormikTouched } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CreationFormValidator from '../CreationFormValidator'
+import { ElementSelectCourse } from '../ElementCreation'
 import MultiplierSelector from '../MultiplierSelector'
-import { MicroLearningFormValues } from '../MultistepWizard'
+import { MicroLearningFormValues } from '../WizardLayout'
+import WizardNavigation from '../WizardNavigation'
 import { MicroLearningWizardStepProps } from './MicroLearningWizard'
 
-function MicroLearningSettingsStep(props: MicroLearningWizardStepProps) {
-  const t = useTranslations()
-  const [courseGamified, setCourseGamified] = useState(false)
-  const { values, setTouched } = useFormikContext<MicroLearningFormValues>()
-
-  const groupedCourses = useGamifiedCourseGrouping({
-    gamifiedCourses: props.gamifiedCourses ?? [],
-    nonGamifiedCourses: props.nonGamifiedCourses ?? [],
-  })
-
+const CourseSelectionMonitor = ({
+  values,
+  gamifiedCourses,
+  setCourseGamified,
+}: {
+  values: MicroLearningFormValues
+  gamifiedCourses?: ElementSelectCourse[]
+  setCourseGamified: (value: boolean) => void
+}) => {
   useEffect(() => {
     if (values.courseId) {
-      const course = props.gamifiedCourses?.find(
+      const course = gamifiedCourses?.find(
         (course) => course.value === values.courseId
       )
       setCourseGamified(!!course)
@@ -35,90 +37,161 @@ function MicroLearningSettingsStep(props: MicroLearningWizardStepProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.courseId])
 
+  return null
+}
+
+const DateChangeMonitor = ({
+  values,
+  setTouched,
+}: {
+  values: MicroLearningFormValues
+  setTouched: (
+    touched: FormikTouched<MicroLearningFormValues>
+  ) => Promise<void | FormikErrors<MicroLearningFormValues>>
+}) => {
   useEffect(() => {
     setTouched({ startDate: true, endDate: true })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.startDate, values.endDate])
 
-  return (
-    <div className="flex flex-col md:flex-row gap-4 justify-center">
-      <div
-        className={twMerge(
-          'border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md',
-          courseGamified && 'border-orange-400'
-        )}
-      >
-        <div className="flex flex-row gap-2 items-center justify-center">
-          <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-          <div className="text-lg font-bold">
-            {t('shared.generic.gamification')}
-          </div>
-        </div>
-        <NewFormikSelectField
-          required
-          name="courseId"
-          label={t('shared.generic.course')}
-          tooltip={t('manage.sessionForms.microlearningCourse')}
-          placeholder={t('manage.sessionForms.selectCourse')}
-          groups={groupedCourses}
-          data={{ cy: 'select-course' }}
-          className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
-        />
+  return null
+}
 
-        {typeof values.courseId === 'undefined' ? (
-          <UserNotification
-            message={t('manage.sessionForms.microLearningMissingCourse')}
-            className={{ root: 'mt-2' }}
-            type="warning"
+function MicroLearningSettingsStep({
+  editMode,
+  formRef,
+  formData,
+  continueDisabled,
+  activeStep,
+  stepValidity,
+  validationSchema,
+  gamifiedCourses,
+  nonGamifiedCourses,
+  setStepValidity,
+  onNextStep,
+  closeWizard,
+}: MicroLearningWizardStepProps) {
+  const t = useTranslations()
+  const [courseGamified, setCourseGamified] = useState(false)
+
+  const groupedCourses = useGamifiedCourseGrouping({
+    gamifiedCourses: gamifiedCourses ?? [],
+    nonGamifiedCourses: nonGamifiedCourses ?? [],
+  })
+
+  return (
+    <Formik
+      validateOnMount
+      initialValues={formData}
+      onSubmit={onNextStep!}
+      innerRef={formRef}
+      validationSchema={validationSchema}
+    >
+      {({ values, isValid, isSubmitting, setTouched }) => (
+        <Form>
+          <CreationFormValidator
+            isValid={isValid}
+            activeStep={activeStep}
+            setStepValidity={setStepValidity}
           />
-        ) : courseGamified ? (
-          <MultiplierSelector />
-        ) : (
-          <UserNotification
-            message={t('manage.sessionForms.microLearningCourseNotGamified')}
-            className={{ root: 'mt-2' }}
-            type="info"
+          <CourseSelectionMonitor
+            values={values}
+            gamifiedCourses={gamifiedCourses}
+            setCourseGamified={setCourseGamified}
           />
-        )}
-      </div>
-      <div className="border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md">
-        <div className="flex flex-row gap-2 items-center justify-center">
-          <FontAwesomeIcon icon={faClock} />
-          <div className="text-lg font-bold">
-            {t('shared.generic.availability')}
+          <DateChangeMonitor values={values} setTouched={setTouched} />
+          <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <div
+              className={twMerge(
+                'border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md',
+                courseGamified && 'border-orange-400'
+              )}
+            >
+              <div className="flex flex-row gap-2 items-center justify-center">
+                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
+                <div className="text-lg font-bold">
+                  {t('shared.generic.gamification')}
+                </div>
+              </div>
+              <NewFormikSelectField
+                required
+                name="courseId"
+                label={t('shared.generic.course')}
+                tooltip={t('manage.sessionForms.microlearningCourse')}
+                placeholder={t('manage.sessionForms.selectCourse')}
+                groups={groupedCourses}
+                data={{ cy: 'select-course' }}
+                className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+              />
+
+              {typeof values.courseId === 'undefined' ? (
+                <UserNotification
+                  message={t('manage.sessionForms.microLearningMissingCourse')}
+                  className={{ root: 'mt-2' }}
+                  type="warning"
+                />
+              ) : courseGamified ? (
+                <MultiplierSelector />
+              ) : (
+                <UserNotification
+                  message={t(
+                    'manage.sessionForms.microLearningCourseNotGamified'
+                  )}
+                  className={{ root: 'mt-2' }}
+                  type="info"
+                />
+              )}
+            </div>
+            <div className="border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md">
+              <div className="flex flex-row gap-2 items-center justify-center">
+                <FontAwesomeIcon icon={faClock} />
+                <div className="text-lg font-bold">
+                  {t('shared.generic.availability')}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <NewFormikDateField
+                  label={t('shared.generic.startDate')}
+                  name="startDate"
+                  tooltip={t('manage.sessionForms.microlearningStartDate')}
+                  required
+                  className={{
+                    root: 'w-full',
+                    field: 'w-full',
+                    label: 'text-base mb-0.5',
+                    tooltip: 'z-20',
+                  }}
+                  data={{ cy: 'select-start-date' }}
+                />
+                <NewFormikDateField
+                  label={t('shared.generic.endDate')}
+                  name="endDate"
+                  tooltip={t('manage.sessionForms.microlearningEndDate')}
+                  required
+                  className={{
+                    root: 'w-full',
+                    field: 'w-full',
+                    label: 'text-base mb-0.5',
+                    tooltip: 'z-20',
+                  }}
+                  data={{ cy: 'select-end-date' }}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <NewFormikDateField
-            label={t('shared.generic.startDate')}
-            name="startDate"
-            tooltip={t('manage.sessionForms.microlearningStartDate')}
-            required
-            className={{
-              root: 'w-full',
-              field: 'w-full',
-              label: 'text-base mb-0.5',
-              tooltip: 'z-20',
-            }}
-            data={{ cy: 'select-start-date' }}
+          <WizardNavigation
+            editMode={editMode}
+            isSubmitting={isSubmitting}
+            stepValidity={stepValidity}
+            activeStep={activeStep}
+            lastStep={activeStep === stepValidity.length - 1}
+            continueDisabled={continueDisabled}
+            onCloseWizard={closeWizard}
           />
-          <NewFormikDateField
-            label={t('shared.generic.endDate')}
-            name="endDate"
-            tooltip={t('manage.sessionForms.microlearningEndDate')}
-            required
-            className={{
-              root: 'w-full',
-              field: 'w-full',
-              label: 'text-base mb-0.5',
-              tooltip: 'z-20',
-            }}
-            data={{ cy: 'select-end-date' }}
-          />
-        </div>
-      </div>
-    </div>
+        </Form>
+      )}
+    </Formik>
   )
 }
 

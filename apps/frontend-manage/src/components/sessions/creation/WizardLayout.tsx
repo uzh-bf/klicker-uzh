@@ -25,7 +25,7 @@ interface CommonFormValues {
   name: string
   displayName: string
   description: string
-  courseId: string
+  courseId?: string
   multiplier: string
 }
 

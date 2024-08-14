@@ -1,12 +1,12 @@
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import DescriptionStep from '../DescriptionStep'
-import { MicroLearningFormValues } from '../MultistepWizard'
+import { GroupActivityFormValues } from '../WizardLayout'
 import { GroupActivityWizardStepProps } from './GroupActivityWizard'
 
 function GroupActivityDescriptionStep(props: GroupActivityWizardStepProps) {
   const t = useTranslations()
-  const { values } = useFormikContext<MicroLearningFormValues>()
+  const { values } = useFormikContext<GroupActivityFormValues>()
 
   return (
     <DescriptionStep
