@@ -300,7 +300,7 @@ function MicroLearningWizard({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: MicroLearningFormValues) => {
+            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
@@ -315,7 +315,7 @@ function MicroLearningWizard({
             stepValidity={stepValidity}
             validationSchema={descriptionValidationSchema}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: MicroLearningFormValues) => {
+            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
@@ -332,7 +332,7 @@ function MicroLearningWizard({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: MicroLearningFormValues) => {
+            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
@@ -350,7 +350,7 @@ function MicroLearningWizard({
             stepValidity={stepValidity}
             validationSchema={stackValiationSchema}
             setStepValidity={setStepValidity}
-            onSubmit={(newValues) =>
+            onSubmit={(newValues: MicroLearningFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }
             closeWizard={closeWizard}

@@ -5,30 +5,41 @@ import {
   Element,
   ElementOrderType,
   ElementType,
-  GetSingleCourseDocument,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
-import MultistepWizard, {
+import StackCreationStep from '../StackCreationStep'
+import WizardLayout, {
   ElementStackFormValues,
   PracticeQuizFormValues,
-} from '../MultistepWizard'
-import StackCreationStep from '../StackCreationStep'
+} from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 import PracticeQuizSettingsStep from './PracticeQuizSettingsStep'
+import submitPracticeQuizForm from './submitPracticeQuizForm'
 
 export interface PracticeQuizWizardStepProps {
-  onSubmit?: () => void
+  editMode: boolean
+  formRef: any
+  formData: PracticeQuizFormValues
+  continueDisabled: boolean
+  activeStep: number
+  stepValidity: boolean[]
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  onSubmit?: (newValues: PracticeQuizFormValues) => void
+  setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onNextStep?: (newValues: PracticeQuizFormValues) => void
+  closeWizard: () => void
 }
 
 interface PracticeQuizWizardProps {
@@ -55,12 +66,18 @@ function PracticeQuizWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
-  const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(!!initialValues && !conversion)
-  const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
+    undefined
+  )
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
+
+  const [activeStep, setActiveStep] = useState(0)
+  const [stepValidity, setStepValidity] = useState(
+    Array(4).fill(!!initialValues)
+  )
+  const formRef = useRef<any>(null)
 
   // TODO: add free text questions to accepted types?
   const acceptedTypes = [
@@ -83,7 +100,7 @@ function PracticeQuizWizard({
     description: yup.string(),
   })
 
-  const stepTwoValidationSchema = yup.object().shape({
+  const settingsValidationSchema = yup.object().shape({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
@@ -136,196 +153,224 @@ function PracticeQuizWizard({
       .min(1),
   })
 
-  const onSubmit = async (values: PracticeQuizFormValues) => {
-    try {
-      const createOrUpdateJSON = {
-        name: values.name,
-        displayName: values.displayName,
-        description: values.description,
-        stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
-          return {
-            order: ix,
-            displayName:
-              stack.displayName && stack.displayName.length > 0
-                ? stack.displayName
-                : undefined,
-            description:
-              stack.description && stack.description.length > 0
-                ? stack.description
-                : undefined,
-            elements: stack.elementIds.map((elementId, ix) => {
-              return { elementId, order: ix }
-            }),
-          }
-        }),
-        multiplier: parseInt(values.multiplier),
-        courseId: values.courseId,
-        order: values.order,
-        availableFrom: dayjs(values.availableFrom).utc().format(),
-        resetTimeDays: parseInt(values.resetTimeDays),
-      }
+  const workflowItems = [
+    {
+      title: t('shared.generic.information'),
+      tooltip: t('manage.sessionForms.practiceQuizInformation'),
+    },
+    {
+      title: t('shared.generic.description'),
+      tooltip: t('manage.sessionForms.practiceQuizDescription'),
+    },
+    {
+      title: t('shared.generic.settings'),
+      tooltip: t('manage.sessionForms.practiceQuizSettings'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+    {
+      title: t('shared.generic.questions'),
+      tooltip: t('manage.sessionForms.practiceQuizContent'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+  ]
 
-      if (initialValues && !conversion) {
-        const result = await editPracticeQuiz({
-          variables: {
-            id: initialValues.id,
-            ...createOrUpdateJSON,
-          },
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
-
-        if (result.data?.editPracticeQuiz) {
-          setIsWizardCompleted(true)
-        }
-        setSelectedCourseId(values.courseId)
-      } else {
-        const result = await createPracticeQuiz({
-          variables: createOrUpdateJSON,
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
-
-        if (result.data?.createPracticeQuiz) {
-          setIsWizardCompleted(true)
-        }
-        setSelectedCourseId(values.courseId)
-      }
-    } catch (error) {
-      console.log(error)
-      setEditMode(!!initialValues && !conversion)
-      setErrorToastOpen(true)
-    }
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elementIds: [],
+        titles: [],
+        types: [],
+        hasSampleSolutions: [],
+      },
+    ],
+    multiplier: '1',
+    courseId: undefined,
+    order: ElementOrderType.SpacedRepetition,
+    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
+    resetTimeDays: '6',
   }
+
+  const [formData, setFormData] = useState<PracticeQuizFormValues>({
+    name: initialValues?.name || formDefaultValues.name,
+    displayName: initialValues?.displayName || formDefaultValues.displayName,
+    description: initialValues?.description || formDefaultValues.description,
+    stacks: initialValues?.stacks
+      ? initialValues.stacks.map((stack) => {
+          return {
+            displayName: stack.displayName ?? '',
+            description: stack.description ?? '',
+            ...stack.elements!.reduce(
+              (acc: ElementStackFormValues, element) => {
+                acc.elementIds.push(parseInt(element.elementData.id))
+                acc.titles.push(element.elementData.name)
+                acc.types.push(element.elementData.type)
+                acc.hasSampleSolutions.push(true) // TODO: get value from element instance
+                return acc
+              },
+              {
+                elementIds: [],
+                titles: [],
+                types: [],
+                hasSampleSolutions: [],
+              }
+            ),
+          }
+        })
+      : formDefaultValues.stacks,
+    multiplier: initialValues?.pointsMultiplier
+      ? String(initialValues?.pointsMultiplier)
+      : formDefaultValues.multiplier,
+    courseId: initialValues?.course?.id || formDefaultValues.courseId,
+    order: initialValues?.orderType || formDefaultValues.order,
+    availableFrom: initialValues?.availableFrom
+      ? dayjs(initialValues?.availableFrom).local().format('YYYY-MM-DDTHH:mm')
+      : formDefaultValues.availableFrom,
+    resetTimeDays: initialValues?.resetTimeDays
+      ? String(initialValues?.resetTimeDays)
+      : formDefaultValues.resetTimeDays,
+  })
+
+  const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
+  const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
+  const handleSubmit = async (values: PracticeQuizFormValues) => {
+    submitPracticeQuizForm({
+      id: initialValues?.id,
+      conversion,
+      values,
+      createPracticeQuiz,
+      editPracticeQuiz,
+      setSelectedCourseId,
+      setIsWizardCompleted,
+      setErrorToastOpen,
+      setEditMode,
+    })
+  }
+
+  useEffect(() => {
+    if (formRef.current) {
+      let newValidity = stepValidity
+      newValidity[activeStep] = formRef.current.isValid
+      setStepValidity(newValidity)
+    }
+  }, [formRef.current])
 
   return (
     <>
-      <MultistepWizard
+      <WizardLayout
         title={title}
-        onCloseWizard={closeWizard}
-        completionSuccessMessage={(elementName) => (
-          <div>
-            {editMode
-              ? t.rich('manage.sessionForms.practiceQuizUpdated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })
-              : t.rich('manage.sessionForms.practiceQuizCreated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })}
-          </div>
-        )}
-        initialValues={{
-          name: initialValues?.name || '',
-          displayName: initialValues?.displayName || '',
-          description: initialValues?.description || '',
-          stacks: initialValues?.stacks
-            ? initialValues.stacks.map((stack) => {
-                return {
-                  displayName: stack.displayName,
-                  description: stack.description,
-                  ...stack.elements!.reduce(
-                    (acc: ElementStackFormValues, element) => {
-                      acc.elementIds.push(parseInt(element.elementData.id))
-                      acc.titles.push(element.elementData.name)
-                      acc.types.push(element.elementData.type)
-                      acc.hasSampleSolutions.push(true) // TODO: get value from element instance
-                      return acc
-                    },
-                    {
-                      elementIds: [],
-                      titles: [],
-                      types: [],
-                      hasSampleSolutions: [],
-                    }
-                  ),
-                }
-              })
-            : [
-                {
-                  displayName: '',
-                  description: '',
-                  elementIds: [],
-                  titles: [],
-                  types: [],
-                  hasSampleSolutions: [],
-                },
-              ],
-          multiplier: initialValues?.pointsMultiplier
-            ? String(initialValues?.pointsMultiplier)
-            : '1',
-          courseId: initialValues?.course?.id || undefined,
-          order: initialValues?.orderType || ElementOrderType.SpacedRepetition,
-          availableFrom: initialValues?.availableFrom
-            ? dayjs(initialValues?.availableFrom)
-                .local()
-                .format('YYYY-MM-DDTHH:mm')
-            : dayjs().local().format('YYYY-MM-DDTHH:mm'),
-          resetTimeDays: initialValues?.resetTimeDays || '6',
-        }}
-        onSubmit={onSubmit}
+        editMode={editMode}
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+        workflowItems={workflowItems}
         isCompleted={isWizardCompleted}
-        editMode={!!initialValues && !conversion}
-        onRestartForm={() => {
-          setIsWizardCompleted(false)
-        }}
-        onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}?tab=practiceQuizzes`)
-        }}
-        workflowItems={[
-          {
-            title: t('shared.generic.information'),
-            tooltip: t('manage.sessionForms.microLearningInformation'),
-          },
-          {
-            title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.practiceQuizDescription'),
-          },
-          {
-            title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.practiceQuizSettings'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
-          {
-            title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.practiceQuizContent'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
+        completionStep={
+          <CompletionStep
+            completionSuccessMessage={(elementName) => (
+              <div>
+                {editMode
+                  ? t.rich('manage.sessionForms.practiceQuizUpdated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })
+                  : t.rich('manage.sessionForms.practiceQuizCreated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })}
+              </div>
+            )}
+            name={formData.name}
+            editMode={editMode}
+            onViewElement={() => {
+              router.push(`/courses/${selectedCourseId}?tab=practiceQuizzes`)
+            }}
+            onRestartForm={() => {
+              setIsWizardCompleted(false)
+            }}
+            resetForm={() => setFormData(formDefaultValues)}
+            setStepNumber={setActiveStep}
+            onCloseWizard={closeWizard}
+          />
+        }
+        steps={[
+          <PracticeQuizInformationStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={
+              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+            }
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={nameValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <PracticeQuizDescriptionStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={descriptionValidationSchema}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <PracticeQuizSettingsStep
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={settingsValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <StackCreationStep
+            editMode={editMode}
+            selection={selection}
+            resetSelection={resetSelection}
+            acceptedTypes={acceptedTypes}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={stackValiationSchema}
+            setStepValidity={setStepValidity}
+            onSubmit={(newValues: PracticeQuizFormValues) =>
+              handleSubmit({ ...formData, ...newValues })
+            }
+            closeWizard={closeWizard}
+          />,
         ]}
-      >
-        <PracticeQuizInformationStep
-          validationSchema={nameValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <PracticeQuizDescriptionStep
-          validationSchema={descriptionValidationSchema}
-        />
-        <PracticeQuizSettingsStep
-          validationSchema={stepTwoValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <StackCreationStep
-          selection={selection}
-          resetSelection={resetSelection}
-          validationSchema={stackValiationSchema}
-          acceptedTypes={acceptedTypes}
-        />
-      </MultistepWizard>
+        saveFormData={() => {
+          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
+        }}
+      />
       <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}

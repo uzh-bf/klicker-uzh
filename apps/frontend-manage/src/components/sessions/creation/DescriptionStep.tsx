@@ -6,8 +6,20 @@ import CreationFormValidator from './CreationFormValidator'
 import EditorField from './EditorField'
 import WizardNavigation from './WizardNavigation'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
+import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
 
-interface DescriptionStepProps extends MicroLearningWizardStepProps {
+interface MicroLearningDescriptionStepProps
+  extends MicroLearningWizardStepProps {
+  displayNameTooltip: string
+  descriptionTooltip: string
+  descriptionLabel?: string
+  dataDisplayName?: { test?: string; cy?: string }
+  dataDescription?: { test?: string; cy?: string }
+  descriptionRequired?: boolean
+  [key: string]: any
+}
+
+interface PracticeQuizDescriptionStepProps extends PracticeQuizWizardStepProps {
   displayNameTooltip: string
   descriptionTooltip: string
   descriptionLabel?: string
@@ -34,7 +46,7 @@ function DescriptionStep({
   setStepValidity,
   onNextStep,
   closeWizard,
-}: DescriptionStepProps) {
+}: MicroLearningDescriptionStepProps | PracticeQuizDescriptionStepProps) {
   const t = useTranslations()
 
   return (

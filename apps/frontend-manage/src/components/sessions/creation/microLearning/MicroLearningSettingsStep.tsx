@@ -7,56 +7,16 @@ import {
   NewFormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { Form, Formik, FormikErrors, FormikTouched } from 'formik'
+import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CourseSelectionMonitor from '../CourseSelectMonitor'
 import CreationFormValidator from '../CreationFormValidator'
-import { ElementSelectCourse } from '../ElementCreation'
 import MultiplierSelector from '../MultiplierSelector'
-import { MicroLearningFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
+import DateChangeMonitor from './DateChangeMonitor'
 import { MicroLearningWizardStepProps } from './MicroLearningWizard'
-
-const CourseSelectionMonitor = ({
-  values,
-  gamifiedCourses,
-  setCourseGamified,
-}: {
-  values: MicroLearningFormValues
-  gamifiedCourses?: ElementSelectCourse[]
-  setCourseGamified: (value: boolean) => void
-}) => {
-  useEffect(() => {
-    if (values.courseId) {
-      const course = gamifiedCourses?.find(
-        (course) => course.value === values.courseId
-      )
-      setCourseGamified(!!course)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.courseId])
-
-  return null
-}
-
-const DateChangeMonitor = ({
-  values,
-  setTouched,
-}: {
-  values: MicroLearningFormValues
-  setTouched: (
-    touched: FormikTouched<MicroLearningFormValues>
-  ) => Promise<void | FormikErrors<MicroLearningFormValues>>
-}) => {
-  useEffect(() => {
-    setTouched({ startDate: true, endDate: true })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.startDate, values.endDate])
-
-  return null
-}
 
 function MicroLearningSettingsStep({
   editMode,

@@ -1026,6 +1026,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       practiceQuizIntroductionName:
         'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      practiceQuizInformation:
+        'In this step, enter the name and description of the practice quiz and find helpful information for creating the element.',
       practiceQuizLecturerDocs:
         'For more information on the creation and execution of practice quizzes, visit the <link>Lecturer Documentation</link>.',
       practiceQuizStudentDocs:

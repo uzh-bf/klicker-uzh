@@ -36,9 +36,7 @@ function StackCreationStep({
   setStepValidity,
   onSubmit,
   closeWizard,
-}: MicroLearningStackCreationStepProps) {
-  // TODO: add practice quiz interface defined above as soon as the corresponding types have been extended
-
+}: MicroLearningStackCreationStepProps | PracticeQuizStackCreationStepProps) {
   return (
     <Formik
       validateOnMount
