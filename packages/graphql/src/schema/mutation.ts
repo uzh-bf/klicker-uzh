@@ -197,6 +197,7 @@ export const Mutation = builder.mutationType({
             type: [StackResponseInput],
             required: true,
           }),
+          stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: (_, args, ctx) => {
           return PracticeQuizService.respondToElementStack(args, ctx)

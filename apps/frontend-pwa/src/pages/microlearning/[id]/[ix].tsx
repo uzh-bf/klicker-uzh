@@ -58,6 +58,7 @@ function MicrolearningInstance() {
             max={(microlearning?.stacks?.length ?? -1) + 1}
           />
           <ElementStack
+            key={currentStack.id}
             parentId={microlearning.id}
             courseId={microlearning.course!.id}
             // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
