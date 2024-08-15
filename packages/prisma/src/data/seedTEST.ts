@@ -1,5 +1,5 @@
 import Prisma from '../../dist/index.js'
-import { type Element } from '../client/index.js'
+import { type Element } from '../prisma/client/index.js'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
