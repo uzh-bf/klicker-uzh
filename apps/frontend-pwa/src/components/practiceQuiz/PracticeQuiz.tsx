@@ -112,6 +112,7 @@ function PracticeQuiz({
 
         {currentStack && (
           <ElementStack
+            key={currentStack.id}
             parentId={quiz.id}
             courseId={quiz.course!.id}
             stack={currentStack}

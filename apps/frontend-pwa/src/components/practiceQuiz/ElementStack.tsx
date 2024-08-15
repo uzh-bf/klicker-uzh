@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import useComponentVisibleCounter from '@components/hooks/useComponentVisibleCounter'
 import {
   ElementStack as ElementStackType,
   ElementType,
@@ -53,6 +54,7 @@ function ElementStack({
   hideBookmark = false,
 }: ElementStackProps) {
   const t = useTranslations()
+  const timeSpent = useComponentVisibleCounter()
 
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
 
@@ -204,6 +206,7 @@ function ElementStack({
               variables: {
                 stackId: stack.id,
                 courseId: courseId,
+                stackAnswerTime: timeSpent,
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
