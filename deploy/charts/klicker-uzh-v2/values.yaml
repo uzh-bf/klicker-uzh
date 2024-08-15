@@ -262,12 +262,12 @@ lti:
 
   db:
     type: postgres
-    host:
-    port:
-    name:
-    username:
-    password:
-    connectionString:
+    host: ''
+    port: 5432
+    name: ''
+    username: ''
+    password: ''
+    connectionString: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti
