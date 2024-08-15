@@ -8,10 +8,11 @@ import {
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -75,7 +76,7 @@ function GroupActivityWizard({
   const [stepValidity, setStepValidity] = useState(
     Array(4).fill(!!initialValues)
   )
-  const formRef = useRef<any>(null)
+  const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
 
   const acceptedTypes = [
     ElementType.Sc,
@@ -267,14 +268,6 @@ function GroupActivityWizard({
     })
   }
 
-  useEffect(() => {
-    if (formRef.current) {
-      let newValidity = stepValidity
-      newValidity[activeStep] = formRef.current.isValid
-      setStepValidity(newValidity)
-    }
-  }, [formRef.current])
-
   return (
     <>
       <WizardLayout
@@ -315,6 +308,7 @@ function GroupActivityWizard({
         }
         steps={[
           <GroupActivityInformationStep
+            key="group-activity-information-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -334,6 +328,7 @@ function GroupActivityWizard({
             closeWizard={closeWizard}
           />,
           <GroupActivityDescriptionStep
+            key="group-activity-description-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -349,6 +344,7 @@ function GroupActivityWizard({
             closeWizard={closeWizard}
           />,
           <GroupActivitySettingsStep
+            key="group-activity-settings-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -366,6 +362,7 @@ function GroupActivityWizard({
             closeWizard={closeWizard}
           />,
           <GroupActivityStackClues
+            key="group-activity-stack-clues"
             editMode={editMode}
             selection={selection}
             resetSelection={resetSelection}
@@ -384,7 +381,7 @@ function GroupActivityWizard({
           />,
         ]}
         saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
         }}
       />
       <ElementCreationErrorToast

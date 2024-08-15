@@ -55,14 +55,16 @@ async function submitLiveSessionForm({
           {
             query: GetUserSessionsDocument,
           },
-          values.courseId
-            ? {
-                query: GetSingleCourseDocument,
-                variables: {
-                  courseId: values.courseId,
+          ...(values.courseId
+            ? [
+                {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
                 },
-              }
-            : '',
+              ]
+            : []),
         ],
       })
       success = Boolean(session.data?.editSession)
@@ -85,14 +87,16 @@ async function submitLiveSessionForm({
           {
             query: GetUserSessionsDocument,
           },
-          values.courseId
-            ? {
-                query: GetSingleCourseDocument,
-                variables: {
-                  courseId: values.courseId,
+          ...(values.courseId
+            ? [
+                {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
                 },
-              }
-            : '',
+              ]
+            : []),
         ],
       })
       success = Boolean(session.data?.createSession)

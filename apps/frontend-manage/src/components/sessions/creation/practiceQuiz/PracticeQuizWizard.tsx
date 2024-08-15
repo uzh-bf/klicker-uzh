@@ -8,10 +8,11 @@ import {
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -77,7 +78,7 @@ function PracticeQuizWizard({
   const [stepValidity, setStepValidity] = useState(
     Array(4).fill(!!initialValues)
   )
-  const formRef = useRef<any>(null)
+  const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
 
   // TODO: add free text questions to accepted types?
   const acceptedTypes = [
@@ -251,14 +252,6 @@ function PracticeQuizWizard({
     })
   }
 
-  useEffect(() => {
-    if (formRef.current) {
-      let newValidity = stepValidity
-      newValidity[activeStep] = formRef.current.isValid
-      setStepValidity(newValidity)
-    }
-  }, [formRef.current])
-
   return (
     <>
       <WizardLayout
@@ -299,6 +292,7 @@ function PracticeQuizWizard({
         }
         steps={[
           <PracticeQuizInformationStep
+            key="practice-quiz-information-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -318,6 +312,7 @@ function PracticeQuizWizard({
             closeWizard={closeWizard}
           />,
           <PracticeQuizDescriptionStep
+            key="practice-quiz-description-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -333,6 +328,7 @@ function PracticeQuizWizard({
             closeWizard={closeWizard}
           />,
           <PracticeQuizSettingsStep
+            key="practice-quiz-settings-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -350,6 +346,7 @@ function PracticeQuizWizard({
             closeWizard={closeWizard}
           />,
           <StackCreationStep
+            key="practice-quiz-stack-step"
             editMode={editMode}
             selection={selection}
             resetSelection={resetSelection}
@@ -368,7 +365,7 @@ function PracticeQuizWizard({
           />,
         ]}
         saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
         }}
       />
       <ElementCreationErrorToast

@@ -10,6 +10,7 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -71,7 +72,7 @@ function LiveSessionWizard({
   const [stepValidity, setStepValidity] = useState(
     Array(4).fill(!!initialValues)
   )
-  const formRef = useRef<any>(null)
+  const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -271,6 +272,7 @@ function LiveSessionWizard({
         }
         steps={[
           <LiveQuizInformationStep
+            key="live-quiz-information-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -286,6 +288,7 @@ function LiveSessionWizard({
             closeWizard={closeWizard}
           />,
           <LiveQuizDescriptionStep
+            key="live-quiz-description-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -301,6 +304,7 @@ function LiveSessionWizard({
             closeWizard={closeWizard}
           />,
           <LiveQuizSettingsStep
+            key="live-quiz-settings-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -318,6 +322,7 @@ function LiveSessionWizard({
             closeWizard={closeWizard}
           />,
           <LiveQuizQuestionsStep
+            key="live-quiz-questions-step"
             editMode={editMode}
             selection={selection}
             resetSelection={resetSelection}
@@ -335,7 +340,7 @@ function LiveSessionWizard({
           />,
         ]}
         saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
         }}
       />
       <ElementCreationErrorToast

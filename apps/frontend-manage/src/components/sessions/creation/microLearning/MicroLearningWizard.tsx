@@ -7,10 +7,11 @@ import {
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -74,7 +75,7 @@ function MicroLearningWizard({
   const [stepValidity, setStepValidity] = useState(
     Array(4).fill(!!initialValues)
   )
-  const formRef = useRef<any>(null)
+  const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
 
   // TODO: add free text questions to accepted types?
   const acceptedTypes = [
@@ -240,14 +241,6 @@ function MicroLearningWizard({
     })
   }
 
-  useEffect(() => {
-    if (formRef.current) {
-      let newValidity = stepValidity
-      newValidity[activeStep] = formRef.current.isValid
-      setStepValidity(newValidity)
-    }
-  }, [formRef.current])
-
   return (
     <>
       <WizardLayout
@@ -288,6 +281,7 @@ function MicroLearningWizard({
         }
         steps={[
           <MicroLearningInformationStep
+            key="micro-learning-information-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -307,6 +301,7 @@ function MicroLearningWizard({
             closeWizard={closeWizard}
           />,
           <MicroLearningDescriptionStep
+            key="micro-learning-description-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -322,6 +317,7 @@ function MicroLearningWizard({
             closeWizard={closeWizard}
           />,
           <MicroLearningSettingsStep
+            key="micro-learning-settings-step"
             editMode={editMode}
             formRef={formRef}
             formData={formData}
@@ -339,6 +335,7 @@ function MicroLearningWizard({
             closeWizard={closeWizard}
           />,
           <StackCreationStep
+            key="stack-creation-step"
             editMode={editMode}
             selection={selection}
             resetSelection={resetSelection}
@@ -357,7 +354,7 @@ function MicroLearningWizard({
           />,
         ]}
         saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current.values }))
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
         }}
       />
       <ElementCreationErrorToast
