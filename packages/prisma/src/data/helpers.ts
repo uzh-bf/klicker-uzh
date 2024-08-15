@@ -16,7 +16,7 @@ import {
   QuestionInstanceType,
   UserLoginScope,
   type Element,
-} from '../client/index.js'
+} from '../prisma/client/index.js'
 
 export async function prepareUser({
   name,
