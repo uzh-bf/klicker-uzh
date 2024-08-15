@@ -2,23 +2,52 @@
 
 import { Provider } from 'ltijs'
 
-// Setup LTI provider
-Provider.setup(
-  process.env.LTI_ENCRYPTION_KEY as string,
-  {
-    url: process.env.LTI_DB_CONNECTION_STRING as string,
+const providerOptions = {
+  appRoute: '/',
+  loginRoute: '/login',
+  cookies: {
+    secure: true,
+    sameSite: 'None',
   },
-  {
-    // Options
-    appRoute: '/',
-    loginRoute: '/login',
-    cookies: {
-      secure: true,
-      sameSite: 'None',
+  devMode: process.env.NODE_ENV === 'development', // needs to be set to false in production
+}
+
+// Initialize database connection
+if (process.env.LTI_DB_TYPE === 'postgres') {
+  const Database = await import('ltijs-sequelize')
+
+  const db = new Database(
+    process.env.LTI_DB_NAME,
+    process.env.LTI_DB_USER,
+    process.env.LTI_DB_PASS,
+    {
+      // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
+      host: process.env.LTI_DB_HOST,
+      dialect: 'postgres',
+      dialectOptions: {
+        ssl: process.env.NODE_ENV !== 'development',
+      },
+    }
+  )
+
+  // Setup LTI provider
+  Provider.setup(
+    process.env.LTI_ENCRYPTION_KEY as string,
+    {
+      plugin: db,
     },
-    devMode: process.env.NODE_ENV === 'development', // needs to be set to false in production
-  }
-)
+    providerOptions
+  )
+} else {
+  // Setup LTI provider
+  Provider.setup(
+    process.env.LTI_ENCRYPTION_KEY as string,
+    {
+      url: process.env.LTI_DB_CONNECTION_STRING as string,
+    },
+    providerOptions
+  )
+}
 
 // LTI launch callback (token has been verified by ltijs beforehand)
 Provider.onConnect((token, req, res) => {
