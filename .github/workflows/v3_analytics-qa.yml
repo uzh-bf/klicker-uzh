@@ -29,6 +29,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Run util/sync-schema.sh
+        run: util/sync-schema.sh
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
