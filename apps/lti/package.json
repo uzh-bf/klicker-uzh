@@ -10,7 +10,8 @@
   ],
   "dependencies": {
     "cross-env": "7.0.3",
-    "ltijs": "5.9.4"
+    "ltijs": "5.9.4",
+    "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
     "@types/ltijs": "^4.0.11",
