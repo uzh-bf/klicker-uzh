@@ -89,7 +89,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row items-center gap-2 text-primary cursor-pointer">
+                        <div className="flex flex-row items-center gap-2 text-primary-100 cursor-pointer">
                           <FontAwesomeIcon icon={faPencil} />
                           <div>{t('manage.sessions.editSession')}</div>
                         </div>

@@ -712,8 +712,8 @@
   color: rgb(22 101 52 / var(--tw-text-opacity))
 }
 
-.text-primary {
-  color: hsl(var(--primary))
+.text-primary-100 {
+  color: var(--theme-color-primary)
 }
 
 .text-red-600 {

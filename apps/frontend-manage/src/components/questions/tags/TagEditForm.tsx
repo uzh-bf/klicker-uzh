@@ -56,7 +56,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                   className={{
                     root: twMerge(
                       'px-2 rounded border border-solid',
-                      isValid && 'hover:text-primary hover:bg-primary-20',
+                      isValid && 'hover:text-primary-100 hover:bg-primary-20',
                       !isValid && 'text-uzh-grey-60 cursor-not-allowed'
                     ),
                   }}

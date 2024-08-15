@@ -116,7 +116,7 @@ function Header({
           <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
-                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 hover:text-primary',
+                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 hover:text-primary-100',
               }}
               basic
               data={{ cy: 'course-docs' }}

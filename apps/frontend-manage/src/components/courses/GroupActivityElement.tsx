@@ -98,7 +98,7 @@ function GroupActivityElement({
                 items={[
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-2 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-2 cursor-pointer">
                         <FontAwesomeIcon icon={faPencil} />
                         <div>{t('manage.course.editGroupActivity')}</div>
                       </div>
@@ -145,7 +145,7 @@ function GroupActivityElement({
                   href={`/courses/grading/groupActivity/${groupActivity.id}`}
                   data-cy={`grade-groupActivity-${groupActivity.name}`}
                 >
-                  <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                  <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                     <FontAwesomeIcon
                       icon={faUpRightFromSquare}
                       className="w-[1.1rem]"

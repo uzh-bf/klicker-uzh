@@ -43,7 +43,7 @@ function TokenGeneration() {
             link: (displayLink) => (
               <Link
                 href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
-                className="text-primary"
+                className="text-primary-100"
                 legacyBehavior
                 passHref
               >

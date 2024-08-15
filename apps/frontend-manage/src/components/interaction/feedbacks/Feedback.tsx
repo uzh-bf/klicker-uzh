@@ -60,7 +60,7 @@ function Feedback({
     <div>
       <Button
         className={{
-          root: 'w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary',
+          root: 'w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid border-primary-100',
         }}
         onClick={() => setIsEditingActive((prev) => !prev)}
         data={{ cy: `open-feedback-${content}` }}
