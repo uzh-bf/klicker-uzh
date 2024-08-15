@@ -23,7 +23,7 @@ function UnpublishMicroLearningButton({
   return (
     <Button
       basic
-      className={{ root: 'text-primary' }}
+      className={{ root: 'text-primary-100' }}
       onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >

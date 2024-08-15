@@ -10,9 +10,7 @@ export default {
   theme: {
     extend: {
       ...TailwindAnimations,
-      colors: {
-        ...TailwindColorsUZH,
-      },
+      color: TailwindColorsUZH,
       fontFamily: {
         sans: ['Source Sans Pro', fontFamily.sans],
       },

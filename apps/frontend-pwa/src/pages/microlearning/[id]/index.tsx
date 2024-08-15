@@ -65,7 +65,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
                 <Button
                   basic
                   className={{
-                    root: 'font-bold hover:text-primary',
+                    root: 'font-bold hover:text-primary-100',
                   }}
                   onClick={() =>
                     router.push(

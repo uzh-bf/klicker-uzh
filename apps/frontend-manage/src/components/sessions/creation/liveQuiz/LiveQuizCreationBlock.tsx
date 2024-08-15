@@ -131,7 +131,7 @@ function LiveQuizCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'px-1 hover:text-primary ',
+              root: 'px-1 hover:text-primary-100',
             }}
             data={{ cy: `open-block-${index}-settings` }}
           >

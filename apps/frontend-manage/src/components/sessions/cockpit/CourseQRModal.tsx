@@ -15,7 +15,6 @@ interface QRPopupProps {
     button?: string
     modal?: string
   }
-  children?: React.ReactNode
   dataTrigger?: {
     cy?: string
     test?: string
@@ -30,25 +29,14 @@ interface QRPopupProps {
   }
 }
 
-interface QRPopupPropsWithLink extends QRPopupProps {
-  link: string
-  children?: never
-}
-interface QRPopupPropsWithChildren extends QRPopupProps {
-  link?: never
-  children: React.ReactNode
-}
-
 function CourseQRModal({
-  link,
   relativeLink,
   triggerText,
   className,
-  children,
   dataTrigger,
   dataModal,
   dataCloseButton,
-}: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
+}: QRPopupProps): React.ReactElement {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
 

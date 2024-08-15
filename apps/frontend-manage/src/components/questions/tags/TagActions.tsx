@@ -64,7 +64,7 @@ function TagActions({
           disabled={!onMoveUp}
           onClick={() => onMoveUp?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-up` }}
         >
@@ -77,7 +77,7 @@ function TagActions({
           disabled={!onMoveDown}
           onClick={() => onMoveDown?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-down` }}
         >
@@ -90,7 +90,7 @@ function TagActions({
           disabled={active}
           onClick={() => setEditMode(true)}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-edit` }}
         >

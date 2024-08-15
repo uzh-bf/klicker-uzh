@@ -112,14 +112,14 @@ function LecturerView() {
         /> */}
 
           {feedbacks?.length === 0 && (
-            <div className="mt-4 flex items-center border border-solid bg-primary-10% border-primary text-2xl p-4">
+            <div className="mt-4 flex items-center border border-solid border-primary-100 text-2xl p-4 rounded">
               {t('manage.lecturer.noFeedbacks')}
             </div>
           )}
 
           {feedbacks?.map(({ id, content, createdAt, votes }: Feedback) => (
             <div
-              className="mt-4 flex items-center border border-solid bg-primary-10% border-primary"
+              className="mt-4 flex items-center border border-solid border-primary-100 rounded"
               key={id}
             >
               <div className="flex-1 p-4">
@@ -140,8 +140,8 @@ function LecturerView() {
       )}
 
       {isConfusionFeedbackEnabled && (
-        <div className="flex-initial">
-          <div className="flex-initial p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
+        <div className="flex-initial mt-4">
+          <div className="flex-initial p-4 w-[300px] rounded shadow print:hidden border-primary-100 border-solid border">
             <ConfusionCharts confusionValues={confusionSummary ?? undefined} />
           </div>
         </div>
