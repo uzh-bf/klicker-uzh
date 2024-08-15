@@ -9,21 +9,27 @@ function useComponentVisibleCounter() {
     const timer = setInterval(() => {
       if (inFocus) {
         setTimeSpent((current) => current + 1)
+      } else {
+        clearInterval(timer)
       }
     }, 1000)
 
     return () => {
       clearInterval(timer)
     }
-  }, [timeSpent, inFocus])
+  }, [inFocus])
 
   // track if the current tab is in focus or not
-  window.onblur = () => {
-    setInFocus(false)
-  }
-  window.onfocus = () => {
-    setInFocus(true)
-  }
+  useEffect(() => {
+    const handleBlur = () => setInFocus(false)
+    const handleFocus = () => setInFocus(true)
+    window.addEventListener('blur', handleBlur)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
 
   return timeSpent
 }
