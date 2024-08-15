@@ -38,6 +38,11 @@ def process_sc_item(item):
 def process_item(item):
     item['content'] = markdown.markdown(item['content'])
 
+    # replace all occurrences of $$ followed by a newline with $$
+    # replace all occurrences of $$ not followed by a newline with $
+    item['content'] = item['content'].replace("$$\n", "$$")
+    item['content'] = item['content'].replace("$$", "$")
+
     if item["type"] == "SC" or item["type"] == "MC":
         options = list(
             map(
@@ -90,7 +95,30 @@ ITEMS = [
         "identifier": "itemSC",
         "type": "SC",
         "title": "Meaning of Life",
-        "content": "What is the _meaning_ of **life**?",
+        "content": """**test** _test_ `test` test
+
+>test
+
+1. hello world
+2. this is great
+
+new line
+
+- so good
+- this is
+
+hello
+
+![Flag_of_Switzerland_(Pantone).svg.png](https://klickeruzhprodimages.blob.core.windows.net/df6d01c9-ab39-43c0-a1cc-768095fe3226/265660a7-8d2e-4fb5-9474-779f79c08488.png)
+
+$$1 + 2$$
+
+$$
+
+1 + 2
+
+$$
+""",
         "explanation": "The meaning of life is a question that has puzzled philosophers for centuries. It is a question that has been debated by scholars, scientists, and thinkers for millennia. The meaning of life is a question that has been explored by many different cultures and traditions. The meaning of life is a question that has been explored by many different cultures and traditions.",
         "options": [
             {
@@ -109,6 +137,9 @@ ITEMS = [
                 "feedback": "Incorrect!",
             },
         ],
+        "tags": ["tag1", "tag2"],
+        "multiplier": 2,
+        "displayMode": "LIST"
     },
     {
         "identifier": "itemMC",
@@ -138,6 +169,9 @@ ITEMS = [
                 "feedback": "Correct!",
             },
         ],
+        "tags": ["tag1", "tag2"],
+        "multiplier": 2,
+        "displayMode": "GRID"
     },
     {
         "identifier": "itemKPRIM",
@@ -167,6 +201,8 @@ ITEMS = [
                 "feedback": "Incorrect!",
             },
         ],
+        "tags": ["tag1", "tag2"],
+        "multiplier": 2
     },
     {
         "identifier": "itemFREE_TEXT",
@@ -178,6 +214,8 @@ ITEMS = [
             "min_length": 1,
             "max_length": 100,
         },
+        "tags": ["tag1", "tag2"],
+        "multiplier": 2
     },
     {
         "identifier": "itemNUMERICAL",
@@ -190,6 +228,8 @@ ITEMS = [
             "max": 100,
             "accuracy": 0,
         },
+        "tags": ["tag1", "tag2"],
+        "multiplier": 2
     },
 ]
 

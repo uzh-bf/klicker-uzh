@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -w out preview.js",
+    "dev": "nodemon -w out --ext xml preview.js",
     "generate": "poetry run python main.py"
   },
   "volta": {
