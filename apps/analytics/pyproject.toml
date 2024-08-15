@@ -21,6 +21,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks]
-sync-schemas = "python prisma/sync-schemas.py"
 generate = "prisma generate"
 main = "doppler run --config dev -- python main.py"
