@@ -8,7 +8,7 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
-import { ElementStackFormValues } from './MultistepWizard'
+import { ElementStackFormValues } from './WizardLayout'
 
 interface AddStackButtonProps {
   push: (value: ElementStackFormValues) => void

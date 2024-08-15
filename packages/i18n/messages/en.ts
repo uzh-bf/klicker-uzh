@@ -175,7 +175,9 @@ export default {
       elementN: 'Element {number}',
       stackN: 'Stack {number}',
       questionN: 'Question {number}',
+      clueN: 'Clue {number}',
       availability: 'Availability',
+      taskDescription: 'Task description',
     },
     contentInput: {
       boldStyle:
@@ -971,6 +973,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       minOneElementPerStack: 'Every stack must contain at least one element.',
+      minOneQuestionGroupActivity:
+        'A group activity must contain at least one question.',
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
@@ -1022,6 +1026,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       practiceQuizIntroductionName:
         'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      practiceQuizInformation:
+        'In this step, enter the name and description of the practice quiz and find helpful information for creating the element.',
       practiceQuizLecturerDocs:
         'For more information on the creation and execution of practice quizzes, visit the <link>Lecturer Documentation</link>.',
       practiceQuizStudentDocs:
@@ -1074,12 +1080,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For the creation of this type of element, a gamified course is required. Please enable gamification in one of your existing courses or create a new gamified course.',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
+      groupActivityInformation:
+        'In this step, enter the name and description of the group activity and find helpful information for creating the element.',
+      groupActivityMissingCourse:
+        'Group activities must be assigned to a course.',
       groupActivityTypes:
-        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, and free-text questions.',
       groupActivityCreated:
         'Your group activity <b>{name}</b> has been created successfully.',
       groupActivityEdited:
         'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityNoCourse:
+        'Group activities must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      groupActivityIntroductionName:
+        'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      groupActivityLecturerDocs:
+        'For more information on the creation and execution of group activities, visit the <link>Lecturer Documentation</link>.',
+      groupActivityStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
       groupActivityDescription:
         'In this step, enter the name and description of the group activity.',
       groupActivitySettings:
@@ -1091,7 +1109,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityName:
         'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
       groupActivityDescField:
-        'Add a description to your group activity that will be displayed to participants at the beginning.',
+        'Add a task description to your group activity that contains all information necessary to solve all questions with the provided clues.',
       groupActivityCourse:
         'For the creation of a group activity, the selection of the corresponding course is required.',
       groupActivityStartDate:
@@ -1105,12 +1123,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityCluesDescription:
         'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
       groupActivityAddClue: 'Add new clue',
+      groupActivityCluesUniqueNames: 'All clues must have unique names.',
       groupActivityClueType: 'Clue type',
       textClue: 'Text clue',
       numericalClue: 'Numerical clue',
       groupActivityNameError: 'Please enter a name for your group activity.',
       groupActivityDisplayNameError:
         'Please enter a valid display name for your group activity.',
+      groupActivityDescriptionError:
+        'Please enter a task description for your group activity.',
       groupActivityMin2Clues:
         'Please add at least two clues to your group activity.',
       clueNameMissing: 'Please enter a name for your clue.',

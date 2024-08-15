@@ -6,10 +6,12 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  LTI_DB_TYPE: {{ .Values.lti.db.type | quote }}
   LTI_DB_HOST: {{ .Values.lti.db.host | quote }}
   LTI_DB_PORT: {{ .Values.lti.db.port | quote }}
   LTI_DB_NAME: {{ .Values.lti.db.name | quote }}
   LTI_DB_USER: {{ .Values.lti.db.username | quote }}
   LTI_CLIENT_ID: {{ .Values.lti.clientId | quote }}
   LTI_REDIRECT_URL: {{ .Values.lti.redirectURL | quote }}
+  LTI_PORT: {{ .Values.lti.port | quote }}
   COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}

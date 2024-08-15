@@ -22,7 +22,7 @@ import { QuestionDragDropTypes } from '../../../questions/Question'
 import {
   LiveQuizBlockErrorValues,
   LiveQuizBlockFormValues,
-} from '../MultistepWizard'
+} from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
 
 interface LiveQuizCreationBlockProps {
@@ -154,113 +154,148 @@ function LiveQuizCreationBlock({
         </div>
       </div>
       <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">
-        {block.titles.map((title, questionIdx) => (
-          <div
-            key={`${questionIdx}-${title}`}
-            className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
-            data-cy={`question-${questionIdx}-block-${index}`}
-          >
-            <div className="flex-1">
-              <Ellipsis
-                // maxLines={2}
-                maxLength={40}
-                className={{ content: 'prose-sm' }}
-              >
-                {title}
-              </Ellipsis>
-            </div>
-            <div className="flex flex-row">
-              <Button
-                basic
-                className={{
-                  root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
-                }}
-                disabled={block.questionIds.length === 1}
-                onClick={() => {
-                  if (!(questionIdx === 0 || block.questionIds.length === 1)) {
-                    replace(index, {
-                      ...block,
-                      questionIds: R.move(
-                        questionIdx,
-                        questionIdx - 1,
-                        block.questionIds
-                      ),
-                      titles: R.move(
-                        questionIdx,
-                        questionIdx - 1,
-                        block.titles
-                      ),
-                      types: R.move(questionIdx, questionIdx - 1, block.types),
-                    })
-                  }
-                }}
-                data={{ cy: `move-question-${questionIdx}-block-${index}-up` }}
-              >
-                <FontAwesomeIcon icon={faArrowUp} />
-              </Button>
-              <Button
-                basic
-                className={{
-                  root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
-                }}
-                disabled={block.questionIds.length === 1}
-                onClick={() => {
-                  if (
-                    !(
-                      block.questionIds.length === questionIdx - 1 ||
-                      block.questionIds.length === 1
-                    )
-                  ) {
-                    replace(index, {
-                      ...block,
-                      questionIds: R.move(
-                        questionIdx,
-                        questionIdx + 1,
-                        block.questionIds
-                      ),
-                      titles: R.move(
-                        questionIdx,
-                        questionIdx + 1,
-                        block.titles
-                      ),
-                      types: R.move(questionIdx, questionIdx + 1, block.types),
-                    })
-                  }
-                }}
-                data={{
-                  cy: `move-question-${questionIdx}-block-${index}-down`,
-                }}
-              >
-                <FontAwesomeIcon icon={faArrowDown} />
-              </Button>
-            </div>
-            <Button
-              basic
-              className={{
-                root: `px-1 hover:text-red-600`,
-              }}
-              onClick={() => {
-                replace(index, {
-                  ...block,
-                  questionIds: block.questionIds
-                    .slice(0, questionIdx)
-                    .concat(block.questionIds.slice(questionIdx + 1)),
-                  titles: block.titles
-                    .slice(0, questionIdx)
-                    .concat(block.titles.slice(questionIdx + 1)),
-                  types: block.types
-                    .slice(0, questionIdx)
-                    .concat(block.types.slice(questionIdx + 1)),
-                })
-              }}
-              data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
+        {block.titles.map((title, questionIdx) => {
+          const errors =
+            error && Array.isArray(error)
+              ? error.length > index && error[index]
+              : error
+
+          const isInvalid =
+            errors &&
+            (
+              ['questionIds', 'titles', 'types'] as (
+                | 'questionIds'
+                | 'titles'
+                | 'types'
+              )[]
+            ).some((key) => errors[key] && errors[key][questionIdx])
+
+          return (
+            <div
+              key={`${questionIdx}-${title}`}
+              className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
+              data-cy={`question-${questionIdx}-block-${index}`}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button.Icon>
-            </Button>
-          </div>
-        ))}
+              <div className="flex-1">
+                <Ellipsis
+                  // maxLines={2}
+                  maxLength={40}
+                  className={{ content: 'prose-sm' }}
+                >
+                  {title}
+                </Ellipsis>
+              </div>
+              <div className="flex flex-row">
+                {isInvalid && (
+                  <FontAwesomeIcon
+                    icon={faCircleExclamation}
+                    className="mr-1 text-red-600"
+                  />
+                )}
+                <Button
+                  basic
+                  className={{
+                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                  }}
+                  disabled={block.questionIds.length === 1}
+                  onClick={() => {
+                    if (
+                      !(questionIdx === 0 || block.questionIds.length === 1)
+                    ) {
+                      replace(index, {
+                        ...block,
+                        questionIds: R.move(
+                          questionIdx,
+                          questionIdx - 1,
+                          block.questionIds
+                        ),
+                        titles: R.move(
+                          questionIdx,
+                          questionIdx - 1,
+                          block.titles
+                        ),
+                        types: R.move(
+                          questionIdx,
+                          questionIdx - 1,
+                          block.types
+                        ),
+                      })
+                    }
+                  }}
+                  data={{
+                    cy: `move-question-${questionIdx}-block-${index}-up`,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faArrowUp} />
+                </Button>
+                <Button
+                  basic
+                  className={{
+                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                  }}
+                  disabled={block.questionIds.length === 1}
+                  onClick={() => {
+                    if (
+                      !(
+                        block.questionIds.length === questionIdx - 1 ||
+                        block.questionIds.length === 1
+                      )
+                    ) {
+                      replace(index, {
+                        ...block,
+                        questionIds: R.move(
+                          questionIdx,
+                          questionIdx + 1,
+                          block.questionIds
+                        ),
+                        titles: R.move(
+                          questionIdx,
+                          questionIdx + 1,
+                          block.titles
+                        ),
+                        types: R.move(
+                          questionIdx,
+                          questionIdx + 1,
+                          block.types
+                        ),
+                      })
+                    }
+                  }}
+                  data={{
+                    cy: `move-question-${questionIdx}-block-${index}-down`,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faArrowDown} />
+                </Button>
+              </div>
+              <Button
+                basic
+                className={{
+                  root: `px-1 hover:text-red-600`,
+                }}
+                onClick={() => {
+                  replace(index, {
+                    ...block,
+                    questionIds: block.questionIds
+                      .slice(0, questionIdx)
+                      .concat(block.questionIds.slice(questionIdx + 1)),
+                    titles: block.titles
+                      .slice(0, questionIdx)
+                      .concat(block.titles.slice(questionIdx + 1)),
+                    types: block.types
+                      .slice(0, questionIdx)
+                      .concat(block.types.slice(questionIdx + 1)),
+                  })
+                }}
+                data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faTrash} />
+                </Button.Icon>
+              </Button>
+            </div>
+          )
+        })}
       </div>
       {selection && !R.isEmpty(selection) && (
         <Button

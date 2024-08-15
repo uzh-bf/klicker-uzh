@@ -86,6 +86,7 @@
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:test": "pnpm run dev",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
     "dev:offline": "pnpm run dev",

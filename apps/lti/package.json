@@ -10,7 +10,8 @@
   ],
   "dependencies": {
     "cross-env": "7.0.3",
-    "ltijs": "5.9.4"
+    "ltijs": "5.9.4",
+    "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
     "@types/ltijs": "^4.0.11",
@@ -25,13 +26,14 @@
     "build:ts": "tsup",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
-    "dev:run": "nodemon -w dist/ --exec 'node --env-file=.env ./dist/index.js'",
+    "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "node --env-file=.env dist/index.js"
+    "start": "node dist/index.js"
   },
   "engines": {
     "node": "=20"

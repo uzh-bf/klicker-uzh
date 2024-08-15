@@ -15,7 +15,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import GroupActivityWizard from './GroupActivityWizard'
+import GroupActivityWizard from './groupActivity/GroupActivityWizard'
 import LiveSessionWizard from './liveQuiz/LiveSessionWizard'
 import MicroLearningWizard from './microLearning/MicroLearningWizard'
 import PracticeQuizWizard from './practiceQuiz/PracticeQuizWizard'
@@ -166,7 +166,7 @@ function ElementCreation({
   ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
 
   return (
-    <div className="flex flex-col justify-center print-hidden md:h-[32rem]">
+    <div className="flex flex-col justify-center print-hidden md:h-[18rem] md:min-h-[18rem] mb-3">
       <div className="w-full h-full">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
@@ -226,7 +226,8 @@ function ElementCreation({
             closeWizard={closeWizard}
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
-            courses={courseSelection || [{ label: '', value: '' }]}
+            selection={selection}
+            resetSelection={resetSelection}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }
