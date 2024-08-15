@@ -100,3 +100,17 @@ releases:
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN" }}'
+
+        lti:
+          clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
+          redirectURL: '{{ requiredEnv "LTI_REDIRECT_URL" }}'
+          cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
+          encryptionKey: '{{ requiredEnv "APP_SECRET" }}'
+
+          db:
+            type: postgres
+            host: '{{ requiredEnv "LTI_DB_HOST" }}'
+            port: '{{ requiredEnv "LTI_DB_PORT" }}'
+            name: '{{ requiredEnv "LTI_DB_NAME" }}'
+            username: '{{ requiredEnv "LTI_DB_USER" }}'
+            password: '{{ requiredEnv "LTI_DB_PASS" }}'
