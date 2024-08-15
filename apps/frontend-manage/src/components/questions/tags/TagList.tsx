@@ -93,7 +93,7 @@ function TagList({
         className={{
           root: twMerge(
             'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
-            !resetDisabled && 'text-primary'
+            !resetDisabled && 'text-primary-100'
           ),
         }}
         disabled={resetDisabled}

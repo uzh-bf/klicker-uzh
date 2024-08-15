@@ -9,12 +9,8 @@ export default {
   theme: {
     extend: {
       ...TailwindAnimations,
-      colors: {
-        ...TailwindColorsUZH,
-      },
-      fontFamily: {
-        ...TailwindFonts,
-      },
+      colors: TailwindColorsUZH,
+      fontFamily: TailwindFonts,
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':

@@ -92,7 +92,7 @@ function MicroLearningElement({
                 items={[
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                         <FontAwesomeIcon
                           icon={faLink}
                           size="sm"
@@ -122,7 +122,7 @@ function MicroLearningElement({
                   },
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                         <FontAwesomeIcon icon={faPencil} />
                         <div>{t('manage.course.editMicrolearning')}</div>
                       </div>
@@ -210,7 +210,7 @@ function MicroLearningElement({
                     ? [
                         {
                           label: (
-                            <div className="flex flex-row items-center text-primary gap-1 cursor-pointer">
+                            <div className="flex flex-row items-center text-primary-100 gap-1 cursor-pointer">
                               <FontAwesomeIcon icon={faArrowsRotate} />
                               <div>
                                 {t(

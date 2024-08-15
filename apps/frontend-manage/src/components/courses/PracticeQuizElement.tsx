@@ -85,7 +85,7 @@ function PracticeQuizElement({
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                        <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                           <FontAwesomeIcon
                             icon={faCopy}
                             size="sm"
@@ -115,7 +115,7 @@ function PracticeQuizElement({
                     },
                     {
                       label: (
-                        <div className="flex flex-row items-center text-primary gap-1 cursor-pointer">
+                        <div className="flex flex-row items-center text-primary-100 gap-1 cursor-pointer">
                           <FontAwesomeIcon icon={faPencil} />
                           <div>{t('manage.course.editPracticeQuiz')}</div>
                         </div>

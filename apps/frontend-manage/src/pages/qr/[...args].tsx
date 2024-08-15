@@ -47,7 +47,7 @@ export function QR({
   return (
     <div>
       <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
-        <div className={twMerge('text-primary text-6xl', className?.title)}>
+        <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
           {process.env.NEXT_PUBLIC_PWA_URL}
           {path}
         </div>

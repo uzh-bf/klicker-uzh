@@ -159,7 +159,7 @@ function Histogram({
                       {t('manage.evaluation.histogramRange')}:{' '}
                       {payload[0]!.payload.label}
                     </div>
-                    <div className="text-primary font-bold">
+                    <div className="font-bold text-primary-100">
                       {t('manage.evaluation.count')}:{' '}
                       {payload[0]!.payload.count}
                     </div>
