@@ -1,6 +1,7 @@
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from lxml import etree
 from pathlib import Path
+import markdown
 
 # xsd_parser = etree.XMLParser()
 
@@ -35,6 +36,8 @@ def process_sc_item(item):
 
 
 def process_item(item):
+    item['content'] = markdown.markdown(item['content'])
+
     if item["type"] == "SC" or item["type"] == "MC":
         options = list(
             map(
@@ -87,7 +90,7 @@ ITEMS = [
         "identifier": "itemSC",
         "type": "SC",
         "title": "Meaning of Life",
-        "content": "What is the meaning of life?",
+        "content": "What is the _meaning_ of **life**?",
         "explanation": "The meaning of life is a question that has puzzled philosophers for centuries. It is a question that has been debated by scholars, scientists, and thinkers for millennia. The meaning of life is a question that has been explored by many different cultures and traditions. The meaning of life is a question that has been explored by many different cultures and traditions.",
         "options": [
             {
@@ -111,7 +114,7 @@ ITEMS = [
         "identifier": "itemMC",
         "type": "MC",
         "title": "The Sun",
-        "content": "What is the sun?",
+        "content": "Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)",
         "explanation": "The sun is a star that is located in the sky and is the source of light and heat for the Earth. The sun is a star that is located in the sky and is the source of light and heat for the Earth. The sun is a star that is located in the sky and is the source of light and heat for the Earth.",
         "options": [
             {
@@ -120,7 +123,7 @@ ITEMS = [
                 "feedback": "Correct!",
             },
             {
-                "content": "A planet",
+                "content": "$$T_n f(x;a)$$",
                 "correct": False,
                 "feedback": "Incorrect!",
             },

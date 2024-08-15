@@ -14,9 +14,7 @@
 {% endblock %}
 
 {% block itemBody %}
-<div>
-  <div>Which animals can fly?</div>
-</div>
+<div>{{item.content}}</div>
 
 <choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="1"
   orientation="vertical">

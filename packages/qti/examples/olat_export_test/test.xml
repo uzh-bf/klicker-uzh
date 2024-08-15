@@ -1,6 +1,6 @@
 <assessmentTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="test8003858f45408af9592a5be26e5c"
-  title="test" toolName="OpenOLAT" toolVersion="6.1.0"
+  xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1" identifier="test" title="Test"
+  toolName="KlickerUZH" toolVersion="3.2.0"
   xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd">
   <outcomeDeclaration identifier="MINSCORE" cardinality="single" baseType="float">
     <defaultValue>
@@ -13,25 +13,18 @@
     </defaultValue>
   </outcomeDeclaration>
   <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float" />
-  <testPart identifier="tp41f6eefe3d419f93cda51446822ae4" navigationMode="nonlinear"
-    submissionMode="individual">
+  <testPart identifier="part1" navigationMode="nonlinear" submissionMode="individual">
     <itemSessionControl maxAttempts="0" showFeedback="false" allowReview="false"
       showSolution="false" allowComment="true" allowSkipping="false" />
-    <assessmentSection identifier="sectf4e2e2e940e2a9c9ab32fe32ea8a" fixed="true" title="Section"
-      visible="true">
+    <assessmentSection identifier="section1" fixed="true" title="Section" visible="true">
       <itemSessionControl />
       <ordering shuffle="false" />
       <rubricBlock view="candidate" />
-      <assessmentItemRef identifier="sc01e799a0dd486a931b0a709bf7c057"
-        href="sc01e799a0dd486a931b0a709bf7c057.xml" />
-      <assessmentItemRef identifier="mc92939851b04c8b932486f5e3487621"
-        href="mc92939851b04c8b932486f5e3487621.xml" />
-      <assessmentItemRef identifier="kprim95cec9c440d8eb7ea2ab82c3545"
-        href="kprim95cec9c440d8eb7ea2ab82c3545.xml" />
-      <assessmentItemRef identifier="essaye774ea34441a913a3da06362d0f"
-        href="essaye774ea34441a913a3da06362d0f.xml" />
-      <assessmentItemRef identifier="fibaa240103141babaed7c756d57ae6f"
-        href="fibaa240103141babaed7c756d57ae6f.xml" />
+      <assessmentItemRef identifier="itemSC" href="itemSC.xml" />
+      <assessmentItemRef identifier="itemMC" href="itemMC.xml" />
+      <assessmentItemRef identifier="itemKPRIM" href="itemKPRIM.xml" />
+      <assessmentItemRef identifier="itemFREE_TEXT" href="itemFREE_TEXT.xml" />
+      <assessmentItemRef identifier="itemNUMERICAL" href="itemNUMERICAL.xml" />
     </assessmentSection>
   </testPart>
   <outcomeProcessing>

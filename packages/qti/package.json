@@ -3,13 +3,14 @@
   "version": "0.0.1",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon -w out preview.js",
+    "generate": "poetry run python main.py"
   },
   "volta": {
     "extends": "../../package.json"
   },
-  "dependencies": {
-    "@mitre/jsonix": "3.0.7",
-    "xml-js": "1.6.11"
+  "devDependencies": {
+    "express": "4.18.2",
+    "nodemon": "3.0.1"
   }
 }
