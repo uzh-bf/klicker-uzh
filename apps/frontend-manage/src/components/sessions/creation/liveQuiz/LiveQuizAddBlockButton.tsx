@@ -8,7 +8,7 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../../questions/Question'
-import { LiveQuizBlockFormValues } from '../MultistepWizard'
+import { LiveQuizBlockFormValues } from '../WizardLayout'
 
 interface LiveQuizAddBlockButtonProps {
   push: (value: LiveQuizBlockFormValues) => void

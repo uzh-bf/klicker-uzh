@@ -1,5 +1,5 @@
 import { useTranslations } from 'next-intl'
-import { LiveQuizBlockErrorValues } from '../MultistepWizard'
+import { LiveQuizBlockErrorValues } from '../WizardLayout'
 
 interface LiveQuizBlocksErrorProps {
   errors: LiveQuizBlockErrorValues

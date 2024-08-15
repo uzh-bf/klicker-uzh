@@ -4,33 +4,44 @@ import {
   EditGroupActivityDocument,
   Element,
   ElementType,
-  GetSingleCourseDocument,
   GroupActivity,
   ParameterType,
-  StackElementsInput,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import { FormikProps } from 'formik'
+import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
-import MultistepWizard, {
+import WizardLayout, {
   ElementStackFormValues,
   GroupActivityClueFormValues,
   GroupActivityFormValues,
-} from '../MultistepWizard'
+} from '../WizardLayout'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
 import GroupActivityInformationStep from './GroupActivityInformationStep'
 import GroupActivitySettingsStep from './GroupActivitySettingsStep'
 import GroupActivityStackClues from './GroupActivityStackClues'
+import submitGroupActivityForm from './submitGroupActivityForm'
 
 export interface GroupActivityWizardStepProps {
-  onSubmit?: () => void
+  editMode: boolean
+  formRef: any
+  formData: GroupActivityFormValues
+  continueDisabled: boolean
+  activeStep: number
+  stepValidity: boolean[]
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  onSubmit?: (newValues: GroupActivityFormValues) => void
+  setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onNextStep?: (newValues: GroupActivityFormValues) => void
+  closeWizard: () => void
 }
 
 interface GroupActivityWizardProps {
@@ -58,10 +69,14 @@ function GroupActivityWizard({
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState('')
-
-  const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
+    undefined
+  )
+  const [activeStep, setActiveStep] = useState(0)
+  const [stepValidity, setStepValidity] = useState(
+    Array(4).fill(!!initialValues)
+  )
+  const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
 
   const acceptedTypes = [
     ElementType.Sc,
@@ -149,213 +164,226 @@ function GroupActivityWizard({
       .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
   })
 
-  const onSubmit = async (values: GroupActivityFormValues) => {
-    try {
-      let success = false
-      if (initialValues) {
-        const result = await editGroupActivity({
-          variables: {
-            id: initialValues?.id || '',
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            startDate: dayjs(values.startDate).utc().format(),
-            endDate: dayjs(values.endDate).utc().format(),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
-            clues: values.clues,
-            stack: {
-              elements: values.stack.elementIds.map<StackElementsInput>(
-                (id, ix) => ({
-                  elementId: id,
-                  order: ix,
-                })
-              ),
-              order: 0,
-            },
-          },
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
+  const workflowItems = [
+    {
+      title: t('shared.generic.information'),
+      tooltip: t('manage.sessionForms.groupActivityInformation'),
+    },
+    {
+      title: t('shared.generic.description'),
+      tooltip: t('manage.sessionForms.groupActivityDescription'),
+    },
+    {
+      title: t('shared.generic.settings'),
+      tooltip: t('manage.sessionForms.groupActivitySettings'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+    {
+      title: t('shared.generic.questions'),
+      tooltip: t('manage.sessionForms.groupActivityQuestions'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+  ]
 
-        success = Boolean(result.data?.editGroupActivity)
-      } else {
-        const result = await createGroupActivity({
-          variables: {
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            startDate: dayjs(values.startDate).utc().format(),
-            endDate: dayjs(values.endDate).utc().format(),
-            multiplier: parseInt(values.multiplier),
-            courseId: values.courseId,
-            clues: values.clues,
-            stack: {
-              elements: values.stack.elementIds.map<StackElementsInput>(
-                (id, ix) => ({
-                  elementId: id,
-                  order: ix,
-                })
-              ),
-              order: 0,
-            },
-          },
-          refetchQueries: [
-            {
-              query: GetSingleCourseDocument,
-              variables: {
-                courseId: values.courseId,
-              },
-            },
-          ],
-        })
-        success = Boolean(result.data?.createGroupActivity)
-      }
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    clues: [],
+    stack: {
+      displayName: '',
+      description: '',
+      elementIds: [],
+      titles: [],
+      types: [],
+      hasSampleSolutions: [],
+    },
+    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: undefined,
+  }
 
-      if (success) {
-        setSelectedCourseId(values.courseId)
-        setEditMode(!!initialValues)
-        setIsWizardCompleted(true)
-      }
-    } catch (error) {
-      console.log(error)
-      setEditMode(!!initialValues)
-      setErrorToastOpen(true)
-    }
+  const [formData, setFormData] = useState<GroupActivityFormValues>({
+    name: initialValues?.name || formDefaultValues.name,
+    displayName: initialValues?.displayName || formDefaultValues.displayName,
+    description: initialValues?.description || formDefaultValues.description,
+    clues:
+      initialValues?.clues?.map((clue) => {
+        return {
+          name: clue.name,
+          displayName: clue.displayName,
+          type: clue.type,
+          value: clue.value,
+          unit: clue.unit ?? undefined,
+        }
+      }) ?? formDefaultValues.clues,
+    stack: initialValues?.stacks
+      ? {
+          displayName: initialValues?.stacks[0].displayName ?? '',
+          description: initialValues?.stacks[0].description ?? '',
+          ...initialValues?.stacks[0].elements!.reduce(
+            (acc: ElementStackFormValues, element) => {
+              acc.elementIds.push(parseInt(element.elementData.id))
+              acc.titles.push(element.elementData.name)
+              acc.types.push(element.elementData.type)
+              return acc
+            },
+            {
+              elementIds: [],
+              titles: [],
+              types: [],
+              hasSampleSolutions: [],
+            }
+          ),
+        }
+      : formDefaultValues.stack,
+
+    startDate: initialValues?.scheduledStartAt
+      ? dayjs(initialValues?.scheduledStartAt)
+          .local()
+          .format('YYYY-MM-DDTHH:mm')
+      : formDefaultValues.startDate,
+    endDate: initialValues?.scheduledEndAt
+      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      : formDefaultValues.endDate,
+    multiplier: initialValues?.pointsMultiplier
+      ? String(initialValues?.pointsMultiplier)
+      : formDefaultValues.multiplier,
+    courseId: initialValues?.course?.id || formDefaultValues.courseId,
+  })
+
+  const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
+  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
+  const handleSubmit = async (values: GroupActivityFormValues) => {
+    submitGroupActivityForm({
+      id: initialValues?.id,
+      values,
+      createGroupActivity,
+      editGroupActivity,
+      setEditMode,
+      setIsWizardCompleted,
+      setErrorToastOpen,
+      setSelectedCourseId,
+    })
   }
 
   return (
     <>
-      <MultistepWizard
+      <WizardLayout
         title={title}
-        onCloseWizard={closeWizard}
-        completionSuccessMessage={(elementName) => (
-          <div>
-            {editMode
-              ? t.rich('manage.sessionForms.groupActivityEdited', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })
-              : t.rich('manage.sessionForms.groupActivityCreated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })}
-          </div>
-        )}
-        initialValues={{
-          name: initialValues?.name || '',
-          displayName: initialValues?.displayName || '',
-          description: initialValues?.description || '',
-          clues:
-            initialValues?.clues?.map((clue) => {
-              return {
-                name: clue.name,
-                displayName: clue.displayName,
-                type: clue.type,
-                value: clue.value,
-                unit: clue.unit ?? undefined,
-              }
-            }) ?? [],
-          stack: initialValues?.stacks
-            ? {
-                displayName: initialValues?.stacks[0].displayName,
-                description: initialValues?.stacks[0].description,
-                ...initialValues?.stacks[0].elements!.reduce(
-                  (acc: ElementStackFormValues, element) => {
-                    acc.elementIds.push(parseInt(element.elementData.id))
-                    acc.titles.push(element.elementData.name)
-                    acc.types.push(element.elementData.type)
-                    return acc
-                  },
-                  {
-                    elementIds: [],
-                    titles: [],
-                    types: [],
-                    hasSampleSolutions: [],
-                  }
-                ),
-              }
-            : {
-                displayName: '',
-                description: '',
-                elementIds: [],
-                titles: [],
-                types: [],
-                hasSampleSolutions: [],
-              },
-
-          startDate: initialValues?.scheduledStartAt
-            ? dayjs(initialValues?.scheduledStartAt)
-                .local()
-                .format('YYYY-MM-DDTHH:mm')
-            : dayjs().local().format('YYYY-MM-DDTHH:mm'),
-          endDate: initialValues?.scheduledEndAt
-            ? dayjs(initialValues?.scheduledEndAt)
-                .local()
-                .format('YYYY-MM-DDTHH:mm')
-            : dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-          multiplier: initialValues?.pointsMultiplier
-            ? String(initialValues?.pointsMultiplier)
-            : '1',
-          courseId: initialValues?.course?.id || undefined,
-        }}
-        onSubmit={onSubmit}
+        editMode={editMode}
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+        workflowItems={workflowItems}
         isCompleted={isWizardCompleted}
-        editMode={!!initialValues}
-        initialValid={!!initialValues}
-        onRestartForm={() => {
-          setIsWizardCompleted(false)
-        }}
-        onViewElement={() => {
-          router.push(`/courses/${selectedCourseId}?tab=groupActivities`)
-        }}
-        workflowItems={[
-          {
-            title: t('shared.generic.information'),
-            tooltip: t('manage.sessionForms.groupActivityInformation'),
-          },
-          {
-            title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.groupActivityDescription'),
-          },
-          {
-            title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.groupActivitySettings'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
-          {
-            title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.groupActivityQuestions'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
+        completionStep={
+          <CompletionStep
+            completionSuccessMessage={(elementName) => (
+              <div>
+                {editMode
+                  ? t.rich('manage.sessionForms.groupActivityEdited', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })
+                  : t.rich('manage.sessionForms.groupActivityCreated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })}
+              </div>
+            )}
+            name={formData.name}
+            editMode={editMode}
+            onViewElement={() => {
+              router.push(`/courses/${selectedCourseId}?tab=groupActivities`)
+            }}
+            onRestartForm={() => {
+              setIsWizardCompleted(false)
+            }}
+            resetForm={() => setFormData(formDefaultValues)}
+            setStepNumber={setActiveStep}
+            onCloseWizard={closeWizard}
+          />
+        }
+        steps={[
+          <GroupActivityInformationStep
+            key="group-activity-information-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={
+              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+            }
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={nameValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <GroupActivityDescriptionStep
+            key="group-activity-description-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={descriptionValidationSchema}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <GroupActivitySettingsStep
+            key="group-activity-settings-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={settingsValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <GroupActivityStackClues
+            key="group-activity-stack-clues"
+            editMode={editMode}
+            selection={selection}
+            resetSelection={resetSelection}
+            acceptedTypes={acceptedTypes}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={stackCluesValiationSchema}
+            setStepValidity={setStepValidity}
+            onSubmit={(newValues: GroupActivityFormValues) =>
+              handleSubmit({ ...formData, ...newValues })
+            }
+            closeWizard={closeWizard}
+          />,
         ]}
-      >
-        <GroupActivityInformationStep
-          validationSchema={nameValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <GroupActivityDescriptionStep
-          validationSchema={descriptionValidationSchema}
-        />
-        <GroupActivitySettingsStep
-          validationSchema={settingsValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <GroupActivityStackClues
-          selection={selection}
-          resetSelection={resetSelection}
-          acceptedTypes={acceptedTypes}
-          validationSchema={stackCluesValiationSchema}
-        />
-      </MultistepWizard>
+        saveFormData={() => {
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
+        }}
+      />
       <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
