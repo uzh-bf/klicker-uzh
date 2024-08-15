@@ -53,7 +53,7 @@ export function SessionProgress({
         <Button
           fluid
           className={{
-            root: 'bg-primary-80 !mr-0 h-10 w-32 font-bold text-white disabled:opacity-50',
+            root: '!mr-0 h-10 w-32 bg-primary-80 font-bold text-white disabled:opacity-50',
           }}
           disabled={isSubmitDisabled}
           onClick={onSubmit}
