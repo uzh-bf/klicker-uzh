@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { Provider } from 'ltijs'
+import Database from 'ltijs-sequelize'
 
 const providerOptions = {
   appRoute: '/',
@@ -14,8 +15,6 @@ const providerOptions = {
 
 // Initialize database connection
 if (process.env.LTI_DB_TYPE === 'postgres') {
-  const Database = await import('ltijs-sequelize')
-
   const db = new Database(
     process.env.LTI_DB_NAME,
     process.env.LTI_DB_USER,
@@ -23,6 +22,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
     {
       // see https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-constructor-constructor
       host: process.env.LTI_DB_HOST,
+      port: process.env.LTI_DB_PORT ?? 5432,
       dialect: 'postgres',
       dialectOptions: {
         ssl: process.env.NODE_ENV !== 'development',
