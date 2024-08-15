@@ -31,7 +31,7 @@ function StackDescriptionModal({
         label={t('manage.sessionForms.stackDisplayName')}
         tooltip={t('manage.sessionForms.stackDisplayNameTooltip')}
         data={{ cy: `stack-${stackIx}-displayname` }}
-        className={{ label: 'text-base mb-0.5 mt-0' }}
+        className={{ label: 'mt-0' }}
       />
       <EditorField
         label={t('manage.sessionForms.stackDescription')}
@@ -39,7 +39,7 @@ function StackDescriptionModal({
         fieldName={`stacks.${stackIx}.description`}
         placeholder={t('manage.sessionForms.stackDescriptionPlaceholder')}
         showToolbarOnFocus={false}
-        className={{ label: 'text-base mb-0.5 mt-2  ' }}
+        className={{ label: 'mt-2  ' }}
         data={{ cy: `stack-${stackIx}-description` }}
       />
       <Button

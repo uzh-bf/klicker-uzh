@@ -1,6 +1,6 @@
 import { faCircleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Label, Tooltip } from '@uzh-bf/design-system'
+import { FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -28,7 +28,7 @@ interface EditorFieldProps {
 function EditorField({
   label,
   labelType = 'small',
-  required,
+  required = false,
   fieldName,
   tooltip,
   placeholder,
@@ -48,20 +48,12 @@ function EditorField({
       )}
     >
       {label && (
-        <Label
-          required={required}
+        <FormLabel
           label={label}
-          className={{
-            root: twMerge(
-              'my-auto mr-2 min-w-max font-bold',
-              labelType === 'small' && '-mb-1 text-sm leading-6 text-gray-600',
-              className?.label
-            ),
-            tooltip: twMerge('text-sm font-normal', className?.tooltip),
-            tooltipSymbol: twMerge(labelType === 'small' && 'h-2 w-2'),
-          }}
+          labelType={labelType}
+          required={required}
           tooltip={tooltip}
-          showTooltipSymbol={typeof tooltip !== 'undefined'}
+          className={className}
         />
       )}
 

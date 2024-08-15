@@ -55,7 +55,6 @@ function LiveQuizInformationStep({
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
-                    label: 'text-base mb-0.5',
                   }}
                   data-cy="insert-live-quiz-name"
                 />

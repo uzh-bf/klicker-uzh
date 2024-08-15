@@ -99,7 +99,7 @@ function DescriptionStep({
                   className={{
                     root: 'mb-1 w-full md:w-1/2',
                     tooltip: 'z-20',
-                    label: 'text-base mb-0.5 mt-0',
+                    label: 'mt-0',
                   }}
                   data={dataDisplayName}
                 />
@@ -110,7 +110,6 @@ function DescriptionStep({
                   tooltip={descriptionTooltip}
                   fieldName="description"
                   showToolbarOnFocus={false}
-                  className={{ label: 'text-base mb-0.5' }}
                   data={dataDescription}
                 />
               </div>

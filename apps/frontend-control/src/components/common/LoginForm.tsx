@@ -78,13 +78,14 @@ export function LoginForm({
               labelType="small"
               name={fieldIdentifier}
               data={dataIdentifier}
+              className={{ label: 'text-sm' }}
             />
             <NewFormikPinField
               required
               label={labelSecret}
               labelType="small"
               name={fieldSecret}
-              className={{ root: 'mt-1' }}
+              className={{ root: 'mt-1', label: 'text-sm' }}
               data={dataSecret}
             />
 

@@ -76,7 +76,7 @@ function GroupActivitySettingsStep({
                   placeholder={t('manage.sessionForms.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
-                  className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+                  className={{ tooltip: 'z-20' }}
                 />
 
                 {typeof values.courseId === 'undefined' ? (
@@ -107,7 +107,6 @@ function GroupActivitySettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     data={{ cy: 'select-start-date' }}
@@ -120,7 +119,6 @@ function GroupActivitySettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     data={{ cy: 'select-end-date' }}

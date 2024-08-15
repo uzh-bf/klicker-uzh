@@ -47,7 +47,7 @@ function MultiplierSelector({ disabled = false }: MultiplierSelectorProps) {
         },
       ]}
       data={{ cy: 'select-multiplier' }}
-      className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+      className={{ tooltip: 'z-20' }}
     />
   )
 }

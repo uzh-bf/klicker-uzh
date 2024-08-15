@@ -82,7 +82,7 @@ function PracticeQuizSettingsStep({
                   placeholder={t('manage.sessionForms.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
-                  className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+                  className={{ tooltip: 'z-20' }}
                 />
 
                 {typeof values.courseId === 'undefined' ? (
@@ -118,7 +118,6 @@ function PracticeQuizSettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     required
@@ -147,7 +146,6 @@ function PracticeQuizSettingsStep({
                     data={{ cy: 'select-order' }}
                     className={{
                       root: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                   />
@@ -170,7 +168,6 @@ function PracticeQuizSettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     data={{ cy: 'select-available-from' }}

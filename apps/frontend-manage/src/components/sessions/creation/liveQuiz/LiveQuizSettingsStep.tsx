@@ -78,7 +78,7 @@ function LiveQuizSettingsStep({
                   placeholder={t('manage.sessionForms.liveQuizSelectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
-                  className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+                  className={{ tooltip: 'z-20' }}
                 />
                 {values.isGamificationEnabled ? (
                   <MultiplierSelector
