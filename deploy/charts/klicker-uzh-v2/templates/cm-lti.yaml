@@ -13,4 +13,5 @@ data:
   LTI_DB_USER: {{ .Values.lti.db.username | quote }}
   LTI_CLIENT_ID: {{ .Values.lti.clientId | quote }}
   LTI_REDIRECT_URL: {{ .Values.lti.redirectURL | quote }}
+  LTI_PORT: {{ .Values.lti.port | quote }}
   COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}

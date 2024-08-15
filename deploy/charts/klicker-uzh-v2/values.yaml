@@ -258,6 +258,8 @@ lti:
   cookieDomain:
   encryptionKey:
 
+  port: 4000
+
   db:
     type: postgres
     host:
