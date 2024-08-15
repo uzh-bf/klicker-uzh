@@ -9,7 +9,6 @@ import {
   FormikDateChanger,
   FormikSwitchField,
   FormikTextField,
-  Label,
   Modal,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -19,7 +18,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-import ContentInput from '../../common/ContentInput'
+import EditorField from '../../sessions/creation/EditorField'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 
 interface CourseCreationModalProps {
@@ -147,27 +146,16 @@ function CourseCreationModal({
                   required
                 />
               </div>
-
-              <div>
-                <Label
-                  label={t('shared.generic.description')}
-                  className={{ root: 'font-bold', tooltip: 'text-sm' }}
-                  tooltip={t('manage.courseList.courseDescriptionTooltip')}
-                  showTooltipSymbol
-                  required
-                />
-                <ContentInput
-                  placeholder={t('manage.courseList.addDescription')}
-                  touched={touched.description}
-                  content={values.description}
-                  onChange={(newValue: string) =>
-                    setFieldValue('description', newValue)
-                  }
-                  className={{ editor: 'h-20' }}
-                  data={{ cy: 'create-course-description' }}
-                />
-              </div>
-
+              <EditorField
+                required
+                fieldName="description"
+                label={t('shared.generic.description')}
+                placeholder={t('manage.courseList.addDescription')}
+                tooltip={t('manage.courseList.courseDescriptionTooltip')}
+                data={{ cy: 'create-course-description' }}
+                className={{ input: { editor: 'h-20' } }}
+                showToolbarOnFocus={false}
+              />
               <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
                 <FormikDateChanger
                   name="startDate"

@@ -12,10 +12,10 @@ import * as Yup from 'yup'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
-  FormikSelectField,
-  FormikSwitchField,
   H1,
   Modal,
+  NewFormikSelectField,
+  NewFormikSwitchField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -119,7 +119,7 @@ function SuspendedFirstLoginModal() {
                   }}
                   name="shortname"
                   label={t('shared.generic.shortname')}
-                  labelType="normal"
+                  labelType="large"
                   valid={isShortnameAvailable}
                   setValid={(shortnameAvailable: boolean | undefined) =>
                     setIsShortnameAvailable(shortnameAvailable)
@@ -136,8 +136,9 @@ function SuspendedFirstLoginModal() {
                   data={{ cy: 'first-login-shortname' }}
                   required
                 />
-                <FormikSelectField
+                <NewFormikSelectField
                   label={t('shared.generic.language')}
+                  labelType="large"
                   name="locale"
                   items={[
                     { label: t('shared.generic.english'), value: 'en' },
@@ -146,11 +147,11 @@ function SuspendedFirstLoginModal() {
                   className={{ root: 'w-full md:w-max' }}
                   required
                 />
-                <FormikSwitchField
-                  standardLabel
+                <NewFormikSwitchField
+                  name="sendProjectUpdates"
+                  labelLeft
                   label={t('manage.settings.emailUpdates')}
                   tooltip={t('manage.settings.emailUpdatesTooltip')}
-                  name="sendProjectUpdates"
                   className={{ tooltip: 'max-w-[20rem] md:max-w-[35rem]' }}
                 />
               </div>

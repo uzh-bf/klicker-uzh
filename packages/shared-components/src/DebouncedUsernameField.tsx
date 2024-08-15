@@ -1,6 +1,6 @@
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { FormikTextField } from '@uzh-bf/design-system'
-import type { TextFieldWithNameProps } from '@uzh-bf/design-system'
+import { NewFormikTextField } from '@uzh-bf/design-system'
+import type { TextFieldClassName } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
@@ -14,14 +14,14 @@ interface DebouncedUsernameFieldProps {
   setValid: (isAvailable: boolean | undefined) => void
   validateField: () => void
   checkUsernameAvailable: (username: string) => Promise<boolean>
-  labelType?: TextFieldWithNameProps['labelType']
+  labelType?: 'small' | 'large'
   required?: boolean
   hideError?: boolean
   data?: {
     cy?: string
     test?: string
   }
-  className?: TextFieldWithNameProps['className']
+  className?: TextFieldClassName & { root?: string }
 }
 
 function DebouncedUsernameField({
@@ -71,7 +71,7 @@ function DebouncedUsernameField({
   )
 
   return (
-    <FormikTextField
+    <NewFormikTextField
       value={field.value}
       label={label}
       error={meta.error}

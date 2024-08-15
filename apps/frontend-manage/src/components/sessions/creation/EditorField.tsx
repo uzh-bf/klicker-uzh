@@ -4,7 +4,7 @@ import { FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import ContentInput from '../../common/ContentInput'
+import ContentInput, { ContentInputClassName } from '../../common/ContentInput'
 
 interface EditorFieldProps {
   label: string
@@ -18,6 +18,7 @@ interface EditorFieldProps {
     root?: string
     label?: string
     tooltip?: string
+    input: ContentInputClassName
   }
   data?: {
     cy?: string
@@ -69,9 +70,13 @@ function EditorField({
           showToolbarOnFocus={showToolbarOnFocus}
           placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
           className={{
-            editor: '!leading-5 h-16 overflow-x-auto',
-            root: 'w-full',
-            content: 'pb-1',
+            ...className?.input,
+            root: twMerge('w-full', className?.input.root),
+            editor: twMerge(
+              '!leading-5 h-16 overflow-x-auto',
+              className?.input.editor
+            ),
+            content: twMerge('pb-1', className?.input.content),
           }}
           data={data}
         />
