@@ -470,6 +470,10 @@
   background-color: rgb(234 88 12 / var(--tw-bg-opacity))
 }
 
+.bg-primary-80 {
+  background-color: var(--theme-color-primary-80)
+}
+
 .bg-red-200 {
   --tw-bg-opacity: 1;
   background-color: rgb(254 202 202 / var(--tw-bg-opacity))
@@ -708,6 +712,10 @@
   color: rgb(22 101 52 / var(--tw-text-opacity))
 }
 
+.text-primary {
+  color: hsl(var(--primary))
+}
+
 .text-red-600 {
   --tw-text-opacity: 1;
   color: rgb(220 38 38 / var(--tw-text-opacity))
@@ -820,6 +828,10 @@
 
 .focus\:border-solid:focus {
   border-style: solid
+}
+
+.focus\:border-primary-80:focus {
+  border-color: var(--theme-color-primary-80)
 }
 
 .disabled\:opacity-50:disabled {
