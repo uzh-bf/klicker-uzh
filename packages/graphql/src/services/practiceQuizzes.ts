@@ -21,6 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
@@ -245,10 +246,11 @@ interface RespondToFlashcardInput {
   id: number
   courseId: string
   response: FlashcardCorrectness
+  answerTime: number
 }
 
 async function respondToFlashcard(
-  { id, courseId, response }: RespondToFlashcardInput,
+  { id, courseId, response, answerTime }: RespondToFlashcardInput,
   ctx: Context
 ) {
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
@@ -322,6 +324,7 @@ async function respondToFlashcard(
       response: {
         correctness: response,
       },
+      timeSpent: answerTime,
       participant: {
         connect: { id: ctx.user.sub },
       },
@@ -370,6 +373,12 @@ async function respondToFlashcard(
     grade: correctness,
   })
 
+  const newAverageTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
@@ -381,6 +390,7 @@ async function respondToFlashcard(
       participant: {
         connect: { id: ctx.user.sub },
       },
+      averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
       },
@@ -418,6 +428,7 @@ async function respondToFlashcard(
       response: {
         correctness: response,
       },
+      averageTimeSpent: newAverageTime,
       aggregatedResponses: {
         ...aggregatedResponses,
         [response]: aggregatedResponses[response] + 1,
@@ -447,10 +458,11 @@ async function respondToFlashcard(
 interface RespondToContentInput {
   id: number
   courseId: string
+  answerTime: number
 }
 
 async function respondToContent(
-  { id, courseId }: RespondToContentInput,
+  { id, courseId, answerTime }: RespondToContentInput,
   ctx: Context
 ) {
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
@@ -509,6 +521,7 @@ async function respondToContent(
       response: {
         viewed: true,
       },
+      timeSpent: answerTime,
       participant: {
         connect: { id: ctx.user.sub },
       },
@@ -547,6 +560,12 @@ async function respondToContent(
     grade: 1,
   })
 
+  const newAverageTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -559,6 +578,7 @@ async function respondToContent(
       participant: {
         connect: { id: ctx.user.sub },
       },
+      averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
       },
@@ -594,6 +614,7 @@ async function respondToContent(
     },
     update: {
       // RESPONSE
+      averageTimeSpent: newAverageTime,
       response: {
         viewed: true,
       },
@@ -951,7 +972,13 @@ export async function respondToQuestion(
     courseId,
     id,
     response,
-  }: { courseId: string; id: number; response: ResponseInput },
+    answerTime,
+  }: {
+    courseId: string
+    id: number
+    response: ResponseInput
+    answerTime: number
+  },
   ctx: Context
 ) {
   const MD5 = createHash('md5')
@@ -1269,6 +1296,12 @@ export async function respondToQuestion(
       grade: correctness,
     })
 
+    const newAverageTime = existingResponse
+      ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+          answerTime) /
+        (existingResponse.trialsCount + 1)
+      : answerTime
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1282,6 +1315,7 @@ export async function respondToQuestion(
           totalPointsAwarded: pointsAwarded,
           totalXpAwarded: xpAwarded,
           trialsCount: 1,
+          averageTimeSpent: newAverageTime,
           lastAwardedAt,
           lastXpAwardedAt,
           response: response as QuestionResponse,
@@ -1320,6 +1354,7 @@ export async function respondToQuestion(
           trialsCount: {
             increment: 1,
           },
+          averageTimeSpent: newAverageTime,
           totalScore: {
             increment: score,
           },
@@ -1350,6 +1385,7 @@ export async function respondToQuestion(
           score,
           pointsAwarded,
           xpAwarded,
+          timeSpent: answerTime,
           response: response as QuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
@@ -1506,15 +1542,20 @@ export interface RespondToElementStackInput {
     numericalResponse?: number | null
     freeTextResponse?: string | null
   }[]
+  stackAnswerTime: number
 }
 
 export async function respondToElementStack(
-  { stackId, courseId, responses }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: IInstanceEvaluation[] = []
+
+  // compute average answer time per element / question by dividing the
+  // answer time for the entire stack through the number of responses
+  const elementAnswerTime = round(stackAnswerTime / responses.length)
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
@@ -1524,6 +1565,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           courseId: courseId,
           response: response.flashcardResponse!,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1548,6 +1590,7 @@ export async function respondToElementStack(
         {
           id: response.instanceId,
           courseId: courseId,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1574,6 +1617,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { choices: response.choicesResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1600,6 +1644,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: String(response.numericalResponse) },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1626,6 +1671,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: response.freeTextResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )

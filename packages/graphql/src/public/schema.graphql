@@ -654,7 +654,7 @@ type Mutation {
   publishScheduledPracticeQuizzes: Boolean!
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
-  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
+  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   sendPushNotifications: Boolean!
   softDeleteLiveSession(id: String!): Session
