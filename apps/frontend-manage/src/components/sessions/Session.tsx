@@ -335,7 +335,7 @@ function Session({ session }: SessionProps) {
                   >
                     <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
                       <Ellipsis
-                        className={{ markdown: 'font-bold' }}
+                        className={{ markdown: 'font-bold text-base' }}
                         maxLength={20}
                       >
                         {instance.questionData!.name}

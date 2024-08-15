@@ -799,7 +799,13 @@ export async function activateSessionBlock(
     },
     include: {
       activeBlock: {
-        include: { instances: true },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
       },
       blocks: {
         orderBy: {
