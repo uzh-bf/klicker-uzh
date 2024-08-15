@@ -1,5 +1,5 @@
 import Prisma from '../../../dist/index.js'
-import { AchievementType } from '../../client/index.js'
+import { AchievementType } from '../../prisma/client/index.js'
 const { ElementType, SessionStatus } = Prisma
 
 export const QUESTIONS = [
