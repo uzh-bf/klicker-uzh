@@ -21,6 +21,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
@@ -1554,7 +1555,7 @@ export async function respondToElementStack(
 
   // compute average answer time per element / question by dividing the
   // answer time for the entire stack through the number of responses
-  const elementAnswerTime = stackAnswerTime / responses.length
+  const elementAnswerTime = round(stackAnswerTime / responses.length)
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
