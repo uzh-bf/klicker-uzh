@@ -15,9 +15,9 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import {
   Button,
-  FormikNumberField,
-  FormikTextField,
   H3,
+  NewFormikNumberField,
+  NewFormikTextField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -527,9 +527,10 @@ function CourseOverview({ courseId }: Props) {
                   >
                     <Form>
                       <div className="flex flex-row gap-4">
-                        <FormikTextField
+                        <NewFormikTextField
                           name="groupName"
                           placeholder={t('pwa.courses.groupName')}
+                          className={{ root: 'w-full md:w-52' }}
                         />
                         <Button
                           type="submit"
@@ -567,9 +568,10 @@ function CourseOverview({ courseId }: Props) {
                   >
                     <Form>
                       <div className="flex flex-row gap-4">
-                        <FormikNumberField
+                        <NewFormikNumberField
                           name="code"
                           placeholder={t('pwa.courses.code')}
+                          className={{ root: 'w-full md:w-52' }}
                         />
                         <Button
                           type="submit"

@@ -13,9 +13,9 @@ import {
 import { push } from '@socialgouv/matomo-next'
 import {
   Button,
-  FormikTextareaField,
   H2,
   H3,
+  NewFormikTextareaField,
   Slider,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -336,7 +336,7 @@ function FeedbackArea({
           >
             {({ isSubmitting }) => (
               <Form>
-                <FormikTextareaField
+                <NewFormikTextareaField
                   name="feedbackInput"
                   placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
@@ -347,7 +347,7 @@ function FeedbackArea({
                   component="textarea"
                   rows="3"
                   maxLength={500}
-                  maxLengthLabel={t('shared.generic.characters')}
+                  maxLengthUnit={t('shared.generic.characters')}
                   data={{ cy: 'feedback-input' }}
                 />
                 <Button

@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { ChangeLiveQuizNameDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
+import { Button, Modal, NewFormikTextField, Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -84,9 +84,8 @@ function LiveQuizNameChangeModal({
         >
           {({ isValid, isSubmitting, submitForm }) => (
             <>
-              <FormikTextField
+              <NewFormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="name"
                 label={t('manage.sessionForms.name')}
@@ -99,9 +98,8 @@ function LiveQuizNameChangeModal({
                 data-cy="insert-live-quiz-name"
                 shouldValidate={() => true}
               />
-              <FormikTextField
+              <NewFormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="displayName"
                 label={t('manage.sessionForms.displayName')}

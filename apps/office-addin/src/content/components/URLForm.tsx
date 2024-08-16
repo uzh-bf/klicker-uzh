@@ -1,4 +1,4 @@
-import { Button, FormikTextField } from "@uzh-bf/design-system";
+import { Button, FormikTextField, NewFormikTextField } from "@uzh-bf/design-system";
 import { Form, Formik } from "formik";
 import React from "react";
 import * as yup from "yup";
@@ -34,11 +34,12 @@ export function URLForm({ slideID }: URLFormProps) {
       }}
     >
       <Form className="flex flex-row w-full gap-4">
-        <FormikTextField
+        <NewFormikTextField
           required
           autoComplete="off"
           name="url"
           label="URL"
+          labelType="large"
           tooltip="Enter the embedding URL of the evaluation you want to add to this slide"
           className={{ root: "w-full" }}
           placeholder="https://manage.klicker.uzh.ch/sessions/12345/evaluation?hmac=xyz"

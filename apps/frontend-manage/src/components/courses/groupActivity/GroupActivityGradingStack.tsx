@@ -13,9 +13,10 @@ import {
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
-  FormikNumberField,
+  FormLabel,
   H2,
   H3,
+  NewFormikNumberField,
   Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -209,7 +210,7 @@ function GroupActivityGradingStack({
               />
             )}
             {elements.map((element, ix) => (
-              <div key={element.id}>
+              <div key={element.id} className="flex flex-col">
                 <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
                   {element.elementData.name}
                 </H3>
@@ -231,10 +232,13 @@ function GroupActivityGradingStack({
                   }
                 >
                   {({ field, meta }: FastFieldProps) => (
-                    <>
-                      <div className="font-bold mt-2">
-                        {t('shared.generic.feedback')}
-                      </div>
+                    <div className="w-full mt-2">
+                      <FormLabel
+                        label={t('shared.generic.feedback')}
+                        labelType="small"
+                        required={false}
+                        className={{ label: 'text-black' }}
+                      />
                       <ContentInput
                         error={meta.error}
                         touched={meta.touched}
@@ -251,16 +255,17 @@ function GroupActivityGradingStack({
                         data={{ cy: `groupActivity-grading-comment-${ix}` }}
                         className={{ content: 'max-w-none' }}
                       />
-                    </>
+                    </div>
                   )}
                 </FastField>
-                <div className="flex flex-row items-center gap-3 mt-2 justify-end">
-                  <FormikNumberField
+                <div className="flex flex-row items-center gap-3 mt-2 justify-end w-max self-end">
+                  <NewFormikNumberField
                     hideError
                     required
                     disabled={gradingCompleted}
                     name={`grading.${ix}.score`}
                     label={t('manage.groupActivity.achievedScore')}
+                    labelType="large"
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
                     min={0}
                     max={
@@ -268,13 +273,16 @@ function GroupActivityGradingStack({
                       pointsPerInstance
                     }
                     data={{ cy: `groupActivity-grading-score-${ix}` }}
-                    className={{ numberField: { input: 'w-20' } }}
+                    className={{ input: 'w-20' }}
                   />
-                  <div>{`/ ${t('manage.groupActivity.nPoints', {
-                    number:
-                      (element.options?.pointsMultiplier || 1) *
-                      pointsPerInstance,
-                  })}`}</div>
+                  <div className="min-w-max">{`/ ${t(
+                    'manage.groupActivity.nPoints',
+                    {
+                      number:
+                        (element.options?.pointsMultiplier || 1) *
+                        pointsPerInstance,
+                    }
+                  )}`}</div>
                 </div>
               </div>
             ))}

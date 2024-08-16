@@ -2,7 +2,7 @@ import { useLazyQuery } from '@apollo/client'
 import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  PinField,
+  NewFormikPinField,
   Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -41,7 +41,9 @@ function CreateAccountJoinForm() {
 
           if (data?.checkValidCoursePin) {
             router.push(
-              `/course/${data.checkValidCoursePin}/join?pin=${values.pin}`
+              `/course/${
+                data.checkValidCoursePin
+              }/join?pin=${values.pin.replace(/\s/g, '')}`
             )
           } else {
             setErrorToast(true)
@@ -53,13 +55,13 @@ function CreateAccountJoinForm() {
       >
         {({ isSubmitting }) => (
           <Form>
-            <PinField
+            <NewFormikPinField
               required
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}
               name="pin"
               className={{
-                root: 'mt-3',
+                root: 'my-2',
                 tooltip: 'max-w-[20rem] md:max-w-[30rem]',
               }}
               data={{ cy: 'pin-field' }}

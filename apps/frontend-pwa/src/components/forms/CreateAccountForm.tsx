@@ -9,10 +9,10 @@ import {
   Button,
   Checkbox,
   Collapsible,
-  FormikSwitchField,
-  FormikTextField,
   H3,
   H4,
+  NewFormikSwitchField,
+  NewFormikTextField,
   Prose,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -144,17 +144,18 @@ function CreateAccountForm({
                 {t('shared.generic.profile')}
               </H3>
               <div className="mb-2 space-y-3">
-                <FormikTextField
+                <NewFormikTextField
+                  required
                   disabled={!!initialEmail}
                   name="email"
                   label={t('shared.generic.email')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-4',
                   }}
                   data={{ cy: 'email-field' }}
                 />
                 <DebouncedUsernameField
+                  required
                   name="username"
                   label={t('shared.generic.username')}
                   valid={isUsernameAvailable}
@@ -171,24 +172,25 @@ function CreateAccountForm({
                       })
                     return result?.checkParticipantNameAvailable ?? false
                   }}
+                  className={{ label: 'mt-0' }}
                   data={{ cy: 'username-field-account-creation' }}
                 />
-                <FormikTextField
+                <NewFormikTextField
+                  required
                   name="password"
                   label={t('shared.generic.password')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-0',
                   }}
                   type="password"
                   data={{ cy: 'password-field' }}
                 />
-                <FormikTextField
+                <NewFormikTextField
+                  required
                   name="passwordRepetition"
                   label={t('shared.generic.passwordRepetition')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-0',
                   }}
                   type="password"
                   data={{ cy: 'password-repetition-field' }}
@@ -200,7 +202,7 @@ function CreateAccountForm({
                   </div>
                   <div className="flex flex-row gap-4 space-between">
                     <div className="flex flex-col items-center gap-1">
-                      <FormikSwitchField
+                      <NewFormikSwitchField
                         name="isProfilePublic"
                         data={{ cy: 'toggle-profile-public-setting' }}
                       />

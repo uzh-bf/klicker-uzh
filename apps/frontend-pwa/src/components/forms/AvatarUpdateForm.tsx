@@ -10,7 +10,7 @@ import {
   AVATAR_OPTIONS,
   AVATAR_OPTIONS_KEY,
 } from '@klicker-uzh/shared-components/src/constants'
-import { Button, FormikSelectField, H3 } from '@uzh-bf/design-system'
+import { Button, H3, NewFormikSelectField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import hash from 'object-hash'
@@ -132,10 +132,10 @@ function AvatarUpdateForm({
                 <div className="flex flex-col gap-2">
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-3 text-sm w-full">
                     {Object.keys(AVATAR_OPTIONS).map((key) => (
-                      <FormikSelectField
+                      <NewFormikSelectField
                         className={{
                           root: 'w-full',
-                          label: 'font-bold text-md',
+                          label: 'text-md',
                           select: {
                             root: 'w-full md:w-38',
                             trigger: 'w-full md:p-1 justify-between md:px-3',

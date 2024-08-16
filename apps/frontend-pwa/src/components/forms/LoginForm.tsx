@@ -5,8 +5,7 @@ import usePWAInstall, {
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
-  FormikTextField,
-  PinField,
+  NewFormikTextField,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -30,7 +29,6 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  usePinField?: boolean
   installAndroid?: string
   installIOS?: string
 }
@@ -43,7 +41,6 @@ export function LoginForm({
   fieldSecret,
   dataSecret,
   isSubmitting,
-  usePinField = false,
   installAndroid,
   installIOS,
 }: LoginFormProps) {
@@ -107,38 +104,26 @@ export function LoginForm({
               root: 'md:px-4 rounded-none h-full flex items-center md:pb-14 md:-my-2',
             }}
           >
-            {/* // TODO: move this into login form component / shared-components or similar */}
             <Form className="mx-auto w-72 sm:w-96">
-              <FormikTextField
+              <NewFormikTextField
                 required
                 label={labelIdentifier}
                 labelType="small"
                 name={fieldIdentifier}
                 data={dataIdentifier}
               />
-
-              {usePinField ? (
-                <PinField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  className={{ root: 'mt-1' }}
-                  data={dataSecret}
-                />
-              ) : (
-                <FormikTextField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  data={dataSecret}
-                  icon={passwordHidden ? faEye : faEyeSlash}
-                  onIconClick={() => setPasswordHidden(!passwordHidden)}
-                  className={{ root: 'mt-1', icon: 'bg-transparent' }}
-                  type={passwordHidden ? 'password' : 'text'}
-                />
-              )}
+              <NewFormikTextField
+                required
+                label={labelSecret}
+                labelType="small"
+                iconPosition="right"
+                name={fieldSecret}
+                data={dataSecret}
+                icon={passwordHidden ? faEye : faEyeSlash}
+                onIconClick={() => setPasswordHidden(!passwordHidden)}
+                className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                type={passwordHidden ? 'password' : 'text'}
+              />
 
               <div className="flex flex-row justify-end w-full">
                 <Button

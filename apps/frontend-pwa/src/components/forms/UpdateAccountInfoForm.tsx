@@ -9,9 +9,9 @@ import {
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
-  FormikSwitchField,
-  FormikTextField,
   H3,
+  NewFormikSwitchField,
+  NewFormikTextField,
   Prose,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -132,7 +132,7 @@ function UpdateAccountInfoForm({
                   />
                 ) : null}
                 <div className="mb-2 space-y-3">
-                  <FormikTextField
+                  <NewFormikTextField
                     // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
                     disabled={
                       user?.email !== '' &&
@@ -142,8 +142,9 @@ function UpdateAccountInfoForm({
                     }
                     name="email"
                     label={t('shared.generic.email')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{
+                      label: 'text-black mt-2',
+                    }}
                     data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
@@ -163,21 +164,20 @@ function UpdateAccountInfoForm({
                         })
                       return result?.checkParticipantNameAvailable ?? false
                     }}
+                    className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />
-                  <FormikTextField
+                  <NewFormikTextField
                     name="password"
                     label={t('shared.generic.password')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password' }}
                   />
-                  <FormikTextField
+                  <NewFormikTextField
                     name="passwordRepetition"
                     label={t('shared.generic.passwordRepetition')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password-repetition' }}
                   />
@@ -187,7 +187,7 @@ function UpdateAccountInfoForm({
                     </div>
                     <div className="flex flex-row gap-4 space-between">
                       <div className="flex flex-col items-center gap-1">
-                        <FormikSwitchField
+                        <NewFormikSwitchField
                           name="isProfilePublic"
                           data={{ cy: 'update-account-toggle-profile-public' }}
                         />
@@ -208,7 +208,7 @@ function UpdateAccountInfoForm({
               <Button
                 fluid
                 type="submit"
-                disabled={isSubmitting || !isValid}
+                disabled={isSubmitting || !isValid || !isUsernameAvailable}
                 data={{ cy: 'save-account-update' }}
               >
                 <Button.Icon>

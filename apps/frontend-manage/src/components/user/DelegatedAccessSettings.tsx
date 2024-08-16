@@ -12,11 +12,11 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import {
   Button,
-  FormikSelectField,
-  FormikTextField,
   H4,
   Label,
   Modal,
+  NewFormikSelectField,
+  NewFormikTextField,
   Prose,
   Toast,
 } from '@uzh-bf/design-system'
@@ -223,9 +223,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     </div>
                   </div>
                   <div className="flex flex-col md:flex-row mt-1.5 gap-2 md:gap-0">
-                    <FormikTextField
+                    <NewFormikTextField
                       name="name"
                       label={t('manage.settings.loginName')}
+                      labelType="large"
                       className={{
                         root: 'md:w-1/2 md:pr-5',
                         input: ' bg-white',
@@ -233,7 +234,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       data={{ cy: 'delegated-login-name' }}
                       required
                     />
-                    <FormikSelectField
+                    <NewFormikSelectField
                       name="scope"
                       placeholder={t('manage.settings.selectScope')}
                       // items={Object.values(UserLoginScope).map((scope) => ({
@@ -246,6 +247,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         data: { cy: `delegated-login-scope-${scope}` },
                       }))}
                       label={t('manage.settings.scope')}
+                      labelType="large"
                       className={{ root: 'md:w-1/2' }}
                       data={{ cy: 'delegated-login-scope' }}
                       required

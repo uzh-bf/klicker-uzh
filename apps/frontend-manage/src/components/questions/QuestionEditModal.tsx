@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import MultiplierSelector from '@components/sessions/creation/MultiplierSelector'
 import {
   faArrowDown,
   faArrowUp,
@@ -28,15 +29,15 @@ import StudentElement, {
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
-  FormikNumberField,
-  FormikSelectField,
-  FormikTextField,
+  FormLabel,
   H3,
   H4,
-  Label,
   Modal,
+  NewFormikNumberField,
+  NewFormikSelectField,
+  NewFormikSwitchField,
+  NewFormikTextField,
   Prose,
-  Select,
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -367,9 +368,7 @@ function QuestionEditModal({
         content: '',
         explanation: '',
         tags: [],
-
         pointsMultiplier: '1',
-
         options: {
           hasSampleSolution: false,
           hasAnswerFeedbacks: false,
@@ -420,7 +419,7 @@ function QuestionEditModal({
               ? values.explanation
               : null,
           tags: values.tags,
-          pointsMultiplier: parseInt(values.pointsMultiplier),
+          pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
         }
 
         switch (values.type) {
@@ -568,17 +567,7 @@ function QuestionEditModal({
         handleSetIsOpen(false)
       }}
     >
-      {({
-        errors,
-        touched,
-        isSubmitting,
-        values,
-        isValid,
-        resetForm,
-        setFieldValue,
-        setFieldTouched,
-        validateForm,
-      }) => {
+      {({ errors, isSubmitting, values, isValid, setFieldValue }) => {
         if (loadingQuestion) {
           return null
         }
@@ -627,21 +616,12 @@ function QuestionEditModal({
               <div className="flex-1 max-w-5xl">
                 <Form className="w-full" id="question-manipulation-form">
                   <div className="z-0 flex flex-row">
-                    <Label
-                      label={t('manage.questionForms.questionType')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-max',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      // tooltip="// TODO: tooltip content"
-                      // showTooltipSymbol={mode === 'CREATE'}
+                    <NewFormikSelectField
+                      name="type"
                       required={mode === 'CREATE'}
-                    />
-                    <FormikSelectField
                       contentPosition="popper"
                       disabled={mode === 'EDIT'}
-                      name="type"
+                      label={t('manage.questionForms.questionType')}
                       placeholder={t('manage.questionForms.selectQuestionType')}
                       items={DROPDOWN_OPTIONS}
                       data={{ cy: 'select-question-type' }}
@@ -649,20 +629,11 @@ function QuestionEditModal({
                   </div>
 
                   <div className="flex flex-row mt-2">
-                    <Label
-                      label={t('manage.questionForms.questionTitle')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-56',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.titleTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
-                    <FormikTextField
-                      onBlur={() => null}
+                    <NewFormikTextField
                       name="name"
+                      required
+                      label={t('manage.questionForms.questionTitle')}
+                      tooltip={t('manage.questionForms.titleTooltip')}
                       className={{
                         root: 'w-full',
                       }}
@@ -670,92 +641,30 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  <div className="flex flex-row mt-2">
-                    <Label
-                      label={t('manage.questionPool.tags')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold w-36',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.tagsTooltip')}
-                      showTooltipSymbol={true}
-                    />
-                    <Suspense fallback={<Loader />}>
-                      <SuspendedTagInput />
-                    </Suspense>
-                  </div>
-
-                  <div className="z-0 flex flex-row mt-2">
-                    <Label
-                      label={t('shared.generic.multiplier')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-32',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.multiplierTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
-
-                    {typeof values.pointsMultiplier !== 'undefined' && (
-                      <FastField
-                        name="pointsMultiplier"
-                        shouldUpdate={(next, prev) =>
-                          next?.formik.values.pointsMultiplier !==
-                            prev?.formik.values.pointsMultiplier ||
-                          next?.pointsMultiplier !== prev?.pointsMultiplier
-                        }
-                      >
-                        {({ field, meta }: FastFieldProps) => (
-                          <Select
-                            items={[
-                              {
-                                label: 'x1',
-                                value: '1',
-                                data: { cy: 'select-multiplier-1' },
-                              },
-                              {
-                                label: 'x2',
-                                value: '2',
-                                data: { cy: 'select-multiplier-2' },
-                              },
-                              {
-                                label: 'x3',
-                                value: '3',
-                                data: { cy: 'select-multiplier-3' },
-                              },
-                              {
-                                label: 'x4',
-                                value: '4',
-                                data: { cy: 'select-multiplier-4' },
-                              },
-                            ]}
-                            onChange={(newValue: string) =>
-                              setFieldValue('pointsMultiplier', newValue)
-                            }
-                            value={field.value}
-                            data={{ cy: 'select-multiplier' }}
+                  <div className="flex flex-row gap-2 mt-2">
+                    {values.type !== ElementType.Content &&
+                      values.type !== ElementType.Flashcard && (
+                        <div>
+                          <MultiplierSelector
+                            name="pointsMultiplier"
+                            disabled={isSubmitting}
                           />
-                        )}
-                      </FastField>
-                    )}
+                        </div>
+                      )}
+                    <div className="flex flex-col w-full">
+                      <FormLabel
+                        required={false}
+                        label={t('manage.questionPool.tags')}
+                        labelType="small"
+                        tooltip={t('manage.questionForms.tagsTooltip')}
+                      />
+                      <Suspense fallback={<Loader />}>
+                        <SuspendedTagInput />
+                      </Suspense>
+                    </div>
                   </div>
 
                   <div className="mt-4">
-                    <Label
-                      label={t('shared.generic.question')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.questionTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
-
                     {typeof values.content !== 'undefined' && (
                       <FastField
                         name="content"
@@ -767,22 +676,32 @@ function QuestionEditModal({
                         }
                       >
                         {({ field, meta }: FastFieldProps) => (
-                          <ContentInput
-                            autoFocus
-                            error={meta.error}
-                            touched={meta.touched}
-                            content={field.value || '<br>'}
-                            onChange={(newValue: string) =>
-                              setFieldValue('content', newValue)
-                            }
-                            showToolbarOnFocus={false}
-                            placeholder={t(
-                              'manage.questionForms.questionPlaceholder'
-                            )}
-                            key={`${values.type}-content`}
-                            data={{ cy: 'insert-question-text' }}
-                            className={{ content: 'max-w-none' }}
-                          />
+                          <>
+                            <FormLabel
+                              required
+                              label={t('shared.generic.question')}
+                              labelType="small"
+                              tooltip={t(
+                                'manage.questionForms.questionTooltip'
+                              )}
+                            />
+                            <ContentInput
+                              autoFocus
+                              error={meta.error}
+                              touched={meta.touched}
+                              content={field.value || '<br>'}
+                              onChange={(newValue: string) =>
+                                setFieldValue('content', newValue)
+                              }
+                              showToolbarOnFocus={false}
+                              placeholder={t(
+                                'manage.questionForms.questionPlaceholder'
+                              )}
+                              key={`${values.type}-content`}
+                              data={{ cy: 'insert-question-text' }}
+                              className={{ content: 'max-w-none' }}
+                            />
+                          </>
                         )}
                       </FastField>
                     )}
@@ -790,17 +709,6 @@ function QuestionEditModal({
 
                   {values.type !== ElementType.Content && (
                     <div className="mt-4">
-                      <Label
-                        label={t('shared.generic.explanation')}
-                        className={{
-                          root: 'my-auto mr-2 text-lg font-bold',
-                          tooltip:
-                            'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                        }}
-                        tooltip={t('manage.questionForms.explanationTooltip')}
-                        showTooltipSymbol={true}
-                      />
-
                       {typeof values.explanation !== 'undefined' && (
                         <FastField
                           name="explanation"
@@ -813,50 +721,55 @@ function QuestionEditModal({
                           }
                         >
                           {({ field, meta }: FastFieldProps) => (
-                            <ContentInput
-                              error={meta.error}
-                              touched={meta.touched}
-                              content={field.value || '<br>'}
-                              onChange={(newValue: string) =>
-                                setFieldValue('explanation', newValue)
-                              }
-                              placeholder={t(
-                                'manage.questionForms.explanationPlaceholder'
-                              )}
-                              key={`${values.type}-explanation`}
-                              data={{ cy: 'insert-question-explanation' }}
-                            />
+                            <>
+                              <FormLabel
+                                required={values.type === ElementType.Flashcard}
+                                label={t('shared.generic.explanation')}
+                                labelType="small"
+                                tooltip={t(
+                                  'manage.questionForms.explanationTooltip'
+                                )}
+                              />
+                              <ContentInput
+                                error={meta.error}
+                                touched={meta.touched}
+                                content={field.value || '<br>'}
+                                onChange={(newValue: string) =>
+                                  setFieldValue('explanation', newValue)
+                                }
+                                placeholder={t(
+                                  'manage.questionForms.explanationPlaceholder'
+                                )}
+                                key={`${values.type}-explanation`}
+                                data={{ cy: 'insert-question-explanation' }}
+                              />
+                            </>
                           )}
                         </FastField>
                       )}
                     </div>
                   )}
 
-                  <div className="flex flex-row gap-4 mt-4">
+                  <div className={twMerge('flex flex-row gap-4 mt-4')}>
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <div className="flex-1">
-                        <Label
+                        <FormLabel
+                          required
                           label={t('manage.questionForms.answerOptions')}
-                          className={{
-                            root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-base font-normal',
-                          }}
+                          labelType="small"
                           tooltip={t(
                             'manage.questionForms.answerOptionsTooltip'
                           )}
-                          showTooltipSymbol
-                          required
+                          className={{ label: 'text-black' }}
                         />
                       </div>
                     )}
                     {QUESTION_GROUPS.FREE.includes(values.type) && (
                       <div className="flex-1">
-                        <Label
+                        <FormLabel
+                          required
                           label={t('shared.generic.options')}
-                          className={{
-                            root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-sm font-normal w-80 md:w-1/2',
-                          }}
+                          labelType="small"
                           tooltip={
                             values.type === ElementType.Numerical
                               ? t(
@@ -864,45 +777,33 @@ function QuestionEditModal({
                                 )
                               : t('manage.questionForms.FTOptionsTooltip')
                           }
-                          showTooltipSymbol={true}
+                          className={{ label: 'mb-1 text-black' }}
                         />
                       </div>
                     )}
                     {QUESTION_GROUPS.ALL.includes(values.type) && (
-                      <Switch
-                        checked={values.options?.hasSampleSolution || false}
-                        onCheckedChange={(newValue: boolean) => {
-                          setFieldValue(
-                            'options.hasSampleSolution',
-                            newValue,
-                            true
-                          )
-                        }}
+                      <NewFormikSwitchField
+                        name="options.hasSampleSolution"
                         label={t('shared.generic.sampleSolution')}
                         data={{ cy: 'configure-sample-solution' }}
+                        className={{ label: 'text-gray-600' }}
                       />
                     )}
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
-                      <Switch
-                        checked={values.options?.hasAnswerFeedbacks || false}
-                        onCheckedChange={(newValue: boolean) => {
-                          setFieldValue(
-                            'options.hasAnswerFeedbacks',
-                            newValue,
-                            true
-                          )
-                        }}
+                      <NewFormikSwitchField
+                        name="options.hasAnswerFeedbacks"
                         label={t('manage.questionPool.answerFeedbacks')}
                         disabled={!values.options?.hasSampleSolution}
                         className={{
                           root: twMerge(
                             !values.options?.hasSampleSolution && 'opacity-50'
                           ),
+                          label: 'text-gray-600',
                         }}
                       />
                     )}
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
-                      <FormikSelectField
+                      <NewFormikSelectField
                         name="options.displayMode"
                         items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
@@ -1174,53 +1075,29 @@ function QuestionEditModal({
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2 mb-2">
-                          <div className="font-bold">
-                            {t('shared.generic.min')}:{' '}
-                          </div>
-                          <FormikNumberField
+                          <NewFormikNumberField
                             name="options.restrictions.min"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white' },
-                            }}
+                            label={t('shared.generic.min')}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
                             hideError
                           />
-                          <div className="font-bold">
-                            {t('shared.generic.max')}:{' '}
-                          </div>
-                          <FormikNumberField
+                          <NewFormikNumberField
                             name="options.restrictions.max"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white' },
-                            }}
+                            label={t('shared.generic.max')}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
                             hideError
                           />
-                        </div>
-                        <div className="flex flex-row items-center gap-2">
-                          <div className="font-bold">
-                            {t('shared.generic.unit')}:{' '}
-                          </div>
-                          <FastField
+                          <NewFormikTextField
                             name="options.unit"
-                            type="text"
-                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                            label={t('shared.generic.unit')}
                             placeholder="CHF"
-                            data-cy="set-numerical-unit"
+                            data={{ cy: 'set-numerical-unit' }}
                           />
-                          <div className="font-bold">
-                            {t('shared.generic.precision')}:{' '}
-                          </div>
-                          <FormikNumberField
+                          <NewFormikNumberField
                             name="options.accuracy"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white' },
-                            }}
+                            label={t('shared.generic.precision')}
                             precision={0}
                             data={{ cy: 'set-numerical-accuracy' }}
                             hideError
@@ -1229,16 +1106,13 @@ function QuestionEditModal({
                       </div>
                       {values.options?.hasSampleSolution && (
                         <div className="mt-3">
-                          <Label
+                          <FormLabel
+                            required
                             label={t('manage.questionForms.solutionRanges')}
-                            className={{
-                              root: 'my-auto mr-2 text-lg font-bold',
-                              tooltip: 'text-base font-normal',
-                            }}
+                            labelType="small"
                             tooltip={t(
                               'manage.questionForms.solutionRangesTooltip'
                             )}
-                            showTooltipSymbol={true}
                           />
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
@@ -1246,18 +1120,13 @@ function QuestionEditModal({
                                 {values.options?.solutionRanges?.map(
                                   (_range: any, index: number) => (
                                     <div
-                                      className="flex flex-row items-center gap-2"
+                                      className="flex flex-row gap-2 items-end"
                                       key={`${index}-${values.options?.solutionRanges.length}`}
                                     >
-                                      <div className="font-bold">
-                                        {t('shared.generic.min')}:{' '}
-                                      </div>
-                                      <FormikNumberField
+                                      <NewFormikNumberField
+                                        required={index === 0}
                                         name={`options.solutionRanges.${index}.min`}
-                                        className={{
-                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                                          input: 'bg-white text-gray-500',
-                                        }}
+                                        label={t('shared.generic.min')}
                                         placeholder={t(
                                           'shared.generic.minLong'
                                         )}
@@ -1265,15 +1134,10 @@ function QuestionEditModal({
                                           cy: `set-solution-range-min-${index}`,
                                         }}
                                       />
-                                      <div className="font-bold">
-                                        {t('shared.generic.max')}:{' '}
-                                      </div>
-                                      <FormikNumberField
+                                      <NewFormikNumberField
+                                        required={index === 0}
                                         name={`options.solutionRanges.${index}.max`}
-                                        className={{
-                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                                          input: 'bg-white text-gray-500',
-                                        }}
+                                        label={t('shared.generic.max')}
                                         placeholder={t(
                                           'shared.generic.maxLong'
                                         )}
@@ -1284,7 +1148,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600 h-9',
                                         }}
                                         data={{
                                           cy: `delete-solution-range-ix-${index}`,
@@ -1321,14 +1185,11 @@ function QuestionEditModal({
                   {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
-                        <div className="mr-2 font-bold">
-                          {t('manage.questionForms.maximumLength')}:
-                        </div>
-                        <FormikNumberField
+                        <NewFormikNumberField
                           name="options.restrictions.maxLength"
+                          label={t('manage.questionForms.maximumLength')}
                           className={{
-                            field:
-                              'mr-2 bg-opacity-50 border rounded w-44  h-9 focus:border-primary-40',
+                            field: 'w-44',
                           }}
                           placeholder={t('manage.questionForms.answerLength')}
                           precision={0}
@@ -1343,26 +1204,23 @@ function QuestionEditModal({
                               {values.options?.solutions?.map(
                                 (_solution, index) => (
                                   <div
-                                    className="flex flex-row items-center gap-2"
+                                    className="flex flex-row items-end gap-2"
                                     key={`${index}-${values.options?.solutions.length}`}
                                   >
-                                    <div className="w-40 font-bold">
-                                      {t(
+                                    <NewFormikTextField
+                                      required
+                                      name={`options.solutions.${index}`}
+                                      label={t(
                                         'manage.questionForms.possibleSolutionN',
                                         { number: String(index + 1) }
                                       )}
-                                      :{' '}
-                                    </div>
-                                    <FastField
-                                      name={`options.solutions.${index}`}
                                       type="text"
-                                      className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                       placeholder={t('shared.generic.solution')}
                                     />
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600 h-9',
                                       }}
                                       data={{
                                         cy: `delete-solution-ix-${index}`,
