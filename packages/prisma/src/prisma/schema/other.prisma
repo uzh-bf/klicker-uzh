@@ -1,0 +1,5 @@
+model Migration {
+  id String @id
+
+  createdAt DateTime @default(now())
+}

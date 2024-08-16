@@ -1,0 +1,169 @@
+// ----- ACHIEVEMENTS -----
+// #region
+enum AchievementType {
+  PARTICIPANT // achievement awarded to individual participants
+  GROUP // achievement awarded to a group of participants
+  CLASS // achievement awarded on a global level (e.g., when reaching a class goal)
+}
+
+enum AchievementScope {
+  GLOBAL // achievements defined at the application level
+  COURSE // achievement defined at the course level
+}
+
+// Titles can be awarded to participants upon receipt of an achievement
+// They are managed on a course-level
+model Title {
+  id Int @id @default(autoincrement())
+
+  name      String
+  awardedBy Achievement[]
+  awardedTo Participant[]
+  course    Course        @relation(fields: [courseId], references: [id])
+  courseId  String        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, name])
+}
+
+// Achievements are awarded to participants, groups, or classes
+// They are managed on a course-level and can yield points for the leaderboard, individual XP, or titles
+// TODO: add mechanisms to automate the awarding of achievements
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  name          String? // TODO: remove once migrated to nameDE and nameEN
+  description   String? // TODO: remove once migrated to descriptionDE and descriptionEN
+  nameDE        String?
+  descriptionDE String?
+  nameEN        String?
+  descriptionEN String?
+
+  icon      String
+  iconColor String?
+
+  rewardedPoints Int?
+  rewardedXP     Int?
+  rewardedTitles Title[]
+  type           AchievementType
+  scope          AchievementScope @default(GLOBAL)
+
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
+  participantInstances ParticipantAchievementInstance[]
+  groupInstances       GroupAchievementInstance[]
+  classInstances       ClassAchievementInstance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ParticipantAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, achievementId])
+}
+
+model GroupAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, achievementId])
+}
+
+model ClassAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, achievementId])
+}
+
+// #endregion
+
+// ----- AWARDS -----
+// #region
+enum AwardType {
+  PARTICIPANT
+  GROUP
+}
+
+model AwardEntry {
+  id Int @id @default(autoincrement())
+
+  order       Int
+  type        AwardType
+  name        String
+  displayName String
+  description String
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId String?      @db.Uuid
+
+  participantGroup   ParticipantGroup? @relation(fields: [participantGroupId], references: [id])
+  participantGroupId String?           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, type, order])
+  @@unique([courseId, type, name])
+}
+
+// #endregion
+
+// ----- LEVELS -----
+// #region
+model Level {
+  id Int @id @default(autoincrement())
+
+  index      Int     @unique
+  name       String?
+  requiredXp Int
+  avatar     String?
+
+  nextLevel   Level?  @relation("level", fields: [nextLevelIx], references: [index])
+  nextLevelIx Int?
+  prevLevel   Level[] @relation("level")
+}
+
+// #endregion
