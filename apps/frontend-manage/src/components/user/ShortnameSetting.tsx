@@ -103,7 +103,6 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                   icon: 'bg-transparent',
                 }}
                 name="shortname"
-                label=""
                 labelType="large"
                 valid={isShortnameAvailable}
                 setValid={(shortnameAvailable: boolean | undefined) =>

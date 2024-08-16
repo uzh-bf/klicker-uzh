@@ -9,7 +9,7 @@ import React from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string
-  label: string
+  label?: string
   valid: boolean | undefined
   setValid: (isAvailable: boolean | undefined) => void
   validateField: () => void
