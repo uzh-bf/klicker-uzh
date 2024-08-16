@@ -8,37 +8,30 @@ export function ParticipantAccountActivation({
 }) {
   return (
     <Layout
-      title="KlickerUZH - One-Time Login Requested"
-      preview="KlickerUZH - Your One-Time Login Link"
+      title="KlickerUZH - Participant Account Activation"
+      preview="KlickerUZH - Your Account Activation Link"
     >
       <Section className="p-8 pt-0">
         <Heading className="pb-4 text-2xl font-semibold">
-          Your One-Time Login Link
+          Activate Your Participant Account
         </Heading>
         <Text className="text-base">
-          You have requested to log in to KlickerUZH PWA (Student Application).
-          Please click on the following button to proceed:
+          You have created a KlickerUZH participant account. Please click on the
+          following button to activate your account:
         </Text>
         <Button
           className="bg-uzh-blue-100 rounded px-4 py-3 text-white"
           href={link}
         >
-          Sign in to KlickerUZH
+          Activate my account
         </Button>
         <Text className="text-base">
           If the button does not work, please paste the following direct link
           into your browser: <Link href={link}>{link}</Link>.
         </Text>
         <Text className="text-base">
-          To change your password after logging in with the login link, visit{' '}
-          <Link href="https://pwa.klicker.uzh.ch/editProfile">
-            https://pwa.klicker.uzh.ch/editProfile
-          </Link>
-          .
-        </Text>
-        <Text className="text-base">
-          The link will be valid for the next 15 minutes. If you have not
-          requested a login link, please ignore this email.
+          The link will be valid for the next 60 minutes. If you have not
+          created a participant account on KlickerUZH, please ignore this email.
         </Text>
       </Section>
     </Layout>
