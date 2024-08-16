@@ -3,7 +3,6 @@ fragment ElementData on ElementInstance {
     id
     elementId
     name
-    status
     type
     content
     explanation

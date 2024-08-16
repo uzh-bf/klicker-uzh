@@ -6,6 +6,15 @@ export default {
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
     },
+    DRAFT: {
+      statusLabel: 'Entwurf',
+    },
+    IN_REVIEW: {
+      statusLabel: 'Zum Review',
+    },
+    READY: {
+      statusLabel: 'Bereit',
+    },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',

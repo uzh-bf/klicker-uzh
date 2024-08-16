@@ -4,10 +4,11 @@ import {
   faCircleQuestion as faQuestionRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
-import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Button, Checkbox, H2, H3, Label, Modal } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
@@ -133,7 +134,7 @@ function Question({
                 onKeyDown={() => setIsModificationModalOpen(true)}
                 data-cy="question-title"
               >
-                <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" />
+                {/* <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" /> */}
                 {title}
               </a>
 
@@ -163,6 +164,7 @@ function Question({
                 })}
               </div>
               <div>{t(`shared.${type}.typeLabel`)}</div>
+              <div>{t(`shared.${status}.statusLabel`)}</div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">

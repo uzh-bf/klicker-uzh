@@ -48,6 +48,7 @@ function QuestionList({
           tags={question.tags || []}
           handleTagClick={handleTagClick}
           title={question.name}
+          status={question.status}
           type={question.type}
           content={question.content}
           hasAnswerFeedbacks={question.options.hasAnswerFeedbacks}

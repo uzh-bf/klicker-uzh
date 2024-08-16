@@ -73,7 +73,6 @@ type ChoicesElementData implements ElementData {
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
@@ -113,7 +112,6 @@ type ContentElementData implements ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
@@ -173,6 +171,7 @@ type Element {
   options: Json!
   pointsMultiplier: Int!
   questionData: QuestionData
+  status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
   updatedAt: Date!
@@ -187,7 +186,6 @@ interface ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
@@ -307,7 +305,6 @@ type FlashcardElementData implements ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
@@ -331,7 +328,6 @@ type FreeTextElementData implements ElementData {
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
@@ -697,7 +693,6 @@ type NumericalElementData implements ElementData {
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
-  status: ElementStatus!
   type: ElementType!
 }
 
