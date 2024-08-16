@@ -3,7 +3,10 @@ import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
+import fs from 'fs'
 import JWT from 'jsonwebtoken'
+import { createRequire } from 'module'
+import nodemailer from 'nodemailer'
 import { Context, ContextWithUser } from '../lib/context.js'
 import {
   prepareInitialInstanceResults,
@@ -11,9 +14,6 @@ import {
 } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { DisplayMode } from '../types/app.js'
-import nodemailer from 'nodemailer'
-import fs from 'fs'
-import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 

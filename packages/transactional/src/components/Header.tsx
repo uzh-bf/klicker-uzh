@@ -1,5 +1,4 @@
-import { Section, Row, Column, Img, Text } from '@react-email/components'
-import React from 'react'
+import { Column, Img, Row, Section, Text } from '@react-email/components'
 
 function Header() {
   return (
@@ -13,7 +12,7 @@ function Header() {
               className="w-40"
             />
           </Column>
-          <Column className="pl-6 w-full border-gray-200 border-solid border-0 border-l-[1px]">
+          <Column className="w-full border-0 border-l-[1px] border-solid border-gray-200 pl-6">
             <Text className="text-lg font-semibold">KlickerUZH</Text>
           </Column>
         </Row>

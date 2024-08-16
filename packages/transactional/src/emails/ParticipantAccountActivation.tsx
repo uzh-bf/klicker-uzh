@@ -1,24 +1,4 @@
-import {
-  Text,
-  Container,
-  Font,
-  Head,
-  Html,
-  Img,
-  Preview,
-  Section,
-  Tailwind,
-  Column,
-  Row,
-  Markdown,
-  Heading,
-  Button,
-  Link,
-} from '@react-email/components'
-import * as React from 'react'
-import tailwindConfig from '../components/tailwind.config.js'
-import Footer from '../components/Footer.js'
-import Header from '../components/Header.js'
+import { Button, Heading, Link, Section, Text } from '@react-email/components'
 import Layout from '../components/Layout.js'
 
 export function ParticipantAccountActivation({
@@ -32,7 +12,7 @@ export function ParticipantAccountActivation({
       preview="KlickerUZH - Your One-Time Login Link"
     >
       <Section className="p-8 pt-0">
-        <Heading className="font-semibold text-2xl pb-4">
+        <Heading className="pb-4 text-2xl font-semibold">
           Your One-Time Login Link
         </Heading>
         <Text className="text-base">

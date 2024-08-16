@@ -1,15 +1,15 @@
 import {
-  Tailwind,
-  Html,
-  Head,
-  Font,
-  Preview,
   Container,
+  Font,
+  Head,
+  Html,
+  Preview,
+  Tailwind,
 } from '@react-email/components'
 import React from 'react'
-import tailwindConfig from './tailwind.config'
-import Header from './Header'
 import Footer from './Footer'
+import Header from './Header'
+import tailwindConfig from './tailwind.config'
 
 function Layout({
   title,

@@ -1,9 +1,8 @@
-import { Section, Row, Column, Markdown, Img } from '@react-email/components'
-import React from 'react'
+import { Column, Img, Markdown, Row, Section } from '@react-email/components'
 
 function Footer() {
   return (
-    <Section className="px-8 py-2 bg-uzh-grey-20">
+    <Section className="bg-uzh-grey-20 px-8 py-2">
       <Row>
         <Column className="w-full">
           <Markdown markdownCustomStyles={{}}>
