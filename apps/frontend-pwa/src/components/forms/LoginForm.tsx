@@ -5,7 +5,7 @@ import usePWAInstall, {
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
-  NewFormikTextField,
+  FormikTextField,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -105,14 +105,14 @@ export function LoginForm({
             }}
           >
             <Form className="mx-auto w-72 sm:w-96">
-              <NewFormikTextField
+              <FormikTextField
                 required
                 label={labelIdentifier}
                 labelType="small"
                 name={fieldIdentifier}
                 data={dataIdentifier}
               />
-              <NewFormikTextField
+              <FormikTextField
                 required
                 label={labelSecret}
                 labelType="small"

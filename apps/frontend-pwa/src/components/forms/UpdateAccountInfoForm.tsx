@@ -9,9 +9,9 @@ import {
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
+  FormikSwitchField,
+  FormikTextField,
   H3,
-  NewFormikSwitchField,
-  NewFormikTextField,
   Prose,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -132,7 +132,7 @@ function UpdateAccountInfoForm({
                   />
                 ) : null}
                 <div className="mb-2 space-y-3">
-                  <NewFormikTextField
+                  <FormikTextField
                     // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
                     disabled={
                       user?.email !== '' &&
@@ -167,14 +167,14 @@ function UpdateAccountInfoForm({
                     className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />
-                  <NewFormikTextField
+                  <FormikTextField
                     name="password"
                     label={t('shared.generic.password')}
                     className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password' }}
                   />
-                  <NewFormikTextField
+                  <FormikTextField
                     name="passwordRepetition"
                     label={t('shared.generic.passwordRepetition')}
                     className={{ label: 'text-black' }}
@@ -187,7 +187,7 @@ function UpdateAccountInfoForm({
                     </div>
                     <div className="flex flex-row gap-4 space-between">
                       <div className="flex flex-col items-center gap-1">
-                        <NewFormikSwitchField
+                        <FormikSwitchField
                           name="isProfilePublic"
                           data={{ cy: 'update-account-toggle-profile-public' }}
                         />

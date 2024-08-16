@@ -12,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
-import { Button, NewFormikTextareaField } from '@uzh-bf/design-system'
+import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -209,7 +209,7 @@ function Feedback({
               {({ isSubmitting }) => (
                 <div className="flex-1">
                   <Form>
-                    <NewFormikTextareaField
+                    <FormikTextareaField
                       className={{
                         input: twMerge(
                           'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',

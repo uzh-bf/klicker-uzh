@@ -2,7 +2,7 @@ import { useLazyQuery } from '@apollo/client'
 import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  NewFormikPinField,
+  FormikPinField,
   Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -55,7 +55,7 @@ function CreateAccountJoinForm() {
       >
         {({ isSubmitting }) => (
           <Form>
-            <NewFormikPinField
+            <FormikPinField
               required
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}

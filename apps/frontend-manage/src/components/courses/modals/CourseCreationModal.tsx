@@ -5,11 +5,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
+  FormikColorPicker,
+  FormikDateChanger,
+  FormikSwitchField,
+  FormikTextField,
   Modal,
-  NewFormikColorPicker,
-  NewFormikDateChanger,
-  NewFormikSwitchField,
-  NewFormikTextField,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
@@ -132,7 +132,7 @@ function CourseCreationModal({
           <Form>
             <div className="flex flex-col gap-2">
               <div className="flex flex-col w-full gap-3 md:flex-row">
-                <NewFormikTextField
+                <FormikTextField
                   name="name"
                   label={t('manage.courseList.courseName')}
                   placeholder={t('manage.courseList.courseName')}
@@ -141,7 +141,7 @@ function CourseCreationModal({
                   data={{ cy: 'create-course-name' }}
                   required
                 />
-                <NewFormikTextField
+                <FormikTextField
                   name="displayName"
                   label={t('manage.sessionForms.displayName')}
                   placeholder={t('manage.courseList.courseDisplayName')}
@@ -161,7 +161,7 @@ function CourseCreationModal({
                 showToolbarOnFocus={false}
               />
               <div className="flex flex-col gap-2 mt-2 md:gap-8 md:flex-row md:items-end md:justify-between">
-                <NewFormikDateChanger
+                <FormikDateChanger
                   name="startDate"
                   label={t('manage.courseList.startDate')}
                   tooltip={t('manage.courseList.startDateTooltip')}
@@ -169,7 +169,7 @@ function CourseCreationModal({
                   dataButton={{ cy: 'create-course-start-date-button' }}
                   required
                 />
-                <NewFormikDateChanger
+                <FormikDateChanger
                   name="endDate"
                   label={t('manage.courseList.endDate')}
                   tooltip={t('manage.courseList.endDateTooltip')}
@@ -177,7 +177,7 @@ function CourseCreationModal({
                   dataButton={{ cy: 'create-course-end-date-button' }}
                   required
                 />
-                <NewFormikColorPicker
+                <FormikColorPicker
                   required
                   name="color"
                   label={t('manage.courseList.courseColor')}
@@ -189,7 +189,7 @@ function CourseCreationModal({
                   dataSubmit={{ cy: 'create-course-color-submit' }}
                   className={{ root: 'w-max' }}
                 />
-                <NewFormikSwitchField
+                <FormikSwitchField
                   required
                   labelLeft
                   name="isGamificationEnabled"

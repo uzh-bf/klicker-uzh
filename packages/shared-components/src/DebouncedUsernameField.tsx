@@ -1,5 +1,5 @@
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { NewFormikTextField } from '@uzh-bf/design-system'
+import { FormikTextField } from '@uzh-bf/design-system'
 import type { TextFieldClassName } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -71,7 +71,7 @@ function DebouncedUsernameField({
   )
 
   return (
-    <NewFormikTextField
+    <FormikTextField
       value={field.value}
       label={label}
       error={meta.error}

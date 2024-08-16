@@ -1,4 +1,4 @@
-import { NewFormikSelectField, SelectClassName } from '@uzh-bf/design-system'
+import { FormikSelectField, SelectClassName } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface MultiplierSelectorProps {
@@ -15,7 +15,7 @@ function MultiplierSelector({
   const t = useTranslations()
 
   return (
-    <NewFormikSelectField
+    <FormikSelectField
       required
       disabled={disabled}
       name={name}

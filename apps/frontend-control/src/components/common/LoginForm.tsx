@@ -4,9 +4,9 @@ import usePWAInstall, {
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
+  FormikPinField,
+  FormikTextField,
   H1,
-  NewFormikPinField,
-  NewFormikTextField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -72,7 +72,7 @@ export function LoginForm({
         <div>
           <H1>{header}</H1>
           <Form className="w-72 sm:w-96">
-            <NewFormikTextField
+            <FormikTextField
               required
               label={labelIdentifier}
               labelType="small"
@@ -80,7 +80,7 @@ export function LoginForm({
               data={dataIdentifier}
               className={{ label: 'text-sm' }}
             />
-            <NewFormikPinField
+            <FormikPinField
               required
               label={labelSecret}
               labelType="small"

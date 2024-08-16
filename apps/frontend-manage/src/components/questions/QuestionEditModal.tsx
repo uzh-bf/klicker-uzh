@@ -30,13 +30,13 @@ import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormLabel,
+  FormikNumberField,
+  FormikSelectField,
+  FormikSwitchField,
+  FormikTextField,
   H3,
   H4,
   Modal,
-  NewFormikNumberField,
-  NewFormikSelectField,
-  NewFormikSwitchField,
-  NewFormikTextField,
   Prose,
   Switch,
   UserNotification,
@@ -616,7 +616,7 @@ function QuestionEditModal({
               <div className="flex-1 max-w-5xl">
                 <Form className="w-full" id="question-manipulation-form">
                   <div className="z-0 flex flex-row">
-                    <NewFormikSelectField
+                    <FormikSelectField
                       name="type"
                       required={mode === 'CREATE'}
                       contentPosition="popper"
@@ -629,7 +629,7 @@ function QuestionEditModal({
                   </div>
 
                   <div className="flex flex-row mt-2">
-                    <NewFormikTextField
+                    <FormikTextField
                       name="name"
                       required
                       label={t('manage.questionForms.questionTitle')}
@@ -782,7 +782,7 @@ function QuestionEditModal({
                       </div>
                     )}
                     {QUESTION_GROUPS.ALL.includes(values.type) && (
-                      <NewFormikSwitchField
+                      <FormikSwitchField
                         name="options.hasSampleSolution"
                         label={t('shared.generic.sampleSolution')}
                         data={{ cy: 'configure-sample-solution' }}
@@ -790,7 +790,7 @@ function QuestionEditModal({
                       />
                     )}
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
-                      <NewFormikSwitchField
+                      <FormikSwitchField
                         name="options.hasAnswerFeedbacks"
                         label={t('manage.questionPool.answerFeedbacks')}
                         disabled={!values.options?.hasSampleSolution}
@@ -803,7 +803,7 @@ function QuestionEditModal({
                       />
                     )}
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
-                      <NewFormikSelectField
+                      <FormikSelectField
                         name="options.displayMode"
                         items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
@@ -1075,27 +1075,27 @@ function QuestionEditModal({
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2 mb-2">
-                          <NewFormikNumberField
+                          <FormikNumberField
                             name="options.restrictions.min"
                             label={t('shared.generic.min')}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
                             hideError
                           />
-                          <NewFormikNumberField
+                          <FormikNumberField
                             name="options.restrictions.max"
                             label={t('shared.generic.max')}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
                             hideError
                           />
-                          <NewFormikTextField
+                          <FormikTextField
                             name="options.unit"
                             label={t('shared.generic.unit')}
                             placeholder="CHF"
                             data={{ cy: 'set-numerical-unit' }}
                           />
-                          <NewFormikNumberField
+                          <FormikNumberField
                             name="options.accuracy"
                             label={t('shared.generic.precision')}
                             precision={0}
@@ -1123,7 +1123,7 @@ function QuestionEditModal({
                                       className="flex flex-row gap-2 items-end"
                                       key={`${index}-${values.options?.solutionRanges.length}`}
                                     >
-                                      <NewFormikNumberField
+                                      <FormikNumberField
                                         required={index === 0}
                                         name={`options.solutionRanges.${index}.min`}
                                         label={t('shared.generic.min')}
@@ -1134,7 +1134,7 @@ function QuestionEditModal({
                                           cy: `set-solution-range-min-${index}`,
                                         }}
                                       />
-                                      <NewFormikNumberField
+                                      <FormikNumberField
                                         required={index === 0}
                                         name={`options.solutionRanges.${index}.max`}
                                         label={t('shared.generic.max')}
@@ -1185,7 +1185,7 @@ function QuestionEditModal({
                   {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
-                        <NewFormikNumberField
+                        <FormikNumberField
                           name="options.restrictions.maxLength"
                           label={t('manage.questionForms.maximumLength')}
                           className={{
@@ -1207,7 +1207,7 @@ function QuestionEditModal({
                                     className="flex flex-row items-end gap-2"
                                     key={`${index}-${values.options?.solutions.length}`}
                                   >
-                                    <NewFormikTextField
+                                    <FormikTextField
                                       required
                                       name={`options.solutions.${index}`}
                                       label={t(

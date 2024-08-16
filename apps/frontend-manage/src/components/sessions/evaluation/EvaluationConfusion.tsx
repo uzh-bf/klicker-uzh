@@ -1,7 +1,7 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { NewFormikNumberField, Tooltip } from '@uzh-bf/design-system'
+import { FormikNumberField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -248,7 +248,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             return (
               <Form className="flex flex-col">
                 <div>
-                  <NewFormikNumberField
+                  <FormikNumberField
                     value={String(values.xInterval)}
                     onChange={(newValue: string) => {
                       const interval = Number(newValue.replace(/[^0-9]/g, ''))
@@ -276,7 +276,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                   )}
                 </div>
                 <div>
-                  <NewFormikNumberField
+                  <FormikNumberField
                     value={String(values.windowLength)}
                     onChange={(newValue: string) => {
                       const window = Number(newValue.replace(/[^0-9]/g, ''))

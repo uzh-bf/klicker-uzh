@@ -12,10 +12,10 @@ import * as Yup from 'yup'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
+  FormikSelectField,
+  FormikSwitchField,
   H1,
   Modal,
-  NewFormikSelectField,
-  NewFormikSwitchField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -136,7 +136,7 @@ function SuspendedFirstLoginModal() {
                   data={{ cy: 'first-login-shortname' }}
                   required
                 />
-                <NewFormikSelectField
+                <FormikSelectField
                   label={t('shared.generic.language')}
                   labelType="large"
                   name="locale"
@@ -147,7 +147,7 @@ function SuspendedFirstLoginModal() {
                   className={{ root: 'w-full md:w-max' }}
                   required
                 />
-                <NewFormikSwitchField
+                <FormikSwitchField
                   name="sendProjectUpdates"
                   labelLeft
                   label={t('manage.settings.emailUpdates')}

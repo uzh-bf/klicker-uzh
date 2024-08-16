@@ -9,10 +9,10 @@ import {
   Button,
   Checkbox,
   Collapsible,
+  FormikSwitchField,
+  FormikTextField,
   H3,
   H4,
-  NewFormikSwitchField,
-  NewFormikTextField,
   Prose,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -144,7 +144,7 @@ function CreateAccountForm({
                 {t('shared.generic.profile')}
               </H3>
               <div className="mb-2 space-y-3">
-                <NewFormikTextField
+                <FormikTextField
                   required
                   disabled={!!initialEmail}
                   name="email"
@@ -175,7 +175,7 @@ function CreateAccountForm({
                   className={{ label: 'mt-0' }}
                   data={{ cy: 'username-field-account-creation' }}
                 />
-                <NewFormikTextField
+                <FormikTextField
                   required
                   name="password"
                   label={t('shared.generic.password')}
@@ -185,7 +185,7 @@ function CreateAccountForm({
                   type="password"
                   data={{ cy: 'password-field' }}
                 />
-                <NewFormikTextField
+                <FormikTextField
                   required
                   name="passwordRepetition"
                   label={t('shared.generic.passwordRepetition')}
@@ -202,7 +202,7 @@ function CreateAccountForm({
                   </div>
                   <div className="flex flex-row gap-4 space-between">
                     <div className="flex flex-col items-center gap-1">
-                      <NewFormikSwitchField
+                      <FormikSwitchField
                         name="isProfilePublic"
                         data={{ cy: 'toggle-profile-public-setting' }}
                       />

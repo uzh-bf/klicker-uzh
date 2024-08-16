@@ -3,8 +3,8 @@ import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  NewFormikDateField,
-  NewFormikSelectField,
+  FormikDateField,
+  FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -75,7 +75,7 @@ function MicroLearningSettingsStep({
                     {t('shared.generic.gamification')}
                   </div>
                 </div>
-                <NewFormikSelectField
+                <FormikSelectField
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
@@ -114,7 +114,7 @@ function MicroLearningSettingsStep({
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <NewFormikDateField
+                  <FormikDateField
                     label={t('shared.generic.startDate')}
                     name="startDate"
                     tooltip={t('manage.sessionForms.microlearningStartDate')}
@@ -126,7 +126,7 @@ function MicroLearningSettingsStep({
                     }}
                     data={{ cy: 'select-start-date' }}
                   />
-                  <NewFormikDateField
+                  <FormikDateField
                     label={t('shared.generic.endDate')}
                     name="endDate"
                     tooltip={t('manage.sessionForms.microlearningEndDate')}

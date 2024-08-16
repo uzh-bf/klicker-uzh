@@ -3,7 +3,7 @@ import {
   faLightbulb,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
-import { NewFormikTextField, UserNotification } from '@uzh-bf/design-system'
+import { FormikTextField, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import CreationFormValidator from '../CreationFormValidator'
@@ -58,7 +58,7 @@ function MicroLearningInformationStep({
                     {t('manage.sessionForms.microLearningIntroductionName')}
                   </div>
                 )}
-                <NewFormikTextField
+                <FormikTextField
                   required
                   autoComplete="off"
                   name="name"

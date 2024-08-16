@@ -1,4 +1,4 @@
-import { Button, FormikTextField, NewFormikTextField } from "@uzh-bf/design-system";
+import { Button, FormikTextField, FormikTextField } from "@uzh-bf/design-system";
 import { Form, Formik } from "formik";
 import React from "react";
 import * as yup from "yup";
@@ -34,7 +34,7 @@ export function URLForm({ slideID }: URLFormProps) {
       }}
     >
       <Form className="flex flex-row w-full gap-4">
-        <NewFormikTextField
+        <FormikTextField
           required
           autoComplete="off"
           name="url"

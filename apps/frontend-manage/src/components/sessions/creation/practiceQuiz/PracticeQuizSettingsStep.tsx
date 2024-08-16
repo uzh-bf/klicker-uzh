@@ -4,9 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  NewFormikDateField,
-  NewFormikNumberField,
-  NewFormikSelectField,
+  FormikDateField,
+  FormikNumberField,
+  FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -74,7 +74,7 @@ function PracticeQuizSettingsStep({
                     {t('shared.generic.gamification')}
                   </div>
                 </div>
-                <NewFormikSelectField
+                <FormikSelectField
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
@@ -111,7 +111,7 @@ function PracticeQuizSettingsStep({
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <NewFormikNumberField
+                  <FormikNumberField
                     name="resetTimeDays"
                     label={t('shared.generic.repetitionInterval')}
                     tooltip={t('manage.sessionForms.practiceQuizRepetition')}
@@ -124,7 +124,7 @@ function PracticeQuizSettingsStep({
                     hideError={true}
                     data={{ cy: 'insert-reset-time-days' }}
                   />
-                  <NewFormikSelectField
+                  <FormikSelectField
                     label={t('shared.generic.order')}
                     tooltip={t('manage.sessionForms.practiceQuizOrder')}
                     name="order"
@@ -162,7 +162,7 @@ function PracticeQuizSettingsStep({
                   <div className="text-sm mt-1">
                     {t('manage.sessionForms.practiceQuizAvailableFrom')}
                   </div>
-                  <NewFormikDateField
+                  <FormikDateField
                     label={t('shared.generic.availableFrom')}
                     name="availableFrom"
                     className={{

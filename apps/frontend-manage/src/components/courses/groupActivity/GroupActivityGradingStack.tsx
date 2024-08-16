@@ -14,9 +14,9 @@ import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
   FormLabel,
+  FormikNumberField,
   H2,
   H3,
-  NewFormikNumberField,
   Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -259,7 +259,7 @@ function GroupActivityGradingStack({
                   )}
                 </FastField>
                 <div className="flex flex-row items-center gap-3 mt-2 justify-end w-max self-end">
-                  <NewFormikNumberField
+                  <FormikNumberField
                     hideError
                     required
                     disabled={gradingCompleted}

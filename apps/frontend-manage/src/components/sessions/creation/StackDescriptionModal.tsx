@@ -1,4 +1,4 @@
-import { Button, Modal, NewFormikTextField } from '@uzh-bf/design-system'
+import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import EditorField from './EditorField'
 
@@ -26,7 +26,7 @@ function StackDescriptionModal({
         content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
       }}
     >
-      <NewFormikTextField
+      <FormikTextField
         name={`stacks.${stackIx}.displayName`}
         label={t('manage.sessionForms.stackDisplayName')}
         tooltip={t('manage.sessionForms.stackDisplayNameTooltip')}
