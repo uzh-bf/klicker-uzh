@@ -4,18 +4,27 @@
   "volta": {
     "extends": "../../package.json"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "dev": "email dev",
-    "build": "email export",
+    "dev:email": "email dev",
+    "build": "tsup",
+    "build:email": "email export",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@react-email/components": "0.0.22",
+    "@types/node": "^20.12.13",
     "@types/react": "^18.2.18",
-    "prettier": "3.3.3",
-    "prettier-plugin-organize-imports": "3.2.3",
+    "@uzh-bf/design-system": "3.0.0-alpha.15",
     "react": "18.3.1",
-    "react-email": "2.1.6"
-  }
+    "react-email": "2.1.6",
+    "tsup": "7.2.0",
+    "typescript": "5.4.5"
+  },
+  "type": "module"
 }

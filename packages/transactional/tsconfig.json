@@ -1,8 +1,9 @@
 {
-  "include": ["**/**/*"],
+  "include": [
+    "**/**/*"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
-    "jsx": "react",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -16,10 +17,18 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    /* If NOT transpiling with TypeScript: */
-    "module": "preserve",
-    "noEmit": true,
-    /* If your code runs in the DOM: */
-    "lib": ["es2022", "dom", "dom.iterable"]
+    /* If transpiling with TypeScript: */
+    "module": "NodeNext",
+    "outDir": "dist",
+    "sourceMap": true,
+    /* AND if you're building for a library: */
+    "declaration": true,
+    /* AND if you're building for a library in a monorepo: */
+    "composite": true,
+    "declarationMap": true,
+    /* If your code doesn't run in the DOM: */
+    "lib": [
+      "es2022"
+    ]
   }
 }
