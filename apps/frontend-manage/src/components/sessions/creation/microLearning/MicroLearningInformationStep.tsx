@@ -53,10 +53,11 @@ function MicroLearningInformationStep({
                     message={t('manage.sessionForms.microLearningNoCourse')}
                     className={{ root: 'mb-2' }}
                   />
-                ) : null}
-                <div className="w-full md:pr-14">
-                  {t('manage.sessionForms.microLearningIntroductionName')}
-                </div>
+                ) : (
+                  <div className="w-full md:pr-14">
+                    {t('manage.sessionForms.microLearningIntroductionName')}
+                  </div>
+                )}
                 <NewFormikTextField
                   required
                   autoComplete="off"

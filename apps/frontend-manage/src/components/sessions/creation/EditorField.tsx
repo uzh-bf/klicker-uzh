@@ -18,7 +18,7 @@ interface EditorFieldProps {
     root?: string
     label?: string
     tooltip?: string
-    input: ContentInputClassName
+    input?: ContentInputClassName
   }
   data?: {
     cy?: string
@@ -71,12 +71,12 @@ function EditorField({
           placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
           className={{
             ...className?.input,
-            root: twMerge('w-full', className?.input.root),
+            root: twMerge('w-full', className?.input?.root),
             editor: twMerge(
               '!leading-5 h-16 overflow-x-auto',
-              className?.input.editor
+              className?.input?.editor
             ),
-            content: twMerge('pb-1', className?.input.content),
+            content: twMerge('pb-1', className?.input?.content),
           }}
           data={data}
         />
