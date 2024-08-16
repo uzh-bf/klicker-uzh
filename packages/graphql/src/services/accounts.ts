@@ -167,7 +167,7 @@ export async function sendMagicLink(
   { usernameOrEmail }: SendMagicLinkArgs,
   ctx: Context
 ) {
-  const emails = await import('src/emails')
+  const emails = await import('../emails/index.js')
 
   const trimmedUsernameOrEmail = usernameOrEmail.trim()
 

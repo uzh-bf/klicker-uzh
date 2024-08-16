@@ -10,6 +10,7 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
