@@ -170,6 +170,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      activateParticipantAccount: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.activateParticipantAccount(args, ctx)
+        },
+      }),
+
       sendMagicLink: t.boolean({
         nullable: true,
         args: {

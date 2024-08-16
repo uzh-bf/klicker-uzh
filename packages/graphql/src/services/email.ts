@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer'
-import { createRequire } from 'module'
 import fs from 'fs'
+import { createRequire } from 'module'
+import nodemailer from 'nodemailer'
 
 const require = createRequire(import.meta.url)
 
@@ -15,19 +15,26 @@ export async function createTransport() {
     return transport
   }
 
-  // TODO: replace with OAuth2 for Outlook 365
-  transport = nodemailer.createTransport({
-    pool: true,
-    host: 'localhost',
-    port: 1025,
-    secure: false, // use TLS
-    auth: {
-      user: 'username',
-      pass: 'password',
-    },
-  })
+  if (process.env.EMAIL_TYPE === 'OAUTH') {
+    // TODO: add OAuth2 for Outlook 365
+  } else {
+    transport = nodemailer.createTransport({
+      pool: true,
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT
+        ? parseInt(process.env.EMAIL_PORT)
+        : undefined,
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    })
 
-  await transport.verify()
+    await transport.verify()
+
+    console.log('Email transport verified')
+  }
 
   return transport
 }
@@ -51,12 +58,23 @@ export function hydrateTemplate({
   return template
 }
 
-export async function sendEmail({ to, subject, text, html }) {
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
+  to: string
+  subject: string
+  text: string
+  html: string
+}) {
   const transport = await createTransport()
 
+  if (!transport) return false
+
   await transport.sendMail({
-    from:
-      process.env.EMAIL_FROM ?? '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>',
+    from: process.env.EMAIL_FROM,
     to,
     subject,
     text,

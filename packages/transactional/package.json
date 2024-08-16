@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev:email": "email dev -d src/emails",
-    "build": "email export -d src/emails --outDir out",
+    "build": "email export -d src/emails",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

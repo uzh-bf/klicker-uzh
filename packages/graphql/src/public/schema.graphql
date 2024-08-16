@@ -584,6 +584,7 @@ type MicroLearning {
 }
 
 type Mutation {
+  activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -1159,6 +1160,7 @@ type UserLogin {
 
 enum UserLoginScope {
   ACCOUNT_OWNER
+  ACTIVATION
   FULL_ACCESS
   OTP
   READ_ONLY

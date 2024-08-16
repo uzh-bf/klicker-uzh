@@ -7,9 +7,9 @@ import {
   Tailwind,
 } from '@react-email/components'
 import React from 'react'
-import Footer from './Footer'
-import Header from './Header'
-import tailwindConfig from './tailwind.config'
+import Footer from './Footer.js'
+import Header from './Header.js'
+import tailwindConfig from './tailwind.config.js'
 
 function Layout({
   title,

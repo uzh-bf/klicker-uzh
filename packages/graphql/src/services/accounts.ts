@@ -3,17 +3,15 @@ import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
-import fs from 'fs'
 import JWT from 'jsonwebtoken'
-import nodemailer from 'nodemailer'
 import { Context, ContextWithUser } from '../lib/context.js'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import { DisplayMode } from '../types/app.js'
 import * as EmailService from '../services/email.js'
+import { DisplayMode } from '../types/app.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -201,7 +199,9 @@ export async function sendMagicLink(
     }
   )
 
-  const magicLink = `${process.env.NODE_ENV === 'production' ? 'https' : 'http'}://${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${
+    process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  }://${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
 
   await sendTeamsNotifications(
     'graphql/sendMagicLink',
@@ -230,11 +230,54 @@ export async function loginParticipantMagicLink(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+    return null
   }
 
   const participant = await ctx.prisma.participant.findUnique({
     where: {
       id: tokenData.sub,
+    },
+  })
+
+  if (participant) {
+    await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
+      },
+      ctx
+    )
+
+    return participant.id
+  }
+
+  return null
+}
+
+export async function activateParticipantAccount(
+  { token }: { token: string },
+  ctx: Context
+) {
+  //
+  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+    sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.ACTIVATION) {
+    return null
+  }
+
+  const participant = await ctx.prisma.participant.update({
+    where: {
+      id: tokenData.sub,
+    },
+    data: {
+      isEmailValid: true,
     },
   })
 
@@ -439,14 +482,6 @@ export async function createParticipantAccount(
       },
     })
 
-    const jwt = await doParticipantLogin(
-      {
-        participantId: participant.id,
-        participantLocale: participant.locale,
-      },
-      ctx
-    )
-
     const activationJWT = JWT.sign(
       {
         sub: participant.id,
@@ -460,7 +495,14 @@ export async function createParticipantAccount(
       }
     )
 
-    const activationLink = `${process.env.NODE_ENV === 'production' ? 'https' : 'http://'}${process.env.APP_STUDENT_SUBDOMAIN}/activation?token=${activationJWT}`
+    const activationLink = `${
+      process.env.NODE_ENV === 'production' ? 'https' : 'http://'
+    }${process.env.APP_STUDENT_SUBDOMAIN}/activation?token=${activationJWT}`
+
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `New participant account created: ${participant.email} with activation link ${activationLink}`
+    )
 
     const emailHtml = EmailService.hydrateTemplate({
       templateName: 'ParticipantAccountActivation',
@@ -474,14 +516,8 @@ export async function createParticipantAccount(
       html: emailHtml,
     })
 
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email} with activation link ${activationLink}`
-    )
-
     return {
       participant,
-      participantToken: jwt,
     }
   } catch (e) {
     console.error(e)
@@ -491,6 +527,7 @@ export async function createParticipantAccount(
         e || 'missing'
       }`
     )
+
     return null
   }
 }

@@ -243,12 +243,18 @@ export default {
       passwordLogin: 'Login with Password',
       magicLinkSent:
         'If an account exists, a one-time login link has been sent to the e-mail address.',
+      activationMailSent:
+        'An activation link has been sent to your e-mail address. Please check your inbox.',
       processingLogin:
         'Your magic link login is being processed. Please wait a moment.',
+      processingActivation:
+        'Your account activation is being processed. Please wait a moment.',
       magicLinkLoginFailed:
         'The magic link login failed. You will be redirected to the login page.',
-      surveyInvitation:
-        'Help shape the future of KlickerUZH by sharing your experiences and needs for personal learning analytics (even if you have never heard of it 😎). Complete our 15-min survey for a chance to win a 25.- voucher.',
+      accountActivationFailed:
+        'The account activation failed. You will be redirected to the login page.',
+      waitingForActivation:
+        'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
