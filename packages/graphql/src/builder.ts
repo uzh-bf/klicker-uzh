@@ -12,16 +12,7 @@ import './types/app'
 
 import { Context, ContextWithUser } from './lib/context.js'
 
-let prisma: PrismaClient
-
-if (
-  process.env.NODE_ENV === 'development' &&
-  process.env.PRISMA_OPTIMIZE === 'true'
-) {
-  prisma = new PrismaClient({}).$extends(withOptimize()) as PrismaClient
-} else {
-  prisma = new PrismaClient({})
-}
+const prisma = new PrismaClient({})
 
 const builder = new SchemaBuilder<{
   Directives: {

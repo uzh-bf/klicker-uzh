@@ -6,6 +6,7 @@ import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import prepareApp from './app.js'
+import { withOptimize } from '@prisma/extension-optimize'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
@@ -16,7 +17,19 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['warn', 'error'],
+})
+
+if (
+  process.env.NODE_ENV === 'development' &&
+  process.env.PRISMA_OPTIMIZE === 'true'
+) {
+  prisma = prisma.$extends(withOptimize()) as PrismaClient
+}
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
