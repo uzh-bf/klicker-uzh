@@ -23,7 +23,7 @@ function PublishMicroLearningButton({
     <>
       <Button
         basic
-        className={{ root: 'text-primary' }}
+        className={{ root: 'text-primary-100' }}
         onClick={() => setPublishModal(true)}
         data={{ cy: `publish-microlearning-${microLearning.name}` }}
       >

@@ -53,7 +53,10 @@ interface Props {
     content?: string
     editor?: string
   }
-  data_cy?: string
+  data?: {
+    test?: string
+    cy?: string
+  }
 }
 
 const HOTKEYS: Record<string, string> = {
@@ -73,7 +76,7 @@ function ContentInput({
   error = '',
   touched,
   className,
-  data_cy,
+  data,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -93,6 +96,7 @@ function ContentInput({
         disabled && 'pointer-events-none opacity-70',
         'border border-solid rounded flex-1 relative',
         showToolbarOnFocus && 'group',
+        error && touched && 'border-red-500',
         className?.root
       )}
     >
@@ -123,7 +127,8 @@ function ContentInput({
                 }
               }
             }}
-            data-cy={data_cy}
+            data-test={data?.test}
+            data-cy={data?.cy}
           />
         </div>
         <div

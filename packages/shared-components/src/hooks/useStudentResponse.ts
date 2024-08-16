@@ -1,10 +1,10 @@
-import {
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type {
   ChoicesElementData,
   ElementStack,
-  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
-import { StudentResponseType } from '../StudentElement'
+import type { StudentResponseType } from '../StudentElement'
 
 interface UseStudentResponseProps {
   stack: ElementStack

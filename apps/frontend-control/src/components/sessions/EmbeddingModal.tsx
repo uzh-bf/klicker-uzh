@@ -30,7 +30,7 @@ function LazyHMACLink({
   })
 
   if (sessionHMAC.loading || !sessionHMAC.data?.sessionHMAC) {
-    return ''
+    return <></>
   }
 
   const link = `${

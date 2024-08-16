@@ -1,26 +1,26 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { checkCronToken } from '../lib/util'
-import * as AccountService from '../services/accounts'
-import * as CourseService from '../services/courses'
-import * as FeedbackService from '../services/feedbacks'
-import * as GroupService from '../services/groups'
-import * as MicroLearningService from '../services/microLearning'
-import * as MigrationService from '../services/migration'
-import * as NotificationService from '../services/notifications'
-import * as ParticipantService from '../services/participants'
-import * as PracticeQuizService from '../services/practiceQuizzes'
-import * as QuestionService from '../services/questions'
-import * as SessionService from '../services/sessions'
-import { Course } from './course'
+import builder from '../builder.js'
+import { checkCronToken } from '../lib/util.js'
+import * as AccountService from '../services/accounts.js'
+import * as CourseService from '../services/courses.js'
+import * as FeedbackService from '../services/feedbacks.js'
+import * as GroupService from '../services/groups.js'
+import * as MicroLearningService from '../services/microLearning.js'
+import * as MigrationService from '../services/migration.js'
+import * as NotificationService from '../services/notifications.js'
+import * as ParticipantService from '../services/participants.js'
+import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as QuestionService from '../services/questions.js'
+import * as SessionService from '../services/sessions.js'
+import { Course } from './course.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
   GroupActivityDetails,
   GroupActivityGradingInput,
   GroupActivityInstance,
-} from './groupActivity'
-import { MicroLearning } from './microLearning'
+} from './groupActivity.js'
+import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
   LeaveCourseParticipation,
@@ -30,14 +30,14 @@ import {
   ParticipantTokenData,
   Participation,
   SubscriptionObjectInput,
-} from './participant'
+} from './participant.js'
 import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
   StackFeedback,
   StackResponseInput,
-} from './practiceQuizzes'
+} from './practiceQuizzes.js'
 import {
   Element,
   OptionsChoicesInput,
@@ -45,22 +45,22 @@ import {
   OptionsNumericalInput,
   QuestionOrElementInstance,
   Tag,
-} from './question'
-import { ElementType } from './questionData'
+} from './question.js'
+import { ElementType } from './questionData.js'
 import {
   BlockInput,
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
   Session,
-} from './session'
+} from './session.js'
 import {
   FileUploadSAS,
   LocaleType,
   User,
   UserLogin,
   UserLoginScope,
-} from './user'
+} from './user.js'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -218,6 +218,7 @@ export const Mutation = builder.mutationType({
             type: [StackResponseInput],
             required: true,
           }),
+          stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: (_, args, ctx) => {
           return PracticeQuizService.respondToElementStack(args, ctx)
@@ -530,6 +531,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.changeCourseDescription(args, ctx)
+        },
+      }),
+
+      enableCourseGamification: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.enableGamification(args, ctx)
         },
       }),
 

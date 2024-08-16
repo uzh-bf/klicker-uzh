@@ -9,6 +9,7 @@ fragment ElementData on ElementInstance {
 
     ... on ChoicesElementData {
       options {
+        hasSampleSolution
         displayMode
         choices {
           ix
@@ -21,6 +22,7 @@ fragment ElementData on ElementInstance {
 
     ... on NumericalElementData {
       options {
+        hasSampleSolution
         accuracy
         placeholder
         unit
@@ -37,6 +39,7 @@ fragment ElementData on ElementInstance {
 
     ... on FreeTextElementData {
       options {
+        hasSampleSolution
         restrictions {
           maxLength
         }

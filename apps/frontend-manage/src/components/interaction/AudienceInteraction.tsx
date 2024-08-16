@@ -158,6 +158,7 @@ function AudienceInteraction({
             <div className="flex flex-col flex-1 p-4 border rounded print:border-0 md:flex-row md:flex-wrap">
               <div className="flex-1">
                 <FeedbackChannel
+                  sessionName={sessionName}
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
                     deleteFeedback({ variables: { id: feedbackId } })

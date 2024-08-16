@@ -2,12 +2,12 @@
   "private": true,
   "name": "@klicker-uzh/cypress",
   "devDependencies": {
-    "@cypress/code-coverage": "3.12.39",
-    "@testing-library/cypress": "10.0.1",
+    "@cypress/code-coverage": "3.12.44",
+    "@testing-library/cypress": "10.0.2",
     "@types/jsonwebtoken": "^8.5.9",
-    "@types/node": "^20.12.12",
+    "@types/node": "^20.12.13",
     "@types/uuid": "^9.0.8",
-    "cypress": "13.9.0",
+    "cypress": "13.13.2",
     "jsonwebtoken": "8.5.1",
     "typescript": "5.4.5",
     "uuid": "9.0.1"

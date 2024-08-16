@@ -17,23 +17,23 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import md5 from 'md5'
+import { round } from 'mathjs'
+import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { orderStacks } from '../lib/util.js'
 import {
-  ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   QuestionResponse as QuestionResponseType,
   ResponseInput,
-} from '../ops'
-import { IInstanceEvaluation } from '../schema/question'
+} from '../ops.js'
+import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   ContentResults,
@@ -45,7 +45,7 @@ import {
   QuestionResponseChoices,
   StackFeedbackStatus,
   StackInput,
-} from '../types/app'
+} from '../types/app.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -246,10 +246,11 @@ interface RespondToFlashcardInput {
   id: number
   courseId: string
   response: FlashcardCorrectness
+  answerTime: number
 }
 
 async function respondToFlashcard(
-  { id, courseId, response }: RespondToFlashcardInput,
+  { id, courseId, response, answerTime }: RespondToFlashcardInput,
   ctx: Context
 ) {
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
@@ -323,6 +324,7 @@ async function respondToFlashcard(
       response: {
         correctness: response,
       },
+      timeSpent: answerTime,
       participant: {
         connect: { id: ctx.user.sub },
       },
@@ -371,6 +373,12 @@ async function respondToFlashcard(
     grade: correctness,
   })
 
+  const newAverageTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
@@ -382,6 +390,7 @@ async function respondToFlashcard(
       participant: {
         connect: { id: ctx.user.sub },
       },
+      averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
       },
@@ -419,6 +428,7 @@ async function respondToFlashcard(
       response: {
         correctness: response,
       },
+      averageTimeSpent: newAverageTime,
       aggregatedResponses: {
         ...aggregatedResponses,
         [response]: aggregatedResponses[response] + 1,
@@ -448,10 +458,11 @@ async function respondToFlashcard(
 interface RespondToContentInput {
   id: number
   courseId: string
+  answerTime: number
 }
 
 async function respondToContent(
-  { id, courseId }: RespondToContentInput,
+  { id, courseId, answerTime }: RespondToContentInput,
   ctx: Context
 ) {
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
@@ -510,6 +521,7 @@ async function respondToContent(
       response: {
         viewed: true,
       },
+      timeSpent: answerTime,
       participant: {
         connect: { id: ctx.user.sub },
       },
@@ -548,6 +560,12 @@ async function respondToContent(
     grade: 1,
   })
 
+  const newAverageTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+
   // create / update question response
   const questionResponse = await ctx.prisma.questionResponse.upsert({
     where: {
@@ -560,6 +578,7 @@ async function respondToContent(
       participant: {
         connect: { id: ctx.user.sub },
       },
+      averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
       },
@@ -595,6 +614,7 @@ async function respondToContent(
     },
     update: {
       // RESPONSE
+      averageTimeSpent: newAverageTime,
       response: {
         viewed: true,
       },
@@ -640,7 +660,7 @@ export function evaluateAnswerCorrectness({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const elementOptions = elementData.options
       const solution = elementOptions.choices.reduce<number[]>(
         (acc, choice) => {
           if (choice.correct) return [...acc, choice.ix]
@@ -702,6 +722,7 @@ export function evaluateAnswerCorrectness({
 
 interface EvaluatedQuestionResponses {
   feedbacks: any[]
+  numAnswers: number
   choices?: Record<string, number>
   answers?: Record<string, number>
   score: number
@@ -726,12 +747,13 @@ function evaluateElementResponse(
       //   response.choices!.includes(choice.ix)
       // )
 
-      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const elementOptions = elementData.options
       const feedbacks = elementOptions.choices
 
       if (elementData.type === ElementType.SC) {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -748,6 +770,7 @@ function evaluateElementResponse(
       } else if (elementData.type === ElementType.MC) {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -764,6 +787,7 @@ function evaluateElementResponse(
       } else {
         return {
           feedbacks,
+          numAnswers: results.total,
           choices: results.choices,
           score: computeSimpleAwardedPoints({
             points: POINTS_PER_INSTANCE,
@@ -784,6 +808,7 @@ function evaluateElementResponse(
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
+        numAnswers: results.total,
         answers: results?.responses ?? {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
@@ -798,6 +823,7 @@ function evaluateElementResponse(
     case ElementType.FREE_TEXT: {
       return {
         feedbacks: [],
+        numAnswers: results.total,
         answers: results.responses ?? {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
@@ -827,6 +853,8 @@ export function updateQuestionResults({
   response,
   correct,
 }: UpdateQuestionResultsInputs) {
+  const MD5 = createHash('md5')
+
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -839,7 +867,7 @@ export function updateQuestionResults({
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
-          [ix]: acc[ix] + 1,
+          [ix]: acc[ix]! + 1,
         }),
         results.choices
       )
@@ -873,14 +901,15 @@ export function updateQuestionResults({
       }
 
       const value = String(parsedValue)
-      const hashedValue = md5(value)
+      MD5.update(value)
+      const hashedValue = MD5.digest('hex')
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
-            ...results.responses[hashedValue],
-            count: results.responses[hashedValue].count + 1,
+            ...results.responses[hashedValue]!,
+            count: results.responses[hashedValue]!.count + 1,
           },
         }
       } else {
@@ -908,14 +937,15 @@ export function updateQuestionResults({
       }
 
       const value = R.toLower(R.trim(response.value))
-      const hashedValue = md5(value)
+      MD5.update(value)
+      const hashedValue = MD5.digest('hex')
 
       if (Object.keys(results.responses).includes(value)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
-            ...results.responses[hashedValue],
-            count: results.responses[hashedValue].count + 1,
+            ...results.responses[hashedValue]!,
+            count: results.responses[hashedValue]!.count + 1,
           },
         }
       } else {
@@ -942,9 +972,16 @@ export async function respondToQuestion(
     courseId,
     id,
     response,
-  }: { courseId: string; id: number; response: ResponseInput },
+    answerTime,
+  }: {
+    courseId: string
+    id: number
+    response: ResponseInput
+    answerTime: number
+  },
   ctx: Context
 ) {
+  const MD5 = createHash('md5')
   let treatAnonymous = false
 
   const participation = ctx.user?.sub
@@ -1033,6 +1070,15 @@ export async function respondToQuestion(
         correct: correctness === 1,
       })
 
+      if (!updatedResults.results) {
+        return {
+          instance: null,
+          updatedInstance: null,
+          correctness: null,
+          validResponse: false,
+        }
+      }
+
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
         data: {
@@ -1087,8 +1133,8 @@ export async function respondToQuestion(
 
     if (hasPreviousResponse) {
       const previousResponseOutsideTimeframe =
-        !instance.responses[0].lastAwardedAt ||
-        dayjs(instance.responses[0].lastAwardedAt).isBefore(
+        !instance.responses[0]!.lastAwardedAt ||
+        dayjs(instance.responses[0]!.lastAwardedAt).isBefore(
           dayjs().subtract(
             instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
             'days'
@@ -1102,8 +1148,8 @@ export async function respondToQuestion(
       }
 
       const previousXpResponseOutsideTimeframe =
-        !instance.responses[0].lastXpAwardedAt ||
-        dayjs(instance.responses[0].lastXpAwardedAt).isBefore(
+        !instance.responses[0]!.lastXpAwardedAt ||
+        dayjs(instance.responses[0]!.lastXpAwardedAt).isBefore(
           dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
         )
 
@@ -1115,10 +1161,10 @@ export async function respondToQuestion(
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0].lastAwardedAt
+        : instance.responses[0]!.lastAwardedAt
       lastXpAwardedAt = previousXpResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0].lastXpAwardedAt
+        : instance.responses[0]!.lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(
           instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
@@ -1179,7 +1225,7 @@ export async function respondToQuestion(
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
-          [ix]: acc[ix] + 1,
+          [ix]: acc[ix]! + 1,
         }),
         newAggResponses.choices
       )
@@ -1193,14 +1239,15 @@ export async function respondToQuestion(
       // update aggregated responses for open questions
       if (instance.elementType === ElementType.NUMERICAL) {
         const value = String(parseFloat(response.value!))
-        const hashedValue = md5(value)
+        MD5.update(value)
+        const hashedValue = MD5.digest('hex')
 
         if (Object.keys(newAggResponses.responses).includes(value)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
-              ...newAggResponses.responses[hashedValue],
-              count: newAggResponses.responses[hashedValue].count + 1,
+              ...newAggResponses.responses[hashedValue]!,
+              count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
         } else {
@@ -1216,14 +1263,15 @@ export async function respondToQuestion(
         newAggResponses.total = newAggResponses.total + 1
       } else {
         const value = R.toLower(R.trim(response.value!))
-        const hashedValue = md5(value)
+        MD5.update(value)
+        const hashedValue = MD5.digest('hex')
 
         if (Object.keys(newAggResponses.responses).includes(value)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
-              ...newAggResponses.responses[hashedValue],
-              count: newAggResponses.responses[hashedValue].count + 1,
+              ...newAggResponses.responses[hashedValue]!,
+              count: newAggResponses.responses[hashedValue]!.count + 1,
             },
           }
         } else {
@@ -1248,6 +1296,12 @@ export async function respondToQuestion(
       grade: correctness,
     })
 
+    const newAverageTime = existingResponse
+      ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+          answerTime) /
+        (existingResponse.trialsCount + 1)
+      : answerTime
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1261,6 +1315,7 @@ export async function respondToQuestion(
           totalPointsAwarded: pointsAwarded,
           totalXpAwarded: xpAwarded,
           trialsCount: 1,
+          averageTimeSpent: newAverageTime,
           lastAwardedAt,
           lastXpAwardedAt,
           response: response as QuestionResponse,
@@ -1299,6 +1354,7 @@ export async function respondToQuestion(
           trialsCount: {
             increment: 1,
           },
+          averageTimeSpent: newAverageTime,
           totalScore: {
             increment: score,
           },
@@ -1329,6 +1385,7 @@ export async function respondToQuestion(
           score,
           pointsAwarded,
           xpAwarded,
+          timeSpent: answerTime,
           response: response as QuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
@@ -1424,8 +1481,14 @@ export async function respondToQuestion(
           newPointsFrom,
           xpAwarded,
           newXpFrom,
-          solutions: elementData.options.solutions,
-          solutionRanges: elementData.options.solutionRanges,
+          solutions:
+            elementData.type === 'FREE_TEXT'
+              ? elementData.options.solutions
+              : null,
+          solutionRanges:
+            elementData.type === 'NUMERICAL'
+              ? elementData.options.solutionRanges
+              : null,
         }
       : undefined,
     status: status,
@@ -1479,15 +1542,20 @@ export interface RespondToElementStackInput {
     numericalResponse?: number | null
     freeTextResponse?: string | null
   }[]
+  stackAnswerTime: number
 }
 
 export async function respondToElementStack(
-  { stackId, courseId, responses }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: IInstanceEvaluation[] = []
+
+  // compute average answer time per element / question by dividing the
+  // answer time for the entire stack through the number of responses
+  const elementAnswerTime = round(stackAnswerTime / responses.length)
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
@@ -1497,6 +1565,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           courseId: courseId,
           response: response.flashcardResponse!,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1521,6 +1590,7 @@ export async function respondToElementStack(
         {
           id: response.instanceId,
           courseId: courseId,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1547,6 +1617,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { choices: response.choicesResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1573,6 +1644,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: String(response.numericalResponse) },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1599,6 +1671,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: response.freeTextResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1743,7 +1816,7 @@ export async function manipulatePracticeQuiz(
           options: {},
           elements: {
             create: stack.elements.map((elem) => {
-              const element = elementMap[elem.elementId]
+              const element = elementMap[elem.elementId]!
 
               const processedElementData = processElementData(element)
 

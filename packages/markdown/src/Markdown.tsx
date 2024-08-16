@@ -12,7 +12,7 @@ import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
-import ImgWithModal from './ImgWithModal'
+import ImgWithModal from './ImgWithModal.js'
 
 export interface MarkdownProps {
   className?: {
@@ -144,7 +144,7 @@ function Markdown({
                     return (
                       <a
                         className={twMerge(
-                          'px-4 py-3 border rounded sm:hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
+                          'px-4 py-3 border rounded hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
                         )}
                         href={href}
                       >

@@ -1,12 +1,11 @@
-import {
+import type {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
-import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useMemo, useState } from 'react'
-// TODO: replace lodash with ramda
 import { NumberField } from '@uzh-bf/design-system'
+import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useTranslations } from 'next-intl'
+import React, { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -96,7 +95,7 @@ function Histogram({
 
     dataArray = dataArray.map((bin) => {
       const binWidth =
-        dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
+        dataArray.length > 1 ? dataArray[1]!.value - dataArray[0]!.value : 1
       const count = sumBy(
         mappedData.filter((result) => {
           return (
@@ -122,7 +121,7 @@ function Histogram({
   }, [data.results, binCount, questionData.options.restrictions])
 
   return (
-    <div className={twMerge('h-[calc(100%-4rem)] mt-1', className?.root)}>
+    <div className={twMerge('mt-1 h-[calc(100%-4rem)]', className?.root)}>
       <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={processedData.data}
@@ -153,15 +152,16 @@ function Histogram({
           <CartesianGrid strokeDasharray="5 5" />
           <Tooltip
             content={({ active, payload }) => {
-              if (active && payload && payload.length) {
+              if (active && payload && payload.length > 0) {
                 return (
-                  <div className="p-2 bg-white border border-solid rounded-md border-uzh-grey-100">
+                  <div className="rounded-md border border-solid border-uzh-grey-100 bg-white p-2">
                     <div>
                       {t('manage.evaluation.histogramRange')}:{' '}
-                      {payload[0].payload.label}
+                      {payload[0]!.payload.label}
                     </div>
-                    <div className="font-bold text-primary">
-                      {t('manage.evaluation.count')}: {payload[0].payload.count}
+                    <div className="font-bold text-primary-100">
+                      {t('manage.evaluation.count')}:{' '}
+                      {payload[0]!.payload.count}
                     </div>
                   </div>
                 )
@@ -287,7 +287,7 @@ function Histogram({
       </ResponsiveContainer>
 
       {!hideBins && (
-        <div className="flex flex-row items-center float-right gap-2 mr-4">
+        <div className="float-right mr-4 flex flex-row items-center gap-2">
           <NumberField
             precision={0}
             id="histogramBins"

@@ -1,12 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import builder from '../builder'
-import { AllElementTypeData, QuestionResults } from '../types/app'
-import type { ICourse } from './course'
-import { CourseRef } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstanceRef } from './question'
-import { QuestionDataRef } from './questionData'
+import builder from '../builder.js'
+import { AllElementTypeData, QuestionResults } from '../types/app.js'
+import type { ICourse } from './course.js'
+import { CourseRef } from './course.js'
+import { QuestionInstanceRef } from './question.js'
+import { QuestionDataRef } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -99,7 +98,7 @@ export const Session = SessionRef.implement({
 
 export interface ISessionBlock extends DB.SessionBlock {
   numOfParticipants?: number
-  instances?: IQuestionInstance[]
+  instances?: DB.QuestionInstance[]
 }
 export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
 export const SessionBlock = SessionBlockRef.implement({
@@ -108,7 +107,7 @@ export const SessionBlock = SessionBlockRef.implement({
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
 
     status: t.expose('status', { type: SessionBlockStatus }),
-    order: t.exposeInt('order', { nullable: true }),
+    order: t.exposeInt('order'),
     expiresAt: t.expose('expiresAt', { type: 'Date', nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
@@ -308,7 +307,7 @@ export const TabData = builder.objectRef<ITabData>('TabData').implement({
 })
 
 export interface IEvaluationBlock {
-  blockIx?: number | null
+  blockIx: number
   blockStatus: DB.SessionBlockStatus
   tabData: ITabData[]
 }
@@ -316,7 +315,7 @@ export const EvaluationBlock = builder
   .objectRef<IEvaluationBlock>('EvaluationBlock')
   .implement({
     fields: (t) => ({
-      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      blockIx: t.exposeInt('blockIx'),
       blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
       tabData: t.expose('tabData', { type: [TabData] }),
     }),

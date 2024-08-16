@@ -49,6 +49,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
       .type(practiceQuizName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .type(practiceQuizDisplayName)
@@ -85,17 +86,33 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
         dataTransfer,
       })
-    }
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+      dataTransfer,
+    })
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer2,
+    })
+    const dataTransfer3 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer3,
+      })
+    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
+      dataTransfer3,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -129,13 +146,14 @@ describe('Different practice quiz workflows', () => {
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]')
       .should('not.be.disabled')
       .click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
@@ -150,7 +168,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-reset"]').click()
 
     cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.findByText('50%').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
+    cy.get('[data-cy="sc-2-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-2-answer-option-2"]').should('exist')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
@@ -193,6 +218,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
       .type(practiceQuizName3)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .type(practiceQuizDisplayName3)
@@ -230,17 +256,24 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle3}"]`)
-        .contains(questionTitle3)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle3}"]`)
+      .contains(questionTitle3)
+      .trigger('dragstart', {
         dataTransfer,
       })
-    }
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+      dataTransfer,
+    })
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle3}"]`)
+      .contains(questionTitle3)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer2,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -302,6 +335,15 @@ describe('Different practice quiz workflows', () => {
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      practiceQuizName3
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      practiceQuizDisplayName3
+    )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-available-from"]')
       .click()
@@ -360,6 +402,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
       .type(practiceQuizName2)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .type(practiceQuizDisplayName2)
@@ -396,17 +439,24 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
         dataTransfer,
       })
-    }
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+      dataTransfer,
+    })
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer2,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
@@ -425,6 +475,15 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
+    )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      practiceQuizName2
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      practiceQuizDisplayName2
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -449,17 +508,24 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add the question two further times
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
-        dataTransfer,
+    const dataTransfer3 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer3,
       })
-    }
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer3,
+    })
+    const dataTransfer4 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer4,
+      })
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+      dataTransfer4,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()

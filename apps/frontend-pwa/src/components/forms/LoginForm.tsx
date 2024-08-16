@@ -82,7 +82,7 @@ export function LoginForm({
               value="login"
               label={t('shared.generic.login')}
               className={{
-                override: '!rounded-none',
+                root: '!rounded-none',
                 label: 'font-bold text-md',
               }}
             />
@@ -91,7 +91,7 @@ export function LoginForm({
               value="joinCourse"
               label={t('pwa.login.createAccountJoin')}
               className={{
-                override: '!rounded-none',
+                root: '!rounded-none',
                 label: 'font-bold text-md',
               }}
             />

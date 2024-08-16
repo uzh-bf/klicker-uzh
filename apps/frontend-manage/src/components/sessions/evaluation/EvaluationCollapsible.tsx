@@ -38,7 +38,7 @@ function EvaluationCollapsible({
 
   const computedClassName = twMerge(
     questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',
-    !showExtensibleButton && 'border-solid border-b-only border-primary',
+    !showExtensibleButton && 'border-solid border-b-only border-primary-100',
     showExtensibleButton &&
       questionCollapsed &&
       'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',

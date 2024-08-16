@@ -1,22 +1,22 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import builder from '../builder'
-import { GroupActivityRef, IGroupActivity } from './groupActivity'
-import { IMicroLearning, MicroLearningRef } from './microLearning'
+import builder from '../builder.js'
+import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
+import { IMicroLearning, MicroLearningRef } from './microLearning.js'
 import type {
   IParticipant,
   IParticipantGroup,
   IParticipation,
-} from './participant'
+} from './participant.js'
 import {
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
-} from './participant'
-import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
-import type { ISession } from './session'
-import { SessionRef } from './session'
-import { IUser, UserRef } from './user'
+} from './participant.js'
+import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
+import type { ISession } from './session.js'
+import { SessionRef } from './session.js'
+import { IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -42,7 +42,7 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    color: t.exposeString('color', { nullable: true }),
+    color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
@@ -116,13 +116,32 @@ export const Course = builder.objectType(CourseRef, {
   }),
 })
 
+export interface IStudentCourse extends DB.Course {
+  owner: IUser
+}
+export const StudentCourseRef =
+  builder.objectRef<IStudentCourse>('StudentCourse')
+export const StudentCourse = builder.objectType(StudentCourseRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    displayName: t.exposeString('displayName'),
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    color: t.exposeString('color'),
+    description: t.exposeString('description', { nullable: true }),
+
+    owner: t.expose('owner', {
+      type: UserRef,
+    }),
+  }),
+})
+
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
   avatar?: string | null
   rank: number
-  lastBlockOrder: number
+  lastBlockOrder?: number
   isSelf?: boolean
-  level?: number
+  level: number
   participant: IParticipant
   participation: IParticipation
 }
@@ -136,13 +155,11 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     username: t.exposeString('username'),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
-    lastBlockOrder: t.exposeInt('lastBlockOrder'),
+    lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
-    level: t.exposeInt('level', {
-      nullable: true,
-    }),
+    level: t.exposeInt('level'),
 
     participant: t.expose('participant', {
       type: ParticipantRef,

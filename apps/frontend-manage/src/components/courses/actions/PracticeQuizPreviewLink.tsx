@@ -19,7 +19,7 @@ function PracticeQuizPreviewLink({
     <Link
       href={href}
       target="_blank"
-      className="flex flex-row items-center gap-1 text-primary"
+      className="flex flex-row items-center gap-1 text-primary-100"
       data-cy={`open-practice-quiz-${practiceQuiz.name}`}
     >
       <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />

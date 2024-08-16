@@ -163,11 +163,12 @@ function QuestionEvaluation({
                   )
                   .map((statistic) => {
                     const statisticName = statistic[0]
+                    const statisticValue = statistic[1] as number
                     return (
                       <Statistic
                         key={statisticName}
                         statisticName={statisticName}
-                        value={statistic[1]}
+                        value={statisticValue}
                         hasCheckbox={
                           !(statisticName === 'min' || statisticName === 'max')
                         }

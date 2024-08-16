@@ -22,6 +22,7 @@ describe('Test functionalities of frontend-control application', () => {
 
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionTitle)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()

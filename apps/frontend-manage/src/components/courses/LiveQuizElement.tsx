@@ -24,7 +24,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
@@ -89,7 +89,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row items-center gap-2 text-primary cursor-pointer">
+                        <div className="flex flex-row items-center gap-2 text-primary-100 cursor-pointer">
                           <FontAwesomeIcon icon={faPencil} />
                           <div>{t('manage.sessions.editSession')}</div>
                         </div>
@@ -98,7 +98,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                         router.push({
                           pathname: '/',
                           query: {
-                            sessionId: session.id,
+                            elementId: session.id,
                             editMode: WizardMode.LiveQuiz,
                           },
                         }),

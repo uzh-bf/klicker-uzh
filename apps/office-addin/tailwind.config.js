@@ -4,10 +4,11 @@ module.exports = {
   content: ["./src/**/*.{js,ts,jsx,tsx}", "./src/*.html"],
   theme: {
     extend: {
-      colors: {
-        ...TailwindColorsUZH,
-      },
+      colors: TailwindColorsUZH,
     },
+  },
+  future: {
+    hoverOnlyWhenSupported: true,
   },
   corePlugins: {
     preflight: false,

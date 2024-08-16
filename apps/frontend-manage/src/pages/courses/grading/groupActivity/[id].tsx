@@ -7,6 +7,7 @@ import Layout from '@components/Layout'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
+  GroupActivityInstance,
   GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -106,7 +107,7 @@ function GroupActivityGrading() {
                 {submissions.map((submission) => (
                   <GroupActivitySubmission
                     key={submission.id}
-                    submission={submission}
+                    submission={submission as GroupActivityInstance}
                     selectedSubmission={selectedSubmission}
                     selectSubmission={(submissionId: number) => {
                       if (currentEditing) {
@@ -158,9 +159,11 @@ function GroupActivityGrading() {
                   element.elementType !== ElementType.Content &&
                   element.elementType !== ElementType.Flashcard
               )}
-              submission={submissions.find(
-                (submission) => submission.id === selectedSubmission
-              )}
+              submission={
+                submissions.find(
+                  (submission) => submission.id === selectedSubmission
+                ) as GroupActivityInstance
+              }
               gradingCompleted={
                 groupActivity.status === GroupActivityStatus.Graded
               }

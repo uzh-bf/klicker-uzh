@@ -30,11 +30,12 @@ describe('Create and solve a group activity', () => {
     // fill out first step of creation process
     cy.get('[data-cy="create-group-activity"]').click()
     cy.get('[data-cy="insert-groupactivity-name"]').click().type(name)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
       .type(displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .click()
+      .focus()
       .type(description)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -58,6 +59,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-end-date"]')
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // add clues to the group activity
     // create 1 text clue and two numerical clues (one with and one without unit)
@@ -127,7 +129,6 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.findByText(clueName3).should('exist')
     cy.findByText(clueContent3).should('exist')
-    cy.get('[data-cy="next-or-submit"]').click()
 
     // add questions to the group activity
     for (let i = 0; i < 2; i++) {
@@ -137,7 +138,7 @@ describe('Create and solve a group activity', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
         dataTransfer,
       })
     }
@@ -177,12 +178,14 @@ describe('Create and solve a group activity', () => {
       .should('have.value', name)
       .clear()
       .type(newName)
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
       .should('have.value', displayName)
       .clear()
       .type(newDisplayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
+      .focus()
       .clear()
       .type(newDescription)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -204,12 +207,41 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-end-date"]')
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: also test editing and deleting clues
     // check that clues exist and add a new one
     cy.findByText(clueName).should('exist')
     cy.findByText(clueName2).should('exist')
     cy.findByText(clueName3).should('exist')
+
+    // edit existing clue
+    const clueNameEdited = 'Edited ' + clueName
+    const clueDisplayNameEdited = 'Edited ' + clueDisplayName
+    const clueContentEdited = 'Edited ' + clueContent
+    cy.get(`[data-cy="edit-clue-${clueName}"]`).click()
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .should('have.value', clueName)
+      .clear()
+      .type(clueNameEdited)
+    cy.get('[data-cy="group-activity-clue-display-name"]')
+      .click()
+      .should('have.value', clueDisplayName)
+      .clear()
+      .type(clueDisplayNameEdited)
+    cy.get('[data-cy="group-activity-string-clue-value"]')
+      .click()
+      .should('have.value', clueContent)
+      .clear()
+      .type(clueContentEdited)
+    cy.get('[data-cy="group-activity-clue-save"]').click()
+    cy.findByText(clueNameEdited).should('exist')
+    cy.findByText(clueContentEdited).should('exist')
+
+    // delete existing clue
+    cy.get(`[data-cy="remove-clue-${clueNameEdited}"]`).click()
+    cy.findByText(clueNameEdited).should('not.exist')
+    cy.findByText(clueContentEdited).should('not.exist')
 
     const clueNameNew = 'New Clue ' + random
     const clueDisplayNameNew = 'New Clue Display Name ' + random
@@ -239,7 +271,6 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.get(`[data-cy="groupActivity-clue-${clueNameNew}"]`).should('exist')
     cy.findByText(fullContentNew).should('exist')
-    cy.get('[data-cy="next-or-submit"]').click()
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()
@@ -248,7 +279,7 @@ describe('Create and solve a group activity', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()

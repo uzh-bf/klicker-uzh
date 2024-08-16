@@ -81,7 +81,7 @@ function Bookmarks() {
     >
       {quiz.stacks && quiz.stacks.length > 0 ? (
         <PracticeQuiz
-          quiz={quiz}
+          quiz={{ ...quiz, course: quiz.course! }}
           currentIx={currentIx}
           setCurrentIx={setCurrentIx}
           handleNextElement={handleNextQuestion}

@@ -4,6 +4,7 @@ fragment PracticeQuizData on PracticeQuiz {
   id
   name
   displayName
+  status
   description
   pointsMultiplier
   resetTimeDays
@@ -33,28 +34,6 @@ fragment PracticeQuizData on PracticeQuiz {
       type
       elementType
       ...ElementData
-      # mdContent
-      # questionInstance {
-      #   id
-      #   pointsMultiplier
-      #   ...QuestionData
-      #   evaluation {
-      #     feedbacks {
-      #       ix
-      #       feedback
-      #       correct
-      #       value
-      #     }
-      #     choices
-      #     answers
-      #     score
-      #     pointsAwarded
-      #     percentile
-      #     newPointsFrom
-      #     xpAwarded
-      #     newXpFrom
-      #   }
-      # }
     }
   }
 }

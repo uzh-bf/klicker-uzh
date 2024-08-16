@@ -1,6 +1,9 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SessionBlockStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  SessionBlockStatus,
+  SessionBlock as SessionBlockType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { CycleCountdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -8,18 +11,7 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
-  block?: {
-    expiresAt?: string
-    timeLimit?: number | null
-    order: number
-    status: SessionBlockStatus
-    instances: {
-      id: number
-      questionData: {
-        name: string
-      }
-    }[]
-  }
+  block?: SessionBlockType
   active?: boolean
 }
 
@@ -66,7 +58,7 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
         )}
       >
         <div className="font-bold">
-          {t('control.session.blockN', { number: block.order + 1 })}
+          {t('shared.generic.blockN', { number: block.order + 1 })}
         </div>
         <div className="flex flex-row items-center gap-2">
           {block.expiresAt && untilExpiration && (
@@ -98,9 +90,9 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
         </div>
       </div>
       <div className="flex flex-col p-1">
-        {block.instances.map((instance) => (
+        {block.instances?.map((instance) => (
           <div key={instance.id} className="line-clamp-1">
-            - {instance.questionData.name}
+            - {instance.questionData?.name}
           </div>
         ))}
       </div>

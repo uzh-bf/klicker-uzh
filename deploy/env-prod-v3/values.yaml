@@ -178,6 +178,25 @@ backendGraphql:
       cpu: 1000m
       memory: 1000Mi
 
+lti:
+  ingress:
+    hosts:
+      - host: lti.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: lti.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-lti-tls-uzh
+        hosts:
+          - lti.klicker.uzh.ch
+      - secretName: klicker-prod-lti-tls
+        hosts:
+          - lti.klicker-prod.bf-app.ch
+
 redis:
   auth:
     enabled: false

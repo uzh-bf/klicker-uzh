@@ -6,6 +6,8 @@ import {
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
   SelfDocument,
+  Session,
+  SessionBlock,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
@@ -21,14 +23,26 @@ import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
-function Subscriber({ id, subscribeToMore }) {
+interface SubscriberProps {
+  id: string
+  subscribeToMore: any
+}
+
+function Subscriber({ id, subscribeToMore }: SubscriberProps) {
   useEffect(() => {
     subscribeToMore({
       document: RunningSessionUpdatedDocument,
       variables: {
         sessionId: id,
       },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { session: Session },
+        {
+          subscriptionData,
+        }: {
+          subscriptionData: { data: { runningSessionUpdated: SessionBlock } }
+        }
+      ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
           session: {
@@ -196,7 +210,7 @@ function Index({ id }: Props) {
               handleNewResponse={handleNewResponse}
               sessionId={id}
               timeLimit={activeBlock?.timeLimit as number}
-              execution={activeBlock?.execution || 0}
+              execution={activeBlock?.execution ?? 0}
             />
           )}
         </div>

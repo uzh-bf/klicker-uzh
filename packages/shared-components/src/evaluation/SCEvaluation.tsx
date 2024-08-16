@@ -1,7 +1,7 @@
-import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import React from 'react'
+import type { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -10,10 +10,6 @@ interface Props {
 
 function SCEvaluation({ evaluation }: Props) {
   const t = useTranslations()
-
-  const sum = Object.values(
-    evaluation.choices as Record<string, number>
-  ).reduce((acc, choice) => acc + choice, 0)
   const correctIx = evaluation.feedbacks?.findIndex((choice) => choice.correct)
 
   return (
@@ -34,7 +30,7 @@ function SCEvaluation({ evaluation }: Props) {
               ),
             }}
             key={`choice-statistic-${ix}-${value}`}
-            value={(value / sum) * 100}
+            value={(value / (evaluation.numAnswers ?? 1)) * 100}
             max={100}
             formatter={(v) => v.toFixed() + '%'}
           />

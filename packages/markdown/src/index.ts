@@ -1,3 +1,3 @@
-export { default as Ellipsis } from './Ellipsis'
-export { default as ImgWithModal } from './ImgWithModal'
-export { default as Markdown } from './Markdown'
+export { default as Ellipsis } from './Ellipsis.js'
+export { default as ImgWithModal } from './ImgWithModal.js'
+export { default as Markdown } from './Markdown.js'

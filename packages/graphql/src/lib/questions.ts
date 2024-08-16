@@ -1,14 +1,12 @@
-import { Element, ElementType } from '@klicker-uzh/prisma'
+import { ElementType, type Element } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllElementTypeData,
-  BaseElementDataKeys,
-  FlashcardCorrectness,
   QuestionResults,
   QuestionResultsChoices,
-} from '../types/app'
+} from '../types/app.js'
 
-const RELEVANT_KEYS: BaseElementDataKeys = [
+const RELEVANT_KEYS = [
   'id',
   'name',
   'content',
@@ -16,13 +14,23 @@ const RELEVANT_KEYS: BaseElementDataKeys = [
   'pointsMultiplier',
   'type',
   'options',
-]
+] as const
 
-export function processQuestionData(question: Element) {
-  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
+const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
+type ExtendedElement =
+  | Pick<Element, (typeof RELEVANT_KEYS)[number]>
+  | {
+      id: string
+      questionId: number
+    }
+
+export function processQuestionData(question: Element): ExtendedElement {
   return {
-    ...extractRelevantKeys(question),
+    ...(extractRelevantKeys(question) as Pick<
+      Element,
+      (typeof RELEVANT_KEYS)[number]
+    >),
     id: `${question.id}-v${question.version}`,
     questionId: question.id,
   }
@@ -47,18 +55,24 @@ export function prepareInitialInstanceResults(
       return { responses: {}, total: 0 }
     }
 
-    case ElementType.FLASHCARD: {
-      return {
-        [FlashcardCorrectness.CORRECT]: 0,
-        [FlashcardCorrectness.PARTIAL]: 0,
-        [FlashcardCorrectness.INCORRECT]: 0,
-        total: 0,
-      }
-    }
+    // case ElementType.FLASHCARD:
+    // case ElementType.CONTENT: {
+    //   return { responses: {}, total: 0 }
+    // }
 
-    case ElementType.CONTENT: {
-      return {}
-    }
+    // ! QuestionInstances do not support Flashcards / Content elements at this point
+    // case ElementType.FLASHCARD: {
+    //   return {
+    //     [FlashcardCorrectness.CORRECT]: 0,
+    //     [FlashcardCorrectness.PARTIAL]: 0,
+    //     [FlashcardCorrectness.INCORRECT]: 0,
+    //     total: 0,
+    //   }
+    // }
+
+    // case ElementType.CONTENT: {
+    //   return { total: 0 }
+    // }
 
     default:
       throw new Error('Unknown question type')

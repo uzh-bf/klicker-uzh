@@ -29,7 +29,7 @@ function MicroLearningAccessLink({
           } catch (e) {}
         }}
         className={{
-          root: twMerge('flex flex-row items-center gap-1 text-primary'),
+          root: twMerge('flex flex-row items-center gap-1 text-primary-100'),
         }}
         data={{ cy: `copy-microlearning-link-${microLearning.name}` }}
       >

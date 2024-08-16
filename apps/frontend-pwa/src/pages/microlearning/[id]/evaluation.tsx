@@ -5,6 +5,7 @@ import {
   GetMicroLearningDocument,
   GetParticipationDocument,
   MarkMicroLearningCompletedDocument,
+  MicroLearning,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -35,7 +36,9 @@ function MicrolearningEvaluation() {
   )
 
   const microlearning = data?.microLearning
-  const aggregatedResults = useStackEvaluationAggregation({ microlearning })
+  const aggregatedResults = useStackEvaluationAggregation({
+    microlearning: microlearning as MicroLearning,
+  })
 
   if (loading || !microlearning) {
     return (
