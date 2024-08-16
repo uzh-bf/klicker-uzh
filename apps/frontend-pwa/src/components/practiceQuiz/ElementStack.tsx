@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import useComponentVisibleCounter from '@components/hooks/useComponentVisibleCounter'
 import {
   ElementStack as ElementStackType,
   ElementType,
@@ -53,6 +54,7 @@ function ElementStack({
   hideBookmark = false,
 }: ElementStackProps) {
   const t = useTranslations()
+  const timeSpent = useComponentVisibleCounter()
 
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
 
@@ -78,6 +80,7 @@ function ElementStack({
     } else {
       return false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentResponse])
 
   // initialize student responses
@@ -90,7 +93,7 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
-        {!hideBookmark && (
+        {!hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark
@@ -99,6 +102,8 @@ function ElementStack({
               stackId={stack.id}
             />
           </div>
+        ) : (
+          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
         )}
 
         {stack.description && (
@@ -201,6 +206,7 @@ function ElementStack({
               variables: {
                 stackId: stack.id,
                 courseId: courseId,
+                stackAnswerTime: timeSpent,
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {

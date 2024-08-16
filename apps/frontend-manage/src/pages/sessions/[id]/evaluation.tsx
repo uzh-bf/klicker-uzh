@@ -2,10 +2,11 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementType,
+  EvaluationBlock as EvaluationBlockType,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
-  SessionBlock,
   SessionBlockStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -39,9 +40,6 @@ import {
 import useEvaluationInitialization from '../../../lib/hooks/useEvaluationInitialization'
 
 export type EvaluationTabData = TabData & { ix: number }
-export type EvaluationBlock = Omit<SessionBlock, 'tabData'> & {
-  tabData: EvaluationTabData[]
-}
 
 function Evaluation() {
   const router = useRouter()
@@ -62,14 +60,14 @@ function Evaluation() {
     instanceIx: 0,
     participants: 0,
     questionData: {
-      id: 0,
+      id: '',
       name: '',
       content: '',
-      type: 'SC',
+      type: ElementType.Sc,
       options: { choices: [] },
     },
     results: {},
-    statistics: {},
+    statistics: undefined,
     status: SessionBlockStatus.Executed,
   })
 
@@ -117,26 +115,30 @@ function Evaluation() {
   const { blocks } = useMemo(() => {
     if (!blockData) return { blocks: [] }
 
-    return blockData.reduce(
-      (acc: { ix: number; blocks: EvaluationBlock[] }, block: Block) => {
+    return blockData.reduce<{
+      offset: number
+      blocks: {
+        blockIx: number
+        blockStatus: SessionBlockStatus
+        tabData: EvaluationTabData[]
+      }[]
+    }>(
+      (acc, block: EvaluationBlockType) => {
         const mappedBlock = {
           ...block,
           tabData: block.tabData?.map((instance, ix) => ({
+            ix: acc.offset + ix,
             ...instance,
-            ix: ix + acc.ix,
           })),
         }
 
         return {
-          ix: acc.ix + (block.tabData?.length || 0),
+          offset: acc.offset + block.tabData.length,
           blocks: [...acc.blocks, mappedBlock],
         }
       },
-      {
-        ix: 0,
-        blocks: [],
-      }
-    ) as { ix: number; blocks: EvaluationBlock[] }
+      { offset: 0, blocks: [] }
+    )
   }, [blockData])
 
   useEvaluationInitialization({
@@ -214,7 +216,7 @@ function Evaluation() {
       {router.query.hideControls !== 'true' && (
         <div className="z-20 flex-none h-11">
           <EvaluationControlBar
-            blocks={blocks || []}
+            blocks={blocks}
             selectedBlock={selectedBlockIndex}
             setSelectedBlock={setSelectedBlockIndex}
             setSelectedInstanceIndex={setSelectedInstanceIndex}

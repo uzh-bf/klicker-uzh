@@ -1,10 +1,11 @@
 query GetUserCourses {
   userCourses {
     id
-    isArchived
-    pinCode
     name
     displayName
+    pinCode
+    isArchived
+    isGamificationEnabled
     description
     createdAt
     updatedAt

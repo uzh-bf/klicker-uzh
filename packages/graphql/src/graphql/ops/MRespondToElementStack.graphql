@@ -2,11 +2,13 @@ mutation RespondToElementStack(
   $stackId: Int!
   $courseId: String!
   $responses: [StackResponseInput!]!
+  $stackAnswerTime: Int!
 ) {
   respondToElementStack(
     stackId: $stackId
     courseId: $courseId
     responses: $responses
+    stackAnswerTime: $stackAnswerTime
   ) {
     id
     status
@@ -22,6 +24,7 @@ mutation RespondToElementStack(
         value
       }
       choices
+      numAnswers
       answers
       score
       pointsAwarded

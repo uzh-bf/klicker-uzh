@@ -25,7 +25,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
@@ -92,7 +92,7 @@ function MicroLearningElement({
                 items={[
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                         <FontAwesomeIcon
                           icon={faLink}
                           size="sm"
@@ -122,7 +122,7 @@ function MicroLearningElement({
                   },
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                         <FontAwesomeIcon icon={faPencil} />
                         <div>{t('manage.course.editMicrolearning')}</div>
                       </div>
@@ -131,7 +131,7 @@ function MicroLearningElement({
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: microLearning.id,
+                          elementId: microLearning.id,
                           editMode: WizardMode.Microlearning,
                         },
                       }),
@@ -210,7 +210,7 @@ function MicroLearningElement({
                     ? [
                         {
                           label: (
-                            <div className="flex flex-row items-center text-primary gap-1 cursor-pointer">
+                            <div className="flex flex-row items-center text-primary-100 gap-1 cursor-pointer">
                               <FontAwesomeIcon icon={faArrowsRotate} />
                               <div>
                                 {t(
@@ -223,7 +223,7 @@ function MicroLearningElement({
                             router.push({
                               pathname: '/',
                               query: {
-                                sessionId: microLearning.id,
+                                elementId: microLearning.id,
                                 conversionMode: 'microLearningToPracticeQuiz',
                               },
                             }),

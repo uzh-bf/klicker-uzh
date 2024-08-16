@@ -1,12 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import type { ICourse } from './course'
-import { CourseRef } from './course'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { CourseRef } from './course.js'
 import {
   ElementStackRef,
   IElementStack,
   PublicationStatus,
-} from './practiceQuizzes'
+} from './practiceQuizzes.js'
 
 export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null

@@ -1,0 +1,140 @@
+name: Check typescript types
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    # branches: ["v3", "v3*"]
+    types: [opened, synchronize, reopened]
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.7.0
+          run_install: true
+      - name: Build all required packages
+        run: |
+          cd packages/prisma
+          pnpm run build
+          cd ../util
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../graphql
+          pnpm run build
+          cd ../markdown
+          pnpm run build
+          cd ../shared-components
+          pnpm run build
+
+      - name: Check prisma package typescript types
+        shell: bash
+        run: |
+          cd packages/prisma
+          pnpm run check
+      - name: Check grading package typescript types
+        if: always() # Run this step even if the previous one fails
+        shell: bash
+        run: |
+          cd packages/grading
+          pnpm run check
+      - name: Check util package typescript types
+        if: always() # Run this step even if the previous one fails
+        shell: bash
+        run: |
+          cd packages/util
+          pnpm run check
+      - name: Check graphql package typescript types
+        if: always() # Run this step even if the previous one fails
+        shell: bash
+        run: |
+          cd packages/graphql
+          pnpm run check
+      - name: Check lti package typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd packages/lti
+          pnpm run check
+      - name: Check shared-components package typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd packages/shared-components
+          pnpm run check
+      - name: Check v2 export function typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-migration-v2-export
+          pnpm run check
+      - name: Check v3 import function typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-migration-v3-import
+          pnpm run check
+      - name: Check backend-docker typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/backend-docker
+          pnpm run check
+      - name: Check frontend-pwa typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/frontend-pwa
+          pnpm run check
+      - name: Check frontend-manage typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/frontend-manage
+          pnpm run check
+      - name: Check frontend-control typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/frontend-control
+          pnpm run check
+      - name: Check frontend-auth typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/auth
+          pnpm run check
+      - name: Check office-addin typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/office-addin
+          pnpm run check
+      - name: Check func-response-processor typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-response-processor
+          pnpm run check
+      - name: Check func-incoming-responses typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/func-incoming-responses
+          pnpm run check
+      - name: Check apps/lti typescript types
+        if: always()
+        shell: bash
+        run: |
+          cd apps/lti
+          pnpm run check

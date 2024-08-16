@@ -28,7 +28,7 @@ function PracticeQuizAccessLink({
           } catch (e) {}
         }}
         className={{
-          root: 'flex flex-row items-center gap-1 text-primary',
+          root: 'flex flex-row items-center gap-1 text-primary-100',
         }}
         data={{ cy: `copy-practice-quiz-link-${practiceQuiz.name}` }}
       >

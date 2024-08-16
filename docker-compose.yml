@@ -1,20 +1,4 @@
 services:
-  reverse_proxy:
-    image: docker.io/library/traefik:v2.10
-    command:
-      - --api.insecure=true
-      - --providers.file=true
-      - --providers.file.filename=/etc/traefik/rules.yaml
-      - --providers.file.watch=true
-      - --entrypoints.web.address=:80
-    ports:
-      - 8088:80
-      - 8080:8080
-    volumes:
-      - "./util/traefik/rules.yaml:/etc/traefik/rules.yaml"
-    networks:
-      - klicker
-
   reverse_proxy_docker:
     image: docker.io/library/traefik:v2.10
     command:
@@ -27,7 +11,23 @@ services:
       - 80:80
       - 8080:8080
     volumes:
-      - "./util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml"
+      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
+  reverse_proxy_wsl:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
 
@@ -37,7 +37,7 @@ services:
     image: ghcr.io/uzh-bf/klicker-uzh/auth:v3
     environment:
       APP_SECRET: abcd
-      DATABASE_URL: "postgres://klicker:klicker@postgres:5432/main"
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
       # EDUID_CLIENT_SECRET: ''
       # TEAMS_WEBHOOK_URL: ''
     ports:
@@ -79,17 +79,17 @@ services:
       - full
     image: ghcr.io/uzh-bf/klicker-uzh/backend-docker:v3
     environment:
-      APP_SECRET: "abcd"
+      APP_SECRET: 'abcd'
       COOKIE_DOMAIN: .klicker.com
-      CRON_TOKEN: "abcd"
-      DATABASE_URL: "postgres://klicker:klicker@postgres:5432/klicker"
-      NOTIFICATION_SUPPORT_MAIL: "noone@klicker.com"
-      NOTIFICATION_URL: "noone@klicker.com"
-      REDIS_CACHE_HOST: "redis_cache"
-      REDIS_CACHE_PASS: ""
+      CRON_TOKEN: 'abcd'
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/klicker'
+      NOTIFICATION_SUPPORT_MAIL: 'noone@klicker.com'
+      NOTIFICATION_URL: 'noone@klicker.com'
+      REDIS_CACHE_HOST: 'redis_cache'
+      REDIS_CACHE_PASS: ''
       REDIS_CACHE_PORT: 6379
-      REDIS_HOST: "redis_exec"
-      REDIS_PASS: ""
+      REDIS_HOST: 'redis_exec'
+      REDIS_PASS: ''
       REDIS_PORT: 6379
       # BLOB_STORAGE_ACCESS_KEY: ''
       # BLOB_STORAGE_ACCOUNT_NAME: ''
@@ -121,6 +121,19 @@ services:
       - klicker
     volumes:
       - klicker_data:/var/lib/postgresql/data
+
+  postgres_lti:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod-lti
+    ports:
+      - 5433:5432
+    networks:
+      - klicker
+    volumes:
+      - klicker_lti_data:/var/lib/postgresql/data
 
     # redis instance to support session execution
   redis_exec:
@@ -164,7 +177,7 @@ services:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:
       - klicker
-    command: [sh, -c, "yes | ./listmonk --install && ./listmonk"]
+    command: [sh, -c, 'yes | ./listmonk --install && ./listmonk']
 
   listmonk_db:
     image: docker.io/library/postgres:13
@@ -177,7 +190,7 @@ services:
     networks:
       - klicker
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U listmonk"]
+      test: ['CMD-SHELL', 'pg_isready -U listmonk']
       interval: 10s
       timeout: 5s
       retries: 6
@@ -201,4 +214,6 @@ networks:
 volumes:
   listmonk_data:
   klicker_data:
+  klicker_lti_data:
   redis_data:
+  lti_data:

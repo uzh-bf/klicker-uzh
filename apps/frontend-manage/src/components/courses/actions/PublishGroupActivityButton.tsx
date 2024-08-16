@@ -23,7 +23,7 @@ function PublishGroupActivityButton({
     <>
       <Button
         basic
-        className={{ root: 'text-primary' }}
+        className={{ root: 'text-primary-100' }}
         onClick={() => setPublishModal(true)}
         data={{ cy: `publish-groupActivity-${groupActivity.name}` }}
       >

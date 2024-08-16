@@ -62,7 +62,7 @@ export const importQuestionInstances = async (
               return null
             }
 
-            let questionData = {}
+            let questionData: any = {}
             let questionId = null
             const question = questions.find(
               (question) =>
@@ -93,7 +93,7 @@ export const importQuestionInstances = async (
 
             let results = {}
 
-            if (questionInstance.results) {
+            if (question && questionInstance.results) {
               if (questionData.type === 'SC' || questionData.type === 'MC') {
                 if (questionInstance.results.CHOICES) {
                   results = questionInstance.results.CHOICES.reduce(

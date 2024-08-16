@@ -130,7 +130,7 @@ type Course {
   averageActiveScore: Float
   averageScore: Float
   awards: [AwardEntry!]
-  color: String
+  color: String!
   createdAt: Date!
   description: String
   displayName: String!
@@ -252,7 +252,7 @@ enum ElementType {
 }
 
 type EvaluationBlock {
-  blockIx: Int
+  blockIx: Int!
   blockStatus: SessionBlockStatus!
   tabData: [TabData!]!
 }
@@ -456,7 +456,7 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
-  groupActivityId: ID
+  groupActivityId: ID!
   groupName: String
   id: Int!
   results: Json
@@ -496,24 +496,13 @@ type InstanceEvaluation {
   instanceId: Int!
   newPointsFrom: Date
   newXpFrom: Date
+  numAnswers: Int
   percentile: Float
   pointsAwarded: Float
   pointsMultiplier: Int
   score: Float!
   solutionRanges: Json
   solutions: Json
-  xpAwarded: Int
-}
-
-type InstanceEvaluationOLD {
-  answers: Json
-  choices: Json
-  feedbacks: [QuestionFeedback!]
-  newPointsFrom: Date
-  newXpFrom: Date
-  percentile: Float
-  pointsAwarded: Float
-  score: Float!
   xpAwarded: Int
 }
 
@@ -537,8 +526,8 @@ type LeaderboardEntry {
   avatar: String
   id: Int!
   isSelf: Boolean
-  lastBlockOrder: Int!
-  level: Int
+  lastBlockOrder: Int
+  level: Int!
   participant: Participant
   participantId: String!
   participation: Participation!
@@ -634,6 +623,7 @@ type Mutation {
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
+  enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementInstanceId: Int!): String
@@ -665,7 +655,7 @@ type Mutation {
   publishScheduledPracticeQuizzes: Boolean!
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
-  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
+  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
@@ -868,7 +858,7 @@ type PushSubscription {
 }
 
 type Query {
-  basicCourseInformation(courseId: String!): Course
+  basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
@@ -936,7 +926,6 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  evaluation: InstanceEvaluationOLD
   id: Int!
   pointsMultiplier: Int!
   questionData: QuestionData
@@ -1026,7 +1015,7 @@ type SessionBlock {
   id: Int!
   instances: [QuestionInstance!]
   numOfParticipants: Int
-  order: Int
+  order: Int!
   randomSelection: Int
   status: SessionBlockStatus!
   timeLimit: Int
@@ -1099,6 +1088,15 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentCourse {
+  color: String!
+  description: String
+  displayName: String!
+  id: ID!
+  owner: User!
+  pinCode: Int
 }
 
 type Subscription {

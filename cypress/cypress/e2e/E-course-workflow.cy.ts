@@ -44,8 +44,29 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="create-course-color-submit"]').click()
 
     // test gamification toggle
+    cy.get('[data-cy="create-course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
     cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="create-course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
     cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="create-course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="create-course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
 
     // submit the form
     cy.get('[data-cy="create-course-submit"]').click()
@@ -99,6 +120,27 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-end-date"]').type('2025-02-01')
     // click outside to submit
     cy.get('[data-cy="course-name-with-pin"]').click()
+
+    // enable gamification for the created course and check that it worked (switch active and disabled)
+    cy.get('[data-cy="course-gamification-switch"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="course-gamification-switch"]').click()
+    cy.get('[data-cy="cancel-enable-gamification"]').click()
+    cy.get('[data-cy="course-gamification-switch"]').click()
+    cy.get('[data-cy="confirm-enable-gamification"]').click()
+    cy.get('[data-cy="course-gamification-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="course-gamification-switch"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
   })
 
   it('Test the course overview on the student side', () => {

@@ -6,7 +6,7 @@ import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operation
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express, { Request } from 'express'
+import express, { type Request } from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
 import passport from 'passport'
@@ -102,7 +102,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
 
   app.use(cookieParser())
   app.use((req: any, res, next) =>
-    passport.authenticate('jwt', { session: false }, (err, user) => {
+    passport.authenticate('jwt', { session: false }, (_: any, user: any) => {
       req.locals = { user }
       next()
     })(req, res, next)
@@ -170,7 +170,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     res.send('OK')
   })
 
-  app.use('/api/graphql', yogaApp)
+  app.use('/api/graphql', yogaApp as any)
 
   return { app, yogaApp }
 }

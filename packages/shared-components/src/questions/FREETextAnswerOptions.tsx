@@ -37,7 +37,7 @@ export function FREETextAnswerOptions({
       />
 
       {typeof maxLength === 'number' && !isNaN(maxLength) && (
-        <div className="text-sm italic text-right">
+        <div className="text-right text-sm italic">
           ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
           {t('shared.generic.characters')})
         </div>

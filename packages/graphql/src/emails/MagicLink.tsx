@@ -1,11 +1,10 @@
-import { MjmlColumn, MjmlSection, MjmlWrapper } from '@faire/mjml-react'
-import BaseLayout from './components/BaseLayout'
-import Button from './components/Button'
-import Footer from './components/Footer'
-import Header from './components/Header'
-import Heading from './components/Heading'
-import Text from './components/Text'
-import { colors, fontFamily, fontSize, screens, spacing } from './theme'
+import BaseLayout from './components/BaseLayout.js'
+import Button from './components/Button.js'
+import Footer from './components/Footer.js'
+import Header from './components/Header.js'
+import Heading from './components/Heading.js'
+import Text from './components/Text.js'
+import { colors, fontFamily, fontSize, screens, spacing } from './theme.js'
 
 const welcomeStyle = `
   .h1 > * {

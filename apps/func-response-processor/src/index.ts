@@ -9,10 +9,10 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import * as Sentry from '@sentry/node'
+import { strict as assert } from 'assert'
+import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
-import JWT from 'jsonwebtoken'
-import md5 from 'md5'
-import assert from 'node:assert/strict'
+import { verify } from 'jsonwebtoken'
 import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
@@ -67,6 +67,7 @@ const serviceBusTrigger = async function (
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
+    const MD5 = createHash('md5')
     const sessionKey = `s:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
@@ -90,10 +91,10 @@ const serviceBusTrigger = async function (
           }, {})
 
         if (parsedCookies['participant_token'] !== undefined) {
-          participantData = JWT.verify(
+          participantData = verify(
             parsedCookies['participant_token'],
             process.env.APP_SECRET
-          ) as any
+          ) as { sub: string; role: string }
 
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
@@ -227,7 +228,8 @@ const serviceBusTrigger = async function (
       }
       // TODO: points based on distance to correct range?
       case 'NUMERICAL': {
-        const responseHash = md5(response.value)
+        MD5.update(response.value)
+        const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,
@@ -246,7 +248,7 @@ const serviceBusTrigger = async function (
             firstResponseReceivedAt,
             responseTimestamp,
             maxBonus: MAX_BONUS_POINTS,
-            getsMaxPoints: parsedSolutions && answerCorrect,
+            getsMaxPoints: parsedSolutions && answerCorrect === 1,
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
@@ -287,7 +289,8 @@ const serviceBusTrigger = async function (
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
         const cleanResponseValue = toLower(trim(response.value))
-        const responseHash = md5(cleanResponseValue)
+        MD5.update(cleanResponseValue)
+        const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,

@@ -69,21 +69,8 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function QuestionEditModal({
-  isOpen,
-  handleSetIsOpen,
-  questionId,
-  mode,
-}: QuestionEditModalProps): React.ReactElement {
-  const isDuplication = mode === QuestionEditMode.DUPLICATE
-  const t = useTranslations()
-  const [updateInstances, setUpdateInstances] = useState(false)
-  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
-    {}
-  )
-
-  // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
-  const questionManipulationSchema = Yup.object().shape({
+function createValidationSchema(t) {
+  return Yup.object().shape({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
@@ -264,6 +251,26 @@ function QuestionEditModal({
       }
     }),
   })
+}
+
+function QuestionEditModal({
+  isOpen,
+  handleSetIsOpen,
+  questionId,
+  mode,
+}: QuestionEditModalProps): React.ReactElement {
+  const t = useTranslations()
+
+  const isDuplication = mode === QuestionEditMode.DUPLICATE
+  const [updateInstances, setUpdateInstances] = useState(false)
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
+
+  const questionManipulationSchema = useMemo(
+    () => createValidationSchema(t),
+    [t]
+  )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -773,7 +780,7 @@ function QuestionEditModal({
                               'manage.questionForms.questionPlaceholder'
                             )}
                             key={`${values.type}-content`}
-                            data_cy="insert-question-text"
+                            data={{ cy: 'insert-question-text' }}
                             className={{ content: 'max-w-none' }}
                           />
                         )}
@@ -817,7 +824,7 @@ function QuestionEditModal({
                                 'manage.questionForms.explanationPlaceholder'
                               )}
                               key={`${values.type}-explanation`}
-                              data_cy="insert-question-explanation"
+                              data={{ cy: 'insert-question-explanation' }}
                             />
                           )}
                         </FastField>
@@ -865,8 +872,11 @@ function QuestionEditModal({
                       <Switch
                         checked={values.options?.hasSampleSolution || false}
                         onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('options.hasSampleSolution', newValue)
-                          validateForm()
+                          setFieldValue(
+                            'options.hasSampleSolution',
+                            newValue,
+                            true
+                          )
                         }}
                         label={t('shared.generic.sampleSolution')}
                         data={{ cy: 'configure-sample-solution' }}
@@ -876,8 +886,11 @@ function QuestionEditModal({
                       <Switch
                         checked={values.options?.hasAnswerFeedbacks || false}
                         onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('options.hasAnswerFeedbacks', newValue)
-                          validateForm()
+                          setFieldValue(
+                            'options.hasAnswerFeedbacks',
+                            newValue,
+                            true
+                          )
                         }}
                         label={t('manage.questionPool.answerFeedbacks')}
                         disabled={!values.options?.hasSampleSolution}
@@ -970,7 +983,9 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy={`insert-answer-field-${index}`}
+                                          data={{
+                                            cy: `insert-answer-field-${index}`,
+                                          }}
                                         />
                                       )}
                                     </FastField>
@@ -1269,7 +1284,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                         }}
                                         data={{
                                           cy: `delete-solution-range-ix-${index}`,
@@ -1347,7 +1362,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
                                       }}
                                       data={{
                                         cy: `delete-solution-ix-${index}`,

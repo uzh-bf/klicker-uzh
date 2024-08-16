@@ -1,8 +1,8 @@
 import { PublicationStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import isEmail from 'validator/lib/isEmail'
-import { Context, ContextWithUser } from '../lib/context'
+import isEmail from 'validator/lib/isEmail.js'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -129,7 +129,7 @@ export async function getParticipations(
   if (!participant) return []
 
   return R.sort(
-    R.ascend(R.prop<string>('course.displayName')),
+    R.ascend(R.prop('course.displayName')),
     participant.participations
   )
 }

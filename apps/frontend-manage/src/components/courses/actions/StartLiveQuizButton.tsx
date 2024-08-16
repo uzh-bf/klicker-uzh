@@ -18,7 +18,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
   return (
     <Button
       basic
-      className={{ root: 'text-primary' }}
+      className={{ root: 'text-primary-100' }}
       onClick={async () => {
         try {
           await startSession({

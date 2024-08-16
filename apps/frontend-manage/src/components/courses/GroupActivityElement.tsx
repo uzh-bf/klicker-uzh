@@ -29,7 +29,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/SessionCreation'
+import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import DeletionModal from './modals/DeletionModal'
@@ -98,7 +98,7 @@ function GroupActivityElement({
                 items={[
                   {
                     label: (
-                      <div className="flex flex-row text-primary items-center gap-2 cursor-pointer">
+                      <div className="flex flex-row text-primary-100 items-center gap-2 cursor-pointer">
                         <FontAwesomeIcon icon={faPencil} />
                         <div>{t('manage.course.editGroupActivity')}</div>
                       </div>
@@ -107,7 +107,7 @@ function GroupActivityElement({
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: groupActivity.id,
+                          elementId: groupActivity.id,
                           editMode: WizardMode.GroupActivity,
                         },
                       }),
@@ -145,7 +145,7 @@ function GroupActivityElement({
                   href={`/courses/grading/groupActivity/${groupActivity.id}`}
                   data-cy={`grade-groupActivity-${groupActivity.name}`}
                 >
-                  <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                  <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
                     <FontAwesomeIcon
                       icon={faUpRightFromSquare}
                       className="w-[1.1rem]"

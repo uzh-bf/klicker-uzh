@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { BaseElementData } from '../types/app'
-import { ElementDataRef, ElementInstanceOptions } from './elementData'
+import builder from '../builder.js'
+import { BaseElementData } from '../types/app.js'
+import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementType,
   QuestionDataRef,
-} from './questionData'
+} from './questionData.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -122,52 +122,13 @@ export const QuestionFeedback = builder
     }),
   })
 
-// TODO: remove old evaluation type
-export interface IInstanceEvaluationOLD {
-  feedbacks?: IQuestionFeedback[]
-  choices?: object[]
-  answers?: object[]
-  score: number
-  pointsAwarded?: number | null
-  percentile?: number
-  newPointsFrom?: Date
-  xpAwarded?: number
-  newXpFrom?: Date
-}
-export const InstanceEvaluationOLD = builder
-  .objectRef<IInstanceEvaluationOLD>('InstanceEvaluationOLD')
-  .implement({
-    fields: (t) => ({
-      feedbacks: t.expose('feedbacks', {
-        type: [QuestionFeedback],
-        nullable: true,
-      }),
-      choices: t.expose('choices', { type: 'Json', nullable: true }),
-      answers: t.expose('answers', {
-        type: 'Json',
-        nullable: true,
-      }),
-      score: t.exposeFloat('score'),
-      pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
-      percentile: t.exposeFloat('percentile', { nullable: true }),
-      newPointsFrom: t.expose('newPointsFrom', {
-        type: 'Date',
-        nullable: true,
-      }),
-      xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
-      newXpFrom: t.expose('newXpFrom', {
-        type: 'Date',
-        nullable: true,
-      }),
-    }),
-  })
-
 export interface IInstanceEvaluation {
   instanceId: number
   pointsMultiplier?: number
   explanation?: string
   feedbacks?: IQuestionFeedback[]
   choices?: object[]
+  numAnswers?: number
   answers?: object[]
   score: number
   pointsAwarded?: number | null
@@ -190,6 +151,7 @@ export const InstanceEvaluation = builder
         nullable: true,
       }),
       choices: t.expose('choices', { type: 'Json', nullable: true }),
+      numAnswers: t.exposeInt('numAnswers', { nullable: true }),
       answers: t.expose('answers', {
         type: 'Json',
         nullable: true,
@@ -251,7 +213,7 @@ export const Element = ElementRef.implement({
 })
 
 export interface IQuestionOrElementInstance {
-  questionInstance?: IQuestionInstance | null
+  questionInstance?: DB.QuestionInstance | null
   elementInstance?: DB.ElementInstance | null
 }
 export const QuestionOrElementInstanceRef =
@@ -271,20 +233,12 @@ export const QuestionOrElementInstance = QuestionOrElementInstanceRef.implement(
   }
 )
 
-export interface IQuestionInstance extends DB.QuestionInstance {
-  evaluation?: IInstanceEvaluationOLD
-}
 export const QuestionInstanceRef =
-  builder.objectRef<IQuestionInstance>('QuestionInstance')
+  builder.objectRef<DB.QuestionInstance>('QuestionInstance')
 export const QuestionInstance = QuestionInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
-    evaluation: t.expose('evaluation', {
-      type: InstanceEvaluationOLD,
-      nullable: true,
-    }),
 
     questionData: t.field({
       type: QuestionDataRef,

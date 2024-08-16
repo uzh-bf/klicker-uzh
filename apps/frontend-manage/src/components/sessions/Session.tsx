@@ -31,7 +31,7 @@ import { useState } from 'react'
 import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
-import { WizardMode } from './creation/SessionCreation'
+import { WizardMode } from './creation/ElementCreation'
 
 interface SessionProps {
   session: SessionType
@@ -153,7 +153,7 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
+                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100',
                       }}
                       data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
@@ -165,9 +165,12 @@ function Session({ session }: SessionProps) {
                       open={embedModalOpen}
                       onClose={() => setEmbedModalOpen(false)}
                       sessionId={session.id}
-                      questions={session.blocks?.flatMap(
-                        (block: SessionBlock) => block.instances
-                      )}
+                      questions={session.blocks
+                        ?.flatMap((block: SessionBlock) => block.instances)
+                        .filter(
+                          (instance) =>
+                            typeof instance !== 'undefined' && instance !== null
+                        )}
                     />
                   </>
                 )}
@@ -179,7 +182,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100"
                       data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -194,7 +197,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100"
                       data-cy={`session-evaluation-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -212,7 +215,7 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: `start-session-${session.name}` }}
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
                       <div>{t('manage.sessions.startSession')}</div>
                     </div>
@@ -244,7 +247,7 @@ function Session({ session }: SessionProps) {
                   router.push({
                     pathname: '/',
                     query: {
-                      sessionId: session.id,
+                      elementId: session.id,
                       duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
@@ -267,7 +270,7 @@ function Session({ session }: SessionProps) {
                       router.push({
                         pathname: '/',
                         query: {
-                          sessionId: session.id,
+                          elementId: session.id,
                           editMode: WizardMode.LiveQuiz,
                         },
                       })
@@ -332,21 +335,21 @@ function Session({ session }: SessionProps) {
                   >
                     <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
                       <Ellipsis
-                        className={{ markdown: 'font-bold' }}
+                        className={{ markdown: 'font-bold text-base' }}
                         maxLength={20}
                       >
-                        {instance.questionData.name}
+                        {instance.questionData!.name}
                       </Ellipsis>
 
                       <div className="italic">
-                        ({t(`shared.${instance.questionData.type}.short`)})
+                        ({t(`shared.${instance.questionData!.type}.short`)})
                       </div>
                     </div>
                     <Ellipsis
                       maxLength={50}
                       className={{ markdown: 'px-1 text-sm' }}
                     >
-                      {instance.questionData.content}
+                      {instance.questionData!.content}
                     </Ellipsis>
                   </div>
                 ))}

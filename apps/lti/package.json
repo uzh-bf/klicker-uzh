@@ -1,0 +1,44 @@
+{
+  "name": "@klicker-uzh/lti-service",
+  "version": "3.1.2-rc.2",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "cross-env": "7.0.3",
+    "ltijs": "5.9.4",
+    "ltijs-sequelize": "2.4.4"
+  },
+  "devDependencies": {
+    "@types/ltijs": "^4.0.11",
+    "@types/node": "^20.12.13",
+    "nodemon": "3.0.1",
+    "npm-run-all": "4.1.5",
+    "tsup": "7.2.0",
+    "typescript": "5.4.5"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production pnpm run build:ts",
+    "build:ts": "tsup",
+    "check": "tsc --noEmit",
+    "dev:lti": "npm-run-all --parallel dev:build dev:run",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
+    "dev:build": "tsup --watch",
+    "dev:offline": "pnpm run dev",
+    "dev:test": "cross-env NODE_ENV=test pnpm run dev",
+    "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

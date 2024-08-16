@@ -24,7 +24,7 @@ export function SessionProgress({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center gap-2 mb-1">
+    <div className="mb-1 flex flex-row items-center gap-2">
       {expiresAt && timeLimit && (
         <div className="flex-initial">
           <CycleCountdown
@@ -38,7 +38,7 @@ export function SessionProgress({
 
       <Progress
         className={{
-          root: 'w-full h-10 my-auto bg-gray-100',
+          root: 'my-auto h-10 w-full bg-gray-100',
           indicator: 'h-10',
         }}
         value={activeIndex}
@@ -53,7 +53,7 @@ export function SessionProgress({
         <Button
           fluid
           className={{
-            root: '!mr-0 h-10 w-32 disabled:opacity-50 text-white font-bold bg-primary-80',
+            root: '!mr-0 h-10 w-32 bg-primary-80 font-bold text-white disabled:opacity-50',
           }}
           disabled={isSubmitDisabled}
           onClick={onSubmit}

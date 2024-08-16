@@ -13,8 +13,8 @@ function TagItem({ text, icon, active, onClick }: TagItemProps) {
   return (
     <li
       className={twMerge(
-        'px-4 py-0.5 hover:cursor-pointer sm:hover:text-primary',
-        active && 'text-primary'
+        'px-4 py-0.5 hover:cursor-pointer hover:text-primary-100',
+        active && 'text-primary-100'
       )}
       onClick={onClick}
     >

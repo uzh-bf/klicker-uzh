@@ -9,7 +9,6 @@ import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import ErrorBoundary from '../components/layout/ErrorBoundary'
 
 import '../globals.css'
 
@@ -31,19 +30,17 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
-      <ErrorBoundary>
-        <NextIntlClientProvider
-          timeZone="Europe/Zurich"
-          messages={pageProps.messages}
-          locale={locale}
-          getMessageFallback={getMessageFallback}
-          onError={onError}
-        >
-          <ApolloProvider client={apolloClient}>
-            <Component {...pageProps} />
-          </ApolloProvider>
-        </NextIntlClientProvider>
-      </ErrorBoundary>
+      <NextIntlClientProvider
+        timeZone="Europe/Zurich"
+        messages={pageProps.messages}
+        locale={locale}
+        getMessageFallback={getMessageFallback}
+        onError={onError}
+      >
+        <ApolloProvider client={apolloClient}>
+          <Component {...pageProps} />
+        </ApolloProvider>
+      </NextIntlClientProvider>
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};

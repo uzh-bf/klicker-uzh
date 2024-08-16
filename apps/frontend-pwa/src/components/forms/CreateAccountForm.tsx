@@ -65,7 +65,7 @@ function CreateAccountForm({
           .required(t('pwa.profile.identicalPasswords'))
           .min(8, t('pwa.profile.passwordMinLength', { length: '8' }))
           .oneOf(
-            [yup.ref('password'), null],
+            [yup.ref('password'), 'null'],
             t('pwa.profile.identicalPasswords')
           ),
       otherwise: (schema) =>

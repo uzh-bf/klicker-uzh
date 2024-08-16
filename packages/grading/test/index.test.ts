@@ -7,7 +7,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
-} from '../src/index'
+} from '../src/index.js'
 
 describe('@klicker-uzh/grading', () => {
   it('should grade MC questions correctly', () => {
