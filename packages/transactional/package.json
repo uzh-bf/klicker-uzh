@@ -1,0 +1,21 @@
+{
+  "name": "@klicker-uzh/transactional",
+  "license": "AGPL-3.0",
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "scripts": {
+    "dev": "email dev",
+    "build": "email export",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@react-email/components": "0.0.22",
+    "@types/react": "^18.2.18",
+    "prettier": "3.3.3",
+    "prettier-plugin-organize-imports": "3.2.3",
+    "react": "18.3.1",
+    "react-email": "2.1.6"
+  }
+}
