@@ -9,7 +9,7 @@ import {
   ElementType,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Label, Tooltip } from '@uzh-bf/design-system'
+import { Button, FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -79,18 +79,14 @@ function GroupActivityStackClues({
                   {({ push, remove, replace }: FieldArrayRenderProps) => (
                     <div className="w-full">
                       <div className="flex flex-row items-center -mb-1.5">
-                        <Label
+                        <FormLabel
                           required
-                          showTooltipSymbol
                           label={t('shared.generic.clues')}
+                          labelType="small"
                           tooltip={t(
                             'manage.sessionForms.groupActivityCluesDescription'
                           )}
-                          className={{
-                            root: 'mr-2 min-w-max font-bold leading-6 text-gray-600 text-base',
-                            tooltip: 'text-sm font-normal z-30',
-                            tooltipSymbol: 'h-2 w-2',
-                          }}
+                          className={{ label: 'mt-0' }}
                         />
                         {errors.clues && (
                           <Tooltip
@@ -118,7 +114,10 @@ function GroupActivityStackClues({
                               )
                             }
                             delay={0}
-                            className={{ tooltip: 'text-sm z-30' }}
+                            className={{
+                              tooltip: 'text-sm z-30',
+                              trigger: 'mt-[0.05rem]',
+                            }}
                           >
                             <FontAwesomeIcon
                               icon={faCircleExclamation}

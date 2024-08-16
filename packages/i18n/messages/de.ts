@@ -179,6 +179,7 @@ export default {
       clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',
       taskDescription: 'Aufgabenstellung',
+      color: 'Farbe',
     },
     contentInput: {
       boldStyle:

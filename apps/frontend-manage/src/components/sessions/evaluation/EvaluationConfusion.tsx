@@ -1,7 +1,7 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { FormikTextField, Tooltip } from '@uzh-bf/design-system'
+import { FormikNumberField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -248,7 +248,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             return (
               <Form className="flex flex-col">
                 <div>
-                  <FormikTextField
+                  <FormikNumberField
                     value={String(values.xInterval)}
                     onChange={(newValue: string) => {
                       const interval = Number(newValue.replace(/[^0-9]/g, ''))
@@ -259,13 +259,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.timestepX')}
                     tooltip={t('manage.evaluation.timestepXTooltip')}
-                    className={{
-                      root: !errors.xInterval ? 'mb-1' : '',
-                      label: 'font-normal',
-                      input: errors.xInterval
-                        ? 'border-red-500 bg-red-100'
-                        : '',
-                    }}
                     placeholder={t('manage.evaluation.minTimestep')}
                     data={{ cy: 'confusion-graph-timestep-setting' }}
                   />
@@ -276,7 +269,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                   )}
                 </div>
                 <div>
-                  <FormikTextField
+                  <FormikNumberField
                     value={String(values.windowLength)}
                     onChange={(newValue: string) => {
                       const window = Number(newValue.replace(/[^0-9]/g, ''))
@@ -287,13 +280,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.windowLength')}
                     tooltip={t('manage.evaluation.windowLengthTooltip')}
-                    className={{
-                      root: !errors.windowLength ? 'mb-1' : '',
-                      label: 'font-normal',
-                      input: errors.windowLength
-                        ? 'border-red-500 bg-red-100'
-                        : '',
-                    }}
                     placeholder={t('manage.evaluation.minWindow')}
                     data={{ cy: 'confusion-graph-window-setting' }}
                   />

@@ -38,6 +38,13 @@ import {
 } from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
 import MediaLibrary from './MediaLibrary'
 
+export interface ContentInputClassName {
+  root?: string
+  toolbar?: string
+  content?: string
+  editor?: string
+}
+
 interface Props {
   error?: any
   onChange: any
@@ -47,12 +54,7 @@ interface Props {
   placeholder: string
   autoFocus?: boolean
   content: string
-  className?: {
-    root?: string
-    toolbar?: string
-    content?: string
-    editor?: string
-  }
+  className?: ContentInputClassName
   data?: {
     test?: string
     cy?: string

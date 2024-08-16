@@ -1,10 +1,10 @@
 import { faCircleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Label, Tooltip } from '@uzh-bf/design-system'
+import { FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import ContentInput from '../../common/ContentInput'
+import ContentInput, { ContentInputClassName } from '../../common/ContentInput'
 
 interface EditorFieldProps {
   label: string
@@ -18,6 +18,7 @@ interface EditorFieldProps {
     root?: string
     label?: string
     tooltip?: string
+    input?: ContentInputClassName
   }
   data?: {
     cy?: string
@@ -28,7 +29,7 @@ interface EditorFieldProps {
 function EditorField({
   label,
   labelType = 'small',
-  required,
+  required = false,
   fieldName,
   tooltip,
   placeholder,
@@ -48,20 +49,12 @@ function EditorField({
       )}
     >
       {label && (
-        <Label
-          required={required}
+        <FormLabel
           label={label}
-          className={{
-            root: twMerge(
-              'my-auto mr-2 min-w-max font-bold',
-              labelType === 'small' && '-mb-1 text-sm leading-6 text-gray-600',
-              className?.label
-            ),
-            tooltip: twMerge('text-sm font-normal', className?.tooltip),
-            tooltipSymbol: twMerge(labelType === 'small' && 'h-2 w-2'),
-          }}
+          labelType={labelType}
+          required={required}
           tooltip={tooltip}
-          showTooltipSymbol={typeof tooltip !== 'undefined'}
+          className={className}
         />
       )}
 
@@ -77,9 +70,13 @@ function EditorField({
           showToolbarOnFocus={showToolbarOnFocus}
           placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
           className={{
-            editor: '!leading-5 h-16 overflow-x-auto',
-            root: 'w-full',
-            content: 'pb-1',
+            ...className?.input,
+            root: twMerge('w-full', className?.input?.root),
+            editor: twMerge(
+              '!leading-5 h-16 overflow-x-auto',
+              className?.input?.editor
+            ),
+            content: twMerge('pb-1', className?.input?.content),
           }}
           data={data}
         />

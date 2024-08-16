@@ -99,12 +99,11 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 className={{
                   root: 'w-36',
                   label: 'hidden',
-                  input: 'bg-white h-8',
+                  input: 'bg-white h-9',
                   icon: 'bg-transparent',
                 }}
                 name="shortname"
-                label={t('shared.generic.shortname')}
-                labelType="normal"
+                labelType="large"
                 valid={isShortnameAvailable}
                 setValid={(shortnameAvailable: boolean | undefined) =>
                   setIsShortnameAvailable(shortnameAvailable)
@@ -126,7 +125,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 disabled={isSubmitting || !isValid}
                 type="submit"
                 className={{
-                  root: 'h-8 w-8 items-center justify-center shadow-none border-uzh-grey-60',
+                  root: 'h-9 w-9 items-center justify-center shadow-none border-uzh-grey-60',
                 }}
                 data={{ cy: 'save-shortname' }}
               >
@@ -136,7 +135,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
           )}
         </Formik>
       ) : (
-        <div className="flex flex-row items-center gap-5 italic font-normal text-black">
+        <div className="flex flex-row items-center gap-5 h-9 italic font-normal text-black">
           <div>{user?.shortname}</div>
           <FontAwesomeIcon
             icon={faPencil}

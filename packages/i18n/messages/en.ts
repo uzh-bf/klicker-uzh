@@ -179,6 +179,7 @@ export default {
       clueN: 'Clue {number}',
       availability: 'Availability',
       taskDescription: 'Task description',
+      color: 'Color',
     },
     contentInput: {
       boldStyle:

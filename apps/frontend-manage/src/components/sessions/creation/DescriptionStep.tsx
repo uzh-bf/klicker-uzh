@@ -1,5 +1,5 @@
 import { Markdown } from '@klicker-uzh/markdown'
-import { H2, H3, NewFormikTextField } from '@uzh-bf/design-system'
+import { FormikTextField, H2, H3 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import CreationFormValidator from './CreationFormValidator'
@@ -90,7 +90,7 @@ function DescriptionStep({
           <div className="flex flex-col w-full h-full justify-between gap-1">
             <div className="flex flex-row -mt-2">
               <div className="flex-1 w-3/5 md:mr-6">
-                <NewFormikTextField
+                <FormikTextField
                   required
                   autoComplete="off"
                   name="displayName"
@@ -99,7 +99,7 @@ function DescriptionStep({
                   className={{
                     root: 'mb-1 w-full md:w-1/2',
                     tooltip: 'z-20',
-                    label: 'text-base mb-0.5 mt-0',
+                    label: 'mt-0',
                   }}
                   data={dataDisplayName}
                 />
@@ -110,7 +110,6 @@ function DescriptionStep({
                   tooltip={descriptionTooltip}
                   fieldName="description"
                   showToolbarOnFocus={false}
-                  className={{ label: 'text-base mb-0.5' }}
                   data={dataDescription}
                 />
               </div>

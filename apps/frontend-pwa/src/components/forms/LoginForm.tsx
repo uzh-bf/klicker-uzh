@@ -167,6 +167,7 @@ export function LoginForm({
                     required
                     label={labelSecret}
                     labelType="small"
+                    iconPosition="right"
                     name={fieldSecret}
                     data={dataSecret}
                     icon={passwordHidden ? faEye : faEyeSlash}

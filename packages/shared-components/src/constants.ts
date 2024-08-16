@@ -31,7 +31,7 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_GROUPS: Record<string, string[]> = {
+export const QUESTION_GROUPS: Record<string, ElementType[]> = {
   CHOICES: [ElementType.Sc, ElementType.Mc, ElementType.Kprim],
   FREE_TEXT: [ElementType.FreeText],
   NUMERICAL: [ElementType.Numerical],

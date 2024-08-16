@@ -135,7 +135,7 @@ function AvatarUpdateForm({
                       <FormikSelectField
                         className={{
                           root: 'w-full',
-                          label: 'font-bold text-md',
+                          label: 'text-md',
                           select: {
                             root: 'w-full md:w-38',
                             trigger: 'w-full md:p-1 justify-between md:px-3',

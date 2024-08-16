@@ -3,7 +3,7 @@ import {
   faLightbulb,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
-import { NewFormikTextField, UserNotification } from '@uzh-bf/design-system'
+import { FormikTextField, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import CreationFormValidator from '../CreationFormValidator'
@@ -57,7 +57,7 @@ function PracticeQuizInformationStep({
                 <div className="w-full md:pr-14">
                   {t('manage.sessionForms.practiceQuizIntroductionName')}
                 </div>
-                <NewFormikTextField
+                <FormikTextField
                   required
                   autoComplete="off"
                   name="name"
@@ -66,7 +66,6 @@ function PracticeQuizInformationStep({
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
-                    label: 'text-base mb-0.5',
                   }}
                   data-cy="insert-practice-quiz-name"
                 />

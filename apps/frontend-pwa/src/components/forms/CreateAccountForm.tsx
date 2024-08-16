@@ -145,16 +145,17 @@ function CreateAccountForm({
               </H3>
               <div className="mb-2 space-y-3">
                 <FormikTextField
+                  required
                   disabled={!!initialEmail}
                   name="email"
                   label={t('shared.generic.email')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-4',
                   }}
                   data={{ cy: 'email-field' }}
                 />
                 <DebouncedUsernameField
+                  required
                   name="username"
                   label={t('shared.generic.username')}
                   valid={isUsernameAvailable}
@@ -171,24 +172,25 @@ function CreateAccountForm({
                       })
                     return result?.checkParticipantNameAvailable ?? false
                   }}
+                  className={{ label: 'mt-0' }}
                   data={{ cy: 'username-field-account-creation' }}
                 />
                 <FormikTextField
+                  required
                   name="password"
                   label={t('shared.generic.password')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-0',
                   }}
                   type="password"
                   data={{ cy: 'password-field' }}
                 />
                 <FormikTextField
+                  required
                   name="passwordRepetition"
                   label={t('shared.generic.passwordRepetition')}
-                  labelType="small"
                   className={{
-                    label: 'font-bold text-md text-black',
+                    label: 'text-black mt-0',
                   }}
                   type="password"
                   data={{ cy: 'password-repetition-field' }}
