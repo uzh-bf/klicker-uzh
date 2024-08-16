@@ -2,8 +2,8 @@ import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  NewFormikDateField,
-  NewFormikSelectField,
+  FormikDateField,
+  FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -68,7 +68,7 @@ function GroupActivitySettingsStep({
                     {t('shared.generic.gamification')}
                   </div>
                 </div>
-                <NewFormikSelectField
+                <FormikSelectField
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
@@ -76,7 +76,7 @@ function GroupActivitySettingsStep({
                   placeholder={t('manage.sessionForms.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
-                  className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+                  className={{ tooltip: 'z-20' }}
                 />
 
                 {typeof values.courseId === 'undefined' ? (
@@ -99,7 +99,7 @@ function GroupActivitySettingsStep({
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <NewFormikDateField
+                  <FormikDateField
                     label={t('shared.generic.startDate')}
                     name="startDate"
                     tooltip={t('manage.sessionForms.groupActivityStartDate')}
@@ -107,12 +107,11 @@ function GroupActivitySettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     data={{ cy: 'select-start-date' }}
                   />
-                  <NewFormikDateField
+                  <FormikDateField
                     label={t('shared.generic.endDate')}
                     name="endDate"
                     tooltip={t('manage.sessionForms.groupActivityEndDate')}
@@ -120,7 +119,6 @@ function GroupActivitySettingsStep({
                     className={{
                       root: 'w-full',
                       field: 'w-full',
-                      label: 'text-base mb-0.5',
                       tooltip: 'z-20',
                     }}
                     data={{ cy: 'select-end-date' }}

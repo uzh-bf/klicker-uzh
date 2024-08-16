@@ -86,7 +86,6 @@ function LiveQuizNameChangeModal({
             <>
               <FormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="name"
                 label={t('manage.sessionForms.name')}
@@ -101,7 +100,6 @@ function LiveQuizNameChangeModal({
               />
               <FormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="displayName"
                 label={t('manage.sessionForms.displayName')}

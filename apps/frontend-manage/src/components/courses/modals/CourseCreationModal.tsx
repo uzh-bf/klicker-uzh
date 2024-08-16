@@ -9,22 +9,31 @@ import {
   FormikDateChanger,
   FormikSwitchField,
   FormikTextField,
-  Label,
   Modal,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Form, Formik } from 'formik'
+import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-import ContentInput from '../../common/ContentInput'
+import EditorField from '../../sessions/creation/EditorField'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 
 interface CourseCreationModalProps {
   modalOpen: boolean
   onModalClose: () => void
+}
+
+interface CourseCreationFormData {
+  name: string
+  displayName: string
+  description: string
+  color: string
+  startDate: string
+  endDate: string
+  isGamificationEnabled: boolean
 }
 
 // TODO: add notification email settings, once more generally compatible solution is available
@@ -38,6 +47,7 @@ function CourseCreationModal({
   const router = useRouter()
   const [createCourse] = useMutation(CreateCourseDocument)
   const [showErrorToast, setShowErrorToast] = useState(false)
+  const formRef = useRef<FormikProps<CourseCreationFormData>>(null)
 
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -65,6 +75,7 @@ function CourseCreationModal({
       className={{ content: 'h-max' }}
     >
       <Formik
+        innerRef={formRef}
         initialValues={{
           name: '',
           displayName: '',
@@ -117,14 +128,7 @@ function CourseCreationModal({
         validationSchema={schema}
         isInitialValid={false}
       >
-        {({
-          values,
-          setFieldValue,
-          isSubmitting,
-          isValid,
-          touched,
-          errors,
-        }) => (
+        {({ errors, isValid, isSubmitting }) => (
           <Form>
             <div className="flex flex-col gap-2">
               <div className="flex flex-col w-full gap-3 md:flex-row">
@@ -147,33 +151,20 @@ function CourseCreationModal({
                   required
                 />
               </div>
-
-              <div>
-                <Label
-                  label={t('shared.generic.description')}
-                  className={{ root: 'font-bold', tooltip: 'text-sm' }}
-                  tooltip={t('manage.courseList.courseDescriptionTooltip')}
-                  showTooltipSymbol
-                  required
-                />
-                <ContentInput
-                  placeholder={t('manage.courseList.addDescription')}
-                  touched={touched.description}
-                  content={values.description}
-                  onChange={(newValue: string) =>
-                    setFieldValue('description', newValue)
-                  }
-                  className={{ editor: 'h-20' }}
-                  data={{ cy: 'create-course-description' }}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
+              <EditorField
+                fieldName="description"
+                label={t('shared.generic.description')}
+                placeholder={t('manage.courseList.addDescription')}
+                tooltip={t('manage.courseList.courseDescriptionTooltip')}
+                data={{ cy: 'create-course-description' }}
+                className={{ input: { editor: 'h-20' } }}
+                showToolbarOnFocus={false}
+              />
+              <div className="flex flex-col gap-2 mt-2 md:gap-8 md:flex-row md:items-end md:justify-between">
                 <FormikDateChanger
                   name="startDate"
                   label={t('manage.courseList.startDate')}
                   tooltip={t('manage.courseList.startDateTooltip')}
-                  className={{ dateChanger: { label: 'font-bold' } }}
                   data={{ cy: 'create-course-start-date' }}
                   dataButton={{ cy: 'create-course-start-date-button' }}
                   required
@@ -182,31 +173,29 @@ function CourseCreationModal({
                   name="endDate"
                   label={t('manage.courseList.endDate')}
                   tooltip={t('manage.courseList.endDateTooltip')}
-                  className={{ dateChanger: { label: 'font-bold' } }}
                   data={{ cy: 'create-course-end-date' }}
                   dataButton={{ cy: 'create-course-end-date-button' }}
                   required
                 />
-              </div>
-              <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
                 <FormikColorPicker
+                  required
                   name="color"
                   label={t('manage.courseList.courseColor')}
+                  colorLabel={t('shared.generic.color')}
                   position="top"
-                  abortText={t('shared.generic.cancel')}
                   submitText={t('shared.generic.confirm')}
                   dataTrigger={{ cy: 'create-course-color-trigger' }}
                   dataHexInput={{ cy: 'create-course-color-hex-input' }}
                   dataSubmit={{ cy: 'create-course-color-submit' }}
-                  required
+                  className={{ root: 'w-max' }}
                 />
                 <FormikSwitchField
+                  required
+                  labelLeft
                   name="isGamificationEnabled"
                   label={t('shared.generic.gamification')}
-                  className={{ label: 'font-bold' }}
+                  className={{ label: 'font-bold text-gray-600' }}
                   data={{ cy: 'create-course-gamification' }}
-                  standardLabel
-                  required
                 />
               </div>
             </div>
@@ -220,7 +209,7 @@ function CourseCreationModal({
               type="submit"
               className={{
                 root: twMerge(
-                  'float-right text-white font-bold mt-2 md:-mt-2 w-full md:w-max bg-primary-80',
+                  'float-right text-white font-bold mt-3 -mb-5 w-full md:w-max bg-primary-80',
                   (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}

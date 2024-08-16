@@ -39,6 +39,7 @@ export function URLForm({ slideID }: URLFormProps) {
           autoComplete="off"
           name="url"
           label="URL"
+          labelType="large"
           tooltip="Enter the embedding URL of the evaluation you want to add to this slide"
           className={{ root: "w-full" }}
           placeholder="https://manage.klicker.uzh.ch/sessions/12345/evaluation?hmac=xyz"

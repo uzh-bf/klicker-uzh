@@ -119,7 +119,7 @@ function SuspendedFirstLoginModal() {
                   }}
                   name="shortname"
                   label={t('shared.generic.shortname')}
-                  labelType="normal"
+                  labelType="large"
                   valid={isShortnameAvailable}
                   setValid={(shortnameAvailable: boolean | undefined) =>
                     setIsShortnameAvailable(shortnameAvailable)
@@ -138,6 +138,7 @@ function SuspendedFirstLoginModal() {
                 />
                 <FormikSelectField
                   label={t('shared.generic.language')}
+                  labelType="large"
                   name="locale"
                   items={[
                     { label: t('shared.generic.english'), value: 'en' },
@@ -147,10 +148,10 @@ function SuspendedFirstLoginModal() {
                   required
                 />
                 <FormikSwitchField
-                  standardLabel
+                  name="sendProjectUpdates"
+                  labelLeft
                   label={t('manage.settings.emailUpdates')}
                   tooltip={t('manage.settings.emailUpdatesTooltip')}
-                  name="sendProjectUpdates"
                   className={{ tooltip: 'max-w-[20rem] md:max-w-[35rem]' }}
                 />
               </div>

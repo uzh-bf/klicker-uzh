@@ -1,18 +1,24 @@
-import { NewFormikSelectField } from '@uzh-bf/design-system'
+import { FormikSelectField, SelectClassName } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface MultiplierSelectorProps {
+  name?: string
   disabled?: boolean
+  className?: SelectClassName
 }
 
-function MultiplierSelector({ disabled = false }: MultiplierSelectorProps) {
+function MultiplierSelector({
+  disabled = false,
+  name = 'multiplier',
+  className,
+}: MultiplierSelectorProps) {
   const t = useTranslations()
 
   return (
-    <NewFormikSelectField
+    <FormikSelectField
       required
       disabled={disabled}
-      name="multiplier"
+      name={name}
       label={t('shared.generic.multiplier')}
       tooltip={t('manage.sessionForms.liveQuizMultiplier')}
       placeholder={t('manage.sessionForms.multiplierDefault')}
@@ -47,7 +53,7 @@ function MultiplierSelector({ disabled = false }: MultiplierSelectorProps) {
         },
       ]}
       data={{ cy: 'select-multiplier' }}
-      className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+      className={{ ...className, tooltip: 'z-20' }}
     />
   )
 }

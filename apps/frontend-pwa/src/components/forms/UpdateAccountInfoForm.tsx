@@ -142,8 +142,9 @@ function UpdateAccountInfoForm({
                     }
                     name="email"
                     label={t('shared.generic.email')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{
+                      label: 'text-black mt-2',
+                    }}
                     data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
@@ -163,21 +164,20 @@ function UpdateAccountInfoForm({
                         })
                       return result?.checkParticipantNameAvailable ?? false
                     }}
+                    className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />
                   <FormikTextField
                     name="password"
                     label={t('shared.generic.password')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password' }}
                   />
                   <FormikTextField
                     name="passwordRepetition"
                     label={t('shared.generic.passwordRepetition')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password-repetition' }}
                   />
@@ -208,7 +208,7 @@ function UpdateAccountInfoForm({
               <Button
                 fluid
                 type="submit"
-                disabled={isSubmitting || !isValid}
+                disabled={isSubmitting || !isValid || !isUsernameAvailable}
                 data={{ cy: 'save-account-update' }}
               >
                 <Button.Icon>

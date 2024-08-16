@@ -347,7 +347,7 @@ function FeedbackArea({
                   component="textarea"
                   rows="3"
                   maxLength={500}
-                  maxLengthLabel={t('shared.generic.characters')}
+                  maxLengthUnit={t('shared.generic.characters')}
                   data={{ cy: 'feedback-input' }}
                 />
                 <Button

@@ -1,13 +1,12 @@
-import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
+  FormikPinField,
   FormikTextField,
   H1,
-  PinField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -30,7 +29,6 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  usePinField?: boolean
   installAndroid?: string
   installIOS?: string
 }
@@ -44,11 +42,9 @@ export function LoginForm({
   fieldSecret,
   dataSecret,
   isSubmitting,
-  usePinField = false,
   installAndroid,
   installIOS,
 }: LoginFormProps) {
-  const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
   const [oniOS, setOniOS] = useState(false)
   const [onChrome, setOnChrome] = useState(false)
@@ -82,30 +78,16 @@ export function LoginForm({
               labelType="small"
               name={fieldIdentifier}
               data={dataIdentifier}
+              className={{ label: 'text-sm' }}
             />
-
-            {usePinField ? (
-              <PinField
-                required
-                label={labelSecret}
-                labelType="small"
-                name={fieldSecret}
-                className={{ root: 'mt-1' }}
-                data={dataSecret}
-              />
-            ) : (
-              <FormikTextField
-                required
-                label={labelSecret}
-                labelType="small"
-                name={fieldSecret}
-                data={dataSecret}
-                icon={passwordHidden ? faEye : faEyeSlash}
-                onIconClick={() => setPasswordHidden(!passwordHidden)}
-                className={{ root: 'mt-1', icon: 'bg-transparent' }}
-                type={passwordHidden ? 'password' : 'text'}
-              />
-            )}
+            <FormikPinField
+              required
+              label={labelSecret}
+              labelType="small"
+              name={fieldSecret}
+              className={{ root: 'mt-1', label: 'text-sm' }}
+              data={dataSecret}
+            />
 
             <div className="flex flex-row justify-between">
               <Button

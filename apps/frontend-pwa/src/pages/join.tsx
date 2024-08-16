@@ -1,6 +1,11 @@
 import { useMutation } from '@apollo/client'
 import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, PinField, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikPinField,
+  H2,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -51,7 +56,7 @@ function JoinPage() {
           {({ isSubmitting, isValid }) => {
             return (
               <Form>
-                <PinField
+                <FormikPinField
                   name="pin"
                   label={t('pwa.joinCourse.coursePinFormat')}
                 />

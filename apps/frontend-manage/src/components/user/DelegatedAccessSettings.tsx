@@ -226,6 +226,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     <FormikTextField
                       name="name"
                       label={t('manage.settings.loginName')}
+                      labelType="large"
                       className={{
                         root: 'md:w-1/2 md:pr-5',
                         input: ' bg-white',
@@ -246,6 +247,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         data: { cy: `delegated-login-scope-${scope}` },
                       }))}
                       label={t('manage.settings.scope')}
+                      labelType="large"
                       className={{ root: 'md:w-1/2' }}
                       data={{ cy: 'delegated-login-scope' }}
                       required

@@ -530,6 +530,7 @@ function CourseOverview({ courseId }: Props) {
                         <FormikTextField
                           name="groupName"
                           placeholder={t('pwa.courses.groupName')}
+                          className={{ root: 'w-full md:w-52' }}
                         />
                         <Button
                           type="submit"
@@ -570,6 +571,7 @@ function CourseOverview({ courseId }: Props) {
                         <FormikNumberField
                           name="code"
                           placeholder={t('pwa.courses.code')}
+                          className={{ root: 'w-full md:w-52' }}
                         />
                         <Button
                           type="submit"

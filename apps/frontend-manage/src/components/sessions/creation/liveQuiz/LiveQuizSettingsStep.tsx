@@ -2,8 +2,8 @@ import { faCrown, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import useLiveQuizCourseGrouping from '@lib/hooks/useLiveQuizCourseGrouping'
 import {
-  NewFormikSelectField,
-  NewFormikSwitchField,
+  FormikSelectField,
+  FormikSwitchField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -71,14 +71,14 @@ function LiveQuizSettingsStep({
                     {t('shared.generic.gamification')}
                   </div>
                 </div>
-                <NewFormikSelectField
+                <FormikSelectField
                   name="courseId"
                   label={t('shared.generic.course')}
                   tooltip={t('manage.sessionForms.liveQuizDescCourse')}
                   placeholder={t('manage.sessionForms.liveQuizSelectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
-                  className={{ tooltip: 'z-20', label: 'text-base mb-0.5' }}
+                  className={{ tooltip: 'z-20' }}
                 />
                 {values.isGamificationEnabled ? (
                   <MultiplierSelector
@@ -102,21 +102,21 @@ function LiveQuizSettingsStep({
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <NewFormikSwitchField
+                  <FormikSwitchField
                     required
                     name="isConfusionFeedbackEnabled"
                     label={t('shared.generic.feedbackChannel')}
                     tooltip={t('manage.sessionForms.liveQuizFeedbackChannel')}
                     data={{ cy: 'set-feedback-enabled' }}
                   />
-                  <NewFormikSwitchField
+                  <FormikSwitchField
                     required
                     name="isLiveQAEnabled"
                     label={t('shared.generic.liveQA')}
                     tooltip={t('manage.sessionForms.liveQuizLiveQA')}
                     data={{ cy: 'set-liveqa-enabled' }}
                   />
-                  <NewFormikSwitchField
+                  <FormikSwitchField
                     required
                     disabled={!values.isLiveQAEnabled}
                     name="isModerationEnabled"

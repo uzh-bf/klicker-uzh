@@ -52,7 +52,6 @@ function Login() {
               fieldSecret="token"
               dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
-              usePinField={true}
               installAndroid={t('control.login.installAndroid')}
               installIOS={t('control.login.installIOS')}
             />
