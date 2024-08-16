@@ -4,6 +4,7 @@ import { BaseElementData } from '../types/app.js'
 import {
   ChoiceQuestionOptions,
   ElementType,
+  ElementStatus,
   FreeTextQuestionOptions,
   IChoiceQuestionOptions,
   IFreeTextQuestionOptions,
@@ -33,6 +34,7 @@ export const ElementData = ElementDataRef.implement({
     elementId: t.exposeInt('elementId', { nullable: true }), // TODO: remove nullability
     questionId: t.exposeInt('questionId', { nullable: true }), // TODO: remove after migration
     name: t.exposeString('name'),
+    status: t.expose('status', { type: ElementStatus }),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),

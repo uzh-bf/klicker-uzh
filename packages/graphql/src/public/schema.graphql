@@ -73,6 +73,7 @@ type ChoicesElementData implements ElementData {
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 
@@ -112,6 +113,7 @@ type ContentElementData implements ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 
@@ -185,6 +187,7 @@ interface ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 
@@ -239,6 +242,12 @@ enum ElementStackType {
   LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
+}
+
+enum ElementStatus {
+  DRAFT
+  IN_REVIEW
+  READY
 }
 
 enum ElementType {
@@ -298,6 +307,7 @@ type FlashcardElementData implements ElementData {
   name: String!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 
@@ -321,6 +331,7 @@ type FreeTextElementData implements ElementData {
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 
@@ -686,6 +697,7 @@ type NumericalElementData implements ElementData {
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
   questionId: Int
+  status: ElementStatus!
   type: ElementType!
 }
 

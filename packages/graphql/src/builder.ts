@@ -7,11 +7,21 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
+import { withOptimize } from '@prisma/extension-optimize'
 import './types/app'
 
 import { Context, ContextWithUser } from './lib/context.js'
 
-const prisma = new PrismaClient({})
+let prisma: PrismaClient
+
+if (
+  process.env.NODE_ENV === 'development' &&
+  process.env.PRISMA_OPTIMIZE === 'true'
+) {
+  prisma = new PrismaClient({}).$extends(withOptimize()) as PrismaClient
+} else {
+  prisma = new PrismaClient({})
+}
 
 const builder = new SchemaBuilder<{
   Directives: {

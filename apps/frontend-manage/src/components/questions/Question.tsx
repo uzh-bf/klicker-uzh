@@ -18,6 +18,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
   ElementType,
+  ElementStatus,
   GetUserQuestionsDocument,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -55,6 +56,7 @@ interface QuestionProps {
   tags?: Tag[]
   handleTagClick: (tagName: string) => void
   title: string
+  status: ElementStatus
   type: ElementType
   content: string
   onCheck: () => void
@@ -72,6 +74,7 @@ function Question({
   tags = [],
   handleTagClick,
   title,
+  status,
   type,
   content,
   onCheck,
