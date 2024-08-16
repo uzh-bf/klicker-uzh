@@ -203,7 +203,7 @@ export async function sendMagicLink(
     }
   )
 
-  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${process.env.NODE_ENV === 'production' ? 'https' : 'http'}://${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
 
   await sendTeamsNotifications(
     'graphql/sendMagicLink',
