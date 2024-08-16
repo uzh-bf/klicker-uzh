@@ -5,5 +5,3 @@ src/prisma/client
 dist/
 instrumented/
 hive.json
-
-.mailing

@@ -16,7 +16,7 @@ import {
   Link,
 } from '@react-email/components'
 import * as React from 'react'
-import tailwindConfig from './tailwind.config'
+import tailwindConfig from './tailwind.config.js'
 
 export function MagicLinkRequested({
   magicLink = '[MAGICLINK]',
