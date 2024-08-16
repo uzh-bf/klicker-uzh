@@ -1,4 +1,4 @@
-import { Button, FormikTextField, FormikTextField } from "@uzh-bf/design-system";
+import { Button, FormikTextField } from "@uzh-bf/design-system";
 import { Form, Formik } from "formik";
 import React from "react";
 import * as yup from "yup";
