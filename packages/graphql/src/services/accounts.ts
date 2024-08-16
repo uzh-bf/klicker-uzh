@@ -223,11 +223,11 @@ export async function sendMagicLink(
   })
 
   const emailTemplate = fs.readFileSync(
-    require.resolve('@klicker-uzh/transactional/dist/MagicLinkRequested.html'),
+    require.resolve('@klicker-uzh/transactional/out/MagicLinkRequested.html'),
     'utf8'
   )
 
-  const email = emailTemplate.replaceAll('[MAGICLINK]', magicLink)
+  const email = emailTemplate.replaceAll('[LINK]', magicLink)
 
   await transport.sendMail({
     from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>',

@@ -1,0 +1,34 @@
+import { Section, Row, Column, Markdown, Img } from '@react-email/components'
+import React from 'react'
+
+function Footer() {
+  return (
+    <Section className="px-8 py-2 bg-uzh-grey-20">
+      <Row>
+        <Column className="w-full">
+          <Markdown markdownCustomStyles={{}}>
+            {`
+**KlickerUZH**<br/>
+Teaching Center<br/>
+Deartment of Finance<br/>
+Plattenstrasse 14<br/>
+8032 Zürich
+
+[www.klicker.uzh.ch](https://www.klicker.uzh.ch) - [community.klicker.uzh.ch](https://community.klicker.uzh.ch)
+
+[Impressum](https://www.df.uzh.ch/de/impressum.html) - [Privacy Policy](https://www.klicker.uzh.ch/privacy_policy/)
+            `}
+          </Markdown>
+        </Column>
+        <Column className="w-42">
+          <Img
+            className="h-12"
+            src="https://www.klicker.uzh.ch/img/KlickerLogo.png"
+          />
+        </Column>
+      </Row>
+    </Section>
+  )
+}
+
+export default Footer
