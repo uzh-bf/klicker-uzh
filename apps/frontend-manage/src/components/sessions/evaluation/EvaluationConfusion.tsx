@@ -259,13 +259,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.timestepX')}
                     tooltip={t('manage.evaluation.timestepXTooltip')}
-                    // className={{
-                    //   root: !errors.xInterval ? 'mb-1' : '',
-                    //   label: 'font-normal',
-                    //   input: errors.xInterval
-                    //     ? 'border-red-500 bg-red-100'
-                    //     : '',
-                    // }}
                     placeholder={t('manage.evaluation.minTimestep')}
                     data={{ cy: 'confusion-graph-timestep-setting' }}
                   />
@@ -287,13 +280,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.windowLength')}
                     tooltip={t('manage.evaluation.windowLengthTooltip')}
-                    // className={{
-                    //   root: !errors.windowLength ? 'mb-1' : '',
-                    //   label: 'font-normal',
-                    //   input: errors.windowLength
-                    //     ? 'border-red-500 bg-red-100'
-                    //     : '',
-                    // }}
                     placeholder={t('manage.evaluation.minWindow')}
                     data={{ cy: 'confusion-graph-window-setting' }}
                   />
