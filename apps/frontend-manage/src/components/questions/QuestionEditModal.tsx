@@ -10,6 +10,7 @@ import {
   ElementDisplayMode,
   ElementInstance,
   ElementInstanceType,
+  ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -72,6 +73,7 @@ interface QuestionEditModalProps {
 
 function createValidationSchema(t) {
   return Yup.object().shape({
+    status: Yup.string().oneOf(Object.values(ElementStatus)),
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
@@ -298,7 +300,31 @@ function QuestionEditModal({
   )
   const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
-  const DROPDOWN_OPTIONS = [
+  const STATUS_OPTIONS = [
+    {
+      value: ElementStatus.Draft,
+      label: t(`shared.${ElementStatus.Draft}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(`shared.${ElementStatus.Draft}.statusLabel`)}`,
+      },
+    },
+    {
+      value: ElementStatus.InReview,
+      label: t(`shared.${ElementStatus.InReview}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(`shared.${ElementStatus.InReview}.statusLabel`)}`,
+      },
+    },
+    {
+      value: ElementStatus.Ready,
+      label: t(`shared.${ElementStatus.Ready}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(`shared.${ElementStatus.Ready}.statusLabel`)}`,
+      },
+    },
+  ]
+
+  const QUESTION_TYPE_OPTIONS = [
     {
       value: ElementType.Content,
       label: t(`shared.${ElementType.Content}.typeLabel`),
@@ -363,6 +389,7 @@ function QuestionEditModal({
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       return {
+        status: ElementStatus.Ready,
         type: ElementType.Sc,
         name: '',
         content: '',
@@ -412,6 +439,7 @@ function QuestionEditModal({
         const common = {
           id: questionId,
           name: values.name,
+          status: values.status,
           content: values.content,
           explanation:
             !values.explanation?.match(/^(<br>(\n)*)$/g) &&
@@ -615,7 +643,7 @@ function QuestionEditModal({
             <div className="flex flex-row gap-12">
               <div className="flex-1 max-w-5xl">
                 <Form className="w-full" id="question-manipulation-form">
-                  <div className="z-0 flex flex-row">
+                  <div className="z-0 flex flex-row justify-between">
                     <FormikSelectField
                       name="type"
                       required={mode === 'CREATE'}
@@ -623,8 +651,19 @@ function QuestionEditModal({
                       disabled={mode === 'EDIT'}
                       label={t('manage.questionForms.questionType')}
                       placeholder={t('manage.questionForms.selectQuestionType')}
-                      items={DROPDOWN_OPTIONS}
+                      items={QUESTION_TYPE_OPTIONS}
                       data={{ cy: 'select-question-type' }}
+                    />
+
+                    <FormikSelectField
+                      name="status"
+                      contentPosition="popper"
+                      label={t('manage.questionForms.questionStatus')}
+                      placeholder={t(
+                        'manage.questionForms.selectQuestionStatus'
+                      )}
+                      items={STATUS_OPTIONS}
+                      data={{ cy: 'select-question-status' }}
                     />
                   </div>
 

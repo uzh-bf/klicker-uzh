@@ -160,6 +160,7 @@ interface QuestionOptionsArgs {
 
 interface ManipulateQuestionArgs {
   id?: number | null
+  status?: DB.ElementStatus | null
   type: DB.ElementType
   name?: string | null
   content?: string | null
@@ -172,6 +173,7 @@ interface ManipulateQuestionArgs {
 export async function manipulateQuestion(
   {
     id,
+    status,
     type,
     name,
     content,
@@ -212,6 +214,7 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
+      status: status ?? undefined,
       type,
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
@@ -239,6 +242,7 @@ export async function manipulateQuestion(
       },
     },
     update: {
+      status: status ?? undefined,
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: explanation ?? undefined,

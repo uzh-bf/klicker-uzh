@@ -152,7 +152,19 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-6 text-slate-600">
+            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
+              <div className="w-20">
+                <Badge
+                  className={twMerge(
+                    status === ElementStatus.Draft && 'bg-slate-400',
+                    status === ElementStatus.InReview && 'bg-violet-400',
+                    status === ElementStatus.Ready && 'bg-green-400'
+                  )}
+                >
+                  {t(`shared.${status}.statusLabel`)}
+                </Badge>
+              </div>
+              <div className="w-36">{t(`shared.${type}.typeLabel`)}</div>
               <div>
                 {t('shared.generic.createdAt', {
                   date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
@@ -163,8 +175,6 @@ function Question({
                   date: dayjs(updatedAt).format('DD.MM.YYYY HH:mm'),
                 })}
               </div>
-              <div>{t(`shared.${type}.typeLabel`)}</div>
-              <div>{t(`shared.${status}.statusLabel`)}</div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">

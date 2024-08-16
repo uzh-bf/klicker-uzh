@@ -844,7 +844,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
       questionType: 'Question type',
+      questionStatus: 'Status',
       selectQuestionType: 'Select question type',
+      selectQuestionStatus: 'Select status',
       questionTitle: 'Question title',
       titleTooltip:
         'Enter a short, summary title for the question. This is only used for better overview.',

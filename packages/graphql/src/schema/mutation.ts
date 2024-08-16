@@ -46,7 +46,7 @@ import {
   QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementType } from './questionData.js'
+import { ElementStatus, ElementType } from './questionData.js'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -756,6 +756,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
@@ -774,6 +775,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -793,6 +795,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
@@ -813,6 +816,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -835,6 +839,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
