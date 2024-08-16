@@ -11,6 +11,11 @@ import {
 } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { DisplayMode } from '../types/app.js'
+import nodemailer from 'nodemailer'
+import fs from 'fs'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -183,6 +188,8 @@ export async function sendMagicLink(
 
   const participantData = participantWithUsername[0]
 
+  if (!participantData?.email) return false
+
   const magicLinkJWT = JWT.sign(
     {
       sub: participantData.id,
@@ -197,13 +204,38 @@ export async function sendMagicLink(
   )
 
   const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
-  console.log(magicLink)
 
-  // // TODO: send email to user with magic link
-  // nodemailer
-  //   .transport
-  //   // TODO smtp params
-  //   ()
+  await sendTeamsNotifications(
+    'graphql/sendMagicLink',
+    `One-time login token created for ${usernameOrEmail}: ${magicLinkJWT}`
+  )
+
+  // TODO: replace with OAuth2 for Outlook 365
+  const transport = nodemailer.createTransport({
+    pool: true,
+    host: 'localhost',
+    port: 1025,
+    secure: false, // use TLS
+    auth: {
+      user: 'username',
+      pass: 'password',
+    },
+  })
+
+  const emailTemplate = fs.readFileSync(
+    require.resolve('@klicker-uzh/transactional/dist/MagicLinkRequested.html'),
+    'utf8'
+  )
+
+  const email = emailTemplate.replaceAll('[MAGICLINK]', magicLink)
+
+  await transport.sendMail({
+    from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>',
+    to: participantData.email,
+    subject: 'KlickerUZH - Your One-Time Login Link',
+    text: `Please click on the following link to log in to KlickerUZH PWA: ${magicLink} (validity: 15 minutes)`,
+    html: email,
+  })
 
   return true
 }

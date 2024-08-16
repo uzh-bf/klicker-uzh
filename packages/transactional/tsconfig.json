@@ -1,16 +1,9 @@
 {
   "include": [
-    "./**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "instrumented",
-    "src/scripts"
+    "**/**/*"
   ],
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,7 +12,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -31,11 +24,14 @@
     /* AND if you're building for a library: */
     "declaration": true,
     /* AND if you're building for a library in a monorepo: */
-    "composite": false,
+    "composite": true,
     "declarationMap": true,
-    /* If your code doesn't run in the DOM: */
+    /* If your code runs in the DOM: */
     "lib": [
       "es2022",
+      "dom",
+      "dom.iterable"
     ],
+    "jsx": "preserve"
   }
 }
