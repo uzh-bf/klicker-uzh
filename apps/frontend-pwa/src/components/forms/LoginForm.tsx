@@ -14,6 +14,7 @@ import {
 import { Form } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useRef, useState } from 'react'
 import CreateAccountJoinForm from './CreateAccountJoinForm'
 
@@ -50,6 +51,7 @@ export function LoginForm({
   magicLinkLogin,
   setMagicLinkLogin,
 }: LoginFormProps) {
+  const router = useRouter()
   const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
   const [oniOS, setOniOS] = useState(false)
@@ -75,6 +77,7 @@ export function LoginForm({
             data-cy="login-logo"
           />
         </div>
+
         <Tabs defaultValue="login" className={{ root: 'w-full border-t' }}>
           <Tabs.TabList>
             <Tabs.Tab
@@ -111,6 +114,12 @@ export function LoginForm({
             }}
           >
             <Form className="mx-auto w-72 sm:w-96">
+              {router.query.newAccount ? (
+                <UserNotification type="success">
+                  {t('pwa.general.waitingForActivation')}
+                </UserNotification>
+              ) : null}
+
               <FormikTextField
                 required
                 label={labelIdentifier}

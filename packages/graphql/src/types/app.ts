@@ -122,7 +122,7 @@ export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,
-  Results extends QuestionResults,
+  Results extends QuestionResults
 > extends QuestionInstance {
   elementType?: Type
   questionData: AllElementTypeData
@@ -366,7 +366,7 @@ export type ElementStackOptions =
 
 interface IElementStackOptions<
   Type extends ElementStackType,
-  Options extends ElementStackOptions | null,
+  Options extends ElementStackOptions | null
 > {}
 
 export type AllElementStackOptions =

@@ -10,12 +10,8 @@ import {
   processQuestionData,
 } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
+import * as EmailService from '../services/email.js'
 import { DisplayMode } from '../types/app.js'
-import nodemailer from 'nodemailer'
-import fs from 'fs'
-import { createRequire } from 'module'
-
-const require = createRequire(import.meta.url)
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -199,38 +195,25 @@ export async function sendMagicLink(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '30 minutes',
+      expiresIn: '15 minutes',
     }
   )
 
-  const magicLink = `${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${
+    process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  }://${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
 
   await sendTeamsNotifications(
     'graphql/sendMagicLink',
     `One-time login token created for ${usernameOrEmail}: ${magicLinkJWT}`
   )
 
-  // TODO: replace with OAuth2 for Outlook 365
-  const transport = nodemailer.createTransport({
-    pool: true,
-    host: 'localhost',
-    port: 1025,
-    secure: false, // use TLS
-    auth: {
-      user: 'username',
-      pass: 'password',
-    },
+  const email = EmailService.hydrateTemplate({
+    templateName: 'MagicLinkRequested',
+    variables: { LINK: magicLink },
   })
 
-  const emailTemplate = fs.readFileSync(
-    require.resolve('@klicker-uzh/transactional/dist/MagicLinkRequested.html'),
-    'utf8'
-  )
-
-  const email = emailTemplate.replaceAll('[MAGICLINK]', magicLink)
-
-  await transport.sendMail({
-    from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>',
+  await EmailService.sendEmail({
     to: participantData.email,
     subject: 'KlickerUZH - Your One-Time Login Link',
     text: `Please click on the following link to log in to KlickerUZH PWA: ${magicLink} (validity: 15 minutes)`,
@@ -247,11 +230,54 @@ export async function loginParticipantMagicLink(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+    return null
   }
 
   const participant = await ctx.prisma.participant.findUnique({
     where: {
       id: tokenData.sub,
+    },
+  })
+
+  if (participant) {
+    await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
+      },
+      ctx
+    )
+
+    return participant.id
+  }
+
+  return null
+}
+
+export async function activateParticipantAccount(
+  { token }: { token: string },
+  ctx: Context
+) {
+  //
+  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+    sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.ACTIVATION) {
+    return null
+  }
+
+  const participant = await ctx.prisma.participant.update({
+    where: {
+      id: tokenData.sub,
+    },
+    data: {
+      isEmailValid: true,
     },
   })
 
@@ -456,22 +482,42 @@ export async function createParticipantAccount(
       },
     })
 
-    const jwt = await doParticipantLogin(
+    const activationJWT = JWT.sign(
       {
-        participantId: participant.id,
-        participantLocale: participant.locale,
+        sub: participant.id,
+        role: UserRole.PARTICIPANT,
+        scope: UserLoginScope.ACTIVATION,
       },
-      ctx
+      process.env.APP_SECRET as string,
+      {
+        algorithm: 'HS256',
+        expiresIn: '60 minutes',
+      }
     )
+
+    const activationLink = `${
+      process.env.NODE_ENV === 'production' ? 'https' : 'http://'
+    }${process.env.APP_STUDENT_SUBDOMAIN}/activation?token=${activationJWT}`
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email}`
+      `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
+
+    const emailHtml = EmailService.hydrateTemplate({
+      templateName: 'ParticipantAccountActivation',
+      variables: { LINK: activationLink },
+    })
+
+    await EmailService.sendEmail({
+      to: email,
+      subject: 'KlickerUZH - Account Activation',
+      text: `Please click on the following link to activate your KlickerUZH account: ${activationLink} (validity: 60 minutes)`,
+      html: emailHtml,
+    })
 
     return {
       participant,
-      participantToken: jwt,
     }
   } catch (e) {
     console.error(e)
@@ -481,6 +527,7 @@ export async function createParticipantAccount(
         e || 'missing'
       }`
     )
+
     return null
   }
 }
