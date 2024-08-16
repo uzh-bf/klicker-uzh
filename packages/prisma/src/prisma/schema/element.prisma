@@ -1,5 +1,11 @@
 // ----- ELEMENTS -----
 // #region
+enum ElementStatus {
+  DRAFT
+  IN_REVIEW
+  READY
+}
+
 enum ElementType {
   // TODO: remove old types, to be migrated to new ones
   SC
@@ -39,7 +45,8 @@ model Element {
   /// [PrismaElementOptions]
   options Json
 
-  type ElementType
+  status ElementStatus @default(DRAFT)
+  type   ElementType
 
   tags Tag[]
 
