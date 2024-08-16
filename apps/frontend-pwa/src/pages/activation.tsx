@@ -36,8 +36,6 @@ function Activation() {
           },
         })
 
-        console.log(result)
-
         if (result?.data?.activateParticipantAccount) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
