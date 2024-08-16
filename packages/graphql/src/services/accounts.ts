@@ -197,7 +197,7 @@ export async function sendMagicLink(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '30 minutes',
+      expiresIn: '15 minutes',
     }
   )
 
@@ -447,9 +447,36 @@ export async function createParticipantAccount(
       ctx
     )
 
+    const activationJWT = JWT.sign(
+      {
+        sub: participant.id,
+        role: UserRole.PARTICIPANT,
+        scope: UserLoginScope.ACTIVATION,
+      },
+      process.env.APP_SECRET as string,
+      {
+        algorithm: 'HS256',
+        expiresIn: '60 minutes',
+      }
+    )
+
+    const activationLink = `${process.env.NODE_ENV === 'production' ? 'https' : 'http://'}${process.env.APP_STUDENT_SUBDOMAIN}/activation?token=${activationJWT}`
+
+    const emailHtml = EmailService.hydrateTemplate({
+      templateName: 'ParticipantAccountActivation',
+      variables: { LINK: activationLink },
+    })
+
+    await EmailService.sendEmail({
+      to: email,
+      subject: 'KlickerUZH - Account Activation',
+      text: `Please click on the following link to activate your KlickerUZH account: ${activationLink} (validity: 60 minutes)`,
+      html: emailHtml,
+    })
+
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email}`
+      `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
 
     return {
