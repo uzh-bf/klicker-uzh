@@ -750,7 +750,7 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  <div className={twMerge('flex flex-row gap-4 mt-4')}>
+                  <div className="flex flex-row gap-4 mt-4">
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <div className="flex-1">
                         <FormLabel
