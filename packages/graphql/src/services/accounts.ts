@@ -5,7 +5,6 @@ import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import fs from 'fs'
 import JWT from 'jsonwebtoken'
-import { createRequire } from 'module'
 import nodemailer from 'nodemailer'
 import { Context, ContextWithUser } from '../lib/context.js'
 import {
@@ -14,8 +13,7 @@ import {
 } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { DisplayMode } from '../types/app.js'
-
-const require = createRequire(import.meta.url)
+import * as EmailService from '../services/email.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -210,27 +208,12 @@ export async function sendMagicLink(
     `One-time login token created for ${usernameOrEmail}: ${magicLinkJWT}`
   )
 
-  // TODO: replace with OAuth2 for Outlook 365
-  const transport = nodemailer.createTransport({
-    pool: true,
-    host: 'localhost',
-    port: 1025,
-    secure: false, // use TLS
-    auth: {
-      user: 'username',
-      pass: 'password',
-    },
+  const email = EmailService.hydrateTemplate({
+    templateName: 'MagicLinkRequested',
+    variables: { LINK: magicLink },
   })
 
-  const emailTemplate = fs.readFileSync(
-    require.resolve('@klicker-uzh/transactional/out/MagicLinkRequested.html'),
-    'utf8'
-  )
-
-  const email = emailTemplate.replaceAll('[LINK]', magicLink)
-
-  await transport.sendMail({
-    from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>',
+  await EmailService.sendEmail({
     to: participantData.email,
     subject: 'KlickerUZH - Your One-Time Login Link',
     text: `Please click on the following link to log in to KlickerUZH PWA: ${magicLink} (validity: 15 minutes)`,
