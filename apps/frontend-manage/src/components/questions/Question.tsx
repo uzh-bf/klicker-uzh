@@ -4,11 +4,11 @@ import {
   faCircleQuestion as faQuestionRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
-import { Button, Checkbox, H2, H3, Label, Modal } from '@uzh-bf/design-system'
+import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import { Badge } from '@uzh-bf/design-system/dist/future'
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
@@ -18,8 +18,8 @@ import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
-  ElementType,
   ElementStatus,
+  ElementType,
   GetUserQuestionsDocument,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -29,6 +29,12 @@ import { useTranslations } from 'next-intl'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
+
+const StatusColors: Record<ElementStatus, string> = {
+  [ElementStatus.Draft]: 'bg-slate-400',
+  [ElementStatus.Review]: 'bg-violet-400',
+  [ElementStatus.Ready]: 'bg-green-400',
+}
 
 const ElementIcons: Record<ElementType, IconDefinition> = {
   FLASHCARD: faListRegular,
@@ -154,13 +160,7 @@ function Question({
 
             <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
               <div className="w-20">
-                <Badge
-                  className={twMerge(
-                    status === ElementStatus.Draft && 'bg-slate-400',
-                    status === ElementStatus.InReview && 'bg-violet-400',
-                    status === ElementStatus.Ready && 'bg-green-400'
-                  )}
-                >
+                <Badge className={twMerge(StatusColors[status])}>
                   {t(`shared.${status}.statusLabel`)}
                 </Badge>
               </div>

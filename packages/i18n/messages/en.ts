@@ -9,8 +9,8 @@ export default {
     DRAFT: {
       statusLabel: 'Draft',
     },
-    IN_REVIEW: {
-      statusLabel: 'In Review',
+    REVIEW: {
+      statusLabel: 'Review',
     },
     READY: {
       statusLabel: 'Ready',

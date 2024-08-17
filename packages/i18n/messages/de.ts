@@ -9,8 +9,8 @@ export default {
     DRAFT: {
       statusLabel: 'Entwurf',
     },
-    IN_REVIEW: {
-      statusLabel: 'Zum Review',
+    REVIEW: {
+      statusLabel: 'Review',
     },
     READY: {
       statusLabel: 'Bereit',
@@ -845,6 +845,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       DUPLICATETitle: 'Frage duplizieren',
       questionType: 'Fragetyp',
       selectQuestionType: 'Fragetyp auswählen',
+      selectQuestionStatus: 'Status auswählen',
+      questionStatus: 'Status',
       questionTitle: 'Fragetitel',
       titleTooltip:
         'Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.',

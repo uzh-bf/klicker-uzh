@@ -244,8 +244,8 @@ enum ElementStackType {
 
 enum ElementStatus {
   DRAFT
-  IN_REVIEW
   READY
+  REVIEW
 }
 
 enum ElementType {

@@ -2630,13 +2630,13 @@
             "deprecationReason": null
           },
           {
-            "name": "IN_REVIEW",
+            "name": "READY",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "READY",
+            "name": "REVIEW",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

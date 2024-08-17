@@ -2,7 +2,7 @@
 // #region
 enum ElementStatus {
   DRAFT
-  IN_REVIEW
+  REVIEW
   READY
 }
 

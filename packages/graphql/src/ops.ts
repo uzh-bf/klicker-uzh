@@ -275,8 +275,8 @@ export enum ElementStackType {
 
 export enum ElementStatus {
   Draft = 'DRAFT',
-  InReview = 'IN_REVIEW',
-  Ready = 'READY'
+  Ready = 'READY',
+  Review = 'REVIEW'
 }
 
 export enum ElementType {
