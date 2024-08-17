@@ -80,10 +80,15 @@ export function filterQuestions(
   }
 
   // if either type or tags were selected, filter the results
-  if (filters.type || filters.tags) {
-    results = results.filter(({ type, tags }): boolean => {
+  if (filters.type || filters.tags || filters.status) {
+    results = results.filter(({ type, tags, status }): boolean => {
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
+        return false
+      }
+
+      // compare the status selected and the status of each question
+      if (filters.status && status !== filters.status) {
         return false
       }
 

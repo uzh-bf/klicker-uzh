@@ -54,11 +54,17 @@ interface Props {
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
-  handleTagClick: (
-    tagName: string,
-    isQuestionTag: boolean,
+  handleTagClick: ({
+    tagName,
+    isTypeTag,
+    isStatusTag,
+    isUntagged,
+  }: {
+    tagName: string
+    isTypeTag: boolean
+    isStatusTag: boolean
     isUntagged: boolean
-  ) => void
+  }) => void
   toggleSampleSolutionFilter: () => void
   toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
@@ -93,11 +99,19 @@ function TagList({
       !(
         activeTags.length > 0 ||
         activeType ||
+        activeStatus ||
         sampleSolution ||
         answerFeedbacks ||
         showUntagged
       ),
-    [activeTags, activeType, sampleSolution, answerFeedbacks, showUntagged]
+    [
+      activeTags,
+      activeType,
+      activeStatus,
+      sampleSolution,
+      answerFeedbacks,
+      showUntagged,
+    ]
   )
 
   return (
@@ -115,8 +129,15 @@ function TagList({
               key={status}
               text={t(`shared.${status as ElementStatus}.statusLabel`)}
               icon={icons}
-              active={activeType === status}
-              onClick={(): void => handleTagClick(status, true, false)}
+              active={activeStatus === status}
+              onClick={(): void =>
+                handleTagClick({
+                  tagName: status,
+                  isTypeTag: false,
+                  isStatusTag: true,
+                  isUntagged: false,
+                })
+              }
             />
           ))}
         </ul>
@@ -136,7 +157,14 @@ function TagList({
               text={t(`shared.${type as ElementType}.typeLabel`)}
               icon={icons}
               active={activeType === type}
-              onClick={(): void => handleTagClick(type, true, false)}
+              onClick={(): void =>
+                handleTagClick({
+                  tagName: type,
+                  isTypeTag: true,
+                  isStatusTag: false,
+                  isUntagged: false,
+                })
+              }
             />
           ))}
         </ul>
@@ -147,7 +175,6 @@ function TagList({
         state={userTagsVisible}
         setState={setUserTagsVisible}
       />
-
       {userTagsVisible && (
         <Suspense fallback={<Loader />}>
           <SuspendedTags
