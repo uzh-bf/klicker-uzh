@@ -13,27 +13,27 @@ const nextConfig = {
       {
         source: '/sessions',
         destination: '/quizzes',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/sessions/:id',
         destination: '/quizzes/:id',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/sessions/:id/cockpit',
         destination: '/quizzes/:id/cockpit',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/sessions/:id/evaluation',
         destination: '/quizzes/:id/evaluation',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/sessions/:id/lecturer',
         destination: '/quizzes/:id/lecturer',
-        permanent: false,
+        permanent: true,
       },
     ]
   },
