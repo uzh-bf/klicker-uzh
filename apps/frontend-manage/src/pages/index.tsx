@@ -101,6 +101,7 @@ function Index() {
       return buildIndex('questions', dataQuestions.userQuestions as Element[], [
         'name',
         'createdAt',
+        'updatedAt',
       ])
     }
     return null
@@ -294,8 +295,13 @@ function Index() {
                       items={[
                         {
                           value: SortyByType.CREATED,
-                          label: t('manage.general.date'),
+                          label: t('manage.general.dateCreated'),
                           data: { cy: 'sort-by-question-pool-created' },
+                        },
+                        {
+                          value: SortyByType.MODIFIED,
+                          label: t('manage.general.dateModified'),
+                          data: { cy: 'sort-by-question-pool-modified' },
                         },
                         {
                           value: SortyByType.TITLE,

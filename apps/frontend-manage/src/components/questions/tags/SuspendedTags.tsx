@@ -32,9 +32,11 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
 
   if (!data?.userTags || data.userTags.length === 0)
     return (
-      <UserNotification type="info">
-        {t('manage.questionPool.noTagsAvailable')}
-      </UserNotification>
+      <div className="px-2">
+        <UserNotification type="info" className={{ root: 'py-1' }}>
+          {t('manage.questionPool.noTagsAvailable')}
+        </UserNotification>
+      </div>
     )
 
   return (

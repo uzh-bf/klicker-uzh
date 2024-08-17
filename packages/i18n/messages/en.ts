@@ -684,6 +684,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
       date: 'Date',
+      dateCreated: 'Date Created',
+      dateModified: 'Date Modified',
       title: 'Title',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
@@ -816,7 +818,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      elementTypes: 'Element types',
+      elementTypes: 'Element Types',
+      elementStatus: 'Status',
       tags: 'Tags',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',

@@ -30,7 +30,7 @@ export function buildIndex(
     )
   }
 
-  // index by title, type, creation date and the description of the first version
+  // index by properties
   searchIndices.forEach((index): void => search.addIndex(index))
 
   // build the index based on the items

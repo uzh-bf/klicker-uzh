@@ -683,6 +683,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
       date: 'Datum',
+      dateCreated: 'Erstellungsdatum',
+      dateModified: 'Änderungsdatum',
       title: 'Titel',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
@@ -816,6 +818,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
       elementTypes: 'Elementtypen',
+      elementStatus: 'Status',
       tags: 'Tags',
       untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',

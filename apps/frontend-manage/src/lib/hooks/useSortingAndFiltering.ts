@@ -20,6 +20,7 @@ export enum SortyByType {
   TITLE = 'TITLE',
   TYPE = 'TYPE',
   CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
   USED = 'USED',
   UNDEFINED = 'UNDEFINED',
 }
