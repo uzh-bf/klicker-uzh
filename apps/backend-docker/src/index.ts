@@ -1,12 +1,12 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
+import { withOptimize } from '@prisma/extension-optimize'
 import * as Sentry from '@sentry/node'
 import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import prepareApp from './app.js'
-import { withOptimize } from '@prisma/extension-optimize'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'

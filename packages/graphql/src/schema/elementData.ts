@@ -4,7 +4,6 @@ import { BaseElementData } from '../types/app.js'
 import {
   ChoiceQuestionOptions,
   ElementType,
-  ElementStatus,
   FreeTextQuestionOptions,
   IChoiceQuestionOptions,
   IFreeTextQuestionOptions,

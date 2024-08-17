@@ -7,7 +7,6 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
-import { withOptimize } from '@prisma/extension-optimize'
 import './types/app'
 
 import { Context, ContextWithUser } from './lib/context.js'
