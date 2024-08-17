@@ -29,8 +29,8 @@ import TagHeader from './TagHeader'
 import TagItem from './TagItem'
 
 const elementTypeFilters: Record<ElementType, IconDefinition[]> = {
-  FLASHCARD: [faListRegular, faListSolid],
   CONTENT: [faCommentRegular, faCommentSolid],
+  FLASHCARD: [faListRegular, faListSolid],
   SC: [faQuestionRegular, faQuestionSolid],
   MC: [faQuestionRegular, faQuestionSolid],
   KPRIM: [faQuestionRegular, faQuestionSolid],
