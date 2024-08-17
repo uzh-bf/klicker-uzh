@@ -135,6 +135,12 @@ export function sortQuestions(
     )
   }
 
+  if (sort.by === SortyByType.MODIFIED) {
+    return questions.sort(
+      (a, b): number => factor * dayjs(a.updatedAt).diff(dayjs(b.updatedAt))
+    )
+  }
+
   // TODO: if desired, fetch instances / number of instances as well and re-introduce this option
   // if (sort.by === SortyByType.USED) {
   //   return questions.sort((a, b): number => {
