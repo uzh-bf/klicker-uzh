@@ -6,6 +6,15 @@ export default {
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
     },
+    DRAFT: {
+      statusLabel: 'Draft',
+    },
+    REVIEW: {
+      statusLabel: 'Review',
+    },
+    READY: {
+      statusLabel: 'Ready',
+    },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
@@ -675,6 +684,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
       date: 'Date',
+      dateCreated: 'Date Created',
+      dateModified: 'Date Modified',
       title: 'Title',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
@@ -807,7 +818,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      elementTypes: 'Element types',
+      elementTypes: 'Element Types',
+      elementStatus: 'Status',
       tags: 'Tags',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
@@ -835,7 +847,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
       questionType: 'Question type',
+      questionStatus: 'Status',
       selectQuestionType: 'Select question type',
+      selectQuestionStatus: 'Select status',
       questionTitle: 'Question title',
       titleTooltip:
         'Enter a short, summary title for the question. This is only used for better overview.',

@@ -101,6 +101,7 @@ function Index() {
       return buildIndex('questions', dataQuestions.userQuestions as Element[], [
         'name',
         'createdAt',
+        'updatedAt',
       ])
     }
     return null
@@ -169,6 +170,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
@@ -186,6 +188,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
@@ -294,8 +297,13 @@ function Index() {
                       items={[
                         {
                           value: SortyByType.CREATED,
-                          label: t('manage.general.date'),
+                          label: t('manage.general.dateCreated'),
                           data: { cy: 'sort-by-question-pool-created' },
+                        },
+                        {
+                          value: SortyByType.MODIFIED,
+                          label: t('manage.general.dateModified'),
+                          data: { cy: 'sort-by-question-pool-modified' },
                         },
                         {
                           value: SortyByType.TITLE,

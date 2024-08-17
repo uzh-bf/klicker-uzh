@@ -5,6 +5,7 @@ import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
+  ElementStatus,
   ElementType,
   QuestionDataRef,
 } from './questionData.js'
@@ -186,6 +187,7 @@ export const Element = ElementRef.implement({
 
     version: t.exposeInt('version'),
     name: t.exposeString('name'),
+    status: t.expose('status', { type: ElementStatus }),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),

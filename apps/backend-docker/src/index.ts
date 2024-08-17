@@ -1,6 +1,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
+import { withOptimize } from '@prisma/extension-optimize'
 import * as Sentry from '@sentry/node'
 import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
@@ -16,7 +17,19 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['warn', 'error'],
+})
+
+if (
+  process.env.NODE_ENV === 'development' &&
+  process.env.PRISMA_OPTIMIZE === 'true'
+) {
+  prisma = prisma.$extends(withOptimize()) as PrismaClient
+}
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({

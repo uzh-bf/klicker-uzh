@@ -6,6 +6,15 @@ export default {
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
     },
+    DRAFT: {
+      statusLabel: 'Entwurf',
+    },
+    REVIEW: {
+      statusLabel: 'Review',
+    },
+    READY: {
+      statusLabel: 'Bereit',
+    },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
@@ -674,6 +683,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
       date: 'Datum',
+      dateCreated: 'Erstellungsdatum',
+      dateModified: 'Änderungsdatum',
       title: 'Titel',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
@@ -807,6 +818,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
       elementTypes: 'Elementtypen',
+      elementStatus: 'Status',
       tags: 'Tags',
       untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
@@ -836,6 +848,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       DUPLICATETitle: 'Frage duplizieren',
       questionType: 'Fragetyp',
       selectQuestionType: 'Fragetyp auswählen',
+      selectQuestionStatus: 'Status auswählen',
+      questionStatus: 'Status',
       questionTitle: 'Fragetitel',
       titleTooltip:
         'Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.',

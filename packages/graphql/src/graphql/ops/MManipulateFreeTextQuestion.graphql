@@ -1,5 +1,6 @@
 mutation ManipulateFreeTextQuestion(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $explanation: String
@@ -9,6 +10,7 @@ mutation ManipulateFreeTextQuestion(
 ) {
   manipulateFreeTextQuestion(
     id: $id
+    status: $status
     name: $name
     content: $content
     explanation: $explanation
@@ -18,6 +20,7 @@ mutation ManipulateFreeTextQuestion(
   ) {
     id
     name
+    status
     type
     content
     explanation

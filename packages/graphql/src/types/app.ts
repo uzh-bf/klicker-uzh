@@ -2,6 +2,7 @@
 import type {
   Element,
   ElementStackType,
+  ElementStatus,
   ElementType,
   Prisma,
   PrismaClient,
@@ -216,6 +217,7 @@ export type ElementOptions =
   | ElementOptionsContent
 
 export interface BaseElementData {
+  status: ElementStatus
   type: ElementType
 
   id: string

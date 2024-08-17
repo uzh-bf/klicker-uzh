@@ -5,6 +5,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
 import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -17,6 +18,7 @@ import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
+  ElementStatus,
   ElementType,
   GetUserQuestionsDocument,
   Tag,
@@ -27,6 +29,12 @@ import { useTranslations } from 'next-intl'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
+
+const StatusColors: Record<ElementStatus, string> = {
+  [ElementStatus.Draft]: 'bg-slate-400',
+  [ElementStatus.Review]: 'bg-violet-400',
+  [ElementStatus.Ready]: 'bg-green-400',
+}
 
 const ElementIcons: Record<ElementType, IconDefinition> = {
   FLASHCARD: faListRegular,
@@ -55,6 +63,7 @@ interface QuestionProps {
   tags?: Tag[]
   handleTagClick: (tagName: string) => void
   title: string
+  status: ElementStatus
   type: ElementType
   content: string
   onCheck: () => void
@@ -72,6 +81,7 @@ function Question({
   tags = [],
   handleTagClick,
   title,
+  status,
   type,
   content,
   onCheck,
@@ -130,7 +140,7 @@ function Question({
                 onKeyDown={() => setIsModificationModalOpen(true)}
                 data-cy="question-title"
               >
-                <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" />
+                {/* <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" /> */}
                 {title}
               </a>
 
@@ -148,7 +158,13 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-6 text-slate-600">
+            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
+              <div className="w-20">
+                <Badge className={twMerge(StatusColors[status])}>
+                  {t(`shared.${status}.statusLabel`)}
+                </Badge>
+              </div>
+              <div className="w-36">{t(`shared.${type}.typeLabel`)}</div>
               <div>
                 {t('shared.generic.createdAt', {
                   date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
@@ -159,7 +175,6 @@ function Question({
                   date: dayjs(updatedAt).format('DD.MM.YYYY HH:mm'),
                 })}
               </div>
-              <div>{t(`shared.${type}.typeLabel`)}</div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">

@@ -2,6 +2,7 @@ query GetSingleQuestion($id: Int!) {
   question(id: $id) {
     id
     name
+    status
     type
     content
     explanation

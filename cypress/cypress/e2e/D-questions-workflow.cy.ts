@@ -14,11 +14,18 @@ describe('Create questions', () => {
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.DRAFT.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
@@ -29,12 +36,19 @@ describe('Create questions', () => {
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-question-explanation"]').click().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.REVIEW.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
@@ -48,6 +62,10 @@ describe('Create questions', () => {
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
@@ -73,6 +91,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
@@ -98,6 +119,10 @@ describe('Create questions', () => {
       .should('exist')
       .contains(messages.shared.MC.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
@@ -123,6 +148,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="mc-1-answer-option-1"]').should('exist')
     cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
@@ -150,6 +178,10 @@ describe('Create questions', () => {
       .should('exist')
       .contains(messages.shared.KPRIM.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
@@ -201,6 +233,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
@@ -222,6 +257,10 @@ describe('Create questions', () => {
       .should('exist')
       .contains(messages.shared.NUMERICAL.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="set-numerical-minimum"]').click().type('0')
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
@@ -231,6 +270,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0')
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100')
@@ -255,12 +297,19 @@ describe('Create questions', () => {
       .should('exist')
       .contains(messages.shared.FREE_TEXT.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="free-text-input-1"]').should('exist')
   })
@@ -272,6 +321,10 @@ describe('Create questions', () => {
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
+    ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
@@ -290,6 +343,9 @@ describe('Create questions', () => {
     cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
     cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).should(
       'exist'
+    )
+    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).contains(
+      messages.shared.DRAFT.statusLabel
     )
 
     // delete the duplicated question

@@ -1,5 +1,6 @@
 mutation ManipulateNumericalQuestion(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $explanation: String
@@ -9,6 +10,7 @@ mutation ManipulateNumericalQuestion(
 ) {
   manipulateNumericalQuestion(
     id: $id
+    status: $status
     name: $name
     content: $content
     explanation: $explanation
@@ -18,6 +20,7 @@ mutation ManipulateNumericalQuestion(
   ) {
     id
     name
+    status
     type
     content
     explanation
