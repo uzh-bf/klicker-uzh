@@ -84,8 +84,8 @@ function Index() {
   } = useSortingAndFiltering()
 
   useEffect((): void => {
-    router.prefetch('/sessions/running')
-    router.prefetch('/sessions')
+    router.prefetch('/quizzes/running')
+    router.prefetch('/quizzes')
 
     if (router.query.elementId && router.query.editMode) {
       setCreationMode(router.query.editMode as any)

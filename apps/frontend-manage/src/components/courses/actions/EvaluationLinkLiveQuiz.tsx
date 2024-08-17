@@ -15,7 +15,7 @@ function EvaluationLinkLiveQuiz({ liveQuiz }: EvaluationLinkLiveQuizProps) {
     <div className="flex flex-row items-center gap-2 text-primary-100">
       <FontAwesomeIcon icon={faUpRightFromSquare} />
       <Link
-        href={`/sessions/${liveQuiz.id}/evaluation`}
+        href={`/quizzes/${liveQuiz.id}/evaluation`}
         target="_blank"
         rel="noopener noreferrer"
         passHref

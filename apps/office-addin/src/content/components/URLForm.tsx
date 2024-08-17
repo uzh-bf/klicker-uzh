@@ -21,7 +21,7 @@ export function URLForm({ slideID }: URLFormProps) {
         url: yup
           .string()
           .matches(
-            /https:\/\/manage\.klicker\.uzh\.ch\/sessions\/.{36}\/evaluation\?hmac=.{64}.*/,
+            /https:\/\/manage\.klicker\.uzh\.ch\/quizzes\/.{36}\/evaluation\?hmac=.{64}.*/,
             "Please enter a valid URL according to the steps described"
           )
           .required("Please enter a valid URL according to the steps described"),
@@ -42,7 +42,7 @@ export function URLForm({ slideID }: URLFormProps) {
           labelType="large"
           tooltip="Enter the embedding URL of the evaluation you want to add to this slide"
           className={{ root: "w-full" }}
-          placeholder="https://manage.klicker.uzh.ch/sessions/12345/evaluation?hmac=xyz"
+          placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
           data={{ cy: "url-form-input" }}
         />
         <Button type="submit">Embed</Button>

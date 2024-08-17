@@ -686,7 +686,7 @@ describe('Different live-quiz workflows', () => {
       const sessionIdEvaluation = url.split('/')[4]
       cy.visit(
         Cypress.env('URL_MANAGE') +
-          '/sessions/' +
+          '/quizzes/' +
           sessionIdEvaluation +
           '/evaluation'
       )

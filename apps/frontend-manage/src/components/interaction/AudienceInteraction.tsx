@@ -88,7 +88,7 @@ function AudienceInteraction({
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
-                href={`/sessions/${sessionId}/lecturer`}
+                href={`/quizzes/${sessionId}/lecturer`}
                 target="_blank"
                 passHref
                 legacyBehavior
