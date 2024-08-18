@@ -16,6 +16,9 @@ prisma = "0.14.0"
 poethepoet = "0.27.0"
 ipykernel = "6.29.5"
 
+[tool.poetry.group.dev.dependencies]
+pyright = "1.1.376"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -23,3 +26,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poe.tasks]
 generate = "prisma generate"
 main = "doppler run --config dev -- python main.py"
+
+[tool.pyright]
+typeCheckingMode = "strict"
