@@ -62,7 +62,7 @@ Provider.onConnect((token, req, res) => {
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '30m',
+      expiresIn: '5m',
     }
   )
 

@@ -36,6 +36,8 @@ export async function getParticipantToken({
         process.env.APP_SECRET as string
       ) as { sub: string; email: string; scope: string }
 
+      console.log('LTI 1.3', signedLtiData)
+
       if (signedLtiData.scope === 'LTI1.3') {
         result = await apolloClient.mutate({
           mutation: LoginParticipantWithLtiDocument,
@@ -43,8 +45,6 @@ export async function getParticipantToken({
             signedLtiData: cookies['lti-token'],
           },
         })
-
-        console.log(result)
       }
     }
     // LTI 1.1 authentication flow
@@ -60,7 +60,7 @@ export async function getParticipantToken({
         })
       })
 
-      console.log('LTI request', request?.body)
+      console.log('LTI 1.1', request?.body)
 
       if (request?.body?.lis_person_sourcedid) {
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
@@ -73,7 +73,7 @@ export async function getParticipantToken({
           process.env.APP_SECRET as string,
           {
             algorithm: 'HS256',
-            expiresIn: '30m',
+            expiresIn: '5m',
           }
         )
 
