@@ -31,21 +31,23 @@ export async function getParticipantToken({
 
     // LTI 1.3 authentication flow
     if (cookies['lti-token']) {
-      const signedLtiData = JWT.verify(
-        cookies['lti-token'],
-        process.env.APP_SECRET as string
-      ) as { sub: string; email: string; scope: string }
+      try {
+        const signedLtiData = JWT.verify(
+          cookies['lti-token'],
+          process.env.APP_SECRET as string
+        ) as { sub: string; email: string; scope: string }
 
-      console.log('LTI 1.3', signedLtiData)
+        console.log('LTI 1.3', signedLtiData)
 
-      if (signedLtiData.scope === 'LTI1.3') {
-        result = await apolloClient.mutate({
-          mutation: LoginParticipantWithLtiDocument,
-          variables: {
-            signedLtiData: cookies['lti-token'],
-          },
-        })
-      }
+        if (signedLtiData.scope === 'LTI1.3') {
+          result = await apolloClient.mutate({
+            mutation: LoginParticipantWithLtiDocument,
+            variables: {
+              signedLtiData: cookies['lti-token'],
+            },
+          })
+        }
+      } catch (e) {}
     }
     // LTI 1.1 authentication flow
     else if (req.method === 'POST') {
@@ -86,11 +88,7 @@ export async function getParticipantToken({
       }
     }
 
-    if (!result) {
-      return {}
-    }
-
-    participantToken = result.data?.loginParticipantWithLti?.participantToken
+    participantToken = result?.data?.loginParticipantWithLti?.participantToken
 
     if (participantToken) {
       nookies.set(ctx, 'participant_token', participantToken, {
@@ -111,9 +109,9 @@ export async function getParticipantToken({
 
     return {
       participantToken:
-        result.data?.loginParticipantWithLti?.participantToken ??
+        result?.data?.loginParticipantWithLti?.participantToken ??
         participantToken,
-      participant: result.data?.loginParticipantWithLti,
+      participant: result?.data?.loginParticipantWithLti,
     }
   } catch (e) {
     console.error(e)

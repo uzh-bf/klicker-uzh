@@ -101,10 +101,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
   // LTI 1.1 authentication flow
   else if (req.method === 'POST') {
-    // extract the body from the LTI request
-    // if there is a body, request a participant token
-    // TODO: verify that there is an LTI body and that it is valid
-
     const { request }: any = await new Promise((resolve) => {
       bodyParser.urlencoded({ extended: true })(req, res, () => {
         bodyParser.json()(req, res, () => {
