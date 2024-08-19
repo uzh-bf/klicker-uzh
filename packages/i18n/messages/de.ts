@@ -509,9 +509,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Fragetyp ist aktuell für Übungs-Quizzes nicht verfügbar.',
       newPointsFrom: 'Erneute Punkte/XP ab:',
       othersAnswered: 'So haben andere geantwortet',
-      flagQuestion: 'Frage melden',
-      flagQuestionText:
-        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       infoStack: 'Informationselement',
       scheduledAvailableFrom: 'Das Übungs-Quiz {name} ist ab {date} verfügbar.',
       inactiveParticipation:

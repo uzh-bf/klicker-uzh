@@ -2,7 +2,13 @@ import { useMutation } from '@apollo/client'
 import { faEnvelope, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagElementDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, Modal, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextareaField,
+  H4,
+  Modal,
+  Toast,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -136,24 +142,14 @@ function FlagElementModal({
           }
           validationSchema={flagElementSchema}
         >
-          {({ values, setFieldValue, isSubmitting, isValid, errors }) => (
+          {({ isSubmitting, isValid }) => (
             <div className="">
               <Form>
-                <textarea
-                  className="w-full h-24 rounded-md"
+                <FormikTextareaField
+                  name="feedback"
                   placeholder={t('pwa.practiceQuiz.addFeedback')}
-                  value={values.feedback}
-                  onChange={(e) => setFieldValue('feedback', e.target.value)}
-                  data-cy="flag-element-textarea"
+                  className={{ input: 'w-full h-24' }}
                 />
-                <div className="flex flex-row justify-between w-full mt-1">
-                  {errors && (
-                    <div className="text-sm text-red-700">
-                      {errors.feedback}
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
                   <Button
                     onClick={() => setOpen(false)}
