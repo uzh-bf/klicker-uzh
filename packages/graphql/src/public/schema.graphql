@@ -204,6 +204,7 @@ type ElementFeedback {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
   type: ElementInstanceType!
