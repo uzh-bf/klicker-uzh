@@ -59,10 +59,17 @@ Provider.onConnect((token, req, res) => {
     domain: process.env.COOKIE_DOMAIN as string,
   })
 
-  const url = process.env.LTI_REDIRECT_URL as string
-  console.log('Redirecting to:', url)
+  if (typeof req.query.redirectTo === 'string') {
+    const url = req.query.redirectTo as string
+    console.log('Redirecting to:', url)
+    res.redirect(url)
+  } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
+    const url = process.env.LTI_REDIRECT_URL as string
+    console.log('Redirecting to:', url)
+    res.redirect(url)
+  }
 
-  res.redirect(url)
+  res.end()
 })
 
 // setup function
