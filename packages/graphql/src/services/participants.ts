@@ -461,7 +461,7 @@ export async function getBookmarkedElementStacks(
 }
 
 export async function flagElement(
-  args: { elementInstanceId: number; content: string },
+  args: { elementInstanceId: number; elementId: number; content: string },
   ctx: ContextWithUser
 ) {
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
@@ -486,11 +486,44 @@ export async function flagElement(
     },
   })
 
+  const elementFeedback = await ctx.prisma.elementFeedback.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: args.elementInstanceId,
+      },
+    },
+    create: {
+      feedback: args.content,
+      upvote: false,
+      downvote: false,
+      element: {
+        connect: {
+          id: args.elementId,
+        },
+      },
+      elementInstance: {
+        connect: {
+          id: args.elementInstanceId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {
+      feedback: args.content,
+    },
+  })
+
   if (
     !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
     !elementInstance?.elementStack.microLearning?.course?.notificationEmail
   ) {
-    return null
+    // return early if no notification email has been specified -> only set database entry
+    return 'OK'
   }
 
   const practiceQuiz = elementInstance.elementStack.practiceQuiz

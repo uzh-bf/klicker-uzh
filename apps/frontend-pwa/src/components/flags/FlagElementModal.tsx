@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
-import { faEnvelope, faWarning } from '@fortawesome/free-solid-svg-icons'
+import { faMessage } from '@fortawesome/free-regular-svg-icons'
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagElementDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -61,12 +62,14 @@ interface FlagElementModalProps {
   open: boolean
   setOpen: (newValue: boolean) => void
   instanceId: number
+  elementId: number
 }
 
 function FlagElementModal({
   open,
   setOpen,
   instanceId,
+  elementId,
 }: FlagElementModalProps) {
   const t = useTranslations()
 
@@ -91,6 +94,7 @@ function FlagElementModal({
       const result = await flagElement({
         variables: {
           elementInstanceId: instanceId,
+          elementId: elementId,
           content,
         },
       })
@@ -121,8 +125,8 @@ function FlagElementModal({
           >
             <Button.Icon>
               <FontAwesomeIcon
-                icon={faWarning}
-                className="text-red-600 hover:text-red-500"
+                icon={faMessage}
+                className="hover:text-primary-80 text-uzh-grey-100"
               />
             </Button.Icon>
           </Button>

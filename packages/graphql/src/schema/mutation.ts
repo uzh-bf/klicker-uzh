@@ -450,6 +450,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {

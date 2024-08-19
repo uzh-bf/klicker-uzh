@@ -157,6 +157,7 @@ function GroupActivityStack({
               <div key={`${element.id}-student`} className="mb-2 text-lg">
                 <InstanceHeader
                   instanceId={element.id}
+                  elementId={parseInt(element.elementData.id)}
                   name={element.elementData.name}
                   className="mb-0"
                   correctness={correctness}

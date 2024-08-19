@@ -633,7 +633,7 @@ type Mutation {
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
