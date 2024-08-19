@@ -45,7 +45,7 @@ model Element {
   /// [PrismaElementOptions]
   options Json
 
-  status ElementStatus @default(DRAFT)
+  status ElementStatus @default(READY)
   type   ElementType
 
   tags Tag[]
