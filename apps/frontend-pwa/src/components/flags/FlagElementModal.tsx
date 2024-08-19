@@ -153,6 +153,7 @@ function FlagElementModal({
                   name="feedback"
                   placeholder={t('pwa.practiceQuiz.addFeedback')}
                   className={{ input: 'w-full h-24' }}
+                  data={{ cy: 'flag-element-textarea' }}
                 />
                 <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
                   <Button
