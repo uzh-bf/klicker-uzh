@@ -3,6 +3,7 @@ import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 
 import { useMutation } from '@apollo/client'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -77,7 +78,29 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  if (req.method === 'POST') {
+  const cookies = nookies.get(ctx)
+
+  const signedLtiData = {
+    token: '',
+    ssoId: '',
+    email: '',
+  }
+
+  // LTI 1.3 authentication flow
+  if (cookies['lti-token']) {
+    const token = JWT.verify(
+      cookies['lti-token'],
+      process.env.APP_SECRET as string
+    ) as { sub: string; email: string; scope: string }
+
+    if (token.scope === 'LTI1.3') {
+      signedLtiData.token = cookies['lti-token']
+      signedLtiData.ssoId = token.sub
+      signedLtiData.email = token.email
+    }
+  }
+  // LTI 1.1 authentication flow
+  else if (req.method === 'POST') {
     // extract the body from the LTI request
     // if there is a body, request a participant token
     // TODO: verify that there is an LTI body and that it is valid
@@ -91,34 +114,39 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
 
     if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
-      const signedLtiData = JWT.sign(
+      signedLtiData.token = JWT.sign(
         {
           sub: request.body.lis_person_sourcedid,
           email: request.body.lis_person_contact_email_primary,
+          scope: 'LTI1.1',
         },
         process.env.APP_SECRET as string,
         {
           algorithm: 'HS256',
-          expiresIn: '1h',
+          expiresIn: '5m',
         }
       )
-
-      return addApolloState(apolloClient, {
-        props: {
-          signedLtiData,
-          ssoId: request.body.lis_person_sourcedid,
-          email: request.body.lis_person_contact_email_primary,
-          username: generatePassword.generate({
-            length: 8,
-            uppercase: true,
-            symbols: false,
-            numbers: true,
-          }),
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      })
+      signedLtiData.ssoId = request.body.lis_person_sourcedid
+      signedLtiData.email = request.body.lis_person_contact_email_primary
     }
+  }
+
+  if (signedLtiData.token !== '') {
+    return addApolloState(apolloClient, {
+      props: {
+        signedLtiData: signedLtiData.token,
+        ssoId: signedLtiData.ssoId,
+        email: signedLtiData.email,
+        username: generatePassword.generate({
+          length: 8,
+          uppercase: true,
+          symbols: false,
+          numbers: true,
+        }),
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
+      },
+    })
   }
 
   return {
