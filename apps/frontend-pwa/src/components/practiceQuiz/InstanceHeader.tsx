@@ -40,6 +40,7 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
 }
 
 interface InstanceHeaderProps {
+  index: number
   instanceId: number
   elementId: number
   name: string
@@ -51,6 +52,7 @@ interface InstanceHeaderProps {
 }
 
 function InstanceHeader({
+  index,
   instanceId,
   elementId,
   name,
@@ -115,7 +117,7 @@ function InstanceHeader({
               basic
               active={vote === 1}
               onClick={() => handleVote(true)}
-              data={{ cy: 'upvote-element-button' }}
+              data={{ cy: `upvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -131,7 +133,7 @@ function InstanceHeader({
               basic
               active={vote === -1}
               onClick={() => handleVote(false)}
-              data={{ cy: 'downvote-element-button' }}
+              data={{ cy: `downvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -144,6 +146,7 @@ function InstanceHeader({
               </Button.Icon>
             </Button>
             <FlagElementModal
+              index={index}
               open={modalOpen}
               setOpen={setModalOpen}
               instanceId={instanceId}

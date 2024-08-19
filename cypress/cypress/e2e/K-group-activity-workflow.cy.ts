@@ -310,6 +310,26 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
+    // test rating and flagging of group activity instances
+    cy.get('[data-cy="upvote-element-0-button"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="downvote-element-0-button"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="upvote-element-1-button"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="flag-element-1-button"]').click()
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"').type(
+      'Test flagging question on group activity'
+    )
+    cy.get('[data-cy="cancel-flag-element"]').click()
+    cy.get('[data-cy="flag-element-1-button"]').click()
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"').type(
+      'Test flagging question on group activity'
+    )
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
+
     // answer the questions in the group activity
     cy.get('[data-cy="free-text-input-1"]').click().type('Testanswer 1')
     cy.get('[data-cy="mc-2-answer-option-3"]').click()

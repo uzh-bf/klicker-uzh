@@ -63,6 +63,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
 }
 
 interface FlagElementModalProps {
+  index: number
   open: boolean
   setOpen: (newValue: boolean) => void
   instanceId: number
@@ -71,6 +72,7 @@ interface FlagElementModalProps {
 }
 
 function FlagElementModal({
+  index,
   open,
   setOpen,
   instanceId,
@@ -129,7 +131,7 @@ function FlagElementModal({
           <Button
             basic
             onClick={() => setOpen(true)}
-            data={{ cy: 'flag-element-button' }}
+            data={{ cy: `flag-element-${index}-button` }}
           >
             <Button.Icon>
               <FontAwesomeIcon
