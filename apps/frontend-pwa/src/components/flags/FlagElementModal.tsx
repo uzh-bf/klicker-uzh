@@ -81,6 +81,7 @@ function FlagElementModal({
 
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [feedbackExists, setFeedbackExists] = useState(!!previousFeedback)
 
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
@@ -106,6 +107,7 @@ function FlagElementModal({
       })
       if (result.data?.flagElement === 'OK') {
         setSuccessToastOpen(true)
+        setFeedbackExists(true)
         setOpen(false)
       } else {
         setErrorToastOpen(true)
@@ -131,10 +133,10 @@ function FlagElementModal({
           >
             <Button.Icon>
               <FontAwesomeIcon
-                icon={!!previousFeedback ? faMessageSolid : faMessage}
+                icon={feedbackExists ? faMessageSolid : faMessage}
                 className={twMerge(
                   'hover:text-primary-80 text-uzh-grey-100',
-                  !!previousFeedback && 'text-primary-80'
+                  feedbackExists && 'text-primary-80'
                 )}
               />
             </Button.Icon>
@@ -149,7 +151,7 @@ function FlagElementModal({
         </div>
         <Formik
           initialValues={{ feedback: previousFeedback ?? '' }}
-          isInitialValid={!!previousFeedback}
+          isInitialValid={feedbackExists}
           onSubmit={(values, { setSubmitting }) =>
             flagElementFeedback(values.feedback, setSubmitting)
           }
@@ -188,7 +190,7 @@ function FlagElementModal({
                       <FontAwesomeIcon icon={faEnvelope} />
                     </Button.Icon>
                     <Button.Label>
-                      {!!previousFeedback
+                      {feedbackExists
                         ? t('pwa.practiceQuiz.updateFeedback')
                         : t('pwa.practiceQuiz.submitFeedback')}
                     </Button.Label>
