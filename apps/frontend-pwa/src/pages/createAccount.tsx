@@ -113,7 +113,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
     })
 
-    if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
+    if (request?.body?.lis_person_sourcedid) {
       signedLtiData.token = JWT.sign(
         {
           sub: request.body.lis_person_sourcedid,
@@ -131,7 +131,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  if (signedLtiData.token !== '') {
+  if (!query?.disableLti && signedLtiData.token !== '') {
     return addApolloState(apolloClient, {
       props: {
         signedLtiData: signedLtiData.token,
