@@ -1,14 +1,13 @@
-// @ts-nocheck
-
 import { Provider } from 'ltijs'
+// @ts-ignore
 import Database from 'ltijs-sequelize'
 
-const providerOptions = {
+const PROVIDER_OPTIONS = {
   appRoute: '/',
   loginRoute: '/login',
   cookies: {
     secure: true,
-    sameSite: 'None',
+    sameSite: 'none',
   },
   devMode: process.env.NODE_ENV === 'development', // needs to be set to false in production
 }
@@ -36,7 +35,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
     {
       plugin: db,
     },
-    providerOptions
+    PROVIDER_OPTIONS
   )
 } else {
   // Setup LTI provider
@@ -45,7 +44,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
     {
       url: process.env.LTI_DB_CONNECTION_STRING as string,
     },
-    providerOptions
+    PROVIDER_OPTIONS
   )
 }
 
@@ -56,7 +55,7 @@ Provider.onConnect((token, req, res) => {
 
   res.cookie('ltik', ltik, {
     secure: true,
-    sameSite: 'None',
+    sameSite: 'none',
     domain: process.env.COOKIE_DOMAIN as string,
   })
 
@@ -82,6 +81,10 @@ const setup = async () => {
     accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
     authConfig: { method: 'JWK_SET', key: process.env.LTI_KEYS_ENDPOINT as string },
   })
+
+  if (!platform) {
+    throw new Error('Failed to register platform')
+  }
 
   console.log(await platform.platformPublicKey())
 }
