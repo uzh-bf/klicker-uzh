@@ -537,7 +537,7 @@ export async function flagElement(
     !elementInstance?.elementStack.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
-    return 'OK'
+    return elementFeedback
   }
 
   const practiceQuiz = elementInstance.elementStack.practiceQuiz
@@ -564,7 +564,7 @@ export async function flagElement(
     }),
   })
 
-  return 'OK'
+  return elementFeedback
 }
 
 export async function rateElement(

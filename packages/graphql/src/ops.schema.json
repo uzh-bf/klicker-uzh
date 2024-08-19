@@ -9274,8 +9274,8 @@
               }
             ],
             "type": {
-              "kind": "SCALAR",
-              "name": "String",
+              "kind": "OBJECT",
+              "name": "ElementFeedback",
               "ofType": null
             },
             "isDeprecated": false,

@@ -12,7 +12,6 @@ import {
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { GetElementFeedbackDocument } from '@klicker-uzh/graphql/src/ops'
 import { Button, H4, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -67,6 +66,9 @@ function InstanceHeader({
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
   const [vote, setVote] = useState(previousRating ?? 0)
+  const [feedbackValue, setFeedbackValue] = useState(
+    previousFeedback ?? undefined
+  )
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -84,9 +86,9 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
-      refetchQueries: [
-        { query: GetElementFeedbackDocument, variables: { instanceId } },
-      ],
+      // refetchQueries: [
+      //   { query: GetElementFeedbackDocument, variables: { instanceId } },
+      // ],
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -154,7 +156,8 @@ function InstanceHeader({
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
-              previousFeedback={previousFeedback}
+              feedbackValue={feedbackValue}
+              setFeedbackValue={setFeedbackValue}
             />
             <RatingErrorToast
               open={ratingErrorToast}
