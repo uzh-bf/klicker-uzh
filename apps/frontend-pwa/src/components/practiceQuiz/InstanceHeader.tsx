@@ -1,12 +1,17 @@
+import { useMutation } from '@apollo/client'
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faCheckDouble,
+  faThumbsDown as faThumbsDownSolid,
   faThumbsUp as faThumbsUpSolid,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ResponseCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  RateElementDocument,
+  ResponseCorrectnessType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -29,8 +34,37 @@ function InstanceHeader({
   correctness,
   className,
 }: InstanceHeaderProps) {
+  const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
-  const [vote, setVote] = useState(0) // TODO: optionally set this to current feedback in db
+  const [vote, setVote] = useState(0) // TODO: optionally fetch last rating from DB
+
+  const handleVote = async (upvote: boolean) => {
+    const res = await rateElement({
+      variables: {
+        elementInstanceId: instanceId,
+        elementId,
+        rating: upvote ? 1 : -1,
+      },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        rateElement: {
+          __typename: 'ElementFeedback',
+          id: 0,
+          upvote,
+          downvote: !upvote,
+        },
+      },
+    })
+
+    if (res.data?.rateElement?.upvote) {
+      setVote(1)
+    } else if (res.data?.rateElement?.downvote) {
+      setVote(-1)
+    } else {
+      // TODO: show error!
+      setVote(0)
+    }
+  }
 
   return (
     <div className={twMerge('mb-4', className)}>
@@ -52,8 +86,8 @@ function InstanceHeader({
             <Button
               basic
               active={vote === 1}
-              onClick={() => alert('// TODO: Implement upvote')}
-              data={{ cy: 'flag-element-button' }}
+              onClick={() => handleVote(true)}
+              data={{ cy: 'upvote-element-button' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -68,12 +102,12 @@ function InstanceHeader({
             <Button
               basic
               active={vote === -1}
-              onClick={() => alert('// TODO: Implement downvote')}
-              data={{ cy: 'flag-element-button' }}
+              onClick={() => handleVote(false)}
+              data={{ cy: 'downvote-element-button' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
-                  icon={faThumbsDown}
+                  icon={vote === -1 ? faThumbsDownSolid : faThumbsDown}
                   className={twMerge(
                     'hover:text-primary-80 text-uzh-grey-100',
                     vote === -1 && 'text-primary-80'

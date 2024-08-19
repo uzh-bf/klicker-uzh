@@ -495,8 +495,6 @@ export async function flagElement(
     },
     create: {
       feedback: args.content,
-      upvote: false,
-      downvote: false,
       element: {
         connect: {
           id: args.elementId,
@@ -551,6 +549,49 @@ export async function flagElement(
   })
 
   return 'OK'
+}
+
+export async function rateElement(
+  args: { elementInstanceId: number; elementId: number; rating: number },
+  ctx: ContextWithUser
+) {
+  if (args.rating !== 1 && args.rating !== -1) {
+    return null
+  }
+
+  const elementFeedback = await ctx.prisma.elementFeedback.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: args.elementInstanceId,
+      },
+    },
+    create: {
+      upvote: args.rating === 1,
+      downvote: args.rating === -1,
+      elementInstance: {
+        connect: {
+          id: args.elementInstanceId,
+        },
+      },
+      element: {
+        connect: {
+          id: args.elementId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {
+      upvote: args.rating === 1,
+      downvote: args.rating === -1,
+    },
+  })
+
+  return elementFeedback
 }
 
 export async function getPublicParticipantProfile(
