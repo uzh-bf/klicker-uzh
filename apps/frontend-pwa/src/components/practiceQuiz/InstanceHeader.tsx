@@ -45,6 +45,8 @@ interface InstanceHeaderProps {
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
+  previousRating?: number
+  previousFeedback?: string
   className?: string
 }
 
@@ -54,12 +56,14 @@ function InstanceHeader({
   name,
   withParticipant,
   correctness,
+  previousRating,
+  previousFeedback,
   className,
 }: InstanceHeaderProps) {
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
-  const [vote, setVote] = useState(0) // TODO: optionally fetch last rating from DB
+  const [vote, setVote] = useState(previousRating ?? 0)
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -77,6 +81,7 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
+      // TODO: possibly fix through refetch query that wrong state is shown when switching back and forth between questions / or move state to top level of page
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -143,6 +148,7 @@ function InstanceHeader({
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
+              previousFeedback={previousFeedback}
             />
             <RatingErrorToast
               open={ratingErrorToast}

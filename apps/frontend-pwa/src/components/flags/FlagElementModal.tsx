@@ -1,6 +1,9 @@
 import { useMutation } from '@apollo/client'
 import { faMessage } from '@fortawesome/free-regular-svg-icons'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import {
+  faEnvelope,
+  faMessage as faMessageSolid,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagElementDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -13,6 +16,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface FlagErrorToastProps {
@@ -63,6 +67,7 @@ interface FlagElementModalProps {
   setOpen: (newValue: boolean) => void
   instanceId: number
   elementId: number
+  previousFeedback?: string
 }
 
 function FlagElementModal({
@@ -70,6 +75,7 @@ function FlagElementModal({
   setOpen,
   instanceId,
   elementId,
+  previousFeedback,
 }: FlagElementModalProps) {
   const t = useTranslations()
 
@@ -125,8 +131,11 @@ function FlagElementModal({
           >
             <Button.Icon>
               <FontAwesomeIcon
-                icon={faMessage}
-                className="hover:text-primary-80 text-uzh-grey-100"
+                icon={!!previousFeedback ? faMessageSolid : faMessage}
+                className={twMerge(
+                  'hover:text-primary-80 text-uzh-grey-100',
+                  !!previousFeedback && 'text-primary-80'
+                )}
               />
             </Button.Icon>
           </Button>
@@ -139,8 +148,8 @@ function FlagElementModal({
           {t('pwa.practiceQuiz.flagElementText')}
         </div>
         <Formik
-          initialValues={{ feedback: '' }}
-          isInitialValid={false}
+          initialValues={{ feedback: previousFeedback ?? '' }}
+          isInitialValid={!!previousFeedback}
           onSubmit={(values, { setSubmitting }) =>
             flagElementFeedback(values.feedback, setSubmitting)
           }
@@ -179,7 +188,9 @@ function FlagElementModal({
                       <FontAwesomeIcon icon={faEnvelope} />
                     </Button.Icon>
                     <Button.Label>
-                      {t('pwa.practiceQuiz.submitFeedback')}
+                      {!!previousFeedback
+                        ? t('pwa.practiceQuiz.updateFeedback')
+                        : t('pwa.practiceQuiz.submitFeedback')}
                     </Button.Label>
                   </Button>
                 </div>

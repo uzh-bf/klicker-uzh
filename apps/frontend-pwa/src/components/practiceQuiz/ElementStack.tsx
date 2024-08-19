@@ -127,6 +127,16 @@ function ElementStack({
                     elementId={parseInt(element.elementData.id)}
                     name={element.elementData.name}
                     withParticipant={withParticipant}
+                    previousRating={
+                      element.feedbacks?.[0]?.upvote
+                        ? 1
+                        : element.feedbacks?.[0]?.downvote
+                        ? -1
+                        : 0
+                    }
+                    previousFeedback={
+                      element.feedbacks?.[0]?.feedback ?? undefined
+                    }
                   />
                   <StudentElement
                     element={element}
