@@ -33,6 +33,12 @@ fragment PracticeQuizData on PracticeQuiz {
       id
       type
       elementType
+      feedbacks {
+        id
+        upvote
+        downvote
+        feedback
+      }
       ...ElementData
     }
   }

@@ -87,6 +87,7 @@ export async function getPracticeQuizData(
                       where: {
                         participantId: ctx.user.sub,
                       },
+                      take: 1,
                     },
                   }
                 : undefined,
