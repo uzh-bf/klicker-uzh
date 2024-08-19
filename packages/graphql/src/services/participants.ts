@@ -1,4 +1,4 @@
-import { PublicationStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail.js'
@@ -448,6 +448,22 @@ export async function getBookmarkedElementStacks(
       bookmarkedElementStacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                    feedbacks: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                      take: 1,
+                    },
+                  }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
