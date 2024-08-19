@@ -12,10 +12,32 @@ import {
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4 } from '@uzh-bf/design-system'
+import { Button, H4, Toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FlagElementModal from '../flags/FlagElementModal'
+
+interface RatingErrorToastProps {
+  open: boolean
+  setOpen: (newValue: boolean) => void
+}
+
+function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
+  const t = useTranslations()
+
+  return (
+    <Toast
+      duration={5000}
+      type="error"
+      openExternal={open}
+      setOpenExternal={setOpen}
+    >
+      <H4>{t('shared.generic.error')}</H4>
+      <div>{t('pwa.practiceQuiz.errorRatingElement')}</div>
+    </Toast>
+  )
+}
 
 interface InstanceHeaderProps {
   instanceId: number
@@ -36,6 +58,7 @@ function InstanceHeader({
 }: InstanceHeaderProps) {
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
+  const [ratingErrorToast, setRatingErrorToast] = useState(false)
   const [vote, setVote] = useState(0) // TODO: optionally fetch last rating from DB
 
   const handleVote = async (upvote: boolean) => {
@@ -61,7 +84,7 @@ function InstanceHeader({
     } else if (res.data?.rateElement?.downvote) {
       setVote(-1)
     } else {
-      // TODO: show error!
+      setRatingErrorToast(true)
       setVote(0)
     }
   }
@@ -120,6 +143,10 @@ function InstanceHeader({
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
+            />
+            <RatingErrorToast
+              open={ratingErrorToast}
+              setOpen={setRatingErrorToast}
             />
           </div>
         )}
