@@ -12,6 +12,7 @@ import {
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { GetElementFeedbackDocument } from '@klicker-uzh/graphql/src/ops'
 import { Button, H4, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -83,7 +84,9 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
-      // TODO: possibly fix through refetch query that wrong state is shown when switching back and forth between questions / or move state to top level of page
+      refetchQueries: [
+        { query: GetElementFeedbackDocument, variables: { instanceId } },
+      ],
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -98,7 +101,7 @@ function InstanceHeader({
 
   return (
     <div className={twMerge('mb-4', className)}>
-      <div className="flex flex-row justify-between pr-1">
+      <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
             <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />

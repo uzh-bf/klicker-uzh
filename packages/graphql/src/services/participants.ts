@@ -610,6 +610,21 @@ export async function rateElement(
   return elementFeedback
 }
 
+export async function getElementFeedback(
+  args: { elementInstanceId: number },
+  ctx: ContextWithUser
+) {
+  const elementFeedback = await ctx.prisma.elementFeedback.findMany({
+    where: {
+      elementInstanceId: args.elementInstanceId,
+      participantId: ctx.user.sub,
+    },
+    take: 1,
+  })
+
+  return elementFeedback?.[0]
+}
+
 export async function getPublicParticipantProfile(
   args: { participantId: string },
   ctx: ContextWithUser
