@@ -189,9 +189,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on practice quiz ${quizNameTestSeed}`
     )
-    // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-element"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
 
     // open the bookmarks of the test course and check if the marked questions appear
     cy.get('[data-cy="header-home"]').click()

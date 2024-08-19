@@ -163,20 +163,22 @@ function FlagElementModal({
                 <FormikTextareaField
                   name="feedback"
                   placeholder={t('pwa.practiceQuiz.addFeedback')}
-                  className={{ input: 'w-full h-24' }}
+                  className={{
+                    input: 'w-full h-24 text-base',
+                  }}
                   data={{ cy: 'flag-element-textarea' }}
                 />
                 <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
                   <Button
                     onClick={() => setOpen(false)}
-                    className={{ root: 'order-2 md:order-1' }}
+                    className={{ root: 'text-base order-2 md:order-1' }}
                     data={{ cy: 'cancel-flag-element' }}
                   >
                     {t('shared.generic.cancel')}
                   </Button>
                   <Button
                     className={{
-                      root: 'float-right px-5 text-white disabled:opacity-20 order-1 md:order-2 border-0 bg-primary-80',
+                      root: 'text-base float-right px-5 text-white disabled:opacity-20 order-1 md:order-2 border-0 bg-primary-80',
                     }}
                     type="submit"
                     disabled={isSubmitting || !isValid}

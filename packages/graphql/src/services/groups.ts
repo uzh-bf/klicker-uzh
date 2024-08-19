@@ -509,6 +509,13 @@ export async function getGroupActivityDetails(
       stacks: {
         include: {
           elements: {
+            include: {
+              feedbacks: {
+                where: {
+                  participantId: ctx.user.sub,
+                },
+              },
+            },
             orderBy: {
               order: 'asc',
             },
