@@ -14,4 +14,9 @@ data:
   LTI_CLIENT_ID: {{ .Values.lti.clientId | quote }}
   LTI_REDIRECT_URL: {{ .Values.lti.redirectURL | quote }}
   LTI_PORT: {{ .Values.lti.port | quote }}
+  LTI_URL: {{ .Values.lti.url | quote }}
+  LTI_NAME: {{ .Values.lti.name | quote }}
+  LTI_AUTH_ENDPOINT: {{ .Values.lti.authEndpoint | quote }}
+  LTI_TOKEN_ENDPOINT: {{ .Values.lti.tokenEndpoint | quote }}
+  LTI_KEYS_ENDPOINT: {{ .Values.lti.keysEndpoint | quote }}
   COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}

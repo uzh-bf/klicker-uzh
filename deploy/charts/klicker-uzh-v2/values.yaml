@@ -257,7 +257,11 @@ lti:
   redirectURL:
   cookieDomain:
   encryptionKey:
-
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
   port: 4000
 
   db:

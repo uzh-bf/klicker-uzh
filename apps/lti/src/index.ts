@@ -75,12 +75,12 @@ const setup = async () => {
 
   // Optional: Register platform if you're setting this up for the first time
   const platform = await Provider.registerPlatform({
-    url: 'https://lms.uzh.ch',
-    name: 'OLAT UZH',
+    url: process.env.LTI_URL as string,
+    name: process.env.LTI_NAME as string,
     clientId: process.env.LTI_CLIENT_ID as string,
-    authenticationEndpoint: 'https://lms.uzh.ch/lti/auth',
-    accesstokenEndpoint: 'https://lms.uzh.ch/lti/token',
-    authConfig: { method: 'JWK_SET', key: 'https://lms.uzh.ch/lti/keys' },
+    authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
+    accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
+    authConfig: { method: 'JWK_SET', key: process.env.LTI_KEYS_ENDPOINT as string },
   })
 
   console.log(await platform.platformPublicKey())
