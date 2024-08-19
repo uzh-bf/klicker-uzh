@@ -1,9 +1,9 @@
 -- CreateTable
 CREATE TABLE "ElementFeedback" (
     "id" SERIAL NOT NULL,
-    "upvote" BOOLEAN NOT NULL,
-    "downvote" BOOLEAN NOT NULL,
-    "feedback" TEXT NOT NULL,
+    "upvote" BOOLEAN NOT NULL DEFAULT false,
+    "downvote" BOOLEAN NOT NULL DEFAULT false,
+    "feedback" TEXT,
     "participantId" UUID NOT NULL,
     "elementInstanceId" INTEGER NOT NULL,
     "elementId" INTEGER NOT NULL,

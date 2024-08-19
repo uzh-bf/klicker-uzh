@@ -76,9 +76,9 @@ model QuestionResponseDetail {
 model ElementFeedback {
   id Int @id @default(autoincrement())
 
-  upvote   Boolean
-  downvote Boolean
-  feedback String
+  upvote   Boolean @default(false)
+  downvote Boolean @default(false)
+  feedback String?
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
