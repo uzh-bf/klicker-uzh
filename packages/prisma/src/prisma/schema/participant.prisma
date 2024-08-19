@@ -1,12 +1,15 @@
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId String @unique
+  ssoId   String @unique
+  ssoType String @default("LTI1.1")
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
+
+  @@unique([participantId, ssoType])
 }
 
 model Participant {

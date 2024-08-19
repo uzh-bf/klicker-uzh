@@ -1,3 +1,4 @@
+import JWT from 'jsonwebtoken'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
@@ -51,9 +52,21 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 // LTI launch callback (token has been verified by ltijs beforehand)
 Provider.onConnect((token, req, res) => {
   console.log(token)
-  const ltik = res.locals.ltik
 
-  res.cookie('ltik', ltik, {
+  const jwt = JWT.sign(
+    {
+      sub: token.user,
+      email: token.userInfo.email,
+      scope: 'LTI1.3',
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '30m',
+    }
+  )
+
+  res.cookie('lti-token', jwt, {
     secure: true,
     sameSite: 'none',
     domain: process.env.COOKIE_DOMAIN as string,

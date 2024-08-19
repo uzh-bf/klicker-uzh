@@ -20,12 +20,35 @@ export async function getParticipantToken({
   // fetch the relevant data directly
   let participantToken: string | undefined | null = cookies['participant_token']
 
-  // console.log('participantToken', participantToken)
+  if (participantToken) {
+    return {
+      participantToken,
+    }
+  }
 
   try {
-    if (!participantToken && req.method === 'POST') {
-      // console.log('POST', req.method)
+    let result
 
+    // LTI 1.3 authentication flow
+    if (cookies['lti-token']) {
+      const signedLtiData = JWT.verify(
+        cookies['lti-token'],
+        process.env.APP_SECRET as string
+      ) as { sub: string; email: string; scope: string }
+
+      if (signedLtiData.scope === 'LTI1.3') {
+        result = await apolloClient.mutate({
+          mutation: LoginParticipantWithLtiDocument,
+          variables: {
+            signedLtiData: cookies['lti-token'],
+          },
+        })
+
+        console.log(result)
+      }
+    }
+    // LTI 1.1 authentication flow
+    else if (req.method === 'POST') {
       // extract the body from the LTI request
       // if there is a body, request a participant token
       // TODO: verify that there is an LTI body and that it is valid
@@ -44,52 +67,53 @@ export async function getParticipantToken({
         const signedLtiData = JWT.sign(
           {
             sub: request?.body?.lis_person_sourcedid,
+            email: request?.body?.lis_person_contact_email_primary,
+            scope: 'LTI1.1',
           },
           process.env.APP_SECRET as string,
           {
             algorithm: 'HS256',
-            expiresIn: '1h',
+            expiresIn: '30m',
           }
         )
 
-        // console.log('signedLtiData', signedLtiData)
-
-        const result = await apolloClient.mutate({
+        result = await apolloClient.mutate({
           mutation: LoginParticipantWithLtiDocument,
           variables: {
             signedLtiData,
           },
         })
-
-        // console.log('result', result.data?.loginParticipantWithLti)
-
-        participantToken =
-          result.data?.loginParticipantWithLti?.participantToken
-
-        if (participantToken) {
-          nookies.set(ctx, 'participant_token', participantToken, {
-            domain: process.env.COOKIE_DOMAIN,
-            path: '/',
-            httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24 * 13,
-            secure:
-              process.env.NODE_ENV === 'production' &&
-              process.env.COOKIE_DOMAIN !== '127.0.0.1',
-            sameSite:
-              process.env.NODE_ENV === 'development' ||
-              process.env.COOKIE_DOMAIN === '127.0.0.1'
-                ? 'lax'
-                : 'none',
-          })
-        }
-
-        return {
-          participantToken:
-            result.data?.loginParticipantWithLti?.participantToken ??
-            participantToken,
-          participant: result.data?.loginParticipantWithLti,
-        }
       }
+    }
+
+    if (!result) {
+      return {}
+    }
+
+    participantToken = result.data?.loginParticipantWithLti?.participantToken
+
+    if (participantToken) {
+      nookies.set(ctx, 'participant_token', participantToken, {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 13,
+        secure:
+          process.env.NODE_ENV === 'production' &&
+          process.env.COOKIE_DOMAIN !== '127.0.0.1',
+        sameSite:
+          process.env.NODE_ENV === 'development' ||
+          process.env.COOKIE_DOMAIN === '127.0.0.1'
+            ? 'lax'
+            : 'none',
+      })
+    }
+
+    return {
+      participantToken:
+        result.data?.loginParticipantWithLti?.participantToken ??
+        participantToken,
+      participant: result.data?.loginParticipantWithLti,
     }
   } catch (e) {
     console.error(e)
