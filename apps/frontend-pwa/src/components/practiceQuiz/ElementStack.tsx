@@ -124,6 +124,7 @@ function ElementStack({
                 <div key={`${element.id}-student`}>
                   <InstanceHeader
                     instanceId={element.id}
+                    elementId={parseInt(element.elementData.id)}
                     name={element.elementData.name}
                     withParticipant={withParticipant}
                   />

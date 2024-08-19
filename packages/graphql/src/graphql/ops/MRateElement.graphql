@@ -1,11 +1,15 @@
-mutation FlagElement(
+mutation RateElement(
   $elementInstanceId: Int!
   $elementId: Int!
-  $content: String!
+  $rating: Int!
 ) {
-  flagElement(
+  rateElement(
     elementInstanceId: $elementInstanceId
     elementId: $elementId
-    content: $content
-  )
+    rating: $rating
+  ) {
+    id
+    upvote
+    downvote
+  }
 }

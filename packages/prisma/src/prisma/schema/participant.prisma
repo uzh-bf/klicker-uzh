@@ -36,6 +36,7 @@ model Participant {
   questionResponses       QuestionResponse[]
   detailQuestionResponses QuestionResponseDetail[]
   feedbacks               Feedback[]
+  elementFeedbacks        ElementFeedback[]
   leaderboards            LeaderboardEntry[]
   subscriptions           PushSubscription[]
   clueAssignments         GroupActivityClueAssignment[]

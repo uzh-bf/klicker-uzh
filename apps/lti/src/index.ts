@@ -70,7 +70,11 @@ Provider.onConnect((token, req, res) => {
     console.log('Redirecting to:', url)
     res.redirect(url)
   } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
-    if (!process.env.LTI_REDIRECT_URL.includes(process.env.COOKIE_DOMAIN as string)) {
+    if (
+      !process.env.LTI_REDIRECT_URL.includes(
+        process.env.COOKIE_DOMAIN as string
+      )
+    ) {
       throw new Error(
         'COOKIE_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
       )
@@ -98,7 +102,10 @@ const setup = async () => {
     clientId: process.env.LTI_CLIENT_ID as string,
     authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
     accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
-    authConfig: { method: 'JWK_SET', key: process.env.LTI_KEYS_ENDPOINT as string },
+    authConfig: {
+      method: 'JWK_SET',
+      key: process.env.LTI_KEYS_ENDPOINT as string,
+    },
   })
 
   if (!platform) {

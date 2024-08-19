@@ -466,7 +466,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
     },
-
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
       studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
@@ -483,6 +482,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       addFeedback: 'Feedback hinzufügen',
       submitFeedback: 'Feedback abschicken',
+      errorRatingElement:
+        'Ihre Bewertung des Elements war leider nicht erfolgreich. Versuchen Sie es später nochmals.',
       notFound:
         'Unter diesem Link existiert kein Übungs-Quiz oder dieses ist noch nicht publiziert.',
       repetitionTitle: 'Repetition Übungs-Quizzes',
@@ -509,9 +510,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Fragetyp ist aktuell für Übungs-Quizzes nicht verfügbar.',
       newPointsFrom: 'Erneute Punkte/XP ab:',
       othersAnswered: 'So haben andere geantwortet',
-      flagQuestion: 'Frage melden',
-      flagQuestionText:
-        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       infoStack: 'Informationselement',
       scheduledAvailableFrom: 'Das Übungs-Quiz {name} ist ab {date} verfügbar.',
       inactiveParticipation:

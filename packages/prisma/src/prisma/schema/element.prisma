@@ -53,6 +53,7 @@ model Element {
   // TODO: as we renamed Question to Element, it will need to have instances and elementInstances in parallel for a while. once we migrated all question instances and activities to elements, we can remove instances with a migration.
   instances        QuestionInstance[]
   elementInstances ElementInstance[]
+  feedbacks        ElementFeedback[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -92,6 +93,7 @@ model ElementInstance {
 
   responses       QuestionResponse[]
   detailResponses QuestionResponseDetail[]
+  feedbacks       ElementFeedback[]
 
   element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int

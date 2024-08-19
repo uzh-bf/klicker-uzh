@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
   GroupActivity,
@@ -450,10 +451,24 @@ export const Mutation = builder.mutationType({
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagElement(args, ctx)
+        },
+      }),
+
+      rateElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ElementFeedback,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
+          rating: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.rateElement(args, ctx)
         },
       }),
 

@@ -194,6 +194,13 @@ enum ElementDisplayMode {
   LIST
 }
 
+type ElementFeedback {
+  downvote: Boolean!
+  feedback: String
+  id: Int!
+  upvote: Boolean!
+}
+
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
@@ -633,7 +640,7 @@ type Mutation {
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
@@ -659,6 +666,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
   publishScheduledPracticeQuizzes: Boolean!
+  rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback

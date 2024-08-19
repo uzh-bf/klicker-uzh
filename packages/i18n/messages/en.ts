@@ -481,6 +481,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       addFeedback: 'Add feedback',
       submitFeedback: 'Submit feedback',
+      errorRatingElement:
+        'Your rating of the element was unfortunately not successful. Please try again later.',
       notFound:
         'The corresponding practice quiz is either not available or not yet published.',
       repetitionTitle: 'Repetition practice quizzes',
@@ -507,9 +509,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This question type is currently not available for practice quizzes',
       newPointsFrom: 'New points/XP from:',
       othersAnswered: 'Others answered as follows',
-      flagQuestion: 'Report question',
-      flagQuestionText:
-        'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       infoStack: 'Information element',
       scheduledAvailableFrom:
         'The practice quiz {name} will be available from {date}.',
