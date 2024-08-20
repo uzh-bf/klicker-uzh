@@ -122,20 +122,22 @@ function FlagElementModal({
             feedback: content,
           },
         },
-        update(cache) {
-          const data = cache.readQuery({
+        update(cache, { data: dataFlagging }) {
+          const dataQuery = cache.readQuery({
             query: GetStackElementFeedbacksDocument,
             variables: { instanceIds: stackInstanceIds },
           })
 
-          const feedbackIx = data?.getStackElementFeedbacks?.findIndex(
+          const feedbackIx = dataQuery?.getStackElementFeedbacks?.findIndex(
             (feedback) => feedback.elementInstanceId === instanceId
           )
-          let newFeedbacks = [...(data?.getStackElementFeedbacks ?? [])]
+          let newFeedbacks = [...(dataQuery?.getStackElementFeedbacks ?? [])]
           if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
             newFeedbacks.push({
               __typename: 'ElementFeedback',
-              id: Math.round(Math.random() * -1000000),
+              id:
+                dataFlagging?.flagElement?.id ??
+                Math.round(Math.random() * -1000000),
               elementInstanceId: instanceId,
               upvote: false,
               downvote: false,
