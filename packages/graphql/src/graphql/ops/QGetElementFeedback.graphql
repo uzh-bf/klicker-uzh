@@ -1,8 +1,9 @@
-query GetElementFeedback($instanceId: Int!) {
-  getElementFeedback(elementInstanceId: $instanceId) {
+query GetStackElementFeedbacks($instanceIds: [Int!]!) {
+  getStackElementFeedbacks(elementInstanceIds: $instanceIds) {
     id
     upvote
     downvote
     feedback
+    elementInstanceId
   }
 }

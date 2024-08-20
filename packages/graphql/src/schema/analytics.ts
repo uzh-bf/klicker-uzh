@@ -9,5 +9,6 @@ export const ElementFeedback = builder.objectType(ElementFeedbackRef, {
     upvote: t.exposeBoolean('upvote'),
     downvote: t.exposeBoolean('downvote'),
     feedback: t.exposeString('feedback', { nullable: true }),
+    elementInstanceId: t.exposeInt('elementInstanceId'),
   }),
 })

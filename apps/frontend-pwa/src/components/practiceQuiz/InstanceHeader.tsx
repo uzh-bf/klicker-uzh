@@ -9,12 +9,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementFeedback,
+  GetStackElementFeedbacksDocument,
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FlagElementModal from '../flags/FlagElementModal'
 
@@ -46,8 +48,8 @@ interface InstanceHeaderProps {
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
-  previousRating?: number
-  previousFeedback?: string
+  previousElementFeedback?: ElementFeedback
+  stackInstanceIds: number[]
   className?: string
 }
 
@@ -58,17 +60,34 @@ function InstanceHeader({
   name,
   withParticipant,
   correctness,
-  previousRating,
-  previousFeedback,
+  previousElementFeedback,
+  stackInstanceIds,
   className,
 }: InstanceHeaderProps) {
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
-  const [vote, setVote] = useState(previousRating ?? 0)
-  const [feedbackValue, setFeedbackValue] = useState(
-    previousFeedback ?? undefined
+  const [vote, setVote] = useState(
+    previousElementFeedback?.upvote
+      ? 1
+      : previousElementFeedback?.downvote
+      ? -1
+      : 0
   )
+  const [feedbackValue, setFeedbackValue] = useState(
+    previousElementFeedback?.feedback ?? undefined
+  )
+
+  useEffect(() => {
+    setVote(
+      previousElementFeedback?.upvote
+        ? 1
+        : previousElementFeedback?.downvote
+        ? -1
+        : 0
+    )
+    setFeedbackValue(previousElementFeedback?.feedback ?? undefined)
+  }, [previousElementFeedback])
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -86,9 +105,41 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
-      // refetchQueries: [
-      //   { query: GetElementFeedbackDocument, variables: { instanceId } },
-      // ],
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetStackElementFeedbacksDocument,
+          variables: { instanceIds: stackInstanceIds },
+        })
+
+        const feedbackIx = data?.getStackElementFeedbacks?.findIndex(
+          (feedback) => feedback.elementInstanceId === instanceId
+        )
+        let newFeedbacks = [...(data?.getStackElementFeedbacks ?? [])]
+        if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
+          newFeedbacks.push({
+            __typename: 'ElementFeedback',
+            id: newFeedbacks.length,
+            elementInstanceId: instanceId,
+            upvote,
+            downvote: !upvote,
+            feedback: null,
+          })
+        } else {
+          newFeedbacks[feedbackIx] = {
+            ...newFeedbacks[feedbackIx],
+            upvote,
+            downvote: !upvote,
+          }
+        }
+
+        cache.writeQuery({
+          query: GetStackElementFeedbacksDocument,
+          variables: { instanceIds: stackInstanceIds },
+          data: {
+            getStackElementFeedbacks: newFeedbacks,
+          },
+        })
+      },
     })
 
     if (res.data?.rateElement?.upvote) {
