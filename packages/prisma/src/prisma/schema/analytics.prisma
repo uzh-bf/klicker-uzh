@@ -15,3 +15,40 @@ model AnalyticsDaily {
   course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String? @db.Uuid
 }
+
+model CompetencyTree {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  competencies Competency[]
+  courses      Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+}
+
+model Competency {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String?
+
+  // left and right values for nested set queries
+  lft Int
+  rgt Int
+
+  tree   CompetencyTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, lft, rgt])
+}

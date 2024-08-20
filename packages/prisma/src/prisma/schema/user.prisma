@@ -106,6 +106,7 @@ model User {
   practiceQuizzes   PracticeQuiz[]
   microLearnings    MicroLearning[]
   liveQuizzes       LiveQuiz[]
+  competencyTrees   CompetencyTree[]
 
   firstLogin Boolean @default(true)
 
