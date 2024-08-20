@@ -10,12 +10,6 @@ query GetBookmarkedElementStacks($courseId: String!) {
       id
       type
       elementType
-      feedbacks {
-        id
-        upvote
-        downvote
-        feedback
-      }
       ...ElementDataWithoutSolutions
     }
   }

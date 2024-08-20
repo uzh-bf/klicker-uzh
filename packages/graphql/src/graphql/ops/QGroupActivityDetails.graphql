@@ -23,12 +23,6 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
         id
         type
         elementType
-        feedbacks {
-          id
-          upvote
-          downvote
-          feedback
-        }
         ...ElementDataWithoutSolutions
       }
     }

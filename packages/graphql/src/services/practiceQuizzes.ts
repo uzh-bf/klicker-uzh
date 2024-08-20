@@ -83,12 +83,6 @@ export async function getPracticeQuizData(
                         participantId: ctx.user.sub,
                       },
                     },
-                    feedbacks: {
-                      where: {
-                        participantId: ctx.user.sub,
-                      },
-                      take: 1,
-                    },
                   }
                 : undefined,
             orderBy: {

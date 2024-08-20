@@ -34,12 +34,6 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
       id
       type
       elementType
-      feedbacks {
-        id
-        upvote
-        downvote
-        feedback
-      }
       ...ElementDataWithoutSolutions
     }
   }

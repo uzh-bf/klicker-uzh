@@ -456,12 +456,6 @@ export async function getBookmarkedElementStacks(
                         participantId: ctx.user.sub,
                       },
                     },
-                    feedbacks: {
-                      where: {
-                        participantId: ctx.user.sub,
-                      },
-                      take: 1,
-                    },
                   }
                 : undefined,
             orderBy: {
