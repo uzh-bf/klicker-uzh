@@ -31,8 +31,8 @@ model Course {
   liveQuizzes       LiveQuiz[]
   analyticsDaily    AnalyticsDaily[]
 
-  competencyTrees  CompetencyTree @relation(fields: [competencyTreeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  competencyTreeId Int
+  competencyTrees  CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  competencyTreeId Int?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
