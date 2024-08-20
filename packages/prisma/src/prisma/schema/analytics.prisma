@@ -51,4 +51,6 @@ model Competency {
   updatedAt DateTime @updatedAt
 
   @@unique([treeId, lft, rgt])
+  @@index([treeId, lft])
+  @@index([treeId, rgt])
 }
