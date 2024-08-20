@@ -311,6 +311,8 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="start-group-activity"]').click()
 
     // test rating and flagging of group activity instances
+    const flaggingText = 'Test flagging question on group activity'
+    const flaggingTextNew = 'Test flagging question on group activity NEW'
     cy.get('[data-cy="upvote-element-0-button"]').click()
     cy.wait(1000)
     cy.get('[data-cy="downvote-element-0-button"]').click()
@@ -318,17 +320,29 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="upvote-element-1-button"]').click()
     cy.wait(1000)
     cy.get('[data-cy="flag-element-1-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"').type(
-      'Test flagging question on group activity'
-    )
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(flaggingText)
     cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get('[data-cy="flag-element-1-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"').type(
-      'Test flagging question on group activity'
-    )
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(flaggingText)
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
+    cy.get('[data-cy="flag-element-1-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').should(
+      'have.value',
+      flaggingText
+    )
+    cy.get('[data-cy="flag-element-textarea"]').clear().type(flaggingTextNew)
+    cy.get('[data-cy="submit-flag-element"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="flag-element-1-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').should(
+      'have.value',
+      flaggingTextNew
+    )
+    cy.get('[data-cy="cancel-flag-element"]').click()
 
     // answer the questions in the group activity
     cy.get('[data-cy="free-text-input-1"]').click().type('Testanswer 1')

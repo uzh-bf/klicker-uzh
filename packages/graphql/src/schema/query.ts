@@ -445,14 +445,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      getElementFeedback: asParticipant.field({
+      getStackElementFeedbacks: asParticipant.field({
         nullable: true,
-        type: ElementFeedback,
+        type: [ElementFeedback],
         args: {
-          elementInstanceId: t.arg.int({ required: true }),
+          elementInstanceIds: t.arg.intList({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantService.getElementFeedback(args, ctx)
+          return ParticipantService.getStackElementFeedbacks(args, ctx)
         },
       }),
 

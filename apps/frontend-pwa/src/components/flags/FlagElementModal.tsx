@@ -5,7 +5,10 @@ import {
   faMessage as faMessageSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { FlagElementDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  FlagElementDocument,
+  GetStackElementFeedbacksDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextareaField,
@@ -70,6 +73,7 @@ interface FlagElementModalProps {
   elementId: number
   feedbackValue?: string
   setFeedbackValue: (newValue: string) => void
+  stackInstanceIds: number[]
 }
 
 function FlagElementModal({
@@ -80,6 +84,7 @@ function FlagElementModal({
   elementId,
   feedbackValue,
   setFeedbackValue,
+  stackInstanceIds,
 }: FlagElementModalProps) {
   const t = useTranslations()
 
@@ -106,6 +111,50 @@ function FlagElementModal({
           elementInstanceId: instanceId,
           elementId: elementId,
           content,
+        },
+        optimisticResponse: {
+          __typename: 'Mutation',
+          flagElement: {
+            __typename: 'ElementFeedback',
+            id: -1,
+            upvote: false,
+            downvote: false,
+            feedback: content,
+          },
+        },
+        update(cache) {
+          const data = cache.readQuery({
+            query: GetStackElementFeedbacksDocument,
+            variables: { instanceIds: stackInstanceIds },
+          })
+
+          const feedbackIx = data?.getStackElementFeedbacks?.findIndex(
+            (feedback) => feedback.elementInstanceId === instanceId
+          )
+          let newFeedbacks = [...(data?.getStackElementFeedbacks ?? [])]
+          if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
+            newFeedbacks.push({
+              __typename: 'ElementFeedback',
+              id: Math.round(Math.random() * -1000000),
+              elementInstanceId: instanceId,
+              upvote: false,
+              downvote: false,
+              feedback: content,
+            })
+          } else {
+            newFeedbacks[feedbackIx] = {
+              ...newFeedbacks[feedbackIx],
+              feedback: content,
+            }
+          }
+
+          cache.writeQuery({
+            query: GetStackElementFeedbacksDocument,
+            variables: { instanceIds: stackInstanceIds },
+            data: {
+              getStackElementFeedbacks: newFeedbacks,
+            },
+          })
         },
       })
       if (result.data?.flagElement?.id) {
