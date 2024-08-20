@@ -118,7 +118,7 @@ function InstanceHeader({
         if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
           newFeedbacks.push({
             __typename: 'ElementFeedback',
-            id: newFeedbacks.length,
+            id: Math.round(Math.random() * -1000000),
             elementInstanceId: instanceId,
             upvote,
             downvote: !upvote,
@@ -209,6 +209,7 @@ function InstanceHeader({
               elementId={elementId}
               feedbackValue={feedbackValue}
               setFeedbackValue={setFeedbackValue}
+              stackInstanceIds={stackInstanceIds}
             />
             <RatingErrorToast
               open={ratingErrorToast}
