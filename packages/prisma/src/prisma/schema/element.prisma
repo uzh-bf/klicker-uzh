@@ -95,6 +95,10 @@ model ElementInstance {
   detailResponses QuestionResponseDetail[]
   feedbacks       ElementFeedback[]
 
+  correctCount        Int @default(0)
+  partialCorrectCount Int @default(0)
+  wrongCount          Int @default(0)
+
   element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
   elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
