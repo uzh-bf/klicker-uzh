@@ -1,8 +1,0 @@
-query GetElementFeedback($instanceId: Int!) {
-  getElementFeedback(elementInstanceId: $instanceId) {
-    id
-    upvote
-    downvote
-    feedback
-  }
-}

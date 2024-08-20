@@ -196,6 +196,7 @@ enum ElementDisplayMode {
 
 type ElementFeedback {
   downvote: Boolean!
+  elementInstanceId: Int!
   feedback: String
   id: Int!
   upvote: Boolean!
@@ -886,12 +887,12 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
-  getElementFeedback(elementInstanceId: Int!): ElementFeedback
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session

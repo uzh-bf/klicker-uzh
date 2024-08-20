@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import useStackElementFeedbacks from '@components/hooks/useStackElementFeedbacks'
 import {
   ElementStack,
   ElementType,
@@ -51,6 +52,9 @@ function GroupActivityStack({
         },
       ],
     })
+  const elementFeedbacks = useStackElementFeedbacks({
+    instanceIds: stack.elements?.map((element) => element.id) ?? [],
+  })
 
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
@@ -162,15 +166,9 @@ function GroupActivityStack({
                   name={element.elementData.name}
                   className="mb-0"
                   correctness={correctness}
-                  previousRating={
-                    element.feedbacks?.[0]?.upvote
-                      ? 1
-                      : element.feedbacks?.[0]?.downvote
-                      ? -1
-                      : 0
-                  }
-                  previousFeedback={
-                    element.feedbacks?.[0]?.feedback ?? undefined
+                  previousElementFeedback={elementFeedbacks[element.id]}
+                  stackInstanceIds={
+                    stack.elements?.map((element) => element.id) ?? []
                   }
                   withParticipant
                 />
