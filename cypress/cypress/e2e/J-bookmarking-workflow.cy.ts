@@ -152,24 +152,38 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="submit-login"]').click()
 
     // test flagging for microlearnings
+    const flagFeedback = `Test flagging question on microlearning ${microlearningName}`
+    const flagFeedbackNew = `Test flagging question on microlearning ${microlearningName} new`
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="flag-element-0-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"').type(
-      `Test flagging question on microlearning ${microlearningName}`
-    )
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(flagFeedback)
     cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get('[data-cy="flag-element-0-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"').type(
-      `Test flagging question on microlearning ${microlearningName}`
-    )
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(flagFeedback)
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
     cy.get('[data-cy="upvote-element-0-button"]').click()
     cy.wait(1000)
     cy.get('[data-cy="downvote-element-0-button"]').click()
     cy.wait(1000)
+    cy.get('[data-cy="flag-element-0-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').should(
+      'have.value',
+      flagFeedback
+    )
+    cy.get('[data-cy="flag-element-textarea"]').clear().type(flagFeedbackNew)
+    cy.get('[data-cy="submit-flag-element"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="flag-element-0-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').should(
+      'have.value',
+      flagFeedbackNew
+    )
+    cy.get('[data-cy="cancel-flag-element"]').click()
 
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
@@ -184,8 +198,8 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.get('[data-cy="bookmark-element-stack"]').click()
     cy.get('[data-cy="flag-element-0-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"').type(
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(
       `Test flagging question on practice quiz ${quizNameTestSeed}`
     )
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
