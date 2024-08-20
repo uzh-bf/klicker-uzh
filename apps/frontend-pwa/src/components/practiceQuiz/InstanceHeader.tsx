@@ -40,26 +40,35 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
 }
 
 interface InstanceHeaderProps {
+  index: number
   instanceId: number
   elementId: number
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
+  previousRating?: number
+  previousFeedback?: string
   className?: string
 }
 
 function InstanceHeader({
+  index,
   instanceId,
   elementId,
   name,
   withParticipant,
   correctness,
+  previousRating,
+  previousFeedback,
   className,
 }: InstanceHeaderProps) {
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
-  const [vote, setVote] = useState(0) // TODO: optionally fetch last rating from DB
+  const [vote, setVote] = useState(previousRating ?? 0)
+  const [feedbackValue, setFeedbackValue] = useState(
+    previousFeedback ?? undefined
+  )
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -77,6 +86,9 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
+      // refetchQueries: [
+      //   { query: GetElementFeedbackDocument, variables: { instanceId } },
+      // ],
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -91,7 +103,7 @@ function InstanceHeader({
 
   return (
     <div className={twMerge('mb-4', className)}>
-      <div className="flex flex-row justify-between pr-1">
+      <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
             <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
@@ -110,7 +122,7 @@ function InstanceHeader({
               basic
               active={vote === 1}
               onClick={() => handleVote(true)}
-              data={{ cy: 'upvote-element-button' }}
+              data={{ cy: `upvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -126,7 +138,7 @@ function InstanceHeader({
               basic
               active={vote === -1}
               onClick={() => handleVote(false)}
-              data={{ cy: 'downvote-element-button' }}
+              data={{ cy: `downvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -139,10 +151,13 @@ function InstanceHeader({
               </Button.Icon>
             </Button>
             <FlagElementModal
+              index={index}
               open={modalOpen}
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
+              feedbackValue={feedbackValue}
+              setFeedbackValue={setFeedbackValue}
             />
             <RatingErrorToast
               open={ratingErrorToast}

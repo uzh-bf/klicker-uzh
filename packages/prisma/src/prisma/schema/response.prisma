@@ -93,5 +93,4 @@ model ElementFeedback {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, elementInstanceId])
-  @@unique([participantId, elementId])
 }

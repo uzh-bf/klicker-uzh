@@ -481,6 +481,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       addFeedback: 'Add feedback',
       submitFeedback: 'Submit feedback',
+      updateFeedback: 'Update feedback',
       errorRatingElement:
         'Your rating of the element was unfortunately not successful. Please try again later.',
       notFound:

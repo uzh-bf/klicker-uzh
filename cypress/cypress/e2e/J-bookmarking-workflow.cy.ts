@@ -154,21 +154,21 @@ describe('Question bookmarking and flagging workflow', () => {
     // test flagging for microlearnings
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on microlearning ${microlearningName}`
     )
     cy.get('[data-cy="cancel-flag-element"]').click()
-    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on microlearning ${microlearningName}`
     )
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
-    cy.get('[data-cy="upvote-element-button"]').click()
+    cy.get('[data-cy="upvote-element-0-button"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="downvote-element-button"]').click()
+    cy.get('[data-cy="downvote-element-0-button"]').click()
     cy.wait(1000)
 
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
@@ -178,20 +178,21 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="finish-microlearning"]').click()
 
     // test bookmarking and flagging for practice quizzes
-    // TODO: adapt bookmarking to custom created practice quiz instead of seed-based solution
     const quizNameTestSeed = 'Practice Quiz Demo Student Title'
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${quizNameTestSeed}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.get('[data-cy="bookmark-element-stack"]').click()
-    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on practice quiz ${quizNameTestSeed}`
     )
-    // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-element"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
+    cy.get('[data-cy="upvote-element-0-button"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="downvote-element-0-button"]').click()
+    cy.wait(1000)
 
     // open the bookmarks of the test course and check if the marked questions appear
     cy.get('[data-cy="header-home"]').click()
@@ -199,9 +200,5 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.wait(1000)
     cy.get(`[data-cy="bookmarks-course-${courseName}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
-    // TODO: reintroduce once test-seed dependency is resolved
-    // cy.get(`[data-cy="element-instance-header-${questionTitle}"]`).should(
-    //   'exist'
-    // )
   })
 })

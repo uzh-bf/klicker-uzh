@@ -204,6 +204,7 @@ type ElementFeedback {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
   type: ElementInstanceType!
@@ -640,7 +641,7 @@ type Mutation {
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
@@ -885,6 +886,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getElementFeedback(elementInstanceId: Int!): ElementFeedback
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getParticipation(courseId: String!): Participation
