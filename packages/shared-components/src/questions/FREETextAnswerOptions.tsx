@@ -1,3 +1,4 @@
+import { TextareaField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
@@ -22,26 +23,23 @@ export function FREETextAnswerOptions({
 
   return (
     <div className="flex flex-col gap-2">
-      <textarea
-        disabled={disabled}
-        className="rounded focus:border focus:border-solid focus:border-primary-80"
+      <TextareaField
         id="responseInput"
         value={value}
-        onChange={(e): void => onChange(e.target.value)}
+        onChange={onChange}
+        disabled={disabled}
         rows={3}
         maxLength={
           typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
         }
+        maxLengthUnit={t('shared.generic.characters')}
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data-cy={`free-text-input-${elementIx + 1}`}
+        data={{ cy: `free-text-input-${elementIx + 1}` }}
+        className={{
+          input:
+            'rounded focus:border focus:border-solid focus:border-primary-80',
+        }}
       />
-
-      {typeof maxLength === 'number' && !isNaN(maxLength) && (
-        <div className="text-right text-sm italic">
-          ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
-          {t('shared.generic.characters')})
-        </div>
-      )}
     </div>
   )
 }
