@@ -68,7 +68,8 @@ interface FlagElementModalProps {
   setOpen: (newValue: boolean) => void
   instanceId: number
   elementId: number
-  previousFeedback?: string
+  feedbackValue?: string
+  setFeedbackValue: (newValue: string) => void
 }
 
 function FlagElementModal({
@@ -77,13 +78,13 @@ function FlagElementModal({
   setOpen,
   instanceId,
   elementId,
-  previousFeedback,
+  feedbackValue,
+  setFeedbackValue,
 }: FlagElementModalProps) {
   const t = useTranslations()
 
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [feedbackExists, setFeedbackExists] = useState(!!previousFeedback)
 
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
@@ -107,9 +108,9 @@ function FlagElementModal({
           content,
         },
       })
-      if (result.data?.flagElement === 'OK') {
+      if (result.data?.flagElement?.id) {
         setSuccessToastOpen(true)
-        setFeedbackExists(true)
+        setFeedbackValue(content)
         setOpen(false)
       } else {
         setErrorToastOpen(true)
@@ -135,10 +136,10 @@ function FlagElementModal({
           >
             <Button.Icon>
               <FontAwesomeIcon
-                icon={feedbackExists ? faMessageSolid : faMessage}
+                icon={!!feedbackValue ? faMessageSolid : faMessage}
                 className={twMerge(
                   'hover:text-primary-80 text-uzh-grey-100',
-                  feedbackExists && 'text-primary-80'
+                  !!feedbackValue && 'text-primary-80'
                 )}
               />
             </Button.Icon>
@@ -152,8 +153,8 @@ function FlagElementModal({
           {t('pwa.practiceQuiz.flagElementText')}
         </div>
         <Formik
-          initialValues={{ feedback: previousFeedback ?? '' }}
-          isInitialValid={feedbackExists}
+          initialValues={{ feedback: feedbackValue ?? '' }}
+          isInitialValid={!!feedbackValue}
           onSubmit={(values, { setSubmitting }) =>
             flagElementFeedback(values.feedback, setSubmitting)
           }
@@ -194,7 +195,7 @@ function FlagElementModal({
                       <FontAwesomeIcon icon={faEnvelope} />
                     </Button.Icon>
                     <Button.Label>
-                      {feedbackExists
+                      {!!feedbackValue
                         ? t('pwa.practiceQuiz.updateFeedback')
                         : t('pwa.practiceQuiz.submitFeedback')}
                     </Button.Label>

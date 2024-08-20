@@ -456,12 +456,6 @@ export async function getBookmarkedElementStacks(
                         participantId: ctx.user.sub,
                       },
                     },
-                    feedbacks: {
-                      where: {
-                        participantId: ctx.user.sub,
-                      },
-                      take: 1,
-                    },
                   }
                 : undefined,
             orderBy: {
@@ -537,7 +531,7 @@ export async function flagElement(
     !elementInstance?.elementStack.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
-    return 'OK'
+    return elementFeedback
   }
 
   const practiceQuiz = elementInstance.elementStack.practiceQuiz
@@ -564,7 +558,7 @@ export async function flagElement(
     }),
   })
 
-  return 'OK'
+  return elementFeedback
 }
 
 export async function rateElement(
@@ -608,6 +602,21 @@ export async function rateElement(
   })
 
   return elementFeedback
+}
+
+export async function getElementFeedback(
+  args: { elementInstanceId: number },
+  ctx: ContextWithUser
+) {
+  const elementFeedback = await ctx.prisma.elementFeedback.findMany({
+    where: {
+      elementInstanceId: args.elementInstanceId,
+      participantId: ctx.user.sub,
+    },
+    take: 1,
+  })
+
+  return elementFeedback?.[0]
 }
 
 export async function getPublicParticipantProfile(

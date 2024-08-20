@@ -66,6 +66,9 @@ function InstanceHeader({
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
   const [vote, setVote] = useState(previousRating ?? 0)
+  const [feedbackValue, setFeedbackValue] = useState(
+    previousFeedback ?? undefined
+  )
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -83,7 +86,9 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
-      // TODO: possibly fix through refetch query that wrong state is shown when switching back and forth between questions / or move state to top level of page
+      // refetchQueries: [
+      //   { query: GetElementFeedbackDocument, variables: { instanceId } },
+      // ],
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -98,7 +103,7 @@ function InstanceHeader({
 
   return (
     <div className={twMerge('mb-4', className)}>
-      <div className="flex flex-row justify-between pr-1">
+      <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
             <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
@@ -151,7 +156,8 @@ function InstanceHeader({
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
-              previousFeedback={previousFeedback}
+              feedbackValue={feedbackValue}
+              setFeedbackValue={setFeedbackValue}
             />
             <RatingErrorToast
               open={ratingErrorToast}
