@@ -30,7 +30,9 @@ export function FREETextAnswerOptions({
         disabled={disabled}
         rows={3}
         maxLength={
-          typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
+          typeof maxLength === 'number' && !Number.isNaN(maxLength)
+            ? maxLength
+            : 1500
         }
         maxLengthUnit={t('shared.generic.characters')}
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
