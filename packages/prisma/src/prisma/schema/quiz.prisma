@@ -25,6 +25,9 @@ model PracticeQuiz {
 
   stacks ElementStack[]
 
+  responses       QuestionResponse[]
+  responseDetails QuestionResponseDetail[]
+
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -197,6 +200,9 @@ model MicroLearning {
   arePushNotificationsSent Boolean @default(false)
 
   stacks ElementStack[]
+
+  responses       QuestionResponse[]
+  responseDetails QuestionResponseDetail[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid

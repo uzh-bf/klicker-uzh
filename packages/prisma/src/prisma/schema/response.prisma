@@ -41,12 +41,22 @@ model QuestionResponse {
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int
 
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   isMigrated Boolean @default(false)
 
   @@unique([participantId, elementInstanceId])
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
 }
 
 model QuestionResponseDetail {
@@ -69,8 +79,19 @@ model QuestionResponseDetail {
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int
 
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
 }
 
 model ElementFeedback {
