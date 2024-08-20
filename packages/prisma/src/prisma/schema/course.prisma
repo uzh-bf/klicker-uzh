@@ -14,22 +14,26 @@ model Course {
   groupDeadlineDate     DateTime?
   notificationEmail     String?
   isGamificationEnabled Boolean   @default(true)
+  areAnalyticsValid     Boolean   @default(false)
 
-  sessions          LiveSession[]
-  elementStacks     ElementStack[]
-  practiceQuizzes   PracticeQuiz[]
-  groupActivities   GroupActivity[]
-  leaderboard       LeaderboardEntry[]
-  awards            AwardEntry[]
-  classAchievements ClassAchievementInstance[]
-  achievements      Achievement[]
-  titles            Title[]
-  participations    Participation[]
-  subscriptions     PushSubscription[]
-  participantGroups ParticipantGroup[]
-  microLearnings    MicroLearning[]
-  liveQuizzes       LiveQuiz[]
-  analyticsDaily    AnalyticsDaily[]
+  sessions                   LiveSession[]
+  elementStacks              ElementStack[]
+  practiceQuizzes            PracticeQuiz[]
+  groupActivities            GroupActivity[]
+  leaderboard                LeaderboardEntry[]
+  awards                     AwardEntry[]
+  classAchievements          ClassAchievementInstance[]
+  achievements               Achievement[]
+  titles                     Title[]
+  participations             Participation[]
+  subscriptions              PushSubscription[]
+  participantGroups          ParticipantGroup[]
+  microLearnings             MicroLearning[]
+  liveQuizzes                LiveQuiz[]
+  participantAnalytics       ParticipantAnalytics[]
+  aggregatedAnalytics        AggregatedAnalytics[]
+  aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
+  participantCourseAnalytics ParticipantCourseAnalytics[]
 
   competencyTrees  CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?
