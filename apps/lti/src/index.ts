@@ -66,11 +66,11 @@ Provider.onConnect((token, req, res) => {
     }
   )
 
-  // res.cookie('lti-token', jwt, {
-  //   secure: true,
-  //   sameSite: 'none',
-  //   domain: process.env.COOKIE_DOMAIN as string,
-  // })
+  res.cookie('lti-token', jwt, {
+    secure: true,
+    sameSite: 'none',
+    domain: process.env.COOKIE_DOMAIN as string,
+  })
 
   if (typeof req.query.redirectTo === 'string') {
     if (!req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string)) {
