@@ -132,7 +132,7 @@ async function run() {
         firstCorrectness =
           firstFlashcardCorrectness === FlashcardCorrectness.CORRECT
             ? 1
-            : firstFlashcardCorrectness
+            : firstFlashcardCorrectness === FlashcardCorrectness.INCORRECT
             ? 0
             : 0.5
 
@@ -146,7 +146,7 @@ async function run() {
           lastCorrectness =
             lastFlashcardCorrectness === FlashcardCorrectness.CORRECT
               ? 1
-              : lastFlashcardCorrectness
+              : lastFlashcardCorrectness === FlashcardCorrectness.INCORRECT
               ? 0
               : 0.5
         }
