@@ -71,7 +71,6 @@ model AggregatedAnalytics {
   @@unique([type, courseId, timestamp])
 }
 
-// TODO: try to optimize the amount of required computation for participant-level analyticsx
 model CompetencyAnalytics {
   id Int @id @default(autoincrement())
 
