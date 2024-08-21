@@ -84,11 +84,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   if (participantToken) {
     return {
-      props: {
-        participantToken,
-        cookiesAvailable,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
+      redirect: {
+        destination: '/editProfile',
+        permanent: false,
       },
     }
   }
