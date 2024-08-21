@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
 import { Toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -11,12 +10,23 @@ import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
+import { getParticipantToken, useParticipantToken } from '../lib/token'
 
-function EditProfile() {
+interface Props {
+  participantToken?: string
+  cookiesAvailable?: boolean
+}
+
+function EditProfile({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
   const { data, loading } = useQuery(SelfDocument)
   const [showError, setShowError] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
 
   if (loading || !data?.self) {
     return (
@@ -76,36 +86,18 @@ function EditProfile() {
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
     ctx,
   })
 
-  if (typeof participantToken !== 'string') {
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    }
-  }
-
-  const result = await apolloClient.query({
-    query: SelfDocument,
-    context: participantToken
-      ? {
-          headers: {
-            authorization: `Bearer ${participantToken}`,
-          },
-        }
-      : undefined,
-  })
-
-  if (!result.data.self) {
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
+      props: {
+        participantToken,
+        cookiesAvailable,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

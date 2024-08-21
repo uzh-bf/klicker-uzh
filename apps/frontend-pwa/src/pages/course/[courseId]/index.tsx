@@ -12,7 +12,6 @@ import {
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
 import {
   Button,
   FormikNumberField,
@@ -39,20 +38,32 @@ import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
+import { getParticipantToken, useParticipantToken } from '../../../lib/token'
 
 // TODO: replace fields in this component through our own design system components
 
 interface Props {
   courseId: string
+  participantToken?: string
+  cookiesAvailable?: boolean
 }
 
-function CourseOverview({ courseId }: Props) {
+function CourseOverview({
+  courseId,
+  participantToken,
+  cookiesAvailable,
+}: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
 
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
@@ -627,39 +638,19 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
     ctx,
   })
 
-  if (typeof participantToken !== 'string') {
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/createAccount',
-        permanent: false,
-      },
-    }
-  }
-
-  const result = await apolloClient.query({
-    query: GetCourseOverviewDataDocument,
-    variables: {
-      courseId: ctx.params.courseId as string,
-    },
-    context: participantToken
-      ? {
-          headers: {
-            authorization: `Bearer ${participantToken}`,
-          },
-        }
-      : undefined,
-  })
-
-  if (!result.data.getCourseOverviewData) {
-    return {
-      redirect: {
-        destination: '/404',
-        statusCode: 302,
+      props: {
+        participantToken,
+        cookiesAvailable,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

@@ -3,20 +3,33 @@ import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Layout from '../../components/Layout'
+import { getParticipantToken, useParticipantToken } from '../../lib/token'
 
 interface Props {
   isInactive: boolean
   shortname: string
+  participantToken?: string
+  cookiesAvailable?: boolean
 }
 
-function Join({ isInactive, shortname }: Props) {
+function Join({
+  isInactive,
+  shortname,
+  participantToken,
+  cookiesAvailable,
+}: Props) {
   const t = useTranslations()
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
+
   const { data } = useQuery(GetRunningSessionsDocument, {
     variables: { shortname },
     skip: isInactive,
@@ -94,11 +107,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const { participantToken, participant } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
   // if only a single session is running, redirect directly to the corresponding session page
   // or if linkTo is set, redirect to the specified link
   if (result.data.runningSessions.length === 1) {
@@ -115,6 +123,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       redirect: {
         destination: `/session/${result.data.runningSessions[0].id}`,
         permanent: false,
+      },
+    }
+  }
+
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  if (participantToken) {
+    return {
+      props: {
+        participantToken,
+        cookiesAvailable,
+        shortname: ctx.params.shortname,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

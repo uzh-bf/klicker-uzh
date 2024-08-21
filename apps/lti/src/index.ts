@@ -1,4 +1,4 @@
-import JWT from 'jsonwebtoken'
+import * as JWT from 'jsonwebtoken'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'

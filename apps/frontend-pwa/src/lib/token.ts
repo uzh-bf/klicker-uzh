@@ -3,7 +3,9 @@ import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
 import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
 import nookies from 'nookies'
+import { useEffect } from 'react'
 
 export async function getParticipantToken({
   apolloClient,
@@ -23,6 +25,7 @@ export async function getParticipantToken({
   if (participantToken) {
     return {
       participantToken,
+      cookiesAvailable: true,
     }
   }
 
@@ -114,6 +117,7 @@ export async function getParticipantToken({
         result?.data?.loginParticipantWithLti?.participantToken ??
         participantToken,
       participant: result?.data?.loginParticipantWithLti,
+      cookiesAvailable: null,
     }
   } catch (e) {
     console.error(e)
@@ -121,5 +125,38 @@ export async function getParticipantToken({
 
   return {
     participantToken,
+    cookiesAvailable: null,
   }
+}
+
+export async function useParticipantToken({
+  participantToken,
+  cookiesAvailable,
+  redirectTo,
+}: {
+  participantToken?: string
+  cookiesAvailable?: boolean
+  redirectTo?: string
+}) {
+  const router = useRouter()
+
+  useEffect(() => {
+    if (participantToken) {
+      if (!cookiesAvailable) {
+        if (!sessionStorage.getItem('participant_token')) {
+          sessionStorage.setItem('participant_token', participantToken)
+        }
+      } else {
+        if (sessionStorage.getItem('participant_token')) {
+          sessionStorage.removeItem('participant_token')
+        }
+      }
+
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else {
+        router.reload()
+      }
+    }
+  }, [participantToken, cookiesAvailable])
 }

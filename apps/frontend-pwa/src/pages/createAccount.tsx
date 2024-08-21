@@ -8,18 +8,18 @@ import nookies from 'nookies'
 import { useMutation } from '@apollo/client'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
-import { useEffect } from 'react'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
 import { addApolloState, initializeApollo } from 'src/lib/apollo'
-import { getParticipantToken } from 'src/lib/token'
+import { getParticipantToken, useParticipantToken } from '../lib/token'
 
-interface CreateAccountProps {
+interface Props {
   signedLtiData?: string
   ssoId?: string
   email?: string
   username: string
   participantToken?: string
+  cookiesAvailable?: boolean
 }
 
 function CreateAccount({
@@ -27,7 +27,8 @@ function CreateAccount({
   email,
   username,
   participantToken,
-}: CreateAccountProps) {
+  cookiesAvailable,
+}: Props) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -35,12 +36,11 @@ function CreateAccount({
     CreateParticipantAccountDocument
   )
 
-  useEffect(() => {
-    if (participantToken) {
-      sessionStorage.setItem('participant_token', participantToken)
-      router.push('/editProfile')
-    }
-  }, [participantToken])
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+    redirectTo: '/editProfile',
+  })
 
   return (
     <Layout displayName={t('pwa.profile.createProfile')}>
@@ -74,11 +74,9 @@ function CreateAccount({
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const { req, res, query } = ctx
 
-  // if the user already has a participant token, skip registration
-  // and redirect to the edit  profile page
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
     ctx,
   })
@@ -86,13 +84,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (participantToken) {
     return {
       props: {
-        participantToken: participantToken,
-        username: generatePassword.generate({
-          length: 10,
-          uppercase: true,
-          symbols: false,
-          numbers: true,
-        }),
+        participantToken,
+        cookiesAvailable,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
@@ -116,8 +109,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       email: string
       scope: string
     }
-
-    console.log('LTI 1.3', signedLtiData)
 
     if (parsedToken.scope === 'LTI1.3') {
       signedLtiData.token = token
@@ -160,7 +151,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         ssoId: signedLtiData.ssoId,
         email: signedLtiData.email,
         username: generatePassword.generate({
-          length: 8,
+          length: 10,
           uppercase: true,
           symbols: false,
           numbers: true,
