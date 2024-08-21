@@ -37,8 +37,8 @@ model QuestionResponse {
   firstResponseCorrectness ResponseCorrectness? // TODO: make mandadtory as soon as old data has been migrated
 
   /// [PrismaQuestionResponse]
-  response            Json
-  responseCorrectness ResponseCorrectness? // TODO: make mandadtory as soon as old data has been migrated
+  lastResponse            Json
+  lastResponseCorrectness ResponseCorrectness? // TODO: make mandadtory as soon as old data has been migrated
 
   /// [PrismaElementResults]
   aggregatedResponses Json?
