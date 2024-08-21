@@ -963,11 +963,11 @@ type QuestionResponse {
   lastAwardedAt: Date
   lastCorrectAt: Date
   lastPartialCorrectAt: Date
+  lastResponse: Json!
   lastWrongAt: Date
   lastXpAwardedAt: Date
   nextDueAt: Date
   partialCorrectCount: Int!
-  response: Json!
   totalPointsAwarded: Float
   totalScore: Float!
   totalXpAwarded: Float
@@ -977,6 +977,12 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
 }
 
 enum ResponseCorrectnessType {
