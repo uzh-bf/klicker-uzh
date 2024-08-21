@@ -15,6 +15,7 @@ import {
   ElementStackType,
   ElementType,
   PublicationStatus,
+  ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
@@ -366,6 +367,12 @@ async function respondToFlashcard(
       : response === FlashcardCorrectness.PARTIAL
       ? 0.5
       : 0
+  const responseCorrectness =
+    correctness === 1
+      ? ResponseCorrectness.CORRECT
+      : correctness === 0
+      ? ResponseCorrectness.WRONG
+      : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -403,9 +410,14 @@ async function respondToFlashcard(
         },
       },
       // RESPONSE and aggregated response creation
-      response: {
+      firstResponse: {
         correctness: response,
       },
+      firstResponseCorrectness: responseCorrectness,
+      lastResponse: {
+        correctness: response,
+      },
+      lastResponseCorrectness: responseCorrectness,
       aggregatedResponses: {
         ...aggregatedResponses,
         total: 1,
@@ -425,9 +437,10 @@ async function respondToFlashcard(
     },
     update: {
       // RESPONSE
-      response: {
+      lastResponse: {
         correctness: response,
       },
+      lastResponseCorrectness: responseCorrectness,
       averageTimeSpent: newAverageTime,
       aggregatedResponses: {
         ...aggregatedResponses,
@@ -591,9 +604,14 @@ async function respondToContent(
         },
       },
       // RESPONSE and aggregated response creation
-      response: {
+      firstResponse: {
         viewed: true,
       },
+      firstResponseCorrectness: ResponseCorrectness.CORRECT,
+      lastResponse: {
+        viewed: true,
+      },
+      lastResponseCorrectness: ResponseCorrectness.CORRECT,
       trialsCount: 1,
 
       // AGGREGATED RESPONSES
@@ -615,9 +633,10 @@ async function respondToContent(
     update: {
       // RESPONSE
       averageTimeSpent: newAverageTime,
-      response: {
+      lastResponse: {
         viewed: true,
       },
+      lastResponseCorrectness: ResponseCorrectness.CORRECT,
       trialsCount: {
         increment: 1,
       },
@@ -1302,6 +1321,13 @@ export async function respondToQuestion(
         (existingResponse.trialsCount + 1)
       : answerTime
 
+    const responseCorrectness =
+      correctness === 1
+        ? ResponseCorrectness.CORRECT
+        : correctness === 0
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1318,7 +1344,10 @@ export async function respondToQuestion(
           averageTimeSpent: newAverageTime,
           lastAwardedAt,
           lastXpAwardedAt,
-          response: response as QuestionResponse,
+          firstResponse: response as QuestionResponse,
+          firstResponseCorrectness: responseCorrectness,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           participant: {
             connect: { id: ctx.user.sub },
@@ -1347,7 +1376,8 @@ export async function respondToQuestion(
           interval: resultSpacedRepetition.interval,
         },
         update: {
-          response: response as QuestionResponse,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           lastAwardedAt,
           lastXpAwardedAt,

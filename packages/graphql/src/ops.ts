@@ -1790,11 +1790,11 @@ export type QuestionResponse = {
   lastAwardedAt?: Maybe<Scalars['Date']['output']>;
   lastCorrectAt?: Maybe<Scalars['Date']['output']>;
   lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: Scalars['Json']['output'];
   lastWrongAt?: Maybe<Scalars['Date']['output']>;
   lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
   nextDueAt?: Maybe<Scalars['Date']['output']>;
   partialCorrectCount: Scalars['Int']['output'];
-  response: Scalars['Json']['output'];
   totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
   totalScore: Scalars['Float']['output'];
   totalXpAwarded?: Maybe<Scalars['Float']['output']>;
@@ -1806,6 +1806,12 @@ export type QuestionResponseDetail = {
   __typename?: 'QuestionResponseDetail';
   id: Scalars['Int']['output'];
 };
+
+export enum ResponseCorrectness {
+  Correct = 'CORRECT',
+  Partial = 'PARTIAL',
+  Wrong = 'WRONG'
+}
 
 export enum ResponseCorrectnessType {
   Correct = 'CORRECT',
