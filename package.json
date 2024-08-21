@@ -42,6 +42,7 @@
     "check": "turbo run check --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev --concurrency 30",
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
+    "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
     "dev:offline": "doppler run --config dev -- turbo run dev:offline",
     "dev:test": "cross-env NODE_ENV=test turbo run dev:test",

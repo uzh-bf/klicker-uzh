@@ -1,3 +1,5 @@
+// @ts-ignore
+import JWT from 'jsonwebtoken'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
@@ -50,10 +52,20 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 
 // LTI launch callback (token has been verified by ltijs beforehand)
 Provider.onConnect((token, req, res) => {
-  console.log(token)
-  const ltik = res.locals.ltik
+  const jwt = JWT.sign(
+    {
+      sub: token.user,
+      email: token.userInfo.email,
+      scope: 'LTI1.3',
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '5m',
+    }
+  )
 
-  res.cookie('ltik', ltik, {
+  res.cookie('lti-token', jwt, {
     secure: true,
     sameSite: 'none',
     domain: process.env.COOKIE_DOMAIN as string,
@@ -68,7 +80,7 @@ Provider.onConnect((token, req, res) => {
 
     const url = req.query.redirectTo as string
     console.log('Redirecting to:', url)
-    res.redirect(url)
+    res.redirect(`${url}?jwt=${jwt}`)
   } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
     if (
       !process.env.LTI_REDIRECT_URL.includes(
@@ -82,7 +94,7 @@ Provider.onConnect((token, req, res) => {
 
     const url = process.env.LTI_REDIRECT_URL as string
     console.log('Redirecting to:', url)
-    res.redirect(url)
+    res.redirect(`${url}?jwt=${jwt}`)
   }
 
   res.end()

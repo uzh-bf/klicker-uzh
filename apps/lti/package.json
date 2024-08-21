@@ -10,6 +10,7 @@
   ],
   "dependencies": {
     "cross-env": "7.0.3",
+    "jsonwebtoken": "9.0.2",
     "ltijs": "5.9.4",
     "ltijs-sequelize": "2.4.4"
   },
