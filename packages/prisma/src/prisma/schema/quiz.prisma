@@ -25,6 +25,13 @@ model PracticeQuiz {
 
   stacks ElementStack[]
 
+  responses       QuestionResponse[]
+  responseDetails QuestionResponseDetail[]
+
+  startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
+  completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
+  repeatedCount  Int @default(0) // (every instance answered at least twice)
+
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -197,6 +204,12 @@ model MicroLearning {
   arePushNotificationsSent Boolean @default(false)
 
   stacks ElementStack[]
+
+  responses       QuestionResponse[]
+  responseDetails QuestionResponseDetail[]
+
+  startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
+  completedCount Int @default(0) // (every instance answered at least once)
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid

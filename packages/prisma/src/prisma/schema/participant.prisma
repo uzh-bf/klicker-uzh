@@ -30,20 +30,21 @@ model Participant {
 
   locale Locale @default(en)
 
-  participantGroups       ParticipantGroup[]
-  accounts                ParticipantAccount[]
-  participations          Participation[]
-  questionResponses       QuestionResponse[]
-  detailQuestionResponses QuestionResponseDetail[]
-  feedbacks               Feedback[]
-  elementFeedbacks        ElementFeedback[]
-  leaderboards            LeaderboardEntry[]
-  subscriptions           PushSubscription[]
-  clueAssignments         GroupActivityClueAssignment[]
-  awards                  AwardEntry[]
-  achievements            ParticipantAchievementInstance[]
-  titles                  Title[]
-  analyticsDaily          AnalyticsDaily[]
+  participantGroups          ParticipantGroup[]
+  accounts                   ParticipantAccount[]
+  participations             Participation[]
+  questionResponses          QuestionResponse[]
+  detailQuestionResponses    QuestionResponseDetail[]
+  feedbacks                  Feedback[]
+  elementFeedbacks           ElementFeedback[]
+  leaderboards               LeaderboardEntry[]
+  subscriptions              PushSubscription[]
+  clueAssignments            GroupActivityClueAssignment[]
+  awards                     AwardEntry[]
+  achievements               ParticipantAchievementInstance[]
+  titles                     Title[]
+  participantAnalytics       ParticipantAnalytics[]
+  participantCourseAnalytics ParticipantCourseAnalytics[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
