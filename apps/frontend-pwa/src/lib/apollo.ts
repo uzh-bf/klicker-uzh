@@ -58,9 +58,7 @@ function createIsomorphLink() {
       }
     }
     return {
-      headers: {
-        ...headers,
-      },
+      headers,
     }
   })
 
