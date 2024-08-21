@@ -62,7 +62,6 @@ model Element {
   updatedAt DateTime @updatedAt
 }
 
-// TODO: elements are only supported for the new PRACTICE_QUIZ type in the first iteration. add the other types here when working on them.
 enum ElementInstanceType {
   LIVE_QUIZ
   PRACTICE_QUIZ
@@ -89,15 +88,16 @@ model ElementInstance {
   elementData Json // contains a copy of relevant element data
 
   /// [PrismaElementResults]
-  results Json // contains the collection of gathered results
+  results Json // contains the collection of gathered results by logged in participants
 
-  responses       QuestionResponse[]
-  detailResponses QuestionResponseDetail[]
-  feedbacks       ElementFeedback[]
+  // TODO: make required after filling field
+  /// [PrismaElementResults]
+  anonymousResults Json? // contains the collection of gathered results by anonymous participants
 
-  correctCount        Int @default(0)
-  partialCorrectCount Int @default(0)
-  wrongCount          Int @default(0)
+  responses          QuestionResponse[]
+  detailResponses    QuestionResponseDetail[]
+  feedbacks          ElementFeedback[]
+  instanceStatistics InstanceStatistics?
 
   element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
@@ -111,6 +111,37 @@ model ElementInstance {
 
   @@unique([type, migrationId])
   @@unique([type, elementStackId, order])
+}
+
+model InstanceStatistics {
+  anonymousCorrectCount        Int?
+  anonymousPartialCorrectCount Int?
+  anonymousWrongCount          Int?
+
+  // aggregated element feedbacks of all students (only last feedback)
+  upvoteCount   Int?
+  downvoteCount Int?
+
+  // only logged in participants impact the following counts (consistent with results)
+  correctCount             Int  @default(0)
+  partialCorrectCount      Int  @default(0)
+  wrongCount               Int  @default(0)
+  firstCorrectCount        Int?
+  firstPartialCorrectCount Int?
+  firstWrongCount          Int?
+  lastCorrectCount         Int?
+  lastPartialCorrectCount  Int?
+  lastWrongCount           Int?
+
+  // only logged in participants impact the following counts (consistent with results and counts above)
+  uniqueParticipantCount Int  @default(0)
+  averageTimeSpent       Int? // computed based on avergaeTimeSpent per participant
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int             @id
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum ElementStackType {

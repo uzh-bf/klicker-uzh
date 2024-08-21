@@ -34,6 +34,7 @@ model Course {
   aggregatedAnalytics        AggregatedAnalytics[]
   aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
+  responses                  QuestionResponse[]
 
   competencyTrees  CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?
