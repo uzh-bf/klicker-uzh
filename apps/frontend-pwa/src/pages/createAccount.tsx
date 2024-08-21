@@ -77,7 +77,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
+  const { participantToken, jwt } = await getParticipantToken({
     apolloClient,
     ctx,
   })
@@ -85,8 +85,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (participantToken) {
     return {
       redirect: {
-        destination: '/editProfile',
+        destination: `/editProfile?jwt=${jwt}`,
         permanent: false,
+        query: { jwt },
       },
     }
   }

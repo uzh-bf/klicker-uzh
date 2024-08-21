@@ -24,6 +24,7 @@ export default async function getParticipantToken({
     return {
       participantToken,
       cookiesAvailable: true,
+      jwt: query.jwt,
     }
   }
 
@@ -111,11 +112,10 @@ export default async function getParticipantToken({
     }
 
     return {
-      participantToken:
-        result?.data?.loginParticipantWithLti?.participantToken ??
-        participantToken,
+      participantToken,
       participant: result?.data?.loginParticipantWithLti,
       cookiesAvailable: null,
+      jwt: query.jwt,
     }
   } catch (e) {
     console.error(e)

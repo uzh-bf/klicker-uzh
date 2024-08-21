@@ -20,7 +20,7 @@ interface Props {
 
 function EditProfile({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
-  const { data, loading } = useQuery(SelfDocument)
+  const { data, loading, refetch } = useQuery(SelfDocument)
   const [showError, setShowError] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
