@@ -147,10 +147,10 @@ function createIsomorphLink() {
       link
     )
 
-    return from([authLink, retryLink, errorLink, ...persistedLink, link])
+    return from([retryLink, errorLink, authLink, ...persistedLink, link])
   }
 
-  return from([authLink, errorLink, ...persistedLink, link])
+  return from([errorLink, authLink, ...persistedLink, link])
 }
 
 // TODO: use the schema link when working on the server?
