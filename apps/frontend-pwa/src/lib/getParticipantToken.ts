@@ -3,11 +3,9 @@ import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
 import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
-import { useRouter } from 'next/router'
 import nookies from 'nookies'
-import { useEffect } from 'react'
 
-export async function getParticipantToken({
+export default async function getParticipantToken({
   apolloClient,
   ctx,
 }: {
@@ -127,36 +125,4 @@ export async function getParticipantToken({
     participantToken,
     cookiesAvailable: null,
   }
-}
-
-export async function useParticipantToken({
-  participantToken,
-  cookiesAvailable,
-  redirectTo,
-}: {
-  participantToken?: string
-  cookiesAvailable?: boolean
-  redirectTo?: string
-}) {
-  const router = useRouter()
-
-  useEffect(() => {
-    if (participantToken) {
-      if (!cookiesAvailable) {
-        if (!sessionStorage.getItem('participant_token')) {
-          sessionStorage.setItem('participant_token', participantToken)
-        }
-      } else {
-        if (sessionStorage.getItem('participant_token')) {
-          sessionStorage.removeItem('participant_token')
-        }
-      }
-
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else {
-        router.reload()
-      }
-    }
-  }, [participantToken, cookiesAvailable])
 }

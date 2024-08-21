@@ -35,10 +35,11 @@ import GroupActivityList from '@components/groupActivity/GroupActivityList'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { getParticipantToken, useParticipantToken } from '../../../lib/token'
 
 // TODO: replace fields in this component through our own design system components
 

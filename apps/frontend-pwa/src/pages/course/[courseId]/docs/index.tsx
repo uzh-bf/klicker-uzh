@@ -1,9 +1,10 @@
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import DocsLayout from '../../../../components/docs/DocsLayout'
-import { getParticipantToken, useParticipantToken } from '../../../../lib/token'
 
 interface Props {
   participantToken?: string

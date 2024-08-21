@@ -6,6 +6,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
@@ -14,7 +16,6 @@ import { useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
-import { getParticipantToken, useParticipantToken } from '../../../../lib/token'
 
 interface Props {
   courseId: string

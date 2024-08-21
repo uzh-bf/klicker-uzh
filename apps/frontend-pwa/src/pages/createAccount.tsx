@@ -7,11 +7,12 @@ import nookies from 'nookies'
 
 import { useMutation } from '@apollo/client'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import bodyParser from 'body-parser'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
 import { addApolloState, initializeApollo } from 'src/lib/apollo'
-import { getParticipantToken, useParticipantToken } from '../lib/token'
 
 interface Props {
   signedLtiData?: string
