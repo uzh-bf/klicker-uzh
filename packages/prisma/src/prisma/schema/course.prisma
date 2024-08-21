@@ -36,7 +36,7 @@ model Course {
   participantCourseAnalytics ParticipantCourseAnalytics[]
   responses                  QuestionResponse[]
 
-  competencyTrees  CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
