@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
-export default async function useParticipantToken({
+export default function useParticipantToken({
   participantToken,
   cookiesAvailable,
   redirectTo,
