@@ -30,10 +30,12 @@ export async function getParticipantToken({
     let result
 
     // LTI 1.3 authentication flow
-    if (cookies['lti-token']) {
+    if (cookies['lti-token'] || query.jwt) {
+      const token = cookies['lti-token'] ?? query.jwt
+
       try {
         const signedLtiData = JWT.verify(
-          cookies['lti-token'],
+          token,
           process.env.APP_SECRET as string
         ) as { sub: string; email: string; scope: string }
 
@@ -43,7 +45,7 @@ export async function getParticipantToken({
           result = await apolloClient.mutate({
             mutation: LoginParticipantWithLtiDocument,
             variables: {
-              signedLtiData: cookies['lti-token'],
+              signedLtiData: token,
             },
           })
         }

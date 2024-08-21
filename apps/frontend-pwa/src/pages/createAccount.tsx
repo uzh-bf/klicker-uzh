@@ -8,6 +8,7 @@ import nookies from 'nookies'
 import { useMutation } from '@apollo/client'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
+import { useEffect } from 'react'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
 import { addApolloState, initializeApollo } from 'src/lib/apollo'
@@ -18,15 +19,28 @@ interface CreateAccountProps {
   ssoId?: string
   email?: string
   username: string
+  participantToken?: string
 }
 
-function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
+function CreateAccount({
+  signedLtiData,
+  email,
+  username,
+  participantToken,
+}: CreateAccountProps) {
   const t = useTranslations()
   const router = useRouter()
 
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument
   )
+
+  useEffect(() => {
+    if (participantToken) {
+      sessionStorage.setItem('participant_token', participantToken)
+      router.push('/editProfile')
+    }
+  }, [participantToken])
 
   return (
     <Layout displayName={t('pwa.profile.createProfile')}>
@@ -71,9 +85,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   if (participantToken) {
     return {
-      redirect: {
-        destination: `/editProfile`,
-        permanent: false,
+      props: {
+        participantToken: participantToken,
+        username: generatePassword.generate({
+          length: 10,
+          uppercase: true,
+          symbols: false,
+          numbers: true,
+        }),
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }
@@ -87,16 +108,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   // LTI 1.3 authentication flow
-  if (cookies['lti-token']) {
-    const token = JWT.verify(
-      cookies['lti-token'],
-      process.env.APP_SECRET as string
-    ) as { sub: string; email: string; scope: string }
+  if (cookies['lti-token'] || query.jwt) {
+    const token = cookies['lti-token'] ?? query.jwt
 
-    if (token.scope === 'LTI1.3') {
-      signedLtiData.token = cookies['lti-token']
-      signedLtiData.ssoId = token.sub
-      signedLtiData.email = token.email
+    const parsedToken = JWT.verify(token, process.env.APP_SECRET as string) as {
+      sub: string
+      email: string
+      scope: string
+    }
+
+    console.log('LTI 1.3', signedLtiData)
+
+    if (parsedToken.scope === 'LTI1.3') {
+      signedLtiData.token = token
+      signedLtiData.ssoId = parsedToken.sub
+      signedLtiData.email = parsedToken.email
     }
   }
   // LTI 1.1 authentication flow

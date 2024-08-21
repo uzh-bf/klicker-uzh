@@ -66,11 +66,11 @@ Provider.onConnect((token, req, res) => {
     }
   )
 
-  res.cookie('lti-token', jwt, {
-    secure: true,
-    sameSite: 'none',
-    domain: process.env.COOKIE_DOMAIN as string,
-  })
+  // res.cookie('lti-token', jwt, {
+  //   secure: true,
+  //   sameSite: 'none',
+  //   domain: process.env.COOKIE_DOMAIN as string,
+  // })
 
   if (typeof req.query.redirectTo === 'string') {
     if (!req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string)) {
@@ -81,7 +81,7 @@ Provider.onConnect((token, req, res) => {
 
     const url = req.query.redirectTo as string
     console.log('Redirecting to:', url)
-    res.redirect(url)
+    res.redirect(`${url}?jwt=${jwt}`)
   } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
     if (
       !process.env.LTI_REDIRECT_URL.includes(
@@ -95,7 +95,7 @@ Provider.onConnect((token, req, res) => {
 
     const url = process.env.LTI_REDIRECT_URL as string
     console.log('Redirecting to:', url)
-    res.redirect(url)
+    res.redirect(`${url}?jwt=${jwt}`)
   }
 
   res.end()

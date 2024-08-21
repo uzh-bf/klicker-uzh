@@ -7,6 +7,7 @@ import {
   NormalizedCacheObject,
   split,
 } from '@apollo/client'
+import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
@@ -44,6 +45,24 @@ function createIsomorphLink() {
             generateHash: usePregeneratedHashes(hashes),
           }),
         ]
+
+  const authLink = setContext((_, { headers }) => {
+    if (isBrowser) {
+      const token = sessionStorage.getItem('participant_token')
+
+      return {
+        headers: {
+          ...headers,
+          authorization: token ? `Bearer ${token}` : '',
+        },
+      }
+    }
+    return {
+      headers: {
+        ...headers,
+      },
+    }
+  })
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
@@ -130,10 +149,10 @@ function createIsomorphLink() {
       link
     )
 
-    return from([retryLink, errorLink, ...persistedLink, link])
+    return from([authLink, retryLink, errorLink, ...persistedLink, link])
   }
 
-  return from([errorLink, ...persistedLink, link])
+  return from([authLink, errorLink, ...persistedLink, link])
 }
 
 // TODO: use the schema link when working on the server?

@@ -51,40 +51,38 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          if (req.headers?.['authorization']) {
-            return req.headers['authorization']?.replace('Bearer ', '')
+          if (
+            req.headers.origin?.includes(
+              process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+            ) ||
+            req.headers.origin?.includes(
+              process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+            )
+          ) {
+            return (
+              req.cookies?.['next-auth.session-token'] ??
+              req.headers['authorization']?.replace('Bearer ', '') ??
+              null
+            )
           }
 
-          if (req.cookies) {
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-              ) ||
-              req.headers.origin?.includes(
-                process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-              )
-            ) {
-              return req.cookies['next-auth.session-token']
-            }
-
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
-              )
-            ) {
-              return req.cookies['participant_token']
-              // TODO: use below to fix preview mode
-              // req.cookies['participant_token'] ||
-              // req.cookies['next-auth.session-token']
-            }
-
-            return req.cookies['participant_token']
-            // TODO: use below to fix preview mode
-            // req.cookies['participant_token'] ||
-            // req.cookies['next-auth.session-token']
+          if (
+            req.headers.origin?.includes(
+              process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+            )
+          ) {
+            return (
+              req.cookies?.['participant_token'] ??
+              req.headers['authorization']?.replace('Bearer ', '') ??
+              null
+            )
           }
 
-          return null
+          return (
+            req.cookies?.['participant_token'] ??
+            req.headers['authorization']?.replace('Bearer ', '') ??
+            null
+          )
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         secretOrKey: process.env.APP_SECRET,
