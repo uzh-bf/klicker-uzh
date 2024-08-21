@@ -51,6 +51,8 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
+          let token = null
+
           if (
             req.headers.origin?.includes(
               process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
@@ -59,27 +61,17 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
               process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
             )
           ) {
-            return (
-              req.cookies?.['next-auth.session-token'] ??
-              req.headers['authorization']?.replace('Bearer ', '') ??
-              null
-            )
-          }
-
-          if (
+            token = req.cookies?.['next-auth.session-token']
+          } else if (
             req.headers.origin?.includes(
               process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
             )
           ) {
-            return (
-              req.cookies?.['participant_token'] ??
-              req.headers['authorization']?.replace('Bearer ', '') ??
-              null
-            )
+            token = req.cookies?.['participant_token']
           }
 
           return (
-            req.cookies?.['participant_token'] ??
+            token ??
             req.headers['authorization']?.replace('Bearer ', '') ??
             null
           )
