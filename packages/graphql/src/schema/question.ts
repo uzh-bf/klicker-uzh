@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
 import { BaseElementData } from '../types/app.js'
+import { ElementFeedbackRef } from './analytics.js'
 import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
@@ -250,8 +251,11 @@ export const QuestionInstance = QuestionInstanceRef.implement({
   }),
 })
 
+export interface IElementInstance extends DB.ElementInstance {
+  feedbacks?: DB.ElementFeedback[] | null
+}
 export const ElementInstanceRef =
-  builder.objectRef<DB.ElementInstance>('ElementInstance')
+  builder.objectRef<IElementInstance>('ElementInstance')
 export const ElementInstance = ElementInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -266,6 +270,11 @@ export const ElementInstance = ElementInstanceRef.implement({
 
     options: t.expose('options', {
       type: ElementInstanceOptions,
+      nullable: true,
+    }),
+
+    feedbacks: t.expose('feedbacks', {
+      type: [ElementFeedbackRef],
       nullable: true,
     }),
   }),

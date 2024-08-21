@@ -196,6 +196,7 @@ enum ElementDisplayMode {
 
 type ElementFeedback {
   downvote: Boolean!
+  elementInstanceId: Int!
   feedback: String
   id: Int!
   upvote: Boolean!
@@ -204,6 +205,7 @@ type ElementFeedback {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
   type: ElementInstanceType!
@@ -640,7 +642,7 @@ type Mutation {
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
@@ -890,6 +892,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session

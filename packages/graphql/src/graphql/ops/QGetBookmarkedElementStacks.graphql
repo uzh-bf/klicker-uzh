@@ -1,4 +1,4 @@
-#import "./FElementData.graphql"
+#import "./FElementDataWithoutSolutions.graphql"
 
 query GetBookmarkedElementStacks($courseId: String!) {
   getBookmarkedElementStacks(courseId: $courseId) {
@@ -8,7 +8,9 @@ query GetBookmarkedElementStacks($courseId: String!) {
     order
     elements {
       id
-      ...ElementData
+      type
+      elementType
+      ...ElementDataWithoutSolutions
     }
   }
 }

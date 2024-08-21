@@ -447,7 +447,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagElement: t.withAuth(asParticipant).string({
+      flagElement: t.withAuth(asParticipant).field({
+        type: ElementFeedback,
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),

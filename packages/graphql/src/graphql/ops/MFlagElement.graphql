@@ -7,5 +7,10 @@ mutation FlagElement(
     elementInstanceId: $elementInstanceId
     elementId: $elementId
     content: $content
-  )
+  ) {
+    id
+    upvote
+    downvote
+    feedback
+  }
 }

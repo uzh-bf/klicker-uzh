@@ -482,6 +482,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       addFeedback: 'Feedback hinzufügen',
       submitFeedback: 'Feedback abschicken',
+      updateFeedback: 'Feedback aktualisieren',
       errorRatingElement:
         'Ihre Bewertung des Elements war leider nicht erfolgreich. Versuchen Sie es später nochmals.',
       notFound:

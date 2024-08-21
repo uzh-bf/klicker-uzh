@@ -9,12 +9,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementFeedback,
+  GetStackElementFeedbacksDocument,
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FlagElementModal from '../flags/FlagElementModal'
 
@@ -40,26 +42,52 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
 }
 
 interface InstanceHeaderProps {
+  index: number
   instanceId: number
   elementId: number
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
+  previousElementFeedback?: ElementFeedback
+  stackInstanceIds: number[]
   className?: string
 }
 
 function InstanceHeader({
+  index,
   instanceId,
   elementId,
   name,
   withParticipant,
   correctness,
+  previousElementFeedback,
+  stackInstanceIds,
   className,
 }: InstanceHeaderProps) {
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
-  const [vote, setVote] = useState(0) // TODO: optionally fetch last rating from DB
+  const [vote, setVote] = useState(
+    previousElementFeedback?.upvote
+      ? 1
+      : previousElementFeedback?.downvote
+      ? -1
+      : 0
+  )
+  const [feedbackValue, setFeedbackValue] = useState(
+    previousElementFeedback?.feedback ?? undefined
+  )
+
+  useEffect(() => {
+    setVote(
+      previousElementFeedback?.upvote
+        ? 1
+        : previousElementFeedback?.downvote
+        ? -1
+        : 0
+    )
+    setFeedbackValue(previousElementFeedback?.feedback ?? undefined)
+  }, [previousElementFeedback])
 
   const handleVote = async (upvote: boolean) => {
     const res = await rateElement({
@@ -77,6 +105,43 @@ function InstanceHeader({
           downvote: !upvote,
         },
       },
+      update(cache, { data: dataRating }) {
+        const dataQuery = cache.readQuery({
+          query: GetStackElementFeedbacksDocument,
+          variables: { instanceIds: stackInstanceIds },
+        })
+
+        const feedbackIx = dataQuery?.getStackElementFeedbacks?.findIndex(
+          (feedback) => feedback.elementInstanceId === instanceId
+        )
+        let newFeedbacks = [...(dataQuery?.getStackElementFeedbacks ?? [])]
+        if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
+          newFeedbacks.push({
+            __typename: 'ElementFeedback',
+            id:
+              dataRating?.rateElement?.id ??
+              Math.round(Math.random() * -1000000),
+            elementInstanceId: instanceId,
+            upvote,
+            downvote: !upvote,
+            feedback: null,
+          })
+        } else {
+          newFeedbacks[feedbackIx] = {
+            ...newFeedbacks[feedbackIx],
+            upvote,
+            downvote: !upvote,
+          }
+        }
+
+        cache.writeQuery({
+          query: GetStackElementFeedbacksDocument,
+          variables: { instanceIds: stackInstanceIds },
+          data: {
+            getStackElementFeedbacks: newFeedbacks,
+          },
+        })
+      },
     })
 
     if (res.data?.rateElement?.upvote) {
@@ -91,7 +156,7 @@ function InstanceHeader({
 
   return (
     <div className={twMerge('mb-4', className)}>
-      <div className="flex flex-row justify-between pr-1">
+      <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
             <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
@@ -110,7 +175,7 @@ function InstanceHeader({
               basic
               active={vote === 1}
               onClick={() => handleVote(true)}
-              data={{ cy: 'upvote-element-button' }}
+              data={{ cy: `upvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -126,7 +191,7 @@ function InstanceHeader({
               basic
               active={vote === -1}
               onClick={() => handleVote(false)}
-              data={{ cy: 'downvote-element-button' }}
+              data={{ cy: `downvote-element-${index}-button` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon
@@ -139,10 +204,14 @@ function InstanceHeader({
               </Button.Icon>
             </Button>
             <FlagElementModal
+              index={index}
               open={modalOpen}
               setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
+              feedbackValue={feedbackValue}
+              setFeedbackValue={setFeedbackValue}
+              stackInstanceIds={stackInstanceIds}
             />
             <RatingErrorToast
               open={ratingErrorToast}
