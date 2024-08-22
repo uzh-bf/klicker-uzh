@@ -5,7 +5,6 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
     paths:
       - 'apps/frontend-control/**'
       - '.github/workflows/v3_frontend-control**'

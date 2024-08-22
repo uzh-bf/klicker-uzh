@@ -6,7 +6,6 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
     paths:
       - 'apps/backend-docker/**'
       - 'packages/graphql/**'
