@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.6...v3.2.0-alpha.7) (2024-08-22)
+
+
+### Build and CI
+
+* skip most jobs on draft PRs ([e743397](https://github.com/uzh-bf/klicker-uzh/commit/e74339733c1d112f0479ffd144029e147aed5a56))
+
 ## [3.2.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.5...v3.2.0-alpha.6) (2024-08-22)
 
 ## [3.2.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.4...v3.2.0-alpha.5) (2024-08-22)
