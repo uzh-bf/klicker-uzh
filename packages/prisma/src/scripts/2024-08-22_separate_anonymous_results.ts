@@ -24,7 +24,7 @@ async function run() {
       },
     })
   })
-  prisma.$transaction(updatedInstancePromises)
+  await prisma.$transaction(updatedInstancePromises)
 
   // ! PART 1: Link all question responses and details to the corresponding practice quiz / microlearning and course
   // fetch all instances
