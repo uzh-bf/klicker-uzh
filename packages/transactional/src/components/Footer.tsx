@@ -9,7 +9,7 @@ function Footer() {
             {`
 **KlickerUZH**<br/>
 Teaching Center<br/>
-Deartment of Finance<br/>
+Department of Finance<br/>
 Plattenstrasse 14<br/>
 8032 Zürich
 
