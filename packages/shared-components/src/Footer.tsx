@@ -16,7 +16,7 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
         <>
           <p className="m-0 py-2 text-center text-xs leading-5 text-gray-400">
             &copy;
-            {new Date().getFullYear()} IBF Teaching Center, Department of
+            {new Date().getFullYear()} DF Teaching Center, Department of
             Finance, University of Zurich. All rights reserved.
             <br />
             Products and Services displayed herein are trademarks or registered

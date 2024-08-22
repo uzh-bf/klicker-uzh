@@ -29,8 +29,8 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
 
       <p className="py-4 m-0 text-xs leading-5 text-center text-gray-400">
         &copy;
-        {new Date().getFullYear()} IBF Teaching Center, Department of Banking
-        and Finance, University of Zurich. All rights reserved.
+        {new Date().getFullYear()} DF Teaching Center, Department of Finance,
+        University of Zurich. All rights reserved.
         <br />
         Products and Services displayed herein are trademarks or registered
         trademarks of their respective owners.

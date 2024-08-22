@@ -10,7 +10,7 @@ async function determineInitialSubscriptionState() {
   ) {
     return {
       disabled: true,
-      info: 'Push-Notificaitons are not supported by your browser.',
+      info: 'Push-Notifications are not supported by your browser.',
       reg: null,
       sub: null,
     }
