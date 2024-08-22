@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.7.0
+          version: 9.8.0
           run_install: true
       - name: Check formatting
         shell: bash
@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.7.0
+          version: 9.8.0
           run_install: true
       - name: Check linting
         shell: bash
@@ -46,7 +46,7 @@ jobs:
   #       uses: actions/checkout@v3
   #     - uses: pnpm/action-setup@v2
   #       with:
-  #         version: 9.7.0
+  #         version: 9.8.0
   #         run_install: true
   #     - name: Check types
   #       shell: bash
