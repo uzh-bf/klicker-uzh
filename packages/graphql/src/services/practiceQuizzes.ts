@@ -170,8 +170,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-        ? -existingResponse.correctCountStreak
-        : 0,
+          ? -existingResponse.correctCountStreak
+          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -243,6 +243,20 @@ function updateSpacedRepetition({
   }
 }
 
+export function updateFlashcardResults({
+  previousResults,
+  response,
+}: {
+  previousResults: FlashcardResults
+  response: FlashcardCorrectness
+}): FlashcardResults {
+  return {
+    ...previousResults,
+    [response]: (previousResults[response] ?? 0) + 1,
+    total: previousResults.total + 1,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
@@ -302,29 +316,20 @@ async function respondToFlashcard(
       })
     : null
 
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardResults
-  const existingAnonymousResults =
-    existingInstance.anonymousResults as FlashcardResults
+  const newResults = updateFlashcardResults({
+    previousResults: participation
+      ? (existingInstance.results as FlashcardResults)
+      : (existingInstance.anonymousResults as FlashcardResults),
+    response,
+  })
+
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
     data: participation
-      ? {
-          results: {
-            ...existingResults,
-            [response]: (existingResults[response] ?? 0) + 1,
-            total: existingResults.total + 1,
-          },
-        }
-      : {
-          anonymousResults: {
-            ...existingAnonymousResults,
-            [response]: (existingAnonymousResults[response] ?? 0) + 1,
-            total: existingAnonymousResults.total + 1,
-          },
-        },
+      ? { results: newResults }
+      : { anonymousResults: newResults },
   })
 
   // if no user exists, return the grading for client display
@@ -392,14 +397,14 @@ async function respondToFlashcard(
     response === FlashcardCorrectness.CORRECT
       ? 1
       : response === FlashcardCorrectness.PARTIAL
-      ? 0.5
-      : 0
+        ? 0.5
+        : 0
   const responseCorrectness =
     correctness === 1
       ? ResponseCorrectness.CORRECT
       : correctness === 0
-      ? ResponseCorrectness.WRONG
-      : ResponseCorrectness.PARTIAL
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -514,6 +519,14 @@ async function respondToFlashcard(
   return result
 }
 
+export function incrementContentResults({
+  previousResults,
+}: {
+  previousResults: ContentResults
+}): ContentResults {
+  return { total: previousResults.total + 1 }
+}
+
 interface RespondToContentInput {
   id: number
   courseId: string
@@ -560,16 +573,19 @@ async function respondToContent(
     : null
 
   // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentResults
-  const existingAnonymousResults =
-    existingInstance.anonymousResults as ContentResults
+  const newResults = incrementContentResults({
+    previousResults: participation
+      ? (existingInstance.results as ContentResults)
+      : (existingInstance.anonymousResults as ContentResults),
+  })
+
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
     data: participation
-      ? { results: { total: existingResults.total + 1 } }
-      : { anonymousResults: { total: existingAnonymousResults.total + 1 } },
+      ? { results: newResults }
+      : { anonymousResults: newResults },
   })
 
   // if no user exists, return the grading for client display
@@ -1416,8 +1432,8 @@ export async function respondToQuestion(
       correctness === 1
         ? ResponseCorrectness.CORRECT
         : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
@@ -1623,8 +1639,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-      ? StackFeedbackStatus.CORRECT
-      : StackFeedbackStatus.PARTIAL
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1950,7 +1966,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : availableFrom ?? undefined
+      : (availableFrom ?? undefined)
 
   const createOrUpdateJSON = {
     name: name.trim(),
