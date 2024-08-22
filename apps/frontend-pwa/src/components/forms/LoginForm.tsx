@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { faKey, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
+import { faKey } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
@@ -130,7 +130,7 @@ export function LoginForm({
 
               {magicLinkLogin && setMagicLinkLogin && (
                 <div className="mt-3 flex flex-col gap-2 md:mt-2">
-                  <Button
+                  {/* <Button
                     fluid
                     className={{ root: 'justify-start gap-4' }}
                     type="submit"
@@ -143,7 +143,7 @@ export function LoginForm({
                     <Button.Label>
                       {t('pwa.general.magicLinkLogin')}
                     </Button.Label>
-                  </Button>
+                  </Button> */}
                   <Button
                     fluid
                     className={{ root: 'justify-start gap-4' }}
@@ -177,16 +177,16 @@ export function LoginForm({
                   />
 
                   <div className="flex w-full flex-row justify-between">
-                    {/* {setMagicLinkLogin && (
+                    {setMagicLinkLogin && (
                       <Button
                         className={{
-                          root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                          root: 'mt-3 w-full !justify-center border-uzh-grey-80 md:mt-2 md:w-max',
                         }}
                         onClick={() => setMagicLinkLogin(true)}
                       >
                         Back
                       </Button>
-                    )} */}
+                    )}
 
                     <Button
                       className={{
