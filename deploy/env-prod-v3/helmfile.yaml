@@ -51,23 +51,13 @@ releases:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
-
         frontendManage:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
-
         frontendControl:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
-
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_CONTROL" }}'
-
 
         backendGraphql:
           image:
