@@ -18,22 +18,27 @@ export async function createTransport() {
   if (process.env.EMAIL_TYPE === 'OAUTH') {
     // TODO: add OAuth2 for Outlook 365
   } else {
-    transport = nodemailer.createTransport({
-      pool: true,
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT
-        ? parseInt(process.env.EMAIL_PORT)
-        : undefined,
-      secure: process.env.EMAIL_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    })
+    try {
+      transport = nodemailer.createTransport({
+        pool: true,
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT
+          ? parseInt(process.env.EMAIL_PORT)
+          : undefined,
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      })
 
-    await transport.verify()
+      await transport.verify()
 
-    console.log('Email transport verified')
+      console.log('Email transport verified')
+    } catch (e) {
+      console.error('Error creating email transport: ', e)
+      return null
+    }
   }
 
   return transport
@@ -46,10 +51,17 @@ export function hydrateTemplate({
   templateName: AVAILABLE_EMAIL_TEMPLATES
   variables?: Record<string, string>
 }) {
-  let template = fs.readFileSync(
-    require.resolve(`@klicker-uzh/transactional/out/${templateName}.html`),
-    'utf8'
-  )
+  let template
+
+  try {
+    template = fs.readFileSync(
+      require.resolve(`@klicker-uzh/transactional/out/${templateName}.html`),
+      'utf8'
+    )
+  } catch (e) {
+    console.error('Error reading email template: ', e)
+    return null
+  }
 
   for (const [key, value] of Object.entries(variables)) {
     template = template.replaceAll(`[${key}]`, value)
@@ -73,13 +85,18 @@ export async function sendEmail({
 
   if (!transport) return false
 
-  await transport.sendMail({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject,
-    text,
-    html,
-  })
+  try {
+    await transport.sendMail({
+      from: process.env.EMAIL_FROM,
+      to,
+      subject,
+      text,
+      html,
+    })
+  } catch (e) {
+    console.error('Error sending email: ', e)
+    return false
+  }
 
   return true
 }

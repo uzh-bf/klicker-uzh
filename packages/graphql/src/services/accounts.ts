@@ -213,6 +213,8 @@ export async function sendMagicLink(
     variables: { LINK: magicLink },
   })
 
+  if (!email) return false
+
   await EmailService.sendEmail({
     to: participantData.email,
     subject: 'KlickerUZH - Your One-Time Login Link',
