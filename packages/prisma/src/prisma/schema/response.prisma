@@ -33,12 +33,12 @@ model QuestionResponse {
   nextDueAt DateTime?
 
   /// [PrismaQuestionResponse]
-  firstResponse            Json? // TODO: make mandadtory as soon as old data has been migrated
-  firstResponseCorrectness ResponseCorrectness? // TODO: make mandadtory as soon as old data has been migrated
+  firstResponse            Json
+  firstResponseCorrectness ResponseCorrectness
 
   /// [PrismaQuestionResponse]
   lastResponse            Json
-  lastResponseCorrectness ResponseCorrectness? // TODO: make mandadtory as soon as old data has been migrated
+  lastResponseCorrectness ResponseCorrectness
 
   /// [PrismaElementResults]
   aggregatedResponses Json?
