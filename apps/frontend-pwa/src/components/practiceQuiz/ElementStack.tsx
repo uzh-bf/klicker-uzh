@@ -60,6 +60,7 @@ function ElementStack({
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
+    withParticipant: withParticipant,
   })
 
   const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
@@ -132,7 +133,9 @@ function ElementStack({
                     elementId={parseInt(element.elementData.id)}
                     name={element.elementData.name}
                     withParticipant={withParticipant}
-                    previousElementFeedback={elementFeedbacks[element.id]}
+                    previousElementFeedback={
+                      withParticipant ? elementFeedbacks[element.id] : undefined
+                    }
                     stackInstanceIds={
                       stack.elements?.map((element) => element.id) ?? []
                     }
