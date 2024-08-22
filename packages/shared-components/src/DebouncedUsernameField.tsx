@@ -72,6 +72,7 @@ function DebouncedUsernameField({
 
   return (
     <FormikTextField
+      name={name}
       value={field.value}
       label={label}
       error={meta.error}

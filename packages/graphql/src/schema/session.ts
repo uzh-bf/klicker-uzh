@@ -19,6 +19,10 @@ export const SessionAccessMode = builder.enumType('SessionAccessMode', {
   values: Object.values(DB.AccessMode),
 })
 
+export const ResponseCorrectness = builder.enumType('ResponseCorrectness', {
+  values: Object.values(DB.ResponseCorrectness),
+})
+
 export const BlockInput = builder.inputType('BlockInput', {
   fields: (t) => ({
     questionIds: t.intList({ required: true }),
@@ -274,7 +278,7 @@ export const QuestionResponse = QuestionResponseRef.implement({
     wrongCount: t.exposeInt('wrongCount'),
     lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
 
-    response: t.expose('response', { type: 'Json' }),
+    lastResponse: t.expose('lastResponse', { type: 'Json' }),
 
     aggregatedResponses: t.expose('aggregatedResponses', {
       type: 'Json',

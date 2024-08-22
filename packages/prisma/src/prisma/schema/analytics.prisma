@@ -1,17 +1,184 @@
-model AnalyticsDaily {
-  id Int @id @default(autoincrement())
+enum AnalyticsType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  COURSE // analytics for the entire course
+}
 
-  timestamp     DateTime @db.Date
-  responseCount Int
-  totalScore    Float
-  totalPoints   Float
-  totalXp       Float
+enum ActivityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// All metrics are based on logged in participant activity only
+model ParticipantAnalytics {
+  id   Int           @id @default(autoincrement())
+  type AnalyticsType
+
+  timestamp DateTime @db.Date
+
+  // unsolvedQuestionsCount = responseCount - AggregatedAnalytics.totalElementsAvailable
+  trialsCount   Int // total number of questions attempted
+  responseCount Int // total number of unique questions attempted
+
+  // summed across all question attempts (non-unique)
+  totalScore  Int
+  totalPoints Int
+  totalXp     Int
+
+  // meanTrialsCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
+  meanCorrectCount        Float @db.Real // aggregated over all questions
+  meanPartialCorrectCount Float @db.Real // aggregated over all questions
+  meanWrongCount          Float @db.Real // aggregated over all questions
+
+  // divide by responseCount to get the correctness rate
+  meanFirstCorrectCount Float @db.Real // aggregated over all questions
+  meanLastCorrectCount  Float @db.Real // aggregated over all questions
 
   collectedAchievements String[]
+
+  competencyAnalytics CompetencyAnalytics[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String? @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  @@unique([type, courseId, participantId, timestamp])
+}
+
+// All metrics are based on logged in participant activity only
+model AggregatedAnalytics {
+  id   Int           @id @default(autoincrement())
+  type AnalyticsType
+
+  // all quantities are defined as the values at the end of the selected timeframe
+  timestamp              DateTime @db.Date
+  responseCount          Int
+  participantCount       Int
+  totalScore             Int
+  totalPoints            Int
+  totalXp                Int
+  totalElementsAvailable Int // total number of elements available at the end of selected timeframe (practice quizzes & microlearnings != instances linked to course)
+
+  aggregatedCompetencyAnalytics AggregatedCompetencyAnalytics[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  @@unique([type, courseId, timestamp])
+}
+
+model CompetencyAnalytics {
+  id Int @id @default(autoincrement())
+
+  unsolvedQuestionsCount  Int @db.SmallInt
+  lastCorrectCount        Int @db.SmallInt
+  lastPartialCorrectCount Int @db.SmallInt
+  lastWrongCount          Int @db.SmallInt
+
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  competencyId Int
+
+  // all metrics are only computed on weekly and course-wide basis
+  participantAnalytics   ParticipantAnalytics @relation(fields: [participantAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantAnalyticsId Int
+
+  @@unique([competencyId, participantAnalyticsId])
+}
+
+model AggregatedCompetencyAnalytics {
+  id Int @id @default(autoincrement())
+
+  meanUnsolvedQuestionsCount  Int @db.SmallInt
+  meanLastCorrectCount        Int @db.SmallInt
+  meanLastPartialCorrectCount Int @db.SmallInt
+  meanLastWrongCount          Int @db.SmallInt
+
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  competencyId Int
+
+  // all metrics are only computed on weekly and course-wide basis
+  aggregatedAnalytics   AggregatedAnalytics @relation(fields: [aggregatedAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  aggregatedAnalyticsId Int
+
+  @@unique([competencyId, aggregatedAnalyticsId])
+}
+
+model ParticipantCourseAnalytics {
+  id Int @id @default(autoincrement())
+
+  activeWeeks        Int
+  activeDaysPerWeek  Float @db.Real
+  meanElementsPerDay Float @db.Real
+
+  activityLevel ActivityLevel
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  @@unique([courseId, participantId])
+}
+
+model AggregatedCourseAnalytics {
+  id Int @id @default(autoincrement())
+
+  participantCount  Int
+  activityMonday    Int
+  activityTuesday   Int
+  activityWednesday Int
+  activityThursday  Int
+  activityFriday    Int
+  activitySaturday  Int
+  activitySunday    Int
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+}
+
+model CompetencyTree {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  competencies Competency[]
+  courses      Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+}
+
+model Competency {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String?
+
+  // left and right values for nested set queries
+  lft Int
+  rgt Int
+
+  analytics           CompetencyAnalytics[]
+  aggregatedAnalytics AggregatedCompetencyAnalytics[]
+
+  tree   CompetencyTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, lft, rgt])
+  @@index([treeId, lft])
+  @@index([treeId, rgt])
 }

@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
   GroupActivity,
@@ -46,7 +47,7 @@ import {
   QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementType } from './questionData.js'
+import { ElementStatus, ElementType } from './questionData.js'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -477,14 +478,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagElement: t.withAuth(asParticipant).string({
+      flagElement: t.withAuth(asParticipant).field({
+        type: ElementFeedback,
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagElement(args, ctx)
+        },
+      }),
+
+      rateElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ElementFeedback,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
+          rating: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.rateElement(args, ctx)
         },
       }),
 
@@ -787,6 +803,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
@@ -805,6 +822,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -824,6 +842,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
@@ -844,6 +863,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -866,6 +886,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),

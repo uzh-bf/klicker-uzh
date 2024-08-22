@@ -1,0 +1,9 @@
+query GetStackElementFeedbacks($instanceIds: [Int!]!) {
+  getStackElementFeedbacks(elementInstanceIds: $instanceIds) {
+    id
+    upvote
+    downvote
+    feedback
+    elementInstanceId
+  }
+}

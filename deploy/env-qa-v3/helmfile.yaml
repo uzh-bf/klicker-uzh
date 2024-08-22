@@ -12,28 +12,49 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+      - teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
+
+        appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        auth:
+          replicaCount: 1
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendPWA:
           replicaCount: 1
-
-          sentryEnv: qa
-          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
-
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendManage:
           replicaCount: 1
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: qa
-          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
+        frontendControl:
+          replicaCount: 0
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
         backendGraphql:
           replicaCount: 1
+
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
           debug: true
+
+          notifications:
+            url: '{{ requiredEnv "NOTIFICATION_URL" }}'
+            secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
+            supportEmail: '{{ requiredEnv "NOTIFICATION_SUPPORT_EMAIL" }}'
+
+          vapid:
+            publicKey: '{{ requiredEnv "VAPID_PUBLIC_KEY" }}'
+            privateKey: '{{ requiredEnv "VAPID_PRIVATE_KEY" }}'
 
           redisCache:
             host: klicker-v2-qa-redis-master
@@ -48,3 +69,25 @@ releases:
 
           sentryEnv: qa
           sentryDSN: '{{ env "SENTRY_DSN" }}'
+
+        lti:
+          replicaCount: 0
+
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
+          clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
+          redirectURL: '{{ requiredEnv "LTI_REDIRECT_URL" }}'
+          cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
+          encryptionKey: '{{ requiredEnv "APP_SECRET" }}'
+          name: '{{ requiredEnv "LTI_NAME" }}'
+          url: '{{ requiredEnv "LTI_URL" }}'
+          authEndpoint: '{{ requiredEnv "LTI_AUTH_ENDPOINT" }}'
+          tokenEndpoint: '{{ requiredEnv "LTI_TOKEN_ENDPOINT" }}'
+          keysEndpoint: '{{ requiredEnv "LTI_KEYS_ENDPOINT" }}'
+
+          db:
+            type: '{{ requiredEnv "LTI_DB_TYPE" }}'
+            host: '{{ requiredEnv "LTI_DB_HOST" }}'
+            port: '{{ requiredEnv "LTI_DB_PORT" }}'
+            name: '{{ requiredEnv "LTI_DB_NAME" }}'
+            username: '{{ requiredEnv "LTI_DB_USER" }}'
+            password: '{{ requiredEnv "LTI_DB_PASS" }}'

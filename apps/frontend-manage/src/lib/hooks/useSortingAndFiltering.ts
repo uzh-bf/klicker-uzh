@@ -1,4 +1,4 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
 export type QuestionPoolFilters = {
@@ -6,6 +6,7 @@ export type QuestionPoolFilters = {
   untagged: boolean
   tags: string[]
   name: string | null
+  status?: ElementStatus
   type?: ElementType
   sampleSolution: boolean
   answerFeedbacks: boolean
@@ -20,6 +21,7 @@ export enum SortyByType {
   TITLE = 'TITLE',
   TYPE = 'TYPE',
   CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
   USED = 'USED',
   UNDEFINED = 'UNDEFINED',
 }
@@ -43,8 +45,9 @@ type FilterSortType = {
 
 type ReducerAction = {
   type: QuestionPoolReducerActionType
-  tagName?: ElementType | string
-  isQuestionTag?: boolean
+  tagName?: ElementType | ElementStatus | string
+  isTypeTag?: boolean
+  isStatusTag?: boolean
   isUntagged?: boolean
   newValue?: boolean
   name?: string
@@ -53,6 +56,7 @@ type ReducerAction = {
 
 const INITIAL_STATE: FilterSortType = {
   filters: {
+    status: undefined,
     type: undefined,
     archive: false,
     untagged: false,
@@ -68,6 +72,8 @@ const INITIAL_STATE: FilterSortType = {
 }
 
 function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
+  console.log(state, action)
+
   switch (action.type) {
     case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is untagged
@@ -83,7 +89,7 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
       }
 
       // if the changed tag is a question type tag
-      if (action.isQuestionTag) {
+      if (action.isTypeTag) {
         if (state.filters.type === action.tagName) {
           return { ...state, filters: { ...state.filters, type: undefined } }
         }
@@ -92,6 +98,22 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         return {
           ...state,
           filters: { ...state.filters, type: action.tagName as ElementType },
+        }
+      }
+
+      // if the changed tag is a question status tag
+      if (action.isStatusTag) {
+        if (state.filters.status === action.tagName) {
+          return { ...state, filters: { ...state.filters, status: undefined } }
+        }
+
+        // add the tag to active tags
+        return {
+          ...state,
+          filters: {
+            ...state.filters,
+            status: action.tagName as ElementStatus,
+          },
         }
       }
 
@@ -207,15 +229,22 @@ function useSortingAndFiltering() {
         type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
         newValue: !state.filters.archive,
       }),
-    handleTagClick: (
-      tagName: string,
-      isQuestionTag: boolean,
+    handleTagClick: ({
+      tagName,
+      isTypeTag,
+      isStatusTag,
+      isUntagged,
+    }: {
+      tagName: string
+      isTypeTag: boolean
+      isStatusTag: boolean
       isUntagged: boolean
-    ): void =>
+    }): void =>
       dispatch({
         type: QuestionPoolReducerActionType.TAG_CLICK,
         tagName,
-        isQuestionTag,
+        isTypeTag,
+        isStatusTag,
         isUntagged,
       }),
     toggleSampleSolutionFilter: (): void =>

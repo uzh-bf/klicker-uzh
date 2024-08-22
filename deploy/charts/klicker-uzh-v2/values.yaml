@@ -253,11 +253,17 @@ lti:
 
   replicaCount: 2
 
+  appSecret: ''
+
   clientId:
   redirectURL:
   cookieDomain:
   encryptionKey:
-
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
   port: 4000
 
   db:

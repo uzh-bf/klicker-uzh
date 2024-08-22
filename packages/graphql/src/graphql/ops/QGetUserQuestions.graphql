@@ -2,6 +2,7 @@ query GetUserQuestions {
   userQuestions {
     id
     name
+    status
     type
     content
 

@@ -420,29 +420,37 @@ export async function createParticipantAccount(
       const ltiData = JWT.verify(
         signedLtiData,
         process.env.APP_SECRET as string
-      ) as { email: string; sub: string }
+      ) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
       // check if the username is already taken by another user
-      const existingUser = await ctx.prisma.participant.findUnique({
-        where: { username: username.trim() },
+      const existingUser = await ctx.prisma.participant.findMany({
+        where: {
+          OR: [{ username: username.trim() }, { email: ltiData.email }],
+        },
       })
 
-      if (existingUser) {
-        // another user already uses the requested username, returning old user
+      if (existingUser.length > 0) {
+        // another user already uses the requested username or email, returning old user
         return null
       }
 
       const account = await ctx.prisma.participantAccount.create({
         data: {
           ssoId: ltiData.sub,
+          ssoType: ltiData.scope,
           participant: {
-            create: {
-              email: ltiData.email.toLowerCase(),
-              username: username.trim(),
-              password: await bcrypt.hash(password, 10),
-              isEmailValid: true,
-              isProfilePublic,
-              isSSOAccount: true,
-              lastLoginAt: new Date(),
+            connectOrCreate: {
+              where: {
+                email: ltiData.email.toLowerCase(),
+              },
+              create: {
+                email: ltiData.email.toLowerCase(),
+                username: username.trim(),
+                password: await bcrypt.hash(password, 10),
+                isEmailValid: true,
+                isProfilePublic,
+                isSSOAccount: true,
+                lastLoginAt: new Date(),
+              },
             },
           },
         },
@@ -540,14 +548,48 @@ export async function loginParticipantWithLti(
   { signedLtiData }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
-  const ltiData = JWT.verify(signedLtiData, process.env.APP_SECRET as string)
+  const ltiData = JWT.verify(
+    signedLtiData,
+    process.env.APP_SECRET as string
+  ) as {
+    sub: string
+    email?: string
+    scope: string
+  }
 
-  const account = await ctx.prisma.participantAccount.findUnique({
+  let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
     include: {
       participant: true,
     },
   })
+
+  // check if there is a participant account already given the email address
+  // if so, create a new participant account with the LTI data and new sub
+  if (!account && ltiData.email) {
+    const existingParticipant = await ctx.prisma.participant.findUnique({
+      where: { email: ltiData.email },
+    })
+
+    if (!existingParticipant) {
+      return null
+    }
+
+    account = await ctx.prisma.participantAccount.create({
+      data: {
+        ssoId: ltiData.sub,
+        ssoType: ltiData.scope,
+        participant: {
+          connect: {
+            id: existingParticipant.id,
+          },
+        },
+      },
+      include: {
+        participant: true,
+      },
+    })
+  }
 
   if (!account?.participant) return null
 

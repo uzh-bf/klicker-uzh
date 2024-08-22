@@ -29,6 +29,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Replace .env.production with .env.qa
+        shell: bash
+        run: |
+          rm apps/auth/.env.production
+          mv apps/auth/.env.qa apps/auth/.env.production
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 

@@ -11,11 +11,17 @@ import UserTag from './UserTag'
 interface Props {
   showUntagged: boolean
   activeTags: string[]
-  handleTagClick: (
-    tagName: string,
-    isQuestionTag: boolean,
+  handleTagClick: ({
+    tagName,
+    isTypeTag,
+    isStatusTag,
+    isUntagged,
+  }: {
+    tagName: string
+    isTypeTag: boolean
+    isStatusTag: boolean
     isUntagged: boolean
-  ) => void
+  }) => void
 }
 
 function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
@@ -32,9 +38,11 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
 
   if (!data?.userTags || data.userTags.length === 0)
     return (
-      <UserNotification type="info">
-        {t('manage.questionPool.noTagsAvailable')}
-      </UserNotification>
+      <div className="px-2">
+        <UserNotification type="info" className={{ root: 'py-1' }}>
+          {t('manage.questionPool.noTagsAvailable')}
+        </UserNotification>
+      </div>
     )
 
   return (
@@ -44,7 +52,14 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
           <UserTag
             key={tag.id}
             tag={tag}
-            handleTagClick={(tag: string) => handleTagClick(tag, false, false)}
+            handleTagClick={(tag: string) =>
+              handleTagClick({
+                tagName: tag,
+                isTypeTag: false,
+                isStatusTag: false,
+                isUntagged: false,
+              })
+            }
             active={activeTags.includes(tag.name)}
             onMoveDown={
               ix < data.userTags!.length - 1
@@ -68,7 +83,14 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
       <UserTag
         key={'untagged-tag-trigger'}
         tag={{ id: 0, name: t('manage.questionPool.untagged'), order: 1 }}
-        handleTagClick={(tag: string) => handleTagClick(tag, false, true)}
+        handleTagClick={(tag: string) =>
+          handleTagClick({
+            tagName: tag,
+            isTypeTag: false,
+            isStatusTag: false,
+            isUntagged: true,
+          })
+        }
         active={showUntagged}
         isStatic
       />

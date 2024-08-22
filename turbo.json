@@ -31,6 +31,17 @@
     "LISTMONK_TEMPLATE_MIGRATION_SUCCESS",
     "LISTMONK_URL",
     "LISTMONK_USER",
+    "LTI_DB_TYPE",
+    "LTI_DB_HOST",
+    "LTI_DB_PORT",
+    "LTI_DB_USER",
+    "LTI_DB_PASS",
+    "LTI_DB_NAME",
+    "LTI_NAME",
+    "LTI_URL",
+    "LTI_AUTH_ENDPOINT",
+    "LTI_TOKEN_ENDPOINT",
+    "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
     "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
@@ -41,6 +52,7 @@
     "NOTIFICATION_SECRET",
     "NOTIFICATION_SUPPORT_MAIL",
     "NOTIFICATION_URL",
+    "PRISMA_OPTIMIZE",
     "REDIS_CACHE_HOST",
     "REDIS_CACHE_PORT",
     "REDIS_HOST",
@@ -75,6 +87,16 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "dev": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/util#build",
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build"
+      ],
+      "persistent": true
+    },
+    "dev:lti": {
       "cache": false,
       "dependsOn": [
         "@klicker-uzh/util#build",

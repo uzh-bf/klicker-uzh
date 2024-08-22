@@ -6,6 +6,15 @@ export default {
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
     },
+    DRAFT: {
+      statusLabel: 'Draft',
+    },
+    REVIEW: {
+      statusLabel: 'Review',
+    },
+    READY: {
+      statusLabel: 'Ready',
+    },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
@@ -487,6 +496,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       addFeedback: 'Add feedback',
       submitFeedback: 'Submit feedback',
+      updateFeedback: 'Update feedback',
+      errorRatingElement:
+        'Your rating of the element was unfortunately not successful. Please try again later.',
       notFound:
         'The corresponding practice quiz is either not available or not yet published.',
       repetitionTitle: 'Repetition practice quizzes',
@@ -513,9 +525,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This question type is currently not available for practice quizzes',
       newPointsFrom: 'New points/XP from:',
       othersAnswered: 'Others answered as follows',
-      flagQuestion: 'Report question',
-      flagQuestionText:
-        'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       infoStack: 'Information element',
       scheduledAvailableFrom:
         'The practice quiz {name} will be available from {date}.',
@@ -690,6 +699,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
       date: 'Date',
+      dateCreated: 'Date Created',
+      dateModified: 'Date Modified',
       title: 'Title',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
@@ -822,7 +833,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      elementTypes: 'Element types',
+      elementTypes: 'Element Types',
+      elementStatus: 'Status',
       tags: 'Tags',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
@@ -850,7 +862,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
       questionType: 'Question type',
+      questionStatus: 'Status',
       selectQuestionType: 'Select question type',
+      selectQuestionStatus: 'Select status',
       questionTitle: 'Question title',
       titleTooltip:
         'Enter a short, summary title for the question. This is only used for better overview.',

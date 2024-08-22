@@ -51,23 +51,13 @@ releases:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
-
         frontendManage:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
-
         frontendControl:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
-
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_CONTROL" }}'
-
 
         backendGraphql:
           image:
@@ -102,13 +92,19 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
           clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
           redirectURL: '{{ requiredEnv "LTI_REDIRECT_URL" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           encryptionKey: '{{ requiredEnv "APP_SECRET" }}'
+          name: '{{ requiredEnv "LTI_NAME" }}'
+          url: '{{ requiredEnv "LTI_URL" }}'
+          authEndpoint: '{{ requiredEnv "LTI_AUTH_ENDPOINT" }}'
+          tokenEndpoint: '{{ requiredEnv "LTI_TOKEN_ENDPOINT" }}'
+          keysEndpoint: '{{ requiredEnv "LTI_KEYS_ENDPOINT" }}'
 
           db:
-            type: postgres
+            type: '{{ requiredEnv "LTI_DB_TYPE" }}'
             host: '{{ requiredEnv "LTI_DB_HOST" }}'
             port: '{{ requiredEnv "LTI_DB_PORT" }}'
             name: '{{ requiredEnv "LTI_DB_NAME" }}'

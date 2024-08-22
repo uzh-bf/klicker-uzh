@@ -1,5 +1,6 @@
 mutation ManipulateContentElement(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $pointsMultiplier: Int
@@ -7,6 +8,7 @@ mutation ManipulateContentElement(
 ) {
   manipulateContentElement(
     id: $id
+    status: $status
     name: $name
     content: $content
     pointsMultiplier: $pointsMultiplier
@@ -14,6 +16,7 @@ mutation ManipulateContentElement(
   ) {
     id
     name
+    status
     type
     content
     pointsMultiplier
