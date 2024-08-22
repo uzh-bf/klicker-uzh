@@ -1,4 +1,4 @@
-import { useSentry } from '@envelop/sentry'
+// import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
@@ -132,20 +132,20 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         },
       }),
       process.env.SENTRY_DSN &&
-        useSentry({
-          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
-          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
-          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
-          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
-          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
-          // skip: (executionArgs) => {
-          //   console.log(executionArgs)
-          //   if (!executionArgs.operationName) {
-          //     return true
-          //   }
-          //   return false
-          // },
-        }),
+        // useSentry({
+        //   includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+        //   includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+        //   includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+        //   // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+        //   // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+        //   // skip: (executionArgs) => {
+        //   //   console.log(executionArgs)
+        //   //   if (!executionArgs.operationName) {
+        //   //     return true
+        //   //   }
+        //   //   return false
+        //   // },
+        // }),
       // useGraphQlJit(),
       ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
