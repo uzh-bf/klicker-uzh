@@ -15,6 +15,15 @@ notifications:
   secret: ''
   supportEmail: ''
 
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: ''
+
 eduId:
   clientSecret: ''
 
