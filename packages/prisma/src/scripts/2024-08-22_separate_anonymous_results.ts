@@ -14,16 +14,18 @@ async function run() {
     },
   })
 
-  const updatedInstancePromises = groupActivityInstances.map((instance) => {
-    return prisma.elementInstance.update({
-      where: {
-        id: instance.id,
-      },
-      data: {
-        anonymousResults: getInitialElementResults(instance.element),
-      },
+  const updatedInstancePromises = groupActivityInstances
+    .filter((instance) => instance.anonymousResults === null)
+    .map((instance) => {
+      return prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          anonymousResults: getInitialElementResults(instance.element),
+        },
+      })
     })
-  })
   await prisma.$transaction(updatedInstancePromises)
 
   // ! PART 1: Link all question responses and details to the corresponding practice quiz / microlearning and course
