@@ -377,6 +377,8 @@ export async function manipulateGroupActivity(
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
+            const initialResults =
+              getInitialElementResults(processedElementData)
 
             return {
               elementType: element.type,
@@ -387,7 +389,8 @@ export async function manipulateGroupActivity(
               options: {
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
-              results: getInitialElementResults(processedElementData),
+              results: initialResults,
+              anonymousResults: initialResults,
               element: {
                 connect: { id: element.id },
               },
@@ -836,7 +839,7 @@ export async function submitGroupActivityDecisions(
 
         // compute the updated results
         const updatedResults = updateQuestionResults({
-          instance,
+          previousResults: instance.results,
           elementData: instance.elementData,
           response: response,
         })
@@ -1064,8 +1067,8 @@ export async function gradeGroupActivitySubmission(
               res.score === 0
                 ? ResponseCorrectness.INCORRECT
                 : res.score < computedMaxPoints
-                ? ResponseCorrectness.PARTIAL
-                : ResponseCorrectness.CORRECT,
+                  ? ResponseCorrectness.PARTIAL
+                  : ResponseCorrectness.CORRECT,
           }
         }),
       },

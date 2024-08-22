@@ -54,6 +54,7 @@ function GroupActivityStack({
     })
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
+    withParticipant: true,
   })
 
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(

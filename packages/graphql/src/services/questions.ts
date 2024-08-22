@@ -665,6 +665,7 @@ export async function updateQuestionInstances(
               data: {
                 elementData: newQuestionData,
                 results: newResults,
+                anonymousResults: newResults,
                 options: {
                   ...oldInstance.options,
                   pointsMultiplier: multiplier * question.pointsMultiplier,
@@ -694,6 +695,7 @@ export async function updateQuestionInstances(
               data: {
                 elementData: newQuestionData,
                 results: newResults,
+                anonymousResults: newResults,
                 options: {
                   ...oldInstance.options,
                   pointsMultiplier: multiplier * question.pointsMultiplier,
