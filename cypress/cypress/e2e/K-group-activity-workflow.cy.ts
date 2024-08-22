@@ -596,6 +596,7 @@ describe('Create and solve a group activity', () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME2'))
