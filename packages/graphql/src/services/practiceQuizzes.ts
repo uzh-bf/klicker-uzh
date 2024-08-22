@@ -519,14 +519,12 @@ async function respondToFlashcard(
   return result
 }
 
-export function udpateContentResults({
+export function incrementContentResults({
   previousResults,
-  increment,
 }: {
   previousResults: ContentResults
-  increment: number
 }): ContentResults {
-  return { total: previousResults.total + increment }
+  return { total: previousResults.total + 1 }
 }
 
 interface RespondToContentInput {
@@ -588,11 +586,10 @@ async function respondToContent(
     : null
 
   // update the aggregated data on the element instance
-  const newResults = udpateContentResults({
+  const newResults = incrementContentResults({
     previousResults: participation
       ? (existingInstance.results as ContentResults)
       : (existingInstance.anonymousResults as ContentResults),
-    increment: 1,
   })
 
   await ctx.prisma.elementInstance.update({
