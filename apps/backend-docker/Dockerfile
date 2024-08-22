@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -38,7 +38,7 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
