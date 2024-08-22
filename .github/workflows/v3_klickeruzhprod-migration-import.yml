@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - 'v3'
-      # - 'CI'
-    # paths:
-    #   - 'apps/func-migration-v3/**'
-    #   - '.github/workflows/v3_klickeruzhprod-migration-import**'
+    paths:
+      - 'apps/func-migration-v3/**'
+      - '.github/workflows/v3_klickeruzhprod-migration-import**'
   workflow_dispatch:
 
 env:
