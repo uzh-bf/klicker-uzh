@@ -839,7 +839,7 @@ export async function submitGroupActivityDecisions(
 
         // compute the updated results
         const updatedResults = updateQuestionResults({
-          instance,
+          previousResults: instance.results,
           elementData: instance.elementData,
           response: response,
         })
@@ -1067,8 +1067,8 @@ export async function gradeGroupActivitySubmission(
               res.score === 0
                 ? ResponseCorrectness.INCORRECT
                 : res.score < computedMaxPoints
-                ? ResponseCorrectness.PARTIAL
-                : ResponseCorrectness.CORRECT,
+                  ? ResponseCorrectness.PARTIAL
+                  : ResponseCorrectness.CORRECT,
           }
         }),
       },
