@@ -25,7 +25,8 @@ RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
 
-RUN pnpm i --frozen-lockfile
+# RUN pnpm i --frozen-lockfile
+RUN pnpm i
 
 ARG NODE_ENV="production"
 ARG COOKIE_DOMAIN
