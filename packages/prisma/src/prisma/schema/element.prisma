@@ -90,9 +90,8 @@ model ElementInstance {
   /// [PrismaElementResults]
   results Json // contains the collection of gathered results by logged in participants
 
-  // TODO: make required after filling field
   /// [PrismaElementResults]
-  anonymousResults Json? // contains the collection of gathered results by anonymous participants
+  anonymousResults Json // contains the collection of gathered results by anonymous participants
 
   responses          QuestionResponse[]
   detailResponses    QuestionResponseDetail[]
