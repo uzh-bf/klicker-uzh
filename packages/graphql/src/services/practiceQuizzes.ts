@@ -335,16 +335,20 @@ async function respondToFlashcard(
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: {
-        connect: {
-          id: existingInstance.elementStack.practiceQuizId ?? undefined,
-        },
-      },
-      microLearning: {
-        connect: {
-          id: existingInstance.elementStack.microLearningId ?? undefined,
-        },
-      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -414,19 +418,23 @@ async function respondToFlashcard(
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: {
-        connect: {
-          id: existingInstance.elementStack.practiceQuizId ?? undefined,
-        },
-      },
-      microLearning: {
-        connect: {
-          id: existingInstance.elementStack.microLearningId ?? undefined,
-        },
-      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       course: {
         connect: {
-          id: existingInstance.elementStack.courseId ?? undefined,
+          id: existingInstance.elementStack.courseId!,
         },
       },
       participation: {
@@ -572,16 +580,20 @@ async function respondToContent(
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: {
-        connect: {
-          id: existingInstance.elementStack.practiceQuizId ?? undefined,
-        },
-      },
-      microLearning: {
-        connect: {
-          id: existingInstance.elementStack.microLearningId ?? undefined,
-        },
-      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -636,19 +648,23 @@ async function respondToContent(
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: {
-        connect: {
-          id: existingInstance.elementStack.practiceQuizId ?? undefined,
-        },
-      },
-      microLearning: {
-        connect: {
-          id: existingInstance.elementStack.microLearningId ?? undefined,
-        },
-      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       course: {
         connect: {
-          id: existingInstance.elementStack.courseId ?? undefined,
+          id: existingInstance.elementStack.courseId!,
         },
       },
       participation: {
@@ -1414,19 +1430,23 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
-          practiceQuiz: {
-            connect: {
-              id: updatedInstance.elementStack.practiceQuizId ?? undefined,
-            },
-          },
-          microLearning: {
-            connect: {
-              id: updatedInstance.elementStack.microLearningId ?? undefined,
-            },
-          },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
           course: {
             connect: {
-              id: updatedInstance.elementStack.courseId ?? undefined,
+              id: updatedInstance.elementStack.courseId!,
             },
           },
           participation: {
@@ -1497,16 +1517,20 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
-          practiceQuiz: {
-            connect: {
-              id: updatedInstance.elementStack.practiceQuizId ?? undefined,
-            },
-          },
-          microLearning: {
-            connect: {
-              id: updatedInstance.elementStack.microLearningId ?? undefined,
-            },
-          },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
           participation: {
             connect: {
               courseId_participantId: {
