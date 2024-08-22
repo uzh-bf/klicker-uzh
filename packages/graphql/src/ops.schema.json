@@ -17635,7 +17635,19 @@
             "deprecationReason": null
           },
           {
+            "name": "ACTIVATION",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "FULL_ACCESS",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OTP",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
