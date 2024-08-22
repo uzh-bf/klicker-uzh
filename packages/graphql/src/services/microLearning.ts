@@ -186,8 +186,9 @@ export async function manipulateMicroLearning(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -198,7 +199,8 @@ export async function manipulateMicroLearning(
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
                 element: {
                   connect: { id: element.id },
                 },

@@ -4,15 +4,14 @@ on:
   push:
     branches:
       - 'v3'
-      # - 'CI'
-    # paths:
-    #   - 'apps/func-migration-v3/**'
-    #   - '.github/workflows/v3_klickeruzhprod-migration-import**'
+    paths:
+      - 'apps/func-migration-v3-import/**'
+      - '.github/workflows/v3_klickeruzhprod-migration-import**'
   workflow_dispatch:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-migration-v3-import'
-  NODE_VERSION: '20.11.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  NODE_VERSION: '20.17.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build-and-deploy:

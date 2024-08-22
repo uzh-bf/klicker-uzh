@@ -7,7 +7,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-response-processor'
-  NODE_VERSION: '20.11.0'
+  NODE_VERSION: '20.17.0'
 
 jobs:
   build-and-deploy:

@@ -9,7 +9,6 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Element,
-  ElementInstance,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
@@ -38,6 +37,7 @@ import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   ContentResults,
+  ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
@@ -170,8 +170,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-        ? -existingResponse.correctCountStreak
-        : 0,
+          ? -existingResponse.correctCountStreak
+          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -397,14 +397,14 @@ async function respondToFlashcard(
     response === FlashcardCorrectness.CORRECT
       ? 1
       : response === FlashcardCorrectness.PARTIAL
-      ? 0.5
-      : 0
+        ? 0.5
+        : 0
   const responseCorrectness =
     correctness === 1
       ? ResponseCorrectness.CORRECT
       : correctness === 0
-      ? ResponseCorrectness.WRONG
-      : ResponseCorrectness.PARTIAL
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -556,19 +556,6 @@ async function respondToContent(
     grading: StackFeedbackStatus.CORRECT,
     score: null,
   }
-
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        total: existingResults.total + 1,
-      },
-    },
-  })
 
   // fetch the participation of the participant
   const participation = ctx.user?.sub
@@ -971,14 +958,14 @@ function evaluateElementResponse(
 }
 
 interface UpdateQuestionResultsInputs {
-  instance: ElementInstance
+  previousResults: ElementInstanceResults
   elementData: AllElementTypeData
   response: ResponseInput
   correct?: boolean
 }
 
 export function updateQuestionResults({
-  instance,
+  previousResults,
   elementData,
   response,
   correct,
@@ -989,7 +976,7 @@ export function updateQuestionResults({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const results = instance?.results as ElementResultsChoices
+      const results = previousResults as ElementResultsChoices
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
@@ -1006,7 +993,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.NUMERICAL: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -1053,7 +1040,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.FREE_TEXT: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -1194,7 +1181,10 @@ export async function respondToQuestion(
       const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
-        instance,
+        previousResults:
+          ctx.user?.sub && !treatAnonymous
+            ? instance.results
+            : instance.anonymousResults,
         elementData,
         response,
         correct: correctness === 1,
@@ -1211,9 +1201,12 @@ export async function respondToQuestion(
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
-        data: {
-          results: updatedResults.results,
-        },
+        data:
+          ctx.user?.sub && !treatAnonymous
+            ? {
+                results: updatedResults.results,
+              }
+            : { anonymousResults: updatedResults.results },
         include: {
           elementStack: true,
         },
@@ -1439,8 +1432,8 @@ export async function respondToQuestion(
       correctness === 1
         ? ResponseCorrectness.CORRECT
         : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
@@ -1646,8 +1639,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-      ? StackFeedbackStatus.CORRECT
-      : StackFeedbackStatus.PARTIAL
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1973,7 +1966,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : availableFrom ?? undefined
+      : (availableFrom ?? undefined)
 
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -1994,8 +1987,9 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -2007,7 +2001,8 @@ export async function manipulatePracticeQuiz(
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                   resetTimeDays,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
                 element: {
                   connect: { id: element.id },
                 },
