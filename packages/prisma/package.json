@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.2.0-alpha.4",
+  "version": "3.2.0-alpha.5",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -80,6 +80,7 @@
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema",
     "script": "ENV=development doppler run --config dev -- tsx",
+    "script:qa": "ENV=development doppler run --config stg -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev tsx src/data/seedAchievements.ts",

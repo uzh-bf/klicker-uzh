@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.4...v3.2.0-alpha.5) (2024-08-22)
+
+
+### Features
+
+* implement magic link login and activation for student accounts, add react-email infrastructure ([#4108](https://github.com/uzh-bf/klicker-uzh/issues/4108)) ([c3f2710](https://github.com/uzh-bf/klicker-uzh/commit/c3f2710c5bbed4d6b6a2eda6e98242cc6c2a056d))
+* separately track results for anonymous and logged in participants on instance ([#4198](https://github.com/uzh-bf/klicker-uzh/issues/4198)) ([2ab53c7](https://github.com/uzh-bf/klicker-uzh/commit/2ab53c7eec6582b16e4dbc2319606d46aa97e734))
+
+
+### Bug Fixes
+
+* **apps/auth:** change NEXTAUTH_URL ([c45ed61](https://github.com/uzh-bf/klicker-uzh/commit/c45ed61733dd3556728694d182ad46cbad968c5a))
+* **deploy:** add remaining LTI configuration from env ([cb322e8](https://github.com/uzh-bf/klicker-uzh/commit/cb322e8a8e95e3a479bf84f1b2f8321ff5ab38a5))
+* **packages/graphql:** ensure that identical numerical answer values are correctly aggregated ([033589c](https://github.com/uzh-bf/klicker-uzh/commit/033589ce7c9cd4b83ab921052b7d68c67eafdf79))
+* **packages/prisma:** ensure that results separation migration script can be run multiple times ([84fd28d](https://github.com/uzh-bf/klicker-uzh/commit/84fd28d55f3ae41dd097b8ac42b0b20ccb884787))
+
+
+### Deployment
+
+* add email config ([2ca1cd1](https://github.com/uzh-bf/klicker-uzh/commit/2ca1cd1b98ffbadfe2f519c9bef885dde356d1c7))
+
+
+### Build and CI
+
+* add more paths to ci workflows ([14c4924](https://github.com/uzh-bf/klicker-uzh/commit/14c49243508c108f8e8e67aecb4f895cb31d484c))
+* align node version in CI ([b2d211d](https://github.com/uzh-bf/klicker-uzh/commit/b2d211ddedd4f3be7d062632d2e1709de78718c4))
+* deploy migration functions only if their files change ([1f393ee](https://github.com/uzh-bf/klicker-uzh/commit/1f393ee994f5ae5c7f41604f337ad9a62186a47c))
+* extend GH workflow for auth app ([ae8939e](https://github.com/uzh-bf/klicker-uzh/commit/ae8939e163d33258a7a40cd03116ab68c8c7d542))
+* fix import CI pipeline paths ([aa65c13](https://github.com/uzh-bf/klicker-uzh/commit/aa65c13601d9b0d4961e3411810274a3ce769c1a))
+* test grading only when grading changes ([6077381](https://github.com/uzh-bf/klicker-uzh/commit/607738151752ee987e06120d65dd2150e0fbcd8a))
+* update turbo version for deployment of functions ([01e25b5](https://github.com/uzh-bf/klicker-uzh/commit/01e25b5b58eae765d74892d2437b15377418a4ce))
+
 ## [3.2.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.3...v3.2.0-alpha.4) (2024-08-22)
 
 ## [3.2.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.2...v3.2.0-alpha.3) (2024-08-22)
