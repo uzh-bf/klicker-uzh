@@ -1165,9 +1165,10 @@ export async function respondToQuestion(
       const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
-        previousResults: !treatAnonymous
-          ? instance.results
-          : instance.anonymousResults,
+        previousResults:
+          ctx.user?.sub && !treatAnonymous
+            ? instance.results
+            : instance.anonymousResults,
         elementData,
         response,
         correct: correctness === 1,
@@ -1184,11 +1185,12 @@ export async function respondToQuestion(
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
-        data: !treatAnonymous
-          ? {
-              results: updatedResults.results,
-            }
-          : { anonymousResults: updatedResults.results },
+        data:
+          ctx.user?.sub && !treatAnonymous
+            ? {
+                results: updatedResults.results,
+              }
+            : { anonymousResults: updatedResults.results },
         include: {
           elementStack: true,
         },
