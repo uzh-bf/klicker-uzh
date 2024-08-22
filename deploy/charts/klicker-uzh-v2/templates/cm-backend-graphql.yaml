@@ -22,6 +22,12 @@ data:
   LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE: {{ .Values.listmonk.templates.emailNotFound | quote }}
   LISTMONK_TEMPLATE_MIGRATION_REQUEST: {{ .Values.listmonk.templates.migrationRequest | quote }}
   MIGRATION_SERVICE_BUS_QUEUE_NAME: {{ .Values.migration.serviceBus.queueName | quote }}
+  EMAIL_TYPE: {{ .Values.email.type | quote }}
+  EMAIL_FROM: {{ .Values.email.from | quote }}
+  EMAIL_HOST: {{ .Values.email.host | quote }}
+  EMAIL_PORT: {{ .Values.email.port | quote }}
+  EMAIL_USER: {{ .Values.email.username | quote }}
+  EMAIL_SECURE: {{ .Values.email.secure | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}
