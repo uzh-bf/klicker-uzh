@@ -1847,8 +1847,9 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -1860,7 +1861,8 @@ export async function manipulatePracticeQuiz(
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                   resetTimeDays,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
                 element: {
                   connect: { id: element.id },
                 },

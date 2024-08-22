@@ -377,6 +377,8 @@ export async function manipulateGroupActivity(
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
+            const initialResults =
+              getInitialElementResults(processedElementData)
 
             return {
               elementType: element.type,
@@ -387,7 +389,8 @@ export async function manipulateGroupActivity(
               options: {
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
-              results: getInitialElementResults(processedElementData),
+              results: initialResults,
+              anonymousResults: initialResults,
               element: {
                 connect: { id: element.id },
               },
