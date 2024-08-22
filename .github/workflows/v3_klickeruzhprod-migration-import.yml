@@ -5,7 +5,7 @@ on:
     branches:
       - 'v3'
     paths:
-      - 'apps/func-migration-v3/**'
+      - 'apps/func-migration-v3-import/**'
       - '.github/workflows/v3_klickeruzhprod-migration-import**'
   workflow_dispatch:
 
