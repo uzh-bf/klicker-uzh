@@ -2,6 +2,88 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.2...v3.2.0-alpha.3) (2024-08-22)
+
+## [3.2.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.1...v3.2.0-alpha.2) (2024-08-22)
+
+## [3.2.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.0...v3.2.0-alpha.1) (2024-08-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only fetch element feedbacks for non-anonymous element stack queries ([#4199](https://github.com/uzh-bf/klicker-uzh/issues/4199)) ([8282a53](https://github.com/uzh-bf/klicker-uzh/commit/8282a5375e708252f4783d06a09b9e56653cb554))
+
+
+### Enhancements
+
+* track links between question response (details) and corresponding klicker elements ([#4196](https://github.com/uzh-bf/klicker-uzh/issues/4196)) ([e85557c](https://github.com/uzh-bf/klicker-uzh/commit/e85557c3f5297cfac953a9d67fab7b50c16ea102))
+
+## [3.2.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.2...v3.2.0-alpha.0) (2024-08-22)
+
+
+### Features
+
+* add possibility for students to provide feedback to questions ([#4184](https://github.com/uzh-bf/klicker-uzh/issues/4184)) ([c8e50a1](https://github.com/uzh-bf/klicker-uzh/commit/c8e50a1482cb6279af73191b5e3ab6298676eae2))
+* **apps/frontend-manage:** upgrade live quiz creation editor with new components ([#4151](https://github.com/uzh-bf/klicker-uzh/issues/4151)) ([5b9fae8](https://github.com/uzh-bf/klicker-uzh/commit/5b9fae8b848632ab1dd4ddc39e8eedc9c20c066e))
+* introduce new group activity creation wizard ([#4168](https://github.com/uzh-bf/klicker-uzh/issues/4168)) ([775025d](https://github.com/uzh-bf/klicker-uzh/commit/775025d935ff0b21870429cb525397b814303a0f))
+* introduce new session creation wizards ([#4152](https://github.com/uzh-bf/klicker-uzh/issues/4152)) ([4d8eb86](https://github.com/uzh-bf/klicker-uzh/commit/4d8eb86bd0b2df57d9e13e64a0be0dc2b6c96c89))
+* introduce time tracking for student answers on element stacks ([#4175](https://github.com/uzh-bf/klicker-uzh/issues/4175)) ([734ac3c](https://github.com/uzh-bf/klicker-uzh/commit/734ac3ce4aac93d989cc7ee79b455703660cca75))
+* upgrade microlearning creation editor with new styling and possibility to create stacks ([#4154](https://github.com/uzh-bf/klicker-uzh/issues/4154)) ([0b31fa6](https://github.com/uzh-bf/klicker-uzh/commit/0b31fa629b7b6cd256e33eabed6b87d9144e99c3))
+* upgrade practice quiz creation editor with new styling and possibility to create stacks ([#4156](https://github.com/uzh-bf/klicker-uzh/issues/4156)) ([87c7674](https://github.com/uzh-bf/klicker-uzh/commit/87c76743ed2122741dd0664a3948aaf8fcc6be72))
+
+
+### Bug Fixes
+
+* add dev:doppler command, fix lti not running without .env ([07bd554](https://github.com/uzh-bf/klicker-uzh/commit/07bd55448acceed6cc390e609f71a7f8fafe4a77))
+* add env declarations to turbo config ([978ee38](https://github.com/uzh-bf/klicker-uzh/commit/978ee38fc032a869acf48e9d542b0257861b2746))
+* **apps/frontend-manage:** ensure that forms state is properly reset when selecting to create another element ([#4155](https://github.com/uzh-bf/klicker-uzh/issues/4155)) ([071ed94](https://github.com/uzh-bf/klicker-uzh/commit/071ed94a06c607cac8babbad3d3499afced6d386))
+* **apps/frontend-pwa:** ensure that stack description and name are shown on microlearning ([#4157](https://github.com/uzh-bf/klicker-uzh/issues/4157)) ([bffdb41](https://github.com/uzh-bf/klicker-uzh/commit/bffdb410e581caa5964a6660b1146cc7aafad7e6))
+* **apps/frontend-pwa:** ensure that tags on question are clickable for filtering ([#4195](https://github.com/uzh-bf/klicker-uzh/issues/4195)) ([de1c888](https://github.com/uzh-bf/klicker-uzh/commit/de1c8882cfb7d573052bcb2aaf96b9a6a8e8f557))
+* **apps/frontend-pwa:** use id from element feedback mutation return value for cache update ([#4192](https://github.com/uzh-bf/klicker-uzh/issues/4192)) ([5e49145](https://github.com/uzh-bf/klicker-uzh/commit/5e491450b38c4214f66418d782bc95920cb9bf8b))
+* **apps/lti:** enable type-checking in LTI app ([2778b96](https://github.com/uzh-bf/klicker-uzh/commit/2778b96f288139ccf9c9dcaef75325fb8b9c1c30))
+* **apps/lti:** ensure that COOKIE_DOMAIN is part of LTI_REDIRECT_URL and redirectTo ([8d502da](https://github.com/uzh-bf/klicker-uzh/commit/8d502da192ab2b15b7d721be57bd453fb24a20da))
+* **apps/lti:** load database constructor correctly ([7fb46a1](https://github.com/uzh-bf/klicker-uzh/commit/7fb46a12f5d55af77643d44a1514243bd7f6abe7))
+* **apps/lti:** make the LTI endpoints and settings configurable via env ([d2830c0](https://github.com/uzh-bf/klicker-uzh/commit/d2830c0847f7fd78b72ab0d1d0afdfd8329b7af2))
+* **deploy:** add defaults to values for host and other db params for lti ([2e13b23](https://github.com/uzh-bf/klicker-uzh/commit/2e13b233c285133c1cd2ef99d9581c070424d7b5))
+* **deploy:** add ingress for lti service ([0cd3c74](https://github.com/uzh-bf/klicker-uzh/commit/0cd3c74639d141f9b73662bac3eb16e8318949d1))
+* **deploy:** add port for lti and db ([0898cc3](https://github.com/uzh-bf/klicker-uzh/commit/0898cc343bbc0dd9896dadc8573cf9606032ba11))
+* **packages/graphql:** ensure that questions in live session are loaded in correct order ([#4172](https://github.com/uzh-bf/klicker-uzh/issues/4172)) ([160d468](https://github.com/uzh-bf/klicker-uzh/commit/160d4682f37ae885bfd849262083db87439b558e))
+* **packages/prisma:** add missing migration for required course color and session block order ([2e46aa4](https://github.com/uzh-bf/klicker-uzh/commit/2e46aa4453a8f055fd03ddea74708053bf6d0a65))
+* **packages/shared-components:** replace broken free text answer field on live quiz with design-system implementation ([#4189](https://github.com/uzh-bf/klicker-uzh/issues/4189)) ([aa37a71](https://github.com/uzh-bf/klicker-uzh/commit/aa37a710e5016e05caceaeb05f18c6545b2b8ae3))
+* replace all primary colors through corresponding new design-system styles ([#4176](https://github.com/uzh-bf/klicker-uzh/issues/4176)) ([923034c](https://github.com/uzh-bf/klicker-uzh/commit/923034cee4d6668f7ea389e49c1083bc6d483bab))
+
+
+### Dependencies
+
+* upgrade design system to v3 alpha ([#4158](https://github.com/uzh-bf/klicker-uzh/issues/4158)) ([8143620](https://github.com/uzh-bf/klicker-uzh/commit/814362002a29f3a4200162412c229594e2a8d4be))
+* upgrade pnpm to v9 and turbo to v2, upgrade other packages ([#4160](https://github.com/uzh-bf/klicker-uzh/issues/4160)) ([1d3bcc8](https://github.com/uzh-bf/klicker-uzh/commit/1d3bcc83183406af759d1de350e4939d77ea1bc3))
+
+
+### Deployment
+
+* **apps/lti:** extend deployment config for LTI service ([#4173](https://github.com/uzh-bf/klicker-uzh/issues/4173)) ([dcfa7f9](https://github.com/uzh-bf/klicker-uzh/commit/dcfa7f9f39bac83f80f6f66515dfad45a7348159))
+
+
+### Refactors
+
+* fix typescript code errors across code base and transform to ESM and TSX (part 1) ([#4133](https://github.com/uzh-bf/klicker-uzh/issues/4133)) ([5dd36e4](https://github.com/uzh-bf/klicker-uzh/commit/5dd36e406f715d402651135b928504e56547621b))
+* replace all formik fields through revised versions with new layout ([#4177](https://github.com/uzh-bf/klicker-uzh/issues/4177)) ([77d430f](https://github.com/uzh-bf/klicker-uzh/commit/77d430fa2ec7af989038bf9fa1763b1ff41c4bb0))
+
+
+### Enhancements
+
+* add backend logic and migration scripts to compute separate first and last responses ([#4193](https://github.com/uzh-bf/klicker-uzh/issues/4193)) ([1e8c375](https://github.com/uzh-bf/klicker-uzh/commit/1e8c3755338bea887db8a1b1d96e6a0b7183c3f6))
+* add efficient cache updates for element feedback rating and flagging ([#4188](https://github.com/uzh-bf/klicker-uzh/issues/4188)) ([0da8b56](https://github.com/uzh-bf/klicker-uzh/commit/0da8b568b51a7f0e3331269c3a8a8cb04959c984))
+* add status for review workflow to elements, improve tag list layout, add sorting by modification date ([#4180](https://github.com/uzh-bf/klicker-uzh/issues/4180)) ([1c92ae6](https://github.com/uzh-bf/klicker-uzh/commit/1c92ae6dc7c87bbcdcb0aa9239a64a353b20445d))
+* **apps/frontend-manage:** rewrite multistep wizard to address state, validation and layout issues ([#4171](https://github.com/uzh-bf/klicker-uzh/issues/4171)) ([8fe6d75](https://github.com/uzh-bf/klicker-uzh/commit/8fe6d753aa52666c972b1b3bebe64441fd4c47b3))
+* **apps/lti:** enable dynamic redirect for LTI ([e34dd53](https://github.com/uzh-bf/klicker-uzh/commit/e34dd53259730b844db993361e319e17aa60eb04))
+* **cypress:** extend test suite with creation and editing workflow for live quiz ([#4153](https://github.com/uzh-bf/klicker-uzh/issues/4153)) ([c252ba5](https://github.com/uzh-bf/klicker-uzh/commit/c252ba5fb0087f4cc533e9c113dc4c891a7d6888))
+* extend database schema for learning analytics ([#4190](https://github.com/uzh-bf/klicker-uzh/issues/4190)) ([bec408c](https://github.com/uzh-bf/klicker-uzh/commit/bec408cfd480cc9227f201b6fb04241eaaf166b3))
+* fetch previous element feedbacks by participant and display them on element stack ([#4185](https://github.com/uzh-bf/klicker-uzh/issues/4185)) ([2c1638f](https://github.com/uzh-bf/klicker-uzh/commit/2c1638fa26b69b7ddda07979a3c1774656426bd3))
+* highlight questions with errors in stack and block creation steps ([#4169](https://github.com/uzh-bf/klicker-uzh/issues/4169)) ([ec313f3](https://github.com/uzh-bf/klicker-uzh/commit/ec313f38ae4eacb20cb0505c9995cce2da129c8c))
+* implement LTI 1.3 for PWA, add session-storage based approach for LTI in iframe, and link existing accounts if email is provided ([#4187](https://github.com/uzh-bf/klicker-uzh/issues/4187)) ([d4ea699](https://github.com/uzh-bf/klicker-uzh/commit/d4ea699066edada51a2369d0e4ad3a21fc3ac595))
+* **lti:** add new LTI service ([#4159](https://github.com/uzh-bf/klicker-uzh/issues/4159)) ([2e70bc9](https://github.com/uzh-bf/klicker-uzh/commit/2e70bc9ebfd8dc55c484e4c6b6884d1d8aaab513))
+
 ### [3.1.2-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.1...v3.1.2-rc.2) (2024-07-19)
 
 

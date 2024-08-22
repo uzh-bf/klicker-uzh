@@ -390,7 +390,12 @@ function Index() {
                   }}
                   tagfilter={filters.tags}
                   handleTagClick={(tag: string) =>
-                    handleTagClick(tag, false, false)
+                    handleTagClick({
+                      tagName: tag,
+                      isTypeTag: false,
+                      isStatusTag: false,
+                      isUntagged: false,
+                    })
                   }
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {
