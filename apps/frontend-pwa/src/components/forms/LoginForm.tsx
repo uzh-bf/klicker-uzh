@@ -65,9 +65,9 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex flex-col flex-grow max-w-xl md:!flex-grow-0 md:border md:rounded-lg md:shadow">
-      <div className="flex flex-col items-center justify-center flex-1">
-        <div className="w-full mb-8 text-center sm:my-12">
+    <div className="flex max-w-xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="mb-8 w-full text-center sm:my-12">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -86,7 +86,7 @@ export function LoginForm({
               label={t('shared.generic.login')}
               className={{
                 root: '!rounded-none',
-                label: 'font-bold text-md',
+                label: 'text-md font-bold',
               }}
             />
             <Tabs.Tab
@@ -95,7 +95,7 @@ export function LoginForm({
               label={t('pwa.login.createAccountJoin')}
               className={{
                 root: '!rounded-none',
-                label: 'font-bold text-md',
+                label: 'text-md font-bold',
               }}
             />
           </Tabs.TabList>
@@ -110,7 +110,7 @@ export function LoginForm({
             key="login"
             value="login"
             className={{
-              root: 'md:px-4 rounded-none h-full flex items-center md:pb-14 md:-my-2',
+              root: 'flex h-full items-center rounded-none md:-my-2 md:px-4 md:pb-14',
             }}
           >
             <Form className="mx-auto w-72 sm:w-96">
@@ -129,10 +129,10 @@ export function LoginForm({
               />
 
               {magicLinkLogin && setMagicLinkLogin && (
-                <div className="flex flex-col mt-3 md:mt-2 gap-2">
+                <div className="mt-3 flex flex-col gap-2 md:mt-2">
                   <Button
                     fluid
-                    className={{ root: 'gap-4 justify-start' }}
+                    className={{ root: 'justify-start gap-4' }}
                     type="submit"
                     disabled={isSubmitting}
                     data={{ cy: 'magic-link-login' }}
@@ -146,7 +146,7 @@ export function LoginForm({
                   </Button>
                   <Button
                     fluid
-                    className={{ root: 'gap-4 justify-start' }}
+                    className={{ root: 'justify-start gap-4' }}
                     type="button"
                     onClick={() => setMagicLinkLogin(false)}
                     data={{ cy: 'password-login' }}
@@ -176,8 +176,8 @@ export function LoginForm({
                     type={passwordHidden ? 'password' : 'text'}
                   />
 
-                  <div className="flex flex-row justify-between w-full">
-                    {setMagicLinkLogin && (
+                  <div className="flex w-full flex-row justify-between">
+                    {/* {setMagicLinkLogin && (
                       <Button
                         className={{
                           root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
@@ -186,11 +186,11 @@ export function LoginForm({
                       >
                         Back
                       </Button>
-                    )}
+                    )} */}
 
                     <Button
                       className={{
-                        root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                        root: 'mt-3 w-full !justify-center border-uzh-grey-80 md:mt-2 md:w-max',
                       }}
                       type="submit"
                       disabled={isSubmitting}
@@ -203,7 +203,7 @@ export function LoginForm({
               )}
 
               {installAndroid && onChrome && (
-                <div className="flex flex-col justify-center mt-4 md:hidden">
+                <div className="mt-4 flex flex-col justify-center md:hidden">
                   <UserNotification type="info" message={installAndroid}>
                     <Button
                       className={{
@@ -230,7 +230,7 @@ export function LoginForm({
           </Tabs.TabContent>
         </Tabs>
       </div>
-      <div className="flex-none w-full">
+      <div className="w-full flex-none">
         <Footer />
       </div>
     </div>
