@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.16.0-alpine AS base
+FROM docker.io/library/node:20.17.0-alpine AS base
 
 
 FROM base AS deps
