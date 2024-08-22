@@ -5,18 +5,29 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
 
-function useStackElementFeedbacks({ instanceIds }: { instanceIds: number[] }) {
+function useStackElementFeedbacks({
+  instanceIds,
+  withParticipant,
+}: {
+  instanceIds: number[]
+  withParticipant: boolean
+}) {
   const { data: elementFeedbackData } = useQuery(
     GetStackElementFeedbacksDocument,
     {
       variables: {
         instanceIds: instanceIds,
       },
+      skip: !withParticipant,
     }
   )
 
   const mappedElementFeedbacks = useMemo(() => {
-    if (!elementFeedbackData || !elementFeedbackData.getStackElementFeedbacks) {
+    if (
+      !withParticipant ||
+      !elementFeedbackData ||
+      !elementFeedbackData.getStackElementFeedbacks
+    ) {
       return {}
     }
 
@@ -27,7 +38,7 @@ function useStackElementFeedbacks({ instanceIds }: { instanceIds: number[] }) {
       },
       {} as Record<number, ElementFeedback>
     )
-  }, [elementFeedbackData])
+  }, [elementFeedbackData, withParticipant])
 
   return mappedElementFeedbacks
 }
