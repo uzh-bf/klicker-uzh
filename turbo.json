@@ -80,11 +80,11 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "dev": {
       "cache": false,
@@ -92,7 +92,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -102,7 +103,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -112,7 +114,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -122,7 +125,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -132,7 +136,7 @@
     },
     "dev:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**", "build/**"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
     "publish": {
@@ -141,11 +145,11 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "test": {
       "cache": false
