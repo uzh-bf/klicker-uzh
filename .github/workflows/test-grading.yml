@@ -3,9 +3,15 @@ name: Test grading package functionalities
 on:
   push:
     branches: ['v3', 'v3*']
+    paths:
+      - 'packages/grading/**'
+      - '.github/workflows/test-grading.yml'
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/grading/**'
+      - '.github/workflows/test-grading.yml'
 
 jobs:
   test:
