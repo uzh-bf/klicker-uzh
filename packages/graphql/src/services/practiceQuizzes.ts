@@ -1070,7 +1070,7 @@ export function updateQuestionResults({
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
-      if (Object.keys(results.responses).includes(value)) {
+      if (Object.keys(results.responses).includes(hashedValue)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {

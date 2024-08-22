@@ -47,6 +47,8 @@ enum UserLoginScope {
   FULL_ACCESS
   SESSION_EXEC
   READ_ONLY
+  OTP
+  ACTIVATION
 }
 
 model UserLogin {

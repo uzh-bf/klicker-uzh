@@ -47,7 +47,7 @@ const builder = new SchemaBuilder<{
   }
 }>({
   authScopes: async (ctx) => ({
-    authenticated: !!ctx.user?.sub,
+    authenticated: !!ctx.user?.sub && ctx.user.scope !== UserLoginScope.OTP,
     role: (role) => ctx.user?.role === role,
     scope: (requiredScope) => {
       switch (requiredScope) {
