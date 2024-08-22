@@ -3,7 +3,7 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   # workflow_dispatch:
 
 env:
@@ -11,6 +11,7 @@ env:
 
 jobs:
   cypress-run:
+    if: github.event.pull_request.draft == false
     # runs-on: self-hosted
     runs-on: ubuntu-latest
     services:

@@ -8,13 +8,14 @@ on:
       - '.github/workflows/test-grading.yml'
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'packages/grading/**'
       - '.github/workflows/test-grading.yml'
 
 jobs:
   test:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
