@@ -9,7 +9,6 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Element,
-  ElementInstance,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
@@ -38,6 +37,7 @@ import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   ContentResults,
+  ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
@@ -284,21 +284,6 @@ async function respondToFlashcard(
     score: null,
   }
 
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        ...existingResults,
-        [response]: (existingResults[response] ?? 0) + 1,
-        total: existingResults.total + 1,
-      },
-    },
-  })
-
   // fetch the participation of the participant
   const participation = ctx.user?.sub
     ? await ctx.prisma.participation.findUnique({
@@ -313,6 +298,31 @@ async function respondToFlashcard(
         },
       })
     : null
+
+  // update the aggregated data on the element instance
+  const existingResults = existingInstance.results as FlashcardResults
+  const existingAnonymousResults =
+    existingInstance.anonymousResults as FlashcardResults
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? {
+          results: {
+            ...existingResults,
+            [response]: (existingResults[response] ?? 0) + 1,
+            total: existingResults.total + 1,
+          },
+        }
+      : {
+          anonymousResults: {
+            ...existingAnonymousResults,
+            [response]: (existingAnonymousResults[response] ?? 0) + 1,
+            total: existingAnonymousResults.total + 1,
+          },
+        },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
@@ -495,19 +505,6 @@ async function respondToContent(
     score: null,
   }
 
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        total: existingResults.total + 1,
-      },
-    },
-  })
-
   // fetch the participation of the participant
   const participation = ctx.user?.sub
     ? await ctx.prisma.participation.findUnique({
@@ -522,6 +519,19 @@ async function respondToContent(
         },
       })
     : null
+
+  // update the aggregated data on the element instance
+  const existingResults = existingInstance.results as ContentResults
+  const existingAnonymousResults =
+    existingInstance.anonymousResults as ContentResults
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? { results: { total: existingResults.total + 1 } }
+      : { anonymousResults: { total: existingAnonymousResults.total + 1 } },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
@@ -860,14 +870,14 @@ function evaluateElementResponse(
 }
 
 interface UpdateQuestionResultsInputs {
-  instance: ElementInstance
+  previousResults: ElementInstanceResults
   elementData: AllElementTypeData
   response: ResponseInput
   correct?: boolean
 }
 
 export function updateQuestionResults({
-  instance,
+  previousResults,
   elementData,
   response,
   correct,
@@ -878,7 +888,7 @@ export function updateQuestionResults({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const results = instance?.results as ElementResultsChoices
+      const results = previousResults as ElementResultsChoices
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
@@ -895,7 +905,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.NUMERICAL: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -942,7 +952,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.FREE_TEXT: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -1083,7 +1093,9 @@ export async function respondToQuestion(
       const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
-        instance,
+        previousResults: !treatAnonymous
+          ? instance.results
+          : instance.anonymousResults,
         elementData,
         response,
         correct: correctness === 1,
@@ -1100,9 +1112,11 @@ export async function respondToQuestion(
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
-        data: {
-          results: updatedResults.results,
-        },
+        data: !treatAnonymous
+          ? {
+              results: updatedResults.results,
+            }
+          : { anonymousResults: updatedResults.results },
       })
 
       return {
