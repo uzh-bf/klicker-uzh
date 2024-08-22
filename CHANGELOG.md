@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.3...v3.2.0-alpha.4) (2024-08-22)
+
+## [3.2.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.2...v3.2.0-alpha.3) (2024-08-22)
+
+## [3.2.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.1...v3.2.0-alpha.2) (2024-08-22)
+
+## [3.2.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.0...v3.2.0-alpha.1) (2024-08-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only fetch element feedbacks for non-anonymous element stack queries ([#4199](https://github.com/uzh-bf/klicker-uzh/issues/4199)) ([8282a53](https://github.com/uzh-bf/klicker-uzh/commit/8282a5375e708252f4783d06a09b9e56653cb554))
+
+
+### Enhancements
+
+* track links between question response (details) and corresponding klicker elements ([#4196](https://github.com/uzh-bf/klicker-uzh/issues/4196)) ([e85557c](https://github.com/uzh-bf/klicker-uzh/commit/e85557c3f5297cfac953a9d67fab7b50c16ea102))
+
 ## [3.2.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.2-rc.2...v3.2.0-alpha.0) (2024-08-22)
 
 

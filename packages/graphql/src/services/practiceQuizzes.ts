@@ -258,6 +258,9 @@ async function respondToFlashcard(
     where: {
       id,
     },
+    include: {
+      elementStack: true,
+    },
   })
 
   // check if the instance exists and the response is valid
@@ -342,6 +345,20 @@ async function respondToFlashcard(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -410,6 +427,25 @@ async function respondToFlashcard(
       averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
+      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
+      course: {
+        connect: {
+          id: courseId,
+        },
       },
       participation: {
         connect: {
@@ -492,6 +528,9 @@ async function respondToContent(
     where: {
       id,
     },
+    include: {
+      elementStack: true,
+    },
   })
 
   // check if the instance exists and the response is valid
@@ -551,6 +590,20 @@ async function respondToContent(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -604,6 +657,25 @@ async function respondToContent(
       averageTimeSpent: newAverageTime,
       elementInstance: {
         connect: { id },
+      },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
+      course: {
+        connect: {
+          id: courseId,
+        },
       },
       participation: {
         connect: {
@@ -1117,6 +1189,9 @@ export async function respondToQuestion(
               results: updatedResults.results,
             }
           : { anonymousResults: updatedResults.results },
+        include: {
+          elementStack: true,
+        },
       })
 
       return {
@@ -1369,6 +1444,25 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
+          course: {
+            connect: {
+              id: courseId,
+            },
+          },
           participation: {
             connect: {
               courseId_participantId: {
@@ -1437,6 +1531,20 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
           participation: {
             connect: {
               courseId_participantId: {
