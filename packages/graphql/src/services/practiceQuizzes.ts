@@ -243,6 +243,20 @@ function updateSpacedRepetition({
   }
 }
 
+export function updateFlashcardResults({
+  previousResults,
+  response,
+}: {
+  previousResults: FlashcardResults
+  response: FlashcardCorrectness
+}): FlashcardResults {
+  return {
+    ...previousResults,
+    [response]: (previousResults[response] ?? 0) + 1,
+    total: previousResults.total + 1,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
@@ -287,21 +301,6 @@ async function respondToFlashcard(
     score: null,
   }
 
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        ...existingResults,
-        [response]: (existingResults[response] ?? 0) + 1,
-        total: existingResults.total + 1,
-      },
-    },
-  })
-
   // fetch the participation of the participant
   const participation = ctx.user?.sub
     ? await ctx.prisma.participation.findUnique({
@@ -316,6 +315,22 @@ async function respondToFlashcard(
         },
       })
     : null
+
+  const newResults = updateFlashcardResults({
+    previousResults: participation
+      ? (existingInstance.results as FlashcardResults)
+      : (existingInstance.anonymousResults as FlashcardResults),
+    response,
+  })
+
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? { results: newResults }
+      : { anonymousResults: newResults },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
@@ -504,6 +519,16 @@ async function respondToFlashcard(
   return result
 }
 
+export function udpateContentResults({
+  previousResults,
+  increment,
+}: {
+  previousResults: ContentResults
+  increment: number
+}): ContentResults {
+  return { total: previousResults.total + increment }
+}
+
 interface RespondToContentInput {
   id: number
   courseId: string
@@ -561,6 +586,23 @@ async function respondToContent(
         },
       })
     : null
+
+  // update the aggregated data on the element instance
+  const newResults = udpateContentResults({
+    previousResults: participation
+      ? (existingInstance.results as ContentResults)
+      : (existingInstance.anonymousResults as ContentResults),
+    increment: 1,
+  })
+
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? { results: newResults }
+      : { anonymousResults: newResults },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
