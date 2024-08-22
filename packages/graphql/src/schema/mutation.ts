@@ -161,6 +161,37 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginParticipantMagicLink: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantMagicLink(args, ctx)
+        },
+      }),
+
+      activateParticipantAccount: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.activateParticipantAccount(args, ctx)
+        },
+      }),
+
+      sendMagicLink: t.boolean({
+        nullable: true,
+        args: {
+          usernameOrEmail: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
+          return AccountService.sendMagicLink(args, ctx)
+        },
+      }),
+
       // createParticipantAndJoinCourse: t.field({
       //   nullable: true,
       //   type: Participant,

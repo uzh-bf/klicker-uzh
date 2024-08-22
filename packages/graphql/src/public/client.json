@@ -1,4 +1,5 @@
 {
+   "ActivateParticipantAccount": "94be2b160d9ac7d21ef8d657fa0d7deeec9d0872ba31479df05e256c82e74789",
    "ActivateSessionBlock": "6b9057f6ce9239f8fda1eb6cee6ea184fa52414d4048f39d272d94ff789bd928",
    "AddConfusionTimestep": "c3f0a2dcb9c2abf0e273a6c0ada8eb9afa2f7bb3872728c6d27f22371ea13f31",
    "BookmarkElementStack": "e45b4c19384ad9280eb84d1d874a091c9bdf22a750c6e2897288beed1e8fe4f2",
@@ -51,6 +52,7 @@
    "LeaveCourse": "56ec19a5d616b1b7b8182d4dba737abf9da29e99348b281c5be601b121ec49c9",
    "LeaveParticipantGroup": "9754dc9536620f85179133d414ebafa1019b5ca0936dee994574e16f2a3332c9",
    "LoginParticipant": "8e3ea39b64b0408ac5e307fc0778e8ad583268eec5569d98873ddec90598c384",
+   "LoginParticipantMagicLink": "69f89c2a6f2af57ee528cd40977d6ab1e52002d6641ac03f8490d1267b3cacd9",
    "LoginParticipantWithLti": "6a006eadd224c2ce908cffef5645f8c5ebc96cfd2c263a2705e1021d981a9ca6",
    "LoginUserToken": "ba803ed2e2b6274726c67ca6acbd16db53de497563e2d5e6bac12deb20183505",
    "LogoutParticipant": "06ea6d3178bda9afde98d0443789b4cd1826e924c5e0323e1d8ae3c1f817e4f7",
@@ -72,6 +74,7 @@
    "ResolveFeedback": "1462d426a28839917a0651fdb669bea4fa1962e61b375a627f210c618dafbf4d",
    "RespondToElementStack": "21e8c6b99c053fcdc346553a5a42c2c4ac63d6ca6c3e00348bbb2166a0a94133",
    "RespondToFeedback": "827ab68df5f3d9cdf820f9da66e56af0c1e1cdad1091386d20a37fe8ad667317",
+   "SendMagicLink": "42b3b78e15609209fbf353cefd8f38d2e456234f5dfa815a4f8935e058733aed",
    "SendPushNotifications": "d0a02157dafcbc7c4df31ea01934d39ca72f9e71eb2ae75cf37298898db99416",
    "SoftDeleteLiveSession": "c9dd09a7a196579215f4b8d671bd94a3c553db2f2770fb6d3a481bb4ecc17709",
    "StartGroupActivity": "bcb2a2dcaa54c5dfb990f99f48816ad6e39bd9ba9b8284a8822776dcbcf5733f",

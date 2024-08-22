@@ -1,4 +1,6 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
+import { faKey, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -12,6 +14,7 @@ import {
 import { Form } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useRef, useState } from 'react'
 import CreateAccountJoinForm from './CreateAccountJoinForm'
 
@@ -31,6 +34,8 @@ interface LoginFormProps {
   isSubmitting: boolean
   installAndroid?: string
   installIOS?: string
+  magicLinkLogin?: boolean
+  setMagicLinkLogin?: (value: boolean) => void
 }
 
 export function LoginForm({
@@ -43,7 +48,10 @@ export function LoginForm({
   isSubmitting,
   installAndroid,
   installIOS,
+  magicLinkLogin,
+  setMagicLinkLogin,
 }: LoginFormProps) {
+  const router = useRouter()
   const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
   const [oniOS, setOniOS] = useState(false)
@@ -69,6 +77,7 @@ export function LoginForm({
             data-cy="login-logo"
           />
         </div>
+
         <Tabs defaultValue="login" className={{ root: 'w-full border-t' }}>
           <Tabs.TabList>
             <Tabs.Tab
@@ -105,6 +114,12 @@ export function LoginForm({
             }}
           >
             <Form className="mx-auto w-72 sm:w-96">
+              {router.query.newAccount ? (
+                <UserNotification type="success">
+                  {t('pwa.general.waitingForActivation')}
+                </UserNotification>
+              ) : null}
+
               <FormikTextField
                 required
                 label={labelIdentifier}
@@ -112,31 +127,80 @@ export function LoginForm({
                 name={fieldIdentifier}
                 data={dataIdentifier}
               />
-              <FormikTextField
-                required
-                label={labelSecret}
-                labelType="small"
-                iconPosition="right"
-                name={fieldSecret}
-                data={dataSecret}
-                icon={passwordHidden ? faEye : faEyeSlash}
-                onIconClick={() => setPasswordHidden(!passwordHidden)}
-                className={{ root: 'mt-1', icon: 'bg-transparent' }}
-                type={passwordHidden ? 'password' : 'text'}
-              />
 
-              <div className="flex flex-row justify-end w-full">
-                <Button
-                  className={{
-                    root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
-                  }}
-                  type="submit"
-                  disabled={isSubmitting}
-                  data={{ cy: 'submit-login' }}
-                >
-                  <Button.Label>{t('shared.generic.signin')}</Button.Label>
-                </Button>
-              </div>
+              {magicLinkLogin && setMagicLinkLogin && (
+                <div className="flex flex-col mt-3 md:mt-2 gap-2">
+                  <Button
+                    fluid
+                    className={{ root: 'gap-4 justify-start' }}
+                    type="submit"
+                    disabled={isSubmitting}
+                    data={{ cy: 'magic-link-login' }}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faWandMagicSparkles} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('pwa.general.magicLinkLogin')}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    fluid
+                    className={{ root: 'gap-4 justify-start' }}
+                    type="button"
+                    onClick={() => setMagicLinkLogin(false)}
+                    data={{ cy: 'password-login' }}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faKey} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('pwa.general.passwordLogin')}
+                    </Button.Label>
+                  </Button>
+                </div>
+              )}
+
+              {!magicLinkLogin && (
+                <>
+                  <FormikTextField
+                    required
+                    label={labelSecret}
+                    labelType="small"
+                    iconPosition="right"
+                    name={fieldSecret}
+                    data={dataSecret}
+                    icon={passwordHidden ? faEye : faEyeSlash}
+                    onIconClick={() => setPasswordHidden(!passwordHidden)}
+                    className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                    type={passwordHidden ? 'password' : 'text'}
+                  />
+
+                  <div className="flex flex-row justify-between w-full">
+                    {setMagicLinkLogin && (
+                      <Button
+                        className={{
+                          root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                        }}
+                        onClick={() => setMagicLinkLogin(true)}
+                      >
+                        Back
+                      </Button>
+                    )}
+
+                    <Button
+                      className={{
+                        root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      data={{ cy: 'submit-login' }}
+                    >
+                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
+                    </Button>
+                  </div>
+                </>
+              )}
 
               {installAndroid && onChrome && (
                 <div className="flex flex-col justify-center mt-4 md:hidden">
