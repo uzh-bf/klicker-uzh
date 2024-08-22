@@ -16,6 +16,15 @@ releases:
 
         appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
+        email:
+            type: '{{ requiredEnv "EMAIL_TYPE" }}'
+            from: '{{ requiredEnv "EMAIL_FROM" }}'
+            host: '{{ requiredEnv "EMAIL_HOST" }}'
+            port: '{{ requiredEnv "EMAIL_PORT" }}'
+            username: '{{ requiredEnv "EMAIL_USER" }}'
+            password: '{{ requiredEnv "EMAIL_PASS" }}'
+            secure: '{{ requiredEnv "EMAIL_SECURE" }}'
+
         auth:
           replicaCount: 1
           image:
