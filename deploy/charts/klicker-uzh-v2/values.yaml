@@ -253,6 +253,8 @@ lti:
 
   replicaCount: 2
 
+  appSecret: ''
+
   clientId:
   redirectURL:
   cookieDomain:
