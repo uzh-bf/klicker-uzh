@@ -160,6 +160,11 @@ export async function loginParticipant(
   return participant.id
 }
 
+const rateLimitStore: Record<string, { count: number; lastRequest: number }> =
+  {}
+const RATE_LIMIT = 5 // Maximum number of requests
+const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+
 interface SendMagicLinkArgs {
   usernameOrEmail: string
 }
@@ -169,6 +174,28 @@ export async function sendMagicLink(
   ctx: Context
 ) {
   const trimmedUsernameOrEmail = usernameOrEmail.trim()
+
+  const currentTime = Date.now()
+
+  if (!rateLimitStore[trimmedUsernameOrEmail]) {
+    rateLimitStore[trimmedUsernameOrEmail] = {
+      count: 1,
+      lastRequest: currentTime,
+    }
+  } else {
+    const { count, lastRequest } = rateLimitStore[trimmedUsernameOrEmail]
+    if (currentTime - lastRequest < TIME_WINDOW) {
+      if (count >= RATE_LIMIT) {
+        throw new Error('Rate limit exceeded. Please try again later.')
+      }
+      rateLimitStore[trimmedUsernameOrEmail].count += 1
+    } else {
+      rateLimitStore[trimmedUsernameOrEmail] = {
+        count: 1,
+        lastRequest: currentTime,
+      }
+    }
+  }
 
   // the returned count can never be more than one, as the username cannot be a valid email (and vice versa)
   const participantWithUsername = await ctx.prisma.participant.findMany({
