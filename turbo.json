@@ -80,11 +80,11 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"]
     },
     "dev": {
       "cache": false,
@@ -132,7 +132,7 @@
     },
     "dev:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"],
+      "outputs": ["dist/**", ".next/**", "build/**"],
       "persistent": true
     },
     "publish": {
@@ -141,11 +141,11 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"]
     },
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"]
     },
     "test": {
       "cache": false
