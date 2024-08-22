@@ -434,7 +434,7 @@ async function respondToFlashcard(
         : undefined,
       course: {
         connect: {
-          id: existingInstance.elementStack.courseId!,
+          id: courseId,
         },
       },
       participation: {
@@ -664,7 +664,7 @@ async function respondToContent(
         : undefined,
       course: {
         connect: {
-          id: existingInstance.elementStack.courseId!,
+          id: courseId,
         },
       },
       participation: {
@@ -1446,7 +1446,7 @@ export async function respondToQuestion(
             : undefined,
           course: {
             connect: {
-              id: updatedInstance.elementStack.courseId!,
+              id: courseId,
             },
           },
           participation: {

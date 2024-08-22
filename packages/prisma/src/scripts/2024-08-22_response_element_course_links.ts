@@ -3,58 +3,19 @@ import { PrismaClient } from '../prisma/client'
 async function run() {
   const prisma = new PrismaClient()
 
-  // ! PART 1 - update courseId on all elementStacks
-  const elementStacks = await prisma.elementStack.findMany({
-    where: { courseId: null },
-    include: {
-      practiceQuiz: true,
-      microLearning: true,
-      groupActivity: true,
-    },
-  })
-
-  const stackUpdates = elementStacks.map((elementStack) => {
-    if (
-      !(
-        (elementStack.practiceQuizId && elementStack.practiceQuiz?.courseId) ||
-        (elementStack.microLearningId &&
-          elementStack.microLearning?.courseId) ||
-        (elementStack.groupActivityId && elementStack.groupActivity?.courseId)
-      )
-    ) {
-      console.log(elementStack)
-      throw new Error('No course found for element linked to stack!')
-    }
-
-    // update the courseId on the elementStack
-    return prisma.elementStack.update({
-      where: {
-        id: elementStack.id,
-      },
-      data: {
-        courseId: elementStack.practiceQuizId
-          ? elementStack.practiceQuiz!.courseId
-          : elementStack.microLearningId
-          ? elementStack.microLearning!.courseId
-          : elementStack.groupActivity!.courseId,
-      },
-    })
-  })
-
-  // run transaction to update all elementStacks
-  await prisma.$transaction(stackUpdates)
-  console.log(
-    `Updated ${elementStacks.length} elementStacks with corresponding course ID`
-  )
-
-  // ! PART 2 - link all question responses and details to the corresponding practice quiz / microlearning and course
+  // ! Link all question responses and details to the corresponding practice quiz / microlearning and course
   // fetch all instances
   let counter = 0
   let responseCounter = 0
   let detailResponseCounter = 0
   const instances = await prisma.elementInstance.findMany({
     include: {
-      elementStack: true,
+      elementStack: {
+        include: {
+          practiceQuiz: true,
+          microLearning: true,
+        },
+      },
     },
   })
   const numOfInstsances = instances.length
@@ -81,7 +42,10 @@ async function run() {
           instance.elementStack.practiceQuizId ||
           instance.elementStack.microLearningId
         ) ||
-        !instance.elementStack.courseId
+        !(
+          instance.elementStack.practiceQuiz?.courseId ||
+          instance.elementStack.microLearning?.courseId
+        )
       ) {
         throw new Error(
           'No practice quiz / microlearning or course found for element stack!'
@@ -93,7 +57,9 @@ async function run() {
           id: response.id,
         },
         data: {
-          courseId: instance.elementStack.courseId,
+          courseId: instance.elementStack.practiceQuiz
+            ? instance.elementStack.practiceQuiz.courseId
+            : instance.elementStack.microLearning!.courseId,
           practiceQuizId: instance.elementStack.practiceQuizId,
           microLearningId: instance.elementStack.microLearningId,
         },
@@ -101,18 +67,6 @@ async function run() {
     })
 
     const responseDetailUpdates = responseDetails.map((responseDetail) => {
-      if (
-        !(
-          instance.elementStack.practiceQuizId ||
-          instance.elementStack.microLearningId
-        ) ||
-        !instance.elementStack.courseId
-      ) {
-        throw new Error(
-          'No practice quiz / microlearning or course found for element stack!'
-        )
-      }
-
       return prisma.questionResponseDetail.update({
         where: {
           id: responseDetail.id,
