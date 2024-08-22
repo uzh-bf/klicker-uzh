@@ -62,7 +62,12 @@ function CreateAccount({
           })
 
           if (login) {
-            router.replace('/editProfile')
+            await router.replace('/login', {
+              pathname: '/login',
+              query: {
+                newAccount: true,
+              },
+            })
           }
 
           setSubmitting(false)

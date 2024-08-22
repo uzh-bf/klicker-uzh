@@ -91,9 +91,10 @@ export default {
       token: 'Token',
       passwordRepetition: 'Passwort (Wiederholung)',
       signin: 'Anmelden',
-      usernameError: 'Bitte geben Sie Ihren Nutzernamen ein.',
+      usernameError: 'Bitte geben Sie Ihren Nutzernamen oder E-Mail ein.',
       passwordError: 'Bitte geben Sie Ihr Passwort ein.',
-      loginError: 'Benutzername oder Passwort sind falsch.',
+      studentLoginError:
+        'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "Magic Link Login" Funktion.',
       systemError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
       error: 'Fehler',
       back: 'Zurück',
@@ -248,8 +249,22 @@ export default {
   },
   pwa: {
     general: {
-      surveyInvitation:
-        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst (auch, wenn du den Begriff noch gar nicht kennst 😎). Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
+      magicLinkLogin: 'Login mit Magic-Link',
+      passwordLogin: 'Login mit Passwort',
+      magicLinkSent:
+        'Falls ein Account existiert, wurde ein einmaliger Login-Link an die hinterlegte E-Mail Adresse gesendet.',
+      activationMailSent:
+        'Ein Aktivierungslink wurde an die E-Mail Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang.',
+      processingLogin:
+        'Ihr Magic-Link Login wird verarbeitet. Bitte warten Sie einen Moment.',
+      processingActivation:
+        'Ihr Account-Aktivierung wird verarbeitet. Bitte warten Sie einen Moment.',
+      magicLinkLoginFailed:
+        'Der Magic-Link Login ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+      accountActivationFailed:
+        'Die Account-Aktivierung ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+      waitingForActivation:
+        'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',

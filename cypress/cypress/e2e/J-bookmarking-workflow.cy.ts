@@ -143,6 +143,7 @@ describe('Question bookmarking and flagging workflow', () => {
     // sign in as student on a laptop and bookmark the questions
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))

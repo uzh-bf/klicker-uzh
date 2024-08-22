@@ -600,6 +600,7 @@ type MicroLearning {
 }
 
 type Mutation {
+  activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -652,6 +653,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, usernameOrEmail: String!): ID
+  loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
@@ -673,6 +675,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -1181,7 +1184,9 @@ type UserLogin {
 
 enum UserLoginScope {
   ACCOUNT_OWNER
+  ACTIVATION
   FULL_ACCESS
+  OTP
   READ_ONLY
   SESSION_EXEC
 }
