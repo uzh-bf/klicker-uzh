@@ -675,7 +675,7 @@ async function respondToContent(
   ctx: Context
 ) {
   const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await ctx.prisma.elementInstance.findUnique({
+    const existingInstance = await prisma.elementInstance.findUnique({
       where: {
         id,
       },
@@ -691,7 +691,7 @@ async function respondToContent(
     }
 
     const existingResponse = ctx.user?.sub
-      ? await ctx.prisma.questionResponse.findUnique({
+      ? await prisma.questionResponse.findUnique({
           where: {
             participantId_elementInstanceId: {
               participantId: ctx.user.sub,
@@ -709,7 +709,7 @@ async function respondToContent(
 
     // fetch the participation of the participant
     const participation = ctx.user?.sub
-      ? await ctx.prisma.participation.findUnique({
+      ? await prisma.participation.findUnique({
           where: {
             courseId_participantId: {
               courseId,
@@ -744,7 +744,7 @@ async function respondToContent(
       instanceInPracticeQuiz,
     })
 
-    await ctx.prisma.elementInstance.update({
+    await prisma.elementInstance.update({
       where: {
         id,
       },
@@ -767,7 +767,7 @@ async function respondToContent(
     }
 
     // create question detail response
-    await ctx.prisma.questionResponseDetail.create({
+    await prisma.questionResponseDetail.create({
       data: {
         response: {
           viewed: true,
@@ -817,7 +817,7 @@ async function respondToContent(
     })
 
     // create / update question response
-    await ctx.prisma.questionResponse.upsert({
+    await prisma.questionResponse.upsert({
       where: {
         participantId_elementInstanceId: {
           participantId: ctx.user.sub,
@@ -1280,105 +1280,147 @@ export async function respondToQuestion(
     treatAnonymous = true
   }
 
-  const { instance, updatedInstance, correctness, validResponse } =
-    await ctx.prisma.$transaction(async (prisma) => {
-      const instance = await prisma.elementInstance.findUnique({
-        where: { id },
-        // if the participant is logged in, fetch the last response of the participant
-        // the response will not be counted and will only yield points if not within the past week
-        include:
-          ctx.user?.sub &&
-          !treatAnonymous &&
-          ctx.user.role === UserRole.PARTICIPANT
-            ? {
-                responses: {
-                  where: {
-                    participant: {
-                      id: ctx.user.sub,
-                    },
+  const {
+    instance,
+    updatedInstance,
+    correctness,
+    newAverageResponseTime,
+    validResponse,
+  } = await ctx.prisma.$transaction(async (prisma) => {
+    const instance = await prisma.elementInstance.findUnique({
+      where: { id },
+      // if the participant is logged in, fetch the last response of the participant
+      // the response will not be counted and will only yield points if not within the past week
+      include:
+        ctx.user?.sub &&
+        !treatAnonymous &&
+        ctx.user.role === UserRole.PARTICIPANT
+          ? {
+              responses: {
+                where: {
+                  participant: {
+                    id: ctx.user.sub,
                   },
-                  take: 1,
                 },
-              }
-            : {
-                responses: {
-                  take: 1,
-                },
+                take: 1,
               },
-      })
-
-      if (!instance) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      // if the participant had already responded, don't track the new response
-      // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-      // const hasPreviousResponse = instance?.responses.length > 0
-      // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
-      //   return {
-      //     instance,
-      //     updatedInstance: instance,
-      //   }
-      // }
-
-      const elementData = instance?.elementData
-
-      if (!elementData) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      // evaluate the correctness of the response
-      const correctness = evaluateAnswerCorrectness({ elementData, response })
-
-      const updatedResults = updateQuestionResults({
-        previousResults:
-          ctx.user?.sub && !treatAnonymous
-            ? instance.results
-            : instance.anonymousResults,
-        elementData,
-        response,
-        correct: correctness === 1,
-      })
-
-      if (!updatedResults.results) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      const updatedInstance = await prisma.elementInstance.update({
-        where: { id },
-        data:
-          ctx.user?.sub && !treatAnonymous
-            ? {
-                results: updatedResults.results,
-              }
-            : { anonymousResults: updatedResults.results },
-        include: {
-          elementStack: true,
-        },
-      })
-
-      return {
-        instance,
-        updatedInstance,
-        correctness,
-        validResponse: true,
-      }
+              elementStack: true,
+              instanceStatistics: true,
+            }
+          : {
+              // TODO: check if fetching a response here makes any sense?
+              responses: {
+                take: 1,
+              },
+              elementStack: true,
+              instanceStatistics: true,
+            },
     })
+
+    if (!instance) {
+      return {
+        instance: null,
+        updatedInstance: null,
+        correctness: null,
+        newAverageResponseTime: null,
+        validResponse: false,
+      }
+    }
+
+    // if the participant had already responded, don't track the new response
+    // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
+    // const hasPreviousResponse = instance?.responses.length > 0
+    // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+    //   return {
+    //     instance,
+    //     updatedInstance: instance,
+    //   }
+    // }
+
+    const elementData = instance?.elementData
+
+    if (!elementData) {
+      return {
+        instance: null,
+        updatedInstance: null,
+        correctness: null,
+        newAverageResponseTime: null,
+        validResponse: false,
+      }
+    }
+
+    // evaluate the correctness of the response
+    const correctness = evaluateAnswerCorrectness({ elementData, response })
+
+    const updatedResults = updateQuestionResults({
+      previousResults:
+        ctx.user?.sub && !treatAnonymous
+          ? instance.results
+          : instance.anonymousResults,
+      elementData,
+      response,
+      correct: correctness === 1,
+    })
+
+    if (!updatedResults.results) {
+      return {
+        instance: null,
+        updatedInstance: null,
+        correctness: null,
+        newAverageResponseTime: null,
+        validResponse: false,
+      }
+    }
+
+    // average answer time computations if participant is logged in
+    const { newAverageResponseTime, newAverageInstanceTime } = participation
+      ? computeNewAverageTimes({
+          existingInstance: instance,
+          existingResponse: instance.responses[0] ?? null, // this is safe because we check for the participation before
+          answerTime,
+        })
+      : {
+          newAverageInstanceTime: undefined,
+          newAverageResponseTime: undefined,
+        }
+
+    // variable summaries for code readability
+    const answerCorrect = correctness === 1
+    const answerPartial = (correctness ?? 0) < 1 && (correctness ?? 0) > 0
+    const answerIncorrect = correctness === 0
+    const instanceInPracticeQuiz = !!instance.elementStack.practiceQuizId
+
+    // compute updated instance statistics
+    const statisticsUpdate = computeUpdatedInstanceStatistics({
+      participation,
+      existingResponse: instance.responses[0] ?? null, // this is safe because we only use it inside the function if the participation is defined
+      newAverageInstanceTime,
+      answerCorrect,
+      answerPartial,
+      answerIncorrect,
+      instanceInPracticeQuiz,
+    })
+
+    const updatedInstance = await prisma.elementInstance.update({
+      where: { id },
+      data: {
+        results: participation ? updatedResults.results : undefined,
+        anonymousResults: participation ? undefined : updatedResults.results,
+        instanceStatistics: statisticsUpdate,
+      },
+      include: {
+        elementStack: true,
+      },
+    })
+
+    return {
+      instance,
+      updatedInstance,
+      correctness,
+      newAverageResponseTime,
+      validResponse: true,
+    }
+  })
 
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
@@ -1582,12 +1624,6 @@ export async function respondToQuestion(
       grade: correctness,
     })
 
-    const newAverageTime = existingResponse
-      ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
-          answerTime) /
-        (existingResponse.trialsCount + 1)
-      : answerTime
-
     const responseCorrectness =
       correctness === 1
         ? ResponseCorrectness.CORRECT
@@ -1608,7 +1644,7 @@ export async function respondToQuestion(
           totalPointsAwarded: pointsAwarded,
           totalXpAwarded: xpAwarded,
           trialsCount: 1,
-          averageTimeSpent: newAverageTime,
+          averageTimeSpent: newAverageResponseTime,
           lastAwardedAt,
           lastXpAwardedAt,
           firstResponse: response as QuestionResponse,
@@ -1670,7 +1706,7 @@ export async function respondToQuestion(
           trialsCount: {
             increment: 1,
           },
-          averageTimeSpent: newAverageTime,
+          averageTimeSpent: newAverageResponseTime,
           totalScore: {
             increment: score,
           },
