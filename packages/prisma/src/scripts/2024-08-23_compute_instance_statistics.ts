@@ -37,7 +37,7 @@ async function run() {
   })
 
   // ! Update the instances with the statistics based on responses
-  instances.forEach(async (instance) => {
+  for (const instance of instances) {
     console.log(`Processing instance ${counter}/${instances.length}`)
 
     // Summarize personal responses
@@ -250,7 +250,7 @@ async function run() {
         },
       },
     })
-  })
+  }
 
   console.log(`Updated ${updateCounter} instances in total`)
   console.log(`Checked ${updatedPQInstances} practice quiz instances`)
