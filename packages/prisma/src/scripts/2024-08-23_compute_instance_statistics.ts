@@ -17,7 +17,7 @@ async function run() {
 
   // ! Fetch all element instances separated by type
   const rawInstances = await prisma.elementInstance.findMany({
-    include: { responses: true, instanceStatistics: true },
+    include: { responses: true, element: true, instanceStatistics: true },
   })
   const instances = rawInstances.filter((instance) => {
     const statistics = instance.instanceStatistics
@@ -55,7 +55,7 @@ async function run() {
       lastWrongCount,
     } = instance.responses.reduce(
       (acc, response) => {
-        // accumulate total time spent on instance and correctness counts
+        // ! Accumulate total time spent on instance and correctness counts
         acc.totalResponseTime += response.averageTimeSpent
         acc.correctCount += response.correctCount
         acc.partialCount += response.partialCorrectCount
@@ -103,29 +103,74 @@ async function run() {
     const totalUniqueParticipants = instance.responses.length
     const averageInstanceTime = totalResponseTime / totalUniqueParticipants
 
-    // TODO: compute anonymous correctness counts
+    // ! Compute anonymous correctness counts
     let anonymousCorrectCount = 0
     let anonymousPartialCorrectCount = 0
     let anonymousWrongCount = 0
     switch (instance.elementData.type) {
       case ElementType.FLASHCARD:
-        console.log('// TODO')
+        anonymousCorrectCount = instance.anonymousResults['CORRECT']
+        anonymousPartialCorrectCount = instance.anonymousResults['PARTIAL']
+        anonymousWrongCount = instance.anonymousResults['INCORRECT']
+
+        if (
+          anonymousCorrectCount +
+            anonymousPartialCorrectCount +
+            anonymousWrongCount !==
+          instance.anonymousResults['total']
+        ) {
+          throw new Error(
+            `Anonymous results computed for flashcard instance ${instance.id} are inconsistent`
+          )
+        }
         break
 
       case ElementType.CONTENT:
-        console.log('// TODO')
+        anonymousCorrectCount = instance.anonymousResults['total']
         break
 
       case ElementType.SC:
-        console.log('// TODO')
+        const correctAnswerIndex =
+          instance.elementData.options.choices.findIndex(
+            (choice) => choice.correct
+          )
+        const correctAnswerIx =
+          instance.elementData.options.choices[correctAnswerIndex].ix
+
+        //check how many of the anonymous responses are equal to correctAnswerIx and the other way around
+        const { tempCorrect1, tempIncorrect1 } = Object.entries(
+          instance.anonymousResults.choices
+        ).reduce(
+          (acc, [ix, count]) => {
+            if (ix === correctAnswerIx) {
+              acc.tempCorrect1 += count as number
+            } else {
+              acc.tempIncorrect1 += count as number
+            }
+
+            return acc
+          },
+          { tempCorrect1: 0, tempIncorrect1: 0 }
+        )
+
+        anonymousCorrectCount = tempCorrect1
+        anonymousWrongCount = tempIncorrect1
         break
 
       case ElementType.NUMERICAL:
-        console.log('// TODO')
-        break
-
       case ElementType.FREE_TEXT:
-        console.log('// TODO')
+        const { tempCorrect2, tempIncorrect2 } =
+          instance.anonymousResults.responses.reduce(
+            (acc, response) => {
+              acc.tempCorrect += Number(response.correct)
+              acc.tempIncorrect += Number(!response.correct)
+              return acc
+            },
+            { tempCorrect: 0, tempIncorrect: 0 }
+          )
+
+        anonymousCorrectCount = tempCorrect2
+        anonymousWrongCount = tempIncorrect2
         break
 
       case ElementType.MC:
