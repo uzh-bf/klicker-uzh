@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.7...v3.2.0-alpha.8) (2024-08-23)
+
+
+### Features
+
+* compute instance statistics (correctness, average timeliness, etc.) on stack submission ([#4205](https://github.com/uzh-bf/klicker-uzh/issues/4205)) ([c83ac2a](https://github.com/uzh-bf/klicker-uzh/commit/c83ac2a1a4d6629964abc5b2b7e59e4836a509c7))
+
+
+### Bug Fixes
+
+* add EMAIL_STARTTLS config to authenticate with STARTTLS when sending via smtp ([06a9f06](https://github.com/uzh-bf/klicker-uzh/commit/06a9f06cce7dd118a2b41f8825ccf5ebc05b49e9))
+* **apps/frontend-pwa:** compare magic link env variable with true ([c213e54](https://github.com/uzh-bf/klicker-uzh/commit/c213e5401a19272898b89ff343e4bb68cd42710f))
+* EduID for QA environment, transactional emails based on DB templates, misc fixes ([#4206](https://github.com/uzh-bf/klicker-uzh/issues/4206)) ([c7e5dab](https://github.com/uzh-bf/klicker-uzh/commit/c7e5daba6c0c0db38aaf1b74941840af136bb152))
+* **packages/graphql:** rework email templating approach to include html files in graphql dist, improve env variable usage ([d9fc9ec](https://github.com/uzh-bf/klicker-uzh/commit/d9fc9ec6e9e8f163359669463f649076aa66293f))
+* **packages/graphql:** use NEXT_PUBLIC_PWA_URL instead of student URL for magic links ([5cab9e2](https://github.com/uzh-bf/klicker-uzh/commit/5cab9e257300e170a03e7c974b9c7707a23e1396))
+
+
+### Deployment
+
+* clean handling of app domain and subdomain in env ([a29af11](https://github.com/uzh-bf/klicker-uzh/commit/a29af11015d21c3d2b4d92c4103682cfcc397c84))
+* remove leftover dot when connecting subdomain and domain ([32297ca](https://github.com/uzh-bf/klicker-uzh/commit/32297ca69134aeb6b8de42862a88db50d726e6a4))
+
+
+### Enhancements
+
+* automatically track aggregated element feedbacks on instance statistics ([#4204](https://github.com/uzh-bf/klicker-uzh/issues/4204)) ([f711e7c](https://github.com/uzh-bf/klicker-uzh/commit/f711e7c237711ee99b8154e48dd08693b28940e5))
+* initialize instance statistics on asynchronous element instance creation and add migration script ([#4202](https://github.com/uzh-bf/klicker-uzh/issues/4202)) ([27e28c5](https://github.com/uzh-bf/klicker-uzh/commit/27e28c590b2c45a3a6c41ff29a9b766c7335fcd1))
+
 ## [3.2.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.6...v3.2.0-alpha.7) (2024-08-22)
 
 
