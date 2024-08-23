@@ -1,9 +1,8 @@
 import {
   ElementInstanceType,
+  ElementType,
   type Element,
-  type InstanceStatistics,
 } from '@klicker-uzh/prisma'
-import { ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
 const RELEVANT_KEYS = [
