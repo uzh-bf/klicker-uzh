@@ -78,11 +78,11 @@ releases:
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
 
           appManageSubdomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}'
-          appManageDomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}.{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appManageDomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
           appStudentSubdomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}'
-          appStudentDomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}.{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appStudentDomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
           appControlSubdomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}'
-          appControlDomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}.{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appControlDomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
 
           notifications:
             url: '{{ requiredEnv "NOTIFICATION_URL" }}'
