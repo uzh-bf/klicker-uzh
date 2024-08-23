@@ -331,13 +331,28 @@ function computeUpdatedInstanceStatistics({
             ),
           },
           lastCorrectCount: {
-            increment: Number(answerCorrect && instanceInPracticeQuiz),
+            increment:
+              Number(answerCorrect && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.CORRECT
+              ),
           },
           lastPartialCorrectCount: {
-            increment: Number(answerPartial && instanceInPracticeQuiz),
+            increment:
+              Number(answerPartial && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.PARTIAL
+              ),
           },
           lastWrongCount: {
-            increment: Number(answerIncorrect && instanceInPracticeQuiz),
+            increment:
+              Number(answerIncorrect && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.WRONG
+              ),
           },
         },
       }
