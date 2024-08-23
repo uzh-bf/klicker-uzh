@@ -228,7 +228,7 @@ export async function sendMagicLink(
 
   const magicLink = `${
     process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  }://${process.env.APP_STUDENT_SUBDOMAIN}/magicLogin?token=${magicLinkJWT}`
+  }://${process.env.NEXT_PUBLIC_PWA_URL}/magicLogin?token=${magicLinkJWT}`
 
   await sendTeamsNotifications(
     'graphql/sendMagicLink',
@@ -534,7 +534,7 @@ export async function createParticipantAccount(
 
     const activationLink = `${
       process.env.NODE_ENV === 'production' ? 'https' : 'http://'
-    }${process.env.APP_STUDENT_SUBDOMAIN}/activation?token=${activationJWT}`
+    }${process.env.NEXT_PUBLIC_PWA_URL}/activation?token=${activationJWT}`
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
