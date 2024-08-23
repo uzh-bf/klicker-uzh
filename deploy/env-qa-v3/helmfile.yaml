@@ -88,7 +88,7 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
-          replicaCount: 0
+          replicaCount: 1
 
           appSecret: '{{ requiredEnv "APP_SECRET" }}'
           clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
