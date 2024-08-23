@@ -750,8 +750,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             correctness === 'CORRECT'
               ? maxPoints
               : correctness === 'PARTIAL'
-              ? Math.floor(Math.random() * maxPoints)
-              : 0,
+                ? Math.floor(Math.random() * maxPoints)
+                : 0,
           ...(correctness === 'INCORRECT' && {
             feedback:
               'In case of an incorrect answer, this feedback is provided.',
