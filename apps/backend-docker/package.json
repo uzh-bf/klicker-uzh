@@ -76,12 +76,13 @@
     "typescript": "5.4.5"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production pnpm run build:ts",
+    "build": "cross-env NODE_ENV=production run-s build:copy build:ts",
     "build:ts": "tsup",
+    "build:copy": "tsx scripts/copy.ts",
     "build:test": "run-s build:instrument build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "check": "tsc --noEmit",
-    "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev": "npm-run-all --parallel build:copy dev:build dev:run",
     "dev:lti": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:build": "tsup --watch",

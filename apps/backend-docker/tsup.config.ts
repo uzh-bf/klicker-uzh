@@ -8,4 +8,5 @@ export default defineConfig({
   format: 'esm',
   clean: true,
   target: 'node20',
+  publicDir: 'public',
 })
