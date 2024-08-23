@@ -463,6 +463,7 @@ async function respondToFlashcard(
   const answerIncorrect = response === FlashcardCorrectness.INCORRECT
   const instanceInPracticeQuiz = !!existingInstance.elementStack.practiceQuizId
 
+  // compute updated instance statistics
   const statisticsUpdate = computeUpdatedInstanceStatistics({
     participation,
     existingResponse,
@@ -673,6 +674,7 @@ async function respondToContent(
     },
     include: {
       elementStack: true,
+      instanceStatistics: true,
     },
   })
 
@@ -680,6 +682,17 @@ async function respondToContent(
   if (!existingInstance) {
     return null
   }
+
+  const existingResponse = ctx.user?.sub
+    ? await ctx.prisma.questionResponse.findUnique({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: ctx.user.sub,
+            elementInstanceId: id,
+          },
+        },
+      })
+    : null
 
   // context elements can only be "read" when submitted
   const result = {
@@ -702,17 +715,42 @@ async function respondToContent(
       })
     : null
 
+  // average answer time computations if participant is logged in
+  const { newAverageResponseTime, newAverageInstanceTime } = participation
+    ? computeNewAverageTimes({
+        existingInstance,
+        existingResponse,
+        answerTime,
+      })
+    : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+
+  // compute updated instance statistics
+  const instanceInPracticeQuiz = !!existingInstance.elementStack.practiceQuizId
+  const statisticsUpdate = computeUpdatedInstanceStatistics({
+    participation,
+    existingResponse,
+    newAverageInstanceTime,
+    answerCorrect: true,
+    answerPartial: false,
+    answerIncorrect: false,
+    instanceInPracticeQuiz,
+  })
+
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
-    data: participation
-      ? { results: { total: existingInstance.results.total + 1 } }
-      : {
-          anonymousResults: {
+    data: {
+      results: participation
+        ? { total: existingInstance.results.total + 1 }
+        : undefined,
+      anonymousResults: participation
+        ? undefined
+        : {
             total: existingInstance.anonymousResults.total + 1,
           },
-        },
+      instanceStatistics: statisticsUpdate,
+    },
   })
 
   // if no user exists, return the grading for client display
@@ -758,15 +796,6 @@ async function respondToContent(
     },
   })
 
-  // find existing question response
-  const existingResponse = await ctx.prisma.questionResponse.findUnique({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-  })
   const aggregatedResponses =
     (existingResponse?.aggregatedResponses as ContentResults) ?? {
       total: 0,
@@ -779,14 +808,8 @@ async function respondToContent(
     grade: 1,
   })
 
-  const newAverageTime = existingResponse
-    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
-        answerTime) /
-      (existingResponse.trialsCount + 1)
-    : answerTime
-
   // create / update question response
-  const questionResponse = await ctx.prisma.questionResponse.upsert({
+  await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
         participantId: ctx.user.sub,
@@ -797,7 +820,7 @@ async function respondToContent(
       participant: {
         connect: { id: ctx.user.sub },
       },
-      averageTimeSpent: newAverageTime,
+      averageTimeSpent: newAverageResponseTime,
       elementInstance: {
         connect: { id },
       },
@@ -857,7 +880,7 @@ async function respondToContent(
     },
     update: {
       // RESPONSE
-      averageTimeSpent: newAverageTime,
+      averageTimeSpent: newAverageResponseTime,
       lastResponse: {
         viewed: true,
       },
