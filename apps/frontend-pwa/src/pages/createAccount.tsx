@@ -62,8 +62,8 @@ function CreateAccount({
           })
 
           if (login) {
-            await router.replace('/login', {
-              pathname: '/login',
+            await router.replace('/editProfile', {
+              pathname: '/editProfile',
               query: {
                 newAccount: true,
               },
