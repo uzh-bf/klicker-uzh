@@ -1297,6 +1297,7 @@ export async function respondToQuestion(
 
   const {
     instance,
+    existingResponse,
     updatedInstance,
     correctness,
     newAverageResponseTime,
@@ -1304,43 +1305,33 @@ export async function respondToQuestion(
   } = await ctx.prisma.$transaction(async (prisma) => {
     const instance = await prisma.elementInstance.findUnique({
       where: { id },
-      // if the participant is logged in, fetch the last response of the participant
-      // the response will not be counted and will only yield points if not within the past week
-      include:
-        ctx.user?.sub &&
-        !treatAnonymous &&
-        ctx.user.role === UserRole.PARTICIPANT
-          ? {
-              responses: {
-                where: {
-                  participant: {
-                    id: ctx.user.sub,
-                  },
-                },
-                take: 1,
-              },
-              elementStack: true,
-              instanceStatistics: true,
-            }
-          : {
-              // TODO: check if fetching a response here makes any sense?
-              responses: {
-                take: 1,
-              },
-              elementStack: true,
-              instanceStatistics: true,
-            },
+      include: {
+        elementStack: true,
+        instanceStatistics: true,
+      },
     })
 
-    if (!instance || instance?.elementData) {
+    if (!instance || !instance?.elementData) {
       return {
         instance: null,
+        existingResponse: null,
         updatedInstance: null,
         correctness: null,
         newAverageResponseTime: null,
         validResponse: false,
       }
     }
+
+    const existingResponse = ctx.user?.sub
+      ? await ctx.prisma.questionResponse.findUnique({
+          where: {
+            participantId_elementInstanceId: {
+              participantId: ctx.user.sub,
+              elementInstanceId: id,
+            },
+          },
+        })
+      : null
 
     // evaluate the correctness of the response
     const elementData = instance?.elementData
@@ -1359,6 +1350,7 @@ export async function respondToQuestion(
     if (!updatedResults.results) {
       return {
         instance: null,
+        existingResponse: null,
         updatedInstance: null,
         correctness: null,
         newAverageResponseTime: null,
@@ -1370,7 +1362,7 @@ export async function respondToQuestion(
     const { newAverageResponseTime, newAverageInstanceTime } = participation
       ? computeNewAverageTimes({
           existingInstance: instance,
-          existingResponse: instance.responses[0] ?? null, // this is safe because we check for the participation before
+          existingResponse: existingResponse, // this is safe because we check for the participation before
           answerTime,
         })
       : {
@@ -1387,7 +1379,7 @@ export async function respondToQuestion(
     // compute updated instance statistics
     const statisticsUpdate = computeUpdatedInstanceStatistics({
       participation,
-      existingResponse: instance.responses[0] ?? null, // this is safe because we only use it inside the function if the participation is defined
+      existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
       newAverageInstanceTime,
       answerCorrect,
       answerPartial,
@@ -1409,6 +1401,7 @@ export async function respondToQuestion(
 
     return {
       instance,
+      existingResponse,
       updatedInstance,
       correctness,
       newAverageResponseTime,
@@ -1425,8 +1418,9 @@ export async function respondToQuestion(
     !elementData ||
     !validResponse ||
     correctness === null
-  )
+  ) {
     return null
+  }
 
   const evaluation = evaluateElementResponse(
     elementData,
@@ -1451,12 +1445,10 @@ export async function respondToQuestion(
     !treatAnonymous &&
     ctx.user.role === UserRole.PARTICIPANT
   ) {
-    const hasPreviousResponse = instance?.responses?.length > 0
-
-    if (hasPreviousResponse) {
+    if (!!existingResponse) {
       const previousResponseOutsideTimeframe =
-        !instance.responses[0]!.lastAwardedAt ||
-        dayjs(instance.responses[0]!.lastAwardedAt).isBefore(
+        !existingResponse.lastAwardedAt ||
+        dayjs(existingResponse.lastAwardedAt).isBefore(
           dayjs().subtract(
             instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
             'days'
@@ -1470,8 +1462,8 @@ export async function respondToQuestion(
       }
 
       const previousXpResponseOutsideTimeframe =
-        !instance.responses[0]!.lastXpAwardedAt ||
-        dayjs(instance.responses[0]!.lastXpAwardedAt).isBefore(
+        !existingResponse.lastXpAwardedAt ||
+        dayjs(existingResponse.lastXpAwardedAt).isBefore(
           dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
         )
 
@@ -1483,10 +1475,10 @@ export async function respondToQuestion(
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0]!.lastAwardedAt
+        : existingResponse.lastAwardedAt
       lastXpAwardedAt = previousXpResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0]!.lastXpAwardedAt
+        : existingResponse.lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(
           instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
@@ -1520,15 +1512,6 @@ export async function respondToQuestion(
     }
 
     // update aggregated results for choices and open questions
-    const existingResponse = await ctx.prisma.questionResponse.findUnique({
-      where: {
-        participantId_elementInstanceId: {
-          participantId: ctx.user.sub,
-          elementInstanceId: id,
-        },
-      },
-    })
-
     let newAggResponses
     if (
       instance.elementType === ElementType.SC ||
@@ -1831,6 +1814,20 @@ export async function respondToQuestion(
       : evaluation?.percentile === 1
         ? StackFeedbackStatus.CORRECT
         : StackFeedbackStatus.PARTIAL
+
+  console.log({
+    ...evaluation,
+    pointsAwarded,
+    newPointsFrom,
+    xpAwarded,
+    newXpFrom,
+    solutions:
+      elementData.type === 'FREE_TEXT' ? elementData.options.solutions : null,
+    solutionRanges:
+      elementData.type === 'NUMERICAL'
+        ? elementData.options.solutionRanges
+        : null,
+  })
 
   return {
     ...updatedInstance,
