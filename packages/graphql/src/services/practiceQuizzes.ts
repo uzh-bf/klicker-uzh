@@ -2007,9 +2007,11 @@ export async function manipulatePracticeQuiz(
                 },
                 results: initialResults,
                 anonymousResults: initialResults,
-                instanceStatistics: getInitialInstanceStatistics(
-                  ElementInstanceType.PRACTICE_QUIZ
-                ),
+                instanceStatistics: {
+                  create: getInitialInstanceStatistics(
+                    ElementInstanceType.PRACTICE_QUIZ
+                  ),
+                },
                 element: {
                   connect: { id: element.id },
                 },

@@ -205,9 +205,11 @@ export async function manipulateMicroLearning(
                 },
                 results: initialResults,
                 anonymousResults: initialResults,
-                instanceStatistics: getInitialInstanceStatistics(
-                  ElementInstanceType.MICROLEARNING
-                ),
+                instanceStatistics: {
+                  create: getInitialInstanceStatistics(
+                    ElementInstanceType.MICROLEARNING
+                  ),
+                },
                 element: {
                   connect: { id: element.id },
                 },

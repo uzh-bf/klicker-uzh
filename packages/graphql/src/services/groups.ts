@@ -395,9 +395,11 @@ export async function manipulateGroupActivity(
               },
               results: initialResults,
               anonymousResults: initialResults,
-              instanceStatistics: getInitialInstanceStatistics(
-                ElementInstanceType.GROUP_ACTIVITY
-              ),
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(
+                  ElementInstanceType.GROUP_ACTIVITY
+                ),
+              },
               element: {
                 connect: { id: element.id },
               },
