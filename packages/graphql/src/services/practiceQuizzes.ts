@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Element,
+  ElementInstance,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
@@ -16,6 +17,9 @@ import {
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
+  QuestionResponse as PrismaQuestionResponse,
+  InstanceStatistics,
+  Participation,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
@@ -174,8 +178,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-        ? -existingResponse.correctCountStreak
-        : 0,
+          ? -existingResponse.correctCountStreak
+          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -247,6 +251,111 @@ function updateSpacedRepetition({
   }
 }
 
+function computeNewAverageTimes({
+  existingInstance,
+  existingResponse,
+  answerTime,
+}: {
+  existingInstance: ElementInstance & {
+    instanceStatistics: InstanceStatistics | null
+  }
+  existingResponse: PrismaQuestionResponse | null
+  answerTime: number
+}): { newAverageResponseTime: number; newAverageInstanceTime: number } {
+  const existingParticipantCount =
+    existingInstance.instanceStatistics!.uniqueParticipantCount
+  const existingInstanceTime =
+    existingInstance.instanceStatistics!.averageTimeSpent
+  const newAverageResponseTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+  const newAverageInstanceTime = existingResponse
+    ? (existingInstanceTime! * existingParticipantCount -
+        existingResponse.averageTimeSpent +
+        answerTime) /
+      existingParticipantCount
+    : ((existingInstanceTime ?? 0) * existingParticipantCount + answerTime) /
+      (existingParticipantCount + 1)
+
+  return { newAverageResponseTime, newAverageInstanceTime }
+}
+
+function computeUpdatedInstanceStatistics({
+  participation,
+  existingResponse,
+  newAverageInstanceTime,
+  answerCorrect,
+  answerPartial,
+  answerIncorrect,
+  instanceInPracticeQuiz,
+}: {
+  participation: Participation | null
+  existingResponse: PrismaQuestionResponse | null
+  newAverageInstanceTime?: number
+  answerCorrect: boolean
+  answerPartial: boolean
+  answerIncorrect: boolean
+  instanceInPracticeQuiz: boolean
+}) {
+  return participation
+    ? {
+        update: {
+          uniqueParticipantCount: {
+            increment: Number(!existingResponse),
+          },
+          averageTimeSpent: newAverageInstanceTime,
+          correctCount: {
+            increment: Number(answerCorrect),
+          },
+          partialCorrectCount: {
+            increment: Number(answerPartial),
+          },
+          wrongCount: {
+            increment: Number(answerIncorrect),
+          },
+          firstCorrectCount: {
+            increment: Number(
+              answerCorrect && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          firstPartialCorrectCount: {
+            increment: Number(
+              answerPartial && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          firstWrongCount: {
+            increment: Number(
+              answerIncorrect && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          lastCorrectCount: {
+            increment: Number(answerCorrect && instanceInPracticeQuiz),
+          },
+          lastPartialCorrectCount: {
+            increment: Number(answerPartial && instanceInPracticeQuiz),
+          },
+          lastWrongCount: {
+            increment: Number(answerIncorrect && instanceInPracticeQuiz),
+          },
+        },
+      }
+    : {
+        update: {
+          anonymousCorrectCount: {
+            increment: Number(answerCorrect),
+          },
+          anonymousPartialCorrectCount: {
+            increment: Number(answerPartial),
+          },
+          anonymousWrongCount: {
+            increment: Number(answerIncorrect),
+          },
+        },
+      }
+}
+
 export function updateFlashcardResults({
   previousResults,
   response,
@@ -278,6 +387,7 @@ async function respondToFlashcard(
     },
     include: {
       elementStack: true,
+      instanceStatistics: true,
     },
   })
 
@@ -292,6 +402,17 @@ async function respondToFlashcard(
   ) {
     return null
   }
+
+  const existingResponse = ctx.user?.sub
+    ? await ctx.prisma.questionResponse.findUnique({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: ctx.user.sub,
+            elementInstanceId: id,
+          },
+        },
+      })
+    : null
 
   // create result from flashcard response
   const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> =
@@ -327,13 +448,40 @@ async function respondToFlashcard(
     response,
   })
 
+  // average answer time computations if participant is logged in
+  const { newAverageResponseTime, newAverageInstanceTime } = participation
+    ? computeNewAverageTimes({
+        existingInstance,
+        existingResponse,
+        answerTime,
+      })
+    : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+
+  // variable summaries for code readability
+  const answerCorrect = response === FlashcardCorrectness.CORRECT
+  const answerPartial = response === FlashcardCorrectness.PARTIAL
+  const answerIncorrect = response === FlashcardCorrectness.INCORRECT
+  const instanceInPracticeQuiz = !!existingInstance.elementStack.practiceQuizId
+
+  const statisticsUpdate = computeUpdatedInstanceStatistics({
+    participation,
+    existingResponse,
+    newAverageInstanceTime,
+    answerCorrect,
+    answerPartial,
+    answerIncorrect,
+    instanceInPracticeQuiz,
+  })
+
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
-    data: participation
-      ? { results: newResults }
-      : { anonymousResults: newResults },
+    data: {
+      results: participation ? newResults : undefined,
+      anonymousResults: participation ? undefined : newResults,
+      instanceStatistics: statisticsUpdate,
+    },
   })
 
   // if no user exists, return the grading for client display
@@ -380,14 +528,6 @@ async function respondToFlashcard(
   })
 
   // find existing question response to this instance by this user and/or create/update it
-  const existingResponse = await ctx.prisma.questionResponse.findUnique({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-  })
   const aggregatedResponses =
     (existingResponse?.aggregatedResponses as FlashcardResults) ?? {
       [FlashcardCorrectness.INCORRECT]: 0,
@@ -401,14 +541,14 @@ async function respondToFlashcard(
     response === FlashcardCorrectness.CORRECT
       ? 1
       : response === FlashcardCorrectness.PARTIAL
-      ? 0.5
-      : 0
+        ? 0.5
+        : 0
   const responseCorrectness =
     correctness === 1
       ? ResponseCorrectness.CORRECT
       : correctness === 0
-      ? ResponseCorrectness.WRONG
-      : ResponseCorrectness.PARTIAL
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -416,13 +556,7 @@ async function respondToFlashcard(
     grade: correctness,
   })
 
-  const newAverageTime = existingResponse
-    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
-        answerTime) /
-      (existingResponse.trialsCount + 1)
-    : answerTime
-
-  const questionResponse = await ctx.prisma.questionResponse.upsert({
+  await ctx.prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: {
         participantId: ctx.user.sub,
@@ -433,7 +567,7 @@ async function respondToFlashcard(
       participant: {
         connect: { id: ctx.user.sub },
       },
-      averageTimeSpent: newAverageTime,
+      averageTimeSpent: newAverageResponseTime,
       elementInstance: {
         connect: { id },
       },
@@ -496,7 +630,7 @@ async function respondToFlashcard(
         correctness: response,
       },
       lastResponseCorrectness: responseCorrectness,
-      averageTimeSpent: newAverageTime,
+      averageTimeSpent: newAverageResponseTime,
       aggregatedResponses: {
         ...aggregatedResponses,
         [response]: aggregatedResponses[response] + 1,
@@ -521,14 +655,6 @@ async function respondToFlashcard(
   })
 
   return result
-}
-
-export function incrementContentResults({
-  previousResults,
-}: {
-  previousResults: ContentResults
-}): ContentResults {
-  return { total: previousResults.total + 1 }
 }
 
 interface RespondToContentInput {
@@ -576,20 +702,17 @@ async function respondToContent(
       })
     : null
 
-  // update the aggregated data on the element instance
-  const newResults = incrementContentResults({
-    previousResults: participation
-      ? (existingInstance.results as ContentResults)
-      : (existingInstance.anonymousResults as ContentResults),
-  })
-
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
     data: participation
-      ? { results: newResults }
-      : { anonymousResults: newResults },
+      ? { results: { total: existingInstance.results.total + 1 } }
+      : {
+          anonymousResults: {
+            total: existingInstance.anonymousResults.total + 1,
+          },
+        },
   })
 
   // if no user exists, return the grading for client display
@@ -1436,8 +1559,8 @@ export async function respondToQuestion(
       correctness === 1
         ? ResponseCorrectness.CORRECT
         : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
@@ -1643,8 +1766,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-      ? StackFeedbackStatus.CORRECT
-      : StackFeedbackStatus.PARTIAL
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1970,7 +2093,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : availableFrom ?? undefined
+      : (availableFrom ?? undefined)
 
   const createOrUpdateJSON = {
     name: name.trim(),
