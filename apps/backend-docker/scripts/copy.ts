@@ -21,8 +21,8 @@ async function copyDir(src: string, dest: string) {
   }
 }
 
-const sourcePath = path.join(__dirname, '../../transactional/out')
-const destinationPath = path.join(__dirname, './public/emails')
+const sourcePath = path.join(__dirname, '../../../packages/transactional/out')
+const destinationPath = path.join(__dirname, '../public/emails')
 
 copyDir(sourcePath, destinationPath)
   .then(() => console.log('Copy completed successfully'))
