@@ -109,6 +109,9 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
           appSecret: '{{ requiredEnv "APP_SECRET" }}'
           clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
           redirectURL: '{{ requiredEnv "LTI_REDIRECT_URL" }}'
