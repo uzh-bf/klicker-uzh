@@ -62,8 +62,8 @@ function CreateAccount({
           })
 
           if (login) {
-            await router.replace('/login', {
-              pathname: '/login',
+            await router.replace('/editProfile', {
+              pathname: '/editProfile',
               query: {
                 newAccount: true,
               },
@@ -109,11 +109,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (cookies['lti-token'] || query.jwt) {
     const token = cookies['lti-token'] ?? query.jwt
 
+    console.log('token', token)
+
     const parsedToken = JWT.verify(token, process.env.APP_SECRET as string) as {
       sub: string
       email: string
       scope: string
     }
+
+    console.log('parsedToken', parsedToken)
 
     if (parsedToken.scope === 'LTI1.3') {
       signedLtiData.token = token

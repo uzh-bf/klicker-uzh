@@ -8,7 +8,11 @@ import {
   ParameterType,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
@@ -391,6 +395,11 @@ export async function manipulateGroupActivity(
               },
               results: initialResults,
               anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(
+                  ElementInstanceType.GROUP_ACTIVITY
+                ),
+              },
               element: {
                 connect: { id: element.id },
               },
