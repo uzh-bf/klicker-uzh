@@ -7,7 +7,7 @@ import {
 
 async function run() {
   const prisma = new PrismaClient()
-  const debug = true
+  const debug = false
 
   let counter = 0
   let updateCounter = 0
