@@ -56,7 +56,7 @@ export function hydrateTemplate({
 
   try {
     template = fs.readFileSync(
-      require.resolve(`@klicker-uzh/transactional/out/${templateName}.html`),
+      require.resolve(`@klicker-uzh/graphql/dist/emails/${templateName}.html`),
       'utf8'
     )
   } catch (e) {

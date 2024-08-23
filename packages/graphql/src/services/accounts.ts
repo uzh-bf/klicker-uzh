@@ -211,6 +211,7 @@ export async function sendMagicLink(
 
   const participantData = participantWithUsername[0]
 
+  // TODO: should we disable magic link login until the email has been verified?
   if (!participantData?.email) return false
 
   const magicLinkJWT = JWT.sign(
@@ -232,7 +233,7 @@ export async function sendMagicLink(
 
   await sendTeamsNotifications(
     'graphql/sendMagicLink',
-    `One-time login token created for ${usernameOrEmail}: ${magicLinkJWT}`
+    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
   )
 
   const email = EmailService.hydrateTemplate({
