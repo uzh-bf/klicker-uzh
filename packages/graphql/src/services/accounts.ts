@@ -534,8 +534,8 @@ export async function createParticipantAccount(
     )
 
     const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http://'
-    }${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+      process.env.NODE_ENV === 'production' ? 'https' : 'http'
+    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
