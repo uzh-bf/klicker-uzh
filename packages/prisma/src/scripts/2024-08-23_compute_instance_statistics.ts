@@ -176,15 +176,16 @@ async function run() {
 
       case ElementType.NUMERICAL:
       case ElementType.FREE_TEXT:
-        const { tempCorrect2, tempIncorrect2 } =
-          instance.anonymousResults.responses.reduce(
-            (acc, response) => {
-              acc.tempCorrect += Number(response.correct)
-              acc.tempIncorrect += Number(!response.correct)
-              return acc
-            },
-            { tempCorrect: 0, tempIncorrect: 0 }
-          )
+        const { tempCorrect2, tempIncorrect2 } = Object.entries(
+          instance.anonymousResults.responses
+        ).reduce(
+          (acc, [_, response]) => {
+            acc.tempCorrect2 += Number(response.correct)
+            acc.tempIncorrect2 += Number(!response.correct)
+            return acc
+          },
+          { tempCorrect2: 0, tempIncorrect2: 0 }
+        )
 
         anonymousCorrectCount = tempCorrect2
         anonymousWrongCount = tempIncorrect2
