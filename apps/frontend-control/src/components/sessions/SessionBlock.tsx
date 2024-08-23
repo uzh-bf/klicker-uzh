@@ -47,13 +47,13 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
   return (
     <div
       className={twMerge(
-        'mb-2 border border-solid rounded-md border-uzh-grey-100',
+        'border-uzh-grey-100 mb-2 rounded-md border border-solid',
         active && 'border-uzh-darkgreen-80'
       )}
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between p-1 bg-uzh-grey-40',
+          'bg-uzh-grey-40 flex flex-row justify-between p-1',
           active && 'bg-green-300'
         )}
       >

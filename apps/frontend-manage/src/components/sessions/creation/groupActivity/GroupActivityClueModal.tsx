@@ -44,7 +44,7 @@ function GroupActivityClueModal({
       <Button
         fluid
         className={{
-          root: 'h-14 hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+          root: 'h-14 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
         }}
         onClick={() => {
           unsetClueIx()
@@ -62,7 +62,7 @@ function GroupActivityClueModal({
         open={open}
         onClose={() => setOpen(false)}
         title={t('manage.sessionForms.groupActivityAddClue')}
-        className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+        className={{ content: 'h-max w-[40rem] self-center pt-0' }}
       >
         <Formik
           enableReinitialize
@@ -98,7 +98,7 @@ function GroupActivityClueModal({
         >
           {({ values, resetForm, submitForm }) => (
             <Form className="flex flex-col">
-              <div className="text-base test-gray-800">
+              <div className="test-gray-800 text-base">
                 {t('manage.sessionForms.groupActivityCluesDescription')}
               </div>
               <FormikSelectField
@@ -120,7 +120,7 @@ function GroupActivityClueModal({
                 data={{ cy: 'group-activity-clue-type' }}
                 required
               />
-              <div className="flex flex-row gap-2 w-full">
+              <div className="flex w-full flex-row gap-2">
                 <FormikTextField
                   name="name"
                   label={t('manage.sessionForms.name')}
@@ -149,7 +149,7 @@ function GroupActivityClueModal({
                 />
               )}
               {values.type === ParameterType.Number && (
-                <div className="flex flex-row gap-2 w-full">
+                <div className="flex w-full flex-row gap-2">
                   <FormikNumberField
                     name="value"
                     label={t('shared.generic.value')}
@@ -164,13 +164,13 @@ function GroupActivityClueModal({
                     label={t('shared.generic.unit')}
                     data={{ cy: 'group-activity-number-clue-unit' }}
                     labelType="small"
-                    className={{ root: 'w-1/2 mt-1' }}
+                    className={{ root: 'mt-1 w-1/2' }}
                   />
                 </div>
               )}
 
               <Button
-                className={{ root: 'mt-3 self-end -mb-3 gap-3' }}
+                className={{ root: '-mb-3 mt-3 gap-3 self-end' }}
                 type="button"
                 onClick={async () => {
                   await submitForm()

@@ -39,7 +39,7 @@ function CourseCollapsible({
       >
         <RadixCollapsible.Trigger
           className={twMerge(
-            'flex flex-row justify-between text-lg font-bold text-slate-700 border-b-2 w-full items-center',
+            'flex w-full flex-row items-center justify-between border-b-2 text-lg font-bold text-slate-700',
             open && 'mb-2'
           )}
         >

@@ -94,16 +94,16 @@ function CreateAccountForm({
     >
       {({ isSubmitting, isValid, values, validateField }) => (
         <Form>
-          <div className="flex flex-col md:grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
-            <div className="flex flex-col items-center justify-between order-3 gap-2 p-4 py-2 rounded md:col-span-2 md:gap-4 md:flex-row bg-slate-100 md:px-4">
+          <div className="flex flex-col gap-2 md:mx-auto md:grid md:w-full md:max-w-[1090px] md:grid-cols-2">
+            <div className="order-3 flex flex-col items-center justify-between gap-2 rounded bg-slate-100 p-4 py-2 md:col-span-2 md:flex-row md:gap-4 md:px-4">
               <div className="flex flex-row items-center gap-4">
                 <div className="flex-1 text-slate-600">
                   {/* <FontAwesomeIcon icon={faWarning} /> */}
                   <Checkbox
                     className={{
                       root: twMerge(
-                        'w-6 h-6',
-                        !tosChecked && 'bg-red-400 border-red-600'
+                        'h-6 w-6',
+                        !tosChecked && 'border-red-600 bg-red-400'
                       ),
                     }}
                     data={{ cy: 'tos-checkbox' }}
@@ -113,7 +113,7 @@ function CreateAccountForm({
                         withLinkButtons={false}
                         className={{
                           root: twMerge(
-                            'prose-p:mb-0 prose-sm max-w-lg ml-4',
+                            'prose-p:mb-0 prose-sm ml-4 max-w-lg',
                             !tosChecked && 'text-red-600'
                           ),
                         }}
@@ -127,7 +127,7 @@ function CreateAccountForm({
               </div>
               <Button
                 className={{
-                  root: 'flex-none w-full md:w-max',
+                  root: 'w-full flex-none md:w-max',
                 }}
                 type="submit"
                 disabled={!tosChecked || isSubmitting || !isValid}
@@ -140,7 +140,7 @@ function CreateAccountForm({
               </Button>
             </div>
             <div className="order-1 gap-3 rounded md:order-1 md:bg-slate-50 md:p-4">
-              <H3 className={{ root: 'border-b mb-0' }}>
+              <H3 className={{ root: 'mb-0 border-b' }}>
                 {t('shared.generic.profile')}
               </H3>
               <div className="mb-2 space-y-3">
@@ -150,7 +150,7 @@ function CreateAccountForm({
                   name="email"
                   label={t('shared.generic.email')}
                   className={{
-                    label: 'text-black mt-4',
+                    label: 'mt-4 text-black',
                   }}
                   data={{ cy: 'email-field' }}
                 />
@@ -180,7 +180,7 @@ function CreateAccountForm({
                   name="password"
                   label={t('shared.generic.password')}
                   className={{
-                    label: 'text-black mt-0',
+                    label: 'mt-0 text-black',
                   }}
                   type="password"
                   data={{ cy: 'password-field' }}
@@ -190,7 +190,7 @@ function CreateAccountForm({
                   name="passwordRepetition"
                   label={t('shared.generic.passwordRepetition')}
                   className={{
-                    label: 'text-black mt-0',
+                    label: 'mt-0 text-black',
                   }}
                   type="password"
                   data={{ cy: 'password-repetition-field' }}
@@ -200,7 +200,7 @@ function CreateAccountForm({
                   <div className="font-bold">
                     {t('pwa.profile.publicProfile')}
                   </div>
-                  <div className="flex flex-row gap-4 space-between">
+                  <div className="space-between flex flex-row gap-4">
                     <div className="flex flex-col items-center gap-1">
                       <FormikSwitchField
                         name="isProfilePublic"
@@ -219,8 +219,8 @@ function CreateAccountForm({
                 </div>
               </div>
             </div>
-            <div className="order-2 space-y-2 rounded md:order-2 md:bg-slate-50 md:p-4 md:justify-between">
-              <H3 className={{ root: 'border-b mb-0' }}>
+            <div className="order-2 space-y-2 rounded md:order-2 md:justify-between md:bg-slate-50 md:p-4">
+              <H3 className={{ root: 'mb-0 border-b' }}>
                 {t('pwa.createAccount.dataProcessingTitle')}
               </H3>
               <Collapsible

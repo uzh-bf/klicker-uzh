@@ -21,7 +21,7 @@ function Settings() {
 
   return (
     <Layout displayName={t('shared.generic.settings')}>
-      <div className="mx-auto p-4 w-[46rem] max-w-full flex flex-col border border-solid border-uzh-grey-100 rounded">
+      <div className="border-uzh-grey-100 mx-auto flex w-[46rem] max-w-full flex-col rounded border border-solid p-4">
         <H1>{t('manage.settings.userSettings')}</H1>
         <ShortnameSetting user={user.userProfile} />
         <LanguageSetting user={user.userProfile} />

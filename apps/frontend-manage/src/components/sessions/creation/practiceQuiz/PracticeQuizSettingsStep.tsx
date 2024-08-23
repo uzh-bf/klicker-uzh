@@ -49,7 +49,7 @@ function PracticeQuizSettingsStep({
       validationSchema={validationSchema}
     >
       {({ values, isValid, isSubmitting, setTouched }) => (
-        <Form className="w-full h-full">
+        <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
             activeStep={activeStep}
@@ -60,15 +60,15 @@ function PracticeQuizSettingsStep({
             gamifiedCourses={gamifiedCourses}
             setCourseGamified={setCourseGamified}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
-            <div className="flex flex-col md:flex-row gap-4 justify-center">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
+            <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div
                 className={twMerge(
-                  'border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md',
+                  'border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72',
                   courseGamified && 'border-orange-400'
                 )}
               >
-                <div className="flex flex-row gap-2 items-center justify-center">
+                <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
                   <div className="text-lg font-bold">
                     {t('shared.generic.gamification')}
@@ -103,8 +103,8 @@ function PracticeQuizSettingsStep({
                   />
                 )}
               </div>
-              <div className="border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md">
-                <div className="flex flex-row gap-2 items-center justify-center">
+              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+                <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faGears} />
                   <div className="text-lg font-bold">
                     {t('shared.generic.settings')}
@@ -151,15 +151,15 @@ function PracticeQuizSettingsStep({
                   />
                 </div>
               </div>
-              <div className="border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-72 shadow-md">
-                <div className="flex flex-row gap-2 items-center justify-center">
+              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+                <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faClock} />
                   <div className="text-lg font-bold">
                     {t('manage.sessionForms.practiceQuizAvailabilityOptional')}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <div className="text-sm mt-1">
+                  <div className="mt-1 text-sm">
                     {t('manage.sessionForms.practiceQuizAvailableFrom')}
                   </div>
                   <FormikDateField

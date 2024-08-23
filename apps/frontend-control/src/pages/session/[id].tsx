@@ -122,10 +122,10 @@ function RunningSession() {
             {typeof currentBlockOrder !== 'undefined' &&
               nextBlockOrder !== -1 &&
               nextBlockOrder < blocks.length && (
-                <div className="flex flex-col gap-2 mt-2">
+                <div className="mt-2 flex flex-col gap-2">
                   <FontAwesomeIcon
                     icon={faArrowDown}
-                    className="w-full mx-auto"
+                    className="mx-auto w-full"
                     size="2xl"
                   />
 
@@ -165,7 +165,7 @@ function RunningSession() {
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
-                className="w-full mx-auto"
+                className="mx-auto w-full"
               />
             )}
             <SessionBlock
@@ -179,7 +179,7 @@ function RunningSession() {
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
-                className="w-full mx-auto"
+                className="mx-auto w-full"
               />
             )}
             <Button
@@ -198,7 +198,7 @@ function RunningSession() {
                 }
               }}
               className={{
-                root: 'float-right text-white bg-primary-80',
+                root: 'bg-primary-80 float-right text-white',
               }}
               data={{ cy: 'activate-next-block' }}
             >
@@ -222,7 +222,7 @@ function RunningSession() {
                 )
               }}
               className={{
-                root: 'float-right text-white bg-uzh-red-100',
+                root: 'bg-uzh-red-100 float-right text-white',
               }}
               data={{ cy: 'end-session' }}
             >

@@ -212,15 +212,15 @@ function QuestionArea({
   }
 
   return (
-    <div className="w-full h-full min-h-content">
-      <H2 className={{ root: 'hidden mb-2 md:block' }}>
+    <div className="min-h-content h-full w-full">
+      <H2 className={{ root: 'mb-2 hidden md:block' }}>
         {t('shared.generic.question')}
       </H2>
 
       {remainingQuestions.length === 0 ? (
         t('pwa.session.allQuestionsAnswered')
       ) : (
-        <div className="flex flex-col w-full gap-2">
+        <div className="flex w-full flex-col gap-2">
           <StudentQuestion
             key={currentQuestion.instanceId}
             activeIndex={questions.length - remainingQuestions.length}

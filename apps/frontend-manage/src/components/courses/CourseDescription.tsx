@@ -69,13 +69,13 @@ function CourseDescription({
               data={{ cy: 'course-description-input' }}
             />
 
-            <div className="flex flex-row justify-between mt-1">
+            <div className="mt-1 flex flex-row justify-between">
               {errors && (
                 <div className="text-sm text-red-700">{errors.description}</div>
               )}
               <Button
                 className={{
-                  root: 'float-right px-5 text-white disabled:opacity-60 bg-primary-80',
+                  root: 'bg-primary-80 float-right px-5 text-white disabled:opacity-60',
                 }}
                 type="submit"
                 disabled={isSubmitting || !isValid}

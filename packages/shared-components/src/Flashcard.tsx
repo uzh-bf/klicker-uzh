@@ -1,5 +1,5 @@
-import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import type { IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
@@ -39,7 +39,7 @@ function Flashcard({
     <div>
       <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
         <div
-          className={`flex flex-col rounded-lg border border-gray-300 p-4 shadow transform-style-preserve-3d transition-transform-0_6s ${
+          className={`transform-style-preserve-3d transition-transform-0_6s flex flex-col rounded-lg border border-gray-300 p-4 shadow ${
             isFlipped
               ? 'transform-rotateY-180'
               : 'cursor-pointer hover:shadow-xl'
@@ -88,9 +88,9 @@ function FlashcardFront({
       content={content}
       className={{
         root: twMerge(
-          'prose mx-auto flex-none text-center prose-p:!m-0 prose-img:!m-0',
+          'prose prose-p:!m-0 prose-img:!m-0 mx-auto flex-none text-center',
           isFlipped &&
-            'mb-4 w-full rounded border bg-slate-100 px-4 py-2 transform-rotateY-180 backface-hidden prose-p:mb-0'
+            'transform-rotateY-180 backface-hidden prose-p:mb-0 mb-4 w-full rounded border bg-slate-100 px-4 py-2'
         ),
       }}
     />
@@ -115,8 +115,8 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex w-full flex-1 flex-col transform-rotateY-180">
-      <div className="prose flex flex-1 prose-p:!m-0 prose-img:!m-0">
+    <div className="transform-rotateY-180 flex w-full flex-1 flex-col">
+      <div className="prose prose-p:!m-0 prose-img:!m-0 flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
       <div className="flex w-full flex-shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">

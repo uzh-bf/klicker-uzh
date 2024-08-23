@@ -50,8 +50,8 @@ function ChoiceOptions({
         displayMode === ElementDisplayMode.Grid
           ? 'grid grid-cols-2 gap-3'
           : isCompact
-          ? 'flex flex-row gap-2'
-          : 'space-y-2'
+            ? 'flex flex-row gap-2'
+            : 'space-y-2'
       )}
     >
       {choices.map((choice) => (
@@ -61,7 +61,7 @@ function ChoiceOptions({
             active={Array.isArray(response) && response?.includes(choice.ix)}
             className={{
               root: twMerge(
-                'px-4 py-3 text-sm shadow-md border-primary-40 h-full',
+                'border-primary-40 h-full px-4 py-3 text-sm shadow-md',
                 isEvaluation && 'text-gray-700',
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&
@@ -79,12 +79,12 @@ function ChoiceOptions({
           {!isCompact && feedbacks?.[choice.ix] && (
             <div
               className={twMerge(
-                'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50'
+                'flex flex-row items-center gap-3 rounded border bg-gray-50 text-sm'
               )}
             >
               <div
                 className={twMerge(
-                  'self-stretch px-3 w-8 py-2 text-xs bg-gray-300 flex text-gray-600 flex-col items-center justify-center',
+                  'flex w-8 flex-col items-center justify-center self-stretch bg-gray-300 px-3 py-2 text-xs text-gray-600',
                   response?.includes(choice.ix) &&
                     (feedbacks[choice.ix].correct
                       ? 'bg-green-200 text-green-700'
@@ -217,7 +217,7 @@ export function Options({
 
               return (
                 <div className="flex flex-col" key={choice.value}>
-                  <div className="flex flex-row items-center justify-between gap-4 p-2 border">
+                  <div className="flex flex-row items-center justify-between gap-4 border p-2">
                     <div>
                       <Markdown content={choice.value} />
                     </div>
@@ -273,7 +273,7 @@ export function Options({
                   {feedbacks?.[choice.ix] && (
                     <div
                       className={twMerge(
-                        'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50'
+                        'flex flex-row items-center gap-3 rounded border bg-gray-50 text-sm'
                       )}
                     >
                       {/* <div
@@ -423,7 +423,7 @@ function OptionsDisplay({
           className={twMerge(
             'flex flex-col items-end',
             isEvaluation &&
-              'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
+              'order-1 border-b pb-4 md:order-2 md:border-0 md:pb-0'
           )}
         >
           <Button

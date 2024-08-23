@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { createRequire } from 'module'
 import nodemailer from 'nodemailer'
 import { Context } from 'src/lib/context.js'

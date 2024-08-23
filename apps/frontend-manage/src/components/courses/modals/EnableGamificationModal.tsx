@@ -50,7 +50,7 @@ function EnableGamificationModal({
             setOpen(false)
           }}
           className={{
-            root: 'font-bold text-white bg-primary-80 text-base',
+            root: 'bg-primary-80 text-base font-bold text-white',
           }}
           data={{ cy: 'confirm-enable-gamification' }}
           loading={isSubmitting}
@@ -71,7 +71,7 @@ function EnableGamificationModal({
       open={open}
       hideCloseButton={true}
       className={{
-        content: 'w-[40rem] min-h-max h-max self-center pt-0',
+        content: 'h-max min-h-max w-[40rem] self-center pt-0',
         title: 'text-xl',
       }}
     >

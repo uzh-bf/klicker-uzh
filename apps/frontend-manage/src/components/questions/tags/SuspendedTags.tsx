@@ -46,7 +46,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
     )
 
   return (
-    <ul className="flex flex-col min-h-[4.7rem] overflow-y-auto list-none">
+    <ul className="flex min-h-[4.7rem] list-none flex-col overflow-y-auto">
       {data.userTags.map(
         (tag: Tag, ix): React.ReactElement => (
           <UserTag

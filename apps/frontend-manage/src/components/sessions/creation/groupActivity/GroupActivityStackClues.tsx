@@ -54,13 +54,13 @@ function GroupActivityStackClues({
       validationSchema={validationSchema}
     >
       {({ values, isValid, isSubmitting, setFieldValue, errors }) => (
-        <Form className="w-full h-full">
+        <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
             activeStep={activeStep}
             setStepValidity={setStepValidity}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="flex flex-row gap-3">
               <StackBlockCreation
                 singleStackMode
@@ -74,11 +74,11 @@ function GroupActivityStackClues({
                 error={errors.stack as any}
                 className="w-80"
               />
-              <div className="w-full h-max">
+              <div className="h-max w-full">
                 <FieldArray name="clues">
                   {({ push, remove, replace }: FieldArrayRenderProps) => (
                     <div className="w-full">
-                      <div className="flex flex-row items-center -mb-1.5">
+                      <div className="-mb-1.5 flex flex-row items-center">
                         <FormLabel
                           required
                           label={t('shared.generic.clues')}
@@ -115,7 +115,7 @@ function GroupActivityStackClues({
                             }
                             delay={0}
                             className={{
-                              tooltip: 'text-sm z-30',
+                              tooltip: 'z-30 text-sm',
                               trigger: 'mt-[0.05rem]',
                             }}
                           >
@@ -126,12 +126,12 @@ function GroupActivityStackClues({
                           </Tooltip>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3 w-full max-h-32 overflow-y-auto">
+                      <div className="mt-3 grid max-h-32 w-full grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
                         {values.clues.map((clue, ix) => (
                           <div
                             key={`${clue.name}-position-${ix}`}
                             className={twMerge(
-                              'text-sm rounded flex flex-row justify-between w-full border',
+                              'flex w-full flex-row justify-between rounded border text-sm',
                               Array.isArray(errors.clues) &&
                                 errors.clues.length > ix &&
                                 errors.clues[ix]
@@ -142,13 +142,13 @@ function GroupActivityStackClues({
                           >
                             <div className="flex flex-col p-1">
                               <div className="font-bold">{clue.name}</div>
-                              <div className="border-black h-full w-full">
+                              <div className="h-full w-full border-black">
                                 {clue.type === ParameterType.Number && clue.unit
                                   ? `${clue.value} ${clue.unit}`
                                   : clue.value}
                               </div>
                             </div>
-                            <div className="h-full flex flex-col">
+                            <div className="flex h-full flex-col">
                               <Button
                                 className={{ root: 'h-1/2' }}
                                 data={{ cy: `edit-clue-${clue.name}` }}

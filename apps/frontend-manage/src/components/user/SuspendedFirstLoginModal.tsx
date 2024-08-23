@@ -53,12 +53,12 @@ function SuspendedFirstLoginModal() {
       open={firstLogin}
       onClose={() => null}
       hideCloseButton
-      className={{ content: 'w-full py-4 px-8 md:py-8 md:px-16' }}
+      className={{ content: 'w-full px-8 py-4 md:px-16 md:py-8' }}
     >
-      <H1 className={{ root: 'text-4xl mb-4' }}>
+      <H1 className={{ root: 'mb-4 text-4xl' }}>
         {t('manage.firstLogin.welcome')}
       </H1>
-      <div className="mb-2 prose max-w-none">
+      <div className="prose mb-2 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
       {data.userProfile ? (
@@ -110,7 +110,7 @@ function SuspendedFirstLoginModal() {
         >
           {({ isValid, isSubmitting, validateField }) => (
             <Form>
-              <div className="flex flex-col mb-1 space-y-4 md:space-y-0 md:flex-row md:justify-between md:mb-5">
+              <div className="mb-1 flex flex-col space-y-4 md:mb-5 md:flex-row md:justify-between md:space-y-0">
                 <DebouncedUsernameField
                   className={{
                     root: 'w-[250px] md:w-max',
@@ -161,11 +161,11 @@ function SuspendedFirstLoginModal() {
                 </UserNotification>
               )}
 
-              <div className="mb-4 prose max-w-none">
+              <div className="prose mb-4 max-w-none">
                 {t('manage.firstLogin.relevantLinks')}
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="mb-4 grid grid-cols-3 gap-4">
                 <Link
                   href="https://www.klicker.uzh.ch/getting_started/welcome"
                   target="_blank"
@@ -186,7 +186,7 @@ function SuspendedFirstLoginModal() {
                 </Link>
               </div>
 
-              <div className="mb-6 prose max-w-none">
+              <div className="prose mb-6 max-w-none">
                 {t('manage.firstLogin.watchVideo')}
               </div>
 
@@ -206,7 +206,7 @@ function SuspendedFirstLoginModal() {
               <Button
                 fluid
                 className={{
-                  root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white disabled:opacity-50 disabled:cursor-not-allowed',
+                  root: 'bg-primary-80 float-right mt-4 w-32 justify-center text-white disabled:cursor-not-allowed disabled:opacity-50',
                 }}
                 disabled={!isValid || isSubmitting}
                 type="submit"

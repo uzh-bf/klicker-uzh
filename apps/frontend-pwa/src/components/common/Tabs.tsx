@@ -50,7 +50,7 @@ export function TabList({
   return (
     <TabsPrimitive.List
       className={twMerge(
-        'flex w-full rounded-t-lg bg-white flex-col md:flex-row',
+        'flex w-full flex-col rounded-t-lg bg-white md:flex-row',
         className
       )}
     >
@@ -75,7 +75,7 @@ export function TabContent({
     <TabsPrimitive.Content
       key={`tab-content-${key}`}
       value={value}
-      className={twMerge('rounded-t-lg bg-white md:px-6 py-4', className)}
+      className={twMerge('rounded-t-lg bg-white py-4 md:px-6', className)}
     >
       {children}
     </TabsPrimitive.Content>

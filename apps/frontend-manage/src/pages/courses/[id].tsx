@@ -65,7 +65,7 @@ function CourseOverviewPage() {
 
   return (
     <Layout>
-      <div className="w-full mb-4">
+      <div className="mb-4 w-full">
         <CourseOverviewHeader
           id={course.id}
           name={course.name}
@@ -211,7 +211,7 @@ function CourseOverviewPage() {
               className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
               leaderboard={course.leaderboard ?? []}
             />
-            <div className="mt-2 text-sm italic text-right text-gray-500">
+            <div className="mt-2 text-right text-sm italic text-gray-500">
               <div>
                 {t('manage.course.participantsLeaderboard', {
                   number: course.numOfActiveParticipants,

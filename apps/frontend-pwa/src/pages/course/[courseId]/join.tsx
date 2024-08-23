@@ -84,13 +84,13 @@ function JoinCourse({
       displayName={t('pwa.general.joinCourse')}
       course={{ displayName: displayName, color: color, id: courseId }}
     >
-      <div className="max-w-5xl mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -123,7 +123,7 @@ function JoinCourse({
                     />
                     <Button
                       className={{
-                        root: 'float-right mt-2 border-uzh-grey-80',
+                        root: 'border-uzh-grey-80 float-right mt-2',
                       }}
                       type="submit"
                       disabled={isSubmitting || !isValid}
@@ -138,7 +138,7 @@ function JoinCourse({
           </div>
         ) : (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <CreateAccountForm

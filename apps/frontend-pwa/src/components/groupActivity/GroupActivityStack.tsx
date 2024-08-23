@@ -184,7 +184,7 @@ function GroupActivityStack({
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'rounded mb-6 mt-3 shadow !border-l-4 text-base',
+                      'mb-6 mt-3 rounded !border-l-4 text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
                         '!border-l-green-500',
                       correctness === ResponseCorrectnessType.Partial &&
@@ -206,7 +206,7 @@ function GroupActivityStack({
                       )}
                     >
                       <div>{t(`pwa.groupActivity.answer${correctness}`)}</div>
-                      <div className="font-bold self-end">{`${grading.score}/${
+                      <div className="self-end font-bold">{`${grading.score}/${
                         grading.maxPoints
                       } ${t('shared.generic.points')}`}</div>
                     </div>
@@ -225,7 +225,7 @@ function GroupActivityStack({
       {!decisions ? (
         <Button
           className={{
-            root: 'mt-4 text-lg font-bold float-right',
+            root: 'float-right mt-4 text-lg font-bold',
           }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
@@ -298,7 +298,7 @@ function GroupActivityStack({
           {t('pwa.groupActivity.sendAnswers')}
         </Button>
       ) : (
-        <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
+        <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,
             date: submittedAt,

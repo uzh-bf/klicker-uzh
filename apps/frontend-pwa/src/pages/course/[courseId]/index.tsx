@@ -164,7 +164,7 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
-          <div className="md:mx-auto md:max-w-6xl md:w-full md:border md:rounded">
+          <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
@@ -231,7 +231,7 @@ function CourseOverview({
                   className="md:px-4"
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
-                    <div className="flex flex-col justify-between flex-1 gap-6">
+                    <div className="flex flex-1 flex-col justify-between gap-6">
                       <div>
                         <H3 className={{ root: 'mb-4' }}>
                           {t('pwa.courses.individualLeaderboard')}
@@ -255,7 +255,7 @@ function CourseOverview({
                         {participant?.id && !participation?.isActive && (
                           <div className="space-y-4">
                             <Podium leaderboard={[]} />
-                            <div className="p-2 text-sm border rounded max-w-none bg-slate-100 border-slate-300 text-slate-600">
+                            <div className="max-w-none rounded border border-slate-300 bg-slate-100 p-2 text-sm text-slate-600">
                               <Markdown
                                 withProse
                                 withLinkButtons={false}
@@ -284,7 +284,7 @@ function CourseOverview({
                           </div>
                         )}
 
-                        <div className="mt-4 mb-2 text-sm text-right text-slate-600">
+                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
                           <div>
                             {t('shared.leaderboard.participantCount', {
                               number: leaderboardStatistics?.participantCount,
@@ -299,12 +299,12 @@ function CourseOverview({
                         </div>
                       </div>
 
-                      <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
+                      <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
                         {t('pwa.courses.individualLeaderboardUpdate')}
                       </div>
                     </div>
 
-                    <div className="flex flex-col justify-between flex-1 gap-8">
+                    <div className="flex flex-1 flex-col justify-between gap-8">
                       <div>
                         <H3 className={{ root: 'mb-4' }}>
                           {t('pwa.courses.groupLeaderboard')}
@@ -335,7 +335,7 @@ function CourseOverview({
                             <div>{t('pwa.courses.noGroupPoints')}</div>
                           )}
 
-                        <div className="mt-4 mb-2 text-sm text-right text-slate-600">
+                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
                           <div>
                             {t('shared.leaderboard.participantCount', {
                               number:
@@ -353,7 +353,7 @@ function CourseOverview({
                         </div>
                       </div>
 
-                      <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
+                      <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
                         {t.rich('pwa.courses.groupLeaderboardUpdate', {
                           b: () => <br />,
                         })}
@@ -363,11 +363,11 @@ function CourseOverview({
 
                   {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
                   {course.awards && course.awards?.length != 0 && (
-                    <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
+                    <div className="mt-4 rounded border border-orange-200 bg-orange-100 px-4 py-3 shadow md:mt-6">
                       <H3 className={{ root: 'mb-2 text-base' }}>
                         {t('pwa.courses.awards')}
                       </H3>
-                      <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
+                      <div className="flex flex-col gap-1 text-sm text-gray-700 md:flex-row md:flex-wrap md:gap-6">
                         <div className="flex-1 space-y-1">
                           {course.awards
                             ?.filter((award) => award.type === 'PARTICIPANT')
@@ -432,7 +432,7 @@ function CourseOverview({
                       </H3>
 
                       <div className="flex flex-row flex-wrap gap-4">
-                        <div className="flex flex-col flex-1">
+                        <div className="flex flex-1 flex-col">
                           <div className="mb-2">
                             {!participation?.isActive && (
                               <UserNotification
@@ -477,7 +477,7 @@ function CourseOverview({
                               rank3: Rank3Img,
                             }}
                           />
-                          <div className="self-end mt-6 text-sm w-60 text-slate-600">
+                          <div className="mt-6 w-60 self-end text-sm text-slate-600">
                             <div className="flex flex-row justify-between">
                               <div>{t('pwa.courses.membersScore')}</div>
                               <div>{group.averageMemberScore}</div>

@@ -312,7 +312,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
@@ -341,7 +341,7 @@ function FeedbackArea({
                   placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
                     input:
-                      'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
+                      'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
                     root: 'mb-1',
                   }}
                   component="textarea"
@@ -352,7 +352,7 @@ function FeedbackArea({
                 />
                 <Button
                   className={{
-                    root: 'float-right h-10 text-center items-center !w-30',
+                    root: '!w-30 float-right h-10 items-center text-center',
                   }}
                   type="submit"
                   disabled={isSubmitting}
@@ -376,7 +376,7 @@ function FeedbackArea({
         <div className="mb-8 space-y-6 text-sm">
           <div className="">
             <H3 className={{ root: 'mb-0' }}>{t('pwa.feedbacks.speed')}</H3>
-            <div className="w-full -mt-8">
+            <div className="-mt-8 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>
@@ -396,7 +396,7 @@ function FeedbackArea({
             <H3 className={{ root: 'mb-0' }}>
               {t('pwa.feedbacks.difficulty')}
             </H3>
-            <div className="w-full -mt-5">
+            <div className="-mt-5 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>

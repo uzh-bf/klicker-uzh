@@ -613,7 +613,7 @@ function QuestionEditModal({
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
               content:
-                'max-w-[1400px] md:text-base text-sm h-max max-h-[calc(100vh-2rem)]',
+                'h-max max-h-[calc(100vh-2rem)] max-w-[1400px] text-sm md:text-base',
               title: 'text-xl',
             }}
             open={isOpen}
@@ -624,9 +624,9 @@ function QuestionEditModal({
                 disabled={isSubmitting || !isValid}
                 className={{
                   root: twMerge(
-                    'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                    'border-uzh-grey-80 bg-primary-80 mt-2 font-bold text-white',
                     (isSubmitting || !isValid) &&
-                      'opacity-50 cursor-not-allowed'
+                      'cursor-not-allowed opacity-50'
                   ),
                 }}
                 type="submit"
@@ -638,7 +638,7 @@ function QuestionEditModal({
             }
             onSecondaryAction={
               <Button
-                className={{ root: 'mt-2 border-uzh-grey-80' }}
+                className={{ root: 'border-uzh-grey-80 mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
                 data={{ cy: 'close-question-modal' }}
               >
@@ -647,7 +647,7 @@ function QuestionEditModal({
             }
           >
             <div className="flex flex-row gap-12">
-              <div className="flex-1 max-w-5xl">
+              <div className="max-w-5xl flex-1">
                 <Form className="w-full" id="question-manipulation-form">
                   <div className="z-0 flex flex-row justify-between">
                     <FormikSelectField
@@ -673,7 +673,7 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  <div className="flex flex-row mt-2">
+                  <div className="mt-2 flex flex-row">
                     <FormikTextField
                       name="name"
                       required
@@ -686,7 +686,7 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  <div className="flex flex-row gap-2 mt-2">
+                  <div className="mt-2 flex flex-row gap-2">
                     {values.type !== ElementType.Content &&
                       values.type !== ElementType.Flashcard && (
                         <div>
@@ -696,7 +696,7 @@ function QuestionEditModal({
                           />
                         </div>
                       )}
-                    <div className="flex flex-col w-full">
+                    <div className="flex w-full flex-col">
                       <FormLabel
                         required={false}
                         label={t('manage.questionPool.tags')}
@@ -795,7 +795,7 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  <div className="flex flex-row gap-4 mt-4">
+                  <div className="mt-4 flex flex-row gap-4">
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <div className="flex-1">
                         <FormLabel
@@ -870,7 +870,7 @@ function QuestionEditModal({
                     <FieldArray name="options.choices">
                       {({ push, remove, move }: FieldArrayRenderProps) => {
                         return (
-                          <div className="flex flex-col w-full gap-2 pt-2">
+                          <div className="flex w-full flex-col gap-2 pt-2">
                             {values.options?.choices?.map(
                               (
                                 choice: {
@@ -884,17 +884,17 @@ function QuestionEditModal({
                                 <div
                                   key={index}
                                   className={twMerge(
-                                    'w-full rounded border-uzh-grey-80',
+                                    'border-uzh-grey-80 w-full rounded',
                                     values.options?.hasSampleSolution && 'p-2',
                                     choice.correct &&
                                       values.options?.hasSampleSolution &&
-                                      ' bg-green-100 border-green-300',
+                                      'border-green-300 bg-green-100',
                                     !choice.correct &&
                                       values.options?.hasSampleSolution &&
-                                      ' bg-red-100 border-red-300'
+                                      'border-red-300 bg-red-100'
                                   )}
                                 >
-                                  <div className="flex flex-row w-full items-center focus:border-primary-40">
+                                  <div className="focus:border-primary-40 flex w-full flex-row items-center">
                                     {/* // TODO: define maximum height of editor if possible */}
                                     <FastField
                                       name={`options.choices.${index}.value`}
@@ -936,7 +936,7 @@ function QuestionEditModal({
                                       )}
                                     </FastField>
                                     {values.options?.hasSampleSolution && (
-                                      <div className="flex flex-row items-center ml-2">
+                                      <div className="ml-2 flex flex-row items-center">
                                         <div className="mr-2">
                                           {t('shared.generic.correct')}?
                                         </div>
@@ -948,7 +948,7 @@ function QuestionEditModal({
                                               checked={field.value || false}
                                               label=""
                                               className={{
-                                                root: 'gap-0 mr-0.5',
+                                                root: 'mr-0.5 gap-0',
                                               }}
                                               onCheckedChange={(
                                                 newValue: boolean
@@ -1009,7 +1009,7 @@ function QuestionEditModal({
                                         remove(index)
                                       }}
                                       className={{
-                                        root: 'items-center justify-center w-10 h-10 text-white bg-red-600 rounded-md',
+                                        root: 'h-10 w-10 items-center justify-center rounded-md bg-red-600 text-white',
                                       }}
                                       data={{
                                         cy: `delete-answer-option-ix-${index}`,
@@ -1063,7 +1063,7 @@ function QuestionEditModal({
                                               className={{
                                                 root: 'bg-white',
                                                 content:
-                                                  'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
+                                                  'border-uzh-grey-100 focus:border-primary-40 w-full rounded border',
                                               }}
                                               showToolbarOnFocus={true}
                                               placeholder={t(
@@ -1082,10 +1082,10 @@ function QuestionEditModal({
                               fluid
                               className={{
                                 root: twMerge(
-                                  'font-bold border border-solid border-uzh-grey-100',
+                                  'border-uzh-grey-100 border border-solid font-bold',
                                   values.type === ElementType.Kprim &&
                                     values.options?.choices.length >= 4 &&
-                                    'opacity-50 cursor-not-allowed'
+                                    'cursor-not-allowed opacity-50'
                                 ),
                               }}
                               disabled={
@@ -1119,7 +1119,7 @@ function QuestionEditModal({
                   {values.type === ElementType.Numerical && (
                     <div>
                       <div className="w-full">
-                        <div className="flex flex-row items-center gap-2 mb-2">
+                        <div className="mb-2 flex flex-row items-center gap-2">
                           <FormikNumberField
                             name="options.restrictions.min"
                             label={t('shared.generic.min')}
@@ -1161,11 +1161,11 @@ function QuestionEditModal({
                           />
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
-                              <div className="flex flex-col gap-1 w-max">
+                              <div className="flex w-max flex-col gap-1">
                                 {values.options?.solutionRanges?.map(
                                   (_range: any, index: number) => (
                                     <div
-                                      className="flex flex-row gap-2 items-end"
+                                      className="flex flex-row items-end gap-2"
                                       key={`${index}-${values.options?.solutionRanges.length}`}
                                     >
                                       <FormikNumberField
@@ -1193,7 +1193,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600 h-9',
+                                          root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
                                         }}
                                         data={{
                                           cy: `delete-solution-range-ix-${index}`,
@@ -1207,7 +1207,7 @@ function QuestionEditModal({
                                 <Button
                                   fluid
                                   className={{
-                                    root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                    root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
                                   }}
                                   onClick={() =>
                                     push({
@@ -1229,7 +1229,7 @@ function QuestionEditModal({
 
                   {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
-                      <div className="flex flex-row items-center mb-4">
+                      <div className="mb-4 flex flex-row items-center">
                         <FormikNumberField
                           name="options.restrictions.maxLength"
                           label={t('manage.questionForms.maximumLength')}
@@ -1245,7 +1245,7 @@ function QuestionEditModal({
                       {values.options?.hasSampleSolution && (
                         <FieldArray name="options.solutions">
                           {({ push, remove }: FieldArrayRenderProps) => (
-                            <div className="flex flex-col gap-1 w-max">
+                            <div className="flex w-max flex-col gap-1">
                               {values.options?.solutions?.map(
                                 (_solution, index) => (
                                   <div
@@ -1265,7 +1265,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600 h-9',
+                                        root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
                                       }}
                                       data={{
                                         cy: `delete-solution-ix-${index}`,
@@ -1279,7 +1279,7 @@ function QuestionEditModal({
                               <Button
                                 fluid
                                 className={{
-                                  root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                  root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
                                 }}
                                 onClick={() => push('')}
                                 data={{ cy: 'add-solution-value' }}
@@ -1297,7 +1297,7 @@ function QuestionEditModal({
                 {JSON.stringify(errors) !== '{}' && (
                   <UserNotification
                     className={{
-                      root: 'mt-8 text-base p-4',
+                      root: 'mt-8 p-4 text-base',
                       icon: 'text-red-700',
                       message: 'text-red-700',
                     }}
@@ -1417,9 +1417,9 @@ function QuestionEditModal({
                   </UserNotification>
                 )}
               </div>
-              <div className="flex-1 max-w-sm">
+              <div className="max-w-sm flex-1">
                 <H3>{t('shared.generic.preview')}</H3>
-                <div className="p-4 border rounded">
+                <div className="rounded border p-4">
                   <StudentElement
                     element={
                       {
@@ -1479,7 +1479,7 @@ function QuestionEditModal({
                       {values.options?.choices?.map((choice, index) => (
                         <div
                           key={index}
-                          className="pt-1 pb-1 border-b last:border-b-0"
+                          className="border-b pb-1 pt-1 last:border-b-0"
                         >
                           {choice.feedback ? (
                             <Markdown
@@ -1501,8 +1501,8 @@ function QuestionEditModal({
             {mode === QuestionEditMode.EDIT && (
               <div
                 className={twMerge(
-                  'p-2 mt-3 border border-solid rounded flex flex-row gap-6 items-center',
-                  updateInstances && 'bg-orange-100 border-orange-200'
+                  'mt-3 flex flex-row items-center gap-6 rounded border border-solid p-2',
+                  updateInstances && 'border-orange-200 bg-orange-100'
                 )}
               >
                 <Switch

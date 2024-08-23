@@ -156,7 +156,7 @@ function ElementStack({
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead && (
         <Button
-          className={{ root: 'float-right text-lg mt-4' }}
+          className={{ root: 'float-right mt-4 text-lg' }}
           onClick={() => {
             setStudentResponse({})
 
@@ -177,7 +177,7 @@ function ElementStack({
       {/* display mark all as read button, if only content elements have not been answered yet */}
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
-          className={{ root: 'float-right text-lg mt-4' }}
+          className={{ root: 'float-right mt-4 text-lg' }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}
@@ -210,7 +210,7 @@ function ElementStack({
 
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
-          className={{ root: 'float-right text-lg mt-4' }}
+          className={{ root: 'float-right mt-4 text-lg' }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}

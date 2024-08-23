@@ -45,9 +45,9 @@ function ProfileData({
   )
 
   return (
-    <div className="flex flex-col items-center w-full max-w-xl p-4 mx-auto md:min-w-[400px]">
+    <div className="mx-auto flex w-full max-w-xl flex-col items-center p-4 md:min-w-[400px]">
       <div className="relative mb-2">
-        <div className="w-[200px] h-[200px] rounded-full border border-solid border-black">
+        <div className="h-[200px] w-[200px] rounded-full border border-solid border-black">
           <Image
             src={
               avatar
@@ -55,11 +55,11 @@ function ProfileData({
                 : '/user-solid.svg'
             }
             alt=""
-            className="overflow-hidden w-[200px] h-[200px] rounded-full"
+            className="h-[200px] w-[200px] overflow-hidden rounded-full"
             fill
           />
           {level && (
-            <div className="absolute right-0 -bottom-2">
+            <div className="absolute -bottom-2 right-0">
               <Image
                 src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_PATH}/levels/level_${level.index}.svg`}
                 width={50}
@@ -73,9 +73,9 @@ function ProfileData({
       </div>
       <Label
         label={username}
-        className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
+        className={{ root: 'w-full justify-center pb-4 text-xl font-bold' }}
       />
-      <div className="flex flex-col w-full gap-4 text-md">
+      <div className="text-md flex w-full flex-col gap-4">
         {level && (
           <div className="flex flex-row items-center">
             <FontAwesomeIcon icon={faTrophy} className="pr-2" />
@@ -86,7 +86,7 @@ function ProfileData({
           </div>
         )}
         <div>
-          <div className="flex flex-row items-center mb-2">
+          <div className="mb-2 flex flex-row items-center">
             <FontAwesomeIcon icon={faStar} className="pr-2" />
             <Label
               label={t('shared.generic.experiencePoints')}
@@ -106,7 +106,7 @@ function ProfileData({
           </div>
         </div>
         <div>
-          <div className="flex flex-row items-center mb-2">
+          <div className="mb-2 flex flex-row items-center">
             <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
             <Label
               label={t('pwa.profile.achievements')}
@@ -122,7 +122,7 @@ function ProfileData({
               <div>{t('pwa.achievements.noAchievements')}</div>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-3 pt-3 pb-3 md:grid-cols-2 justify-items-center">
+          <div className="grid grid-cols-1 justify-items-center gap-3 pb-3 pt-3 md:grid-cols-2">
             {achievements?.map((achievement) => (
               <ReceivedAchievementTile
                 key={achievement.id}
