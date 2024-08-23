@@ -21,7 +21,7 @@ async function upsertEmailTemplates() {
     const content = await fs.readFile(filePath, 'utf-8')
 
     await prisma.emailTemplate.upsert({
-      where: { name: file.name },
+      where: { name: file.name.replace('.html', '') },
       update: { html: content },
       create: { name: file.name, html: content },
     })
