@@ -101,7 +101,9 @@ async function run() {
 
     // update the instance statistics based on the accumulated data
     const totalUniqueParticipants = instance.responses.length
-    const averageInstanceTime = totalResponseTime / totalUniqueParticipants
+    const averageInstanceTime = totalUniqueParticipants
+      ? totalResponseTime / totalUniqueParticipants
+      : 0
 
     if (debug) {
       console.log('RESPONSES')
