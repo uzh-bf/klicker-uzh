@@ -130,7 +130,7 @@ export function LoginForm({
 
               {magicLinkLogin && setMagicLinkLogin && (
                 <div className="mt-3 flex flex-col gap-2 md:mt-2">
-                  {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK && (
+                  {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
                     <Button
                       fluid
                       className={{ root: 'justify-start gap-4' }}
