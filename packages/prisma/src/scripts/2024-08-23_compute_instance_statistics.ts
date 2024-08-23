@@ -197,11 +197,11 @@ async function run() {
       case ElementType.MC:
       case ElementType.KPRIM:
         console.log(
-          'Anonymous results for MC/KPRIM cannot be recovered, the corresponding counts are set to -1'
+          'Anonymous results for MC/KPRIM cannot be recovered, the corresponding counts are set to 0'
         )
-        anonymousCorrectCount = -1
-        anonymousPartialCorrectCount = -1
-        anonymousWrongCount = -1
+        anonymousCorrectCount = 0
+        anonymousPartialCorrectCount = 0
+        anonymousWrongCount = 0
         break
 
       default:
