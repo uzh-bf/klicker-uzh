@@ -67,6 +67,7 @@ function InstanceHeader({
   const [rateElement] = useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
+  const [ratingInProgress, setRatingInProgress] = useState(false)
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
       ? 1
@@ -90,6 +91,7 @@ function InstanceHeader({
   }, [previousElementFeedback])
 
   const handleVote = async (upvote: boolean) => {
+    setRatingInProgress(true)
     const res = await rateElement({
       variables: {
         elementInstanceId: instanceId,
@@ -144,6 +146,7 @@ function InstanceHeader({
       },
     })
 
+    setRatingInProgress(false)
     if (res.data?.rateElement?.upvote) {
       setVote(1)
     } else if (res.data?.rateElement?.downvote) {
@@ -176,12 +179,13 @@ function InstanceHeader({
               active={vote === 1}
               onClick={() => handleVote(true)}
               data={{ cy: `upvote-element-${index}-button` }}
+              disabled={ratingInProgress}
             >
               <Button.Icon>
                 <FontAwesomeIcon
                   icon={vote === 1 ? faThumbsUpSolid : faThumbsUp}
                   className={twMerge(
-                    'hover:text-primary-80 text-uzh-grey-100',
+                    'text-uzh-grey-100 hover:text-primary-80',
                     vote === 1 && 'text-primary-80'
                   )}
                 />
@@ -192,12 +196,13 @@ function InstanceHeader({
               active={vote === -1}
               onClick={() => handleVote(false)}
               data={{ cy: `downvote-element-${index}-button` }}
+              disabled={ratingInProgress}
             >
               <Button.Icon>
                 <FontAwesomeIcon
                   icon={vote === -1 ? faThumbsDownSolid : faThumbsDown}
                   className={twMerge(
-                    'hover:text-primary-80 text-uzh-grey-100',
+                    'text-uzh-grey-100 hover:text-primary-80',
                     vote === -1 && 'text-primary-80'
                   )}
                 />

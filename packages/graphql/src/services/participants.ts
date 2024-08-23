@@ -569,37 +569,85 @@ export async function rateElement(
     return null
   }
 
-  const elementFeedback = await ctx.prisma.elementFeedback.upsert({
+  // fetch previous element feedback
+  const prevFeedback = await ctx.prisma.elementFeedback.findUnique({
     where: {
       participantId_elementInstanceId: {
         participantId: ctx.user.sub,
         elementInstanceId: args.elementInstanceId,
       },
     },
-    create: {
-      upvote: args.rating === 1,
-      downvote: args.rating === -1,
-      elementInstance: {
-        connect: {
-          id: args.elementInstanceId,
-        },
-      },
-      element: {
-        connect: {
-          id: args.elementId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-    },
-    update: {
-      upvote: args.rating === 1,
-      downvote: args.rating === -1,
-    },
   })
+
+  let elementFeedback = null
+  if (prevFeedback) {
+    // update existing element feedback
+    elementFeedback = await ctx.prisma.elementFeedback.update({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: args.elementInstanceId,
+        },
+      },
+      data: {
+        upvote: args.rating === 1,
+        downvote: args.rating === -1,
+      },
+    })
+
+    // update instance statistics (decrement by previous feedback first to only count last feedback)
+    await ctx.prisma.instanceStatistics.update({
+      where: {
+        elementInstanceId: args.elementInstanceId,
+      },
+      data: {
+        upvoteCount: {
+          increment: Number(args.rating === 1) - Number(prevFeedback.upvote),
+        },
+        downvoteCount: {
+          increment: Number(args.rating === -1) - Number(prevFeedback.downvote),
+        },
+      },
+    })
+  } else {
+    // create new element feedback
+    elementFeedback = await ctx.prisma.elementFeedback.create({
+      data: {
+        upvote: args.rating === 1,
+        downvote: args.rating === -1,
+        elementInstance: {
+          connect: {
+            id: args.elementInstanceId,
+          },
+        },
+        element: {
+          connect: {
+            id: args.elementId,
+          },
+        },
+        participant: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+    })
+
+    // update instance statistics
+    await ctx.prisma.instanceStatistics.update({
+      where: {
+        elementInstanceId: args.elementInstanceId,
+      },
+      data: {
+        upvoteCount: {
+          increment: Number(args.rating === 1),
+        },
+        downvoteCount: {
+          increment: Number(args.rating === -1),
+        },
+      },
+    })
+  }
 
   return elementFeedback
 }
