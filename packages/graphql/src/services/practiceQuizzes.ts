@@ -170,8 +170,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-          ? -existingResponse.correctCountStreak
-          : 0,
+        ? -existingResponse.correctCountStreak
+        : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -397,14 +397,14 @@ async function respondToFlashcard(
     response === FlashcardCorrectness.CORRECT
       ? 1
       : response === FlashcardCorrectness.PARTIAL
-        ? 0.5
-        : 0
+      ? 0.5
+      : 0
   const responseCorrectness =
     correctness === 1
       ? ResponseCorrectness.CORRECT
       : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+      ? ResponseCorrectness.WRONG
+      : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -1432,8 +1432,8 @@ export async function respondToQuestion(
       correctness === 1
         ? ResponseCorrectness.CORRECT
         : correctness === 0
-          ? ResponseCorrectness.WRONG
-          : ResponseCorrectness.PARTIAL
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
 
     promises.push(
       ctx.prisma.questionResponse.upsert({
@@ -1639,8 +1639,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-        ? StackFeedbackStatus.CORRECT
-        : StackFeedbackStatus.PARTIAL
+      ? StackFeedbackStatus.CORRECT
+      : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1966,7 +1966,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : (availableFrom ?? undefined)
+      : availableFrom ?? undefined
 
   const createOrUpdateJSON = {
     name: name.trim(),

@@ -1067,8 +1067,8 @@ export async function gradeGroupActivitySubmission(
               res.score === 0
                 ? ResponseCorrectness.INCORRECT
                 : res.score < computedMaxPoints
-                  ? ResponseCorrectness.PARTIAL
-                  : ResponseCorrectness.CORRECT,
+                ? ResponseCorrectness.PARTIAL
+                : ResponseCorrectness.CORRECT,
           }
         }),
       },
