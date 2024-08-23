@@ -27,8 +27,6 @@
     "dotenv": "16.4.5",
     "eslint": "8.45.0",
     "npm-run-all": "4.1.5",
-    "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.3",
     "tsup": "7.2.0",
     "typescript": "5.4.5"
   },
