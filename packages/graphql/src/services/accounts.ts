@@ -587,6 +587,8 @@ export async function loginParticipantWithLti(
     scope: string
   }
 
+  console.log('ltiData', ltiData)
+
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
     include: {
@@ -594,12 +596,16 @@ export async function loginParticipantWithLti(
     },
   })
 
+  console.log('account', account)
+
   // check if there is a participant account already given the email address
   // if so, create a new participant account with the LTI data and new sub
   if (!account && ltiData.email) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
       where: { email: ltiData.email },
     })
+
+    console.log('existingParticipant', existingParticipant)
 
     if (!existingParticipant) {
       return null
