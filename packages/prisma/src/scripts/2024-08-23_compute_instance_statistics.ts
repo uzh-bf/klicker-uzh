@@ -37,7 +37,7 @@ async function run() {
   })
 
   // ! Update the instances with the statistics based on responses
-  const updates = instances.map((instance) => {
+  instances.forEach(async (instance) => {
     console.log(`Processing instance ${counter}/${instances.length}`)
 
     // Summarize personal responses
@@ -102,6 +102,23 @@ async function run() {
     // update the instance statistics based on the accumulated data
     const totalUniqueParticipants = instance.responses.length
     const averageInstanceTime = totalResponseTime / totalUniqueParticipants
+
+    if (debug) {
+      console.log('RESPONSES')
+      console.log(instance.responses)
+      console.log('STATISTICS')
+      console.log('Correct count:', correctCount)
+      console.log('Partial count:', partialCount)
+      console.log('Wrong count:', wrongCount)
+      console.log('First correct count:', firstCorrectCount)
+      console.log('First partial count:', firstPartialCount)
+      console.log('First wrong count:', firstWrongCount)
+      console.log('Last correct count:', lastCorrectCount)
+      console.log('Last partial count:', lastPartialCount)
+      console.log('Last wrong count:', lastWrongCount)
+      console.log('Unique participants:', totalUniqueParticipants)
+      console.log('Average time spent:', averageInstanceTime)
+    }
 
     // ! Compute anonymous correctness counts
     let anonymousCorrectCount = 0
@@ -181,13 +198,24 @@ async function run() {
         anonymousCorrectCount = -1
         anonymousPartialCorrectCount = -1
         anonymousWrongCount = -1
+        break
 
       default:
         throw new Error(`Unknown element type ${instance.elementData.type}`)
     }
 
+    if (debug) {
+      console.log('ELEMENT DATA')
+      console.log(instance.elementData.options)
+      console.log('ANONYMOUS RESULTS')
+      console.log(instance.anonymousResults)
+      console.log('Correct count:', anonymousCorrectCount)
+      console.log('Partial count:', anonymousPartialCorrectCount)
+      console.log('Wrong count:', anonymousWrongCount)
+    }
+
     // update the instance statistics
-    return prisma.elementInstance.update({
+    await prisma.elementInstance.update({
       where: { id: instance.id },
       data: {
         instanceStatistics: {
@@ -222,8 +250,6 @@ async function run() {
       },
     })
   })
-
-  await prisma.$transaction(updates)
 
   console.log(`Updated ${updateCounter} instances in total`)
   console.log(`Checked ${updatedPQInstances} practice quiz instances`)
