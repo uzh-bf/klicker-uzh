@@ -16,9 +16,6 @@ CREATE TABLE "ElementFeedback" (
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementFeedback_participantId_elementInstanceId_key" ON "ElementFeedback"("participantId", "elementInstanceId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "ElementFeedback_participantId_elementId_key" ON "ElementFeedback"("participantId", "elementId");
-
 -- AddForeignKey
 ALTER TABLE "ElementFeedback" ADD CONSTRAINT "ElementFeedback_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

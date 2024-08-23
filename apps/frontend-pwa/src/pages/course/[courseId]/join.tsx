@@ -158,7 +158,12 @@ function JoinCourse({
                   },
                 })
 
-                router.reload()
+                await router.replace('/login', {
+                  pathname: '/login',
+                  query: {
+                    newAccount: true,
+                  },
+                })
               }}
             />
           </div>

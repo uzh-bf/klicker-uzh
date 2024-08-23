@@ -17,11 +17,13 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '21 7 * * 3'
 
 jobs:
   analyze:
+    if: github.event.pull_request.draft == false
     name: Analyze
     runs-on: ubuntu-latest
     permissions:

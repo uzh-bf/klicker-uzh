@@ -5,12 +5,12 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
     paths:
       - 'apps/frontend-control/**'
       - '.github/workflows/v3_frontend-control**'
   pull_request:
     # branches: [ "v3" ]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/frontend-control/**'
       - '.github/workflows/v3_frontend-control**'
@@ -21,6 +21,7 @@ env:
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read

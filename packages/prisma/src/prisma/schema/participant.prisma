@@ -1,12 +1,15 @@
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId String @unique
+  ssoId   String @unique
+  ssoType String @default("LTI1.1")
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
+
+  @@unique([participantId, ssoType])
 }
 
 model Participant {
@@ -30,20 +33,21 @@ model Participant {
 
   locale Locale @default(en)
 
-  participantGroups       ParticipantGroup[]
-  accounts                ParticipantAccount[]
-  participations          Participation[]
-  questionResponses       QuestionResponse[]
-  detailQuestionResponses QuestionResponseDetail[]
-  feedbacks               Feedback[]
-  elementFeedbacks        ElementFeedback[]
-  leaderboards            LeaderboardEntry[]
-  subscriptions           PushSubscription[]
-  clueAssignments         GroupActivityClueAssignment[]
-  awards                  AwardEntry[]
-  achievements            ParticipantAchievementInstance[]
-  titles                  Title[]
-  analyticsDaily          AnalyticsDaily[]
+  participantGroups          ParticipantGroup[]
+  accounts                   ParticipantAccount[]
+  participations             Participation[]
+  questionResponses          QuestionResponse[]
+  detailQuestionResponses    QuestionResponseDetail[]
+  feedbacks                  Feedback[]
+  elementFeedbacks           ElementFeedback[]
+  leaderboards               LeaderboardEntry[]
+  subscriptions              PushSubscription[]
+  clueAssignments            GroupActivityClueAssignment[]
+  awards                     AwardEntry[]
+  achievements               ParticipantAchievementInstance[]
+  titles                     Title[]
+  participantAnalytics       ParticipantAnalytics[]
+  participantCourseAnalytics ParticipantCourseAnalytics[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

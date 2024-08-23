@@ -196,6 +196,7 @@ enum ElementDisplayMode {
 
 type ElementFeedback {
   downvote: Boolean!
+  elementInstanceId: Int!
   feedback: String
   id: Int!
   upvote: Boolean!
@@ -204,6 +205,7 @@ type ElementFeedback {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
   type: ElementInstanceType!
@@ -598,6 +600,7 @@ type MicroLearning {
 }
 
 type Mutation {
+  activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -640,7 +643,7 @@ type Mutation {
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
@@ -650,6 +653,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, usernameOrEmail: String!): ID
+  loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
@@ -671,6 +675,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -890,6 +895,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
@@ -960,11 +966,11 @@ type QuestionResponse {
   lastAwardedAt: Date
   lastCorrectAt: Date
   lastPartialCorrectAt: Date
+  lastResponse: Json!
   lastWrongAt: Date
   lastXpAwardedAt: Date
   nextDueAt: Date
   partialCorrectCount: Int!
-  response: Json!
   totalPointsAwarded: Float
   totalScore: Float!
   totalXpAwarded: Float
@@ -974,6 +980,12 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
 }
 
 enum ResponseCorrectnessType {
@@ -1172,7 +1184,9 @@ type UserLogin {
 
 enum UserLoginScope {
   ACCOUNT_OWNER
+  ACTIVATION
   FULL_ACCESS
+  OTP
   READ_ONLY
   SESSION_EXEC
 }

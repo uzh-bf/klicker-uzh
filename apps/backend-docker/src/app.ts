@@ -1,4 +1,4 @@
-import { useSentry } from '@envelop/sentry'
+// import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
@@ -51,40 +51,30 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          if (req.headers?.['authorization']) {
-            return req.headers['authorization']?.replace('Bearer ', '')
+          let token = null
+
+          if (
+            req.headers.origin?.includes(
+              process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+            ) ||
+            req.headers.origin?.includes(
+              process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+            )
+          ) {
+            token = req.cookies?.['next-auth.session-token']
+          } else if (
+            req.headers.origin?.includes(
+              process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+            )
+          ) {
+            token = req.cookies?.['participant_token']
           }
 
-          if (req.cookies) {
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-              ) ||
-              req.headers.origin?.includes(
-                process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-              )
-            ) {
-              return req.cookies['next-auth.session-token']
-            }
-
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
-              )
-            ) {
-              return req.cookies['participant_token']
-              // TODO: use below to fix preview mode
-              // req.cookies['participant_token'] ||
-              // req.cookies['next-auth.session-token']
-            }
-
-            return req.cookies['participant_token']
-            // TODO: use below to fix preview mode
-            // req.cookies['participant_token'] ||
-            // req.cookies['next-auth.session-token']
-          }
-
-          return null
+          return (
+            token ??
+            req.headers['authorization']?.replace('Bearer ', '') ??
+            null
+          )
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         secretOrKey: process.env.APP_SECRET,
@@ -141,21 +131,21 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           return persistedOperations[sha256Hash]
         },
       }),
-      process.env.SENTRY_DSN &&
-        useSentry({
-          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
-          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
-          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
-          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
-          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
-          // skip: (executionArgs) => {
-          //   console.log(executionArgs)
-          //   if (!executionArgs.operationName) {
-          //     return true
-          //   }
-          //   return false
-          // },
-        }),
+      // process.env.SENTRY_DSN &&
+      // useSentry({
+      //   includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+      //   includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+      //   includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+      //   // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+      //   // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+      //   // skip: (executionArgs) => {
+      //   //   console.log(executionArgs)
+      //   //   if (!executionArgs.operationName) {
+      //   //     return true
+      //   //   }
+      //   //   return false
+      //   // },
+      // }),
       // useGraphQlJit(),
       ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],

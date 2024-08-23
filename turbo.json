@@ -15,6 +15,13 @@
     "DATABASE_IMPORT_USER",
     "DATABASE_URL",
     "EDUID_CLIENT_SECRET",
+    "EMAIL_TYPE",
+    "EMAIL_HOST",
+    "EMAIL_PORT",
+    "EMAIL_SECURE",
+    "EMAIL_USER",
+    "EMAIL_PASS",
+    "EMAIL_FROM",
     "FUNCTIONS_EXTENSION_VERSION",
     "FUNCTIONS_WORKER_PROCESS_COUNT",
     "FUNCTIONS_WORKER_RUNTIME",
@@ -24,6 +31,17 @@
     "LISTMONK_TEMPLATE_MIGRATION_SUCCESS",
     "LISTMONK_URL",
     "LISTMONK_USER",
+    "LTI_DB_TYPE",
+    "LTI_DB_HOST",
+    "LTI_DB_PORT",
+    "LTI_DB_USER",
+    "LTI_DB_PASS",
+    "LTI_DB_NAME",
+    "LTI_NAME",
+    "LTI_URL",
+    "LTI_AUTH_ENDPOINT",
+    "LTI_TOKEN_ENDPOINT",
+    "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
     "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
@@ -62,11 +80,11 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "dev": {
       "cache": false,
@@ -74,7 +92,19 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
+      ],
+      "persistent": true
+    },
+    "dev:lti": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/util#build",
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -84,7 +114,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -94,7 +125,8 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build"
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
@@ -104,7 +136,7 @@
     },
     "dev:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
     "publish": {
@@ -113,11 +145,11 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "test": {
       "cache": false

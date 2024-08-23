@@ -3,4 +3,6 @@ kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uz
 kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uzh-v2-frontend-manage
 kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uzh-v2-frontend-pwa
 kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uzh-v2-frontend-control
+kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uzh-v2-auth
+kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uzh-v2-lti
 kubectl get pods -n klicker-v2-prod

@@ -1,4 +1,4 @@
-import { PublicationStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail.js'
@@ -448,6 +448,16 @@ export async function getBookmarkedElementStacks(
       bookmarkedElementStacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -521,7 +531,7 @@ export async function flagElement(
     !elementInstance?.elementStack.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
-    return 'OK'
+    return elementFeedback
   }
 
   const practiceQuiz = elementInstance.elementStack.practiceQuiz
@@ -548,7 +558,7 @@ export async function flagElement(
     }),
   })
 
-  return 'OK'
+  return elementFeedback
 }
 
 export async function rateElement(
@@ -592,6 +602,22 @@ export async function rateElement(
   })
 
   return elementFeedback
+}
+
+export async function getStackElementFeedbacks(
+  args: { elementInstanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  const elementFeedbacks = await ctx.prisma.elementFeedback.findMany({
+    where: {
+      elementInstanceId: {
+        in: args.elementInstanceIds,
+      },
+      participantId: ctx.user.sub,
+    },
+  })
+
+  return elementFeedbacks
 }
 
 export async function getPublicParticipantProfile(

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.1.2-rc.2",
+  "version": "3.2.0-alpha.7",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",
@@ -18,7 +18,7 @@
     "@sentry/nextjs": "7.61.1",
     "@socialgouv/matomo-next": "1.6.1",
     "@types/js-cookie": "^3.0.3",
-    "@uzh-bf/design-system": "3.0.0-alpha.21",
+    "@uzh-bf/design-system": "3.0.0-alpha.22",
     "body-parser": "1.20.2",
     "cross-env": "7.0.3",
     "dayjs": "1.11.12",
@@ -30,8 +30,8 @@
     "js-cookie": "3.0.5",
     "jsonwebtoken": "9.0.2",
     "localforage": "1.10.0",
-    "next": "14.2.5",
-    "next-intl": "3.17.2",
+    "next": "14.2.6",
+    "next-intl": "3.17.4",
     "next-pwa": "5.6.0",
     "nookies": "2.5.2",
     "ramda": "0.29.0",

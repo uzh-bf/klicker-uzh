@@ -15,6 +15,15 @@ notifications:
   secret: ''
   supportEmail: ''
 
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: ''
+
 eduId:
   clientSecret: ''
 
@@ -252,6 +261,8 @@ lti:
   priorityClassName: production-workload
 
   replicaCount: 2
+
+  appSecret: ''
 
   clientId:
   redirectURL:

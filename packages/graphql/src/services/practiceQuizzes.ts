@@ -9,12 +9,12 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Element,
-  ElementInstance,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   ElementType,
   PublicationStatus,
+  ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
@@ -37,6 +37,7 @@ import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   ContentResults,
+  ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
@@ -169,8 +170,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-        ? -existingResponse.correctCountStreak
-        : 0,
+          ? -existingResponse.correctCountStreak
+          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -242,6 +243,20 @@ function updateSpacedRepetition({
   }
 }
 
+export function updateFlashcardResults({
+  previousResults,
+  response,
+}: {
+  previousResults: FlashcardResults
+  response: FlashcardCorrectness
+}): FlashcardResults {
+  return {
+    ...previousResults,
+    [response]: (previousResults[response] ?? 0) + 1,
+    total: previousResults.total + 1,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
@@ -256,6 +271,9 @@ async function respondToFlashcard(
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
+    },
+    include: {
+      elementStack: true,
     },
   })
 
@@ -283,21 +301,6 @@ async function respondToFlashcard(
     score: null,
   }
 
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        ...existingResults,
-        [response]: (existingResults[response] ?? 0) + 1,
-        total: existingResults.total + 1,
-      },
-    },
-  })
-
   // fetch the participation of the participant
   const participation = ctx.user?.sub
     ? await ctx.prisma.participation.findUnique({
@@ -312,6 +315,22 @@ async function respondToFlashcard(
         },
       })
     : null
+
+  const newResults = updateFlashcardResults({
+    previousResults: participation
+      ? (existingInstance.results as FlashcardResults)
+      : (existingInstance.anonymousResults as FlashcardResults),
+    response,
+  })
+
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? { results: newResults }
+      : { anonymousResults: newResults },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
@@ -331,6 +350,20 @@ async function respondToFlashcard(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -364,8 +397,14 @@ async function respondToFlashcard(
     response === FlashcardCorrectness.CORRECT
       ? 1
       : response === FlashcardCorrectness.PARTIAL
-      ? 0.5
-      : 0
+        ? 0.5
+        : 0
+  const responseCorrectness =
+    correctness === 1
+      ? ResponseCorrectness.CORRECT
+      : correctness === 0
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor || 2.5,
     interval: existingResponse?.interval || 1,
@@ -394,6 +433,25 @@ async function respondToFlashcard(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
       participation: {
         connect: {
           courseId_participantId: {
@@ -403,9 +461,14 @@ async function respondToFlashcard(
         },
       },
       // RESPONSE and aggregated response creation
-      response: {
+      firstResponse: {
         correctness: response,
       },
+      firstResponseCorrectness: responseCorrectness,
+      lastResponse: {
+        correctness: response,
+      },
+      lastResponseCorrectness: responseCorrectness,
       aggregatedResponses: {
         ...aggregatedResponses,
         total: 1,
@@ -425,9 +488,10 @@ async function respondToFlashcard(
     },
     update: {
       // RESPONSE
-      response: {
+      lastResponse: {
         correctness: response,
       },
+      lastResponseCorrectness: responseCorrectness,
       averageTimeSpent: newAverageTime,
       aggregatedResponses: {
         ...aggregatedResponses,
@@ -455,6 +519,14 @@ async function respondToFlashcard(
   return result
 }
 
+export function incrementContentResults({
+  previousResults,
+}: {
+  previousResults: ContentResults
+}): ContentResults {
+  return { total: previousResults.total + 1 }
+}
+
 interface RespondToContentInput {
   id: number
   courseId: string
@@ -469,6 +541,9 @@ async function respondToContent(
     where: {
       id,
     },
+    include: {
+      elementStack: true,
+    },
   })
 
   // check if the instance exists and the response is valid
@@ -481,19 +556,6 @@ async function respondToContent(
     grading: StackFeedbackStatus.CORRECT,
     score: null,
   }
-
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        total: existingResults.total + 1,
-      },
-    },
-  })
 
   // fetch the participation of the participant
   const participation = ctx.user?.sub
@@ -509,6 +571,22 @@ async function respondToContent(
         },
       })
     : null
+
+  // update the aggregated data on the element instance
+  const newResults = incrementContentResults({
+    previousResults: participation
+      ? (existingInstance.results as ContentResults)
+      : (existingInstance.anonymousResults as ContentResults),
+  })
+
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: participation
+      ? { results: newResults }
+      : { anonymousResults: newResults },
+  })
 
   // if no user exists, return the grading for client display
   if (!ctx.user?.sub || !participation) {
@@ -528,6 +606,20 @@ async function respondToContent(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
       participation: {
         connect: {
           courseId_participantId: {
@@ -582,6 +674,25 @@ async function respondToContent(
       elementInstance: {
         connect: { id },
       },
+      practiceQuiz: existingInstance.elementStack.practiceQuizId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.practiceQuizId,
+            },
+          }
+        : undefined,
+      microLearning: existingInstance.elementStack.microLearningId
+        ? {
+            connect: {
+              id: existingInstance.elementStack.microLearningId,
+            },
+          }
+        : undefined,
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
       participation: {
         connect: {
           courseId_participantId: {
@@ -591,9 +702,14 @@ async function respondToContent(
         },
       },
       // RESPONSE and aggregated response creation
-      response: {
+      firstResponse: {
         viewed: true,
       },
+      firstResponseCorrectness: ResponseCorrectness.CORRECT,
+      lastResponse: {
+        viewed: true,
+      },
+      lastResponseCorrectness: ResponseCorrectness.CORRECT,
       trialsCount: 1,
 
       // AGGREGATED RESPONSES
@@ -615,9 +731,10 @@ async function respondToContent(
     update: {
       // RESPONSE
       averageTimeSpent: newAverageTime,
-      response: {
+      lastResponse: {
         viewed: true,
       },
+      lastResponseCorrectness: ResponseCorrectness.CORRECT,
       trialsCount: {
         increment: 1,
       },
@@ -841,14 +958,14 @@ function evaluateElementResponse(
 }
 
 interface UpdateQuestionResultsInputs {
-  instance: ElementInstance
+  previousResults: ElementInstanceResults
   elementData: AllElementTypeData
   response: ResponseInput
   correct?: boolean
 }
 
 export function updateQuestionResults({
-  instance,
+  previousResults,
   elementData,
   response,
   correct,
@@ -859,7 +976,7 @@ export function updateQuestionResults({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const results = instance?.results as ElementResultsChoices
+      const results = previousResults as ElementResultsChoices
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
@@ -876,7 +993,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.NUMERICAL: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -923,7 +1040,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.FREE_TEXT: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -940,7 +1057,7 @@ export function updateQuestionResults({
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
-      if (Object.keys(results.responses).includes(value)) {
+      if (Object.keys(results.responses).includes(hashedValue)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
@@ -1064,7 +1181,10 @@ export async function respondToQuestion(
       const correctness = evaluateAnswerCorrectness({ elementData, response })
 
       const updatedResults = updateQuestionResults({
-        instance,
+        previousResults:
+          ctx.user?.sub && !treatAnonymous
+            ? instance.results
+            : instance.anonymousResults,
         elementData,
         response,
         correct: correctness === 1,
@@ -1081,8 +1201,14 @@ export async function respondToQuestion(
 
       const updatedInstance = await prisma.elementInstance.update({
         where: { id },
-        data: {
-          results: updatedResults.results,
+        data:
+          ctx.user?.sub && !treatAnonymous
+            ? {
+                results: updatedResults.results,
+              }
+            : { anonymousResults: updatedResults.results },
+        include: {
+          elementStack: true,
         },
       })
 
@@ -1302,6 +1428,13 @@ export async function respondToQuestion(
         (existingResponse.trialsCount + 1)
       : answerTime
 
+    const responseCorrectness =
+      correctness === 1
+        ? ResponseCorrectness.CORRECT
+        : correctness === 0
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1318,13 +1451,35 @@ export async function respondToQuestion(
           averageTimeSpent: newAverageTime,
           lastAwardedAt,
           lastXpAwardedAt,
-          response: response as QuestionResponse,
+          firstResponse: response as QuestionResponse,
+          firstResponseCorrectness: responseCorrectness,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           participant: {
             connect: { id: ctx.user.sub },
           },
           elementInstance: {
             connect: { id },
+          },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
+          course: {
+            connect: {
+              id: courseId,
+            },
           },
           participation: {
             connect: {
@@ -1347,7 +1502,8 @@ export async function respondToQuestion(
           interval: resultSpacedRepetition.interval,
         },
         update: {
-          response: response as QuestionResponse,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           lastAwardedAt,
           lastXpAwardedAt,
@@ -1393,6 +1549,20 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
           participation: {
             connect: {
               courseId_participantId: {
@@ -1469,8 +1639,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-      ? StackFeedbackStatus.CORRECT
-      : StackFeedbackStatus.PARTIAL
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1796,7 +1966,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : availableFrom ?? undefined
+      : (availableFrom ?? undefined)
 
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -1817,8 +1987,9 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -1830,7 +2001,8 @@ export async function manipulatePracticeQuiz(
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                   resetTimeDays,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
                 element: {
                   connect: { id: element.id },
                 },

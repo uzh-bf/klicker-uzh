@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import useComponentVisibleCounter from '@components/hooks/useComponentVisibleCounter'
+import useStackElementFeedbacks from '@components/hooks/useStackElementFeedbacks'
 import {
   ElementStack as ElementStackType,
   ElementType,
@@ -57,6 +58,10 @@ function ElementStack({
   const timeSpent = useComponentVisibleCounter()
 
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
+  const elementFeedbacks = useStackElementFeedbacks({
+    instanceIds: stack.elements?.map((element) => element.id) ?? [],
+    withParticipant: withParticipant,
+  })
 
   const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
     `qi-${parentId}-${stack.id}`,
@@ -123,10 +128,17 @@ function ElementStack({
               return (
                 <div key={`${element.id}-student`}>
                   <InstanceHeader
+                    index={elementIx}
                     instanceId={element.id}
                     elementId={parseInt(element.elementData.id)}
                     name={element.elementData.name}
                     withParticipant={withParticipant}
+                    previousElementFeedback={
+                      withParticipant ? elementFeedbacks[element.id] : undefined
+                    }
+                    stackInstanceIds={
+                      stack.elements?.map((element) => element.id) ?? []
+                    }
                   />
                   <StudentElement
                     element={element}

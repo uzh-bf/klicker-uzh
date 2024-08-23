@@ -19,10 +19,8 @@
   "files.associations": {
     "plyconfig.json": "jsonc"
   },
-  "terminal.integrated.env.osx": {
-    "PATH": "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK:${env:PATH}"
-  },
-  "omnisharp.dotNetCliPaths": [
-    "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK"
-  ]
+  "prettier.configPath": ".prettierrc.js",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "notebook.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.prettierPath": "./node_modules/prettier"
 }
