@@ -19,7 +19,6 @@
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
-    "@klicker-uzh/transactional": "workspace:*",
     "@opentelemetry/exporter-trace-otlp-http": "0.52.1",
     "@opentelemetry/instrumentation": "0.52.1",
     "@opentelemetry/resources": "1.25.1",

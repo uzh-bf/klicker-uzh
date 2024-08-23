@@ -236,10 +236,13 @@ export async function sendMagicLink(
     `One-time login token created for ${usernameOrEmail}: ${magicLink}`
   )
 
-  const email = EmailService.hydrateTemplate({
-    templateName: 'MagicLinkRequested',
-    variables: { LINK: magicLink },
-  })
+  const email = await EmailService.hydrateTemplate(
+    {
+      templateName: 'MagicLinkRequested',
+      variables: { LINK: magicLink },
+    },
+    ctx
+  )
 
   if (!email) return false
 
@@ -542,10 +545,13 @@ export async function createParticipantAccount(
       `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
 
-    const emailHtml = EmailService.hydrateTemplate({
-      templateName: 'ParticipantAccountActivation',
-      variables: { LINK: activationLink },
-    })
+    const emailHtml = await EmailService.hydrateTemplate(
+      {
+        templateName: 'ParticipantAccountActivation',
+        variables: { LINK: activationLink },
+      },
+      ctx
+    )
 
     await EmailService.sendEmail({
       to: email,
