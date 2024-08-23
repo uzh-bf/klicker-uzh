@@ -1445,7 +1445,7 @@ export async function respondToQuestion(
     !treatAnonymous &&
     ctx.user.role === UserRole.PARTICIPANT
   ) {
-    if (!!existingResponse) {
+    if (existingResponse) {
       const previousResponseOutsideTimeframe =
         !existingResponse.lastAwardedAt ||
         dayjs(existingResponse.lastAwardedAt).isBefore(
