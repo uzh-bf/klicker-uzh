@@ -1317,29 +1317,7 @@ export async function respondToQuestion(
             },
     })
 
-    if (!instance) {
-      return {
-        instance: null,
-        updatedInstance: null,
-        correctness: null,
-        newAverageResponseTime: null,
-        validResponse: false,
-      }
-    }
-
-    // if the participant had already responded, don't track the new response
-    // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-    // const hasPreviousResponse = instance?.responses.length > 0
-    // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
-    //   return {
-    //     instance,
-    //     updatedInstance: instance,
-    //   }
-    // }
-
-    const elementData = instance?.elementData
-
-    if (!elementData) {
+    if (!instance || instance?.elementData) {
       return {
         instance: null,
         updatedInstance: null,
@@ -1350,6 +1328,7 @@ export async function respondToQuestion(
     }
 
     // evaluate the correctness of the response
+    const elementData = instance?.elementData
     const correctness = evaluateAnswerCorrectness({ elementData, response })
 
     const updatedResults = updateQuestionResults({
