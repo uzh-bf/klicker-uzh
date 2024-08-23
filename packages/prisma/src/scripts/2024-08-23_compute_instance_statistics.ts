@@ -38,7 +38,10 @@ async function run() {
 
   // ! Update the instances with the statistics based on responses
   for (const instance of instances) {
-    console.log(`Processing instance ${counter}/${instances.length}`)
+    counter = counter + 1
+    console.log(
+      `Processing instance ${counter}/${instances.length} with id ${instance.id}`
+    )
 
     // Summarize personal responses
     const isPracticeQuiz = instance.type === ElementInstanceType.PRACTICE_QUIZ
