@@ -154,8 +154,9 @@ async function run() {
           instance.elementData.options.choices.findIndex(
             (choice) => choice.correct
           )
-        const correctAnswerIx =
-          instance.elementData.options.choices[correctAnswerIndex].ix
+        const correctAnswerIx = instance.elementData.hasSampleSolution
+          ? instance.elementData.options.choices[correctAnswerIndex].ix
+          : -1
 
         //check how many of the anonymous responses are equal to correctAnswerIx and the other way around
         const { tempCorrect1, tempIncorrect1 } = Object.entries(
