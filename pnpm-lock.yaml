@@ -1740,9 +1740,6 @@ importers:
       '@istanbuljs/nyc-config-typescript':
         specifier: 1.0.2
         version: 1.0.2(nyc@15.1.0)
-      '@klicker-uzh/transactional':
-        specifier: workspace:*
-        version: link:../transactional
       '@parcel/watcher':
         specifier: 2.2.0
         version: 2.2.0
