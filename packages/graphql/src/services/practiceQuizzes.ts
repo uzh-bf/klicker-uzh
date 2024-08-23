@@ -674,250 +674,254 @@ async function respondToContent(
   { id, courseId, answerTime }: RespondToContentInput,
   ctx: Context
 ) {
-  const existingInstance = await ctx.prisma.elementInstance.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      elementStack: true,
-      instanceStatistics: true,
-    },
-  })
-
-  // check if the instance exists and the response is valid
-  if (!existingInstance) {
-    return null
-  }
-
-  const existingResponse = ctx.user?.sub
-    ? await ctx.prisma.questionResponse.findUnique({
-        where: {
-          participantId_elementInstanceId: {
-            participantId: ctx.user.sub,
-            elementInstanceId: id,
-          },
-        },
-      })
-    : null
-
-  // context elements can only be "read" when submitted
-  const result = {
-    grading: StackFeedbackStatus.CORRECT,
-    score: null,
-  }
-
-  // fetch the participation of the participant
-  const participation = ctx.user?.sub
-    ? await ctx.prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-        include: {
-          participant: true,
-        },
-      })
-    : null
-
-  // average answer time computations if participant is logged in
-  const { newAverageResponseTime, newAverageInstanceTime } = participation
-    ? computeNewAverageTimes({
-        existingInstance,
-        existingResponse,
-        answerTime,
-      })
-    : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
-
-  // compute updated instance statistics
-  const instanceInPracticeQuiz = !!existingInstance.elementStack.practiceQuizId
-  const statisticsUpdate = computeUpdatedInstanceStatistics({
-    participation,
-    existingResponse,
-    newAverageInstanceTime,
-    answerCorrect: true,
-    answerPartial: false,
-    answerIncorrect: false,
-    instanceInPracticeQuiz,
-  })
-
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: participation
-        ? { total: existingInstance.results.total + 1 }
-        : undefined,
-      anonymousResults: participation
-        ? undefined
-        : {
-            total: existingInstance.anonymousResults.total + 1,
-          },
-      instanceStatistics: statisticsUpdate,
-    },
-  })
-
-  // if no user exists, return the grading for client display
-  if (!ctx.user?.sub || !participation) {
-    return result
-  }
-
-  // create question detail response
-  await ctx.prisma.questionResponseDetail.create({
-    data: {
-      response: {
-        viewed: true,
+  const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
+    const existingInstance = await ctx.prisma.elementInstance.findUnique({
+      where: {
+        id,
       },
-      timeSpent: answerTime,
-      participant: {
-        connect: { id: ctx.user.sub },
+      include: {
+        elementStack: true,
+        instanceStatistics: true,
       },
-      elementInstance: {
-        connect: { id },
-      },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
-        ? {
-            connect: {
-              id: existingInstance.elementStack.practiceQuizId,
-            },
-          }
-        : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
-        ? {
-            connect: {
-              id: existingInstance.elementStack.microLearningId,
-            },
-          }
-        : undefined,
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-      },
-    },
-  })
+    })
 
-  const aggregatedResponses =
-    (existingResponse?.aggregatedResponses as ContentResults) ?? {
-      total: 0,
+    // check if the instance exists and the response is valid
+    if (!existingInstance) {
+      return null
     }
 
-  const resultSpacedRepetition = updateSpacedRepetition({
-    eFactor: existingResponse?.eFactor || 2.5,
-    interval: existingResponse?.interval || 1,
-    streak: (existingResponse?.correctCountStreak || 0) + 1,
-    grade: 1,
-  })
+    const existingResponse = ctx.user?.sub
+      ? await ctx.prisma.questionResponse.findUnique({
+          where: {
+            participantId_elementInstanceId: {
+              participantId: ctx.user.sub,
+              elementInstanceId: id,
+            },
+          },
+        })
+      : null
 
-  // create / update question response
-  await ctx.prisma.questionResponse.upsert({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-    create: {
-      participant: {
-        connect: { id: ctx.user.sub },
-      },
-      averageTimeSpent: newAverageResponseTime,
-      elementInstance: {
-        connect: { id },
-      },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
-        ? {
-            connect: {
-              id: existingInstance.elementStack.practiceQuizId,
+    // context elements can only be "read" when submitted
+    const result = {
+      grading: StackFeedbackStatus.CORRECT,
+      score: null,
+    }
+
+    // fetch the participation of the participant
+    const participation = ctx.user?.sub
+      ? await ctx.prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
             },
-          }
-        : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
-        ? {
-            connect: {
-              id: existingInstance.elementStack.microLearningId,
+          },
+          include: {
+            participant: true,
+          },
+        })
+      : null
+
+    // average answer time computations if participant is logged in
+    const { newAverageResponseTime, newAverageInstanceTime } = participation
+      ? computeNewAverageTimes({
+          existingInstance,
+          existingResponse,
+          answerTime,
+        })
+      : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+
+    // compute updated instance statistics
+    const instanceInPracticeQuiz =
+      !!existingInstance.elementStack.practiceQuizId
+    const statisticsUpdate = computeUpdatedInstanceStatistics({
+      participation,
+      existingResponse,
+      newAverageInstanceTime,
+      answerCorrect: true,
+      answerPartial: false,
+      answerIncorrect: false,
+      instanceInPracticeQuiz,
+    })
+
+    await ctx.prisma.elementInstance.update({
+      where: {
+        id,
+      },
+      data: {
+        results: participation
+          ? { total: existingInstance.results.total + 1 }
+          : undefined,
+        anonymousResults: participation
+          ? undefined
+          : {
+              total: existingInstance.anonymousResults.total + 1,
             },
-          }
-        : undefined,
-      course: {
-        connect: {
-          id: courseId,
+        instanceStatistics: statisticsUpdate,
+      },
+    })
+
+    // if no user exists, return the grading for client display
+    if (!ctx.user?.sub || !participation) {
+      return result
+    }
+
+    // create question detail response
+    await ctx.prisma.questionResponseDetail.create({
+      data: {
+        response: {
+          viewed: true,
         },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
+        timeSpent: answerTime,
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
           },
         },
       },
-      // RESPONSE and aggregated response creation
-      firstResponse: {
-        viewed: true,
-      },
-      firstResponseCorrectness: ResponseCorrectness.CORRECT,
-      lastResponse: {
-        viewed: true,
-      },
-      lastResponseCorrectness: ResponseCorrectness.CORRECT,
-      trialsCount: 1,
+    })
 
-      // AGGREGATED RESPONSES
-      aggregatedResponses: {
-        total: 1,
-      },
+    const aggregatedResponses =
+      (existingResponse?.aggregatedResponses as ContentResults) ?? {
+        total: 0,
+      }
 
-      // CORRECT
-      correctCount: 1,
-      correctCountStreak: 1,
-      lastAnsweredAt: new Date(),
-      lastCorrectAt: new Date(),
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor || 2.5,
+      interval: existingResponse?.interval || 1,
+      streak: (existingResponse?.correctCountStreak || 0) + 1,
+      grade: 1,
+    })
 
-      // update spaced repetition parameters
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
-    update: {
-      // RESPONSE
-      averageTimeSpent: newAverageResponseTime,
-      lastResponse: {
-        viewed: true,
+    // create / update question response
+    await ctx.prisma.questionResponse.upsert({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: id,
+        },
       },
-      lastResponseCorrectness: ResponseCorrectness.CORRECT,
-      trialsCount: {
-        increment: 1,
-      },
+      create: {
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        averageTimeSpent: newAverageResponseTime,
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+        // RESPONSE and aggregated response creation
+        firstResponse: {
+          viewed: true,
+        },
+        firstResponseCorrectness: ResponseCorrectness.CORRECT,
+        lastResponse: {
+          viewed: true,
+        },
+        lastResponseCorrectness: ResponseCorrectness.CORRECT,
+        trialsCount: 1,
 
-      // AGGREGATED RESPONSES
-      aggregatedResponses: {
-        total: aggregatedResponses.total + 1,
-      },
+        // AGGREGATED RESPONSES
+        aggregatedResponses: {
+          total: 1,
+        },
 
-      // CORRECT
-      correctCount: {
-        increment: 1,
-      },
-      correctCountStreak: {
-        increment: 1,
-      },
-      lastAnsweredAt: new Date(),
-      lastCorrectAt: new Date(),
+        // CORRECT
+        correctCount: 1,
+        correctCountStreak: 1,
+        lastAnsweredAt: new Date(),
+        lastCorrectAt: new Date(),
 
-      // update spaced repetition parameters
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
+        // update spaced repetition parameters
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+      update: {
+        // RESPONSE
+        averageTimeSpent: newAverageResponseTime,
+        lastResponse: {
+          viewed: true,
+        },
+        lastResponseCorrectness: ResponseCorrectness.CORRECT,
+        trialsCount: {
+          increment: 1,
+        },
+
+        // AGGREGATED RESPONSES
+        aggregatedResponses: {
+          total: aggregatedResponses.total + 1,
+        },
+
+        // CORRECT
+        correctCount: {
+          increment: 1,
+        },
+        correctCountStreak: {
+          increment: 1,
+        },
+        lastAnsweredAt: new Date(),
+        lastCorrectAt: new Date(),
+
+        // update spaced repetition parameters
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+    })
+    return result
   })
 
-  return result
+  return transactionResult
 }
 
 interface EvaluateAnswerCorrectnessArgs {
