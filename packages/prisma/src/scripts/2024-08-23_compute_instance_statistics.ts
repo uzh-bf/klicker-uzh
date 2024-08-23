@@ -11,9 +11,6 @@ async function run() {
 
   let counter = 0
   let updateCounter = 0
-  let updatedPQInstances = 0
-  let updatedMLInstances = 0
-  let updatedGAInstances = 0
 
   // ! Fetch all element instances separated by type
   const rawInstances = await prisma.elementInstance.findMany({
@@ -254,12 +251,10 @@ async function run() {
         },
       },
     })
+    updateCounter = updateCounter + 1
   }
 
   console.log(`Updated ${updateCounter} instances in total`)
-  console.log(`Checked ${updatedPQInstances} practice quiz instances`)
-  console.log(`Checked ${updatedMLInstances} microlearning instances`)
-  console.log(`Checked ${updatedGAInstances} group activity instances`)
 }
 
 await run()
