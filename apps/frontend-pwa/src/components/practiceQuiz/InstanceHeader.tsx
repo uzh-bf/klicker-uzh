@@ -64,7 +64,8 @@ function InstanceHeader({
   stackInstanceIds,
   className,
 }: InstanceHeaderProps) {
-  const [rateElement] = useMutation(RateElementDocument)
+  const [rateElement, { loading: ratingLoading }] =
+    useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
   const [ratingErrorToast, setRatingErrorToast] = useState(false)
   const [vote, setVote] = useState(
@@ -176,12 +177,13 @@ function InstanceHeader({
               active={vote === 1}
               onClick={() => handleVote(true)}
               data={{ cy: `upvote-element-${index}-button` }}
+              disabled={ratingLoading}
             >
               <Button.Icon>
                 <FontAwesomeIcon
                   icon={vote === 1 ? faThumbsUpSolid : faThumbsUp}
                   className={twMerge(
-                    'hover:text-primary-80 text-uzh-grey-100',
+                    'text-uzh-grey-100 hover:text-primary-80',
                     vote === 1 && 'text-primary-80'
                   )}
                 />
@@ -192,12 +194,13 @@ function InstanceHeader({
               active={vote === -1}
               onClick={() => handleVote(false)}
               data={{ cy: `downvote-element-${index}-button` }}
+              disabled={ratingLoading}
             >
               <Button.Icon>
                 <FontAwesomeIcon
                   icon={vote === -1 ? faThumbsDownSolid : faThumbsDown}
                   className={twMerge(
-                    'hover:text-primary-80 text-uzh-grey-100',
+                    'text-uzh-grey-100 hover:text-primary-80',
                     vote === -1 && 'text-primary-80'
                   )}
                 />
