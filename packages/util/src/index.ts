@@ -1,4 +1,8 @@
-import { ElementInstanceType, type Element } from '@klicker-uzh/prisma'
+import {
+  ElementInstanceType,
+  type Element,
+  type InstanceStatistics,
+} from '@klicker-uzh/prisma'
 import { ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
