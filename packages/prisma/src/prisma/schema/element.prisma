@@ -134,7 +134,7 @@ model InstanceStatistics {
 
   // only logged in participants impact the following counts (consistent with results and counts above)
   uniqueParticipantCount Int  @default(0)
-  averageTimeSpent       Int? // computed based on avergaeTimeSpent per participant
+  averageTimeSpent       Int? // computed based on averageTimeSpent per participant
 
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int             @id
