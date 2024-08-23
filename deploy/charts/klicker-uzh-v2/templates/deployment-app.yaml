@@ -430,8 +430,7 @@ spec:
         - name: lti
           securityContext:
             {{- toYaml .Values.lti.securityContext | nindent 12 }}
-          # image: "{{ .Values.lti.image.repository }}:{{ .Values.lti.image.tag | default .Chart.AppVersion }}"
-          image: "{{ .Values.lti.image.repository }}:v3" # TODO: replace with the above once klicker release is out
+          image: "{{ .Values.lti.image.repository }}:{{ .Values.lti.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.lti.image.pullPolicy }}
           ports:
             - name: http

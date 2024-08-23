@@ -236,10 +236,13 @@ export async function sendMagicLink(
     `One-time login token created for ${usernameOrEmail}: ${magicLink}`
   )
 
-  const email = EmailService.hydrateTemplate({
-    templateName: 'MagicLinkRequested',
-    variables: { LINK: magicLink },
-  })
+  const email = await EmailService.hydrateTemplate(
+    {
+      templateName: 'MagicLinkRequested',
+      variables: { LINK: magicLink },
+    },
+    ctx
+  )
 
   if (!email) return false
 
@@ -534,18 +537,21 @@ export async function createParticipantAccount(
     )
 
     const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http://'
-    }${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+      process.env.NODE_ENV === 'production' ? 'https' : 'http'
+    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
       `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
 
-    const emailHtml = EmailService.hydrateTemplate({
-      templateName: 'ParticipantAccountActivation',
-      variables: { LINK: activationLink },
-    })
+    const emailHtml = await EmailService.hydrateTemplate(
+      {
+        templateName: 'ParticipantAccountActivation',
+        variables: { LINK: activationLink },
+      },
+      ctx
+    )
 
     await EmailService.sendEmail({
       to: email,
@@ -587,6 +593,8 @@ export async function loginParticipantWithLti(
     scope: string
   }
 
+  console.log('ltiData', ltiData)
+
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
     include: {
@@ -594,12 +602,16 @@ export async function loginParticipantWithLti(
     },
   })
 
+  console.log('account', account)
+
   // check if there is a participant account already given the email address
   // if so, create a new participant account with the LTI data and new sub
   if (!account && ltiData.email) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
       where: { email: ltiData.email },
     })
+
+    console.log('existingParticipant', existingParticipant)
 
     if (!existingParticipant) {
       return null

@@ -276,6 +276,9 @@ lti:
   keysEndpoint:
   port: 4000
 
+  devMode: 'true'
+  ltiaas: 'false'
+
   db:
     type: postgres
     host: ''

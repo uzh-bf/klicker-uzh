@@ -217,6 +217,8 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile, email }) {
+      console.log('signIn', user, account, profile, email)
+
       const profileData = profile as ExtendedProfile
       if (profileData?.sub && account?.provider) {
         const userAccount = await prisma.account.findUnique({

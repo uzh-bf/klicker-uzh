@@ -11,7 +11,8 @@ const PROVIDER_OPTIONS = {
     secure: true,
     sameSite: 'none',
   },
-  devMode: process.env.NODE_ENV === 'development', // needs to be set to false in production
+  devMode: process.env.LTI_DEV_MODE === 'true',
+  ltiaas: process.env.LTI_AAS_MODE === 'true',
 }
 
 // Initialize database connection

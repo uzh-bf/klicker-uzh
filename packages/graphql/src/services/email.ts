@@ -1,6 +1,7 @@
 import fs from 'fs'
 import { createRequire } from 'module'
 import nodemailer from 'nodemailer'
+import { Context } from 'src/lib/context.js'
 
 const require = createRequire(import.meta.url)
 
@@ -45,20 +46,26 @@ export async function createTransport() {
   return transport
 }
 
-export function hydrateTemplate({
-  templateName,
-  variables = {},
-}: {
-  templateName: AVAILABLE_EMAIL_TEMPLATES
-  variables?: Record<string, string>
-}) {
+export async function hydrateTemplate(
+  {
+    templateName,
+    variables = {},
+  }: {
+    templateName: AVAILABLE_EMAIL_TEMPLATES
+    variables?: Record<string, string>
+  },
+  ctx: Context
+) {
   let template
 
   try {
-    template = fs.readFileSync(
-      require.resolve(`./emails/${templateName}.html`),
-      'utf8'
-    )
+    template = await ctx.prisma.emailTemplate.findUnique({
+      where: { name: templateName },
+    })
+
+    if (!template) return null
+
+    template = template.html
   } catch (e) {
     console.error('Error reading email template: ', e)
     return null

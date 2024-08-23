@@ -26,6 +26,9 @@ releases:
             secure: '{{ requiredEnv "EMAIL_SECURE" }}'
             requireTLS: '{{ requiredEnv "EMAIL_STARTTLS" }}'
 
+        eduId:
+          clientSecret: '{{ requiredEnv "EDUID_CLIENT_SECRET" }}'
+
         auth:
           replicaCount: 1
           image:
@@ -89,6 +92,9 @@ releases:
 
         lti:
           replicaCount: 1
+
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           appSecret: '{{ requiredEnv "APP_SECRET" }}'
           clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'

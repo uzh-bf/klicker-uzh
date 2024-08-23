@@ -16,9 +16,13 @@ export default async function getParticipantToken({
 
   const cookies = nookies.get(ctx)
 
+  console.log('cookies', cookies)
+
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
   let participantToken: string | undefined | null = cookies['participant_token']
+
+  console.log('participantToken', participantToken)
 
   if (participantToken) {
     return {

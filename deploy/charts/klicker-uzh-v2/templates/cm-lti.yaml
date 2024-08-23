@@ -20,3 +20,5 @@ data:
   LTI_TOKEN_ENDPOINT: {{ .Values.lti.tokenEndpoint | quote }}
   LTI_KEYS_ENDPOINT: {{ .Values.lti.keysEndpoint | quote }}
   COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}
+  LTI_DEV_MODE: {{ .Values.lti.devMode | quote }}
+  LTI_AAS_MODE: {{ .Values.lti.ltiaas | quote }}
