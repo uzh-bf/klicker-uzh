@@ -18,7 +18,11 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  processElementData,
+  getInitialInstanceStatistics,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { round } from 'mathjs'
@@ -2003,6 +2007,9 @@ export async function manipulatePracticeQuiz(
                 },
                 results: initialResults,
                 anonymousResults: initialResults,
+                instanceStatistics: getInitialInstanceStatistics(
+                  ElementInstanceType.PRACTICE_QUIZ
+                ),
                 element: {
                   connect: { id: element.id },
                 },

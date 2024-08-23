@@ -1,5 +1,6 @@
 import {
   getInitialElementResults,
+  getInitialInstanceStatistics,
   processElementData,
   processQuestionData,
 } from '@klicker-uzh/util'
@@ -410,6 +411,9 @@ export function prepareGroupActivityStack({
               },
               results: getInitialElementResults(el),
               anonymousResults: getInitialElementResults(el),
+              instanceStatistics: getInitialInstanceStatistics(
+                Prisma.ElementInstanceType.GROUP_ACTIVITY
+              ),
               ownerId: el.ownerId,
               elementId: el.id,
             })),
@@ -422,6 +426,9 @@ export function prepareGroupActivityStack({
             options: {},
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
+            instanceStatistics: getInitialInstanceStatistics(
+              Prisma.ElementInstanceType.GROUP_ACTIVITY
+            ),
             ownerId: el.ownerId,
             elementId: el.id,
           })),
@@ -477,6 +484,8 @@ export function prepareStackVariety({
               options: { resetTimeDays: 7 },
               results: getInitialElementResults(el),
               anonymousResults: getInitialElementResults(el),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: el.ownerId,
               elementId: el.id,
             },
@@ -509,6 +518,8 @@ export function prepareStackVariety({
             options: { resetTimeDays: 6 },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
+            instanceStatistics:
+              getInitialInstanceStatistics(elementInstanceType),
             ownerId: el.ownerId,
             elementId: el.id,
           })),
@@ -543,6 +554,8 @@ export function prepareStackVariety({
               options: { pointsMultiplier: 1, resetTimeDays: 5 },
               results: getInitialElementResults(el),
               anonymousResults: getInitialElementResults(el),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: el.ownerId,
               elementId: el.id,
             },
@@ -577,6 +590,8 @@ export function prepareStackVariety({
             options: { pointsMultiplier: 4, resetTimeDays: 8 },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
+            instanceStatistics:
+              getInitialInstanceStatistics(elementInstanceType),
             ownerId: el.ownerId,
             elementId: el.id,
           })),
@@ -614,6 +629,8 @@ export function prepareStackVariety({
               options: { pointsMultiplier: 4, resetTimeDays: 7 },
               results: getInitialElementResults(el),
               anonymousResults: getInitialElementResults(el),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: el.ownerId,
               elementId: el.id,
             },
@@ -658,6 +675,8 @@ export function prepareStackVariety({
             options: { pointsMultiplier: 2, resetTimeDays: 6 },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
+            instanceStatistics:
+              getInitialInstanceStatistics(elementInstanceType),
             ownerId: el.ownerId,
             elementId: el.id,
           })),
@@ -698,6 +717,8 @@ export function prepareStackVariety({
               options: { resetTimeDays: 5 },
               results: getInitialElementResults(flashcards[0]!),
               anonymousResults: getInitialElementResults(flashcards[0]!),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: flashcards[0]!.ownerId,
               elementId: flashcards[0]!.id,
             },
@@ -717,6 +738,8 @@ export function prepareStackVariety({
               options: { pointsMultiplier: 3, resetTimeDays: 6 },
               results: getInitialElementResults(questions[0]!),
               anonymousResults: getInitialElementResults(questions[0]!),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: questions[0]!.ownerId,
               elementId: questions[0]!.id,
             },
@@ -736,6 +759,8 @@ export function prepareStackVariety({
               options: {},
               results: getInitialElementResults(contentElements[0]!),
               anonymousResults: getInitialElementResults(contentElements[0]!),
+              instanceStatistics:
+                getInitialInstanceStatistics(elementInstanceType),
               ownerId: contentElements[0]!.ownerId,
               elementId: contentElements[0]!.id,
             },
