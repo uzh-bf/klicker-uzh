@@ -28,6 +28,7 @@ data:
   EMAIL_PORT: {{ .Values.email.port | quote }}
   EMAIL_USER: {{ .Values.email.username | quote }}
   EMAIL_SECURE: {{ .Values.email.secure | quote }}
+  EMAIL_STARTTLS: {{ .Values.email.requireTLS | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}

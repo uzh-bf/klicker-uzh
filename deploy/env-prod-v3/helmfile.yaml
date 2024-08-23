@@ -24,6 +24,7 @@ releases:
             username: '{{ requiredEnv "EMAIL_USER" }}'
             password: '{{ requiredEnv "EMAIL_PASS" }}'
             secure: '{{ requiredEnv "EMAIL_SECURE" }}'
+            requireTLS: '{{ requiredEnv "EMAIL_STARTTLS" }}'
 
         blobStorage:
           accountName: '{{ requiredEnv "BLOB_STORAGE_ACCOUNT_NAME" }}'

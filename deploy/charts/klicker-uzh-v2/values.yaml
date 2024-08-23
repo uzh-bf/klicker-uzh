@@ -22,7 +22,8 @@ email:
   port: ''
   username: ''
   password: ''
-  secure: ''
+  secure: 'false'
+  requireTLS: 'true'
 
 eduId:
   clientSecret: ''
