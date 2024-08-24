@@ -84,7 +84,7 @@ function JoinCourse({
       displayName={t('pwa.general.joinCourse')}
       course={{ displayName: displayName, color: color, id: courseId }}
     >
-      <div className="max-w-5xl mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
@@ -155,6 +155,7 @@ function JoinCourse({
                     username: values.username.trim(),
                     password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
+                    courseId,
                   },
                 })
 
