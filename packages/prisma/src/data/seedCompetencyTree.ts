@@ -34,10 +34,8 @@ async function createNode({
         children: child.nodes,
       })
     }
-    newCounter += 1
-  } else {
-    newCounter += 1
   }
+  newCounter += 1
 
   // create competency node
   await prisma.competency.upsert({
