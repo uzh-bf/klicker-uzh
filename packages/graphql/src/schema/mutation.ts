@@ -268,6 +268,7 @@ export const Mutation = builder.mutationType({
           password: t.arg.string({ required: true }),
           email: t.arg.string({ required: true, validate: { email: true } }),
           isProfilePublic: t.arg.boolean({ required: true }),
+          courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {

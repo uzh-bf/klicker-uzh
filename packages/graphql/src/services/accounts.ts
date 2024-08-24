@@ -435,6 +435,7 @@ interface CreateParticipantAccountArgs {
   username: string
   password: string
   isProfilePublic: boolean
+  courseId?: string | null
   signedLtiData?: string | null
 }
 
@@ -444,6 +445,7 @@ export async function createParticipantAccount(
     isProfilePublic,
     username,
     password,
+    courseId,
     signedLtiData,
   }: CreateParticipantAccountArgs,
   ctx: Context
@@ -492,6 +494,31 @@ export async function createParticipantAccount(
         },
       })
 
+      // if a courseId is specified, add a participation in the corresponding course
+      if (courseId) {
+        await ctx.prisma.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: account.participant.id,
+            },
+          },
+          create: {
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: account.participant.id,
+              },
+            },
+          },
+          update: {},
+        })
+      }
+
       const jwt = await doParticipantLogin(
         {
           participantId: account.participant.id,
@@ -522,6 +549,31 @@ export async function createParticipantAccount(
         lastLoginAt: new Date(),
       },
     })
+
+    // if a courseId is specified, add a participation in the corresponding course
+    if (courseId) {
+      await ctx.prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: participant.id,
+          },
+        },
+        create: {
+          course: {
+            connect: {
+              id: courseId,
+            },
+          },
+          participant: {
+            connect: {
+              id: participant.id,
+            },
+          },
+        },
+        update: {},
+      })
+    }
 
     const activationJWT = JWT.sign(
       {
