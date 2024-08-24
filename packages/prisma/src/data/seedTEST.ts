@@ -5,9 +5,6 @@ import {
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
   USER_ID_TEST,
-  USER_ID_TEST2,
-  USER_ID_TEST3,
-  USER_ID_TEST4,
 } from './constants.js'
 import * as DATA_TEST from './data/TEST.js'
 import {
@@ -20,7 +17,6 @@ import {
   prepareQuestion,
   prepareSession,
   prepareStackVariety,
-  prepareUser,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
@@ -710,8 +706,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             correctness === 'CORRECT'
               ? maxPoints
               : correctness === 'PARTIAL'
-                ? Math.floor(Math.random() * maxPoints)
-                : 0,
+              ? Math.floor(Math.random() * maxPoints)
+              : 0,
           ...(correctness === 'INCORRECT' && {
             feedback:
               'In case of an incorrect answer, this feedback is provided.',

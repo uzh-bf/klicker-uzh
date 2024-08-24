@@ -1,11 +1,11 @@
 import Prisma from '../../dist/index.js'
-import { prepareUser } from './helpers.js'
 import {
   USER_ID_TEST,
   USER_ID_TEST2,
   USER_ID_TEST3,
   USER_ID_TEST4,
 } from './constants.js'
+import { prepareUser } from './helpers.js'
 
 export async function seedUsers(prisma: Prisma.PrismaClient) {
   const standardUser = await prisma.user.upsert(
