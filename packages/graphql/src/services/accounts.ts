@@ -12,7 +12,6 @@ import {
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { DisplayMode } from '../types/app.js'
-import { update } from 'ramda'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
