@@ -538,9 +538,8 @@ export async function createParticipantAccount(
   }
 
   try {
-    const participant = await ctx.prisma.participant.upsert({
-      where: { email: email.trim().toLowerCase() },
-      create: {
+    const participant = await ctx.prisma.participant.create({
+      data: {
         email: email.trim().toLowerCase(),
         username: username.trim(),
         password: await bcrypt.hash(password, 10),
@@ -549,7 +548,6 @@ export async function createParticipantAccount(
         isSSOAccount: false,
         lastLoginAt: new Date(),
       },
-      update: {},
     })
 
     // if a courseId is specified, add a participation in the corresponding course
