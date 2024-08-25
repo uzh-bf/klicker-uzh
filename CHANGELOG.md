@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.8...v3.2.0-alpha.9) (2024-08-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that message is displayed correctly on login form after account creation ([b74ba6a](https://github.com/uzh-bf/klicker-uzh/commit/b74ba6ab4700f9a71e9d68dc3383a14a042a3407))
+* **deploy:** update app version of lti for prod deployment ([e0411a8](https://github.com/uzh-bf/klicker-uzh/commit/e0411a80bf97c778396179f33058de415adc5f8b))
+
+
+### Enhancements
+
+* add parsing logic for competency trees from JSON and associated test seed ([#4209](https://github.com/uzh-bf/klicker-uzh/issues/4209)) ([2feb200](https://github.com/uzh-bf/klicker-uzh/commit/2feb2009e6cc756ababa9bb32d0fc7f19e00e84a))
+* automatically create participation on account creation through course join form ([#4208](https://github.com/uzh-bf/klicker-uzh/issues/4208)) ([b18b7fe](https://github.com/uzh-bf/klicker-uzh/commit/b18b7fe8d7607863669b7f859fe80a615d7223f2))
+
 ## [3.2.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.7...v3.2.0-alpha.8) (2024-08-23)
 
 
