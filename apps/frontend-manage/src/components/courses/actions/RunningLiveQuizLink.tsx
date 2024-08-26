@@ -14,7 +14,7 @@ function RunningLiveQuizLink({ liveQuiz }: RunningLiveQuizLinkProps) {
   return (
     <div className="flex flex-row items-center gap-2 text-primary-100">
       <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
-      <Link legacyBehavior passHref href={`/sessions/${liveQuiz.id}/cockpit`}>
+      <Link legacyBehavior passHref href={`/quizzes/${liveQuiz.id}/cockpit`}>
         <a data-cy={`open-cockpit-session-${liveQuiz.name}`}>
           {t('manage.course.runningSession')}
         </a>

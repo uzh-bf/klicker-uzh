@@ -48,7 +48,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
         <div className="flex flex-row gap-4 mb-4">
           <div className="flex-1">
             <ol className="list-decimal list-inside">
-              <li>Go to https://manage.klicker.uzh.ch/sessions</li>
+              <li>Go to https://manage.klicker.uzh.ch/quizzes</li>
               <li>For the quiz you want to embed, open the &ldquo;Embed Evaluation&rdquo; dialog</li>
               <li>Copy the link of the view to embed (the full evaluation, a specific question, or the leaderboard)</li>
               <li>Paste the link into the field and click &ldquo;Embed&rdquo;</li>

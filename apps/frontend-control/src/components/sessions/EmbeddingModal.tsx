@@ -35,7 +35,7 @@ function LazyHMACLink({
 
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/sessions/${sessionId}/evaluation?hmac=${sessionHMAC.data?.sessionHMAC}${
+  }/quizzes/${sessionId}/evaluation?hmac=${sessionHMAC.data?.sessionHMAC}${
     params ? `&${params}` : ''
   }`
 

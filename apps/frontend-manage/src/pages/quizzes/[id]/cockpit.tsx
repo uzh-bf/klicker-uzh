@@ -38,8 +38,8 @@ function Cockpit() {
   })
 
   // useEffect((): void => {
-  //   router.prefetch('/sessions/evaluation')
-  //   router.prefetch('/sessions/feedbacks')
+  //   router.prefetch('/quizzes/evaluation')
+  //   router.prefetch('/quizzes/feedbacks')
   //   router.prefetch('/join')
   //   router.prefetch('/qr')
   // }, [router])
@@ -115,7 +115,7 @@ function Cockpit() {
           sessionName={name}
           handleEndSession={() => {
             endSession({ variables: { id: id } })
-            router.push('/sessions')
+            router.push('/quizzes')
           }}
           handleOpenBlock={(blockId: number) => {
             activateSessionBlock({

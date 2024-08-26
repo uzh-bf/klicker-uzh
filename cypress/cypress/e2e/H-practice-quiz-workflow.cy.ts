@@ -27,7 +27,7 @@ describe('Different practice quiz workflows', () => {
 
   it('Test creating and publishing a practice quiz', () => {
     // switch to question pool view
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
 
     // set up question with solution
     cy.get('[data-cy="create-question"]').click()
@@ -198,7 +198,7 @@ describe('Different practice quiz workflows', () => {
   it('Test scheduling and publishing functionalities of a practice quiz', () => {
     // create a practice quiz with availability starting in the future
     // switch to question pool view
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
 
     // set up question with solution
     cy.get('[data-cy="create-question"]').click()
@@ -394,7 +394,7 @@ describe('Different practice quiz workflows', () => {
 
   it('Test editing an existing practice quizs', () => {
     // switch back to question pool view
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
 
     // create practice quiz
     cy.get('[data-cy="create-practice-quiz"]').click()
