@@ -650,7 +650,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.wait(1000)
 
@@ -677,7 +677,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -757,7 +757,7 @@ describe('Different live-quiz workflows', () => {
 
     // check that feedback is visible to lecturer and switch its status to visible
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
     cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
@@ -773,7 +773,7 @@ describe('Different live-quiz workflows', () => {
 
     // login to lecturer and disable moderation
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get('[data-cy="toggle-moderation"]').click()
 
@@ -792,7 +792,7 @@ describe('Different live-quiz workflows', () => {
     // login to lecturer and answer second feedback
     const feedbackAnswer = 'Answer to feedback'
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
     cy.get(`[data-cy="respond-to-feedback-${feedback2}"]`).type(feedbackAnswer)
@@ -806,7 +806,7 @@ describe('Different live-quiz workflows', () => {
 
     // login to lecturer and pin feedback, check lecturer display
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
     cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
@@ -816,7 +816,7 @@ describe('Different live-quiz workflows', () => {
 
     // delete feedback response
     cy.visit(Cypress.env('URL_MANAGE'))
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
     cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
@@ -829,7 +829,7 @@ describe('Different live-quiz workflows', () => {
 
     // delete feedback
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
     cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
@@ -841,7 +841,7 @@ describe('Different live-quiz workflows', () => {
 
     // click through blocks and end session
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // open block
     cy.wait(1000)
