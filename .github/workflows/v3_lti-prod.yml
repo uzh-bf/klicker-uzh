@@ -3,9 +3,6 @@ name: Build Docker image for lti (Production)
 on:
   push:
     tags: ['v*.*.*']
-    paths:
-      - 'apps/lti/**'
-      - '.github/workflows/v3_lti**'
 
 env:
   REGISTRY: ghcr.io

@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.16.0-alpine AS base
+FROM docker.io/library/node:20.17.0-alpine AS base
 
 
 FROM base AS builder
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.7.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.7.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
@@ -39,7 +39,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-RUN npm i -g --ignore-scripts pnpm@9.7.0 turbo@2.0.12
+RUN npm i -g --ignore-scripts pnpm@9.8.0 turbo@2.0.14
 
 COPY --from=builder /app/out/json/ .
 RUN pnpm i --frozen-lockfile --prod --ignore-scripts

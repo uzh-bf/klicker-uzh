@@ -3,6 +3,7 @@ mutation CreateParticipantAccount(
   $username: String!
   $password: String!
   $isProfilePublic: Boolean!
+  $courseId: String
   $signedLtiData: String
 ) {
   createParticipantAccount(
@@ -10,6 +11,7 @@ mutation CreateParticipantAccount(
     username: $username
     password: $password
     isProfilePublic: $isProfilePublic
+    courseId: $courseId
     signedLtiData: $signedLtiData
   ) {
     participantToken

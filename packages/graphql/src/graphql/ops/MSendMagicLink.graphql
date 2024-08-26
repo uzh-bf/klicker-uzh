@@ -1,0 +1,3 @@
+mutation SendMagicLink($usernameOrEmail: String!) {
+  sendMagicLink(usernameOrEmail: $usernameOrEmail)
+}

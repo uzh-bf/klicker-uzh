@@ -3,9 +3,6 @@ name: Build Docker image for frontend-pwa (Production)
 on:
   push:
     tags: ['v*.*.*']
-    paths:
-      - 'apps/frontend-pwa/**'
-      - '.github/workflows/v3_frontend-pwa**'
 
 env:
   REGISTRY: ghcr.io

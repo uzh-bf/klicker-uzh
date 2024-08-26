@@ -91,9 +91,10 @@ export default {
       token: 'Token',
       passwordRepetition: 'Passwort (Wiederholung)',
       signin: 'Anmelden',
-      usernameError: 'Bitte geben Sie Ihren Nutzernamen ein.',
+      usernameError: 'Bitte geben Sie Ihren Nutzernamen oder E-Mail ein.',
       passwordError: 'Bitte geben Sie Ihr Passwort ein.',
-      loginError: 'Benutzername oder Passwort sind falsch.',
+      studentLoginError:
+        'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "Magic Link Login" Funktion.',
       systemError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
       error: 'Fehler',
       back: 'Zurück',
@@ -248,8 +249,22 @@ export default {
   },
   pwa: {
     general: {
-      surveyInvitation:
-        'Gestalte die Zukunft von KlickerUZH mit, indem du deine Erfahrungen und Anforderungen an persönliche Learning Analytics mit uns teilst (auch, wenn du den Begriff noch gar nicht kennst 😎). Nimm an unserer 15-minütigen Umfrage teil und gewinne mit Glück einen 25.- Gutschein.',
+      magicLinkLogin: 'Login mit Magic-Link',
+      passwordLogin: 'Login mit Passwort',
+      magicLinkSent:
+        'Falls ein Account existiert, wurde ein einmaliger Login-Link an die hinterlegte E-Mail Adresse gesendet.',
+      activationMailSent:
+        'Ein Aktivierungslink wurde an die E-Mail Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang.',
+      processingLogin:
+        'Ihr Magic-Link Login wird verarbeitet. Bitte warten Sie einen Moment.',
+      processingActivation:
+        'Ihr Account-Aktivierung wird verarbeitet. Bitte warten Sie einen Moment.',
+      magicLinkLoginFailed:
+        'Der Magic-Link Login ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+      accountActivationFailed:
+        'Die Account-Aktivierung ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+      waitingForActivation:
+        'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',
@@ -466,7 +481,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
     },
-
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
       studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
@@ -483,6 +497,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       addFeedback: 'Feedback hinzufügen',
       submitFeedback: 'Feedback abschicken',
+      updateFeedback: 'Feedback aktualisieren',
+      errorRatingElement:
+        'Ihre Bewertung des Elements war leider nicht erfolgreich. Versuchen Sie es später nochmals.',
       notFound:
         'Unter diesem Link existiert kein Übungs-Quiz oder dieses ist noch nicht publiziert.',
       repetitionTitle: 'Repetition Übungs-Quizzes',
@@ -509,9 +526,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Fragetyp ist aktuell für Übungs-Quizzes nicht verfügbar.',
       newPointsFrom: 'Erneute Punkte/XP ab:',
       othersAnswered: 'So haben andere geantwortet',
-      flagQuestion: 'Frage melden',
-      flagQuestionText:
-        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       infoStack: 'Informationselement',
       scheduledAvailableFrom: 'Das Übungs-Quiz {name} ist ab {date} verfügbar.',
       inactiveParticipation:

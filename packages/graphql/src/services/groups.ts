@@ -8,7 +8,11 @@ import {
   ParameterType,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
@@ -377,6 +381,8 @@ export async function manipulateGroupActivity(
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
+            const initialResults =
+              getInitialElementResults(processedElementData)
 
             return {
               elementType: element.type,
@@ -387,7 +393,13 @@ export async function manipulateGroupActivity(
               options: {
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
-              results: getInitialElementResults(processedElementData),
+              results: initialResults,
+              anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(
+                  ElementInstanceType.GROUP_ACTIVITY
+                ),
+              },
               element: {
                 connect: { id: element.id },
               },
@@ -836,7 +848,7 @@ export async function submitGroupActivityDecisions(
 
         // compute the updated results
         const updatedResults = updateQuestionResults({
-          instance,
+          previousResults: instance.results,
           elementData: instance.elementData,
           response: response,
         })

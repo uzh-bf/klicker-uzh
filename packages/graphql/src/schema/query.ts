@@ -9,6 +9,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
 import { Course, LeaderboardEntry, StudentCourse } from './course.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
@@ -441,6 +442,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getBookmarkedElementStacks(args, ctx)
+        },
+      }),
+
+      getStackElementFeedbacks: asParticipant.field({
+        nullable: true,
+        type: [ElementFeedback],
+        args: {
+          elementInstanceIds: t.arg.intList({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.getStackElementFeedbacks(args, ctx)
         },
       }),
 

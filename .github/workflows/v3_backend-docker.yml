@@ -6,14 +6,9 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
-    paths:
-      - 'apps/backend-docker/**'
-      - 'packages/graphql/**'
-      - 'packages/prisma/**'
-      - '.github/workflows/v3_backend-docker**'
   pull_request:
     # branches: [ "v3" ]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/backend-docker/**'
       - 'packages/graphql/**'
@@ -26,6 +21,7 @@ env:
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read

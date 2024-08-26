@@ -7,6 +7,9 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
+  APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
+  APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}
+  APP_CONTROL_DOMAIN: {{ .Values.backendGraphql.appControlDomain | quote }}
   APP_MANAGE_SUBDOMAIN: {{ .Values.backendGraphql.appManageSubdomain | quote }}
   APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
@@ -22,6 +25,13 @@ data:
   LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE: {{ .Values.listmonk.templates.emailNotFound | quote }}
   LISTMONK_TEMPLATE_MIGRATION_REQUEST: {{ .Values.listmonk.templates.migrationRequest | quote }}
   MIGRATION_SERVICE_BUS_QUEUE_NAME: {{ .Values.migration.serviceBus.queueName | quote }}
+  EMAIL_TYPE: {{ .Values.email.type | quote }}
+  EMAIL_FROM: {{ .Values.email.from | quote }}
+  EMAIL_HOST: {{ .Values.email.host | quote }}
+  EMAIL_PORT: {{ .Values.email.port | quote }}
+  EMAIL_USER: {{ .Values.email.username | quote }}
+  EMAIL_SECURE: {{ .Values.email.secure | quote }}
+  EMAIL_STARTTLS: {{ .Values.email.requireTLS | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}

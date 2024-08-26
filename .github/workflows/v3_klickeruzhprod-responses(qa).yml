@@ -5,7 +5,6 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
     paths:
       - 'apps/func-incoming-responses/**'
       - '.github/workflows/v3_klickeruzhprod-responses**'
@@ -13,7 +12,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-incoming-responses'
-  NODE_VERSION: '20.11.0'
+  NODE_VERSION: '20.17.0'
 
 jobs:
   build-and-deploy:
@@ -29,12 +28,12 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.7.0
+          version: 9.8.0
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm dlx turbo@1.11.3 prune --scope @klicker-uzh/func-incoming-responses
+          pnpm dlx turbo@2.0.14 prune --scope @klicker-uzh/func-incoming-responses
           pushd out
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
