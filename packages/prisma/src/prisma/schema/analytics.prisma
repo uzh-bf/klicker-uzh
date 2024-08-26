@@ -27,7 +27,7 @@ model ParticipantAnalytics {
   totalPoints Int
   totalXp     Int
 
-  // meanTrialsCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
+  // responseCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
   meanCorrectCount        Float @db.Real // mean over responses to same question and sum over all questions
   meanPartialCorrectCount Float @db.Real // mean over responses to same question and sum over all questions
   meanWrongCount          Float @db.Real // mean over responses to same question and sum over all questions
@@ -38,9 +38,6 @@ model ParticipantAnalytics {
   lastCorrectCount  Float? @db.Real // aggregated over all questions (sum)
   firstWrongCount   Float? @db.Real // aggregated over all questions (sum)
   lastWrongCount    Float? @db.Real // aggregated over all questions (sum)
-
-  // add id of achievement
-  collectedAchievements String[]
 
   competencyAnalytics CompetencyAnalytics[]
 
