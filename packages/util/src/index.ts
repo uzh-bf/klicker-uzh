@@ -1,5 +1,8 @@
-import type { Element } from '@klicker-uzh/prisma'
-import { ElementType } from '@klicker-uzh/prisma'
+import {
+  ElementInstanceType,
+  ElementType,
+  type Element,
+} from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
 const RELEVANT_KEYS = [
@@ -117,4 +120,63 @@ export function getInitialElementResults(element: Element) {
       'Invalid element type encountered during result initialization'
     )
   }
+}
+
+export function getInitialInstanceStatistics(type: ElementInstanceType) {
+  if (type === ElementInstanceType.LIVE_QUIZ) {
+    return undefined
+  } else if (type === ElementInstanceType.PRACTICE_QUIZ) {
+    return {
+      anonymousCorrectCount: 0,
+      anonymousPartialCorrectCount: 0,
+      anonymousWrongCount: 0,
+
+      correctCount: 0,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+      firstCorrectCount: 0,
+      firstPartialCorrectCount: 0,
+      firstWrongCount: 0,
+      lastCorrectCount: 0,
+      lastPartialCorrectCount: 0,
+      lastWrongCount: 0,
+
+      upvoteCount: 0,
+      downvoteCount: 0,
+
+      uniqueParticipantCount: 0,
+      averageTimeSpent: 0,
+    }
+  } else if (type === ElementInstanceType.MICROLEARNING) {
+    return {
+      anonymousCorrectCount: 0,
+      anonymousPartialCorrectCount: 0,
+      anonymousWrongCount: 0,
+
+      correctCount: 0,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+
+      upvoteCount: 0,
+      downvoteCount: 0,
+
+      uniqueParticipantCount: 0,
+      averageTimeSpent: 0,
+    }
+  } else if (type === ElementInstanceType.GROUP_ACTIVITY) {
+    return {
+      // correct counts are currently only set on group activity instance
+      correctCount: -1,
+      partialCorrectCount: -1,
+      wrongCount: -1,
+
+      upvoteCount: 0,
+      downvoteCount: 0,
+
+      uniqueParticipantCount: -1, // participant counts not available on group activities at the moment, group counts should be available from number of instances immediately
+      averageTimeSpent: -1, // time tracking not available on group activities at the moment
+    }
+  }
+
+  return undefined
 }

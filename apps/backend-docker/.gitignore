@@ -4,6 +4,7 @@ node_modules
 src/client
 dist/
 instrumented/
+public/
 
 src/prisma/ERD.svg
 src/graphql

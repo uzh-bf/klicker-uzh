@@ -1,3 +1,9 @@
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
+}
+
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
@@ -27,7 +33,12 @@ model QuestionResponse {
   nextDueAt DateTime?
 
   /// [PrismaQuestionResponse]
-  response Json
+  firstResponse            Json
+  firstResponseCorrectness ResponseCorrectness
+
+  /// [PrismaQuestionResponse]
+  lastResponse            Json
+  lastResponseCorrectness ResponseCorrectness
 
   /// [PrismaElementResults]
   aggregatedResponses Json?
@@ -41,12 +52,25 @@ model QuestionResponse {
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int
 
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   isMigrated Boolean @default(false)
 
   @@unique([participantId, elementInstanceId])
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
 }
 
 model QuestionResponseDetail {
@@ -69,6 +93,39 @@ model QuestionResponseDetail {
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int
 
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
+}
+
+model ElementFeedback {
+  id Int @id @default(autoincrement())
+
+  upvote   Boolean @default(false)
+  downvote Boolean @default(false)
+  feedback String?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, elementInstanceId])
 }

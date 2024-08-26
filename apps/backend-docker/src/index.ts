@@ -2,8 +2,8 @@ import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { withOptimize } from '@prisma/extension-optimize'
-import * as Sentry from '@sentry/node'
-import '@sentry/tracing'
+// import * as Sentry from '@sentry/node'
+// import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import prepareApp from './app.js'
@@ -31,14 +31,14 @@ if (
   prisma = prisma.$extends(withOptimize()) as PrismaClient
 }
 
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    debug: !!process.env.DEBUG,
-    tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
-      ? Number(process.env.SENTRY_SAMPLE_RATE)
-      : 1,
-  })
-}
+// if (process.env.SENTRY_DSN) {
+//   Sentry.init({
+//     debug: !!process.env.DEBUG,
+//     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
+//       ? Number(process.env.SENTRY_SAMPLE_RATE)
+//       : 1,
+//   })
+// }
 
 const redisExec = new Redis({
   family: 4,

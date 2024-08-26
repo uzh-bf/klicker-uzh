@@ -6,9 +6,10 @@ on:
       - 'v3*'
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 jobs:
   sonarcloud:
+    if: github.event.pull_request.draft == false
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:

@@ -1,4 +1,4 @@
-import { PublicationStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail.js'
@@ -448,6 +448,16 @@ export async function getBookmarkedElementStacks(
       bookmarkedElementStacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -461,7 +471,7 @@ export async function getBookmarkedElementStacks(
 }
 
 export async function flagElement(
-  args: { elementInstanceId: number; content: string },
+  args: { elementInstanceId: number; elementId: number; content: string },
   ctx: ContextWithUser
 ) {
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
@@ -486,11 +496,42 @@ export async function flagElement(
     },
   })
 
+  const elementFeedback = await ctx.prisma.elementFeedback.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: args.elementInstanceId,
+      },
+    },
+    create: {
+      feedback: args.content,
+      element: {
+        connect: {
+          id: args.elementId,
+        },
+      },
+      elementInstance: {
+        connect: {
+          id: args.elementInstanceId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {
+      feedback: args.content,
+    },
+  })
+
   if (
     !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
     !elementInstance?.elementStack.microLearning?.course?.notificationEmail
   ) {
-    return null
+    // return early if no notification email has been specified -> only set database entry
+    return elementFeedback
   }
 
   const practiceQuiz = elementInstance.elementStack.practiceQuiz
@@ -517,7 +558,117 @@ export async function flagElement(
     }),
   })
 
-  return 'OK'
+  return elementFeedback
+}
+
+export async function rateElement(
+  args: { elementInstanceId: number; elementId: number; rating: number },
+  ctx: ContextWithUser
+) {
+  if (args.rating !== 1 && args.rating !== -1) {
+    return null
+  }
+
+  let elementFeedback = null
+  await ctx.prisma.$transaction(async (prisma) => {
+    // fetch previous element feedback
+    const prevFeedback = await ctx.prisma.elementFeedback.findUnique({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: args.elementInstanceId,
+        },
+      },
+    })
+
+    if (prevFeedback) {
+      // update existing element feedback
+      elementFeedback = await prisma.elementFeedback.update({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: ctx.user.sub,
+            elementInstanceId: args.elementInstanceId,
+          },
+        },
+        data: {
+          upvote: args.rating === 1,
+          downvote: args.rating === -1,
+        },
+      })
+
+      // update instance statistics (decrement by previous feedback first to only count last feedback)
+      await prisma.instanceStatistics.update({
+        where: {
+          elementInstanceId: args.elementInstanceId,
+        },
+        data: {
+          upvoteCount: {
+            increment: Number(args.rating === 1) - Number(prevFeedback.upvote),
+          },
+          downvoteCount: {
+            increment:
+              Number(args.rating === -1) - Number(prevFeedback.downvote),
+          },
+        },
+      })
+    } else {
+      // create new element feedback
+      elementFeedback = await prisma.elementFeedback.create({
+        data: {
+          upvote: args.rating === 1,
+          downvote: args.rating === -1,
+          elementInstance: {
+            connect: {
+              id: args.elementInstanceId,
+            },
+          },
+          element: {
+            connect: {
+              id: args.elementId,
+            },
+          },
+          participant: {
+            connect: {
+              id: ctx.user.sub,
+            },
+          },
+        },
+      })
+
+      // update instance statistics
+      await prisma.instanceStatistics.update({
+        where: {
+          elementInstanceId: args.elementInstanceId,
+        },
+        data: {
+          upvoteCount: {
+            increment: Number(args.rating === 1),
+          },
+          downvoteCount: {
+            increment: Number(args.rating === -1),
+          },
+        },
+      })
+    }
+  })
+
+  return elementFeedback
+}
+
+export async function getStackElementFeedbacks(
+  args: { elementInstanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  const elementFeedbacks = await ctx.prisma.elementFeedback.findMany({
+    where: {
+      elementInstanceId: {
+        in: args.elementInstanceIds,
+      },
+      participantId: ctx.user.sub,
+    },
+  })
+
+  return elementFeedbacks
 }
 
 export async function getPublicParticipantProfile(

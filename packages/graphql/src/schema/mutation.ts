@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
   GroupActivity,
@@ -160,6 +161,37 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginParticipantMagicLink: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantMagicLink(args, ctx)
+        },
+      }),
+
+      activateParticipantAccount: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.activateParticipantAccount(args, ctx)
+        },
+      }),
+
+      sendMagicLink: t.boolean({
+        nullable: true,
+        args: {
+          usernameOrEmail: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
+          return AccountService.sendMagicLink(args, ctx)
+        },
+      }),
+
       // createParticipantAndJoinCourse: t.field({
       //   nullable: true,
       //   type: Participant,
@@ -236,6 +268,7 @@ export const Mutation = builder.mutationType({
           password: t.arg.string({ required: true }),
           email: t.arg.string({ required: true, validate: { email: true } }),
           isProfilePublic: t.arg.boolean({ required: true }),
+          courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
@@ -446,14 +479,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagElement: t.withAuth(asParticipant).string({
+      flagElement: t.withAuth(asParticipant).field({
+        type: ElementFeedback,
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagElement(args, ctx)
+        },
+      }),
+
+      rateElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ElementFeedback,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
+          rating: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.rateElement(args, ctx)
         },
       }),
 

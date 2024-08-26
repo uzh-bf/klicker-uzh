@@ -15,6 +15,16 @@ notifications:
   secret: ''
   supportEmail: ''
 
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: 'false'
+  requireTLS: 'true'
+
 eduId:
   clientSecret: ''
 
@@ -253,12 +263,21 @@ lti:
 
   replicaCount: 2
 
+  appSecret: ''
+
   clientId:
   redirectURL:
   cookieDomain:
   encryptionKey:
-
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
   port: 4000
+
+  devMode: 'true'
+  ltiaas: 'false'
 
   db:
     type: postgres

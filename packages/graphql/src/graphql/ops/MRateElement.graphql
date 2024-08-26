@@ -1,0 +1,16 @@
+mutation RateElement(
+  $elementInstanceId: Int!
+  $elementId: Int!
+  $rating: Int!
+) {
+  rateElement(
+    elementInstanceId: $elementInstanceId
+    elementId: $elementId
+    rating: $rating
+  ) {
+    id
+    upvote
+    downvote
+    feedback
+  }
+}

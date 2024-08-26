@@ -3,9 +3,6 @@ name: Build Docker image for analytics (Production)
 on:
   push:
     tags: ['v*.*.*']
-    paths:
-      - 'apps/analytics/**'
-      - '.github/workflows/v3_analytics**'
 
 env:
   REGISTRY: ghcr.io

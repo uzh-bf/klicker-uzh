@@ -1,16 +1,18 @@
-// @ts-nocheck
-
+// @ts-ignore
+import JWT from 'jsonwebtoken'
 import { Provider } from 'ltijs'
+// @ts-ignore
 import Database from 'ltijs-sequelize'
 
-const providerOptions = {
+const PROVIDER_OPTIONS = {
   appRoute: '/',
   loginRoute: '/login',
   cookies: {
     secure: true,
-    sameSite: 'None',
+    sameSite: 'none',
   },
-  devMode: process.env.NODE_ENV === 'development', // needs to be set to false in production
+  devMode: process.env.LTI_DEV_MODE === 'true',
+  ltiaas: process.env.LTI_AAS_MODE === 'true',
 }
 
 // Initialize database connection
@@ -36,7 +38,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
     {
       plugin: db,
     },
-    providerOptions
+    PROVIDER_OPTIONS
   )
 } else {
   // Setup LTI provider
@@ -45,25 +47,58 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
     {
       url: process.env.LTI_DB_CONNECTION_STRING as string,
     },
-    providerOptions
+    PROVIDER_OPTIONS
   )
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
 Provider.onConnect((token, req, res) => {
-  console.log(token)
-  const ltik = res.locals.ltik
+  const jwt = JWT.sign(
+    {
+      sub: token.user,
+      email: token.userInfo.email,
+      scope: 'LTI1.3',
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '5m',
+    }
+  )
 
-  res.cookie('ltik', ltik, {
+  res.cookie('lti-token', jwt, {
     secure: true,
-    sameSite: 'None',
+    sameSite: 'none',
     domain: process.env.COOKIE_DOMAIN as string,
   })
 
-  const url = process.env.LTI_REDIRECT_URL as string
-  console.log('Redirecting to:', url)
+  if (typeof req.query.redirectTo === 'string') {
+    if (!req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string)) {
+      throw new Error(
+        'COOKIE_DOMAIN is not part of redirectTo. Please check your configuration.'
+      )
+    }
 
-  res.redirect(url)
+    const url = req.query.redirectTo as string
+    console.log('Redirecting to:', url)
+    res.redirect(`${url}?jwt=${jwt}`)
+  } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
+    if (
+      !process.env.LTI_REDIRECT_URL.includes(
+        process.env.COOKIE_DOMAIN as string
+      )
+    ) {
+      throw new Error(
+        'COOKIE_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
+      )
+    }
+
+    const url = process.env.LTI_REDIRECT_URL as string
+    console.log('Redirecting to:', url)
+    res.redirect(`${url}?jwt=${jwt}`)
+  }
+
+  res.end()
 })
 
 // setup function
@@ -75,13 +110,20 @@ const setup = async () => {
 
   // Optional: Register platform if you're setting this up for the first time
   const platform = await Provider.registerPlatform({
-    url: 'https://lms.uzh.ch',
-    name: 'OLAT UZH',
+    url: process.env.LTI_URL as string,
+    name: process.env.LTI_NAME as string,
     clientId: process.env.LTI_CLIENT_ID as string,
-    authenticationEndpoint: 'https://lms.uzh.ch/lti/auth',
-    accesstokenEndpoint: 'https://lms.uzh.ch/lti/token',
-    authConfig: { method: 'JWK_SET', key: 'https://lms.uzh.ch/lti/keys' },
+    authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
+    accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
+    authConfig: {
+      method: 'JWK_SET',
+      key: process.env.LTI_KEYS_ENDPOINT as string,
+    },
   })
+
+  if (!platform) {
+    throw new Error('Failed to register platform')
+  }
 
   console.log(await platform.platformPublicKey())
 }

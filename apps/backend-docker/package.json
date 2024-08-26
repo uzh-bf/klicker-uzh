@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.1.2-rc.2",
+  "version": "3.2.0-alpha.9",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -57,7 +57,7 @@
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
     "@types/ws": "^8.5.9",
-    "@uzh-bf/design-system": "3.0.0-alpha.21",
+    "@uzh-bf/design-system": "3.0.0-alpha.22",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.4.5",
@@ -75,12 +75,13 @@
     "typescript": "5.4.5"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production pnpm run build:ts",
+    "build": "cross-env NODE_ENV=production run-s build:ts",
     "build:ts": "tsup",
     "build:test": "run-s build:instrument build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:lti": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",

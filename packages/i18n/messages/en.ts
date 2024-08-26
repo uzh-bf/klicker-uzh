@@ -91,9 +91,10 @@ export default {
       token: 'Token',
       passwordRepetition: 'Password (repetition)',
       signin: 'Login',
-      usernameError: 'Please enter your username.',
+      usernameError: 'Please enter your username or email.',
       passwordError: 'Please enter your password.',
-      loginError: 'The username or password are incorrect.',
+      studentLoginError:
+        'The username or password are incorrect. If you have forgotten your password, please use the "Magic link login" function.',
       systemError: 'An unexpected error occurred. Please try again later.',
       error: 'Error',
       back: 'Back',
@@ -248,8 +249,22 @@ export default {
   },
   pwa: {
     general: {
-      surveyInvitation:
-        'Help shape the future of KlickerUZH by sharing your experiences and needs for personal learning analytics (even if you have never heard of it 😎). Complete our 15-min survey for a chance to win a 25.- voucher.',
+      magicLinkLogin: 'Login with Magic-Link',
+      passwordLogin: 'Login with Password',
+      magicLinkSent:
+        'If an account exists, a one-time login link has been sent to the e-mail address.',
+      activationMailSent:
+        'An activation link has been sent to your e-mail address. Please check your inbox.',
+      processingLogin:
+        'Your magic link login is being processed. Please wait a moment.',
+      processingActivation:
+        'Your account activation is being processed. Please wait a moment.',
+      magicLinkLoginFailed:
+        'The magic link login failed. You will be redirected to the login page.',
+      accountActivationFailed:
+        'The account activation failed. You will be redirected to the login page.',
+      waitingForActivation:
+        'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
@@ -481,6 +496,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       addFeedback: 'Add feedback',
       submitFeedback: 'Submit feedback',
+      updateFeedback: 'Update feedback',
+      errorRatingElement:
+        'Your rating of the element was unfortunately not successful. Please try again later.',
       notFound:
         'The corresponding practice quiz is either not available or not yet published.',
       repetitionTitle: 'Repetition practice quizzes',
@@ -507,9 +525,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This question type is currently not available for practice quizzes',
       newPointsFrom: 'New points/XP from:',
       othersAnswered: 'Others answered as follows',
-      flagQuestion: 'Report question',
-      flagQuestionText:
-        'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       infoStack: 'Information element',
       scheduledAvailableFrom:
         'The practice quiz {name} will be available from {date}.',

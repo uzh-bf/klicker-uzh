@@ -19,6 +19,12 @@ async function seedFlashcardSet(
 ) {
   const quizInfo = await processQuizInfo(fileName)
 
+  const initialResults = {
+    CORRECT: 0,
+    PARTIAL: 0,
+    INCORRECT: 0,
+    total: 0,
+  }
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
       id: quizId,
@@ -53,12 +59,8 @@ async function seedFlashcardSet(
                   elementType: ElementType.FLASHCARD,
                   elementData: el,
                   options: {},
-                  results: {
-                    CORRECT: 0,
-                    PARTIAL: 0,
-                    INCORRECT: 0,
-                    total: 0,
-                  },
+                  results: initialResults,
+                  anonymousResults: initialResults,
                   ownerId: el.ownerId,
                   elementId: el.id,
                 },

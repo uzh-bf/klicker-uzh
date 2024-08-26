@@ -5,7 +5,11 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { StackInput } from 'src/types/app.js'
@@ -186,8 +190,9 @@ export async function manipulateMicroLearning(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -198,7 +203,13 @@ export async function manipulateMicroLearning(
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
+                instanceStatistics: {
+                  create: getInitialInstanceStatistics(
+                    ElementInstanceType.MICROLEARNING
+                  ),
+                },
                 element: {
                   connect: { id: element.id },
                 },
