@@ -18,7 +18,7 @@ model ParticipantAnalytics {
 
   timestamp DateTime @db.Date
 
-  // unsolvedQuestionsCount = responseCount - AggregatedAnalytics.totalElementsAvailable
+  // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
   responseCount Int // total number of unique questions attempted
 
@@ -27,16 +27,17 @@ model ParticipantAnalytics {
   totalPoints Int
   totalXp     Int
 
-  // meanTrialsCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
-  meanCorrectCount        Float @db.Real // aggregated over all questions
-  meanPartialCorrectCount Float @db.Real // aggregated over all questions
-  meanWrongCount          Float @db.Real // aggregated over all questions
+  // responseCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
+  meanCorrectCount        Float @db.Real // mean over responses to same question and sum over all questions
+  meanPartialCorrectCount Float @db.Real // mean over responses to same question and sum over all questions
+  meanWrongCount          Float @db.Real // mean over responses to same question and sum over all questions
 
-  // divide by responseCount to get the correctness rate
-  meanFirstCorrectCount Float @db.Real // aggregated over all questions
-  meanLastCorrectCount  Float @db.Real // aggregated over all questions
-
-  collectedAchievements String[]
+  // divide by responseCount to get the correctness rate (COURSE LEVEL ONLY)
+  // values can be computed based on firstCorrectness and lastCorrectness on QuestionResponse
+  firstCorrectCount Float? @db.Real // aggregated over all questions (sum)
+  lastCorrectCount  Float? @db.Real // aggregated over all questions (sum)
+  firstWrongCount   Float? @db.Real // aggregated over all questions (sum)
+  lastWrongCount    Float? @db.Real // aggregated over all questions (sum)
 
   competencyAnalytics CompetencyAnalytics[]
 
