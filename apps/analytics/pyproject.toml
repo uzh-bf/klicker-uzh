@@ -2,7 +2,7 @@
 name = "@klicker-uzh/analytics"
 version = "0.0.1"
 description = ""
-authors = ["Roland Schlaefli <roland.schlaefli@df.uzh.ch>"]
+authors = ["Roland Schlaefli <roland.schlaefli@df.uzh.ch>", "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"]
 license = "AGPL-3.0"
 readme = "README.md"
 packages = [{include = "@klicker_uzh"}]
