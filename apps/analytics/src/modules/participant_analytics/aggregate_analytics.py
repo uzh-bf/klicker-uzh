@@ -31,19 +31,37 @@ def aggregate_analytics(df_details, verbose=False):
     )
 
     # Divide each of the correctness columns by the sum of all and rename them to meanCorrect, meanPartial, meanIncorrect
-    df_analytics_corr_temp["sum"] = (
+    correctCount = (
         df_analytics_corr_temp["CORRECT"]
-        + df_analytics_corr_temp["PARTIAL"]
-        + df_analytics_corr_temp["INCORRECT"]
+        if "CORRECT" in df_analytics_corr_temp.columns
+        else 0
     )
+    partialCount = (
+        df_analytics_corr_temp["PARTIAL"]
+        if "PARTIAL" in df_analytics_corr_temp.columns
+        else 0
+    )
+    incorrectCount = (
+        df_analytics_corr_temp["INCORRECT"]
+        if "INCORRECT" in df_analytics_corr_temp.columns
+        else 0
+    )
+
+    df_analytics_corr_temp["sum"] = correctCount + partialCount + incorrectCount
     df_analytics_corr_temp["meanCorrect"] = (
         df_analytics_corr_temp["CORRECT"] / df_analytics_corr_temp["sum"]
+        if "CORRECT" in df_analytics_corr_temp.columns
+        else 0
     )
     df_analytics_corr_temp["meanPartial"] = (
         df_analytics_corr_temp["PARTIAL"] / df_analytics_corr_temp["sum"]
+        if "PARTIAL" in df_analytics_corr_temp.columns
+        else 0
     )
     df_analytics_corr_temp["meanIncorrect"] = (
         df_analytics_corr_temp["INCORRECT"] / df_analytics_corr_temp["sum"]
+        if "INCORRECT" in df_analytics_corr_temp.columns
+        else 0
     )
 
     # Aggregate the correctness columns for each participantId and courseId

@@ -1,3 +1,4 @@
+from datetime import date
 import pandas as pd
 
 
@@ -40,6 +41,12 @@ def set_course_dates(detail):
         course = detail["microLearning"]["course"]
         detail["course_start_date"] = course["startDate"]
         detail["course_end_date"] = course["endDate"]
+    else:
+        # If the instance is not part of a practice quiz or microlearning, set the start date far into the future -> no analytics should be computed
+        print("ELSE CASE")
+        detail["course_start_date"] = date(9999, 12, 31)
+        detail["course_end_date"] = date(9999, 12, 31)
+
     return detail
 
 
@@ -145,6 +152,11 @@ def compute_correctness(db, participant_response_details, verbose=False):
         )
 
     df_details = df_details.apply(set_course_dates, axis=1)
+
+    if len(df_details) == 0:
+        print("No question response details found for the given date.")
+        return None, None
+
     df_details["course_start_date"] = pd.to_datetime(df_details["course_start_date"])
     df_details["course_end_date"] = pd.to_datetime(df_details["course_end_date"])
     df_details = df_details[
@@ -187,6 +199,11 @@ def compute_correctness(db, participant_response_details, verbose=False):
     df_element_instances = pd.DataFrame(
         list(map(map_element_instance_options, element_instances))
     )
+
+    # If no element instances were found for the given element instance ids, return None
+    if len(df_element_instances) == 0:
+        print("No element instances found for the given element instance ids.")
+        return None, None
 
     # Compute the correctness for every response entry based on the element instance options (depending on the type of the element)
     df_details["correctness"] = df_details.apply(
