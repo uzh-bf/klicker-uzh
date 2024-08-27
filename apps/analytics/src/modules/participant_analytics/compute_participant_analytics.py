@@ -7,14 +7,10 @@ from .save_participant_analytics import save_participant_analytics
 def compute_participant_analytics(
     db, start_date, end_date, timestamp, analytics_type="DAILY", verbose=False
 ):
-    participant_response_details = get_participant_responses(
-        db, start_date, end_date, verbose
-    )
+    df_details = get_participant_responses(db, start_date, end_date, verbose)
 
     # Compute the correctness of each question response detail
-    df_details, df_element_instances = compute_correctness(
-        db, participant_response_details, verbose
-    )
+    df_details, df_element_instances = compute_correctness(db, df_details, verbose)
 
     if df_details is None:
         print(f"No participant responses found for {start_date} to {end_date}.")

@@ -2,54 +2,6 @@ from datetime import date
 import pandas as pd
 
 
-def map_details(detail, participantId):
-    courseId = (
-        detail["practiceQuiz"]["courseId"]
-        if detail["practiceQuiz"]
-        else detail["microLearning"]["courseId"]
-    )
-    return {**detail, "participantId": participantId, "courseId": courseId}
-
-
-def map_participants(participant):
-    participant_dict = participant.dict()
-    return list(
-        map(
-            lambda detail: map_details(detail, participant_dict["id"]),
-            participant_dict["detailQuestionResponses"],
-        )
-    )
-
-
-def convert_to_df(participants):
-    return pd.DataFrame(
-        [
-            item
-            for sublist in list(map(map_participants, participants))
-            for item in sublist
-        ]
-    )
-
-
-# Add the course start and end date to the dataframe for filtering of question response details later on
-def set_course_dates(detail):
-    if detail["practiceQuiz"] is not None:
-        course = detail["practiceQuiz"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
-    elif detail["microLearning"] is not None:
-        course = detail["microLearning"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
-    else:
-        # If the instance is not part of a practice quiz or microlearning, set the start date far into the future -> no analytics should be computed
-        print("ELSE CASE")
-        detail["course_start_date"] = date(9999, 12, 31)
-        detail["course_end_date"] = date(9999, 12, 31)
-
-    return detail
-
-
 def map_element_instance_options(instance):
     instance_dict = instance.dict()
     return {
@@ -140,19 +92,7 @@ def compute_correctness_columns(df_element_instances, row):
         raise ValueError("Unknown element type: {}".format(element_instance["type"]))
 
 
-def compute_correctness(db, participant_response_details, verbose=False):
-    # Convert the question response details to a pandas dataframe
-    df_details = convert_to_df(participant_response_details)
-
-    # Filter out the question response details that are not within the course dates and do not consider them for the analysis
-    if verbose:
-        print(
-            "Number of question response details before course date filtering:",
-            len(df_details),
-        )
-
-    df_details = df_details.apply(set_course_dates, axis=1)
-
+def compute_correctness(db, df_details, verbose=False):
     if len(df_details) == 0:
         print("No question response details found for the given date.")
         return None, None
