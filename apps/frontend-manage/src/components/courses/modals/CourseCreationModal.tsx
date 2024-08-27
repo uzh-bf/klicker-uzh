@@ -131,7 +131,7 @@ function CourseCreationModal({
         {({ errors, isValid, isSubmitting }) => (
           <Form>
             <div className="flex flex-col gap-2">
-              <div className="flex flex-col w-full gap-3 md:flex-row">
+              <div className="flex w-full flex-col gap-3 md:flex-row">
                 <FormikTextField
                   name="name"
                   label={t('manage.courseList.courseName')}
@@ -160,7 +160,7 @@ function CourseCreationModal({
                 className={{ input: { editor: 'h-20' } }}
                 showToolbarOnFocus={false}
               />
-              <div className="flex flex-col gap-2 mt-2 md:gap-8 md:flex-row md:items-end md:justify-between">
+              <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-end md:justify-between md:gap-8">
                 <FormikDateChanger
                   name="startDate"
                   label={t('manage.courseList.startDate')}
@@ -199,7 +199,7 @@ function CourseCreationModal({
                 />
               </div>
             </div>
-            <div className="flex flex-row justify-between mt-1">
+            <div className="mt-1 flex flex-row justify-between">
               {errors && (
                 <div className="text-sm text-red-700">{errors.description}</div>
               )}
@@ -209,7 +209,7 @@ function CourseCreationModal({
               type="submit"
               className={{
                 root: twMerge(
-                  'float-right text-white font-bold mt-3 -mb-5 w-full md:w-max bg-primary-80',
+                  'bg-primary-80 float-right -mb-5 mt-3 w-full font-bold text-white md:w-max',
                   (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}

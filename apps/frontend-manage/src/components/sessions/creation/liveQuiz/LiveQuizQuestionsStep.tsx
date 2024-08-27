@@ -41,11 +41,11 @@ function LiveQuizQuestionsStep({
             activeStep={activeStep}
             setStepValidity={setStepValidity}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="mt-1 md:mt-0 md:overflow-x-auto">
               <FieldArray name="blocks">
                 {({ push, remove, move, replace }: FieldArrayRenderProps) => (
-                  <div className="flex flex-row gap-4 overflow-x-auto w-fit">
+                  <div className="flex w-fit flex-row gap-4 overflow-x-auto">
                     {values.blocks.map(
                       (block: LiveQuizBlockFormValues, index: number) => (
                         <LiveQuizCreationBlock

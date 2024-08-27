@@ -116,7 +116,7 @@ function Session({ session }: SessionProps) {
 
   return (
     <>
-      <div key={session.id} className="p-1 border rounded" data-cy="session">
+      <div key={session.id} className="rounded border p-1" data-cy="session">
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
@@ -153,7 +153,7 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100',
+                        root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
                       }}
                       data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
@@ -182,7 +182,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100"
+                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
                       data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -197,7 +197,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100"
+                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
                       data-cy={`session-evaluation-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -215,13 +215,13 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: `start-session-${session.name}` }}
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary-100">
+                    <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
                       <div>{t('manage.sessions.startSession')}</div>
                     </div>
                   </Button>
                 )}
-                <div className="flex flex-row items-center text-sm gap-1">
+                <div className="flex flex-row items-center gap-1 text-sm">
                   <FontAwesomeIcon
                     icon={timeIcon[session.status]}
                     className="mr-1"
@@ -240,9 +240,9 @@ function Session({ session }: SessionProps) {
             </div>
           }
           primary={
-            <div className="flex flex-row float-right gap-1">
+            <div className="float-right flex flex-row gap-1">
               <Button
-                className={{ root: 'text-sm py-1 px-3' }}
+                className={{ root: 'px-3 py-1 text-sm' }}
                 onClick={() =>
                   router.push({
                     pathname: '/',
@@ -265,7 +265,7 @@ function Session({ session }: SessionProps) {
                 SessionStatus.Scheduled === session.status) && (
                 <>
                   <Button
-                    className={{ root: 'text-sm py-1 px-3' }}
+                    className={{ root: 'px-3 py-1 text-sm' }}
                     onClick={() =>
                       router.push({
                         pathname: '/',
@@ -286,7 +286,7 @@ function Session({ session }: SessionProps) {
                   </Button>
                   <Button
                     className={{
-                      root: 'border-red-600 text-sm py-1 px-3',
+                      root: 'border-red-600 px-3 py-1 text-sm',
                     }}
                     onClick={() => setDeletionModal(true)}
                     data={{ cy: `delete-session-${session.name}` }}
@@ -303,7 +303,7 @@ function Session({ session }: SessionProps) {
               {SessionStatus.Completed === session.status && (
                 <Button
                   className={{
-                    root: 'border-red-600 text-sm py-1 px-3',
+                    root: 'border-red-600 px-3 py-1 text-sm',
                   }}
                   onClick={() => setSoftDeletionModal(true)}
                   data={{ cy: `delete-past-session-${session.name}` }}
@@ -319,7 +319,7 @@ function Session({ session }: SessionProps) {
             </div>
           }
         >
-          <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
+          <div className="my-2 flex flex-row gap-2 overflow-y-scroll">
             {session.blocks?.map((block, index) => (
               <div key={block.id} className="flex flex-col gap-1">
                 <div className="italic">
@@ -331,11 +331,11 @@ function Session({ session }: SessionProps) {
                 {block.instances?.map((instance) => (
                   <div
                     key={instance.id}
-                    className="text-sm border border-solid rounded-md w-60 border-uzh-grey-100"
+                    className="border-uzh-grey-100 w-60 rounded-md border border-solid text-sm"
                   >
-                    <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
+                    <div className="bg-uzh-grey-40 flex flex-row justify-between px-1 py-0.5">
                       <Ellipsis
-                        className={{ markdown: 'font-bold text-base' }}
+                        className={{ markdown: 'text-base font-bold' }}
                         maxLength={20}
                       >
                         {instance.questionData!.name}

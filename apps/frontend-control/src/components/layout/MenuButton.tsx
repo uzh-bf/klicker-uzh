@@ -29,8 +29,8 @@ function MenuButton({
     <Button
       className={{
         root: twMerge(
-          'flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none text-white',
-          disabled && 'cursor-not-allowed text-uzh-grey-100',
+          'bg-grey-60 my-0.5 flex flex-1 flex-col justify-center gap-0 border-0 text-white shadow-none',
+          disabled && 'text-uzh-grey-100 cursor-not-allowed',
           className?.root
         ),
       }}

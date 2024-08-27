@@ -90,7 +90,7 @@ function JoinCourse({
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -123,7 +123,7 @@ function JoinCourse({
                     />
                     <Button
                       className={{
-                        root: 'float-right mt-2 border-uzh-grey-80',
+                        root: 'border-uzh-grey-80 float-right mt-2',
                       }}
                       type="submit"
                       disabled={isSubmitting || !isValid}
@@ -138,7 +138,7 @@ function JoinCourse({
           </div>
         ) : (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <CreateAccountForm

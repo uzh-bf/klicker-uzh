@@ -74,8 +74,8 @@ function InstanceHeader({
     previousElementFeedback?.upvote
       ? 1
       : previousElementFeedback?.downvote
-      ? -1
-      : 0
+        ? -1
+        : 0
   )
   const [feedbackValue, setFeedbackValue] = useState(
     previousElementFeedback?.feedback ?? undefined
@@ -86,8 +86,8 @@ function InstanceHeader({
       previousElementFeedback?.upvote
         ? 1
         : previousElementFeedback?.downvote
-        ? -1
-        : 0
+          ? -1
+          : 0
     )
     setFeedbackValue(previousElementFeedback?.feedback ?? undefined)
   }, [previousElementFeedback])

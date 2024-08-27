@@ -22,7 +22,7 @@ export function URLForm({ slideID }: URLFormProps) {
           .string()
           .matches(
             /https:\/\/manage\.klicker\.uzh\.ch\/sessions\/.{36}\/evaluation\?hmac=.{64}.*/,
-            "Please enter a valid URL according to the steps described"
+            "Please enter a valid URL according to the steps described",
           )
           .required("Please enter a valid URL according to the steps described"),
       })}

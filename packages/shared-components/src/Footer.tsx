@@ -8,7 +8,7 @@ interface FooterProps {
 
 function Footer({ className, children }: FooterProps): React.ReactElement {
   return (
-    <footer className={twMerge(' bg-slate-100 px-4 print:hidden', className)}>
+    <footer className={twMerge('bg-slate-100 px-4 print:hidden', className)}>
       <hr className="h-[1px] border-0 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
       {children ? (
         children

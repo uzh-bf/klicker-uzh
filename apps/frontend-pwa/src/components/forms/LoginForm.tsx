@@ -182,7 +182,7 @@ export function LoginForm({
                     {setMagicLinkLogin && (
                       <Button
                         className={{
-                          root: 'mt-3 w-full !justify-center border-uzh-grey-80 md:mt-2 md:w-max',
+                          root: 'border-uzh-grey-80 mt-3 w-full !justify-center md:mt-2 md:w-max',
                         }}
                         onClick={() => setMagicLinkLogin(true)}
                       >
@@ -192,7 +192,7 @@ export function LoginForm({
 
                     <Button
                       className={{
-                        root: 'mt-3 w-full !justify-center border-uzh-grey-80 md:mt-2 md:w-max',
+                        root: 'border-uzh-grey-80 mt-3 w-full !justify-center md:mt-2 md:w-max',
                       }}
                       type="submit"
                       disabled={isSubmitting}
@@ -209,7 +209,7 @@ export function LoginForm({
                   <UserNotification type="info" message={installAndroid}>
                     <Button
                       className={{
-                        root: 'mt-2 w-fit border-uzh-grey-80',
+                        root: 'border-uzh-grey-80 mt-2 w-fit',
                       }}
                       onClick={onInstallClick}
                       data={{ cy: 'install-student-pwa' }}

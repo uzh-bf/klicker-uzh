@@ -40,15 +40,15 @@ function MobileMenuBar({
       ? menuItems
       : undefined
     : menuItems
-    ? [homeMenuItem, ...menuItems]
-    : [homeMenuItem]
+      ? [homeMenuItem, ...menuItems]
+      : [homeMenuItem]
 
   if (!items) {
     return <></>
   }
 
   return (
-    <div className="flex flex-row justify-between w-full gap-1 py-1 text-white bg-slate-800">
+    <div className="flex w-full flex-row justify-between gap-1 bg-slate-800 py-1 text-white">
       {items.map((item: any) => (
         <NotificationBadgeWrapper
           count={item.unseenItems}
@@ -59,7 +59,7 @@ function MobileMenuBar({
         >
           <Button
             className={{
-              root: 'flex justify-center flex-1 flex-col gap-0 bg-grey-60 border-0 shadow-none',
+              root: 'bg-grey-60 flex flex-1 flex-col justify-center gap-0 border-0 shadow-none',
             }}
             key={item.value}
             onClick={() => {

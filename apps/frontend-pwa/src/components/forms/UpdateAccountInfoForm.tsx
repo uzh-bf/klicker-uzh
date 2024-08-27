@@ -119,9 +119,9 @@ function UpdateAccountInfoForm({
       {({ values, isSubmitting, isValid, validateField }) => {
         return (
           <Form>
-            <div className="flex flex-col justify-between order-2 gap-3 rounded-md md:order-1 md:bg-slate-50 md:p-4">
+            <div className="order-2 flex flex-col justify-between gap-3 rounded-md md:order-1 md:bg-slate-50 md:p-4">
               <div>
-                <H3 className={{ root: 'border-b mb-0' }}>
+                <H3 className={{ root: 'mb-0 border-b' }}>
                   {t('shared.generic.profile')}
                 </H3>
                 {!user.email ? (
@@ -143,7 +143,7 @@ function UpdateAccountInfoForm({
                     name="email"
                     label={t('shared.generic.email')}
                     className={{
-                      label: 'text-black mt-2',
+                      label: 'mt-2 text-black',
                     }}
                     data={{ cy: 'update-account-email' }}
                   />
@@ -185,7 +185,7 @@ function UpdateAccountInfoForm({
                     <div className="font-bold">
                       {t('pwa.profile.publicProfile')}
                     </div>
-                    <div className="flex flex-row gap-4 space-between">
+                    <div className="space-between flex flex-row gap-4">
                       <div className="flex flex-col items-center gap-1">
                         <FormikSwitchField
                           name="isProfilePublic"

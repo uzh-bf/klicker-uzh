@@ -1,5 +1,5 @@
-import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
@@ -65,7 +65,7 @@ export function SCAnswerOptions({
                   withProse
                   content={choice.value}
                   className={{
-                    root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
+                    root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
                   }}
                 />
               </Button.Label>

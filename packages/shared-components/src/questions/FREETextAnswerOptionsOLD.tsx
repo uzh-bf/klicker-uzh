@@ -22,7 +22,7 @@ export function FREETextAnswerOptionsOLD({
     <div className="flex flex-col gap-2">
       <textarea
         disabled={disabled}
-        className="rounded focus:border focus:border-solid focus:border-primary-80"
+        className="focus:border-primary-80 rounded focus:border focus:border-solid"
         id="responseInput"
         value={value}
         onChange={(e): void => onChange(e.target.value)}

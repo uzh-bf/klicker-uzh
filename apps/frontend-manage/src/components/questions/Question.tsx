@@ -117,22 +117,22 @@ function Question({
 
   return (
     <div
-      className="flex gap-1.5 items-center"
+      className="flex items-center gap-1.5"
       data-cy={`question-item-${title}`}
     >
       <Checkbox checked={checked} onCheck={onCheck} />
       <div
         className={twMerge(
-          'flex flex-col md:flex-row w-full p-3 gap-2 border border-solid rounded-lg cursor-[grab] hover:shadow-md',
+          'flex w-full cursor-[grab] flex-col gap-2 rounded-lg border border-solid p-3 hover:shadow-md md:flex-row',
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
       >
-        <div className="flex flex-row flex-1">
-          <div className="flex flex-col flex-1 gap-1">
-            <div className="flex flex-row items-center flex-none gap-2 text-lg">
+        <div className="flex flex-1 flex-row">
+          <div className="flex flex-1 flex-col gap-1">
+            <div className="flex flex-none flex-row items-center gap-2 text-lg">
               <a
-                className="inline-flex items-center flex-1 text-xl font-bold cursor-pointer hover:text-uzh-blue-100"
+                className="hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-xl font-bold"
                 role="button"
                 tabIndex={0}
                 type="button"
@@ -158,7 +158,7 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
+            <div className="flex flex-none flex-col gap-1 text-sm text-slate-600 md:flex-row md:gap-4">
               <div className="w-20">
                 <Badge className={twMerge(StatusColors[status])}>
                   {t(`shared.${status}.statusLabel`)}
@@ -177,7 +177,7 @@ function Question({
               </div>
             </div>
           </div>
-          <div className="hidden mr-6 w-max md:block">
+          <div className="mr-6 hidden w-max md:block">
             <QuestionTags
               tags={tags}
               tagfilter={tagfilter}
@@ -189,7 +189,7 @@ function Question({
         <div className="flex flex-row gap-2 md:flex-col">
           <Button
             className={{
-              root: 'bg-white md:w-36 text-sm md:text-base space-x-2',
+              root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
             }}
             onClick={(): void => setIsModificationModalOpen(true)}
             data={{ cy: `edit-question-${title}` }}
@@ -209,7 +209,7 @@ function Question({
           )}
           <Button
             className={{
-              root: 'bg-white text-sm md:text-base md:w-36 space-x-2',
+              root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
             }}
             onClick={(): void => setIsDuplicationModalOpen(true)}
             data={{ cy: `duplicate-question-${title}` }}
@@ -229,7 +229,7 @@ function Question({
           )}
           <Button
             className={{
-              root: 'text-sm md:text-base md:w-36 border-red-400 space-x-2',
+              root: 'space-x-2 border-red-400 text-sm md:w-36 md:text-base',
             }}
             onClick={() => setIsDeletionModalOpen(true)}
             data={{ cy: `delete-question-${title}` }}
@@ -285,19 +285,19 @@ function Question({
             open={isDeletionModalOpen}
             hideCloseButton={true}
             className={{
-              content: 'w-[40rem] min-h-max h-max self-center pt-0',
+              content: 'h-max min-h-max w-[40rem] self-center pt-0',
             }}
           >
             <div>
               <H2>{t('manage.questionPool.deleteQuestion')}</H2>
               <div>{t('manage.questionPool.confirmDeletion')}</div>
-              <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
+              <div className="border-uzh-grey-40 mt-1 rounded border border-solid p-2">
                 <H3>
                   {title} ({t(`shared.${type}.short`)})
                 </H3>
                 <div>{content}</div>
               </div>
-              <div className="mt-4 mb-2 text-sm italic">
+              <div className="mb-2 mt-4 text-sm italic">
                 {t('manage.questionPool.noQuestionRecovery')}
               </div>
             </div>

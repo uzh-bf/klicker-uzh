@@ -17,12 +17,12 @@ function GroupActivityClue({ clue }: GroupActivityClueProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-2 py-2 border rounded shadow',
+        'flex flex-row items-center gap-2 rounded border py-2 shadow',
         clue.participant.isSelf && 'border-primary-40'
       )}
       key={clue.participant.id}
     >
-      <div className="flex flex-col items-center flex-none w-24 px-4">
+      <div className="flex w-24 flex-none flex-col items-center px-4">
         <Image
           src={
             clue.participant.avatar
@@ -37,7 +37,7 @@ function GroupActivityClue({ clue }: GroupActivityClueProps) {
           {clue.participant.username}
         </div>
       </div>
-      <div className="text-sm h-max">
+      <div className="h-max text-sm">
         <div className="font-bold">{clue.displayName}</div>
         {typeof clue.value === 'string' && (
           <div>

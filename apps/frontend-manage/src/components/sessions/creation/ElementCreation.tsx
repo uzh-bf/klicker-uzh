@@ -166,8 +166,8 @@ function ElementCreation({
   ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
 
   return (
-    <div className="flex flex-col justify-center print-hidden md:h-[18rem] md:min-h-[18rem] mb-3">
-      <div className="w-full h-full">
+    <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18rem] md:min-h-[18rem]">
+      <div className="h-full w-full">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}

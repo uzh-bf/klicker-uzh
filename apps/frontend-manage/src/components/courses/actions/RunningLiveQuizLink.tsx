@@ -12,7 +12,7 @@ function RunningLiveQuizLink({ liveQuiz }: RunningLiveQuizLinkProps) {
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center gap-2 text-primary-100">
+    <div className="text-primary-100 flex flex-row items-center gap-2">
       <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
       <Link legacyBehavior passHref href={`/sessions/${liveQuiz.id}/cockpit`}>
         <a data-cy={`open-cockpit-session-${liveQuiz.name}`}>
