@@ -154,12 +154,12 @@ function Histogram({
             content={({ active, payload }) => {
               if (active && payload && payload.length > 0) {
                 return (
-                  <div className="rounded-md border border-solid border-uzh-grey-100 bg-white p-2">
+                  <div className="border-uzh-grey-100 rounded-md border border-solid bg-white p-2">
                     <div>
                       {t('manage.evaluation.histogramRange')}:{' '}
                       {payload[0]!.payload.label}
                     </div>
-                    <div className="font-bold text-primary-100">
+                    <div className="text-primary-100 font-bold">
                       {t('manage.evaluation.count')}:{' '}
                       {payload[0]!.payload.count}
                     </div>

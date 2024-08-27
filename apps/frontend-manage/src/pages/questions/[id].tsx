@@ -15,7 +15,7 @@ function QuestionDetails() {
   })
 
   return (
-    <div className="max-w-5xl p-8 m-auto">
+    <div className="m-auto max-w-5xl p-8">
       <StudentQuestion
         activeIndex={0}
         numItems={1}

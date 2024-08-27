@@ -10,7 +10,7 @@ let newlyInserted = false;
 const render = (Component) => {
   ReactDOM.render(
     <Component isOfficeInitialized={isOfficeInitialized} newlyInserted={newlyInserted} />,
-    document.getElementById("container")
+    document.getElementById("container"),
   );
 };
 

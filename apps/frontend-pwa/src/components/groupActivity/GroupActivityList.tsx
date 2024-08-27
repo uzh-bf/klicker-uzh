@@ -34,17 +34,17 @@ function GroupActivityList({
   return (
     <div className="mt-8">
       <H3>{t('shared.generic.groupActivities')}</H3>
-      <div className="flex flex-col pt-2 border-t gap-1">
+      <div className="flex flex-col gap-1 border-t pt-2">
         {groupActivities?.map((activity) => (
           <div
             key={activity.id}
-            className="flex flex-col md:flex-row border border-solid rounded-md p-1.5 justify-between gap-2 md:gap-0"
+            className="flex flex-col justify-between gap-2 rounded-md border border-solid p-1.5 md:flex-row md:gap-0"
             data-cy={`group-activity-${activity.displayName}`}
           >
             <div>
               <div>{activity.displayName}</div>
-              <div className="flex flex-row text-sm gap-5">
-                <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row gap-5 text-sm">
+                <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon icon={faHourglassStart} />
                   <div>
                     {t('pwa.groupActivity.startAt', {
@@ -54,7 +54,7 @@ function GroupActivityList({
                     })}
                   </div>
                 </div>
-                <div className="flex flex-row gap-1 items-center">
+                <div className="flex flex-row items-center gap-1">
                   <FontAwesomeIcon icon={faHourglassEnd} />
                   <div>
                     {t('pwa.groupActivity.endAt', {
@@ -70,13 +70,13 @@ function GroupActivityList({
             {dayjs().isAfter(activity.scheduledStartAt) &&
               dayjs().isBefore(activity.scheduledEndAt) &&
               !groupActivityInstances[activity.id]?.id && (
-                <div className="flex flex-row gap-1.5 h-max items-center">
+                <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
+                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faPlay} />
                     <div>{t('pwa.groupActivity.available')}</div>
                   </div>
@@ -87,13 +87,13 @@ function GroupActivityList({
               dayjs().isBefore(activity.scheduledEndAt) &&
               groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
-                <div className="flex flex-row gap-1.5 h-max items-center">
+                <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
+                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faUserGroup} />
                     <div>{t('pwa.groupActivity.started')}</div>
                   </div>
@@ -104,13 +104,13 @@ function GroupActivityList({
               dayjs().isBefore(activity.scheduledEndAt) &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
-                <div className="flex flex-row gap-1.5 h-max items-center">
+                <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
+                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faClock} />
                     <div>{t('pwa.groupActivity.submitted')}</div>
                   </div>
@@ -120,8 +120,8 @@ function GroupActivityList({
             {dayjs().isAfter(activity.scheduledEndAt) &&
               groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
-                <div className="flex flex-row gap-1.5 h-max items-center">
-                  <div className="flex flex-row items-center gap-2 py-0.5 bg-slate-300 rounded text-sm px-2 h-max">
+                <div className="flex h-max flex-row items-center gap-1.5">
+                  <div className="flex h-max flex-row items-center gap-2 rounded bg-slate-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faXmark} />
                     <div>{t('pwa.groupActivity.past')}</div>
                   </div>
@@ -133,7 +133,7 @@ function GroupActivityList({
               groupActivityInstances[activity.id]?.decisionsSubmittedAt &&
               (!groupActivityInstances[activity.id]?.results ||
                 !groupActivityInstances[activity.id]?.resultsComputedAt) && (
-                <div className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max">
+                <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                   <FontAwesomeIcon icon={faClock} />
                   <div>{t('pwa.groupActivity.submitted')}</div>
                 </div>
@@ -143,7 +143,7 @@ function GroupActivityList({
               groupActivityInstances[activity.id]?.resultsComputedAt &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.results && (
-                <div className="flex flex-row gap-1.5 h-max items-center">
+                <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
                     activity={activity}
@@ -151,7 +151,7 @@ function GroupActivityList({
                   />
                   {groupActivityInstances[activity.id]?.results.passed ? (
                     <div
-                      className="flex flex-row items-center gap-2 py-0.5 bg-green-300 rounded text-sm px-2 h-max"
+                      className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm"
                       data-cy="group-activity-passed-tag"
                     >
                       <FontAwesomeIcon icon={faCheck} />
@@ -159,7 +159,7 @@ function GroupActivityList({
                     </div>
                   ) : (
                     <div
-                      className="flex flex-row items-center gap-2 py-0.5 bg-red-400 rounded text-sm px-2 h-max"
+                      className="flex h-max flex-row items-center gap-2 rounded bg-red-400 px-2 py-0.5 text-sm"
                       data-cy="group-activity-failed-tag"
                     >
                       <FontAwesomeIcon icon={faXmark} />

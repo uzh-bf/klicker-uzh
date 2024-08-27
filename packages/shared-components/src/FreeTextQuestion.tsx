@@ -1,9 +1,9 @@
-import React from 'react'
 import type {
   FreeTextQuestionOptions,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -40,7 +40,7 @@ function FreeTextQuestion({
         {content !== '<br>' && (
           <div
             className={twMerge(
-              'bg-primary-10 prose mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
+              'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
             )}
           >
             <Markdown content={content} />

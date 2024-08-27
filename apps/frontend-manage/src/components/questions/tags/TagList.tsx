@@ -90,9 +90,8 @@ function TagList({
   const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
-  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
-    !compact
-  )
+  const [gamificationTagsVisible, setGamificationTagsVisible] =
+    useState(!compact)
 
   const resetDisabled = useMemo(
     () =>
@@ -115,7 +114,7 @@ function TagList({
   )
 
   return (
-    <div className="flex flex-col flex-1 h-max max-h-full p-2 md:w-[14rem] border border-uzh-grey-60 border-solid rounded-md text-sm overflow-y-auto">
+    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-[14rem]">
       <TagHeader
         text={t('manage.questionPool.elementStatus')}
         state={questionStatusVisible}
@@ -217,7 +216,7 @@ function TagList({
       </div>
 
       <Button
-        className={{ root: 'mt-4 mx-2 mb-2' }}
+        className={{ root: 'mx-2 mb-2 mt-4' }}
         disabled={resetDisabled}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}

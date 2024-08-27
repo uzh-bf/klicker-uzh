@@ -76,8 +76,8 @@ function LiveQuizCreationBlock({
   )
 
   return (
-    <div key={index} className="flex flex-col w-56" data-cy={`block-${index}`}>
-      <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
+    <div key={index} className="flex w-56 flex-col" data-cy={`block-${index}`}>
+      <div className="flex flex-row items-center justify-between rounded bg-slate-200 px-2 py-1 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="block-container-header">
             {t('shared.generic.blockN', { number: index + 1 })}
@@ -88,7 +88,7 @@ function LiveQuizCreationBlock({
               <Tooltip
                 tooltip={<LiveQuizBlocksError errors={error[index]} />}
                 delay={0}
-                className={{ tooltip: 'text-sm z-20' }}
+                className={{ tooltip: 'z-20 text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -101,7 +101,7 @@ function LiveQuizCreationBlock({
           <Button
             basic
             className={{
-              root: 'disabled:hidden hover:bg-primary-20 px-1',
+              root: 'hover:bg-primary-20 px-1 disabled:hidden',
             }}
             disabled={numOfBlocks === 1}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
@@ -114,7 +114,7 @@ function LiveQuizCreationBlock({
           <Button
             basic
             className={{
-              root: 'disabled:hidden hover:bg-primary-20 px-1',
+              root: 'hover:bg-primary-20 px-1 disabled:hidden',
             }}
             disabled={numOfBlocks === 1}
             onClick={() =>
@@ -131,7 +131,7 @@ function LiveQuizCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'px-1 hover:text-primary-100',
+              root: 'hover:text-primary-100 px-1',
             }}
             data={{ cy: `open-block-${index}-settings` }}
           >
@@ -143,7 +143,7 @@ function LiveQuizCreationBlock({
             basic
             onClick={() => remove(index)}
             className={{
-              root: 'px-1  hover:text-red-600',
+              root: 'px-1 hover:text-red-600',
             }}
             data={{ cy: 'delete-block' }}
           >
@@ -153,7 +153,7 @@ function LiveQuizCreationBlock({
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">
+      <div className="my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto">
         {block.titles.map((title, questionIdx) => {
           const errors =
             error && Array.isArray(error)
@@ -173,7 +173,7 @@ function LiveQuizCreationBlock({
           return (
             <div
               key={`${questionIdx}-${title}`}
-              className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
+              className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
               data-cy={`question-${questionIdx}-block-${index}`}
             >
               <div className="flex-1">
@@ -195,7 +195,7 @@ function LiveQuizCreationBlock({
                 <Button
                   basic
                   className={{
-                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
                   }}
                   disabled={block.questionIds.length === 1}
                   onClick={() => {
@@ -231,7 +231,7 @@ function LiveQuizCreationBlock({
                 <Button
                   basic
                   className={{
-                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
                   }}
                   disabled={block.questionIds.length === 1}
                   onClick={() => {
@@ -301,7 +301,7 @@ function LiveQuizCreationBlock({
         <Button
           fluid
           className={{
-            root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+            root: 'mb-2 justify-center gap-3 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
           }}
           onClick={() => {
             const { questionIds, titles, types } = Object.values(
@@ -343,7 +343,7 @@ function LiveQuizCreationBlock({
       <div
         ref={drop}
         className={twMerge(
-          'w-full text-center p-0.5 border border-solid rounded',
+          'w-full rounded border border-solid p-0.5 text-center',
           isOver && 'bg-primary-20'
         )}
         data-cy="drop-questions-here"
@@ -357,7 +357,7 @@ function LiveQuizCreationBlock({
           blockIx: index + 1,
         })}
         className={{
-          content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
+          content: '!h-max !min-h-max w-full !pb-0 sm:w-3/4 md:w-1/2',
         }}
       >
         <NumberField
@@ -377,7 +377,7 @@ function LiveQuizCreationBlock({
           data={{ cy: 'block-time-limit' }}
         />
         <Button
-          className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
+          className={{ root: 'bg-uzh-blue-100 float-right mt-3 text-white' }}
           onClick={() => setOpenSettings(false)}
           data={{ cy: 'close-block-settings' }}
         >

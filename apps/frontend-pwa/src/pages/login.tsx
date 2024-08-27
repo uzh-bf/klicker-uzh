@@ -111,7 +111,7 @@ function Login() {
   }
 
   return (
-    <div className="flex flex-col items-center h-full md:justify-center">
+    <div className="flex h-full flex-col items-center md:justify-center">
       <Formik
         initialValues={{ usernameOrEmail: '', password: '' }}
         validationSchema={loginSchema(magicLinkLogin)}

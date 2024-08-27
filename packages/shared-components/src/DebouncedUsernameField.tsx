@@ -1,11 +1,10 @@
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { FormikTextField } from '@uzh-bf/design-system'
 import type { TextFieldClassName } from '@uzh-bf/design-system'
+import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import React from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string
@@ -83,8 +82,8 @@ function DebouncedUsernameField({
           typeof valid === 'undefined'
             ? 'animate-spin bg-transparent !py-0'
             : !valid || typeof meta.error !== 'undefined'
-            ? 'bg-red-50 text-red-600'
-            : 'text-green-600',
+              ? 'bg-red-50 text-red-600'
+              : 'text-green-600',
           className?.icon
         ),
         input: twMerge(
@@ -103,8 +102,8 @@ function DebouncedUsernameField({
         typeof valid === 'undefined'
           ? faSpinner
           : valid === false || typeof meta.error !== 'undefined'
-          ? faX
-          : faCheck
+            ? faX
+            : faCheck
       }
       required={required}
       hideError={hideError}

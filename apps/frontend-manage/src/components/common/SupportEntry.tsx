@@ -21,10 +21,10 @@ function SupportEntry({ title, subtitle, href, icon, data }: Props) {
         target="_blank"
         data-cy={data?.cy}
         data-test={data?.test}
-        className="flex flex-row items-center w-full gap-4 px-3 py-1 text-black border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer"
+        className="flex w-full flex-row items-center gap-4 rounded-lg border border-solid px-3 py-1 text-black hover:cursor-pointer hover:bg-gray-200"
       >
         {icon && (
-          <div className="flex items-center justify-center w-6">
+          <div className="flex w-6 items-center justify-center">
             <FontAwesomeIcon icon={icon} size="lg" />
           </div>
         )}

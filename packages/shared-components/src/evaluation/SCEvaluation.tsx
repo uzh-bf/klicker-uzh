@@ -1,7 +1,7 @@
-import React from 'react'
 import type { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {

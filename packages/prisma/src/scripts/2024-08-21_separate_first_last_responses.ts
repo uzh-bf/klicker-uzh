@@ -133,8 +133,8 @@ async function run() {
           firstFlashcardCorrectness === FlashcardCorrectness.CORRECT
             ? 1
             : firstFlashcardCorrectness === FlashcardCorrectness.INCORRECT
-            ? 0
-            : 0.5
+              ? 0
+              : 0.5
 
         if (firstLastIdentical) {
           lastCorrectness = firstCorrectness
@@ -147,8 +147,8 @@ async function run() {
             lastFlashcardCorrectness === FlashcardCorrectness.CORRECT
               ? 1
               : lastFlashcardCorrectness === FlashcardCorrectness.INCORRECT
-              ? 0
-              : 0.5
+                ? 0
+                : 0.5
         }
       } else if (
         response.elementInstance!.elementType === ElementType.CONTENT
@@ -190,14 +190,14 @@ async function run() {
             firstCorrectness === 1
               ? ResponseCorrectness.CORRECT
               : firstCorrectness === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL,
+                ? ResponseCorrectness.WRONG
+                : ResponseCorrectness.PARTIAL,
           lastResponseCorrectness:
             lastCorrectness === 1
               ? ResponseCorrectness.CORRECT
               : lastCorrectness === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL,
+                ? ResponseCorrectness.WRONG
+                : ResponseCorrectness.PARTIAL,
         },
       })
     })

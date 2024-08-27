@@ -57,7 +57,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
       displayName={data.microLearning.displayName}
       course={data.microLearning.course ?? undefined}
     >
-      <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:mx-auto">
+      <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-3xl md:rounded md:border md:p-8 md:pt-6">
         {!selfData?.self && (
           <UserNotification type="warning" className={{ root: 'mb-4' }}>
             {t.rich('pwa.general.userNotLoggedIn', {
@@ -65,7 +65,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
                 <Button
                   basic
                   className={{
-                    root: 'font-bold hover:text-primary-100',
+                    root: 'hover:text-primary-100 font-bold',
                   }}
                   onClick={() =>
                     router.push(
@@ -88,7 +88,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
         <H3>{data.microLearning.displayName}</H3>
         <Prose
           className={{
-            root: 'max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current',
+            root: 'prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 max-w-none hover:text-current',
           }}
         >
           <DynamicMarkdown
@@ -96,7 +96,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
           />
         </Prose>
 
-        <div className="grid grid-cols-1 mb-4 text-sm md:mb-0 md:grid-cols-2 gap-y-1">
+        <div className="mb-4 grid grid-cols-1 gap-y-1 text-sm md:mb-0 md:grid-cols-2">
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
@@ -138,7 +138,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
         <Link href={`/microlearning/${data.microLearning.id}/0`} legacyBehavior>
           <Button
             className={{
-              root: 'justify-center w-full text-lg md:w-auto md:self-end',
+              root: 'w-full justify-center text-lg md:w-auto md:self-end',
             }}
             data={{ cy: 'start-microlearning' }}
           >

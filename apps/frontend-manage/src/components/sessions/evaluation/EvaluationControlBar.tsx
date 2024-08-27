@@ -97,7 +97,7 @@ function EvaluationControlBar({
   }, [blocks, selectedBlock])
 
   return (
-    <div className="flex flex-row justify-between w-full px-3 bg-white border-b-2 border-solid print:hidden">
+    <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
       <div>
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-2">
@@ -144,8 +144,8 @@ function EvaluationControlBar({
                 setSelectedInstanceIndex(Number(newValue))
               }}
               className={{
-                root: 'h-[2.65rem] z-20',
-                trigger: 'shadow-none rounded-none m-0 border-none h-full',
+                root: 'z-20 h-[2.65rem]',
+                trigger: 'm-0 h-full rounded-none border-none shadow-none',
               }}
               value={String(selectedInstanceIndex)}
               data={{ cy: 'evaluate-question-select' }}
@@ -170,9 +170,9 @@ function EvaluationControlBar({
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
               (blocks.length <= 2 * width + 1 || selectedBlock - width <= 0) &&
-                'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
             )}
           >
             <FontAwesomeIcon icon={faChevronLeft} size="lg" />
@@ -192,17 +192,17 @@ function EvaluationControlBar({
             }}
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent w-[7rem] text-center hover:bg-primary-20',
+                'hover:bg-primary-20 w-[7rem] border-b-2 border-transparent px-3 py-2 text-center',
                 !showLeaderboard &&
                   !showFeedbacks &&
                   !showConfusion &&
                   tab.value === selectedBlock &&
-                  `border-solid border-primary-80`
+                  `border-primary-80 border-solid`
               ),
             }}
             data={{ cy: `evaluate-block-${tab.value}` }}
           >
-            <div className="flex flex-row items-center justify-center w-full gap-2">
+            <div className="flex w-full flex-row items-center justify-center gap-2">
               <FontAwesomeIcon
                 size="xs"
                 icon={INSTANCE_STATUS_ICON[blocks[tab.value].blockStatus]}
@@ -231,10 +231,10 @@ function EvaluationControlBar({
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
               (blocks.length <= 2 * width + 1 ||
                 selectedBlock + width >= blocks.length - 1) &&
-                'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
             )}
           >
             <FontAwesomeIcon icon={faChevronRight} size="lg" />
@@ -245,8 +245,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showLeaderboard && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showLeaderboard && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {
@@ -272,8 +272,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showFeedbacks && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showFeedbacks && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {
@@ -298,8 +298,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showConfusion && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showConfusion && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {

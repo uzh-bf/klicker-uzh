@@ -81,15 +81,15 @@ function DescriptionStep({
       validationSchema={validationSchema}
     >
       {({ values, isValid, isSubmitting }) => (
-        <Form className="w-full h-full">
+        <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
             activeStep={activeStep}
             setStepValidity={setStepValidity}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
-            <div className="flex flex-row -mt-2">
-              <div className="flex-1 w-3/5 md:mr-6">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
+            <div className="-mt-2 flex flex-row">
+              <div className="w-3/5 flex-1 md:mr-6">
                 <FormikTextField
                   required
                   autoComplete="off"
@@ -113,9 +113,9 @@ function DescriptionStep({
                   data={dataDescription}
                 />
               </div>
-              <div className="hidden md:flex flex-col gap-1 w-2/5">
+              <div className="hidden w-2/5 flex-col gap-1 md:flex">
                 <H2>{t('shared.generic.preview')}</H2>
-                <div className="h-full w-full border border-solid rounded-md overflow-y-auto">
+                <div className="h-full w-full overflow-y-auto rounded-md border border-solid">
                   <div className="p-4">
                     <H3>{values.displayName}</H3>
                     <Markdown

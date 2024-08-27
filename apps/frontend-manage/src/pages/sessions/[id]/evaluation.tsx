@@ -191,10 +191,10 @@ function Evaluation() {
 
   if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (
-      <div className="flex flex-col items-center justify-center w-full h-full">
+      <div className="flex h-full w-full flex-col items-center justify-center">
         <UserNotification
           className={{
-            root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
+            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
           }}
           message={t('manage.evaluation.evaluationNotYetAvailable')}
         />
@@ -214,7 +214,7 @@ function Evaluation() {
       </Head>
 
       {router.query.hideControls !== 'true' && (
-        <div className="z-20 flex-none h-11">
+        <div className="z-20 h-11 flex-none">
           <EvaluationControlBar
             blocks={blocks}
             selectedBlock={selectedBlockIndex}
@@ -236,7 +236,7 @@ function Evaluation() {
         </div>
       )}
 
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col">
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -253,8 +253,8 @@ function Evaluation() {
 
         {showLeaderboard && !showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
-            <div className="p-4 border-t">
-              <div className="max-w-2xl mx-auto text-xl">
+            <div className="border-t p-4">
+              <div className="mx-auto max-w-2xl text-xl">
                 {data.sessionLeaderboard &&
                 data.sessionLeaderboard.length > 0 ? (
                   <Leaderboard
@@ -283,7 +283,7 @@ function Evaluation() {
           data.sessionEvaluation && (
             <div className="overflow-y-auto print:overflow-y-visible">
               <div className="p-4">
-                <div className="max-w-5xl mx-auto text-xl">
+                <div className="mx-auto max-w-5xl text-xl">
                   {feedbacks && feedbacks.length > 0 ? (
                     <EvaluationFeedbacks
                       feedbacks={feedbacks}
@@ -303,8 +303,8 @@ function Evaluation() {
 
         {!showLeaderboard && showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
-            <div className="p-4 border-t">
-              <div className="max-w-5xl mx-auto text-xl">
+            <div className="border-t p-4">
+              <div className="mx-auto max-w-5xl text-xl">
                 {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
                   <EvaluationConfusion confusionTS={confusionFeedbacks} />
                 ) : (
@@ -322,7 +322,7 @@ function Evaluation() {
 
       <div
         className={twMerge(
-          'flex-none h-14 z-20',
+          'z-20 h-14 flex-none',
           (showFeedbacks || showConfusion || showLeaderboard) && 'h-18'
         )}
       >
@@ -331,21 +331,21 @@ function Evaluation() {
             !showFeedbacks &&
             !showConfusion &&
             !showLeaderboard && (
-              <div className="flex flex-row items-center justify-between py-2.5 m-0">
+              <div className="m-0 flex flex-row items-center justify-between py-2.5">
                 <div className="text-lg" data-cy="session-total-participants">
                   {t('manage.evaluation.totalParticipants', {
                     number: currentInstance.participants,
                   })}
                 </div>
                 <div className="flex flex-row items-center gap-7">
-                  <div className="flex flex-row items-center gap-2 ml-2">
+                  <div className="ml-2 flex flex-row items-center gap-2">
                     <Button
                       onClick={() => {
                         settextSize({ type: 'decrease' })
                       }}
                       disabled={textSize.size === 'sm'}
                       className={{
-                        root: 'w-8 h-8 flex items-center justify-center',
+                        root: 'flex h-8 w-8 items-center justify-center',
                       }}
                       data={{ cy: 'decrease-font-size' }}
                     >
@@ -359,7 +359,7 @@ function Evaluation() {
                       }}
                       disabled={textSize.size === 'xl'}
                       className={{
-                        root: 'w-8 h-8 flex items-center justify-center',
+                        root: 'flex h-8 w-8 items-center justify-center',
                       }}
                       data={{ cy: 'increase-font-size' }}
                     >

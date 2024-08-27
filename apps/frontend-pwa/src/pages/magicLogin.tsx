@@ -66,7 +66,7 @@ function MagicLogin() {
         className="mx-auto"
         data-cy="login-logo"
       />
-      <H2 className={{ root: 'mt-4 mb-2' }}>
+      <H2 className={{ root: 'mb-2 mt-4' }}>
         {t('pwa.general.processingLogin')}
       </H2>
       <Loader />

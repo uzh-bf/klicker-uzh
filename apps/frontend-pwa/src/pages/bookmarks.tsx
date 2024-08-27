@@ -28,7 +28,7 @@ function Bookmarks() {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.general.myBookmarks')}
     >
-      <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>{t('pwa.general.selectCourse')}</H1>
         {data?.participantCourses?.length === 0 && (
           <div className="flex flex-col gap-2">

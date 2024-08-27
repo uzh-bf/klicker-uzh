@@ -3,9 +3,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
-import React from 'react'
 
 interface ContentelementProps {
   element: ElementInstance
@@ -34,7 +34,7 @@ function ContentElement({
     >
       <div
         className={twMerge(
-          'flex flex-row gap-3 leading-6 prose-p:!m-0 prose-img:!m-0',
+          'prose-p:!m-0 prose-img:!m-0 flex flex-row gap-3 leading-6',
           !hideReadButton && 'mb-1'
         )}
       >

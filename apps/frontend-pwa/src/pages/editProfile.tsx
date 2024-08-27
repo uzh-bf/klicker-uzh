@@ -45,8 +45,8 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
       course={{ displayName: t('shared.generic.title') }}
       displayName={t('pwa.profile.editProfile')}
     >
-      <div className="flex flex-col gap-8 md:gap-4 md:w-full md:max-w-5xl md:mx-auto">
-        <div className="flex flex-col w-full gap-8 md:gap-4 md:flex-row">
+      <div className="flex flex-col gap-8 md:mx-auto md:w-full md:max-w-5xl md:gap-4">
+        <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
           <div className="w-full md:w-1/2">
             <UpdateAccountInfoForm
               user={data.self}
@@ -54,7 +54,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
               setShowSuccess={setShowSuccess}
             />
           </div>
-          <div className="w-full md:w-1/2 md:h-full">
+          <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
               user={data.self}
               setShowError={setShowError}

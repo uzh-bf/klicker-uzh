@@ -983,13 +983,17 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed((count: number, responseHash: string) => {
-          return {
-            count: +count,
-            value:
-              acc[instance.id]['responseHashes'][responseHash] ?? responseHash,
-          }
-        }, dissoc('participants', cacheObj))
+        const results = mapObjIndexed(
+          (count: number, responseHash: string) => {
+            return {
+              count: +count,
+              value:
+                acc[instance.id]['responseHashes'][responseHash] ??
+                responseHash,
+            }
+          },
+          dissoc('participants', cacheObj)
+        )
 
         return {
           ...acc,

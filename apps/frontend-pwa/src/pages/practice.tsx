@@ -17,7 +17,7 @@ function Practice() {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('shared.generic.practiceTitle')}
     >
-      <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>

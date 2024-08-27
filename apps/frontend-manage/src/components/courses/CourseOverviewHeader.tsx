@@ -27,7 +27,7 @@ function CourseOverviewHeader({
             ?.join(' '),
         })}
       </H1>
-      <div className="flex flex-row items-center gap-4 mb-2">
+      <div className="mb-2 flex flex-row items-center gap-4">
         <CourseQRModal
           relativeLink={`/course/${id}/join?pin=${pinCode}`}
           triggerText={t('manage.course.joinCourse')}
