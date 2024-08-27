@@ -1,4 +1,3 @@
-from datetime import date
 import pandas as pd
 
 
@@ -84,9 +83,14 @@ def compute_correctness_columns(df_element_instances, row):
         return "INCORRECT"
 
     elif element_instance["type"] == "FREE_TEXT":
-        raise NotImplementedError(
-            "Free text correctness computation not implemented yet"
+        response_value = response["value"]
+        solutions = list(
+            map(lambda solution: solution.strip().lower(), options["solutions"])
         )
+        if response_value.strip().lower() in solutions:
+            return "CORRECT"
+
+        return "INCORRECT"
 
     else:
         raise ValueError("Unknown element type: {}".format(element_instance["type"]))
