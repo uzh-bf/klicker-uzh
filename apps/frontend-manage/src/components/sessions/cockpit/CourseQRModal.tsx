@@ -45,7 +45,7 @@ function CourseQRModal({
       title="QR Code"
       trigger={
         <Button
-          className={{ root: 'w-full !mr-0' }}
+          className={{ root: '!mr-0 w-full' }}
           onClick={() => setModalOpen(true)}
           data={dataTrigger}
         >
@@ -79,7 +79,7 @@ function CourseQRModal({
           fluid
           className={{
             root: twMerge(
-              'mt-3 text-lg font-bold text-white h-11 bg-primary-80',
+              'bg-primary-80 mt-3 h-11 text-lg font-bold text-white',
               className?.button
             ),
           }}

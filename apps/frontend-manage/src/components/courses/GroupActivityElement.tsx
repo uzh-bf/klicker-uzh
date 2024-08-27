@@ -77,7 +77,7 @@ function GroupActivityElement({
 
   return (
     <div
-      className="w-full p-2 border border-solid rounded border-uzh-grey-80"
+      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
       data-cy={`groupActivity-${groupActivity.name}`}
     >
       <div className="flex flex-row items-center justify-between">
@@ -98,7 +98,7 @@ function GroupActivityElement({
                 items={[
                   {
                     label: (
-                      <div className="flex flex-row text-primary-100 items-center gap-2 cursor-pointer">
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
                         <FontAwesomeIcon icon={faPencil} />
                         <div>{t('manage.course.editGroupActivity')}</div>
                       </div>
@@ -115,7 +115,7 @@ function GroupActivityElement({
                   },
                   {
                     label: (
-                      <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                         <FontAwesomeIcon
                           icon={faTrashCan}
                           className="w-[1.1rem]"
@@ -145,7 +145,7 @@ function GroupActivityElement({
                   href={`/courses/grading/groupActivity/${groupActivity.id}`}
                   data-cy={`grade-groupActivity-${groupActivity.name}`}
                 >
-                  <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
+                  <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
                     <FontAwesomeIcon
                       icon={faUpRightFromSquare}
                       className="w-[1.1rem]"
@@ -160,7 +160,7 @@ function GroupActivityElement({
                   data={{ cy: `unpublish-groupActivity-${groupActivity.name}` }}
                   basic
                 >
-                  <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                  <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                     <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
                     <div>{t('manage.course.unpublishGroupActivity')}</div>
                   </div>

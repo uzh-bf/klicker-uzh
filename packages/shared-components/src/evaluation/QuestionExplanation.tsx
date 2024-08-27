@@ -1,6 +1,6 @@
-import React from 'react'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 import DynamicMarkdown from './DynamicMarkdown'
 
 interface QuestionExplanationProps {
@@ -22,7 +22,7 @@ function QuestionExplanation({ explanation }: QuestionExplanationProps) {
       <div className="font-bold">{t('shared.generic.explanation')}</div>
       <DynamicMarkdown
         className={{
-          root: 'prose prose-sm max-w-none text-green-800 prose-p:mb-1 prose-p:mt-0',
+          root: 'prose prose-sm prose-p:mb-1 prose-p:mt-0 max-w-none text-green-800',
         }}
         content={explanation}
       />

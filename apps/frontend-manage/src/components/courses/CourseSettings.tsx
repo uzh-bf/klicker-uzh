@@ -61,12 +61,12 @@ function CourseSettings({
             setDescriptionEditMode={setDescriptionEditMode}
           />
         ) : (
-          <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80 prose-p:mb-2 last:prose-p:mb-0 prose-p:mt-0 prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none">
+          <div className="border-uzh-grey-80 prose-p:mb-2 last:prose-p:mb-0 prose-p:mt-0 prose prose-sm prose-blockquote:text-gray-500 flex max-w-none flex-row gap-2 rounded border border-solid leading-6 focus:!outline-none">
             <Markdown
               withProse
               content={description}
               className={{
-                root: 'w-full p-2 rounded prose-p:mt-0 prose-headings:mt-0',
+                root: 'prose-p:mt-0 prose-headings:mt-0 w-full rounded p-2',
               }}
               data={{ cy: 'course-description' }}
             />
@@ -89,7 +89,7 @@ function CourseSettings({
           setDescriptionEditMode={setDescriptionEditMode}
         />
       )}
-      <div className="flex flex-row items-center gap-8 pt-1 h-11">
+      <div className="flex h-11 flex-row items-center gap-8 pt-1">
         <div>
           <Switch
             disabled={isGamificationEnabled}

@@ -75,7 +75,7 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded w-full'
+          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:border md:p-8 md:pt-6'
         )}
       >
         <StepProgressWithScoring

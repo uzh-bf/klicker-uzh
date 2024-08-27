@@ -1,8 +1,8 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type {
   ChoicesElementData,
   ElementStack,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
 import type { StudentResponseType } from '../StudentElement'
 
@@ -33,9 +33,12 @@ function useStudentResponse({
               type: element.elementData.type,
               response: (
                 element.elementData as ChoicesElementData
-              ).options.choices.reduce((acc, _, ix) => {
-                return { ...acc, [ix]: undefined }
-              }, {} as Record<number, boolean | undefined>),
+              ).options.choices.reduce(
+                (acc, _, ix) => {
+                  return { ...acc, [ix]: undefined }
+                },
+                {} as Record<number, boolean | undefined>
+              ),
               correct: undefined,
               valid: false,
             },

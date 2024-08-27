@@ -72,7 +72,7 @@ function Layout({
 
       <div
         className={twMerge(
-          'flex-1 flex flex-col p-4 min-h-0 overflow-y-auto',
+          'flex min-h-0 flex-1 flex-col overflow-y-auto p-4',
           pageInFrame && 'px-0'
         )}
       >

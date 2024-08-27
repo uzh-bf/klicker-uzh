@@ -37,7 +37,7 @@ function StepProgressWithScoring({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row w-full gap-1 md:gap-2">
+    <div className="flex w-full flex-row gap-1 md:gap-2">
       <StepProgress
         displayOffsetLeft={(items.length ?? 0) > 5 ? 3 : undefined}
         displayOffsetRight={(items.length ?? 0) > 5 ? 1 : undefined}
@@ -57,7 +57,7 @@ function StepProgressWithScoring({
             return {
               className,
               element: (
-                <div className="flex flex-row justify-center w-full px-0.5 md:px-2">
+                <div className="flex w-full flex-row justify-center px-0.5 md:px-2">
                   <div className="flex flex-row items-center justify-between md:w-full">
                     <div
                       className={twMerge(
@@ -115,7 +115,7 @@ function StepProgressWithScoring({
       />
       {resetLocalStorage && (
         <Button
-          className={{ root: 'text-sm h-7 flex flex-row' }}
+          className={{ root: 'flex h-7 flex-row text-sm' }}
           onClick={() => {
             resetLocalStorage()
           }}

@@ -23,7 +23,7 @@ function StackDescriptionModal({
         stackIx: stackIx + 1,
       })}
       className={{
-        content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
+        content: '!h-max !min-h-max w-full !pb-0 sm:w-3/4 md:w-1/2',
       }}
     >
       <FormikTextField
@@ -39,11 +39,11 @@ function StackDescriptionModal({
         fieldName={`stacks.${stackIx}.description`}
         placeholder={t('manage.sessionForms.stackDescriptionPlaceholder')}
         showToolbarOnFocus={false}
-        className={{ label: 'mt-2  ' }}
+        className={{ label: 'mt-2' }}
         data={{ cy: `stack-${stackIx}-description` }}
       />
       <Button
-        className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
+        className={{ root: 'bg-uzh-blue-100 float-right mt-3 text-white' }}
         onClick={() => setModalOpen(false)}
         data={{ cy: 'close-stack-description' }}
       >

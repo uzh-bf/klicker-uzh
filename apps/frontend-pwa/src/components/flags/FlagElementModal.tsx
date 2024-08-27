@@ -175,7 +175,7 @@ function FlagElementModal({
       <Modal
         title={t('pwa.practiceQuiz.flagElement')}
         className={{
-          content: 'z-20 max-w-lg h-max',
+          content: 'z-20 h-max max-w-lg',
           overlay: 'z-10',
         }}
         open={open}
@@ -200,7 +200,7 @@ function FlagElementModal({
         hideCloseButton
         escapeDisabled
       >
-        <div className="mb-4 prose max-w-none">
+        <div className="prose mb-4 max-w-none">
           {t('pwa.practiceQuiz.flagElementText')}
         </div>
         <Formik
@@ -218,21 +218,21 @@ function FlagElementModal({
                   name="feedback"
                   placeholder={t('pwa.practiceQuiz.addFeedback')}
                   className={{
-                    input: 'w-full h-24 text-base',
+                    input: 'h-24 w-full text-base',
                   }}
                   data={{ cy: 'flag-element-textarea' }}
                 />
-                <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
+                <div className="mt-4 flex flex-col justify-between gap-2 md:flex-row md:gap-0">
                   <Button
                     onClick={() => setOpen(false)}
-                    className={{ root: 'text-base order-2 md:order-1' }}
+                    className={{ root: 'order-2 text-base md:order-1' }}
                     data={{ cy: 'cancel-flag-element' }}
                   >
                     {t('shared.generic.cancel')}
                   </Button>
                   <Button
                     className={{
-                      root: 'text-base float-right px-5 text-white disabled:opacity-20 order-1 md:order-2 border-0 bg-primary-80',
+                      root: 'bg-primary-80 order-1 float-right border-0 px-5 text-base text-white disabled:opacity-20 md:order-2',
                     }}
                     type="submit"
                     disabled={isSubmitting || !isValid}

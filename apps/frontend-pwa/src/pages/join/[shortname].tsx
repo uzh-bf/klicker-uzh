@@ -47,7 +47,7 @@ function Join({
 
   return (
     <Layout>
-      <div className="w-full max-w-md p-4 mx-auto mt-4 border rounded">
+      <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
         <div className="font-bold">
           {t.rich('pwa.general.activeSessionsBy', {
             i: (text) => <span className="italic">{text}</span>,

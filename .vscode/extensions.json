@@ -25,6 +25,7 @@
     "prisma.prisma",
     "stivo.tailwind-fold",
     "wix.vscode-import-cost",
-    "yzhang.markdown-all-in-one"
+    "yzhang.markdown-all-in-one",
+    "folke.vscode-monorepo-workspace"
   ]
 }

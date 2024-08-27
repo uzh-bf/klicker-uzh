@@ -63,7 +63,7 @@ function PracticeQuizElement({
 
   return (
     <div
-      className="w-full p-2 border border-solid rounded border-uzh-grey-80"
+      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
       data-cy={`practice-quiz-${practiceQuiz.name}`}
     >
       <div>
@@ -85,7 +85,7 @@ function PracticeQuizElement({
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row text-primary-100 items-center gap-1 cursor-pointer">
+                        <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
                           <FontAwesomeIcon
                             icon={faCopy}
                             size="sm"
@@ -115,7 +115,7 @@ function PracticeQuizElement({
                     },
                     {
                       label: (
-                        <div className="flex flex-row items-center text-primary-100 gap-1 cursor-pointer">
+                        <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
                           <FontAwesomeIcon icon={faPencil} />
                           <div>{t('manage.course.editPracticeQuiz')}</div>
                         </div>
@@ -133,7 +133,7 @@ function PracticeQuizElement({
 
                     {
                       label: (
-                        <div className="flex flex-row items-center text-red-600 gap-1 cursor-pointer">
+                        <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                           <FontAwesomeIcon
                             icon={faTrashCan}
                             className="w-[1.1rem]"
@@ -171,7 +171,7 @@ function PracticeQuizElement({
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row text-red-600 items-center gap-1 cursor-pointer">
+                        <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                           <FontAwesomeIcon
                             icon={faLock}
                             className="w-[1.1rem]"

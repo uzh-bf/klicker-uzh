@@ -57,7 +57,7 @@ function TagActions({
   })
 
   return (
-    <div className="flex-row hidden text-black group-hover:flex">
+    <div className="hidden flex-row text-black group-hover:flex">
       {onMoveUp && (
         <Button
           basic
@@ -103,7 +103,7 @@ function TagActions({
           disabled={active}
           onClick={() => setIsDeletionModalOpen(true)}
           className={{
-            root: 'hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
+            root: 'disabled:text-uzh-grey-60 disabled:hover:text-none hover:text-red-600',
           }}
           data={{ cy: `tag-list-item-${tag.name}-delete` }}
         >

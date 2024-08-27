@@ -53,11 +53,11 @@ function MicrolearningEvaluation() {
       displayName={microlearning.displayName}
       course={microlearning.course ?? undefined}
     >
-      <div className="flex flex-col gap-3 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-5xl md:rounded md:border md:p-8 md:pt-6">
         <div className="flex flex-row items-center gap-4">
           <FontAwesomeIcon
             icon={faCheckCircle}
-            className="text-green-600 w-14 h-14"
+            className="h-14 w-14 text-green-600"
           />
           <div>
             <H3>{t('shared.generic.congrats')}</H3>
@@ -70,7 +70,7 @@ function MicrolearningEvaluation() {
           </div>
         </div>
         <div>
-          <div className="flex flex-col items-center justify-between mt-3 md:flex-row md:mt-0">
+          <div className="mt-3 flex flex-col items-center justify-between md:mt-0 md:flex-row">
             <H3 className={{ root: 'flex flex-row justify-between' }}>
               {t('shared.generic.evaluation')}
             </H3>

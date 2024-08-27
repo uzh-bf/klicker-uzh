@@ -1,6 +1,5 @@
 // @ts-nocheck
 
-import React from 'react'
 import {
   ChoicesQuestionData,
   ElementType,
@@ -11,6 +10,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -240,7 +240,7 @@ export const StudentQuestion = ({
       {currentQuestion.content !== '<br>' && (
         <div
           className={twMerge(
-            'bg-primary-10 prose mt-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
+            'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mt-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
           )}
         >
           <Markdown content={currentQuestion.content} />

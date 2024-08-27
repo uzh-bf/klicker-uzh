@@ -32,13 +32,13 @@ function CompletionStep({
   const router = useRouter()
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 mx-auto">
+    <div className="mx-auto flex flex-col items-center gap-4 p-4">
       <div>
         {completionSuccessMessage
           ? completionSuccessMessage(name)
           : editMode
-          ? t('manage.sessionForms.changesSaved')
-          : t('manage.sessionForms.elementCreated')}
+            ? t('manage.sessionForms.changesSaved')
+            : t('manage.sessionForms.elementCreated')}
       </div>
       <div className="space-x-2">
         {children}

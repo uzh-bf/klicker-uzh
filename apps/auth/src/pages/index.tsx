@@ -77,7 +77,7 @@ function SignInOutButton() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="px-3 py-2 rounded shadow bg-slate-100 border-slate-300">
+      <p className="rounded border-slate-300 bg-slate-100 px-3 py-2 shadow">
         {t('auth.loginInfo')}
       </p>
       <Checkbox
@@ -124,7 +124,7 @@ function SignInOutButton() {
       )}
       <Button
         className={{
-          root: 'disabled:opacity-50 justify-center italic',
+          root: 'justify-center italic disabled:opacity-50',
         }}
         disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
@@ -147,9 +147,9 @@ export function Index() {
   const t = useTranslations()
 
   return (
-    <div className="m-auto flex w-full md:max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
-      <div className="flex flex-col items-center justify-center flex-1 gap-8 md:p-8">
-        <div className="w-full px-5 pb-4 text-center border-b sm:px-8">
+    <div className="m-auto flex w-full flex-grow flex-col md:max-w-2xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
+        <div className="w-full border-b px-5 pb-4 text-center sm:px-8">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -159,7 +159,7 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div className="flex flex-row justify-between w-full px-6 sm:px-10 md:mx-0">
+        <div className="flex w-full flex-row justify-between px-6 sm:px-10 md:mx-0">
           <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger
@@ -177,7 +177,7 @@ export function Index() {
           <SignInOutButton />
         </div>
       </div>
-      <div className="flex-none w-full">
+      <div className="w-full flex-none">
         <Footer className="!text-xs" />
       </div>
     </div>

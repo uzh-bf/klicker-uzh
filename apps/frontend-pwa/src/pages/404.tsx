@@ -13,9 +13,9 @@ function MissingPage() {
 
   return (
     <Layout className="h-full">
-      <div className="flex flex-col items-center gap-6 mx-auto my-auto text-center">
-        <div className="flex flex-row items-center gap-4 text-2xl text-red-600 sm:gap-6 md:gap-8 sm:text-3xl md:text-4xl">
-          <FontAwesomeIcon icon={faBan} className="h-14 sm:h-18 md:h-20" />
+      <div className="mx-auto my-auto flex flex-col items-center gap-6 text-center">
+        <div className="flex flex-row items-center gap-4 text-2xl text-red-600 sm:gap-6 sm:text-3xl md:gap-8 md:text-4xl">
+          <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
           <div>{t('shared.error.404')}</div>
         </div>
         {!dataParticipant?.self && (

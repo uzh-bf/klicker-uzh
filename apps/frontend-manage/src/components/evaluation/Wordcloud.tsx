@@ -28,7 +28,7 @@ function Wordcloud({
     })
   }, [data])
   return (
-    <div className="flex w-full h-full p-4">
+    <div className="flex h-full w-full p-4">
       <TagCloud
         colorOptions={{ luminosity: 'dark' }}
         maxSize={textSize.max}

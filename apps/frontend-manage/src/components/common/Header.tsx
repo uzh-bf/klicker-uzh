@@ -56,12 +56,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
 
   return (
     <div
-      className="border-b border-slate-300 flex flex-row items-center justify-between w-full h-full font-bold bg-slate-100 text-slate-700 print:!hidden"
+      className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
       data-cy="navigation"
     >
       <Navigation
         className={{
-          root: 'bg-slate-100 rounded-none',
+          root: 'rounded-none bg-slate-100',
         }}
       >
         {navigationItems.map((item) => (
@@ -71,11 +71,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
             label={item.label}
             className={{
               label: twMerge(
-                'text-base bg-left-bottom bg-gradient-to-r from-slate-700 to-slate-700 text-slate-700 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+                'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
                 item.active &&
-                  'underline underline-offset-[0.3rem] decoration-2'
+                  'underline decoration-2 underline-offset-[0.3rem]'
               ),
-              root: 'group text-slate-700 hover:bg-inherit transition-all duration-300 ease-in-out',
+              root: 'group text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
             }}
             onClick={() => {
               router.push(item.href)
@@ -97,7 +97,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           }
           dropdownWidth="w-36"
           className={{
-            root: 'hidden md:block h-9 w-9 group',
+            root: 'group hidden h-9 w-9 md:block',
             icon: twMerge(
               data?.userRunningSessions?.length !== 0 && 'text-green-600'
             ),
@@ -125,7 +125,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           label=""
           icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-5" />}
           className={{
-            root: 'hidden md:block h-9 group-hover:text-white bg-transparent hover:bg-transparent text-slate-700 hover:text-uzh-blue-100',
+            root: 'hover:text-uzh-blue-100 hidden h-9 bg-transparent text-slate-700 hover:bg-transparent group-hover:text-white md:block',
           }}
         />
         <Navigation.TriggerItem
@@ -139,9 +139,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
           dropdownWidth="w-[16rem]"
           className={{
             label:
-              'text-base bg-left-bottom bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out text-slate-700',
-            root: 'group flex flex-row items-center gap-1 text-slate-700 hover:bg-inherit transition-all duration-300 ease-in-out',
-            dropdown: 'p-1.5 gap-0',
+              'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
+            root: 'group flex flex-row items-center gap-1 text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
+            dropdown: 'gap-0 p-1.5',
           }}
           data={{ cy: 'user-menu' }}
         >

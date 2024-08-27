@@ -29,9 +29,9 @@ function JoinPage() {
 
   return (
     <Layout displayName={t('pwa.general.joinCourse')}>
-      <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="mx-auto max-w-sm md:mb-4 md:rounded md:border md:p-8 md:pt-6 lg:max-w-md">
         <H2>{t('pwa.general.joinCourse')}</H2>
-        <div className="mb-5 ">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
+        <div className="mb-5">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
           initialValues={{
             pin: '',
@@ -63,7 +63,7 @@ function JoinPage() {
 
                 <Button
                   className={{
-                    root: 'float-right mt-2 border-uzh-grey-80',
+                    root: 'border-uzh-grey-80 float-right mt-2',
                   }}
                   type="submit"
                   disabled={isSubmitting || !isValid}

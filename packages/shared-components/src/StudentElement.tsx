@@ -1,4 +1,3 @@
-import React from 'react'
 import type {
   ChoicesElementData,
   ElementInstance,
@@ -12,6 +11,7 @@ import {
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
+import React from 'react'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
