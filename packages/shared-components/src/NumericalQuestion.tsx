@@ -40,7 +40,7 @@ function NumericalQuestion({
         {content !== '<br>' && (
           <div
             className={twMerge(
-              'bg-primary-10 prose mb-4 mt-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
+              'bg-primary-10 prose mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6 prose-p:!m-0 prose-img:!m-0'
             )}
           >
             <Markdown content={content} />

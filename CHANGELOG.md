@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.9...v3.2.0-alpha.10) (2024-08-27)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** fix debounced validation of username field ([24bb5af](https://github.com/uzh-bf/klicker-uzh/commit/24bb5af4164d57bfbc933cc2c12d1e2242c301c5))
+
+
+### Other
+
+* simplify styling of element stack and improve placement of element feedback icons ([7055c6d](https://github.com/uzh-bf/klicker-uzh/commit/7055c6d8ba0ba7f7638aa05cf726eabec81cd403))
+
 ## [3.2.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.8...v3.2.0-alpha.9) (2024-08-25)
 
 

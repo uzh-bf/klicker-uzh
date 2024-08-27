@@ -50,6 +50,7 @@ interface InstanceHeaderProps {
   correctness?: ResponseCorrectnessType
   previousElementFeedback?: ElementFeedback
   stackInstanceIds: number[]
+  showSeparator?: boolean
   className?: string
 }
 
@@ -62,6 +63,7 @@ function InstanceHeader({
   correctness,
   previousElementFeedback,
   stackInstanceIds,
+  showSeparator = false,
   className,
 }: InstanceHeaderProps) {
   const [rateElement, { loading: ratingLoading }] =
@@ -156,7 +158,7 @@ function InstanceHeader({
   }
 
   return (
-    <div className={twMerge('mb-4', className)}>
+    <div className={className}>
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
@@ -171,7 +173,7 @@ function InstanceHeader({
           <H4 data={{ cy: `element-instance-header-${name}` }}>{name}</H4>
         </div>
         {withParticipant && (
-          <div className="flex flex-row items-center gap-4">
+          <div className="-mr-2 flex flex-row items-center gap-4">
             <Button
               basic
               active={vote === 1}
@@ -223,7 +225,7 @@ function InstanceHeader({
           </div>
         )}
       </div>
-      <hr className="h-[1px] border-0 bg-gray-300" />
+      {showSeparator && <hr className="mb-3 h-[1px] border-0 bg-gray-300" />}
     </div>
   )
 }

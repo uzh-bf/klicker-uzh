@@ -27,7 +27,7 @@ function ContentElement({
   return (
     <div
       className={twMerge(
-        'mt-4 rounded-lg border border-solid bg-slate-100 px-3 py-2',
+        'rounded-md border border-solid bg-slate-100 px-3 py-2',
         !hideReadButton && 'pb-10'
       )}
       data-cy={`content-element-${elementIx + 1}`}
