@@ -63,7 +63,7 @@ function GroupVisualization({
       ))}
 
       <div
-        className="absolute w-full text-sm font-bold text-center text-slate-700"
+        className="absolute w-full text-center text-sm font-bold text-slate-700"
         style={{ top: '29%' }}
       >
         {groupName}

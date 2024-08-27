@@ -40,7 +40,7 @@ function LiveQuizInformationStep({
             activeStep={activeStep}
             setStepValidity={setStepValidity}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="flex flex-row">
               <div className="w-full md:w-1/2">
                 <div className="w-full md:pr-14">
@@ -59,7 +59,7 @@ function LiveQuizInformationStep({
                   data-cy="insert-live-quiz-name"
                 />
               </div>
-              <div className="hidden md:flex flex-col gap-2 w-1/2 ml-1 p-3 border border-solid border-uzh-grey-80 bg-uzh-grey-20 rounded-md h-max">
+              <div className="border-uzh-grey-80 bg-uzh-grey-20 ml-1 hidden h-max w-1/2 flex-col gap-2 rounded-md border border-solid p-3 md:flex">
                 <PropertyList
                   elements={[
                     {

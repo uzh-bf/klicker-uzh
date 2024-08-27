@@ -43,7 +43,7 @@ function LiveQuizNameChangeModal({
         onClose={(): void => setOpen(false)}
         title={t('manage.sessions.changeLiveQuizName')}
         className={{
-          content: 'w-[30rem] min-h-max h-max self-center pt-0',
+          content: 'h-max min-h-max w-[30rem] self-center pt-0',
           title: 'text-xl',
         }}
       >
@@ -91,7 +91,7 @@ function LiveQuizNameChangeModal({
                 label={t('manage.sessionForms.name')}
                 tooltip={t('manage.sessionForms.liveQuizName')}
                 className={{
-                  root: 'mb-2 -mt-2 w-full',
+                  root: '-mt-2 mb-2 w-full',
                   tooltip: 'z-20 w-80',
                   label: 'w-36',
                 }}
@@ -111,7 +111,7 @@ function LiveQuizNameChangeModal({
                 }}
                 data-cy="insert-live-quiz-display-name"
               />
-              <div className="flex flex-row justify-between mt-3 -mb-4">
+              <div className="-mb-4 mt-3 flex flex-row justify-between">
                 <Button
                   type="button"
                   onClick={(): void => setOpen(false)}

@@ -32,11 +32,11 @@ function CourseSelectionPage() {
 
   return (
     <Layout>
-      <div className="flex justify-center w-full">
-        <div className="flex flex-col w-max">
+      <div className="flex w-full justify-center">
+        <div className="flex w-max flex-col">
           <H3>{t('manage.courseList.selectCourse')}:</H3>
           {dataCourses?.userCourses && dataCourses.userCourses.length > 0 ? (
-            <div className="md:w-[30rem] w-[20rem]">
+            <div className="w-[20rem] md:w-[30rem]">
               <div className="flex flex-col gap-2">
                 {dataCourses.userCourses.map((course) => (
                   <CourseListButton
@@ -56,7 +56,7 @@ function CourseSelectionPage() {
               </div>
             </div>
           ) : (
-            <div className="md:w-[30rem] w-[20rem]">
+            <div className="w-[20rem] md:w-[30rem]">
               <UserNotification
                 type="warning"
                 className={{ root: 'text-normal mb-3' }}

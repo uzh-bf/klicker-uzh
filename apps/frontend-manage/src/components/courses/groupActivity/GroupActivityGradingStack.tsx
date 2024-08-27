@@ -211,7 +211,7 @@ function GroupActivityGradingStack({
             )}
             {elements.map((element, ix) => (
               <div key={element.id} className="flex flex-col">
-                <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
+                <H3 className={{ root: '-mb-2 border-t border-gray-400 pt-2' }}>
                   {element.elementData.name}
                 </H3>
                 <StudentElement
@@ -232,7 +232,7 @@ function GroupActivityGradingStack({
                   }
                 >
                   {({ field, meta }: FastFieldProps) => (
-                    <div className="w-full mt-2">
+                    <div className="mt-2 w-full">
                       <FormLabel
                         label={t('shared.generic.feedback')}
                         labelType="small"
@@ -258,7 +258,7 @@ function GroupActivityGradingStack({
                     </div>
                   )}
                 </FastField>
-                <div className="flex flex-row items-center gap-3 mt-2 justify-end w-max self-end">
+                <div className="mt-2 flex w-max flex-row items-center justify-end gap-3 self-end">
                   <FormikNumberField
                     hideError
                     required
@@ -286,7 +286,7 @@ function GroupActivityGradingStack({
                 </div>
               </div>
             ))}
-            <div className="border-t border-black pt-2 self-end font-bold text-lg">
+            <div className="self-end border-t border-black pt-2 text-lg font-bold">
               {t('manage.groupActivity.totalAchievedPoints', {
                 achieved: values.grading.reduce(
                   (
@@ -311,7 +311,7 @@ function GroupActivityGradingStack({
             </div>
             <div className="-mt-4">
               <H2>{t('manage.groupActivity.generalFeedback')}</H2>
-              <div className="flex flex-row items-center gap-2 mb-3">
+              <div className="mb-3 flex flex-row items-center gap-2">
                 <div className="flex flex-row">
                   {t('manage.groupActivity.didGroupPass')}
                   <div className="mb-1 ml-0.5 mr-2 text-red-600">*</div>
@@ -364,9 +364,9 @@ function GroupActivityGradingStack({
               type="submit"
               className={{
                 root: twMerge(
-                  '-mt-2 h-10 w-max self-end font-bold bg-primary-80 text-white',
+                  'bg-primary-80 -mt-2 h-10 w-max self-end font-bold text-white',
                   (!isValid || gradingCompleted) &&
-                    'cursor-not-allowed bg-primary-60'
+                    'bg-primary-60 cursor-not-allowed'
                 ),
               }}
               loading={isSubmitting}

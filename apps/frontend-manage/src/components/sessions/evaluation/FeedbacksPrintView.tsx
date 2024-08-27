@@ -17,7 +17,7 @@ function FeedbacksPrintView({
   if (typeof feedbacks === 'undefined' || feedbacks.length === 0) return <></>
 
   return (
-    <div className="hidden print:block space-y-3">
+    <div className="hidden space-y-3 print:block">
       <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
         {t('manage.cockpit.printTitle', { name: sessionName })}
       </H2>

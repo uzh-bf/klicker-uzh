@@ -129,13 +129,13 @@ function GroupActivityGrading() {
                   }
                   className={{
                     root: twMerge(
-                      'bg-primary-80 font-bold text-white w-max self-end',
+                      'bg-primary-80 w-max self-end font-bold text-white',
                       (submissions.some(
                         (submission) =>
                           !submission.results && submission.decisions
                       ) ||
                         groupActivity.status === GroupActivityStatus.Graded) &&
-                        'cursor-not-allowed bg-primary-60'
+                        'bg-primary-60 cursor-not-allowed'
                     ),
                   }}
                   onClick={() => setFinalizeModal(true)}

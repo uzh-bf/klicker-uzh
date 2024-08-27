@@ -1,6 +1,6 @@
 import {
-  TailwindColorsUZH,
   TailwindAnimations,
+  TailwindColorsUZH,
   TailwindFonts,
 } from '@uzh-bf/design-system/dist/constants'
 

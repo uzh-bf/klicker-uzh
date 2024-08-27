@@ -39,7 +39,7 @@ export function FREETextAnswerOptions({
         data={{ cy: `free-text-input-${elementIx + 1}` }}
         className={{
           input:
-            'rounded focus:border focus:border-solid focus:border-primary-80',
+            'focus:border-primary-80 rounded focus:border focus:border-solid',
         }}
       />
     </div>

@@ -92,10 +92,10 @@ function StackBlockCreation({
   return (
     <div
       key={index}
-      className={twMerge('flex flex-col w-56', className)}
+      className={twMerge('flex w-56 flex-col', className)}
       data-cy={`stack-${index}`}
     >
-      <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
+      <div className="flex flex-row items-center justify-between rounded bg-slate-200 px-2 py-1 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="stack-container-header">
             {singleStackMode
@@ -110,7 +110,7 @@ function StackBlockCreation({
               <Tooltip
                 tooltip={<StackCreationErrors errors={error[index]} />}
                 delay={0}
-                className={{ tooltip: 'text-sm z-20' }}
+                className={{ tooltip: 'z-20 text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -122,7 +122,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
-              className={{ tooltip: 'text-sm z-20' }}
+              className={{ tooltip: 'z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faCircleExclamation}
@@ -136,7 +136,7 @@ function StackBlockCreation({
             <Button
               basic
               className={{
-                root: 'disabled:hidden hover:bg-primary-20 px-1',
+                root: 'hover:bg-primary-20 px-1 disabled:hidden',
               }}
               disabled={numOfStacks === 1}
               onClick={() => move(index, index !== 0 ? index - 1 : index)}
@@ -151,7 +151,7 @@ function StackBlockCreation({
             <Button
               basic
               className={{
-                root: 'disabled:hidden hover:bg-primary-20 px-1',
+                root: 'hover:bg-primary-20 px-1 disabled:hidden',
               }}
               disabled={numOfStacks === 1}
               onClick={() =>
@@ -169,7 +169,7 @@ function StackBlockCreation({
               basic
               onClick={() => setStackDescriptionModal(true)}
               className={{
-                root: 'px-1 hover:text-primary-100',
+                root: 'hover:text-primary-100 px-1',
               }}
               data={{ cy: `open-stack-${index}-description` }}
             >
@@ -183,7 +183,7 @@ function StackBlockCreation({
               basic
               onClick={() => remove(index)}
               className={{
-                root: 'px-1  hover:text-red-600',
+                root: 'px-1 hover:text-red-600',
               }}
               data={{ cy: 'delete-stack' }}
             >
@@ -194,7 +194,7 @@ function StackBlockCreation({
           )}
         </div>
       </div>
-      <div className="flex flex-col flex-1 my-2 overflow-y-auto max-h-[7.5rem]">
+      <div className="my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto">
         {stack.titles.map((title, questionIdx) => {
           const errors =
             error && Array.isArray(error)
@@ -215,7 +215,7 @@ function StackBlockCreation({
           return (
             <div
               key={`${questionIdx}-${title}`}
-              className="flex flex-row items-center text-xs border-b border-solid border-slate-200 last:border-b-0 py-0.5"
+              className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
               data-cy={`question-${questionIdx}-stack-${index}`}
             >
               <div className="flex-1">
@@ -237,7 +237,7 @@ function StackBlockCreation({
                 <Button
                   basic
                   className={{
-                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
                   }}
                   disabled={stack.elementIds.length === 1}
                   onClick={() => {
@@ -276,7 +276,7 @@ function StackBlockCreation({
                 <Button
                   basic
                   className={{
-                    root: 'flex flex-col justify-center disabled:hidden hover:bg-primary-20 px-1',
+                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
                   }}
                   disabled={stack.elementIds.length === 1}
                   onClick={() => {
@@ -354,7 +354,7 @@ function StackBlockCreation({
         <Button
           fluid
           className={{
-            root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+            root: 'mb-2 justify-center gap-3 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
           }}
           onClick={() => {
             const { elementIds, titles, types, hasSampleSolutions } =
@@ -403,7 +403,7 @@ function StackBlockCreation({
       <div
         ref={drop}
         className={twMerge(
-          'w-full text-center p-0.5 border border-solid rounded',
+          'w-full rounded border border-solid p-0.5 text-center',
           isOver && 'bg-primary-20'
         )}
         data-cy={`drop-elements-stack-${index}`}

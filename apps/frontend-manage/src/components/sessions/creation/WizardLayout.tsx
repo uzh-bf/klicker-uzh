@@ -120,9 +120,9 @@ function WizardLayout({
   const t = useTranslations()
 
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex flex-row items-end gap-8 h-6">
-        <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
+    <div className="flex h-full w-full flex-col">
+      <div className="flex h-6 flex-row items-end gap-8">
+        <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
           {editMode
             ? t('manage.questionForms.editElement', { element: title })
             : t('manage.questionForms.createElement', { element: title })}
@@ -138,12 +138,12 @@ function WizardLayout({
           activeIx={activeStep}
           disabledFrom={disabledFrom}
           className={{
-            item: 'last:rounded-r-md first:rounded-l-md hidden md:flex',
+            item: 'hidden first:rounded-l-md last:rounded-r-md md:flex',
           }}
         />
       </div>
 
-      <div className="flex flex-col flex-1 h-full w-full justify-between gap-1 pt-4">
+      <div className="flex h-full w-full flex-1 flex-col justify-between gap-1 pt-4">
         {!isCompleted && steps[activeStep]}
         {isCompleted && completionStep}
       </div>

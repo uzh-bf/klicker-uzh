@@ -1,8 +1,8 @@
-import React from 'react'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import type { PropsWithChildren } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ParticipantProps {
@@ -56,7 +56,7 @@ function Participant({
               width={avatar ? 30 : 20}
             />
             {level && (
-              <div className="absolute bottom-0 right-0 -mb-1 flex h-3 w-3 items-center justify-center rounded-full border border-solid border-uzh-grey-80 bg-white text-xs font-bold text-slate-600">
+              <div className="border-uzh-grey-80 absolute bottom-0 right-0 -mb-1 flex h-3 w-3 items-center justify-center rounded-full border border-solid bg-white text-xs font-bold text-slate-600">
                 {level}
               </div>
             )}

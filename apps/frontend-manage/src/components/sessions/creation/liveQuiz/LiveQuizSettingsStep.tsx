@@ -45,7 +45,7 @@ function LiveQuizSettingsStep({
       validationSchema={validationSchema}
     >
       {({ values, isValid, isSubmitting, setFieldValue }) => (
-        <Form className="w-full h-full">
+        <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
             activeStep={activeStep}
@@ -57,15 +57,15 @@ function LiveQuizSettingsStep({
             gamifiedCourses={gamifiedCourses ?? []}
             nonGamifiedCourses={nonGamifiedCourses ?? []}
           />
-          <div className="flex flex-col w-full h-full justify-between gap-1">
-            <div className="flex flex-col md:flex-row gap-4 justify-center">
+          <div className="flex h-full w-full flex-col justify-between gap-1">
+            <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div
                 className={twMerge(
-                  'border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-64 shadow-md',
+                  'border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-64',
                   values.isGamificationEnabled && 'border-orange-400'
                 )}
               >
-                <div className="flex flex-row gap-2 items-center justify-center">
+                <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
                   <div className="text-lg font-bold">
                     {t('shared.generic.gamification')}
@@ -94,8 +94,8 @@ function LiveQuizSettingsStep({
                   />
                 )}
               </div>
-              <div className="border border-solid p-2 border-uzh-grey-40 rounded-md w-full md:w-64 shadow-md">
-                <div className="flex flex-row gap-2 items-center justify-center mb-4">
+              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-64">
+                <div className="mb-4 flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faUsers} />
                   <div className="text-lg font-bold">
                     {t('shared.generic.settings')}

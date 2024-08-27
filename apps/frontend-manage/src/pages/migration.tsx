@@ -67,14 +67,14 @@ function Migration({ query }) {
 
   return (
     <Layout displayName={t('manage.migration.pageName')}>
-      <h1 className="text-3xl font-bold text-center">
+      <h1 className="text-center text-3xl font-bold">
         {t('manage.migration.pageName')}
       </h1>
-      <div className="flex flex-col self-center items-center p-4 w-[1000px] md-pt-8">
-        <div className="w-2/3 mb-4 bg-gray-50">
+      <div className="md-pt-8 flex w-[1000px] flex-col items-center self-center p-4">
+        <div className="mb-4 w-2/3 bg-gray-50">
           <Button
             className={{
-              root: twMerge('w-full shadow-sm h-16 bg-gray-50 justify-between'),
+              root: twMerge('h-16 w-full justify-between bg-gray-50 shadow-sm'),
             }}
             onClick={() => toggleStep(setIsStep1Shown)}
             disabled={currentStep !== 1}
@@ -90,8 +90,8 @@ function Migration({ query }) {
             )}
           </Button>
           {isStep1Shown && (
-            <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
-              <p className="mt-4 mb-4">
+            <div className="flex w-full flex-col border border-t border-slate-200 pl-2 pr-2">
+              <p className="mb-4 mt-4">
                 {t('manage.migration.step1Description')}
               </p>
               <TextField
@@ -107,7 +107,7 @@ function Migration({ query }) {
               />
               <Button
                 className={{
-                  root: twMerge('mt-8 mb-5 self-end bg-uzh-blue-80 text-white'),
+                  root: twMerge('bg-uzh-blue-80 mb-5 mt-8 self-end text-white'),
                 }}
                 onClick={() => {
                   try {
@@ -135,10 +135,10 @@ function Migration({ query }) {
           )}
         </div>
 
-        <div className="w-2/3 mb-4 bg-gray-50">
+        <div className="mb-4 w-2/3 bg-gray-50">
           <Button
             className={{
-              root: twMerge('w-full shadow-sm h-16 justify-between bg-gray-50'),
+              root: twMerge('h-16 w-full justify-between bg-gray-50 shadow-sm'),
             }}
             onClick={() => toggleStep(setIsStep2Shown)}
             disabled={currentStep !== 2}
@@ -154,18 +154,18 @@ function Migration({ query }) {
             )}
           </Button>
           {isStep2Shown && (
-            <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
-              <p className="mt-4 mb-4">
+            <div className="flex w-full flex-col border border-t border-slate-200 pl-2 pr-2">
+              <p className="mb-4 mt-4">
                 {t('manage.migration.step2Description')}
               </p>
             </div>
           )}
         </div>
 
-        <div className="w-2/3 mb-4 bg-gray-50">
+        <div className="mb-4 w-2/3 bg-gray-50">
           <Button
             className={{
-              root: twMerge('w-full shadow-sm h-16 justify-between bg-gray-50'),
+              root: twMerge('h-16 w-full justify-between bg-gray-50 shadow-sm'),
             }}
             onClick={() => toggleStep(setIsStep3Shown)}
             disabled={currentStep !== 3}
@@ -181,8 +181,8 @@ function Migration({ query }) {
             )}
           </Button>
           {isStep3Shown && (
-            <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
-              <p className="mt-4 mb-4">
+            <div className="flex w-full flex-col border border-t border-slate-200 pl-2 pr-2">
+              <p className="mb-4 mt-4">
                 {t('manage.migration.step3Description', {
                   email: data?.userProfile?.email,
                 })}
@@ -190,7 +190,7 @@ function Migration({ query }) {
               <Button
                 className={{
                   root: twMerge(
-                    'mt-8 mb-5 self-center bg-uzh-blue-80 text-white'
+                    'bg-uzh-blue-80 mb-5 mt-8 self-center text-white'
                   ),
                 }}
                 onClick={() => {
@@ -227,9 +227,9 @@ function Migration({ query }) {
           )}
         </div>
 
-        <div className="w-2/3 mb-4 bg-gray-50">
+        <div className="mb-4 w-2/3 bg-gray-50">
           <Button
-            className={{ root: twMerge('w-full shadow-sm h-16 bg-gray-50') }}
+            className={{ root: twMerge('h-16 w-full bg-gray-50 shadow-sm') }}
             onClick={() => toggleStep(setIsStep4Shown)}
             disabled={currentStep !== 4}
             data={{ cy: 'fourth-step-migration' }}
@@ -239,8 +239,8 @@ function Migration({ query }) {
             </h2>
           </Button>
           {isStep4Shown && (
-            <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
-              <p className="mt-4 mb-4">
+            <div className="flex w-full flex-col border border-t border-slate-200 pl-2 pr-2">
+              <p className="mb-4 mt-4">
                 {t('manage.migration.step4Description', {
                   email: data?.userProfile?.email,
                 })}

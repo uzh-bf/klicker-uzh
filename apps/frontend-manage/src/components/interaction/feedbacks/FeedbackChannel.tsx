@@ -76,7 +76,7 @@ function FeedbackChannel({
         }}
         {...filterProps}
       />
-      <div className="flex flex-col gap-2 mt-4 overflow-y-auto print:hidden">
+      <div className="mt-4 flex flex-col gap-2 overflow-y-auto print:hidden">
         {/* // TODO: styling */}
         {!feedbacks ||
           (feedbacks.length === 0 && (
@@ -107,7 +107,7 @@ function FeedbackChannel({
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    className={{ root: 'justify-center mr-2 w-9 h-9' }}
+                    className={{ root: 'mr-2 h-9 w-9 justify-center' }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}

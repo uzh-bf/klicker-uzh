@@ -57,9 +57,9 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex flex-col flex-grow max-w-xl md:!flex-grow-0 md:border md:rounded-lg md:shadow">
-      <div className="flex flex-col items-center justify-center flex-1 md:p-12">
-        <div className="w-full mb-8 text-center sm:mb-12">
+    <div className="flex max-w-xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+      <div className="flex flex-1 flex-col items-center justify-center md:p-12">
+        <div className="mb-8 w-full text-center sm:mb-12">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -91,7 +91,7 @@ export function LoginForm({
 
             <div className="flex flex-row justify-between">
               <Button
-                className={{ root: 'mt-2 border-uzh-grey-80' }}
+                className={{ root: 'border-uzh-grey-80 mt-2' }}
                 type="submit"
                 disabled={isSubmitting}
                 data={{ cy: 'submit-login' }}
@@ -101,11 +101,11 @@ export function LoginForm({
             </div>
 
             {installAndroid && onChrome && (
-              <div className="flex flex-col justify-center mt-4 md:hidden">
+              <div className="mt-4 flex flex-col justify-center md:hidden">
                 <UserNotification type="info" message={installAndroid}>
                   <Button
                     className={{
-                      root: 'mt-2 w-fit border-uzh-grey-80',
+                      root: 'border-uzh-grey-80 mt-2 w-fit',
                     }}
                     onClick={onInstallClick}
                     data={{ cy: 'install-control-pwa' }}
@@ -127,7 +127,7 @@ export function LoginForm({
           </Form>
         </div>
       </div>
-      <div className="flex-none w-full">
+      <div className="w-full flex-none">
         <Footer />
       </div>
     </div>

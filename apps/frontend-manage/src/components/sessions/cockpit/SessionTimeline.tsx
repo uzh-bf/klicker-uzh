@@ -139,9 +139,9 @@ function SessionTimeline({
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
-      <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
+      <div className="flex flex-1 flex-row flex-wrap items-end justify-between md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end gap-8">
-          <H1 className={{ root: 'text-xl m-0' }}>Quiz: {sessionName}</H1>
+          <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {sessionName}</H1>
           <div>
             <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
           </div>
@@ -150,8 +150,8 @@ function SessionTimeline({
           </div>
         </div>
 
-        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
-          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
+        <div className="mt-1.5 flex flex-row flex-wrap items-end gap-2 sm:mt-0">
+          <div className="flex w-full flex-row flex-wrap gap-2 sm:w-max">
             <Button
               onClick={() => setEmbedModalOpen(true)}
               className={{ root: 'h-10' }}
@@ -192,7 +192,7 @@ function SessionTimeline({
               </Button>
             </a>
           </div>
-          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+          <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
               href={`/quizzes/${sessionId}/evaluation`}
@@ -216,10 +216,10 @@ function SessionTimeline({
             </Link>
           </div>
           {isFeedbackSession && (
-            <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+            <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 className={{
-                  root: twMerge('bg-uzh-red-100 text-white h-10'),
+                  root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
                 onClick={handleEndSession}
                 data={{ cy: 'end-session-cockpit' }}
@@ -232,12 +232,12 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full gap-2 p-4 mt-2 overflow-auto border border-solid rounded-lg border-uzh-grey-80 md:mt-0">
+          <div className="border-uzh-grey-80 mt-2 flex w-full flex-row gap-2 overflow-auto rounded-lg border border-solid p-4 md:mt-0">
             <FontAwesomeIcon
               icon={faPlay}
               size="xl"
               className={twMerge(
-                'my-auto p-2 rounded-md',
+                'my-auto rounded-md p-2',
                 buttonState === 'firstBlock' && 'text-green-500'
               )}
             />
@@ -268,12 +268,12 @@ function SessionTimeline({
               icon={faStop}
               size="xl"
               className={twMerge(
-                'my-auto p-2 rounded-md',
+                'my-auto rounded-md p-2',
                 buttonState === 'endSession' && 'text-uzh-red-100'
               )}
             />
           </div>
-          <div className="flex flex-row justify-between w-full gap-2 mt-2">
+          <div className="mt-2 flex w-full flex-row justify-between gap-2">
             <Button
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
@@ -286,7 +286,7 @@ function SessionTimeline({
                 root: twMerge(
                   (buttonState === 'firstBlock' ||
                     buttonState === 'nextBlock') &&
-                    `text-white bg-primary-80`,
+                    `bg-primary-80 text-white`,
                   buttonState === 'endSession' && 'bg-uzh-red-100 text-white',
                   buttonState === 'blockActive' &&
                     inCooldown &&

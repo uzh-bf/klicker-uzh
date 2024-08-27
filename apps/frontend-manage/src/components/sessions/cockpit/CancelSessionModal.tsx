@@ -50,7 +50,7 @@ function CancelSessionModal({
           className={{
             root: twMerge(
               'bg-red-600 font-bold text-white',
-              enteredName !== title && 'opacity-60 cursor-not-allowed'
+              enteredName !== title && 'cursor-not-allowed opacity-60'
             ),
           }}
           data={{ cy: 'confirm-cancel-session' }}
@@ -70,7 +70,7 @@ function CancelSessionModal({
       onClose={(): void => setIsCancellationModalOpen(false)}
       open={isCancellationModalOpen}
       hideCloseButton={true}
-      className={{ content: 'w-[48rem] min-h-max h-max self-center !pt-0' }}
+      className={{ content: 'h-max min-h-max w-[48rem] self-center !pt-0' }}
     >
       <div>
         <H2>{t('manage.cockpit.confirmAbortSession', { title: title })}</H2>

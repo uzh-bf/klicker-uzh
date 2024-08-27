@@ -44,7 +44,7 @@ export function SCAnswerOptionsOLD({
                 withProse
                 content={choice.value}
                 className={{
-                  root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
+                  root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
                 }}
               />
             </Button.Label>

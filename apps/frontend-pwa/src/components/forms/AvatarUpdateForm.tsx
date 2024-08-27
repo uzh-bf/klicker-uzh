@@ -102,7 +102,7 @@ function AvatarUpdateForm({
       {({ values, isSubmitting, isValid }) => {
         return (
           <Form className="md:h-full">
-            <div className="rounded md:bg-slate-50 md:p-4 md:h-full">
+            <div className="rounded md:h-full md:bg-slate-50 md:p-4">
               <div className="flex flex-col justify-between md:h-full">
                 <div>
                   <H3 className={{ root: 'border-b' }}>
@@ -110,7 +110,7 @@ function AvatarUpdateForm({
                   </H3>
                   <BigHead
                     // @ts-ignore
-                    className="w-full border-b-4 md:h-48 border-primary-80"
+                    className="border-primary-80 w-full border-b-4 md:h-48"
                     eyebrows="raised"
                     faceMask={false}
                     lashes={false}
@@ -130,15 +130,15 @@ function AvatarUpdateForm({
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3 text-sm w-full">
+                  <div className="grid w-full grid-cols-2 gap-2 text-sm md:grid-cols-3">
                     {Object.keys(AVATAR_OPTIONS).map((key) => (
                       <FormikSelectField
                         className={{
                           root: 'w-full',
                           label: 'text-md',
                           select: {
-                            root: 'w-full md:w-38',
-                            trigger: 'w-full md:p-1 justify-between md:px-3',
+                            root: 'md:w-38 w-full',
+                            trigger: 'w-full justify-between md:p-1 md:px-3',
                           },
                         }}
                         key={key}

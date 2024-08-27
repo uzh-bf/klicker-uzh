@@ -34,16 +34,16 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
       open={open}
       onClose={() => setOpen(false)}
       className={{
-        overlay: 'text-black my-auto',
+        overlay: 'my-auto text-black',
         title: 'text-xl md:text-2xl',
       }}
       fullScreen
     >
-      <div className="flex flex-col flex-wrap gap-8 md:gap-16 md:flex-row">
-        <div className="flex flex-col justify-between flex-1">
+      <div className="flex flex-col flex-wrap gap-8 md:flex-row md:gap-16">
+        <div className="flex flex-1 flex-col justify-between">
           <div className="order-2 md:order-1">
             <H2>{t('manage.support.yourFeedback')}</H2>
-            <p className="mb-4 leading-6 prose">
+            <p className="prose mb-4 leading-6">
               {t('manage.support.feedbackText')}
             </p>
             <div className="flex flex-col gap-2">
@@ -71,7 +71,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
             </div>
           </div>
 
-          <div className="order-1 md:order-2 w-[200px] py-8 md:p-0 m-auto md:m-0">
+          <div className="order-1 m-auto w-[200px] py-8 md:order-2 md:m-0 md:p-0">
             <Image
               src="/KlickerLogo.png"
               width={300}
@@ -83,7 +83,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between flex-1">
+        <div className="flex flex-1 flex-col justify-between">
           <div className="flex flex-col gap-2">
             <H2>{t('manage.support.furtherResources')}</H2>
             <div className="text-gray-600">

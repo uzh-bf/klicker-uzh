@@ -26,9 +26,9 @@ function AccountDeletionForm() {
   }, [])
 
   return (
-    <div className="flex flex-col justify-between flex-1 order-1 h-full space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
+    <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
       <div className="flex-initial space-y-2">
-        <H3 className={{ root: 'border-b mb-0' }}>
+        <H3 className={{ root: 'mb-0 border-b' }}>
           {t('pwa.profile.deleteProfile')}
         </H3>
         <Prose className={{ root: '' }}>
@@ -38,7 +38,7 @@ function AccountDeletionForm() {
           onClick={(): void => setDeleteModalOpen(true)}
           data={{ cy: 'confirm-delete-account' }}
           className={{
-            root: 'border-red-700 text-red-600 hover:bg-red-600 hover:border-red-700 hover:text-white',
+            root: 'border-red-700 text-red-600 hover:border-red-700 hover:bg-red-600 hover:text-white',
           }}
         >
           {t('shared.generic.delete')}
@@ -53,7 +53,7 @@ function AccountDeletionForm() {
           onPrimaryAction={
             <Button
               className={{
-                root: 'bg-red-600 border-red-700 text-white',
+                root: 'border-red-700 bg-red-600 text-white',
               }}
               onClick={async () => {
                 await deleteParticipantAccount()

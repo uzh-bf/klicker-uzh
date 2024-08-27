@@ -90,7 +90,7 @@ function LecturerView() {
   return (
     <div
       className={twMerge(
-        'flex flex-row p-4 gap-8 border-t-[30px] border-t-only border-solid',
+        'border-t-only flex flex-row gap-8 border-t-[30px] border-solid p-4',
         borderColor
       )}
     >
@@ -112,23 +112,23 @@ function LecturerView() {
         /> */}
 
           {feedbacks?.length === 0 && (
-            <div className="mt-4 flex items-center border border-solid border-primary-100 text-2xl p-4 rounded">
+            <div className="border-primary-100 mt-4 flex items-center rounded border border-solid p-4 text-2xl">
               {t('manage.lecturer.noFeedbacks')}
             </div>
           )}
 
           {feedbacks?.map(({ id, content, createdAt, votes }: Feedback) => (
             <div
-              className="mt-4 flex items-center border border-solid border-primary-100 rounded"
+              className="border-primary-100 mt-4 flex items-center rounded border border-solid"
               key={id}
             >
               <div className="flex-1 p-4">
                 <p className="mb-0 text-2xl">{content}</p>
-                <div className="flex flex-row mt-2 text-lg text-gray-500">
+                <div className="mt-2 flex flex-row text-lg text-gray-500">
                   <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
                 </div>
               </div>
-              <div className="flex flex-col justify-between flex-initial pr-4">
+              <div className="flex flex-initial flex-col justify-between pr-4">
                 <div className="text-3xl text-gray-500">
                   {votes}{' '}
                   <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
@@ -140,8 +140,8 @@ function LecturerView() {
       )}
 
       {isConfusionFeedbackEnabled && (
-        <div className="flex-initial mt-4">
-          <div className="flex-initial p-4 w-[300px] rounded shadow print:hidden border-primary-100 border-solid border">
+        <div className="mt-4 flex-initial">
+          <div className="border-primary-100 w-[300px] flex-initial rounded border border-solid p-4 shadow print:hidden">
             <ConfusionCharts confusionValues={confusionSummary ?? undefined} />
           </div>
         </div>

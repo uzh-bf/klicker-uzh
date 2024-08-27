@@ -79,14 +79,14 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             <div
               key={login.id}
               className={twMerge(
-                'w-full border border-solid rounded flex flex-row justify-between bg-neutral-200 p-1'
+                'flex w-full flex-row justify-between rounded border border-solid bg-neutral-200 p-1'
               )}
             >
-              <div className="flex flex-row items-center gap-5 ml-1">
+              <div className="ml-1 flex flex-row items-center gap-5">
                 <div>{login.name}</div>
                 <div
                   className={twMerge(
-                    'w-max rounded py-0.5 px-1 text-sm font-bold',
+                    'w-max rounded px-1 py-0.5 text-sm font-bold',
                     login.scope === UserLoginScope.FullAccess && 'bg-green-300',
                     login.scope === UserLoginScope.SessionExec &&
                       'bg-yellow-200',
@@ -97,7 +97,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                 </div>
               </div>
               <div className="flex flex-row gap-0.5">
-                <div className="mt-auto mr-2 text-sm text-neutral-500">
+                <div className="mr-2 mt-auto text-sm text-neutral-500">
                   {login.lastLoginAt
                     ? t('manage.settings.lastUsed', {
                         date: dayjs(login.lastLoginAt).format('DD.MM.YYYY'),
@@ -156,8 +156,8 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             {({ values, setFieldValue, isValid, isSubmitting }) => {
               return (
                 <Form>
-                  <div className="flex flex-col md:flex-row gap-1.5 md:gap-0">
-                    <div className="flex flex-row items-center w-1/2 gap-3">
+                  <div className="flex flex-col gap-1.5 md:flex-row md:gap-0">
+                    <div className="flex w-1/2 flex-row items-center gap-3">
                       <Label
                         label={t('shared.generic.shortname')}
                         tooltip={t('manage.settings.shortnameTooltip')}
@@ -169,7 +169,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       />
                       <div>{shortname}</div>
                     </div>
-                    <div className="flex flex-row items-center justify-between w-full md:w-1/2">
+                    <div className="flex w-full flex-row items-center justify-between md:w-1/2">
                       <div className="flex flex-row items-center gap-3">
                         <Label
                           label={t('shared.generic.password')}
@@ -202,7 +202,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         >
                           <FontAwesomeIcon
                             icon={faClipboard}
-                            className="w-4 -mx-1"
+                            className="-mx-1 w-4"
                           />
                         </Button>
                         <Button
@@ -216,20 +216,20 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         >
                           <FontAwesomeIcon
                             icon={faArrowsRotate}
-                            className="w-4 -mx-1"
+                            className="-mx-1 w-4"
                           />
                         </Button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col md:flex-row mt-1.5 gap-2 md:gap-0">
+                  <div className="mt-1.5 flex flex-col gap-2 md:flex-row md:gap-0">
                     <FormikTextField
                       name="name"
                       label={t('manage.settings.loginName')}
                       labelType="large"
                       className={{
                         root: 'md:w-1/2 md:pr-5',
-                        input: ' bg-white',
+                        input: 'bg-white',
                       }}
                       data={{ cy: 'delegated-login-name' }}
                       required
@@ -257,7 +257,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     type="button"
                     className={{
                       root: twMerge(
-                        'float-right mt-2 mb-2 bg-primary-80 text-white',
+                        'bg-primary-80 float-right mb-2 mt-2 text-white',
                         (!isValid || isSubmitting) &&
                           'bg-primary-20 cursor-not-allowed'
                       ),
@@ -273,13 +273,13 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     open={confirmationModal}
                     onClose={() => setConfirmationModal(false)}
                     className={{
-                      content: '!min-h-[10rem] h-max w-1/2 !pb-1',
+                      content: 'h-max !min-h-[10rem] w-1/2 !pb-1',
                     }}
                   >
                     <div>
                       {t('manage.settings.confirmDelegatedAccesTooltip')}
                     </div>
-                    <div className="p-3 mt-2 bg-gray-300 rounded-lg">
+                    <div className="mt-2 rounded-lg bg-gray-300 p-3">
                       <div>
                         <span className="font-bold">
                           {t('shared.generic.shortname')}:{' '}
@@ -310,7 +310,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         >
                           <FontAwesomeIcon
                             icon={faClipboard}
-                            className="w-4 -mx-1"
+                            className="-mx-1 w-4"
                           />
                         </Button>
                       </div>
@@ -319,7 +319,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       type="submit"
                       className={{
                         root: twMerge(
-                          'float-right mt-2 mb-2 bg-primary-80 text-white',
+                          'bg-primary-80 float-right mb-2 mt-2 text-white',
                           (!isValid || isSubmitting) &&
                             'bg-primary-20 cursor-not-allowed'
                         ),

@@ -67,7 +67,7 @@ function Markdown({
               '&gt;': '>',
               '&#39;': "'",
               '&quot;': '"',
-            }[tag] || tag)
+            })[tag] || tag
         )
         .replace(/<br>/g, '&nbsp;')
 
@@ -144,7 +144,7 @@ function Markdown({
                     return (
                       <a
                         className={twMerge(
-                          'px-4 py-3 border rounded hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
+                          'my-1 flex flex-row gap-3 rounded border px-4 py-3 text-sm hover:bg-slate-200'
                         )}
                         href={href}
                       >
@@ -172,7 +172,7 @@ function Markdown({
     return (
       <Prose
         className={{
-          root: twMerge('max-w-none prose-p:mt-0', className?.root),
+          root: twMerge('prose-p:mt-0 max-w-none', className?.root),
         }}
         data={data}
       >

@@ -63,14 +63,14 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
 
   return (
     <div
-      className="w-full p-2 border border-solid rounded border-uzh-grey-80"
+      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
       data-cy={`session-${session.name}`}
     >
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis
             maxLength={50}
-            className={{ markdown: 'font-bold text-base' }}
+            className={{ markdown: 'text-base font-bold' }}
           >
             {session.name || ''}
           </Ellipsis>
@@ -89,7 +89,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row items-center gap-2 text-primary-100 cursor-pointer">
+                        <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
                           <FontAwesomeIcon icon={faPencil} />
                           <div>{t('manage.sessions.editSession')}</div>
                         </div>
@@ -106,7 +106,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     },
                     {
                       label: (
-                        <div className="flex flex-row items-center text-red-600 gap-2 cursor-pointer">
+                        <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
                           <FontAwesomeIcon icon={faTrashCan} />
                           <div>{t('manage.sessions.deleteSession')}</div>
                         </div>
@@ -135,7 +135,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                   items={[
                     {
                       label: (
-                        <div className="flex flex-row items-center text-red-600 gap-2 cursor-pointer">
+                        <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
                           <FontAwesomeIcon icon={faTrashCan} />
                           <div>{t('manage.sessions.deleteSession')}</div>
                         </div>
@@ -159,7 +159,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         </div>
       </div>
 
-      <div className="flex flex-row gap-2 ">
+      <div className="flex flex-row gap-2">
         {session.isGamificationEnabled && (
           <StatusTag color="bg-uzh-red-40" status="Gamified" icon={faTrophy} />
         )}

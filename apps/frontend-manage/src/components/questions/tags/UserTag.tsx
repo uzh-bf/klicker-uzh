@@ -31,7 +31,7 @@ function UserTag({
     <>
       <li
         className={twMerge(
-          'px-4 hover:cursor-pointer flex flex-row justify-between group',
+          'group flex flex-row justify-between px-4 hover:cursor-pointer',
           active && 'text-primary-100'
         )}
       >
@@ -43,7 +43,7 @@ function UserTag({
               basic
               onClick={(): void => handleTagClick(tag.name)}
               className={{
-                root: 'flex-1 hover:text-primary-100 whitespace-nowrap overflow-hidden',
+                root: 'hover:text-primary-100 flex-1 overflow-hidden whitespace-nowrap',
               }}
               data={{ cy: `user-tag-${tag.name}` }}
             >

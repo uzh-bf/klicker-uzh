@@ -63,9 +63,8 @@ const usePushNotifications = ({
           throw new Error('Service worker registration is not available.')
         }
 
-        const newSubscription = await subscribeParticipantToPushService(
-          registration
-        )
+        const newSubscription =
+          await subscribeParticipantToPushService(registration)
         setSubscription(newSubscription)
 
         // Store new subscription object on the server
