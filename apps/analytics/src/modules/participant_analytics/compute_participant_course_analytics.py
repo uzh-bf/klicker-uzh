@@ -31,7 +31,8 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
                                     "lte": course_end_date,
                                 }
                             },
-                        }
+                        },
+                        "questionResponses": True,
                     }
                 }
             },
@@ -45,14 +46,32 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
                 participations_dict,
             )
         )
+        responses_dict = list(
+            map(lambda x: x["participant"]["questionResponses"], participations_dict)
+        )
+
         details = [item for sublist in details_dict for item in sublist]
-        if len(details) == 0:
+        responses = [item for sublist in responses_dict for item in sublist]
+        if len(details) == 0 or len(responses) == 0:
             courses_without_responses += 1
-            print("No detail responses found for course {}".format(course_id))
+            print(
+                "No detail responses or response entries found for course {}".format(
+                    course_id
+                )
+            )
             continue
 
-        # Create pandas dataframe containing all question response details
+        # Create pandas dataframe containing all question responses and details
         df_details = pd.DataFrame(details)
+        df_responses = pd.DataFrame(responses)
+        df_responses = df_responses[
+            [
+                "courseId",
+                "participantId",
+                "firstResponseCorrectness",
+                "lastResponseCorrectness",
+            ]
+        ]
 
         # Add the course start and end dates to the dataframe
         df_details["course_start_date"] = course_start_date
@@ -71,9 +90,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
             continue
 
         # Compute participant analytics (score/xp counts and correctness statistics)
-        df_analytics = aggregate_analytics(df_details, verbose)
-        if verbose:
-            df_analytics.head()
+        df_analytics = aggregate_analytics(df_details, df_responses)
 
         # Save the aggreagted analytics into the database
         end_curr_date = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"

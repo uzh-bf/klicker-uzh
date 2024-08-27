@@ -16,7 +16,8 @@ model ParticipantAnalytics {
   id   Int           @id @default(autoincrement())
   type AnalyticsType
 
-  timestamp DateTime @db.Date
+  timestamp  DateTime @db.Date
+  computedAt DateTime @db.Date @default(now())
 
   // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
@@ -47,6 +48,9 @@ model ParticipantAnalytics {
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([type, courseId, participantId, timestamp])
 }
 
@@ -57,6 +61,7 @@ model AggregatedAnalytics {
 
   // all quantities are defined as the values at the end of the selected timeframe
   timestamp              DateTime @db.Date
+  computedAt             DateTime @db.Date @default(now())
   responseCount          Int
   participantCount       Int
   totalScore             Int
@@ -68,6 +73,9 @@ model AggregatedAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, timestamp])
 }
@@ -87,6 +95,9 @@ model CompetencyAnalytics {
   participantAnalytics   ParticipantAnalytics @relation(fields: [participantAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantAnalyticsId Int
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([competencyId, participantAnalyticsId])
 }
 
@@ -104,6 +115,9 @@ model AggregatedCompetencyAnalytics {
   // all metrics are only computed on weekly and course-wide basis
   aggregatedAnalytics   AggregatedAnalytics @relation(fields: [aggregatedAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   aggregatedAnalyticsId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([competencyId, aggregatedAnalyticsId])
 }
@@ -123,6 +137,9 @@ model ParticipantCourseAnalytics {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([courseId, participantId])
 }
 
@@ -140,6 +157,9 @@ model AggregatedCourseAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CompetencyTree {

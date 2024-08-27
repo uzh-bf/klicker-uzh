@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def aggregate_analytics(df_details, verbose=False):
+def aggregate_analytics(df_details, df_course_responses=None):
     # Aggregate the question response details for the participant and course level
     df_analytics_counts = (
         df_details.groupby(["participantId", "courseId"])
@@ -93,9 +93,53 @@ def aggregate_analytics(df_details, verbose=False):
         }
     )
 
+    df_course_analytics = None
+    if df_course_responses is not None:
+        # Count entries where firstResponseCorrectness is 'CORRECT', 'WRONG' and lastResponseCorrectness is 'CORRECT', 'WRONG' into separate columns - grouped by participantId and courseId
+        df_course_analytics = (
+            df_course_responses.groupby(["participantId", "courseId"])
+            .agg(
+                {
+                    "firstResponseCorrectness": [
+                        ("correct", lambda x: (x == "CORRECT").sum()),
+                        ("wrong", lambda x: (x == "WRONG").sum()),
+                    ],
+                    "lastResponseCorrectness": [
+                        ("correct", lambda x: (x == "CORRECT").sum()),
+                        ("wrong", lambda x: (x == "WRONG").sum()),
+                    ],
+                }
+            )
+            .reset_index()
+        )
+        df_course_analytics.columns = df_course_analytics.columns.map(
+            "_".join
+        ).str.strip("_")
+        df_course_analytics = df_course_analytics.rename(
+            columns={
+                "firstResponseCorrectness_correct": "firstCorrectCount",
+                "firstResponseCorrectness_wrong": "firstWrongCount",
+                "lastResponseCorrectness_correct": "lastCorrectCount",
+                "lastResponseCorrectness_wrong": "lastWrongCount",
+            }
+        )
+
     # Combine the analytics counts and correctness dataframes based on the unique participantId and courseId combinations
-    df_analytics = pd.merge(
-        df_analytics_counts, df_analytics_correctness, on=["participantId", "courseId"]
-    )
+    if df_course_analytics is None:
+        df_analytics = pd.merge(
+            df_analytics_counts,
+            df_analytics_correctness,
+            on=["participantId", "courseId"],
+        )
+    else:
+        df_analytics = pd.merge(
+            df_analytics_counts,
+            pd.merge(
+                df_analytics_correctness,
+                df_course_analytics,
+                on=["participantId", "courseId"],
+            ),
+            on=["participantId", "courseId"],
+        )
 
     return df_analytics

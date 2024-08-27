@@ -19,9 +19,7 @@ def compute_participant_analytics(
         return
 
     # Compute participant analytics (score/xp counts and correctness statistics)
-    df_analytics = aggregate_analytics(df_details, verbose)
-    if verbose:
-        df_analytics.head()
+    df_analytics = aggregate_analytics(df_details)
 
     # Save the aggreagted analytics into the database
     save_participant_analytics(db, df_analytics, timestamp, analytics_type)
