@@ -91,8 +91,6 @@
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",

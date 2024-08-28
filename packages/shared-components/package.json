@@ -54,9 +54,7 @@
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "run-p dev:tw:*",
     "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
-    "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w"
   },
   "volta": {
     "extends": "../../package.json"

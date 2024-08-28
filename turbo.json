@@ -68,10 +68,6 @@
     "VAPID_PUBLIC_KEY_TEST"
   ],
   "tasks": {
-    "format": {},
-    "format:check": {
-      "outputLogs": "errors-only"
-    },
     "lint": {
       "outputLogs": "errors-only"
     },

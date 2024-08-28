@@ -61,8 +61,6 @@
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "dev-server": "webpack serve --mode development",
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "lint": "office-addin-lint check",
     "lint:fix": "office-addin-lint fix",
     "package": "webpack --mode production",

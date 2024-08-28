@@ -32,8 +32,6 @@
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "size": "size-limit",
     "test": "jest"
   },

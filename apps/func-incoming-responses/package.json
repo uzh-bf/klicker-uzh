@@ -35,8 +35,6 @@
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7072 --verbose --javascript",
     "dev:ts": "tsup --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "prestart": "pnpm run build",
     "start": "func start -p 7072",
     "start:test": "func start -p 7072"

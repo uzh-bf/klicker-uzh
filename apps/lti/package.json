@@ -32,8 +32,6 @@
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "start": "node dist/index.js"
   },
   "engines": {
