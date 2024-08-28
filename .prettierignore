@@ -16,3 +16,26 @@ client.json
 server.json
 
 *.sql
+
+CHANGELOG.md
+
+packages/markdown/components.css
+packages/markdown/utilities.css
+
+packages/prisma/src/prisma/client/
+
+packages/graphql/instrumented/
+
+deploy/charts/
+
+
+apps/frontend-pwa/ios/
+apps/frontend-pwa/android/
+
+public/
+static/
+
+.docusaurus/
+.tsup/
+
+pnpm-lock.yaml

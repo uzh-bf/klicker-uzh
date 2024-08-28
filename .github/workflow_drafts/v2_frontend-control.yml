@@ -5,19 +5,19 @@ on:
     branches:
       - v2
     paths:
-      - "apps/frontend-control/**"
-      - ".github/workflows/v2_frontend-control**"
+      - 'apps/frontend-control/**'
+      - '.github/workflows/v2_frontend-control**'
   workflow_dispatch:
 
 env:
-  APP_PATH: "apps/frontend-control"
-  NODE_VERSION: "16.x"
+  APP_PATH: 'apps/frontend-control'
+  NODE_VERSION: '16.x'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: "Checkout GitHub Action"
+      - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
 
       - name: Setup Node ${{ env.NODE_VERSION }} Environment
@@ -29,7 +29,7 @@ jobs:
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
           github-token: ${{ secrets.GITHUB_TOKEN }} #Optional
-          vercel-args: "--prod --force" #Optional
+          vercel-args: '--prod --force' #Optional
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID}} #Required
           vercel-project-id: ${{ secrets.VERCEL_FRONTEND_MANAGE_ID}} #Required
           working-directory: ${{ env.APP_PATH }}

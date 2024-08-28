@@ -30,7 +30,6 @@ auth:
       cpu: 200m
       memory: 200Mi
 
-
 frontendPWA:
   priorityClassName: staging-workload
 

@@ -2,7 +2,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
 
 cron:
-  dailyGroupScores: "5 6,20 * * *"
+  dailyGroupScores: '5 6,20 * * *'
 
 auth:
   autoscaling:
