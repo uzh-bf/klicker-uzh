@@ -3,10 +3,10 @@ name: Build and deploy backend-sls to Function App (QA)
 on:
   push:
     branches:
-      - "v2"
+      - 'v2'
     paths:
-      - "apps/backend-sls/**"
-      - ".github/workflows/v2_klickeruzhprod-graphql**"
+      - 'apps/backend-sls/**'
+      - '.github/workflows/v2_klickeruzhprod-graphql**'
   workflow_dispatch:
 
 env:

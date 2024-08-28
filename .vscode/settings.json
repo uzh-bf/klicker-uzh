@@ -7,9 +7,7 @@
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (serverless)",
   "azureFunctions.projectSubpath": "apps/func-migration-v2-export",
-  "githubPullRequests.ignoredPullRequestBranches": [
-    "v3"
-  ],
+  "githubPullRequests.ignoredPullRequestBranches": ["v3"],
   "editor.formatOnSave": true,
   "sonarlint.connectedMode.project": {
     "connectionId": "uzh-bf",
