@@ -10,8 +10,6 @@
   "scripts": {
     "dev:email": "email dev -d src/emails",
     "build": "email export -d src/emails",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "update-templates": "doppler run --config dev -- tsx src/scripts/deploy.ts",
     "update-templates:qa": "doppler run --config stg -- tsx src/scripts/deploy.ts",
     "update-templates:prod": "doppler run --config prd -- tsx src/scripts/deploy.ts"

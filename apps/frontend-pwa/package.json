@@ -87,8 +87,6 @@
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "cross-env NODE_ENV=development next dev --port 3001",
     "dev:test": "cross-env NODE_ENV=test next dev --port 3001",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "generateAvatars": "ts-node --esm src/utils/generateAvatars.ts",
     "lint": "next lint",
     "pushTest": "node src/testPush.js",

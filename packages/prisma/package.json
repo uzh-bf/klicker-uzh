@@ -51,8 +51,6 @@
     "build:copy": "node src/copy.cjs",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "generate": "prisma generate --schema=src/prisma/schema",
     "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "doppler run --config prd -- pnpm run prisma:deploy:raw",

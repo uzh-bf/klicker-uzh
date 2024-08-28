@@ -46,8 +46,6 @@
     "dev:docs": "docusaurus start  --port 5000",
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
-    "format": "prettier --write src/",
-    "format:check": "prettier --check src/",
     "rename-version": "docusaurus-rename-version",
     "serve": "docusaurus serve",
     "swizzle": "docusaurus swizzle",

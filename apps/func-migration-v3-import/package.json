@@ -38,8 +38,6 @@
     "dev:function": "run-p dev:func dev:ts",
     "dev:migration": "run-s dev:copy dev:function",
     "dev:ts": "tsup --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "prestart": "pnpm run build",
     "start": "func start -p 7075"
   },
