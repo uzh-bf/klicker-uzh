@@ -50,7 +50,7 @@
     "tailwindcss-radix": "3.0.3",
     "ts-loader": "9.4.2",
     "typescript": "5.4.5",
-    "webpack": "5.83.1",
+    "webpack": "5.94.0",
     "webpack-cli": "5.1.1",
     "webpack-dev-server": "4.15.0"
   },
