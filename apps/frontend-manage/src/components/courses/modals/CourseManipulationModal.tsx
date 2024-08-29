@@ -104,17 +104,18 @@ function CourseManipulationModal({
   // convert all dates back to local time
   const today = new Date()
   const startDateInit = initialValues?.startDate
-    ? dayjs(initialValues?.startDate).local().toISOString().slice(0, 10)
+    ? dayjs(initialValues?.startDate).local().format().slice(0, 10)
     : new Date().toISOString().slice(0, 10)
   const endDateInit = initialValues?.endDate
-    ? dayjs(initialValues?.endDate).local().toISOString().slice(0, 10)
+    ? dayjs(initialValues?.endDate).local().format().slice(0, 10)
     : new Date(today.setMonth(today.getMonth() + 6)).toISOString().slice(0, 10)
   const groupDeadlineDateInit = initialValues?.groupDeadlineDate
-    ? dayjs(initialValues?.groupDeadlineDate).local().toISOString().slice(0, 10)
+    ? dayjs(initialValues?.groupDeadlineDate).local().format().slice(0, 10)
     : endDateInit
 
   return (
     <Modal
+      escapeDisabled
       title={
         initialValues
           ? t('manage.course.modifyCourse')
@@ -172,7 +173,7 @@ function CourseManipulationModal({
                   placeholder={t('manage.courseList.courseName')}
                   tooltip={t('manage.courseList.courseNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
-                  data={{ cy: 'create-course-name' }}
+                  data={{ cy: 'course-name' }}
                   required
                 />
                 <FormikTextField
@@ -181,7 +182,7 @@ function CourseManipulationModal({
                   placeholder={t('manage.courseList.courseDisplayName')}
                   tooltip={t('manage.courseList.courseDisplayNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
-                  data={{ cy: 'create-course-display-name' }}
+                  data={{ cy: 'course-display-name' }}
                   required
                 />
               </div>
@@ -190,7 +191,7 @@ function CourseManipulationModal({
                 label={t('shared.generic.description')}
                 placeholder={t('manage.courseList.addDescription')}
                 tooltip={t('manage.courseList.courseDescriptionTooltip')}
-                data={{ cy: 'create-course-description' }}
+                data={{ cy: 'course-description' }}
                 className={{ input: { editor: 'h-20' } }}
                 showToolbarOnFocus={false}
               />
@@ -200,8 +201,8 @@ function CourseManipulationModal({
                     name="startDate"
                     label={t('manage.courseList.startDate')}
                     tooltip={t('manage.courseList.startDateTooltip')}
-                    data={{ cy: 'create-course-start-date' }}
-                    dataButton={{ cy: 'create-course-start-date-button' }}
+                    data={{ cy: 'course-start-date' }}
+                    dataButton={{ cy: 'course-start-date-button' }}
                     disabled={startDatePast}
                     required
                   />
@@ -209,8 +210,8 @@ function CourseManipulationModal({
                     name="endDate"
                     label={t('manage.courseList.endDate')}
                     tooltip={t('manage.courseList.endDateTooltip')}
-                    data={{ cy: 'create-course-end-date' }}
-                    dataButton={{ cy: 'create-course-end-date-button' }}
+                    data={{ cy: 'course-end-date' }}
+                    dataButton={{ cy: 'course-end-date-button' }}
                     disabled={endDatePast}
                     required
                   />
@@ -221,9 +222,9 @@ function CourseManipulationModal({
                     colorLabel={t('shared.generic.color')}
                     position="top"
                     submitText={t('shared.generic.confirm')}
-                    dataTrigger={{ cy: 'create-course-color-trigger' }}
-                    dataHexInput={{ cy: 'create-course-color-hex-input' }}
-                    dataSubmit={{ cy: 'create-course-color-submit' }}
+                    dataTrigger={{ cy: 'course-color-trigger' }}
+                    dataHexInput={{ cy: 'course-color-hex-input' }}
+                    dataSubmit={{ cy: 'course-color-submit' }}
                     className={{
                       root: 'w-max',
                     }}
@@ -243,7 +244,7 @@ function CourseManipulationModal({
                       className={{
                         label: 'font-bold text-gray-600',
                       }}
-                      data={{ cy: 'create-course-gamification' }}
+                      data={{ cy: 'course-gamification' }}
                     />
                     <FormikSwitchField
                       required
