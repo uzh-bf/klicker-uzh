@@ -1,5 +1,4 @@
 import { v4 as uuid } from 'uuid'
-
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create questions', () => {

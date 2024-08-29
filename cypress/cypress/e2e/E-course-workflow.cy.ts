@@ -1,4 +1,5 @@
 import { v4 as uuid } from 'uuid'
+import messages from '../../../packages/i18n/messages/en'
 
 describe('Test course creation and editing functionalities', () => {
   const name = 'Z' + uuid()
@@ -118,7 +119,7 @@ describe('Test course creation and editing functionalities', () => {
       `${currentYear + 1}-01-01`
     )
     cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-02-01`)
-    cy.get('[data-cy="course-name-with-pin"]').click() // click outside to submit
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
     // check course end date and change it
     cy.get('[data-cy="course-end-date-button"]').click()
@@ -127,142 +128,185 @@ describe('Test course creation and editing functionalities', () => {
       `${currentYear + 2}-01-01`
     )
     cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-02-01`)
-    cy.get('[data-cy="course-name-with-pin"]').click() // click outside to submit
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
     // enable gamification for the created course and check that it worked (switch active and disabled)
-    cy.get('[data-cy="course-gamification-switch"]').should(
+    cy.get('[data-cy="course-gamification"]').should(
       'have.attr',
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="course-gamification-switch"]').click()
-    cy.get('[data-cy="cancel-enable-gamification"]').click()
-    cy.get('[data-cy="course-gamification-switch"]').click()
-    cy.get('[data-cy="confirm-enable-gamification"]').click()
-    cy.get('[data-cy="course-gamification-switch"]').should(
+    cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="course-gamification"]').should(
       'have.attr',
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="course-gamification-switch"]').should(
+
+    // save settings and check correct values afterwards (gamification should be enabled & blocked)
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+    cy.get('[data-cy="course-settings-button"]').click()
+    cy.get('[data-cy="course-name"]').should('have.value', newName)
+    cy.get('[data-cy="course-display-name"]').should(
+      'have.value',
+      newDisplayName
+    )
+    cy.get('[data-cy="course-start-date-button"]').click()
+    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-02-01`)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="course-end-date-button"]').click()
+    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-02-01`)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="course-gamification"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
       'have.attr',
       'disabled',
       'disabled'
     )
 
-    // TODO: add new test cases for the settings on the course overview related to groups
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 3}-01-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 1}-06-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="max-group-size"]').should('not.exist')
+    cy.get('[data-cy="preferred-group-size"]').should('not.exist')
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    // check if the group creation deadline has been set correctly
+    cy.get('[data-cy="course-settings-button"]').click()
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'have.value',
+      `${currentYear + 1}-06-01`
+    )
   })
 
-  // it('Test the creation of a new gamified course', () => {
-  //   // log into frontend-manage
-  //   cy.loginLecturer()
+  it('Test the creation of a new gamified course', () => {
+    // log into frontend-manage
+    cy.loginLecturer()
 
-  //   // switch to course list
-  //   cy.get('[data-cy="courses"]').click()
+    // switch to course list
+    cy.get('[data-cy="courses"]').click()
 
-  //   // create a new course
-  //   cy.get('[data-cy="course-list-button-new-course"]').click()
+    // create a new course
+    cy.get('[data-cy="course-list-button-new-course"]').click()
 
-  //   // fill in the form
-  //   cy.get('[data-cy="course-name"]').type(name)
-  //   cy.get('[data-cy="course-display-name"]').type(displayName)
+    // fill in the form
+    cy.get('[data-cy="course-name"]').type(name)
+    cy.get('[data-cy="course-display-name"]').type(displayName)
 
-  //   // change the start date
-  //   cy.get('[data-cy="course-start-date-button"]').click()
-  //   cy.get('[data-cy="course-start-date"]').type(
-  //     `${currentYear + 1}-01-01`
-  //   )
-  //   // click outside to save the value
-  //   cy.get('[data-cy="course-name"]').click()
+    // change the start date
+    cy.get('[data-cy="course-start-date-button"]').click()
+    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-01-01`)
+    // click outside to save the value
+    cy.get('[data-cy="course-name"]').click()
 
-  //   // change the end date
-  //   cy.get('[data-cy="course-end-date-button"]').click()
-  //   cy.get('[data-cy="course-end-date"]').type(
-  //     `${currentYear + 2}-01-01`
-  //   )
-  //   // click outside to save the value
-  //   cy.get('[data-cy="course-name"]').click()
+    // change the end date
+    cy.get('[data-cy="course-end-date-button"]').click()
+    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-01-01`)
+    // click outside to save the value
+    cy.get('[data-cy="course-name"]').click()
 
-  //   // test gamification toggle
-  //   cy.get('[data-cy="course-gamification"]').should(
-  //     'have.attr',
-  //     'data-state',
-  //     'checked'
-  //   )
-  //   cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-  //     'not.be.disabled'
-  //   )
-  //   cy.get('[data-cy="course-gamification"]').click()
-  //   cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
-  //   cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
-  //   cy.get('[data-cy="max-group-size"]').should('not.exist')
-  //   cy.get('[data-cy="preferred-group-size"]').should('not.exist')
+    // test gamification toggle
+    cy.get('[data-cy="course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
+    cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
+    cy.get('[data-cy="max-group-size"]').should('not.exist')
+    cy.get('[data-cy="preferred-group-size"]').should('not.exist')
 
-  //   // check if the values of the form are properly reset if gamification is disabled
-  //   cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
-  //   cy.get('[data-cy="course-gamification"]').click()
-  //   cy.get('[data-cy="group-creation-deadline-button"]').click()
-  //   cy.get('[data-cy="group-creation-deadline"]').clear()
-  //   cy.get('[data-cy="course-name"]').click() // click outside to save the value
-  //   cy.get('[data-cy="max-group-size"]').clear()
-  //   cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
-  //   cy.get('[data-cy="course-gamification"]').click()
-  //   cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
+    // check if the values of the form are properly reset if gamification is disabled
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').clear()
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="max-group-size"]').clear()
+    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
 
-  //   // change group settings
-  //   cy.get('[data-cy="course-gamification"]').click()
-  //   cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-  //     'not.be.disabled'
-  //   )
-  //   cy.get('[data-cy="group-creation-deadline-button"]').click()
-  //   cy.get('[data-cy="group-creation-deadline"]').type(
-  //     `${currentYear + 3}-01-01`
-  //   )
-  //   cy.get('[data-cy="course-name"]').click() // click outside to save the value
-  //   cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
-  //   cy.get('[data-cy="group-creation-deadline-button"]').click()
-  //   cy.get('[data-cy="group-creation-deadline"]').type(
-  //     `${currentYear + 1}-06-01`
-  //   )
-  //   cy.get('[data-cy="course-name"]').click() // click outside to save the value
-  //   cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
-  //   cy.get('[data-cy="max-group-size"]').click().type('10')
-  //   cy.get('[data-cy="preferred-group-size"]').click().type('4')
+    // change group settings
+    cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 3}-01-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 1}-06-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="max-group-size"]').click().type('10')
+    cy.get('[data-cy="preferred-group-size"]').click().type('4')
 
-  //   // submit the form
-  //   cy.get('[data-cy="manipulate-course-submit"]').click()
+    // submit the form
+    cy.get('[data-cy="manipulate-course-submit"]').click()
 
-  //   // check if the course is in the list
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.findByText(name).should('exist')
+    // check if the course is in the list
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(name).should('exist')
+  })
 
-  //   // TODO: check out the settings on the course if they have been stored correctly
-  // })
+  it('Test the course overview on the student side', () => {
+    // log into the student frontend
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.viewport('iphone-x')
+    cy.get('[data-cy="password-login"]').click()
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.wait(1000)
 
-  // it('Test the course overview on the student side', () => {
-  //   // log into the student frontend
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.clearAllCookies()
-  //   cy.clearAllLocalStorage()
-  //   cy.viewport('iphone-x')
-  //   cy.get('[data-cy="password-login"]').click()
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.wait(1000)
+    // check for the existince of the test course
+    cy.get(`[data-cy="course-button-${testCourseName}"]`).click()
+    cy.get('[data-cy="student-course-leaderboard-tab"]').should('exist')
 
-  //   // check for the existince of the test course
-  //   cy.get(`[data-cy="course-button-${testCourseName}"]`).click()
-  //   cy.get('[data-cy="student-course-leaderboard-tab"]').should('exist')
+    // check if the leaderboards exist
+    cy.findByText(messages.pwa.courses.individualLeaderboard).should('exist')
+    cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
 
-  //   // check if the leaderboards exist
-  //   cy.findByText(messages.pwa.courses.individualLeaderboard).should('exist')
-  //   cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
-
-  //   // TODO: join the course created above (extract the pin after generation)
-  // })
+    // TODO: join the course created above (extract the pin after generation)
+  })
 })
