@@ -83,6 +83,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
+    ).click()
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -253,6 +260,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
+    ).click()
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -490,7 +504,7 @@ describe('Different practice quiz workflows', () => {
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // change the multiplier to 4, reset time to 10 days and order to sequential
+    // change the multiplier to 4, reset time to 10 days and order to spaced repetition
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier2)
@@ -508,6 +522,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
+    ).click()
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add the question two further times
