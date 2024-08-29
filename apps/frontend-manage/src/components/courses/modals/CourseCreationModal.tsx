@@ -10,6 +10,7 @@ import {
   FormikNumberField,
   FormikSwitchField,
   FormikTextField,
+  H3,
   Modal,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -35,6 +36,10 @@ interface CourseCreationFormData {
   startDate: string
   endDate: string
   isGamificationEnabled: boolean
+  isGroupCreationEnabled: boolean
+  groupCreationDeadline: string
+  maxGroupSize: number
+  preferredGroupSize: number
 }
 
 // TODO: add notification email settings, once more generally compatible solution is available
@@ -165,32 +170,57 @@ function CourseCreationModal({
                 className={{ input: { editor: 'h-20' } }}
                 showToolbarOnFocus={false}
               />
-              <div className="mt-2 flex flex-col gap-2 md:grid md:grid-cols-4">
-                <FormikDateChanger
-                  name="startDate"
-                  label={t('manage.courseList.startDate')}
-                  tooltip={t('manage.courseList.startDateTooltip')}
-                  data={{ cy: 'create-course-start-date' }}
-                  dataButton={{ cy: 'create-course-start-date-button' }}
-                  required
-                  className={{ root: 'order-1' }}
-                />
-                <FormikSwitchField
-                  required
-                  labelLeft
-                  name="isGamificationEnabled"
-                  label={t('shared.generic.gamification')}
-                  className={{
-                    root: twMerge(!values.isGamificationEnabled && 'order-4'),
-                    label: 'font-bold text-gray-600',
-                  }}
-                  data={{ cy: 'create-course-gamification' }}
-                />
-                {values.isGamificationEnabled && (
-                  <>
+              <div className="mt-2 flex flex-col gap-6">
+                <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
+                  <FormikDateChanger
+                    name="startDate"
+                    label={t('manage.courseList.startDate')}
+                    tooltip={t('manage.courseList.startDateTooltip')}
+                    data={{ cy: 'create-course-start-date' }}
+                    dataButton={{ cy: 'create-course-start-date-button' }}
+                    required
+                  />
+                  <FormikDateChanger
+                    name="endDate"
+                    label={t('manage.courseList.endDate')}
+                    tooltip={t('manage.courseList.endDateTooltip')}
+                    data={{ cy: 'create-course-end-date' }}
+                    dataButton={{ cy: 'create-course-end-date-button' }}
+                    required
+                  />
+                  <FormikColorPicker
+                    required
+                    name="color"
+                    label={t('manage.courseList.courseColor')}
+                    colorLabel={t('shared.generic.color')}
+                    position="top"
+                    submitText={t('shared.generic.confirm')}
+                    dataTrigger={{ cy: 'create-course-color-trigger' }}
+                    dataHexInput={{ cy: 'create-course-color-hex-input' }}
+                    dataSubmit={{ cy: 'create-course-color-submit' }}
+                    className={{
+                      root: 'w-max',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <H3>{t('shared.generic.gamification')}</H3>
+                  <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                     <FormikSwitchField
                       required
                       labelLeft
+                      name="isGamificationEnabled"
+                      label={t('shared.generic.gamification')}
+                      className={{
+                        label: 'font-bold text-gray-600',
+                      }}
+                      data={{ cy: 'create-course-gamification' }}
+                    />
+                    <FormikSwitchField
+                      required
+                      labelLeft
+                      disabled={!values.isGamificationEnabled}
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
                       tooltip={t(
@@ -201,64 +231,39 @@ function CourseCreationModal({
                       }}
                       data={{ cy: 'toggle-group-creation-enabled' }}
                     />
-                    <FormikDateChanger
-                      name="groupCreationDeadline"
-                      label={t('manage.courseList.groupCreationDeadline')}
-                      tooltip={t(
-                        'manage.courseList.groupCreationDeadlineTooltip'
-                      )}
-                      data={{ cy: 'group-creation-deadline' }}
-                      dataButton={{ cy: 'group-creation-deadline-button' }}
-                      required
-                    />
-                  </>
-                )}
-                <FormikDateChanger
-                  name="endDate"
-                  label={t('manage.courseList.endDate')}
-                  tooltip={t('manage.courseList.endDateTooltip')}
-                  data={{ cy: 'create-course-end-date' }}
-                  dataButton={{ cy: 'create-course-end-date-button' }}
-                  required
-                  className={{
-                    root: twMerge(!values.isGamificationEnabled && 'order-2'),
-                  }}
-                />
-                <FormikColorPicker
-                  required
-                  name="color"
-                  label={t('manage.courseList.courseColor')}
-                  colorLabel={t('shared.generic.color')}
-                  position="top"
-                  submitText={t('shared.generic.confirm')}
-                  dataTrigger={{ cy: 'create-course-color-trigger' }}
-                  dataHexInput={{ cy: 'create-course-color-hex-input' }}
-                  dataSubmit={{ cy: 'create-course-color-submit' }}
-                  className={{
-                    root: twMerge(
-                      'w-max',
-                      !values.isGamificationEnabled && 'order-3'
-                    ),
-                  }}
-                />
-                {values.isGamificationEnabled && (
-                  <>
-                    <FormikNumberField
-                      name="maxGroupSize"
-                      label={t('manage.courseList.maxGroupSize')}
-                      tooltip={t('manage.courseList.maxGroupSizeTooltip')}
-                      data={{ cy: 'max-group-size' }}
-                      required
-                    />
-                    <FormikNumberField
-                      name="preferredGroupSize"
-                      label={t('manage.courseList.preferredGroupSize')}
-                      tooltip={t('manage.courseList.preferredGroupSizeTooltip')}
-                      data={{ cy: 'preferred-group-size' }}
-                      required
-                    />
-                  </>
-                )}
+                  </div>
+                  {values.isGamificationEnabled &&
+                    values.isGroupCreationEnabled && (
+                      <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
+                        <FormikDateChanger
+                          name="groupCreationDeadline"
+                          label={t('manage.courseList.groupCreationDeadline')}
+                          tooltip={t(
+                            'manage.courseList.groupCreationDeadlineTooltip'
+                          )}
+                          data={{ cy: 'group-creation-deadline' }}
+                          dataButton={{ cy: 'group-creation-deadline-button' }}
+                          required
+                        />
+                        <FormikNumberField
+                          name="maxGroupSize"
+                          label={t('manage.courseList.maxGroupSize')}
+                          tooltip={t('manage.courseList.maxGroupSizeTooltip')}
+                          data={{ cy: 'max-group-size' }}
+                          required
+                        />
+                        <FormikNumberField
+                          name="preferredGroupSize"
+                          label={t('manage.courseList.preferredGroupSize')}
+                          tooltip={t(
+                            'manage.courseList.preferredGroupSizeTooltip'
+                          )}
+                          data={{ cy: 'preferred-group-size' }}
+                          required
+                        />
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
             <div className="mt-1 flex flex-row justify-between">
