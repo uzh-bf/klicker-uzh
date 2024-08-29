@@ -66,7 +66,7 @@ function CourseOverviewPage() {
     <Layout>
       <div className="mb-4 w-full">
         <CourseOverviewHeader
-          id={course.id}
+          course={course}
           name={course.name}
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}

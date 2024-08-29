@@ -71,7 +71,7 @@ export function prepareCourse({
   pinCode: number
   startDate: Date
   endDate: Date
-  enableGroupCreation: boolean
+  isGroupCreationEnabled: boolean
   groupDeadlineDate: Date
   maxGroupSize: number
   preferredGroupSize: number

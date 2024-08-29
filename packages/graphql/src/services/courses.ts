@@ -392,7 +392,7 @@ interface CreateCourseArgs {
   color?: string | null
   startDate: Date
   endDate: Date
-  enableGroupCreation?: boolean | null
+  isGroupCreationEnabled?: boolean | null
   groupDeadlineDate?: Date | null
   maxGroupSize?: number | null
   preferredGroupSize?: number | null
@@ -408,7 +408,7 @@ export async function createCourse(
     color,
     startDate,
     endDate,
-    enableGroupCreation,
+    isGroupCreationEnabled,
     groupDeadlineDate,
     maxGroupSize,
     preferredGroupSize,
@@ -434,7 +434,7 @@ export async function createCourse(
       color: color ?? '#CCD5ED',
       startDate: startDate,
       endDate: endDate,
-      enableGroupCreation: enableGroupCreation ?? true,
+      isGroupCreationEnabled: isGroupCreationEnabled ?? true,
       groupDeadlineDate: groupDeadlineDate ?? endDate,
       maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
       preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
@@ -450,6 +450,88 @@ export async function createCourse(
   })
 
   return course
+}
+
+interface UpdateCourseSettingsArgs {
+  id: string
+  name?: string | null
+  displayName?: string | null
+  description?: string | null
+  color?: string | null
+  startDate?: Date | null
+  endDate?: Date | null
+  isGroupCreationEnabled?: boolean | null
+  groupDeadlineDate?: Date | null
+  notificationEmail?: string | null
+  isGamificationEnabled?: boolean | null
+}
+
+export async function updateCourseSettings(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    color,
+    startDate,
+    endDate,
+    isGroupCreationEnabled,
+    groupDeadlineDate,
+    notificationEmail,
+    isGamificationEnabled,
+  }: UpdateCourseSettingsArgs,
+  ctx: ContextWithUser
+) {
+  // verify that no past dates are modified or enabled gamification / group creation settings are disabled
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!course) return null
+
+  const currentStartDatePast = course.startDate < new Date()
+  const currentEndDatePast = course.endDate < new Date()
+  const currentGroupDeadlinePast = course.groupDeadlineDate < new Date()
+  const newStartDatePast = startDate ? startDate < new Date() : false
+  const newEndDatePast = endDate ? endDate < new Date() : false
+  const newGroupDeadlinePast = groupDeadlineDate
+    ? groupDeadlineDate < new Date()
+    : false
+
+  const updatedCourse = await ctx.prisma.course.update({
+    where: {
+      id,
+    },
+    data: {
+      name: name ?? undefined,
+      displayName: displayName ?? undefined,
+      description: description ?? undefined,
+      color: color ?? undefined,
+      startDate:
+        currentStartDatePast || newStartDatePast || !startDate
+          ? undefined
+          : startDate,
+      endDate:
+        currentEndDatePast || newEndDatePast || !endDate ? undefined : endDate,
+      isGroupCreationEnabled:
+        course.isGroupCreationEnabled || !isGroupCreationEnabled
+          ? undefined
+          : isGroupCreationEnabled,
+      groupDeadlineDate:
+        currentGroupDeadlinePast || newGroupDeadlinePast || !groupDeadlineDate
+          ? undefined
+          : groupDeadlineDate,
+      notificationEmail: notificationEmail ?? undefined,
+      isGamificationEnabled:
+        course.isGamificationEnabled || !isGamificationEnabled
+          ? undefined
+          : isGamificationEnabled,
+    },
+  })
+
+  return updatedCourse
 }
 
 export async function getUserCourses(ctx: ContextWithUser) {

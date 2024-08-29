@@ -1,5 +1,4 @@
-import { useMutation } from '@apollo/client'
-import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Course } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -10,9 +9,9 @@ import {
   H3,
   Modal,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
@@ -22,6 +21,7 @@ import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
 
 interface CourseManipulationModalProps {
+  initialValues?: Course
   modalOpen: boolean
   onModalClose: () => void
   onSubmit: (
@@ -46,15 +46,23 @@ export interface CourseManipulationFormData {
 }
 
 function CourseManipulationModal({
+  initialValues,
   modalOpen,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
   const t = useTranslations()
-  const router = useRouter()
-  const [createCourse] = useMutation(CreateCourseDocument)
   const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
+
+  // check if initialValues.startDate is in the past
+  const startDatePast =
+    initialValues?.startDate && new Date(initialValues.startDate) < new Date()
+  const endDatePast =
+    initialValues?.endDate && new Date(initialValues.endDate) < new Date()
+  const groupDeadlinePast =
+    initialValues?.groupDeadlineDate &&
+    new Date(initialValues.groupDeadlineDate) < new Date()
 
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -64,18 +72,25 @@ function CourseManipulationModal({
     description: yup.string(),
     color: yup.string().required(t('manage.courseList.courseColorReq')),
     startDate: yup.date().required(t('manage.courseList.courseStartReq')),
-    endDate: yup
-      .date()
-      .min(new Date(), t('manage.courseList.endDateFuture'))
-      .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
-      .required(t('manage.courseList.courseEndReq')),
+    endDate: endDatePast
+      ? yup.date()
+      : yup
+          .date()
+          .min(new Date(), t('manage.courseList.endDateFuture'))
+          .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
+          .required(t('manage.courseList.courseEndReq')),
     isGamificationEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
-    groupCreationDeadline: yup
-      .date()
-      .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
-      .max(yup.ref('endDate'), t('manage.courseList.groupDeadlineBeforeEnd'))
-      .required(t('manage.courseList.groupDeadlineReq')),
+    groupCreationDeadline: groupDeadlinePast
+      ? yup.date()
+      : yup
+          .date()
+          .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
+          .max(
+            yup.ref('endDate'),
+            t('manage.courseList.groupDeadlineBeforeEnd')
+          )
+          .required(t('manage.courseList.groupDeadlineReq')),
     maxGroupSize: yup
       .number()
       .min(2, t('manage.courseList.maxGroupSizeMin'))
@@ -85,36 +100,50 @@ function CourseManipulationModal({
       .min(2, t('manage.courseList.preferredGroupSizeMin'))
       .required(t('manage.courseList.preferredGroupSizeReq')),
   })
+
+  // convert all dates back to local time
   const today = new Date()
-  const initEndDate = new Date(today.setMonth(today.getMonth() + 6))
+  const startDateInit = initialValues?.startDate
+    ? dayjs(initialValues?.startDate).local().toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10)
+  const endDateInit = initialValues?.endDate
+    ? dayjs(initialValues?.endDate).local().toISOString().slice(0, 10)
+    : new Date(today.setMonth(today.getMonth() + 6)).toISOString().slice(0, 10)
+  const groupDeadlineDateInit = initialValues?.groupDeadlineDate
+    ? dayjs(initialValues?.groupDeadlineDate).local().toISOString().slice(0, 10)
+    : endDateInit
 
   return (
     <Modal
-      title={t('manage.courseList.createNewCourse')}
+      title={
+        initialValues
+          ? t('manage.course.modifyCourse')
+          : t('manage.courseList.createNewCourse')
+      }
       open={modalOpen}
       onClose={onModalClose}
       className={{ content: 'h-max' }}
     >
       <Formik
+        validateOnMount
         innerRef={formRef}
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          color: '#0028A5',
-          startDate: new Date().toISOString().slice(0, 10),
-          endDate: initEndDate.toISOString().slice(0, 10),
-          isGamificationEnabled: true,
-          isGroupCreationEnabled: true,
-          groupCreationDeadline: initEndDate.toISOString().slice(0, 10),
-          maxGroupSize: 5,
-          preferredGroupSize: 3,
+          name: initialValues?.name ?? '',
+          displayName: initialValues?.displayName ?? '',
+          description: initialValues?.description ?? '',
+          color: initialValues?.color ?? '#0028A5',
+          startDate: startDateInit,
+          endDate: endDateInit,
+          isGamificationEnabled: initialValues?.isGamificationEnabled ?? true,
+          isGroupCreationEnabled: initialValues?.isGroupCreationEnabled ?? true,
+          groupCreationDeadline: groupDeadlineDateInit,
+          maxGroupSize: initialValues?.maxGroupSize ?? 5,
+          preferredGroupSize: initialValues?.preferredGroupSize ?? 3,
         }}
         onSubmit={async (values, { setSubmitting }) =>
           onSubmit(values, setSubmitting, setShowErrorToast)
         }
         validationSchema={schema}
-        isInitialValid={false}
       >
         {({
           values,
@@ -173,6 +202,7 @@ function CourseManipulationModal({
                     tooltip={t('manage.courseList.startDateTooltip')}
                     data={{ cy: 'create-course-start-date' }}
                     dataButton={{ cy: 'create-course-start-date-button' }}
+                    disabled={startDatePast}
                     required
                   />
                   <FormikDateChanger
@@ -181,6 +211,7 @@ function CourseManipulationModal({
                     tooltip={t('manage.courseList.endDateTooltip')}
                     data={{ cy: 'create-course-end-date' }}
                     dataButton={{ cy: 'create-course-end-date-button' }}
+                    disabled={endDatePast}
                     required
                   />
                   <FormikColorPicker
@@ -205,6 +236,7 @@ function CourseManipulationModal({
                     <FormikSwitchField
                       required
                       labelLeft
+                      disabled={initialValues?.isGamificationEnabled}
                       name="isGamificationEnabled"
                       label={t('shared.generic.gamification')}
                       tooltip={t('manage.courseList.gamificationTooltip')}
@@ -216,7 +248,10 @@ function CourseManipulationModal({
                     <FormikSwitchField
                       required
                       labelLeft
-                      disabled={!values.isGamificationEnabled}
+                      disabled={
+                        !values.isGamificationEnabled ||
+                        initialValues?.isGroupCreationEnabled
+                      }
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
                       tooltip={t(
@@ -239,26 +274,36 @@ function CourseManipulationModal({
                           )}
                           data={{ cy: 'group-creation-deadline' }}
                           dataButton={{ cy: 'group-creation-deadline-button' }}
+                          disabled={groupDeadlinePast}
                           required
                         />
-                        <FormikNumberField
-                          name="maxGroupSize"
-                          label={t('manage.courseList.maxGroupSize')}
-                          tooltip={t('manage.courseList.maxGroupSizeTooltip')}
-                          data={{ cy: 'max-group-size' }}
-                          className={{ root: 'max-w-52' }}
-                          required
-                        />
-                        <FormikNumberField
-                          name="preferredGroupSize"
-                          label={t('manage.courseList.preferredGroupSize')}
-                          tooltip={t(
-                            'manage.courseList.preferredGroupSizeTooltip'
-                          )}
-                          data={{ cy: 'preferred-group-size' }}
-                          className={{ root: 'max-w-52' }}
-                          required
-                        />
+                        {initialValues ? (
+                          <div className="font-bold text-gray-600">
+                            <div>{`${t('manage.courseList.maxGroupSize')}: ${initialValues.maxGroupSize}`}</div>{' '}
+                            <div>{`${t('manage.courseList.preferredGroupSize')}: ${initialValues.preferredGroupSize}`}</div>
+                          </div>
+                        ) : (
+                          <FormikNumberField
+                            name="maxGroupSize"
+                            label={t('manage.courseList.maxGroupSize')}
+                            tooltip={t('manage.courseList.maxGroupSizeTooltip')}
+                            data={{ cy: 'max-group-size' }}
+                            className={{ root: 'max-w-52' }}
+                            required
+                          />
+                        )}
+                        {!initialValues && (
+                          <FormikNumberField
+                            name="preferredGroupSize"
+                            label={t('manage.courseList.preferredGroupSize')}
+                            tooltip={t(
+                              'manage.courseList.preferredGroupSizeTooltip'
+                            )}
+                            data={{ cy: 'preferred-group-size' }}
+                            className={{ root: 'max-w-52' }}
+                            required
+                          />
+                        )}
                       </div>
                     )}
                 </div>
@@ -278,9 +323,11 @@ function CourseManipulationModal({
                   (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}
-              data={{ cy: 'create-course-submit' }}
+              data={{ cy: 'manipulate-course-submit' }}
             >
-              {t('shared.generic.create')}
+              {initialValues
+                ? t('shared.generic.save')
+                : t('shared.generic.create')}
             </Button>
           </Form>
         )}

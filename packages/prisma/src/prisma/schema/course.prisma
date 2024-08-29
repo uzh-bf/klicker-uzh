@@ -15,12 +15,12 @@ model Course {
   isGamificationEnabled Boolean  @default(true)
   areAnalyticsValid     Boolean  @default(false)
 
-  enableGroupCreation Boolean  @default(true)
-  groupDeadlineDate   DateTime
+  isGroupCreationEnabled Boolean  @default(true)
+  groupDeadlineDate      DateTime
   // TODO: make required after applying migration and remove default
-  preferredGroupSize  Int?     @default(3)
+  preferredGroupSize     Int?     @default(3)
   // TODO: make required after applying migration and remove default
-  maxGroupSize        Int?     @default(5)
+  maxGroupSize           Int?     @default(5)
 
   sessions                   LiveSession[]
   elementStacks              ElementStack[]

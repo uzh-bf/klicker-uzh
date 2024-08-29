@@ -71,7 +71,7 @@ describe('Test course creation and editing functionalities', () => {
     )
 
     // submit the form
-    cy.get('[data-cy="create-course-submit"]').click()
+    cy.get('[data-cy="manipulate-course-submit"]').click()
 
     // check if the course is in the list
     cy.get('[data-cy="courses"]').click()
@@ -188,15 +188,15 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="preferred-group-size"]').should('not.exist')
 
     // check if the values of the form are properly reset if gamification is disabled
-    cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="create-course-gamification"]').click()
     cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').clear()
     cy.get('[data-cy="create-course-name"]').click() // click outside to save the value
     cy.get('[data-cy="max-group-size"]').clear()
-    cy.get('[data-cy="create-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="create-course-gamification"]').click()
-    cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
 
     // change group settings
     cy.get('[data-cy="create-course-gamification"]').click()
@@ -208,14 +208,14 @@ describe('Test course creation and editing functionalities', () => {
       `${currentYear + 2}-01-01`
     )
     cy.get('[data-cy="create-course-name"]').click() // click outside to save the value
-    cy.get('[data-cy="create-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="group-creation-deadline"]').type(`${currentYear}-06-01`)
-    cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="max-group-size"]').click().type('10')
     cy.get('[data-cy="preferred-group-size"]').click().type('4')
 
     // submit the form
-    cy.get('[data-cy="create-course-submit"]').click()
+    cy.get('[data-cy="manipulate-course-submit"]').click()
 
     // check if the course is in the list
     cy.get('[data-cy="courses"]').click()

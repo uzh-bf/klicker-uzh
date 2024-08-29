@@ -109,7 +109,7 @@ function CourseSelectionPage() {
                     startDate: startDateUTC,
                     endDate: endDateUTC,
                     isGamificationEnabled: values.isGamificationEnabled,
-                    enableGroupCreation: values.isGroupCreationEnabled,
+                    isGroupCreationEnabled: values.isGroupCreationEnabled,
                     groupDeadlineDate: groupDeadlineDateUTC,
                     maxGroupSize: parseInt(String(values.maxGroupSize)),
                     preferredGroupSize: parseInt(

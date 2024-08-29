@@ -901,7 +901,7 @@ export const Mutation = builder.mutationType({
           color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
-          enableGroupCreation: t.arg.boolean({ required: true }),
+          isGroupCreationEnabled: t.arg.boolean({ required: true }),
           groupDeadlineDate: t.arg({ type: 'Date', required: true }),
           maxGroupSize: t.arg.int({ required: true }),
           preferredGroupSize: t.arg.int({ required: true }),
@@ -913,6 +913,30 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.createCourse(args, ctx)
+        },
+      }),
+
+      updateCourseSettings: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: false }),
+          displayName: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          color: t.arg.string({ required: false }),
+          startDate: t.arg({ type: 'Date', required: false }),
+          endDate: t.arg({ type: 'Date', required: false }),
+          isGroupCreationEnabled: t.arg.boolean({ required: false }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: false },
+          }),
+          isGamificationEnabled: t.arg.boolean({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.updateCourseSettings(args, ctx)
         },
       }),
 
