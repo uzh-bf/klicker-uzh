@@ -1387,6 +1387,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.',
       courseColor: 'Kursfarbe',
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
+      groupDeadlineFuture:
+        'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
+      groupDeadlineBeforeEnd:
+        'Die Deadline für die Gruppenbildung muss vor dem Kursenddatum liegen.',
+      groupDeadlineReq:
+        'Bitte geben Sie ein gültiges Datum für die Gruppenbildung an.',
+      maxGroupSizeMin: 'Die maximale Gruppengrösse muss mindestens 2 betragen.',
+      maxGroupSizeReq:
+        'Bitte geben Sie eine gültige maximale Gruppengrösse an.',
+      preferredGroupSizeMin:
+        'Die bevorzugte Gruppengrösse muss mindestens 2 betragen.',
+      preferredGroupSizeReq:
+        'Bitte geben Sie eine gültige bevorzugte Gruppengrösse an.',
       groupCreationEnabled: 'Gruppenbildung möglich',
       groupCreationEnabledTooltip:
         'Wenn Sie diese Einstellung deaktivieren, können Studierende in diesem Kurs keine Gruppen bilden und Sie können keine Gruppenaktivitäten erstellen. Diese Einstellung kann in der Kursübersicht geändert werden.',

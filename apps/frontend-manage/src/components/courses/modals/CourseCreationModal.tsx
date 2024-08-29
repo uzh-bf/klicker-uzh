@@ -17,7 +17,7 @@ import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../sessions/creation/EditorField'
@@ -42,9 +42,6 @@ interface CourseCreationFormData {
   preferredGroupSize: number
 }
 
-// TODO: add notification email settings, once more generally compatible solution is available
-// TODO: add groupDeadlineDate field, once this should be user settable (also add to fields on course overview)
-
 function CourseCreationModal({
   modalOpen,
   onModalClose,
@@ -54,6 +51,20 @@ function CourseCreationModal({
   const [createCourse] = useMutation(CreateCourseDocument)
   const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseCreationFormData>>(null)
+
+  // TODO: fix this - somehow the useEffect hook is not triggered
+  // if gamification or group creation are disabled, update the group creation settings to their default values
+  useEffect(() => {
+    if (formRef.current) {
+      const values = formRef.current.values
+      console.log(values)
+      if (!values.isGamificationEnabled || !values.isGroupCreationEnabled) {
+        formRef.current.setFieldValue('groupCreationDeadline', values.endDate)
+        formRef.current.setFieldValue('maxGroupSize', 5)
+        formRef.current.setFieldValue('preferredGroupSize', 3)
+      }
+    }
+  }, [formRef.current?.values])
 
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -69,6 +80,21 @@ function CourseCreationModal({
       .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
       .required(t('manage.courseList.courseEndReq')),
     isGamificationEnabled: yup.boolean(),
+    // TODO: validation seems to be always one step behind for date fields - potentially issue in design-system
+    isGroupCreationEnabled: yup.boolean(),
+    groupCreationDeadline: yup
+      .date()
+      .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
+      .max(yup.ref('endDate'), t('manage.courseList.groupDeadlineBeforeEnd'))
+      .required(t('manage.courseList.groupDeadlineReq')),
+    maxGroupSize: yup
+      .number()
+      .min(2, t('manage.courseList.maxGroupSizeMin'))
+      .required(t('manage.courseList.maxGroupSizeReq')),
+    preferredGroupSize: yup
+      .number()
+      .min(2, t('manage.courseList.preferredGroupSizeMin'))
+      .required(t('manage.courseList.preferredGroupSizeReq')),
   })
   const today = new Date()
   const initEndDate = new Date(today.setMonth(today.getMonth() + 6))
@@ -250,6 +276,7 @@ function CourseCreationModal({
                           label={t('manage.courseList.maxGroupSize')}
                           tooltip={t('manage.courseList.maxGroupSizeTooltip')}
                           data={{ cy: 'max-group-size' }}
+                          className={{ root: 'max-w-52' }}
                           required
                         />
                         <FormikNumberField
@@ -259,6 +286,7 @@ function CourseCreationModal({
                             'manage.courseList.preferredGroupSizeTooltip'
                           )}
                           data={{ cy: 'preferred-group-size' }}
+                          className={{ root: 'max-w-52' }}
                           required
                         />
                       </div>

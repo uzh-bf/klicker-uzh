@@ -7,6 +7,7 @@ describe('Test course creation and editing functionalities', () => {
   const displayName = name
   const description = uuid()
   const testCourseName = 'Testkurs'
+  const currentYear = new Date().getFullYear()
 
   it('Test the creation of a new course', () => {
     // log into frontend-manage
@@ -21,22 +22,23 @@ describe('Test course creation and editing functionalities', () => {
     // fill in the form
     cy.get('[data-cy="create-course-name"]').type(name)
     cy.get('[data-cy="create-course-display-name"]').type(displayName)
-    // TODO: Fix the typing into the content input - does not seem to work...
-    cy.get('[data-cy="create-course-description"]').click().type(description)
+    cy.get('[data-cy="create-course-description"]').focus().type(description)
 
-    // change the start date to the first of january 2024
+    // change the start date
     cy.get('[data-cy="create-course-start-date-button"]').click()
-    cy.get('[data-cy="create-course-start-date"]').type('2024-01-01')
+    cy.get('[data-cy="create-course-start-date"]').type(`${currentYear}-01-01`)
     // click outside to save the value
     cy.get('[data-cy="create-course-name"]').click()
 
-    // change the end date to the first of january 2025
+    // change the end date
     cy.get('[data-cy="create-course-end-date-button"]').click()
-    cy.get('[data-cy="create-course-end-date"]').type('2025-01-01')
+    cy.get('[data-cy="create-course-end-date"]').type(
+      `${currentYear + 1}-01-01`
+    )
     // click outside to save the value
     cy.get('[data-cy="create-course-name"]').click()
 
-    // change course color to red using the following cys
+    // change course color to red
     cy.get('[data-cy="create-course-color-trigger"]').click()
     // first clear current test in field
     cy.get('[data-cy="create-course-color-hex-input"]').clear()
@@ -85,15 +87,6 @@ describe('Test course creation and editing functionalities', () => {
     cy.get(`[data-cy="course-list-button-${name}"]`).click()
     cy.get('[data-cy="course-name-with-pin"]').should('contain', name)
 
-    // TODO: check for description content here once bug above is fixed
-    // cy.get('[data-cy="course-description"]').should('contain', description)
-    // // change the description
-    // cy.get('[data-cy="course-description-edit-button"]').click()
-    // cy.get('[data-cy="course-description-input"]')
-    //   .click()
-    //   .type('New description')
-    // cy.get('[data-cy="course-description-submit"]').click()
-
     // check out course join modal
     cy.get('[data-cy="course-join-button"]').click()
     cy.get('[data-cy="course-join-modal"]').should('exist')
@@ -107,17 +100,23 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-color-hex-input"]').type('00FF00')
     cy.get('[data-cy="course-color-submit"]').click()
 
-    // check course start date and change it to 2024-02-01
+    // check course start date and change it
     cy.get('[data-cy="course-start-date-button"]').click()
-    cy.get('[data-cy="course-start-date"]').should('have.value', '2024-01-01')
-    cy.get('[data-cy="course-start-date"]').type('2024-02-01')
+    cy.get('[data-cy="course-start-date"]').should(
+      'have.value',
+      `${currentYear}-01-01`
+    )
+    cy.get('[data-cy="course-start-date"]').type(`${currentYear}-02-01`)
     // click outside to submit
     cy.get('[data-cy="course-name-with-pin"]').click()
 
-    // check course end date and change it to 2025-02-01
+    // check course end date and change it
     cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').should('have.value', '2025-01-01')
-    cy.get('[data-cy="course-end-date"]').type('2025-02-01')
+    cy.get('[data-cy="course-end-date"]').should(
+      'have.value',
+      `${currentYear + 1}-01-01`
+    )
+    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 1}-02-01`)
     // click outside to submit
     cy.get('[data-cy="course-name-with-pin"]').click()
 
@@ -141,6 +140,76 @@ describe('Test course creation and editing functionalities', () => {
       'disabled',
       'disabled'
     )
+
+    // TODO: add new test cases for the settings on the course overview related to groups
+  })
+
+  it('Test the creation of a new gamified course', () => {
+    // log into frontend-manage
+    cy.loginLecturer()
+
+    // switch to course list
+    cy.get('[data-cy="courses"]').click()
+
+    // create a new course
+    cy.get('[data-cy="course-list-button-new-course"]').click()
+
+    // fill in the form
+    cy.get('[data-cy="create-course-name"]').type(name)
+    cy.get('[data-cy="create-course-display-name"]').type(displayName)
+
+    // change the start date
+    cy.get('[data-cy="create-course-start-date-button"]').click()
+    cy.get('[data-cy="create-course-start-date"]').type(`${currentYear}-01-01`)
+    // click outside to save the value
+    cy.get('[data-cy="create-course-name"]').click()
+
+    // change the end date
+    cy.get('[data-cy="create-course-end-date-button"]').click()
+    cy.get('[data-cy="create-course-end-date"]').type(
+      `${currentYear + 1}-01-01`
+    )
+    // click outside to save the value
+    cy.get('[data-cy="create-course-name"]').click()
+
+    // test gamification toggle
+    cy.get('[data-cy="create-course-gamification"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
+    cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
+    cy.get('[data-cy="max-group-size"]').should('not.exist')
+    cy.get('[data-cy="preferred-group-size"]').should('not.exist')
+
+    // change group settings
+    cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 2}-01-01`
+    )
+    cy.get('[data-cy="create-course-submit"]').should('be.disabled')
+    cy.get('[data-cy="group-creation-deadline"]').type(`${currentYear}-06-01`)
+    cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="max-group-size"]').click().type('10')
+    cy.get('[data-cy="preferred-group-size"]').click().type('4')
+
+    // submit the form
+    cy.get('[data-cy="create-course-submit"]').click()
+
+    // check if the course is in the list
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(name).should('exist')
+
+    // TODO: check out the settings on the course if they have been stored correctly
   })
 
   it('Test the course overview on the student side', () => {
