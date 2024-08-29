@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.10...v3.2.0-alpha.11) (2024-08-29)
+
+
+### Bug Fixes
+
+* ensure magic link emails are seeded without .html ([#4219](https://github.com/uzh-bf/klicker-uzh/issues/4219)) ([c75ebe8](https://github.com/uzh-bf/klicker-uzh/commit/c75ebe8be7fd5ceb887117f04df0f9867012e2ea))
+* **packages/graphql:** ensure that practice quiz stacks are only ordered based on answers when spaced repetition logic is enabled ([d6beef8](https://github.com/uzh-bf/klicker-uzh/commit/d6beef83f8b246133557e8ff92ddee9d39b800b0))
+
 ## [3.2.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.9...v3.2.0-alpha.10) (2024-08-27)
 
 

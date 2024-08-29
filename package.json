@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.2.0-alpha.10",
+  "version": "3.2.0-alpha.11",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -35,7 +35,7 @@
     "prettier-plugin-tailwindcss": "0.6.6",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
-    "turbo": "2.0.14",
+    "turbo": "2.1.0",
     "typescript": "5.4.5",
     "yaml": "2.3.2"
   },
@@ -48,6 +48,7 @@
     "dev": "doppler run --config dev -- turbo run dev --concurrency 30",
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
     "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
+    "dev:cleverreach": "doppler run --config dev_cleverreach -- turbo run dev --concurrency 30",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
     "dev:offline": "doppler run --config dev -- turbo run dev:offline",
     "dev:test": "cross-env NODE_ENV=test turbo run dev:test",
@@ -86,5 +87,5 @@
     "node": "20.17.0",
     "pnpm": "9.8.0"
   },
-  "packageManager": "pnpm@9.8.0"
+  "packageManager": "pnpm@9.9.0"
 }

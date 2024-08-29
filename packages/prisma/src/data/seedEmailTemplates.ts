@@ -1,15 +1,13 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { PrismaClient } from '../../dist/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const prisma = new PrismaClient()
-
-async function upsertEmailTemplates() {
-  const outDir = path.join(__dirname, '../../out')
+export async function seedEmailTemplates(prisma: PrismaClient) {
+  const outDir = path.join(__dirname, '../../../transactional/out')
   const entries = await fs.readdir(outDir, { withFileTypes: true })
 
   const htmlFiles = entries.filter(
@@ -23,21 +21,11 @@ async function upsertEmailTemplates() {
     await prisma.emailTemplate.upsert({
       where: { name: file.name.replace('.html', '') },
       update: { html: content },
-      create: { name: file.name, html: content },
+      create: { name: file.name.replace('.html', ''), html: content },
     })
   }
 }
 
-async function main() {
-  await prisma.$connect()
-  try {
-    await upsertEmailTemplates()
-    console.log('Email templates upserted successfully')
-  } catch (err) {
-    console.error('Error upserting email templates:', err)
-  } finally {
-    await prisma.$disconnect()
-  }
-}
+// const prisma = new PrismaClient()
 
-main()
+// await seedEmailTemplates(prisma)
