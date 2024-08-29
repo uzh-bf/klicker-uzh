@@ -7,7 +7,9 @@
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (serverless)",
   "azureFunctions.projectSubpath": "apps/func-migration-v2-export",
-  "githubPullRequests.ignoredPullRequestBranches": ["v3"],
+  "githubPullRequests.ignoredPullRequestBranches": [
+    "v3"
+  ],
   "editor.formatOnSave": true,
   "sonarlint.connectedMode.project": {
     "connectionId": "uzh-bf",
@@ -19,7 +21,7 @@
   },
   "prettier.requireConfig": true,
   "prettier.useEditorConfig": false,
-  "prettier.configPath": "${workspaceFolder}/.prettierrc.js",
+  "prettier.configPath": ".prettierrc.mjs",
   "prettier.resolveGlobalModules": true,
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
