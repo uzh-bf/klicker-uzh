@@ -4,11 +4,9 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened]
     paths:
       - apps/**
       - packages/**
-  # workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
