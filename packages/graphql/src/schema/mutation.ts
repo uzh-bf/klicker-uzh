@@ -537,30 +537,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseColor: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          color: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseColor(args, ctx)
-        },
-      }),
-
-      changeCourseDescription: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          input: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseDescription(args, ctx)
-        },
-      }),
-
       enableCourseGamification: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -937,19 +913,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.createCourse(args, ctx)
-        },
-      }),
-
-      changeCourseDates: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          startDate: t.arg({ type: 'Date', required: false }),
-          endDate: t.arg({ type: 'Date', required: false }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseDates(args, ctx)
         },
       }),
 

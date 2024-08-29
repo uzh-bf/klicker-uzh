@@ -702,64 +702,6 @@ export async function getControlCourse(
   return course
 }
 
-export async function changeCourseDescription(
-  { courseId, input }: { courseId: string; input: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      description: input,
-    },
-  })
-
-  return course
-}
-
-export async function changeCourseColor(
-  { courseId, color }: { courseId: string; color: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      color,
-    },
-  })
-
-  return course
-}
-
-interface ChangeCourseDates {
-  courseId: string
-  startDate?: Date | null
-  endDate?: Date | null
-}
-
-export async function changeCourseDates(
-  { courseId, startDate, endDate }: ChangeCourseDates,
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      ...(startDate && { startDate }),
-      ...(endDate && { endDate }),
-    },
-  })
-
-  return course
-}
-
 export async function checkValidCoursePin(
   { pin }: { pin: number },
   ctx: Context

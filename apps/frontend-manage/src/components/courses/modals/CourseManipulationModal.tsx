@@ -1,8 +1,5 @@
 import { useMutation } from '@apollo/client'
-import {
-  CreateCourseDocument,
-  GetUserCoursesDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -13,11 +10,10 @@ import {
   H3,
   Modal,
 } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../sessions/creation/EditorField'
@@ -28,6 +24,11 @@ import GamificationSettingMonitor from './GamificationSettingMonitor'
 interface CourseManipulationModalProps {
   modalOpen: boolean
   onModalClose: () => void
+  onSubmit: (
+    values: CourseManipulationFormData,
+    setSubmitting: (isSubmitting: boolean) => void,
+    setShowErrorToast: Dispatch<SetStateAction<boolean>>
+  ) => Promise<void>
 }
 
 export interface CourseManipulationFormData {
@@ -47,6 +48,7 @@ export interface CourseManipulationFormData {
 function CourseManipulationModal({
   modalOpen,
   onModalClose,
+  onSubmit,
 }: CourseManipulationModalProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -108,55 +110,9 @@ function CourseManipulationModal({
           maxGroupSize: 5,
           preferredGroupSize: 3,
         }}
-        onSubmit={async (values, { setSubmitting }) => {
-          try {
-            // convert dates to UTC
-            const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-              .utc()
-              .toISOString()
-            const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-              .utc()
-              .toISOString()
-            const groupDeadlineDateUTC = dayjs(
-              values.groupCreationDeadline + 'T23:59:59.999'
-            )
-              .utc()
-              .toISOString()
-
-            const result = await createCourse({
-              variables: {
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                color: values.color,
-                startDate: startDateUTC,
-                endDate: endDateUTC,
-                isGamificationEnabled: values.isGamificationEnabled,
-                enableGroupCreation: values.isGroupCreationEnabled,
-                groupDeadlineDate: groupDeadlineDateUTC,
-                maxGroupSize: values.maxGroupSize,
-                preferredGroupSize: values.preferredGroupSize,
-              },
-              refetchQueries: [
-                {
-                  query: GetUserCoursesDocument,
-                },
-              ],
-            })
-
-            if (result.data?.createCourse) {
-              onModalClose()
-              router.push(`/courses/${result.data.createCourse.id}`)
-            } else {
-              setShowErrorToast(true)
-              setSubmitting(false)
-            }
-          } catch (error) {
-            setShowErrorToast(true)
-            setSubmitting(false)
-            console.log(error)
-          }
-        }}
+        onSubmit={async (values, { setSubmitting }) =>
+          onSubmit(values, setSubmitting, setShowErrorToast)
+        }
         validationSchema={schema}
         isInitialValid={false}
       >

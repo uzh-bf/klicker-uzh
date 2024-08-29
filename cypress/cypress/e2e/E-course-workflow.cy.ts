@@ -192,6 +192,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="create-course-gamification"]').click()
     cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').clear()
+    cy.get('[data-cy="create-course-name"]').click() // click outside to save the value
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="create-course-submit"]').should('be.disabled')
     cy.get('[data-cy="create-course-gamification"]').click()
@@ -206,6 +207,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="group-creation-deadline"]').type(
       `${currentYear + 2}-01-01`
     )
+    cy.get('[data-cy="create-course-name"]').click() // click outside to save the value
     cy.get('[data-cy="create-course-submit"]').should('be.disabled')
     cy.get('[data-cy="group-creation-deadline"]').type(`${currentYear}-06-01`)
     cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
