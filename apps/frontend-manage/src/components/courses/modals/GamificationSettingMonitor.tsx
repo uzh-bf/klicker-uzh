@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { CourseCreationFormData } from './CourseCreationModal'
+import { CourseManipulationFormData } from './CourseManipulationModal'
 
 function GamificationSettingMonitor({
   values,
   setFieldValue,
 }: {
-  values: CourseCreationFormData
+  values: CourseManipulationFormData
   setFieldValue: (
     field: string,
     value: any,

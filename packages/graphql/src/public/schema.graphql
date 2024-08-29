@@ -615,7 +615,7 @@ type Mutation {
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, enableGroupCreation: Boolean!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning

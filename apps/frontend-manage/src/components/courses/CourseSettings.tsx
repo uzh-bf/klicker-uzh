@@ -101,17 +101,18 @@ function CourseSettings({
               }
             }}
             data={{ cy: 'course-gamification-switch' }}
+            className={{ label: 'text-gray-600' }}
           />
         </div>
         <div className="flex flex-row">
-          <div className="pr-3">{t('manage.courseList.courseColor')}</div>
           <ColorPicker
             color={courseColor ?? '#0028A5'}
+            label={t('manage.courseList.courseColor')}
             onSubmit={(color) =>
               changeCourseColor({ variables: { color, courseId: id } })
             }
-            abortText={t('shared.generic.cancel')}
             submitText={t('shared.generic.save')}
+            colorLabel={t('shared.generic.color')}
             dataTrigger={{ cy: 'course-color-trigger' }}
             dataHexInput={{ cy: 'course-color-hex-input' }}
             dataSubmit={{ cy: 'course-color-submit' }}

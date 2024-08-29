@@ -1,17 +1,17 @@
 import { FormikErrors, FormikTouched } from 'formik'
 import { useEffect } from 'react'
 import validateFieldSync from '../../../lib/utils/validateFieldSync'
-import { CourseCreationFormData } from './CourseCreationModal'
+import { CourseManipulationFormData } from './CourseManipulationModal'
 
 function CourseDateChangeMonitor({
   values,
   setTouched,
   validateField,
 }: {
-  values: CourseCreationFormData
+  values: CourseManipulationFormData
   setTouched: (
-    touched: FormikTouched<CourseCreationFormData>
-  ) => Promise<void | FormikErrors<CourseCreationFormData>>
+    touched: FormikTouched<CourseManipulationFormData>
+  ) => Promise<void | FormikErrors<CourseManipulationFormData>>
   validateField: (field: string) => Promise<void> | Promise<string | undefined>
 }) {
   useEffect(() => {

@@ -1381,6 +1381,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       maxGroupSizeReq: 'Please specify a valid maximum group size.',
       preferredGroupSizeMin: 'The preferred group size must be at least 2.',
       preferredGroupSizeReq: 'Please specify a valid preferred group size.',
+      gamificationTooltip:
+        'Gamification can only be activated (not deactivated) after the course has been created.',
       groupCreationEnabled: 'Group Creation',
       groupCreationEnabledTooltip:
         'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. This setting can be modified on the course overview.',

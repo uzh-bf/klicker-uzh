@@ -190,6 +190,7 @@ describe('Test course creation and editing functionalities', () => {
     // check if the values of the form are properly reset if gamification is disabled
     cy.get('[data-cy="create-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="create-course-gamification"]').click()
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').clear()
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="create-course-submit"]').should('be.disabled')

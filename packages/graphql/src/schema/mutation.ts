@@ -925,7 +925,10 @@ export const Mutation = builder.mutationType({
           color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          enableGroupCreation: t.arg.boolean({ required: true }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+          maxGroupSize: t.arg.int({ required: true }),
+          preferredGroupSize: t.arg.int({ required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: true },

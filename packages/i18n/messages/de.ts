@@ -1400,6 +1400,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die bevorzugte Gruppengrösse muss mindestens 2 betragen.',
       preferredGroupSizeReq:
         'Bitte geben Sie eine gültige bevorzugte Gruppengrösse an.',
+      gamificationTooltip:
+        'Gamifizierung kann nach Erstellung des Kurses nur noch aktiviert (nicht mehr deaktiviert) werden.',
       groupCreationEnabled: 'Gruppenbildung möglich',
       groupCreationEnabledTooltip:
         'Wenn Sie diese Einstellung deaktivieren, können Studierende in diesem Kurs keine Gruppen bilden und Sie können keine Gruppenaktivitäten erstellen. Diese Einstellung kann in der Kursübersicht geändert werden.',

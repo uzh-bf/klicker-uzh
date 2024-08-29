@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
-import CourseCreationModal from '../../components/courses/modals/CourseCreationModal'
+import CourseCreationModal from '../../components/courses/modals/CourseManipulationModal'
 
 function CourseSelectionPage() {
   const router = useRouter()

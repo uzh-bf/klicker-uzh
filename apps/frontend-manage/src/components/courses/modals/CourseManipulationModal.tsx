@@ -25,12 +25,12 @@ import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
 
-interface CourseCreationModalProps {
+interface CourseManipulationModalProps {
   modalOpen: boolean
   onModalClose: () => void
 }
 
-export interface CourseCreationFormData {
+export interface CourseManipulationFormData {
   name: string
   displayName: string
   description: string
@@ -44,15 +44,15 @@ export interface CourseCreationFormData {
   preferredGroupSize: number
 }
 
-function CourseCreationModal({
+function CourseManipulationModal({
   modalOpen,
   onModalClose,
-}: CourseCreationModalProps) {
+}: CourseManipulationModalProps) {
   const t = useTranslations()
   const router = useRouter()
   const [createCourse] = useMutation(CreateCourseDocument)
   const [showErrorToast, setShowErrorToast] = useState(false)
-  const formRef = useRef<FormikProps<CourseCreationFormData>>(null)
+  const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
 
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -117,6 +117,11 @@ function CourseCreationModal({
             const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
               .utc()
               .toISOString()
+            const groupDeadlineDateUTC = dayjs(
+              values.groupCreationDeadline + 'T23:59:59.999'
+            )
+              .utc()
+              .toISOString()
 
             const result = await createCourse({
               variables: {
@@ -127,6 +132,10 @@ function CourseCreationModal({
                 startDate: startDateUTC,
                 endDate: endDateUTC,
                 isGamificationEnabled: values.isGamificationEnabled,
+                enableGroupCreation: values.isGroupCreationEnabled,
+                groupDeadlineDate: groupDeadlineDateUTC,
+                maxGroupSize: values.maxGroupSize,
+                preferredGroupSize: values.preferredGroupSize,
               },
               refetchQueries: [
                 {
@@ -242,6 +251,7 @@ function CourseCreationModal({
                       labelLeft
                       name="isGamificationEnabled"
                       label={t('shared.generic.gamification')}
+                      tooltip={t('manage.courseList.gamificationTooltip')}
                       className={{
                         label: 'font-bold text-gray-600',
                       }}
@@ -328,4 +338,4 @@ function CourseCreationModal({
   )
 }
 
-export default CourseCreationModal
+export default CourseManipulationModal

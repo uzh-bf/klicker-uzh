@@ -5,7 +5,10 @@ mutation CreateCourse(
   $color: String
   $startDate: Date!
   $endDate: Date!
-  $groupDeadlineDate: Date
+  $enableGroupCreation: Boolean!
+  $groupDeadlineDate: Date!
+  $maxGroupSize: Int!
+  $preferredGroupSize: Int!
   $notificationEmail: String
   $isGamificationEnabled: Boolean!
 ) {
@@ -16,7 +19,10 @@ mutation CreateCourse(
     color: $color
     startDate: $startDate
     endDate: $endDate
+    enableGroupCreation: $enableGroupCreation
     groupDeadlineDate: $groupDeadlineDate
+    maxGroupSize: $maxGroupSize
+    preferredGroupSize: $preferredGroupSize
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
   ) {
