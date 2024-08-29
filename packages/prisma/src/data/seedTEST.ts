@@ -20,6 +20,7 @@ import {
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
+import { seedEmailTemplates } from './seedEmailTemplates.js'
 import { seedLevels } from './seedLevels.js'
 import { seedUsers } from './seedUsers.js'
 
@@ -71,6 +72,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedAchievements(prisma)
   await seedUsers(prisma)
   await seedCompetencyTree(prisma)
+  await seedEmailTemplates(prisma)
 
   const courseTest = await prisma.course.upsert(
     prepareCourse({

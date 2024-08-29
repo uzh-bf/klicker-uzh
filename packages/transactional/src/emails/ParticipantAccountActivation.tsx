@@ -27,7 +27,11 @@ export function ParticipantAccountActivation({
         </Button>
         <Text className="text-base">
           If the button does not work, please paste the following direct link
-          into your browser: <Link href={link}>{link}</Link>.
+          into your browser:{' '}
+          <Link href={link} className="break-all">
+            {link}
+          </Link>
+          .
         </Text>
         <Text className="text-base">
           The link will be valid for the next 60 minutes. If you have not

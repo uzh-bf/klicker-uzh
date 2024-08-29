@@ -22,13 +22,13 @@ function Layout({
 }) {
   return (
     <Tailwind config={tailwindConfig}>
-      <Html lang="en" className="bg-white">
+      <Html lang="en" className="bg-white text-base">
         <Head>
           <title>{title}</title>
           <Font fontFamily="Source Sans 3" fallbackFontFamily="Verdana" />
         </Head>
         <Preview>{preview}</Preview>
-        <Container>
+        <Container className="max-w-3xl">
           <Header />
           {children}
           <Footer />

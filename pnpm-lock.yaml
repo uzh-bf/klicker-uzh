@@ -1884,6 +1884,9 @@ importers:
         specifier: 5.18.0
         version: 5.18.0(prisma@5.18.0)
     devDependencies:
+      '@klicker-uzh/transactional':
+        specifier: workspace:*
+        version: link:../transactional
       '@pothos/plugin-prisma':
         specifier: 3.60.0
         version: 3.60.0(@pothos/core@3.38.0(graphql@16.7.1))(@prisma/client@5.18.0(prisma@5.18.0))(graphql@16.7.1)(typescript@5.4.5)
@@ -2092,9 +2095,6 @@ importers:
 
   packages/transactional:
     devDependencies:
-      '@klicker-uzh/prisma':
-        specifier: workspace:*
-        version: link:../prisma
       '@react-email/components':
         specifier: 0.0.22
         version: 0.0.22(@types/react@18.3.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
