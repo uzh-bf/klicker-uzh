@@ -17,18 +17,20 @@ import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../sessions/creation/EditorField'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
+import CourseDateChangeMonitor from './CourseDateChangeMonitor'
+import GamificationSettingMonitor from './GamificationSettingMonitor'
 
 interface CourseCreationModalProps {
   modalOpen: boolean
   onModalClose: () => void
 }
 
-interface CourseCreationFormData {
+export interface CourseCreationFormData {
   name: string
   displayName: string
   description: string
@@ -52,20 +54,6 @@ function CourseCreationModal({
   const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseCreationFormData>>(null)
 
-  // TODO: fix this - somehow the useEffect hook is not triggered
-  // if gamification or group creation are disabled, update the group creation settings to their default values
-  useEffect(() => {
-    if (formRef.current) {
-      const values = formRef.current.values
-      console.log(values)
-      if (!values.isGamificationEnabled || !values.isGroupCreationEnabled) {
-        formRef.current.setFieldValue('groupCreationDeadline', values.endDate)
-        formRef.current.setFieldValue('maxGroupSize', 5)
-        formRef.current.setFieldValue('preferredGroupSize', 3)
-      }
-    }
-  }, [formRef.current?.values])
-
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
     displayName: yup
@@ -80,7 +68,6 @@ function CourseCreationModal({
       .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
       .required(t('manage.courseList.courseEndReq')),
     isGamificationEnabled: yup.boolean(),
-    // TODO: validation seems to be always one step behind for date fields - potentially issue in design-system
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: yup
       .date()
@@ -164,8 +151,25 @@ function CourseCreationModal({
         validationSchema={schema}
         isInitialValid={false}
       >
-        {({ values, errors, isValid, isSubmitting }) => (
+        {({
+          values,
+          errors,
+          isValid,
+          isSubmitting,
+          setTouched,
+          setFieldValue,
+          validateField,
+        }) => (
           <Form>
+            <CourseDateChangeMonitor
+              values={values}
+              setTouched={setTouched}
+              validateField={validateField}
+            />
+            <GamificationSettingMonitor
+              values={values}
+              setFieldValue={setFieldValue}
+            />
             <div className="flex flex-col gap-2">
               <div className="flex w-full flex-col gap-3 md:flex-row">
                 <FormikTextField

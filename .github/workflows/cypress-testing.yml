@@ -3,7 +3,11 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened]
+    paths:
+      - apps/**
+      - packages/**
   # workflow_dispatch:
 
 env:
