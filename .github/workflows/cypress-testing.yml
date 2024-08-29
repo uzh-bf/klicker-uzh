@@ -2,8 +2,12 @@ name: Klicker automated testing with cypress
 on:
   push:
     branches: ['v3', 'v3*']
+    paths:
+      - apps/**
+      - packages/**
   pull_request:
     branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened]
     paths:
       - apps/**
       - packages/**
@@ -13,7 +17,6 @@ env:
 
 jobs:
   cypress-run:
-    if: github.event.pull_request.draft == false
     # runs-on: self-hosted
     runs-on: ubuntu-latest
     services:
