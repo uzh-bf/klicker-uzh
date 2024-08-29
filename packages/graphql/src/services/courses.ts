@@ -392,7 +392,10 @@ interface CreateCourseArgs {
   color?: string | null
   startDate: Date
   endDate: Date
+  enableGroupCreation?: boolean | null
   groupDeadlineDate?: Date | null
+  maxGroupSize?: number | null
+  preferredGroupSize?: number | null
   notificationEmail?: string | null
   isGamificationEnabled: boolean
 }
@@ -405,7 +408,10 @@ export async function createCourse(
     color,
     startDate,
     endDate,
+    enableGroupCreation,
     groupDeadlineDate,
+    maxGroupSize,
+    preferredGroupSize,
     notificationEmail,
     isGamificationEnabled,
   }: CreateCourseArgs,
@@ -418,6 +424,8 @@ export async function createCourse(
   // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
   // endDate.setHours(endDate.getHours() - endDate.getTimezoneOffset() / 60)
 
+  const defaultMaxGroupSize = 5
+  const defaultPreferredGroupSize = 3
   const course = await ctx.prisma.course.create({
     data: {
       name: name.trim(),
@@ -426,7 +434,10 @@ export async function createCourse(
       color: color ?? '#CCD5ED',
       startDate: startDate,
       endDate: endDate,
+      enableGroupCreation: enableGroupCreation ?? true,
       groupDeadlineDate: groupDeadlineDate ?? endDate,
+      maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+      preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
       notificationEmail: notificationEmail,
       isGamificationEnabled: isGamificationEnabled,
       pinCode: randomPin,

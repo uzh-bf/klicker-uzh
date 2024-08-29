@@ -1373,6 +1373,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
       courseColor: 'Course color',
       courseCreationFailed: 'Failed to create course...',
+      groupCreationEnabled: 'Group Creation',
+      groupCreationEnabledTooltip:
+        'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. This setting can be modified on the course overview.',
+      groupCreationDeadline: 'Group Creation Deadline',
+      groupCreationDeadlineTooltip:
+        'Students can create new groups or join an existing one until the deadline. Group activities can only start after the group formation phase has been completed.',
+      maxGroupSize: 'Maximum Group Size',
+      maxGroupSizeTooltip:
+        'The maximum number of students in a group. The minimum group size is fixed to two participants to enable randomized group creation',
+      preferredGroupSize: 'Preferred Group Size',
+      preferredGroupSizeTooltip:
+        'The preferred number of students in a group. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
     },
     course: {
       nameWithPin: 'Course: {name} (PIN: {pin})',

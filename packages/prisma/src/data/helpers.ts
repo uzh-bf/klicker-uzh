@@ -71,7 +71,10 @@ export function prepareCourse({
   pinCode: number
   startDate: Date
   endDate: Date
+  enableGroupCreation: boolean
   groupDeadlineDate: Date
+  maxGroupSize: number
+  preferredGroupSize: number
   notificationEmail?: string
 }) {
   const data = {
