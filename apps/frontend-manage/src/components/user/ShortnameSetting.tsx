@@ -96,6 +96,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 </Tooltip>
               )}
               <DebouncedUsernameField
+                t={t}
                 className={{
                   root: 'w-36',
                   label: 'hidden',
