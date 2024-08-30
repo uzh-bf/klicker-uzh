@@ -529,6 +529,8 @@ export async function updateCourseSettings(
         course.isGamificationEnabled || !isGamificationEnabled
           ? undefined
           : isGamificationEnabled,
+      // to be sure that data is consistent, check random assignment during next cronjob run
+      randomAssignmentFinalized: false,
     },
   })
 
