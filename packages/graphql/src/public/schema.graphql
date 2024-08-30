@@ -650,8 +650,10 @@ type Mutation {
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  joinRandomCourseGroupPool(courseId: String!): Boolean!
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
+  leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
@@ -823,6 +825,7 @@ type ParticipantLearningData {
   groupLeaderboard: [GroupLeaderboardEntry!]
   groupLeaderboardStatistics: LeaderboardStatistics
   id: String!
+  inRandomGroupPool: Boolean
   leaderboard: [LeaderboardEntry!]
   leaderboardStatistics: LeaderboardStatistics
   participant: Participant

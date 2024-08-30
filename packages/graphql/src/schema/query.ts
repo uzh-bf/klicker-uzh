@@ -417,7 +417,6 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: getCourseOverviewData has no more type issues, but contains a lot of mappings and subsetting of existing types
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),

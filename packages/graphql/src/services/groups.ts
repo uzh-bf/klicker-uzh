@@ -83,6 +83,91 @@ export async function createParticipantGroup(
   }
 }
 
+export async function joinRandomCourseGroupPool(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  // check if group creation is enabled on course
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+  })
+  if (!course || !course.isGroupCreationEnabled) {
+    return false
+  }
+
+  // add the participant to the pool of waiting participants
+  const poolEntry = await ctx.prisma.groupAssignmentPoolEntry.upsert({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    create: {
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {},
+  })
+
+  if (poolEntry) {
+    // return success
+    return true
+  }
+  return false
+}
+
+export async function leaveRandomCourseGroupPool(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  // check if group creation is enabled on course and if a corresponding pool entry exists
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      groupAssignmentPoolEntries: {
+        where: {
+          participantId: ctx.user.sub,
+        },
+      },
+    },
+  })
+  if (
+    !course ||
+    !course.isGroupCreationEnabled ||
+    course.groupAssignmentPoolEntries.length === 0
+  ) {
+    return false
+  }
+
+  // remove the participant from the pool
+  try {
+    await ctx.prisma.groupAssignmentPoolEntry.delete({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+    })
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
 interface JoinParticipantGroupArgs {
   courseId: string
   code: number

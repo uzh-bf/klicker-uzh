@@ -1,25 +1,15 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
-  GetParticipantGroupsDocument,
   GroupActivityInstance,
   JoinCourseDocument,
-  JoinParticipantGroupDocument,
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import {
-  Button,
-  FormikNumberField,
-  FormikTextField,
-  H3,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -27,11 +17,12 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import Tabs from '../../../components/common/Tabs'
-import GroupVisualization from '../../../components/participant/GroupVisualization'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
+import GroupVisualization from '../../../components/participant/groups/GroupVisualization'
 
 import GroupActivityList from '@components/groupActivity/GroupActivityList'
+import GroupCreationActions from '@components/participant/groups/GroupCreationActions'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
@@ -41,8 +32,6 @@ import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-
-// TODO: replace fields in this component through our own design system components
 
 interface Props {
   courseId: string
@@ -85,8 +74,6 @@ function CourseOverview({
     ],
   })
 
-  const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
-  const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   useEffect(() => {
@@ -123,6 +110,7 @@ function CourseOverview({
     groupLeaderboard,
     groupLeaderboardStatistics,
     groupActivityInstances,
+    inRandomGroupPool,
   } = data.getCourseOverviewData
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
@@ -531,89 +519,11 @@ function CourseOverview({
 
               {course.isGamificationEnabled && (
                 <Tabs.TabContent key="create" value="create">
-                  <H3>{t('pwa.courses.createGroup')}</H3>
-                  <Formik
-                    initialValues={{ groupName: '' }}
-                    onSubmit={async (values) => {
-                      const result = await createParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          name: values.groupName,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetParticipantGroupsDocument,
-                            variables: { courseId: courseId },
-                          },
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId: courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.createParticipantGroup?.id) {
-                        setSelectedTab(result.data.createParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikTextField
-                          name="groupName"
-                          placeholder={t('pwa.courses.groupName')}
-                          className={{ root: 'w-full md:w-52' }}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'create-new-participant-group' }}
-                        >
-                          {t('shared.generic.create')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
-
-                  <H3 className={{ root: 'mt-4' }}>
-                    {t('pwa.courses.joinGroup')}
-                  </H3>
-                  <Formik
-                    initialValues={{ code: '' }}
-                    onSubmit={async (values) => {
-                      const result = await joinParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          code: Number(values.code) >> 0,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.joinParticipantGroup?.id) {
-                        setSelectedTab(result.data.joinParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikNumberField
-                          name="code"
-                          placeholder={t('pwa.courses.code')}
-                          className={{ root: 'w-full md:w-52' }}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'join-participant-group' }}
-                        >
-                          {t('shared.generic.join')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
+                  <GroupCreationActions
+                    courseId={courseId}
+                    setSelectedTab={setSelectedTab}
+                    inRandomGroupPool={inRandomGroupPool ?? false}
+                  />
                 </Tabs.TabContent>
               )}
             </Tabs>

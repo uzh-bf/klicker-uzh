@@ -15,12 +15,13 @@ model Course {
   isGamificationEnabled Boolean  @default(true)
   areAnalyticsValid     Boolean  @default(false)
 
-  isGroupCreationEnabled Boolean  @default(true)
-  groupDeadlineDate      DateTime
+  isGroupCreationEnabled    Boolean  @default(true)
+  groupDeadlineDate         DateTime
   // TODO: make required after applying migration and remove default
-  preferredGroupSize     Int?     @default(3)
+  preferredGroupSize        Int?     @default(3)
   // TODO: make required after applying migration and remove default
-  maxGroupSize           Int?     @default(5)
+  maxGroupSize              Int?     @default(5)
+  randomAssignmentFinalized Boolean  @default(false)
 
   sessions                   LiveSession[]
   elementStacks              ElementStack[]
@@ -41,6 +42,7 @@ model Course {
   aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
   responses                  QuestionResponse[]
+  groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?

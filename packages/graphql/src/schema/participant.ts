@@ -219,6 +219,7 @@ export interface IParticipantLearningData {
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
   groupActivityInstances?: IGroupActivityInstance[]
+  inRandomGroupPool?: boolean
 }
 export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
@@ -267,6 +268,8 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
+
+    inRandomGroupPool: t.exposeBoolean('inRandomGroupPool', { nullable: true }),
   }),
 })
 
