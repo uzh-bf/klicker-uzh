@@ -11,6 +11,7 @@ interface GroupActionProps {
   onClick?: () => void
   onSubmit?: (value: string) => Promise<void>
   explanation?: string
+  loading?: boolean
   placeholder?: string
   textSubmit?: string
   data?: { text?: string; cy?: string }
@@ -19,6 +20,7 @@ interface GroupActionProps {
 interface GroupActionButtonProps extends GroupActionProps {
   onClick: () => void
   explanation: string
+  loading: boolean
   onSubmit?: never
   placeholder?: never
   textSubmit?: never
@@ -30,6 +32,7 @@ interface GroupActionFormProps extends GroupActionProps {
   textSubmit: string
   onClick?: never
   explanation?: never
+  loading?: never
 }
 
 function GroupAction({
@@ -38,6 +41,7 @@ function GroupAction({
   onSubmit,
   onClick,
   explanation,
+  loading,
   placeholder,
   textSubmit,
   data,
@@ -87,6 +91,7 @@ function GroupAction({
         root: 'border-uzh-grey-80 hover:bg-primary-20 flex flex-col items-center rounded-md border border-solid p-3',
       }}
       onClick={onClick}
+      disabled={loading}
     >
       <TitleIcon />
       <div>{explanation}</div>

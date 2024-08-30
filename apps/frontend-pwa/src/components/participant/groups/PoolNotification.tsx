@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl'
 
 function PoolNotification({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  const [leaveRandomCourseGroupPool] = useMutation(
+  const [leaveRandomCourseGroupPool, { loading }] = useMutation(
     LeaveRandomCourseGroupPoolDocument,
     {
       variables: { courseId },
@@ -41,7 +41,10 @@ function PoolNotification({ courseId }: { courseId: string }) {
         message={t('pwa.courses.inRandomGroupPool')}
         className={{ root: 'w-full' }}
       />
-      <Button onClick={async () => await leaveRandomCourseGroupPool()}>
+      <Button
+        onClick={async () => await leaveRandomCourseGroupPool()}
+        loading={loading}
+      >
         {t('pwa.courses.leaveRandomGroupPool')}
       </Button>
     </div>

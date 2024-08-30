@@ -9,7 +9,7 @@ import GroupAction from './GroupAction'
 
 function RandomGroupBlock({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  const [joinRandomCourseGroupPool] = useMutation(
+  const [joinRandomCourseGroupPool, { loading }] = useMutation(
     JoinRandomCourseGroupPoolDocument,
     {
       variables: { courseId },
@@ -43,6 +43,7 @@ function RandomGroupBlock({ courseId }: { courseId: string }) {
       onClick={async () => await joinRandomCourseGroupPool()}
       explanation={t('pwa.courses.createJoinRandomGroup')}
       data={{ cy: 'enter-random-group-pool' }}
+      loading={loading}
     />
   )
 }
