@@ -1414,6 +1414,9 @@ importers:
       eslint:
         specifier: 8.45.0
         version: 8.45.0
+      eslint-config-prettier:
+        specifier: 9.1.0
+        version: 9.1.0(eslint@8.45.0)
       eslint-plugin-office-addins:
         specifier: 2.1.5
         version: 2.1.5
@@ -1447,9 +1450,6 @@ importers:
       office-addin-manifest:
         specifier: 1.12.4
         version: 1.12.4
-      office-addin-prettier-config:
-        specifier: 1.2.0
-        version: 1.2.0
       os-browserify:
         specifier: 0.3.0
         version: 0.3.0
@@ -14029,6 +14029,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-generator@1.4.4:
