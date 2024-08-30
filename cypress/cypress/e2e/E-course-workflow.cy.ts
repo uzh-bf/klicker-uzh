@@ -168,14 +168,15 @@ describe('Test course creation and editing functionalities', () => {
       'disabled'
     )
     cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
       'have.attr',
       'data-state',
       'checked'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
     )
 
     cy.get('[data-cy="group-creation-deadline-button"]').click()
@@ -247,6 +248,7 @@ describe('Test course creation and editing functionalities', () => {
     // check if the values of the form are properly reset if gamification is disabled
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
+    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
     cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').clear()
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
@@ -260,6 +262,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="toggle-group-creation-enabled"]').should(
       'not.be.disabled'
     )
+    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
     cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').type(
       `${currentYear + 3}-01-01`
