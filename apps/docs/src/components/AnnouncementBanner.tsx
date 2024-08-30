@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 export default function AnnouncementBanner() {
   return (
-    <div className="flex flex-row items-center gap-6 bg-uzh-red-20 p-4">
+    <div className="bg-uzh-red-20 flex flex-row items-center gap-6 p-4">
       <div>
         <FontAwesomeIcon icon={faMessage} />
       </div>
