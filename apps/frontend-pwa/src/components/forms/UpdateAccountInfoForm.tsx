@@ -148,6 +148,7 @@ function UpdateAccountInfoForm({
                     data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
+                    t={t}
                     name="username"
                     label={t('shared.generic.username')}
                     valid={isUsernameAvailable}

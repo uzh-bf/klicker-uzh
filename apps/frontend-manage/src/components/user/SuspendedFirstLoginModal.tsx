@@ -112,6 +112,7 @@ function SuspendedFirstLoginModal() {
             <Form>
               <div className="mb-1 flex flex-col space-y-4 md:mb-5 md:flex-row md:justify-between md:space-y-0">
                 <DebouncedUsernameField
+                  t={t}
                   className={{
                     root: 'w-[250px] md:w-max',
                     input: 'bg-white',

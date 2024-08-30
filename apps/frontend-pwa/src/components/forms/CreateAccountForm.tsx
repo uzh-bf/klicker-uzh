@@ -156,6 +156,7 @@ function CreateAccountForm({
                 />
                 <DebouncedUsernameField
                   required
+                  t={t}
                   name="username"
                   label={t('shared.generic.username')}
                   valid={isUsernameAvailable}
