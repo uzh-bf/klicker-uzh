@@ -228,7 +228,7 @@ function CourseManipulationModal({
                     name="color"
                     label={t('manage.courseList.courseColor')}
                     colorLabel={t('shared.generic.color')}
-                    position="top"
+                    position="top-left"
                     submitText={t('shared.generic.confirm')}
                     dataTrigger={{ cy: 'course-color-trigger' }}
                     dataHexInput={{ cy: 'course-color-hex-input' }}
