@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.2.0-alpha.11",
+  "version": "3.2.0-alpha.12",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
     "@types/jest": "^29.5.3",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
     "cross-env": "7.0.3",
     "eslint": "8.45.0",

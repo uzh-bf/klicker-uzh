@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-migration-v3-import",
-  "version": "3.2.0-alpha.11",
+  "version": "3.2.0-alpha.12",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -19,7 +19,7 @@
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "@types/uuid": "^9.0.8",
     "azure-functions-core-tools": "4.0.5801",
     "cross-env": "7.0.3",

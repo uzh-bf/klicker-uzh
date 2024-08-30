@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.11...v3.2.0-alpha.12) (2024-08-30)
+
+
+### Bug Fixes
+
+* issue with useTranslations in shared components ([4ec9af4](https://github.com/uzh-bf/klicker-uzh/commit/4ec9af4414f880f3c0b82bcac4c906d728f9b90e))
+* LTI login should be working with cookies and session storage ([#4220](https://github.com/uzh-bf/klicker-uzh/issues/4220)) ([c1f4487](https://github.com/uzh-bf/klicker-uzh/commit/c1f448723e934f1241e1869ab70e47df4aeecabf))
+
 ## [3.2.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.10...v3.2.0-alpha.11) (2024-08-29)
 
 

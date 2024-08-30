@@ -234,7 +234,7 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
           />
         </aside>
         <main className={twMerge(MainStyles.docMainContainer)}>
-          <div className={twMerge('m-auto max-w-7xl p-4 w-full')}>
+          <div className={twMerge('m-auto w-full max-w-7xl p-4')}>
             {children}
           </div>
         </main>

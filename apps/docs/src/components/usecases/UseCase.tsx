@@ -20,9 +20,7 @@ function UseCase({ slug }: UseCaseProps) {
         <div className="order-1 col-span-3">
           <H1>{useCase.title}</H1>
           <div className="flex flex-row flex-wrap gap-2">
-            {useCase.tags?.map((tag) => (
-              <Tag key={tag} label={tag} />
-            ))}
+            {useCase.tags?.map((tag) => <Tag key={tag} label={tag} />)}
           </div>
         </div>
         <div className="prose order-3 col-span-3 max-w-none md:order-2 md:col-span-2">
@@ -46,11 +44,7 @@ function UseCase({ slug }: UseCaseProps) {
 
         <div className="prose order-2 col-span-3 bg-slate-50 p-4 md:order-2 md:col-span-1 md:rounded">
           <H2>Goals</H2>
-          <ul>
-            {useCase.goals?.map((goal) => (
-              <li key={goal}>{goal}</li>
-            ))}
-          </ul>
+          <ul>{useCase.goals?.map((goal) => <li key={goal}>{goal}</li>)}</ul>
         </div>
       </div>
     </UseCaseLayout>

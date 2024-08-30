@@ -5,31 +5,40 @@ export default function useParticipantToken({
   participantToken,
   cookiesAvailable,
   redirectTo,
+  callback,
 }: {
   participantToken?: string
   cookiesAvailable?: boolean
   redirectTo?: string
+  callback?: () => void
 }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (participantToken) {
+    if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
         if (!sessionStorage.getItem('participant_token')) {
           sessionStorage.setItem('participant_token', participantToken)
+
           if (redirectTo) {
-            router.push(redirectTo)
+            router.push(`${redirectTo}?participantToken=${participantToken}`, {
+              query: {
+                ...router.query,
+                participantToken,
+              },
+            })
           } else {
-            router.reload()
+            callback?.()
           }
         }
       } else {
         if (sessionStorage.getItem('participant_token')) {
           sessionStorage.removeItem('participant_token')
+
           if (redirectTo) {
             router.push(redirectTo)
           } else {
-            router.reload()
+            callback?.()
           }
         }
       }

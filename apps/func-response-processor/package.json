@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-response-processor",
-  "version": "3.2.0-alpha.11",
+  "version": "3.2.0-alpha.12",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -19,7 +19,7 @@
     "@tsconfig/node18": "18.2.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
     "@uzh-bf/design-system": "3.0.0-alpha.24",
     "azure-functions-core-tools": "4.0.5801",
