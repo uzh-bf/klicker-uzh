@@ -8,13 +8,19 @@ model Course {
   name                  String
   displayName           String
   description           String?
-  color                 String    @default("#eaa07d")
+  color                 String   @default("#eaa07d")
   startDate             DateTime
   endDate               DateTime
-  groupDeadlineDate     DateTime?
   notificationEmail     String?
-  isGamificationEnabled Boolean   @default(true)
-  areAnalyticsValid     Boolean   @default(false)
+  isGamificationEnabled Boolean  @default(true)
+  areAnalyticsValid     Boolean  @default(false)
+
+  isGroupCreationEnabled Boolean  @default(true)
+  groupDeadlineDate      DateTime
+  // TODO: make required after applying migration and remove default
+  preferredGroupSize     Int?     @default(3)
+  // TODO: make required after applying migration and remove default
+  maxGroupSize           Int?     @default(5)
 
   sessions                   LiveSession[]
   elementStacks              ElementStack[]

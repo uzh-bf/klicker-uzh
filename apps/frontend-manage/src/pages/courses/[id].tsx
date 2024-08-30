@@ -7,7 +7,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
+import { Button, H2, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
-import CourseSettings from '../../components/courses/CourseSettings'
 import GroupActivityList from '../../components/courses/GroupActivityList'
 import LiveQuizList from '../../components/courses/LiveQuizList'
 import MicroLearningList from '../../components/courses/MicroLearningList'
@@ -67,18 +66,10 @@ function CourseOverviewPage() {
     <Layout>
       <div className="mb-4 w-full">
         <CourseOverviewHeader
-          id={course.id}
+          course={course}
           name={course.name}
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}
-        />
-        <CourseSettings
-          id={course.id}
-          description={course.description}
-          isGamificationEnabled={course.isGamificationEnabled}
-          courseColor={course.color}
-          startDate={course.startDate}
-          endDate={course.endDate}
         />
       </div>
       <div className="flex flex-col md:flex-row">
@@ -206,7 +197,7 @@ function CourseOverviewPage() {
         </div>
         {data?.course?.isGamificationEnabled && (
           <div className="w-full border-l md:w-1/3 md:pl-2">
-            <H3>{t('manage.course.courseLeaderboard')}</H3>
+            <H2>{t('manage.course.courseLeaderboard')}</H2>
             <Leaderboard
               className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
               leaderboard={course.leaderboard ?? []}

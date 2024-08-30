@@ -37,6 +37,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
+import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -200,6 +201,7 @@ function CourseOverview({
                   ))}
 
                 {course.isGamificationEnabled &&
+                  course.isGroupCreationEnabled &&
                   !course.isGroupDeadlinePassed &&
                   (data.participantGroups?.length ?? 0) < 1 && (
                     <Tabs.Tab
@@ -304,61 +306,63 @@ function CourseOverview({
                       </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col justify-between gap-8">
-                      <div>
-                        <H3 className={{ root: 'mb-4' }}>
-                          {t('pwa.courses.groupLeaderboard')}
-                        </H3>
+                    {course.isGroupCreationEnabled && (
+                      <div className="flex flex-1 flex-col justify-between gap-8">
+                        <div>
+                          <H3 className={{ root: 'mb-4' }}>
+                            {t('pwa.courses.groupLeaderboard')}
+                          </H3>
 
-                        <Leaderboard
-                          leaderboard={
-                            filteredGroupLeaderboard?.map((entry) => ({
-                              id: entry.id,
-                              username: entry.name,
-                              score: entry.score,
-                              rank: entry.rank,
-                              isMember: entry.isMember ?? false,
-                            })) || []
-                          }
-                          hideAvatars={true}
-                        />
+                          <Leaderboard
+                            leaderboard={
+                              filteredGroupLeaderboard?.map((entry) => ({
+                                id: entry.id,
+                                username: entry.name,
+                                score: entry.score,
+                                rank: entry.rank,
+                                isMember: entry.isMember ?? false,
+                              })) || []
+                            }
+                            hideAvatars={true}
+                          />
 
-                        {!groupLeaderboard ||
-                          (groupLeaderboard.length === 0 && (
-                            <div className="mt-6">
-                              {t('pwa.courses.noGroups')}
+                          {!groupLeaderboard ||
+                            (groupLeaderboard.length === 0 && (
+                              <div className="mt-6">
+                                {t('pwa.courses.noGroups')}
+                              </div>
+                            ))}
+                          {groupLeaderboard &&
+                            groupLeaderboard.length !== 0 &&
+                            filteredGroupLeaderboard?.length === 0 && (
+                              <div>{t('pwa.courses.noGroupPoints')}</div>
+                            )}
+
+                          <div className="mb-2 mt-4 text-right text-sm text-slate-600">
+                            <div>
+                              {t('shared.leaderboard.participantCount', {
+                                number:
+                                  groupLeaderboardStatistics?.participantCount,
+                              })}
                             </div>
-                          ))}
-                        {groupLeaderboard &&
-                          groupLeaderboard.length !== 0 &&
-                          filteredGroupLeaderboard?.length === 0 && (
-                            <div>{t('pwa.courses.noGroupPoints')}</div>
-                          )}
-
-                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
-                          <div>
-                            {t('shared.leaderboard.participantCount', {
-                              number:
-                                groupLeaderboardStatistics?.participantCount,
-                            })}
-                          </div>
-                          <div>
-                            {t('shared.leaderboard.averagePoints', {
-                              number:
-                                groupLeaderboardStatistics?.averageScore?.toFixed(
-                                  2
-                                ),
-                            })}
+                            <div>
+                              {t('shared.leaderboard.averagePoints', {
+                                number:
+                                  groupLeaderboardStatistics?.averageScore?.toFixed(
+                                    2
+                                  ),
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
-                        {t.rich('pwa.courses.groupLeaderboardUpdate', {
-                          b: () => <br />,
-                        })}
+                        <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
+                          {t.rich('pwa.courses.groupLeaderboardUpdate', {
+                            b: () => <br />,
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
@@ -433,11 +437,24 @@ function CourseOverview({
 
                       <div className="flex flex-row flex-wrap gap-4">
                         <div className="flex flex-1 flex-col">
-                          <div className="mb-2">
+                          <div className="mb-2 flex flex-col gap-2">
                             {!participation?.isActive && (
                               <UserNotification
                                 type="warning"
                                 message={t('pwa.groupActivity.joinLeaderboard')}
+                              />
+                            )}
+                            {group.participants?.length === 1 && (
+                              <UserNotification
+                                type="info"
+                                message={t(
+                                  'pwa.groupActivity.singleParticipantAutomaticAssignment',
+                                  {
+                                    groupFormationDeadline: dayjs(
+                                      course.groupDeadlineDate
+                                    ).format('DD.MM.YYYY HH:mm'),
+                                  }
+                                )}
                               />
                             )}
                           </div>
@@ -463,7 +480,10 @@ function CourseOverview({
                                         groupId: group.id,
                                       },
                                       refetchQueries: [
-                                        GetCourseOverviewDataDocument,
+                                        {
+                                          query: GetCourseOverviewDataDocument,
+                                          variables: { courseId: courseId },
+                                        },
                                       ],
                                     })
 

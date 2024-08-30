@@ -23,6 +23,7 @@ query GetCourseOverviewData($courseId: String!) {
       isGamificationEnabled
       groupDeadlineDate
       isGroupDeadlinePassed
+      isGroupCreationEnabled
 
       awards {
         id

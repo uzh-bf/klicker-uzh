@@ -1,18 +1,18 @@
-mutation CreateCourse(
-  $name: String!
-  $displayName: String!
+mutation UpdateCourseSettings(
+  $id: String!
+  $name: String
+  $displayName: String
   $description: String
   $color: String
-  $startDate: Date!
-  $endDate: Date!
-  $isGroupCreationEnabled: Boolean!
-  $groupDeadlineDate: Date!
-  $maxGroupSize: Int!
-  $preferredGroupSize: Int!
+  $startDate: Date
+  $endDate: Date
+  $isGroupCreationEnabled: Boolean
+  $groupDeadlineDate: Date
   $notificationEmail: String
-  $isGamificationEnabled: Boolean!
+  $isGamificationEnabled: Boolean
 ) {
-  createCourse(
+  updateCourseSettings(
+    id: $id
     name: $name
     displayName: $displayName
     description: $description
@@ -21,8 +21,6 @@ mutation CreateCourse(
     endDate: $endDate
     isGroupCreationEnabled: $isGroupCreationEnabled
     groupDeadlineDate: $groupDeadlineDate
-    maxGroupSize: $maxGroupSize
-    preferredGroupSize: $preferredGroupSize
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
   ) {
@@ -35,8 +33,6 @@ mutation CreateCourse(
     endDate
     isGroupCreationEnabled
     groupDeadlineDate
-    maxGroupSize
-    preferredGroupSize
     notificationEmail
     isGamificationEnabled
   }

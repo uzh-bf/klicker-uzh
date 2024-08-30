@@ -86,7 +86,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -103,7 +106,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -120,7 +126,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 482748273,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: false,
       groupDeadlineDate: new Date('2025-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )

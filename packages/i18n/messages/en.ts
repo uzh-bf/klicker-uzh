@@ -685,6 +685,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
         'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
+      singleParticipantAutomaticAssignment:
+        'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
     },
   },
   manage: {
@@ -1373,8 +1375,35 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
       courseColor: 'Course color',
       courseCreationFailed: 'Failed to create course...',
+      groupDeadlineFuture: 'The group creation deadline must be in the future.',
+      groupDeadlineBeforeEnd:
+        'The group creation deadline must be before the course end date.',
+      groupDeadlineReq: 'Please specify a valid group creation deadline.',
+      maxGroupSizeMin: 'The maximum group size must be at least 2.',
+      maxGroupSizeLargerThanPreferred:
+        'The maximum group size must be strictly larger than the preferred group size to ensure that automatically generated groups never exceed the maximum group size.',
+      maxGroupSizeReq: 'Please specify a valid maximum group size.',
+      preferredGroupSizeMin: 'The preferred group size must be at least 2.',
+      preferredGroupSizeReq: 'Please specify a valid preferred group size.',
+      gamificationTooltip:
+        'Gamification can only be activated (not deactivated) after the course has been created.',
+      groupCreationEnabled: 'Group Creation',
+      groupCreationEnabledTooltip:
+        'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. This setting can be modified on the course overview.',
+      groupCreationDeadline: 'Group Creation Deadline',
+      groupCreationDeadlineTooltip:
+        'Students can create new groups or join an existing one until the deadline.',
+      maxGroupSize: 'Maximum Group Size',
+      maxGroupSizeTooltip:
+        'The maximum number of students in a group. The minimum group size is fixed to two participants to enable randomized group creation',
+      preferredGroupSize: 'Preferred Group Size',
+      preferredGroupSizeTooltip:
+        'The preferred number of students in a group. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
+      groupDeadlineChangedToPast:
+        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within 15 minutes, if possible.',
     },
     course: {
+      modifyCourse: 'Modify course',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
