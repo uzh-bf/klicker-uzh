@@ -1394,6 +1394,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupDeadlineReq:
         'Bitte geben Sie ein gültiges Datum für die Gruppenbildung an.',
       maxGroupSizeMin: 'Die maximale Gruppengrösse muss mindestens 2 betragen.',
+      maxGroupSizeLargerThanPreferred:
+        'Die maximale Gruppengrösse muss strikt grösser als die bevorzugte Gruppengrösse sein, um sicherzustellen, dass automatisch generierte Gruppen niemals die maximale Gruppengrösse überschreiten.',
       maxGroupSizeReq:
         'Bitte geben Sie eine gültige maximale Gruppengrösse an.',
       preferredGroupSizeMin:

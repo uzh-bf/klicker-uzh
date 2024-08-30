@@ -94,6 +94,10 @@ function CourseManipulationModal({
     maxGroupSize: yup
       .number()
       .min(2, t('manage.courseList.maxGroupSizeMin'))
+      .moreThan(
+        yup.ref('preferredGroupSize'),
+        t('manage.courseList.maxGroupSizeLargerThanPreferred')
+      )
       .required(t('manage.courseList.maxGroupSizeReq')),
     preferredGroupSize: yup
       .number()

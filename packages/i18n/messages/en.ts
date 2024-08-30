@@ -1378,6 +1378,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The group creation deadline must be before the course end date.',
       groupDeadlineReq: 'Please specify a valid group creation deadline.',
       maxGroupSizeMin: 'The maximum group size must be at least 2.',
+      maxGroupSizeLargerThanPreferred:
+        'The maximum group size must be strictly larger than the preferred group size to ensure that automatically generated groups never exceed the maximum group size.',
       maxGroupSizeReq: 'Please specify a valid maximum group size.',
       preferredGroupSizeMin: 'The preferred group size must be at least 2.',
       preferredGroupSizeReq: 'Please specify a valid preferred group size.',
