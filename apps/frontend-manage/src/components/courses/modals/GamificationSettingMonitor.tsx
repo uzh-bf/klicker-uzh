@@ -15,6 +15,7 @@ function GamificationSettingMonitor({
   // if the gamification or group creation are disabled, reset the group setting to their default values
   useEffect(() => {
     if (!values.isGamificationEnabled || !values.isGroupCreationEnabled) {
+      setFieldValue('isGroupCreationEnabled', false)
       setFieldValue('groupCreationDeadline', values.endDate)
       setFieldValue('maxGroupSize', 5)
       setFieldValue('preferredGroupSize', 3)

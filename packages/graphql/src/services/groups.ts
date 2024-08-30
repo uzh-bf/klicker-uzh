@@ -38,8 +38,17 @@ export async function createParticipantGroup(
   { courseId, name }: CreateParticipantGroupArgs,
   ctx: ContextWithUser
 ) {
-  const code = 100000 + Math.floor(Math.random() * 900000)
+  // check if group creation is enabled on course
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+  })
+  if (!course || !course.isGroupCreationEnabled) {
+    return null
+  }
 
+  const code = 100000 + Math.floor(Math.random() * 900000)
   const participantGroup = await ctx.prisma.participantGroup.create({
     data: {
       name: name.trim(),

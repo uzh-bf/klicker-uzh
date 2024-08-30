@@ -174,6 +174,7 @@ export async function getCourseOverviewData(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
