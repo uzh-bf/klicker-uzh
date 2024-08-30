@@ -20,13 +20,15 @@ interface Props {
 
 function EditProfile({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
-  const { data, loading, refetch } = useQuery(SelfDocument)
   const [showError, setShowError] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  const { data, loading, refetch } = useQuery(SelfDocument)
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    callback: () => refetch(),
   })
 
   if (loading || !data?.self) {
@@ -105,6 +107,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return addApolloState(apolloClient, {
     props: {
+      cookiesAvailable,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },

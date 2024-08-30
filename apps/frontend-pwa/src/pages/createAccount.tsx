@@ -62,12 +62,18 @@ function CreateAccount({
           })
 
           if (login) {
-            await router.replace('/editProfile', {
-              pathname: '/editProfile',
-              query: {
-                newAccount: true,
-              },
-            })
+            const participantToken =
+              login.data?.createParticipantAccount?.participantToken ?? null
+            await router.replace(
+              `/editProfile?newAccount=true&participantToken=${participantToken}`,
+              {
+                pathname: '/editProfile',
+                query: {
+                  newAccount: true,
+                  participantToken,
+                },
+              }
+            )
           }
 
           setSubmitting(false)
@@ -82,17 +88,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, jwt } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
     ctx,
   })
 
   if (participantToken) {
+    if (!cookiesAvailable) {
+      return {
+        redirect: {
+          destination: `/editProfile?participantToken=${participantToken}`,
+          permanent: false,
+          query: { participantToken },
+        },
+      }
+    }
+
     return {
       redirect: {
-        destination: `/editProfile?jwt=${jwt}`,
+        destination: `/editProfile`,
         permanent: false,
-        query: { jwt },
       },
     }
   }
@@ -109,15 +124,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (cookies['lti-token'] || query.jwt) {
     const token = cookies['lti-token'] ?? query.jwt
 
-    console.log('token', token)
-
     const parsedToken = JWT.verify(token, process.env.APP_SECRET as string) as {
       sub: string
       email: string
       scope: string
     }
-
-    console.log('parsedToken', parsedToken)
 
     if (parsedToken.scope === 'LTI1.3') {
       signedLtiData.token = token
