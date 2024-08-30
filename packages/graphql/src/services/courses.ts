@@ -332,6 +332,16 @@ export async function getCourseOverviewData(
         return { ...entry, rank: ix + 1 }
       })
 
+      const groupCreationPoolEntry =
+        await ctx.prisma.groupAssignmentPoolEntry.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        })
+
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
@@ -352,6 +362,7 @@ export async function getCourseOverviewData(
               : 0,
         },
         groupActivityInstances,
+        inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
   }

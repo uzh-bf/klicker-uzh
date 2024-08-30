@@ -1,20 +1,19 @@
 import { useMutation } from '@apollo/client'
-import { faShuffle } from '@fortawesome/free-solid-svg-icons'
 import {
   GetCourseOverviewDataDocument,
-  JoinRandomCourseGroupPoolDocument,
+  LeaveRandomCourseGroupPoolDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import GroupAction from './GroupAction'
 
-function RandomGroupBlock({ courseId }: { courseId: string }) {
+function PoolNotification({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  const [joinRandomCourseGroupPool] = useMutation(
-    JoinRandomCourseGroupPoolDocument,
+  const [leaveRandomCourseGroupPool] = useMutation(
+    LeaveRandomCourseGroupPoolDocument,
     {
       variables: { courseId },
       update: (cache, { data }) => {
-        if ((data?.joinRandomCourseGroupPool ?? false) !== true) return
+        if ((data?.leaveRandomCourseGroupPool ?? false) !== true) return
         const CourseOverviewData = cache.readQuery({
           query: GetCourseOverviewDataDocument,
           variables: { courseId: courseId },
@@ -27,7 +26,7 @@ function RandomGroupBlock({ courseId }: { courseId: string }) {
             getCourseOverviewData: {
               id: courseId,
               ...CourseOverviewData.getCourseOverviewData,
-              inRandomGroupPool: true,
+              inRandomGroupPool: false,
             },
           },
         })
@@ -36,15 +35,17 @@ function RandomGroupBlock({ courseId }: { courseId: string }) {
   )
 
   return (
-    <GroupAction
-      buttonMode
-      title={t('pwa.courses.randomGroup')}
-      icon={faShuffle}
-      onClick={async () => await joinRandomCourseGroupPool()}
-      explanation={t('pwa.courses.createJoinRandomGroup')}
-      data={{ cy: 'enter-random-group-pool' }}
-    />
+    <div className="flex flex-col items-end gap-2">
+      <UserNotification
+        type="info"
+        message={t('pwa.courses.inRandomGroupPool')}
+        className={{ root: 'w-full' }}
+      />
+      <Button onClick={async () => await leaveRandomCourseGroupPool()}>
+        {t('pwa.courses.leaveRandomGroupPool')}
+      </Button>
+    </div>
   )
 }
 
-export default RandomGroupBlock
+export default PoolNotification

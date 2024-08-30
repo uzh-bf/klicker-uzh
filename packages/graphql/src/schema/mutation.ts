@@ -466,6 +466,26 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      joinRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.joinRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
+      leaveRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.leaveRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
       bookmarkElementStack: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],

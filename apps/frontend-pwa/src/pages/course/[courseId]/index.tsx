@@ -110,6 +110,7 @@ function CourseOverview({
     groupLeaderboard,
     groupLeaderboardStatistics,
     groupActivityInstances,
+    inRandomGroupPool,
   } = data.getCourseOverviewData
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
@@ -521,6 +522,7 @@ function CourseOverview({
                   <GroupCreationActions
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
+                    inRandomGroupPool={inRandomGroupPool ?? false}
                   />
                 </Tabs.TabContent>
               )}

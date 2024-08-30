@@ -441,6 +441,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       randomGroup: 'Zufällige Gruppe',
       createJoinRandomGroup:
         'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
+      inRandomGroupPool:
+        'Sie haben sich entschieden, automatisch einer Gruppe von Studierenden in Ihrem Kurs zugewiesen zu werden. Wir warten derzeit darauf, dass mehr Personen dem Pool beitreten, und werden Sie so schnell wie möglich einer Gruppe zuweisen. Wenn Sie stattdessen lieber manuell einer anderen Gruppe beitreten oder Ihre eigene Gruppe erstellen möchten, können Sie den Pool mit dem Button unten verlassen.',
+      leaveRandomGroupPool: 'Pool verlassen',
       code: 'Code',
       individualLeaderboard: 'Individuelles Leaderboard',
       groupLeaderboard: 'Gruppenleaderboard',
