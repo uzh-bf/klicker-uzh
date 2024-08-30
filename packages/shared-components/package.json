@@ -12,7 +12,7 @@
     "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
     "@types/react": "^18.3.4",
-    "@types/react-dom": "^18.2.7",
+    "@types/react-dom": "^18.3.0",
     "autoprefixer": "10.4.14",
     "eslint": "8.45.0",
     "lodash": "4.17.21",

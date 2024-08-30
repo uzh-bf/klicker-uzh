@@ -121,7 +121,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       autoprefixer:
         specifier: 10.4.14
@@ -588,7 +588,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       '@types/web-push':
         specifier: ^3.6.3
@@ -823,7 +823,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       '@types/react-tagcloud':
         specifier: ^1.1.7
@@ -1034,7 +1034,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       '@types/web-push':
         specifier: ^3.6.3
@@ -1391,7 +1391,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       '@types/webpack':
         specifier: ^5.0.0
@@ -1836,7 +1836,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       autoprefixer:
         specifier: 10.4.14
@@ -2066,7 +2066,7 @@ importers:
         specifier: ^18.3.4
         version: 18.3.4
       '@types/react-dom':
-        specifier: ^18.2.7
+        specifier: ^18.3.0
         version: 18.3.0
       autoprefixer:
         specifier: 10.4.14

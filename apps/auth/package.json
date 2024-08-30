@@ -29,7 +29,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.16.1",
     "@types/react": "^18.3.4",
-    "@types/react-dom": "^18.2.7",
+    "@types/react-dom": "^18.3.0",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "cssnano": "6.0.1",

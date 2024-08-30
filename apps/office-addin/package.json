@@ -22,7 +22,7 @@
     "@types/office-js": "^1.0.256",
     "@types/office-runtime": "^1.0.23",
     "@types/react": "^18.3.4",
-    "@types/react-dom": "^18.2.7",
+    "@types/react-dom": "^18.3.0",
     "@types/webpack": "^5.0.0",
     "@types/webpack-dev-server": "^4.1.0",
     "acorn": "8.8.2",
