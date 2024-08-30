@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.12...v3.2.0-alpha.13) (2024-08-30)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that explanation on questions can be deleted again ([#4223](https://github.com/uzh-bf/klicker-uzh/issues/4223)) ([19db4c1](https://github.com/uzh-bf/klicker-uzh/commit/19db4c18e602c40c5c9ec4318f2c44cf549cc648))
+
 ## [3.2.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.11...v3.2.0-alpha.12) (2024-08-30)
 
 

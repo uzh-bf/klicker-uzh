@@ -245,7 +245,7 @@ export async function manipulateQuestion(
       status: status ?? undefined,
       name: name ?? undefined,
       content: content ?? undefined,
-      explanation: explanation ?? undefined,
+      explanation: typeof explanation === 'undefined' ? undefined : explanation,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,
