@@ -466,7 +466,10 @@ function CourseOverview({
                                         groupId: group.id,
                                       },
                                       refetchQueries: [
-                                        GetCourseOverviewDataDocument,
+                                        {
+                                          query: GetCourseOverviewDataDocument,
+                                          variables: { courseId: courseId },
+                                        },
                                       ],
                                     })
 
