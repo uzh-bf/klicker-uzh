@@ -51,7 +51,7 @@ const RoadmapTile = ({
                   <FontAwesomeIcon icon={faExternalLink} />
                   <div>
                     <div className="font-bold">{useCase.content}</div>
-                    <div className="text-gray-600 ">{useCase.status}</div>
+                    <div className="text-gray-600">{useCase.status}</div>
                   </div>
                 </a>
               )
