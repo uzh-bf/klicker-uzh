@@ -15,7 +15,9 @@ function GroupJoinBlock({
   setSelectedTab: (value: string) => void
 }) {
   const t = useTranslations()
-  const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
+  const [joinParticipantGroup, { loading }] = useMutation(
+    JoinParticipantGroupDocument
+  )
 
   return (
     <GroupAction
@@ -40,6 +42,7 @@ function GroupJoinBlock({
           setSelectedTab(result.data.joinParticipantGroup.id)
         }
       }}
+      loading={loading}
       placeholder={t('pwa.courses.code')}
       textSubmit={t('shared.generic.join')}
       data={undefined}

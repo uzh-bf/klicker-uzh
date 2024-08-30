@@ -16,7 +16,9 @@ function GroupCreationBlock({
   setSelectedTab: (value: string) => void
 }) {
   const t = useTranslations()
-  const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
+  const [createParticipantGroup, { loading }] = useMutation(
+    CreateParticipantGroupDocument
+  )
 
   return (
     <GroupAction
@@ -45,6 +47,7 @@ function GroupCreationBlock({
           setSelectedTab(result.data.createParticipantGroup.id)
         }
       }}
+      loading={loading}
       placeholder={t('pwa.courses.groupName')}
       textSubmit={t('shared.generic.create')}
       data={{ cy: 'create-new-participant-group' }}

@@ -7,11 +7,11 @@ import { twMerge } from 'tailwind-merge'
 interface GroupActionProps {
   title: string
   icon: IconDefinition
+  loading: boolean
   buttonMode: boolean
   onClick?: () => void
   onSubmit?: (value: string) => Promise<void>
   explanation?: string
-  loading?: boolean
   placeholder?: string
   textSubmit?: string
   data?: { text?: string; cy?: string }
@@ -20,7 +20,6 @@ interface GroupActionProps {
 interface GroupActionButtonProps extends GroupActionProps {
   onClick: () => void
   explanation: string
-  loading: boolean
   onSubmit?: never
   placeholder?: never
   textSubmit?: never
@@ -32,16 +31,15 @@ interface GroupActionFormProps extends GroupActionProps {
   textSubmit: string
   onClick?: never
   explanation?: never
-  loading?: never
 }
 
 function GroupAction({
   title,
   icon,
+  loading,
   onSubmit,
   onClick,
   explanation,
-  loading,
   placeholder,
   textSubmit,
   data,
@@ -74,7 +72,7 @@ function GroupAction({
                 placeholder={placeholder}
                 className={{ root: 'w-full' }}
               />
-              <Button type="submit" data={data}>
+              <Button type="submit" data={data} loading={loading}>
                 {textSubmit}
               </Button>
             </div>
