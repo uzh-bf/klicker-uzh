@@ -94,6 +94,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ctx,
   })
 
+  if (!participantToken) {
+    return {
+      redirect: {
+        destination: `/createAccount`,
+        permanent: false,
+      },
+    }
+  }
+
   if (participantToken) {
     return {
       props: {
