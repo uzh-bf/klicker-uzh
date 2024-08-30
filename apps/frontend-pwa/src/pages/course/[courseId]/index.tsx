@@ -37,6 +37,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
+import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -436,11 +437,24 @@ function CourseOverview({
 
                       <div className="flex flex-row flex-wrap gap-4">
                         <div className="flex flex-1 flex-col">
-                          <div className="mb-2">
+                          <div className="mb-2 flex flex-col gap-2">
                             {!participation?.isActive && (
                               <UserNotification
                                 type="warning"
                                 message={t('pwa.groupActivity.joinLeaderboard')}
+                              />
+                            )}
+                            {group.participants?.length === 1 && (
+                              <UserNotification
+                                type="info"
+                                message={t(
+                                  'pwa.groupActivity.singleParticipantAutomaticAssignment',
+                                  {
+                                    groupFormationDeadline: dayjs(
+                                      course.groupDeadlineDate
+                                    ).format('DD.MM.YYYY HH:mm'),
+                                  }
+                                )}
                               />
                             )}
                           </div>

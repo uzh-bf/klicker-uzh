@@ -683,6 +683,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.',
       joinLeaderboard:
         'Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme.',
+      singleParticipantAutomaticAssignment:
+        'Sie sind der einzige Teilnehmer in Ihrer Gruppe. Sobald die Frist für die Gruppenbildung abgelaufen ist am {groupFormationDeadline} oder der Dozent die Gruppenbildung manuell gestoppt hat, werden Sie automatisch einer zufälligen Gruppe zugewiesen.',
     },
   },
   manage: {

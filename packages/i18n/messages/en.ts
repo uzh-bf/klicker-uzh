@@ -685,6 +685,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
         'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
+      singleParticipantAutomaticAssignment:
+        'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
     },
   },
   manage: {
