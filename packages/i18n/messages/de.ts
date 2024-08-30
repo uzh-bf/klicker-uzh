@@ -1411,6 +1411,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endAt: 'Ende: {time}',
       nQuestions: '{number} Fragen',
       copyAccessLink: 'Zugriffslink kopieren',
+      copyLTIAccessLink: 'LTI Link kopieren',
       linkMicrolearningCopied:
         'Der Link zum Microlearning wurde erfolgreich in die Zwischenablage kopiert.',
       linkPracticeQuizCopied:

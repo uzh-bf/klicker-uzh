@@ -1397,6 +1397,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
       copyAccessLink: 'Copy access link',
+      copyLTIAccessLink: 'Copy LTI link',
       linkMicrolearningCopied:
         'The link to the microlearning has been successfully copied to the clipboard.',
       linkPracticeQuizCopied:
