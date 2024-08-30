@@ -118,7 +118,6 @@ function GroupActivityGradingStack({
   )
 
   const gradingSchema = useMemo(() => {
-    console.log('RECOMPUTING SCHEMA')
     Yup.object().shape({
       passed: Yup.boolean().required(
         t('manage.groupActivity.passedMissingError')
