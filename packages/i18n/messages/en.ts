@@ -438,6 +438,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createGroup: 'Create Group',
       joinGroup: 'Join Group',
       groupName: 'Group Name',
+      randomGroup: 'Random Group',
+      createJoinRandomGroup:
+        'Click here to be automatically assigned to a random group with other students.',
       code: 'Code',
       individualLeaderboard: 'Individual Leaderboard',
       groupLeaderboard: 'Group Leaderboard',

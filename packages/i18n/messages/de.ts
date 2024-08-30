@@ -438,6 +438,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createGroup: 'Gruppe erstellen',
       joinGroup: 'Gruppe beitreten',
       groupName: 'Gruppenname',
+      randomGroup: 'Zufällige Gruppe',
+      createJoinRandomGroup:
+        'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
       code: 'Code',
       individualLeaderboard: 'Individuelles Leaderboard',
       groupLeaderboard: 'Gruppenleaderboard',
