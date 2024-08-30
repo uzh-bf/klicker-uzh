@@ -16,36 +16,39 @@ export default async function getParticipantToken({
 
   const cookies = nookies.get(ctx)
 
-  console.log('cookies', cookies)
-
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken: string | undefined | null = cookies['participant_token']
-
-  console.log('participantToken', participantToken)
+  let participantToken: string | undefined | null =
+    cookies['participant_token'] ?? query.participantToken
 
   if (participantToken) {
     return {
       participantToken,
-      cookiesAvailable: true,
-      jwt: query.jwt,
+      cookiesAvailable: !!cookies['participant_token'],
     }
   }
 
   try {
     let result
 
+    const cookiesAvailable = !!cookies['lti-token']
+
     // LTI 1.3 authentication flow
     if (cookies['lti-token'] || query.jwt) {
       const token = cookies['lti-token'] ?? query.jwt
+
+      if (!token) {
+        return {
+          participantToken: null,
+          cookiesAvailable,
+        }
+      }
 
       try {
         const signedLtiData = JWT.verify(
           token,
           process.env.APP_SECRET as string
         ) as { sub: string; email: string; scope: string }
-
-        console.log('LTI 1.3', signedLtiData)
 
         if (signedLtiData.scope === 'LTI1.3') {
           result = await apolloClient.mutate({
@@ -69,8 +72,6 @@ export default async function getParticipantToken({
           })
         })
       })
-
-      console.log('LTI 1.1', request?.body)
 
       if (request?.body?.lis_person_sourcedid) {
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
@@ -118,15 +119,14 @@ export default async function getParticipantToken({
     return {
       participantToken,
       participant: result?.data?.loginParticipantWithLti,
-      cookiesAvailable: null,
-      jwt: query.jwt,
+      cookiesAvailable,
     }
   } catch (e) {
     console.error(e)
   }
 
   return {
-    participantToken,
-    cookiesAvailable: null,
+    participantToken: null,
+    cookiesAvailable: true,
   }
 }

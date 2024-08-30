@@ -121,19 +121,7 @@ services:
       - klicker
     volumes:
       - klicker_data:/var/lib/postgresql/data
-
-  postgres_lti:
-    image: docker.io/library/postgres:15
-    environment:
-      POSTGRES_USER: klicker
-      POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: klicker-prod-lti
-    ports:
-      - 5433:5432
-    networks:
-      - klicker
-    volumes:
-      - klicker_lti_data:/var/lib/postgresql/data
+      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     # redis instance to support session execution
   redis_exec:

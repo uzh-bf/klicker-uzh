@@ -19,7 +19,7 @@
     "@pothos/plugin-prisma": "3.60.0",
     "@size-limit/preset-small-lib": "8.2.4",
     "@types/bcryptjs": "^2.4.2",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
     "@types/turndown": "^5.0.4",
     "@types/uuid": "^9.0.8",
