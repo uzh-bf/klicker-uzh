@@ -231,12 +231,7 @@ export async function sendMagicLink(
     process.env.NODE_ENV === 'production' ? 'https' : 'http'
   }://${process.env.APP_STUDENT_DOMAIN}/magicLogin?token=${magicLinkJWT}`
 
-  await sendTeamsNotifications(
-    'graphql/sendMagicLink',
-    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
-  )
-
-  const email = await EmailService.hydrateTemplate(
+  const emailHtml = await EmailService.hydrateTemplate(
     {
       templateName: 'MagicLinkRequested',
       variables: { LINK: magicLink },
@@ -244,13 +239,18 @@ export async function sendMagicLink(
     ctx
   )
 
-  if (!email) return false
+  if (!emailHtml) return null
+
+  await sendTeamsNotifications(
+    'graphql/sendMagicLink',
+    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
+  )
 
   await EmailService.sendEmail({
     to: participantData.email,
     subject: 'KlickerUZH - Your One-Time Login Link',
     text: `Please click on the following link to log in to KlickerUZH PWA: ${magicLink} (validity: 15 minutes)`,
-    html: email,
+    html: emailHtml,
   })
 
   return true
@@ -451,13 +451,13 @@ export async function createParticipantAccount(
   ctx: Context
 ) {
   if (signedLtiData) {
-    try {
+    const account = await ctx.prisma.$transaction(async (prisma) => {
       const ltiData = JWT.verify(
         signedLtiData,
         process.env.APP_SECRET as string
       ) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
       // check if the username is already taken by another user
-      const existingUser = await ctx.prisma.participant.findMany({
+      const existingUser = await prisma.participant.findMany({
         where: {
           OR: [{ username: username.trim() }, { email: ltiData.email }],
         },
@@ -468,7 +468,7 @@ export async function createParticipantAccount(
         return null
       }
 
-      const account = await ctx.prisma.participantAccount.create({
+      const account = await prisma.participantAccount.create({
         data: {
           ssoId: ltiData.sub,
           ssoType: ltiData.scope,
@@ -496,7 +496,7 @@ export async function createParticipantAccount(
 
       // if a courseId is specified, add a participation in the corresponding course
       if (courseId) {
-        await ctx.prisma.participation.upsert({
+        await prisma.participation.upsert({
           where: {
             courseId_participantId: {
               courseId,
@@ -519,6 +519,12 @@ export async function createParticipantAccount(
         })
       }
 
+      return account
+    })
+
+    if (!account) return null
+
+    try {
       const jwt = await doParticipantLogin(
         {
           participantId: account.participant.id,
@@ -538,42 +544,46 @@ export async function createParticipantAccount(
   }
 
   try {
-    const participant = await ctx.prisma.participant.create({
-      data: {
-        email: email.trim().toLowerCase(),
-        username: username.trim(),
-        password: await bcrypt.hash(password, 10),
-        isEmailValid: false,
-        isProfilePublic,
-        isSSOAccount: false,
-        lastLoginAt: new Date(),
-      },
-    })
-
-    // if a courseId is specified, add a participation in the corresponding course
-    if (courseId) {
-      await ctx.prisma.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: participant.id,
-          },
+    const participant = await ctx.prisma.$transaction(async (prisma) => {
+      const participant = await prisma.participant.create({
+        data: {
+          email: email.trim().toLowerCase(),
+          username: username.trim(),
+          password: await bcrypt.hash(password, 10),
+          isEmailValid: false,
+          isProfilePublic,
+          isSSOAccount: false,
+          lastLoginAt: new Date(),
         },
-        create: {
-          course: {
-            connect: {
-              id: courseId,
-            },
-          },
-          participant: {
-            connect: {
-              id: participant.id,
-            },
-          },
-        },
-        update: {},
       })
-    }
+
+      // if a courseId is specified, add a participation in the corresponding course
+      if (courseId) {
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: participant.id,
+            },
+          },
+          create: {
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: participant.id,
+              },
+            },
+          },
+          update: {},
+        })
+      }
+
+      return participant
+    })
 
     const activationJWT = JWT.sign(
       {
@@ -592,17 +602,19 @@ export async function createParticipantAccount(
       process.env.NODE_ENV === 'production' ? 'https' : 'http'
     }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
 
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email} with activation link ${activationLink}`
-    )
-
     const emailHtml = await EmailService.hydrateTemplate(
       {
         templateName: 'ParticipantAccountActivation',
         variables: { LINK: activationLink },
       },
       ctx
+    )
+
+    if (!emailHtml) return null
+
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
 
     await EmailService.sendEmail({

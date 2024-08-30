@@ -28,12 +28,12 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.8.0
+          version: 9.9.0
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm dlx turbo@2.0.14 prune --scope @klicker-uzh/func-incoming-responses
+          pnpm dlx turbo@2.1.0 prune --scope @klicker-uzh/func-incoming-responses
           pushd out
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
