@@ -8,6 +8,7 @@ import {
   FormikTextField,
   H3,
   Modal,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
@@ -60,9 +61,6 @@ function CourseManipulationModal({
     initialValues?.startDate && new Date(initialValues.startDate) < new Date()
   const endDatePast =
     initialValues?.endDate && new Date(initialValues.endDate) < new Date()
-  const groupDeadlinePast =
-    initialValues?.groupDeadlineDate &&
-    new Date(initialValues.groupDeadlineDate) < new Date()
 
   const schema = yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -81,8 +79,14 @@ function CourseManipulationModal({
           .required(t('manage.courseList.courseEndReq')),
     isGamificationEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
-    groupCreationDeadline: groupDeadlinePast
-      ? yup.date()
+    groupCreationDeadline: initialValues?.groupDeadlineDate
+      ? yup
+          .date()
+          .max(
+            yup.ref('endDate'),
+            t('manage.courseList.groupDeadlineBeforeEnd')
+          )
+          .required(t('manage.courseList.groupDeadlineReq'))
       : yup
           .date()
           .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
@@ -279,7 +283,6 @@ function CourseManipulationModal({
                           )}
                           data={{ cy: 'group-creation-deadline' }}
                           dataButton={{ cy: 'group-creation-deadline-button' }}
-                          disabled={groupDeadlinePast}
                           required
                         />
                         {initialValues ? (
@@ -313,6 +316,14 @@ function CourseManipulationModal({
                     )}
                 </div>
               </div>
+              {initialValues?.groupDeadlineDate &&
+                values.groupCreationDeadline !== groupDeadlineDateInit &&
+                dayjs(values.groupCreationDeadline) < dayjs() && (
+                  <UserNotification
+                    type="warning"
+                    message={t('manage.courseList.groupDeadlineChangedToPast')}
+                  />
+                )}
             </div>
             <div className="mt-1 flex flex-row justify-between">
               {errors && (
