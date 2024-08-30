@@ -262,6 +262,7 @@ function QuestionEditModal({
   questionId,
   mode,
 }: QuestionEditModalProps): React.ReactElement {
+  // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
 
   const isDuplication = mode === QuestionEditMode.DUPLICATE
@@ -424,9 +425,6 @@ function QuestionEditModal({
         }
       : {}
   }, [dataQuestion?.question, mode])
-
-  // TODO: styling of tooltips - some are too wide
-  // TODO: show errors of form validation below fields as for the login form
 
   if (!question || Object.keys(question).length === 0) {
     return <div></div>
