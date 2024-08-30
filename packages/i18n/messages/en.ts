@@ -442,7 +442,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createJoinRandomGroup:
         'Click here to be automatically assigned to a random group with other students.',
       inRandomGroupPool:
-        'You selected to be assigned automatically to a group of participants in your course. We are currently waiting for more people join the pool and will assign you to a group as soon as possible. Should you want to join another group manually instead, or create your own group, you can leave the pool with the button below.',
+        'You selected to be assigned automatically to a group of participants in your course. We are currently waiting for more people to join the pool and will assign you to a group as soon as possible. Should you want to join another group manually instead, or create your own group, you can leave the pool with the button below.',
       leaveRandomGroupPool: 'Leave Pool',
       code: 'Code',
       individualLeaderboard: 'Individual Leaderboard',
