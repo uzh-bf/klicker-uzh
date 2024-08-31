@@ -4,8 +4,15 @@ import CatalystNotification from './CatalystNotification'
 import MicroLearningElement from './MicroLearningElement'
 
 interface MicroLearningListProps {
-  microLearnings: (Partial<MicroLearning> &
-    Pick<MicroLearning, 'id' | 'name'>)[]
+  microLearnings: Pick<
+    MicroLearning,
+    | 'id'
+    | 'name'
+    | 'status'
+    | 'numOfStacks'
+    | 'scheduledStartAt'
+    | 'scheduledEndAt'
+  >[]
   courseId: string
   userCatalyst?: boolean
 }

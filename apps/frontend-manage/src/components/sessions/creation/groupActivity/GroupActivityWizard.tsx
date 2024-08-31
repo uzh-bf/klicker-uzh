@@ -12,7 +12,7 @@ import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -43,6 +43,15 @@ export interface GroupActivityWizardStepProps {
   onNextStep?: (newValues: GroupActivityFormValues) => void
   closeWizard: () => void
 }
+
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.FreeText,
+  ElementType.Content,
+]
 
 interface GroupActivityWizardProps {
   title: string
@@ -77,15 +86,6 @@ function GroupActivityWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
-
-  const acceptedTypes = [
-    ElementType.Sc,
-    ElementType.Mc,
-    ElementType.Kprim,
-    ElementType.Numerical,
-    ElementType.FreeText,
-    ElementType.Content,
-  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -164,6 +164,25 @@ function GroupActivityWizard({
       .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
   })
 
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    clues: [],
+    stack: {
+      displayName: '',
+      description: '',
+      elementIds: [],
+      titles: [],
+      types: [],
+      hasSampleSolutions: [],
+    },
+    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: undefined,
+  }
+
   const workflowItems = [
     {
       title: t('shared.generic.information'),
@@ -184,25 +203,6 @@ function GroupActivityWizard({
       tooltipDisabled: t('manage.sessionForms.checkValues'),
     },
   ]
-
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    clues: [],
-    stack: {
-      displayName: '',
-      description: '',
-      elementIds: [],
-      titles: [],
-      types: [],
-      hasSampleSolutions: [],
-    },
-    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
-    multiplier: '1',
-    courseId: undefined,
-  }
 
   const [formData, setFormData] = useState<GroupActivityFormValues>({
     name: initialValues?.name || formDefaultValues.name,
@@ -255,18 +255,21 @@ function GroupActivityWizard({
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
   const [editGroupActivity] = useMutation(EditGroupActivityDocument)
-  const handleSubmit = async (values: GroupActivityFormValues) => {
-    submitGroupActivityForm({
-      id: initialValues?.id,
-      values,
-      createGroupActivity,
-      editGroupActivity,
-      setEditMode,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-      setSelectedCourseId,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: GroupActivityFormValues) => {
+      submitGroupActivityForm({
+        id: initialValues?.id,
+        values,
+        createGroupActivity,
+        editGroupActivity,
+        setEditMode,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+        setSelectedCourseId,
+      })
+    },
+    [createGroupActivity, editGroupActivity, initialValues?.id]
+  )
 
   return (
     <>

@@ -3,19 +3,28 @@ import { useTranslations } from 'next-intl'
 import { sort } from 'ramda'
 import LiveQuizElement from './LiveQuizElement'
 
+const sortingOrderSessions: Record<string, number> = {
+  [SessionStatus.Running]: 0,
+  [SessionStatus.Scheduled]: 1,
+  [SessionStatus.Prepared]: 2,
+  [SessionStatus.Completed]: 3,
+}
+
 interface LiveQuizListProps {
-  sessions: Partial<Session>[]
+  sessions: Pick<
+    Session,
+    | 'id'
+    | 'status'
+    | 'name'
+    | 'numOfBlocks'
+    | 'numOfQuestions'
+    | 'isGamificationEnabled'
+    | 'accessMode'
+  >[]
 }
 
 function LiveQuizList({ sessions }: LiveQuizListProps) {
   const t = useTranslations()
-
-  const sortingOrderSessions: Record<string, number> = {
-    [SessionStatus.Running]: 0,
-    [SessionStatus.Scheduled]: 1,
-    [SessionStatus.Prepared]: 2,
-    [SessionStatus.Completed]: 3,
-  }
 
   return (
     <>

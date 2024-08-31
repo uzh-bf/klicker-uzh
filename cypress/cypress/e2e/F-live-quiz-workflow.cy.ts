@@ -1,5 +1,4 @@
 import { v4 as uuid } from 'uuid'
-
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-quiz workflows', () => {
@@ -486,6 +485,93 @@ describe('Different live-quiz workflows', () => {
     cy.get(`[data-cy="delete-session-${newSessionName}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
     cy.findByText(newSessionName).should('not.exist')
+  })
+
+  it('creates a session with two blocks and duplicates it', () => {
+    const questionTitle = uuid()
+    const questionTitle2 = uuid()
+    const question = uuid()
+    const question2 = uuid()
+    const sessionName = uuid()
+    const session = uuid()
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
+    cy.get('[data-cy="insert-question-text"]').click().type(question2)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
+    cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
+      .contains(questionTitle2)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get('[data-cy="add-block"]').trigger('drop', {
+      dataTransfer2,
+    })
+
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.contains('[data-cy="session-block"]', sessionName)
+
+    // duplicate the session and verify that the content is the same as for the original session
+    cy.get(`[data-cy="duplicate-session-${sessionName}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="insert-live-quiz-name"]').should(
+      'have.value',
+      `${sessionName} (Copy)`
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="insert-live-display-name"]').should('have.value', session)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="question-0-block-0"]')
+      .should('exist')
+      .should('contain', questionTitle.substring(0, 20))
+    cy.get('[data-cy="question-0-block-1"]')
+      .should('exist')
+      .should('contain', questionTitle2.substring(0, 20))
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.contains('[data-cy="session-block"]', `${sessionName} (Copy)`)
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {

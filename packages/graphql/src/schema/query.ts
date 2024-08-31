@@ -274,6 +274,28 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningData(args, ctx)
+        },
+      }),
+
+      getSinglePracticeQuiz: asUser.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getSinglePracticeQuiz(args, ctx)
+        },
+      }),
+
+      getSingleMicroLearning: asUser.field({
+        nullable: true,
+        type: MicroLearning,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
           return MicroLearningService.getSingleMicroLearning(args, ctx)
         },
       }),

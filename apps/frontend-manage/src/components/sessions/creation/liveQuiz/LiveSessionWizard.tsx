@@ -14,7 +14,7 @@ import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -123,6 +123,19 @@ function LiveSessionWizard({
     ),
   })
 
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
+    courseId: '',
+    multiplier: '1',
+    isGamificationEnabled: false,
+    isConfusionFeedbackEnabled: true,
+    isLiveQAEnabled: false,
+    isModerationEnabled: true,
+  }
+
   const workflowItems = [
     {
       title: t('shared.generic.information'),
@@ -144,19 +157,6 @@ function LiveSessionWizard({
       tooltipDisabled: t('manage.sessionForms.checkValues'),
     },
   ]
-
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
-    courseId: '',
-    multiplier: '1',
-    isGamificationEnabled: false,
-    isConfusionFeedbackEnabled: true,
-    isLiveQAEnabled: false,
-    isModerationEnabled: true,
-  }
 
   const [formData, setFormData] = useState<LiveSessionFormValues>({
     name: initialValues?.name || formDefaultValues.name,
@@ -198,17 +198,20 @@ function LiveSessionWizard({
   const [editSession] = useMutation(EditSessionDocument)
   const [createSession, { data }] = useMutation(CreateSessionDocument)
   const [startSession] = useMutation(StartSessionDocument)
-  const handleSubmit = async (values: LiveSessionFormValues) => {
-    submitLiveSessionForm({
-      id: initialValues?.id,
-      editMode,
-      values,
-      createLiveSession: createSession,
-      editLiveSession: editSession,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: LiveSessionFormValues) => {
+      submitLiveSessionForm({
+        id: initialValues?.id,
+        editMode,
+        values,
+        createLiveSession: createSession,
+        editLiveSession: editSession,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+      })
+    },
+    [createSession, editMode, editSession, initialValues?.id]
+  )
 
   return (
     <>
