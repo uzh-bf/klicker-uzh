@@ -19,12 +19,13 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown, Toast } from '@uzh-bf/design-system'
+import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
+import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
@@ -340,14 +341,7 @@ function PracticeQuizElement({
           {statusMap[practiceQuiz.status ?? PublicationStatus.Draft]}
         </div>
       </div>
-      <Toast
-        openExternal={copyToast}
-        setOpenExternal={setCopyToast}
-        type="success"
-        className={{ root: 'w-[24rem]' }}
-      >
-        {t('manage.course.linkAccessCopied')}
-      </Toast>
+      <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
       <DeletionModal
         title={t('manage.course.deletePracticeQuiz')}
         description={t('manage.course.confirmDeletionPracticeQuiz')}

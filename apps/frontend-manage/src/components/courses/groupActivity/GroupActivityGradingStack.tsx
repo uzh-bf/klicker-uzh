@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import ContentInput from '@components/common/ContentInput'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -25,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import ContentInput from '../../common/ContentInput'
 
 interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void

@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import MultiplierSelector from '@components/sessions/creation/MultiplierSelector'
 import {
   faArrowDown,
   faArrowUp,
@@ -56,6 +55,7 @@ import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
+import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
