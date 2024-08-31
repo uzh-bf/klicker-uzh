@@ -1,40 +1,9 @@
-import { ElementType, type Element } from '@klicker-uzh/prisma'
-import * as R from 'ramda'
+import { ElementType } from '@klicker-uzh/prisma'
 import {
   AllElementTypeData,
   QuestionResults,
   QuestionResultsChoices,
 } from '../types/app.js'
-
-const RELEVANT_KEYS = [
-  'id',
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'type',
-  'options',
-] as const
-
-const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
-
-type ExtendedElement =
-  | Pick<Element, (typeof RELEVANT_KEYS)[number]>
-  | {
-      id: string
-      questionId: number
-    }
-
-export function processQuestionData(question: Element): ExtendedElement {
-  return {
-    ...(extractRelevantKeys(question) as Pick<
-      Element,
-      (typeof RELEVANT_KEYS)[number]
-    >),
-    id: `${question.id}-v${question.version}`,
-    questionId: question.id,
-  }
-}
 
 export function prepareInitialInstanceResults(
   questionData: AllElementTypeData

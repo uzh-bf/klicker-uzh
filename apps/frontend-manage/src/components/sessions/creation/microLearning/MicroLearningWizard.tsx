@@ -11,7 +11,7 @@ import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -41,6 +41,16 @@ export interface MicroLearningWizardStepProps {
   onNextStep?: (newValues: MicroLearningFormValues) => void
   closeWizard: () => void
 }
+
+// TODO: add free text questions to accepted types?
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.Flashcard,
+  ElementType.Content,
+]
 
 interface MicroLearningWizardProps {
   title: string
@@ -76,16 +86,6 @@ function MicroLearningWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
-
-  // TODO: add free text questions to accepted types?
-  const acceptedTypes = [
-    ElementType.Sc,
-    ElementType.Mc,
-    ElementType.Kprim,
-    ElementType.Numerical,
-    ElementType.Flashcard,
-    ElementType.Content,
-  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -144,6 +144,26 @@ function MicroLearningWizard({
       .min(1),
   })
 
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elementIds: [],
+        titles: [],
+        types: [],
+        hasSampleSolutions: [],
+      },
+    ],
+    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: undefined,
+  }
+
   const workflowItems = [
     {
       title: t('shared.generic.information'),
@@ -165,26 +185,6 @@ function MicroLearningWizard({
       tooltipDisabled: t('manage.sessionForms.checkValues'),
     },
   ]
-
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    stacks: [
-      {
-        displayName: '',
-        description: '',
-        elementIds: [],
-        titles: [],
-        types: [],
-        hasSampleSolutions: [],
-      },
-    ],
-    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-    multiplier: '1',
-    courseId: undefined,
-  }
 
   const [formData, setFormData] = useState<MicroLearningFormValues>({
     name: initialValues?.name || formDefaultValues.name,
@@ -229,17 +229,21 @@ function MicroLearningWizard({
 
   const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
   const [editMicroLearning] = useMutation(EditMicroLearningDocument)
-  const handleSubmit = async (values: MicroLearningFormValues) => {
-    submitMicrolearningForm({
-      id: initialValues?.id,
-      values,
-      createMicroLearning,
-      editMicroLearning,
-      setSelectedCourseId,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: MicroLearningFormValues) => {
+      submitMicrolearningForm({
+        id: initialValues?.id,
+        values,
+        createMicroLearning,
+        editMicroLearning,
+        setSelectedCourseId,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+        editMode,
+      })
+    },
+    [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
+  )
 
   return (
     <>

@@ -20,7 +20,7 @@ interface GetMicroLearningArgs {
   id: string
 }
 
-export async function getSingleMicroLearning(
+export async function getMicroLearningData(
   { id }: GetMicroLearningArgs,
   ctx: Context
 ) {
@@ -43,9 +43,6 @@ export async function getSingleMicroLearning(
     include: {
       course: true,
       stacks: {
-        orderBy: {
-          order: 'asc',
-        },
         include: {
           elements: {
             orderBy: {
@@ -53,13 +50,43 @@ export async function getSingleMicroLearning(
             },
           },
         },
+        orderBy: {
+          order: 'asc',
+        },
       },
     },
   })
 
   // TODO: handle here if already responded to the element? goal with micro = one try
 
-  if (!microLearning) return null
+  return microLearning
+}
+
+export async function getSingleMicroLearning(
+  { id }: GetMicroLearningArgs,
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
 
   return microLearning
 }

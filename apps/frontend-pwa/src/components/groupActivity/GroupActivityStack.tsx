@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import useStackElementFeedbacks from '@components/hooks/useStackElementFeedbacks'
 import {
   ElementStack,
   ElementType,
@@ -20,6 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {

@@ -130,6 +130,34 @@ export async function getPracticeQuizData(
   return quiz
 }
 
+export async function getSinglePracticeQuiz(
+  { id }: { id: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  return quiz
+}
+
 interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
@@ -1815,20 +1843,6 @@ export async function respondToQuestion(
       : evaluation?.percentile === 1
         ? StackFeedbackStatus.CORRECT
         : StackFeedbackStatus.PARTIAL
-
-  console.log({
-    ...evaluation,
-    pointsAwarded,
-    newPointsFrom,
-    xpAwarded,
-    newXpFrom,
-    solutions:
-      elementData.type === 'FREE_TEXT' ? elementData.options.solutions : null,
-    solutionRanges:
-      elementData.type === 'NUMERICAL'
-        ? elementData.options.solutionRanges
-        : null,
-  })
 
   return {
     ...updatedInstance,

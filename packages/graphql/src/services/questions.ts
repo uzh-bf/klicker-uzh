@@ -5,16 +5,17 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  processElementData,
+  processQuestionData,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Tag } from 'src/ops.js'
 import { ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { DisplayMode } from '../types/app.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
@@ -245,7 +246,7 @@ export async function manipulateQuestion(
       status: status ?? undefined,
       name: name ?? undefined,
       content: content ?? undefined,
-      explanation: explanation ?? undefined,
+      explanation: typeof explanation === 'undefined' ? undefined : explanation,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,

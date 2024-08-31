@@ -1450,12 +1450,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startAt: 'Start: {time}',
       endAt: 'Ende: {time}',
       nQuestions: '{number} Fragen',
+      courseQRDescription:
+        'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
       copyAccessLink: 'Zugriffslink kopieren',
-      linkMicrolearningCopied:
-        'Der Link zum Microlearning wurde erfolgreich in die Zwischenablage kopiert.',
-      linkPracticeQuizCopied:
-        'Der Link zum Übungs-Quiz wurde erfolgreich in die Zwischenablage kopiert.',
+      copyLTIAccessLink: 'LTI Link kopieren',
+      linkAccessCopied:
+        'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
+      linkLTICopied:
+        'Der Link für die Einbettung per LTI (z. B. in OpenOLAT) wurde in die Zwischenablage kopiert.',
+      linkLTILeaderboardLabel: 'Leaderboard',
+      linkLTIDocsLabel: 'Dokumentation',
       editMicrolearning: 'Microlearning bearbeiten',
+      duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
@@ -1476,6 +1482,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionMicrolearning:
         'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
+      duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       confirmDeletionPracticeQuiz:

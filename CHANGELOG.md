@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.14...v3.2.0-alpha.15) (2024-08-31)
+
+
+### Features
+
+* add duplication functionalities for practice quizzes and microlearnings ([#4229](https://github.com/uzh-bf/klicker-uzh/issues/4229)) ([7333098](https://github.com/uzh-bf/klicker-uzh/commit/7333098b435a73b573d7dd479af0fb37e92b29ef))
+
+
+### Bug Fixes
+
+* ensure that correct data is loaded into wizard for live quiz editing and duplication ([#4228](https://github.com/uzh-bf/klicker-uzh/issues/4228)) ([e027754](https://github.com/uzh-bf/klicker-uzh/commit/e027754d2c44046ed1fd0bc097c3c04c91753cd7))
+
+## [3.2.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.13...v3.2.0-alpha.14) (2024-08-31)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add missing copy toast for LTI links ([#4227](https://github.com/uzh-bf/klicker-uzh/issues/4227)) ([683e242](https://github.com/uzh-bf/klicker-uzh/commit/683e242f046180a9aea4ca4fc741ac451cefd3b4))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** display LTI embed links on course overview ([#4224](https://github.com/uzh-bf/klicker-uzh/issues/4224)) ([0604c5c](https://github.com/uzh-bf/klicker-uzh/commit/0604c5cdaf60617e2a8da5b36f6c6b232bf5ff13))
+
+
+### Refactors
+
+* **apps/frontend-manage:** improve performance of complex operations using useMemo and useCallback ([#4225](https://github.com/uzh-bf/klicker-uzh/issues/4225)) ([4b75d6c](https://github.com/uzh-bf/klicker-uzh/commit/4b75d6c6abf38608bc317ce843bea2d3e91822d5))
+
+## [3.2.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.12...v3.2.0-alpha.13) (2024-08-30)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that explanation on questions can be deleted again ([#4223](https://github.com/uzh-bf/klicker-uzh/issues/4223)) ([19db4c1](https://github.com/uzh-bf/klicker-uzh/commit/19db4c18e602c40c5c9ec4318f2c44cf549cc648))
+
 ## [3.2.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.11...v3.2.0-alpha.12) (2024-08-30)
 
 

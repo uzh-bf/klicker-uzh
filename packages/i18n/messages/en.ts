@@ -1431,12 +1431,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       startAt: 'Start: {time}',
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
+      courseQRDescription:
+        'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
-      linkMicrolearningCopied:
-        'The link to the microlearning has been successfully copied to the clipboard.',
-      linkPracticeQuizCopied:
-        'The link to the practice quiz has been successfully copied to the clipboard.',
+      copyLTIAccessLink: 'Copy LTI link',
+      linkAccessCopied:
+        'The link for accessing the item has been copied to the clipboard.',
+      linkLTICopied:
+        'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
+      linkLTILeaderboardLabel: 'Leaderboard',
+      linkLTIDocsLabel: 'Documentation',
       editMicrolearning: 'Edit microlearning',
+      duplicateMicroLearning: 'Duplicate microlearning',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
@@ -1456,6 +1462,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionMicrolearning:
         'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
       editPracticeQuiz: 'Edit practice quiz',
+      duplicatePracticeQuiz: 'Duplicate practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
       deletePracticeQuiz: 'Delete practice quiz',
       confirmDeletionPracticeQuiz:

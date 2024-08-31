@@ -1,12 +1,9 @@
 import { useMutation } from '@apollo/client'
-import {
-  faClock,
-  faHandPointer,
-  faTrashCan,
-} from '@fortawesome/free-regular-svg-icons'
+import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
+  faClock,
   faHourglassEnd,
   faHourglassStart,
   faLock,
@@ -75,15 +72,120 @@ function GroupActivityElement({
     ],
   })
 
+  const statusMap: Record<GroupActivityStatus, React.ReactElement> = {
+    [GroupActivityStatus.Draft]: (
+      <StatusTag
+        color="bg-gray-200"
+        status={t('shared.generic.draft')}
+        icon={faPencil}
+      />
+    ),
+    [GroupActivityStatus.Published]: (isFuture && (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.scheduled')}
+        icon={faClock}
+      />
+    )) ||
+      (isPast && (
+        <StatusTag
+          color={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? 'bg-green-300'
+              : 'bg-orange-300'
+          }
+          status={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? t('shared.generic.completed')
+              : t('shared.generic.grading')
+          }
+          icon={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? faCheck
+              : faArrowsRotate
+          }
+        />
+      )) || (
+        <StatusTag
+          color="bg-green-300"
+          status={t('shared.generic.running')}
+          icon={faPlay}
+        />
+      ),
+    [GroupActivityStatus.Graded]: (isFuture && (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.scheduled')}
+        icon={faClock}
+      />
+    )) ||
+      (isPast && (
+        <StatusTag
+          color={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? 'bg-green-300'
+              : 'bg-orange-300'
+          }
+          status={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? t('shared.generic.completed')
+              : t('shared.generic.grading')
+          }
+          icon={
+            groupActivity.status === GroupActivityStatus.Graded
+              ? faCheck
+              : faArrowsRotate
+          }
+        />
+      )) || (
+        <StatusTag
+          color="bg-green-300"
+          status={t('shared.generic.running')}
+          icon={faPlay}
+        />
+      ),
+  }
+
   return (
     <div
-      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
+      className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
       data-cy={`groupActivity-${groupActivity.name}`}
     >
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex-1">
         <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
           {groupActivity.name}
         </Ellipsis>
+
+        <div className="mb-1 text-sm italic">
+          {t('pwa.microLearning.numOfQuestionSets', {
+            number: groupActivity.numOfQuestions,
+          })}
+        </div>
+        <div className="flex flex-row gap-4 text-sm">
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassStart} />
+            <div>
+              {t('manage.course.startAt', {
+                time: dayjs(groupActivity.scheduledStartAt)
+                  .local()
+                  .format('DD.MM.YYYY, HH:mm'),
+              })}
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassEnd} />
+            <div>
+              {t('manage.course.endAt', {
+                time: dayjs(groupActivity.scheduledEndAt)
+                  .local()
+                  .format('DD.MM.YYYY, HH:mm'),
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-end justify-between gap-4">
         <div className="flex flex-row items-center gap-3 text-sm">
           {groupActivity.status === GroupActivityStatus.Draft && (
             <>
@@ -124,15 +226,12 @@ function GroupActivityElement({
                       </div>
                     ),
                     onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-groupActivity-${groupActivity.name}` },
+                    data: {
+                      cy: `delete-groupActivity-${groupActivity.name}`,
+                    },
                   },
                 ]}
                 triggerIcon={faHandPointer}
-              />
-              <StatusTag
-                color="bg-gray-200"
-                status={t('shared.generic.draft')}
-                icon={faPencil}
               />
             </>
           )}
@@ -157,7 +256,9 @@ function GroupActivityElement({
               {isFuture && (
                 <Button
                   onClick={async () => await unpublishGroupActivity()}
-                  data={{ cy: `unpublish-groupActivity-${groupActivity.name}` }}
+                  data={{
+                    cy: `unpublish-groupActivity-${groupActivity.name}`,
+                  }}
                   basic
                 >
                   <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
@@ -166,70 +267,12 @@ function GroupActivityElement({
                   </div>
                 </Button>
               )}
-
-              {isFuture && (
-                <StatusTag
-                  color="bg-green-300"
-                  status={t('shared.generic.scheduled')}
-                  icon={faClock}
-                />
-              )}
-              {isPast && (
-                <StatusTag
-                  color={
-                    groupActivity.status === GroupActivityStatus.Graded
-                      ? 'bg-green-300'
-                      : 'bg-orange-300'
-                  }
-                  status={
-                    groupActivity.status === GroupActivityStatus.Graded
-                      ? t('shared.generic.completed')
-                      : t('shared.generic.grading')
-                  }
-                  icon={
-                    groupActivity.status === GroupActivityStatus.Graded
-                      ? faCheck
-                      : faArrowsRotate
-                  }
-                />
-              )}
-              {!(isFuture || isPast) && (
-                <StatusTag
-                  color="bg-green-300"
-                  status={t('shared.generic.running')}
-                  icon={faPlay}
-                />
-              )}
             </>
           )}
         </div>
-      </div>
 
-      <div className="mb-1 text-sm italic">
-        {t('pwa.microLearning.numOfQuestionSets', {
-          number: groupActivity.numOfQuestions,
-        })}
-      </div>
-      <div className="flex flex-row gap-4 text-sm">
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassStart} />
-          <div>
-            {t('manage.course.startAt', {
-              time: dayjs(groupActivity.scheduledStartAt)
-                .local()
-                .format('DD.MM.YYYY, HH:mm'),
-            })}
-          </div>
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassEnd} />
-          <div>
-            {t('manage.course.endAt', {
-              time: dayjs(groupActivity.scheduledEndAt)
-                .local()
-                .format('DD.MM.YYYY, HH:mm'),
-            })}
-          </div>
+        <div>
+          {statusMap[groupActivity.status ?? GroupActivityStatus.Draft]}
         </div>
       </div>
       <DeletionModal

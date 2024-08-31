@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import MultiplierSelector from '@components/sessions/creation/MultiplierSelector'
 import {
   faArrowDown,
   faArrowUp,
@@ -56,6 +55,7 @@ import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
+import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
@@ -262,6 +262,7 @@ function QuestionEditModal({
   questionId,
   mode,
 }: QuestionEditModalProps): React.ReactElement {
+  // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
 
   const isDuplication = mode === QuestionEditMode.DUPLICATE
@@ -425,11 +426,8 @@ function QuestionEditModal({
       : {}
   }, [dataQuestion?.question, mode])
 
-  // TODO: styling of tooltips - some are too wide
-  // TODO: show errors of form validation below fields as for the login form
-
   if (!question || Object.keys(question).length === 0) {
-    return <div></div>
+    return <div />
   }
 
   return (
@@ -441,6 +439,7 @@ function QuestionEditModal({
       enableReinitialize={true}
       initialValues={question}
       validationSchema={questionManipulationSchema}
+      // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values) => {
         const common = {
           id: questionId,

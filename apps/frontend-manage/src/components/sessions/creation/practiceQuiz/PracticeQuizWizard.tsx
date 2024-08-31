@@ -12,7 +12,7 @@ import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -43,6 +43,16 @@ export interface PracticeQuizWizardStepProps {
   closeWizard: () => void
 }
 
+// TODO: add free text questions to accepted types?
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.Flashcard,
+  ElementType.Content,
+]
+
 interface PracticeQuizWizardProps {
   title: string
   gamifiedCourses: ElementSelectCourse[]
@@ -51,7 +61,8 @@ interface PracticeQuizWizardProps {
   initialValues?: PracticeQuiz
   selection: Record<number, Element>
   resetSelection: () => void
-  conversion?: boolean
+  editMode: boolean
+  conversion: boolean
 }
 
 function PracticeQuizWizard({
@@ -62,13 +73,13 @@ function PracticeQuizWizard({
   initialValues,
   selection,
   resetSelection,
-  conversion = false,
+  conversion,
+  editMode,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(!!initialValues && !conversion)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
   )
@@ -79,16 +90,6 @@ function PracticeQuizWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
-
-  // TODO: add free text questions to accepted types?
-  const acceptedTypes = [
-    ElementType.Sc,
-    ElementType.Mc,
-    ElementType.Kprim,
-    ElementType.Numerical,
-    ElementType.Flashcard,
-    ElementType.Content,
-  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -154,27 +155,6 @@ function PracticeQuizWizard({
       .min(1),
   })
 
-  const workflowItems = [
-    {
-      title: t('shared.generic.information'),
-      tooltip: t('manage.sessionForms.practiceQuizInformation'),
-    },
-    {
-      title: t('shared.generic.description'),
-      tooltip: t('manage.sessionForms.practiceQuizDescription'),
-    },
-    {
-      title: t('shared.generic.settings'),
-      tooltip: t('manage.sessionForms.practiceQuizSettings'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
-    },
-    {
-      title: t('shared.generic.questions'),
-      tooltip: t('manage.sessionForms.practiceQuizContent'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
-    },
-  ]
-
   const formDefaultValues = {
     name: '',
     displayName: '',
@@ -195,6 +175,27 @@ function PracticeQuizWizard({
     availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
     resetTimeDays: '6',
   }
+
+  const workflowItems = [
+    {
+      title: t('shared.generic.information'),
+      tooltip: t('manage.sessionForms.practiceQuizInformation'),
+    },
+    {
+      title: t('shared.generic.description'),
+      tooltip: t('manage.sessionForms.practiceQuizDescription'),
+    },
+    {
+      title: t('shared.generic.settings'),
+      tooltip: t('manage.sessionForms.practiceQuizSettings'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+    {
+      title: t('shared.generic.questions'),
+      tooltip: t('manage.sessionForms.practiceQuizContent'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+  ]
 
   const [formData, setFormData] = useState<PracticeQuizFormValues>({
     name: initialValues?.name || formDefaultValues.name,
@@ -238,19 +239,21 @@ function PracticeQuizWizard({
 
   const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
   const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
-  const handleSubmit = async (values: PracticeQuizFormValues) => {
-    submitPracticeQuizForm({
-      id: initialValues?.id,
-      conversion,
-      values,
-      createPracticeQuiz,
-      editPracticeQuiz,
-      setSelectedCourseId,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-      setEditMode,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: PracticeQuizFormValues) => {
+      submitPracticeQuizForm({
+        id: initialValues?.id,
+        values,
+        createPracticeQuiz,
+        editPracticeQuiz,
+        setSelectedCourseId,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+        editMode,
+      })
+    },
+    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+  )
 
   return (
     <>
