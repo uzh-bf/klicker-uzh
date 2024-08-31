@@ -239,9 +239,10 @@ function MicroLearningWizard({
         setSelectedCourseId,
         setIsWizardCompleted,
         setErrorToastOpen,
+        editMode,
       })
     },
-    [createMicroLearning, editMicroLearning, initialValues?.id]
+    [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
   )
 
   return (
