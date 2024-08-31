@@ -9,7 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { Suspense, useState } from 'react'
+import { Suspense, useCallback, useState } from 'react'
 import Dropzone from 'react-dropzone'
 
 interface Props {
@@ -44,50 +44,50 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
 }
 
 function MediaLibrary({ onImageClick }: Props) {
-  const client = useApolloClient()
-
   const t = useTranslations()
-
+  const client = useApolloClient()
   const [isUploading, setIsUploading] = useState(false)
-
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
 
-  const handleFileFieldChange = async (files: File[]) => {
-    const file = files?.[0]
-    if (!file) return
+  const handleFileFieldChange = useCallback(
+    async (files: File[]) => {
+      const file = files?.[0]
+      if (!file) return
 
-    setIsUploading(true)
+      setIsUploading(true)
 
-    const { data } = await getFileUploadSAS({
-      variables: {
-        fileName: file.name,
-        contentType: file.type,
-      },
-    })
-    if (!data?.getFileUploadSas) return
+      const { data } = await getFileUploadSAS({
+        variables: {
+          fileName: file.name,
+          contentType: file.type,
+        },
+      })
+      if (!data?.getFileUploadSas) return
 
-    const blobServiceClient = new BlobServiceClient(
-      data.getFileUploadSas.uploadSasURL
-    )
-    const containerClient = blobServiceClient.getContainerClient(
-      data.getFileUploadSas.containerName
-    )
-    const blobClient = containerClient.getBlobClient(
-      data.getFileUploadSas.fileName
-    )
-    const blockBlobClient = blobClient.getBlockBlobClient()
-    const result = await blockBlobClient.uploadData(file, {
-      blockSize: 4 * 1024 * 1024, // 4MB block size
-    })
+      const blobServiceClient = new BlobServiceClient(
+        data.getFileUploadSas.uploadSasURL
+      )
+      const containerClient = blobServiceClient.getContainerClient(
+        data.getFileUploadSas.containerName
+      )
+      const blobClient = containerClient.getBlobClient(
+        data.getFileUploadSas.fileName
+      )
+      const blockBlobClient = blobClient.getBlockBlobClient()
+      const result = await blockBlobClient.uploadData(file, {
+        blockSize: 4 * 1024 * 1024, // 4MB block size
+      })
 
-    client.refetchQueries({
-      include: ['GetUserMediaFiles'],
-    })
+      client.refetchQueries({
+        include: ['GetUserMediaFiles'],
+      })
 
-    onImageClick(data.getFileUploadSas.uploadHref, file.name)
+      onImageClick(data.getFileUploadSas.uploadHref, file.name)
 
-    setIsUploading(false)
-  }
+      setIsUploading(false)
+    },
+    [client, getFileUploadSAS, onImageClick]
+  )
 
   return (
     <Dropzone

@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../sessions/creation/EditorField'
@@ -49,21 +49,25 @@ function CourseCreationModal({
   const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseCreationFormData>>(null)
 
-  const schema = yup.object().shape({
-    name: yup.string().required(t('manage.courseList.courseNameReq')),
-    displayName: yup
-      .string()
-      .required(t('manage.courseList.courseDisplayNameReq')),
-    description: yup.string(),
-    color: yup.string().required(t('manage.courseList.courseColorReq')),
-    startDate: yup.date().required(t('manage.courseList.courseStartReq')),
-    endDate: yup
-      .date()
-      .min(new Date(), t('manage.courseList.endDateFuture'))
-      .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
-      .required(t('manage.courseList.courseEndReq')),
-    isGamificationEnabled: yup.boolean(),
-  })
+  const schema = useMemo(
+    () =>
+      yup.object().shape({
+        name: yup.string().required(t('manage.courseList.courseNameReq')),
+        displayName: yup
+          .string()
+          .required(t('manage.courseList.courseDisplayNameReq')),
+        description: yup.string(),
+        color: yup.string().required(t('manage.courseList.courseColorReq')),
+        startDate: yup.date().required(t('manage.courseList.courseStartReq')),
+        endDate: yup
+          .date()
+          .min(new Date(), t('manage.courseList.endDateFuture'))
+          .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
+          .required(t('manage.courseList.courseEndReq')),
+        isGamificationEnabled: yup.boolean(),
+      }),
+    [t]
+  )
   const today = new Date()
   const initEndDate = new Date(today.setMonth(today.getMonth() + 6))
 

@@ -33,6 +33,13 @@ import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
 import DeletionModal from './modals/DeletionModal'
 
+const statusMap = {
+  PREPARED: <FontAwesomeIcon icon={faClock} />,
+  SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
+  RUNNING: <FontAwesomeIcon icon={faPlay} />,
+  COMPLETED: <FontAwesomeIcon icon={faCheck} />,
+}
+
 interface LiveQuizElementProps {
   session: Partial<Session>
 }
@@ -61,13 +68,6 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     variables: { id: session.id || '' },
     refetchQueries: [GetSingleCourseDocument],
   })
-
-  const statusMap = {
-    PREPARED: <FontAwesomeIcon icon={faClock} />,
-    SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
-    RUNNING: <FontAwesomeIcon icon={faPlay} />,
-    COMPLETED: <FontAwesomeIcon icon={faCheck} />,
-  }
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/${dataUser?.userProfile?.shortname}`
 
