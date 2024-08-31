@@ -36,14 +36,24 @@ interface AccessLinkArgs {
   t: ReturnType<typeof useTranslations>
   href: string
   setCopyToast: (value: boolean) => void
+  label?: string
 }
 
-export function getAccessLink({ name, t, href, setCopyToast }: AccessLinkArgs) {
+export function getAccessLink({
+  name,
+  t,
+  href,
+  setCopyToast,
+  label,
+}: AccessLinkArgs) {
   return {
     label: (
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
-        <div>{t('manage.course.copyAccessLink')}</div>
+        <div>
+          {t('manage.course.copyAccessLink')}
+          {typeof label == 'string' && ` (${label})`}
+        </div>
       </div>
     ),
     onClick: () => {
@@ -63,12 +73,16 @@ export function getLTIAccessLink({
   t,
   href,
   setCopyToast,
+  label,
 }: AccessLinkArgs) {
   return {
     label: (
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
-        <div>{t('manage.course.copyLTIAccessLink')}</div>
+        <div>
+          {t('manage.course.copyLTIAccessLink')}
+          {typeof label == 'string' && ` (${label})`}
+        </div>
       </div>
     ),
     onClick: async () => {
@@ -323,7 +337,7 @@ function PracticeQuizElement({
           )}
         </div>
         <div className="flex flex-row gap-2">
-          {statusMap[practiceQuiz.status]}
+          {statusMap[practiceQuiz.status ?? PublicationStatus.Draft]}
         </div>
       </div>
       <Toast
@@ -332,7 +346,7 @@ function PracticeQuizElement({
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkPracticeQuizCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
       <DeletionModal
         title={t('manage.course.deletePracticeQuiz')}

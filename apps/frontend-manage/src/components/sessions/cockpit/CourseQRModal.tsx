@@ -1,7 +1,7 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useState } from 'react'
@@ -63,7 +63,9 @@ function CourseQRModal({
       dataOverlay={dataModal}
       dataCloseButton={dataCloseButton}
     >
-      <div>
+      <UserNotification message={t('manage.course.courseQRDescription')} />
+
+      <div className="mt-4">
         <QR
           className={{
             title: 'text-base',

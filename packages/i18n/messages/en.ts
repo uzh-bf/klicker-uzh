@@ -1396,12 +1396,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       startAt: 'Start: {time}',
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
+      courseQRDescription:
+        'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
       copyLTIAccessLink: 'Copy LTI link',
-      linkMicrolearningCopied:
-        'The link to the microlearning has been successfully copied to the clipboard.',
-      linkPracticeQuizCopied:
-        'The link to the practice quiz has been successfully copied to the clipboard.',
+      linkAccessCopied:
+        'The link for accessing the item has been copied to the clipboard.',
+      linkLTICopied:
+        'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
+      linkLTILeaderboardLabel: 'Leaderboard',
+      linkLTIDocsLabel: 'Documentation',
       editMicrolearning: 'Edit microlearning',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',

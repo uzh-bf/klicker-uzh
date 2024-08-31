@@ -1410,12 +1410,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startAt: 'Start: {time}',
       endAt: 'Ende: {time}',
       nQuestions: '{number} Fragen',
+      courseQRDescription:
+        'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
-      linkMicrolearningCopied:
-        'Der Link zum Microlearning wurde erfolgreich in die Zwischenablage kopiert.',
-      linkPracticeQuizCopied:
-        'Der Link zum Übungs-Quiz wurde erfolgreich in die Zwischenablage kopiert.',
+      linkAccessCopied:
+        'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
+      linkLTICopied:
+        'Der Link für die Einbettung per LTI (z. B. in OpenOLAT) wurde in die Zwischenablage kopiert.',
+      linkLTILeaderboardLabel: 'Leaderboard',
+      linkLTIDocsLabel: 'Dokumentation',
       editMicrolearning: 'Microlearning bearbeiten',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',

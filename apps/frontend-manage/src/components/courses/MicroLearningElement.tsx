@@ -299,7 +299,7 @@ function MicroLearningElement({
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkMicrolearningCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
       <DeletionModal
         title={t('manage.course.deleteMicrolearning')}
