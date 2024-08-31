@@ -1,9 +1,4 @@
 import { useQuery } from '@apollo/client'
-import FinalizeGradingModal from '@components/courses/groupActivity/FinalizeGradingModal'
-import GroupActivityGradingStack from '@components/courses/groupActivity/GroupActivityGradingStack'
-import GroupActivitySubmission from '@components/courses/groupActivity/GroupActivitySubmission'
-import SubmissionSwitchModal from '@components/courses/groupActivity/SubmissionSwitchModal'
-import Layout from '@components/Layout'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
@@ -18,6 +13,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Layout from '../../../../components/Layout'
+import FinalizeGradingModal from '../../../../components/courses/groupActivity/FinalizeGradingModal'
+import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
+import GroupActivitySubmission from '../../../../components/courses/groupActivity/GroupActivitySubmission'
+import SubmissionSwitchModal from '../../../../components/courses/groupActivity/SubmissionSwitchModal'
 
 const MAX_POINTS_PER_QUESTION = 25
 

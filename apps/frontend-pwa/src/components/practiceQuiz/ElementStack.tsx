@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import useComponentVisibleCounter from '@components/hooks/useComponentVisibleCounter'
-import useStackElementFeedbacks from '@components/hooks/useStackElementFeedbacks'
 import {
   ElementStack as ElementStackType,
   ElementType,
@@ -18,6 +16,8 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
+import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 

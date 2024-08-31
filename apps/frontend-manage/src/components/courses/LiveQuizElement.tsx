@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
+import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
@@ -237,6 +238,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         </div>
       </div>
 
+      <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
       <DeletionModal
         title={t('manage.sessions.deleteLiveQuiz')}
         description={t('manage.sessions.confirmLiveQuizDeletion')}

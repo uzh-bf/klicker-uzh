@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import DeletionModal from '@components/courses/modals/DeletionModal'
 import {
   faArrowDown,
   faArrowUp,
@@ -15,6 +14,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import DeletionModal from '../../courses/modals/DeletionModal'
 
 interface TagActionsProps {
   tag: Tag
