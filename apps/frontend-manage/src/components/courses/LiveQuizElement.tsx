@@ -32,7 +32,7 @@ import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
-import getLiveQuizDuplicationAction from './actions/getLiveQuizDuplicationAction'
+import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
 
 const statusMap = {
@@ -151,11 +151,12 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                       }),
                     data: { cy: `edit-live-quiz-${session.name}` },
                   },
-                  getLiveQuizDuplicationAction({
+                  getActivityDuplicationAction({
                     id: session.id,
-                    name: session.name,
-                    t,
-                    router,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
                   }),
                   {
                     label: (
@@ -197,11 +198,12 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                         name: session.name,
                       })
                     : [],
-                  getLiveQuizDuplicationAction({
+                  getActivityDuplicationAction({
                     id: session.id,
-                    name: session.name,
-                    t,
-                    router,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
                   }),
                 ].flat()}
                 triggerIcon={faHandPointer}
@@ -229,11 +231,12 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     onClick: () => setSoftDeletionModal(true),
                     data: { cy: `delete-past-live-quiz-${session.name}` },
                   },
-                  getLiveQuizDuplicationAction({
+                  getActivityDuplicationAction({
                     id: session.id,
-                    name: session.name,
-                    t,
-                    router,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
                   }),
                 ]}
                 triggerIcon={faHandPointer}

@@ -1,27 +1,28 @@
 import { WizardMode } from '@components/sessions/creation/ElementCreation'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useTranslations } from 'next-intl'
 import { NextRouter } from 'next/router'
 
-interface GetLiveQuizDuplicationActionProps {
+interface getActivityDuplicationActionProps {
   id: string
-  name: string
-  t: ReturnType<typeof useTranslations>
+  text: string
+  wizardMode: WizardMode
   router: NextRouter
+  data: { text?: string; cy?: string }
 }
 
-function getLiveQuizDuplicationAction({
+function getActivityDuplicationAction({
   id,
-  name,
-  t,
+  text,
+  wizardMode,
   router,
-}: GetLiveQuizDuplicationActionProps) {
+  data,
+}: getActivityDuplicationActionProps) {
   return {
     label: (
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
         <FontAwesomeIcon icon={faCopy} />
-        <div>{t('manage.sessions.duplicateSession')}</div>
+        <div>{text}</div>
       </div>
     ),
     onClick: () =>
@@ -29,11 +30,11 @@ function getLiveQuizDuplicationAction({
         pathname: '/',
         query: {
           elementId: id,
-          duplicationMode: WizardMode.LiveQuiz,
+          duplicationMode: wizardMode,
         },
       }),
-    data: { cy: `duplicate-live-quiz-${name}` },
+    data,
   }
 }
 
-export default getLiveQuizDuplicationAction
+export default getActivityDuplicationAction
