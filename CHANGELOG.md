@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.14...v3.2.0-alpha.15) (2024-08-31)
+
+
+### Features
+
+* add duplication functionalities for practice quizzes and microlearnings ([#4229](https://github.com/uzh-bf/klicker-uzh/issues/4229)) ([7333098](https://github.com/uzh-bf/klicker-uzh/commit/7333098b435a73b573d7dd479af0fb37e92b29ef))
+
+
+### Bug Fixes
+
+* ensure that correct data is loaded into wizard for live quiz editing and duplication ([#4228](https://github.com/uzh-bf/klicker-uzh/issues/4228)) ([e027754](https://github.com/uzh-bf/klicker-uzh/commit/e027754d2c44046ed1fd0bc097c3c04c91753cd7))
+
 ## [3.2.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.13...v3.2.0-alpha.14) (2024-08-31)
 
 
