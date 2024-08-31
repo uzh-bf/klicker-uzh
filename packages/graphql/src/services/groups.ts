@@ -187,11 +187,21 @@ export async function joinParticipantGroup(
     },
     include: {
       course: true,
+      participants: true,
     },
   })
 
-  // if no participant group with the provided id exists in this course or at all, return null
-  if (!participantGroup || participantGroup.course?.id !== courseId) return null
+  // if no participant group exists in this course with the provided code, return failure
+  if (!participantGroup) {
+    return 'FAILURE'
+  }
+
+  // if the group is full, return full
+  if (
+    participantGroup.participants.length >= participantGroup.course.maxGroupSize
+  ) {
+    return 'FULL'
+  }
 
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
@@ -214,12 +224,7 @@ export async function joinParticipantGroup(
     },
   })
 
-  return {
-    ...updatedParticipantGroup,
-    score:
-      updatedParticipantGroup.averageMemberScore +
-      updatedParticipantGroup.groupActivityScore,
-  }
+  return updatedParticipantGroup.id
 }
 
 interface LeaveParticipantGroupArgs {

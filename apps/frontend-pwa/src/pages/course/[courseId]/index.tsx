@@ -414,8 +414,12 @@ function CourseOverview({
               {course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
                   <Tabs.TabContent key={group.id} value={group.id}>
-                    <div className="flex flex-col gap-4">
-                      <H3 className={{ root: 'flex flex-row justify-between' }}>
+                    <div className="flex flex-col gap-2">
+                      <H3
+                        className={{
+                          root: 'flex flex-row justify-between',
+                        }}
+                      >
                         <div>
                           {t('shared.generic.group')} {group.name}
                         </div>
@@ -424,26 +428,48 @@ function CourseOverview({
 
                       <div className="flex flex-row flex-wrap gap-4">
                         <div className="flex flex-1 flex-col">
-                          <div className="mb-2 flex flex-col gap-2">
-                            {!participation?.isActive && (
-                              <UserNotification
-                                type="warning"
-                                message={t('pwa.groupActivity.joinLeaderboard')}
-                              />
-                            )}
-                            {group.participants?.length === 1 && (
-                              <UserNotification
-                                type="info"
-                                message={t(
-                                  'pwa.groupActivity.singleParticipantAutomaticAssignment',
-                                  {
-                                    groupFormationDeadline: dayjs(
-                                      course.groupDeadlineDate
-                                    ).format('DD.MM.YYYY HH:mm'),
-                                  }
-                                )}
-                              />
-                            )}
+                          {(!participation?.isActive ||
+                            group.participants!.length === 1 ||
+                            group.participants!.length ===
+                              course.maxGroupSize) && (
+                            <div className="mb-2 flex flex-col gap-2">
+                              {!participation?.isActive && (
+                                <UserNotification
+                                  type="warning"
+                                  message={t(
+                                    'pwa.groupActivity.joinLeaderboard'
+                                  )}
+                                />
+                              )}
+                              {group.participants?.length === 1 && (
+                                <UserNotification
+                                  type="info"
+                                  message={t(
+                                    'pwa.groupActivity.singleParticipantAutomaticAssignment',
+                                    {
+                                      groupFormationDeadline: dayjs(
+                                        course.groupDeadlineDate
+                                      ).format('DD.MM.YYYY HH:mm'),
+                                    }
+                                  )}
+                                />
+                              )}
+                              {group.participants!.length ===
+                                course.maxGroupSize && (
+                                <UserNotification
+                                  type="info"
+                                  message={t(
+                                    'pwa.groupActivity.maxNumberOfGroupMembers'
+                                  )}
+                                />
+                              )}
+                            </div>
+                          )}
+                          <div className="mb-1 self-end text-sm italic">
+                            {t('pwa.groupActivity.nOfMaxParticipants', {
+                              numParticipants: group.participants!.length,
+                              maxParticipants: course.maxGroupSize,
+                            })}
                           </div>
                           <Leaderboard
                             leaderboard={

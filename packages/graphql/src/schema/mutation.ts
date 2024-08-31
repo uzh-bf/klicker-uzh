@@ -327,9 +327,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinParticipantGroup: t.withAuth(asParticipant).field({
+      joinParticipantGroup: t.withAuth(asParticipant).string({
         nullable: true,
-        type: ParticipantGroup,
         args: {
           courseId: t.arg.string({ required: true }),
           code: t.arg.int({ required: true }),

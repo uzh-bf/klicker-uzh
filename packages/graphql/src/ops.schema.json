@@ -9477,8 +9477,8 @@
               }
             ],
             "type": {
-              "kind": "OBJECT",
-              "name": "ParticipantGroup",
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,

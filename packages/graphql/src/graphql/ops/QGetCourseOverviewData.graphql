@@ -25,6 +25,8 @@ query GetCourseOverviewData($courseId: String!) {
       groupDeadlineDate
       isGroupDeadlinePassed
       isGroupCreationEnabled
+      maxGroupSize
+      preferredGroupSize
 
       awards {
         id
