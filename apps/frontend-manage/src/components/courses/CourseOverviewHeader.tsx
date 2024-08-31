@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { faHandPointer } from '@fortawesome/free-solid-svg-icons'
+import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, H1, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
