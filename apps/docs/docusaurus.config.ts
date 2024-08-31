@@ -26,7 +26,7 @@ const config: Config = {
         docs: {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: './sidebars.js',
           editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/v3/apps/docs',
           routeBasePath: '/',
           lastVersion: 'current',
@@ -46,7 +46,7 @@ const config: Config = {
         },
         sitemap: {},
         theme: {
-          customCss: [require.resolve('./src/css/custom.css')],
+          customCss: ['./src/css/custom.css'],
         },
       } satisfies Preset.Options,
     ],
