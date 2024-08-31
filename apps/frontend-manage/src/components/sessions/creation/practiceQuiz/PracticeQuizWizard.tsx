@@ -61,7 +61,8 @@ interface PracticeQuizWizardProps {
   initialValues?: PracticeQuiz
   selection: Record<number, Element>
   resetSelection: () => void
-  conversion?: boolean
+  editMode: boolean
+  conversion: boolean
 }
 
 function PracticeQuizWizard({
@@ -72,13 +73,13 @@ function PracticeQuizWizard({
   initialValues,
   selection,
   resetSelection,
-  conversion = false,
+  conversion,
+  editMode,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(!!initialValues && !conversion)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
   )
@@ -242,17 +243,16 @@ function PracticeQuizWizard({
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
         id: initialValues?.id,
-        conversion,
         values,
         createPracticeQuiz,
         editPracticeQuiz,
         setSelectedCourseId,
         setIsWizardCompleted,
         setErrorToastOpen,
-        setEditMode,
+        editMode,
       })
     },
-    [conversion, createPracticeQuiz, editPracticeQuiz, initialValues?.id]
+    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
   )
 
   return (

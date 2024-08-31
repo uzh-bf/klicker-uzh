@@ -30,6 +30,7 @@ import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
+import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
 
 interface AccessLinkArgs {
@@ -100,7 +101,10 @@ export function getLTIAccessLink({
 }
 
 interface PracticeQuizElementProps {
-  practiceQuiz: Partial<PracticeQuiz>
+  practiceQuiz: Pick<
+    PracticeQuiz,
+    'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
+  >
   courseId: string
 }
 
@@ -166,7 +170,7 @@ function PracticeQuizElement({
     >
       <div className="flex flex-1 flex-col">
         <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
-          {practiceQuiz.name || ''}
+          {practiceQuiz.name}
         </Ellipsis>
 
         <div
@@ -174,7 +178,7 @@ function PracticeQuizElement({
           data-cy={`practice-quiz-num-of-questions-${practiceQuiz.name}`}
         >
           {t('pwa.microLearning.numOfQuestionSets', {
-            number: practiceQuiz.numOfStacks || '0',
+            number: practiceQuiz.numOfStacks,
           })}
         </div>
         {practiceQuiz.availableFrom && (
@@ -209,14 +213,14 @@ function PracticeQuizElement({
                     href,
                     setCopyToast,
                     t,
-                    name: practiceQuiz.name ?? '',
+                    name: practiceQuiz.name,
                   }),
                   dataUser?.userProfile?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
                         t,
-                        name: practiceQuiz.name ?? '',
+                        name: practiceQuiz.name,
                       })
                     : [],
                   {
@@ -245,7 +249,15 @@ function PracticeQuizElement({
                       }),
                     data: { cy: `edit-practice-quiz-${practiceQuiz.name}` },
                   },
-
+                  getActivityDuplicationAction({
+                    id: practiceQuiz.id,
+                    text: t('manage.course.duplicatePracticeQuiz'),
+                    wizardMode: WizardMode.PracticeQuiz,
+                    router: router,
+                    data: {
+                      cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
+                    },
+                  }),
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
@@ -281,9 +293,18 @@ function PracticeQuizElement({
                         href,
                         setCopyToast,
                         t,
-                        name: practiceQuiz.name ?? '',
+                        name: practiceQuiz.name,
                       })
                     : [],
+                  getActivityDuplicationAction({
+                    id: practiceQuiz.id,
+                    text: t('manage.course.duplicatePracticeQuiz'),
+                    wizardMode: WizardMode.PracticeQuiz,
+                    router: router,
+                    data: {
+                      cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
+                    },
+                  }),
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
@@ -319,7 +340,7 @@ function PracticeQuizElement({
                         href,
                         setCopyToast,
                         t,
-                        name: practiceQuiz.name ?? '',
+                        name: practiceQuiz.name,
                       })
                     : [],
                   {
@@ -331,6 +352,15 @@ function PracticeQuizElement({
                     ),
                     onClick: () => null,
                   },
+                  getActivityDuplicationAction({
+                    id: practiceQuiz.id,
+                    text: t('manage.course.duplicatePracticeQuiz'),
+                    wizardMode: WizardMode.PracticeQuiz,
+                    router: router,
+                    data: {
+                      cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
+                    },
+                  }),
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -338,7 +368,7 @@ function PracticeQuizElement({
           )}
         </div>
         <div className="flex flex-row gap-2">
-          {statusMap[practiceQuiz.status ?? PublicationStatus.Draft]}
+          {statusMap[practiceQuiz.status]}
         </div>
       </div>
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />

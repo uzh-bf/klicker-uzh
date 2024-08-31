@@ -1,7 +1,7 @@
 #import "./FMicroLearningDataWithoutSolutions.graphql"
 
-query GetMicroLearning($id: String!) {
-  microLearning(id: $id) {
+query GetSingleMicroLearning($id: String!) {
+  getSingleMicroLearning(id: $id) {
     ...MicroLearningDataWithoutSolutions
   }
 }

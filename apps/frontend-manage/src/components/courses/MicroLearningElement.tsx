@@ -32,10 +32,19 @@ import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
+import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
 
 interface MicroLearningElementProps {
-  microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
+  microLearning: Pick<
+    MicroLearning,
+    | 'id'
+    | 'name'
+    | 'status'
+    | 'numOfStacks'
+    | 'scheduledStartAt'
+    | 'scheduledEndAt'
+  >
   courseId: string
 }
 
@@ -99,12 +108,12 @@ function MicroLearningElement({
     >
       <div className="flex-1">
         <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
-          {microLearning.name || ''}
+          {microLearning.name}
         </Ellipsis>
 
         <div className="mb-1 text-sm italic">
           {t('pwa.microLearning.numOfQuestionSets', {
-            number: microLearning.numOfStacks || '0',
+            number: microLearning.numOfStacks,
           })}
         </div>
         <div className="flex flex-row gap-4 text-sm">
@@ -184,6 +193,15 @@ function MicroLearningElement({
                       }),
                     data: { cy: `edit-microlearning-${microLearning.name}` },
                   },
+                  getActivityDuplicationAction({
+                    id: microLearning.id,
+                    text: t('manage.course.duplicateMicroLearning'),
+                    wizardMode: WizardMode.Microlearning,
+                    router: router,
+                    data: {
+                      cy: `duplicate-microlearning-${microLearning.name}`,
+                    },
+                  }),
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
@@ -234,6 +252,15 @@ function MicroLearningElement({
                     ),
                     onClick: () => null,
                   },
+                  getActivityDuplicationAction({
+                    id: microLearning.id,
+                    text: t('manage.course.duplicateMicroLearning'),
+                    wizardMode: WizardMode.Microlearning,
+                    router: router,
+                    data: {
+                      cy: `duplicate-microlearning-${microLearning.name}`,
+                    },
+                  }),
                   ...(isFuture
                     ? [
                         {
@@ -290,7 +317,7 @@ function MicroLearningElement({
           )}
         </div>
         <div className="flex flex-row gap-2">
-          {statusMap[microLearning.status ?? PublicationStatus.Draft]}
+          {statusMap[microLearning.status]}
         </div>
       </div>
 

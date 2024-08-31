@@ -1421,6 +1421,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       editMicrolearning: 'Microlearning bearbeiten',
+      duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
@@ -1441,6 +1442,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionMicrolearning:
         'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
+      duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       confirmDeletionPracticeQuiz:

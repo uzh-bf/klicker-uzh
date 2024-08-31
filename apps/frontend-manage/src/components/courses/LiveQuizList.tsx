@@ -11,7 +11,16 @@ const sortingOrderSessions: Record<string, number> = {
 }
 
 interface LiveQuizListProps {
-  sessions: Partial<Session>[]
+  sessions: Pick<
+    Session,
+    | 'id'
+    | 'status'
+    | 'name'
+    | 'numOfBlocks'
+    | 'numOfQuestions'
+    | 'isGamificationEnabled'
+    | 'accessMode'
+  >[]
 }
 
 function LiveQuizList({ sessions }: LiveQuizListProps) {

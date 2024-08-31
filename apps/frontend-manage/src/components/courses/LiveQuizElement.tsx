@@ -32,6 +32,7 @@ import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
+import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
 
 const statusMap = {
@@ -42,7 +43,16 @@ const statusMap = {
 }
 
 interface LiveQuizElementProps {
-  session: Partial<Session>
+  session: Pick<
+    Session,
+    | 'id'
+    | 'status'
+    | 'name'
+    | 'numOfBlocks'
+    | 'numOfQuestions'
+    | 'isGamificationEnabled'
+    | 'accessMode'
+  >
 }
 
 function LiveQuizElement({ session }: LiveQuizElementProps) {
@@ -60,13 +70,13 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
 
   // TODO: implement update and optimistic response
   const [deleteSession] = useMutation(DeleteSessionDocument, {
-    variables: { id: session.id || '' },
+    variables: { id: session.id },
     refetchQueries: [GetSingleCourseDocument],
   })
 
   // TODO: implement update and optimistic response
   const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
-    variables: { id: session.id || '' },
+    variables: { id: session.id },
     refetchQueries: [GetSingleCourseDocument],
   })
 
@@ -79,19 +89,19 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     >
       <div className="flex-1">
         <div className="flex flex-row gap-2">
-          <div>{statusMap[session.status || SessionStatus.Prepared]}</div>
+          <div>{statusMap[session.status]}</div>
 
           <Ellipsis
             maxLength={50}
             className={{ markdown: 'text-base font-bold' }}
           >
-            {session.name || ''}
+            {session.name}
           </Ellipsis>
         </div>
         <div className="mb-1 text-sm italic">
           {t('manage.sessions.nBlocksQuestions', {
-            blocks: session.numOfBlocks || '0',
-            questions: session.numOfQuestions || '0',
+            blocks: session.numOfBlocks,
+            questions: session.numOfQuestions,
           })}
         </div>
       </div>
@@ -114,14 +124,14 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     href,
                     setCopyToast,
                     t,
-                    name: session.name ?? '',
+                    name: session.name,
                   }),
                   dataUser?.userProfile?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
                         t,
-                        name: session.name ?? '',
+                        name: session.name,
                       })
                     : [],
                   {
@@ -141,6 +151,13 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                       }),
                     data: { cy: `edit-live-quiz-${session.name}` },
                   },
+                  getActivityDuplicationAction({
+                    id: session.id,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                  }),
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
@@ -171,16 +188,23 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     href,
                     setCopyToast,
                     t,
-                    name: session.name ?? '',
+                    name: session.name,
                   }),
                   dataUser?.userProfile?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
                         t,
-                        name: session.name ?? '',
+                        name: session.name,
                       })
                     : [],
+                  getActivityDuplicationAction({
+                    id: session.id,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                  }),
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -207,6 +231,13 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     onClick: () => setSoftDeletionModal(true),
                     data: { cy: `delete-past-live-quiz-${session.name}` },
                   },
+                  getActivityDuplicationAction({
+                    id: session.id,
+                    text: t('manage.sessions.duplicateSession'),
+                    wizardMode: WizardMode.LiveQuiz,
+                    router: router,
+                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                  }),
                 ]}
                 triggerIcon={faHandPointer}
               />
@@ -242,7 +273,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
       <DeletionModal
         title={t('manage.sessions.deleteLiveQuiz')}
         description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name || ''}
+        elementName={session.name}
         message={t('manage.sessions.liveQuizDeletionHint')}
         deleteElement={deleteSession}
         open={deletionModal}
@@ -253,7 +284,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
       <DeletionModal
         title={t('manage.sessions.deleteLiveQuiz')}
         description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name || ''}
+        elementName={session.name}
         message={t('manage.sessions.pastLiveQuizDeletionHint')}
         deleteElement={softDeleteLiveSession}
         open={softDeletionModal}
