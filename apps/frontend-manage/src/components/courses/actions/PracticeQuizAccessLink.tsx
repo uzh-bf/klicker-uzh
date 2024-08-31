@@ -41,7 +41,7 @@ function PracticeQuizAccessLink({
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkPracticeQuizCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
     </>
   )
