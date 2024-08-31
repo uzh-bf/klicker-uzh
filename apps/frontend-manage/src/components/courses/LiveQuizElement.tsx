@@ -69,13 +69,6 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     refetchQueries: [GetSingleCourseDocument],
   })
 
-  const statusMap = {
-    PREPARED: <FontAwesomeIcon icon={faClock} />,
-    SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
-    RUNNING: <FontAwesomeIcon icon={faPlay} />,
-    COMPLETED: <FontAwesomeIcon icon={faCheck} />,
-  }
-
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/${dataUser?.userProfile?.shortname}`
 
   return (
