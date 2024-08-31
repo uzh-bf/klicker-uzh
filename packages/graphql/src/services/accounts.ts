@@ -1,14 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { processQuestionData } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import { Context, ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { DisplayMode } from '../types/app.js'
