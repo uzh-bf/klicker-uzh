@@ -441,6 +441,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       randomGroup: 'Zufällige Gruppe',
       createJoinRandomGroup:
         'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
+      joinGroupError:
+        'Beim Beitreten zur Gruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      joinGroupFull:
+        'Diese Gruppe hat bereits die maximale Anzahl Teilnehmer erreicht. Bitte wählen Sie eine andere Gruppe.',
       inRandomGroupPool:
         'Sie haben sich entschieden, automatisch einer Gruppe von Studierenden in Ihrem Kurs zugewiesen zu werden. Wir warten derzeit darauf, dass mehr Personen dem Pool beitreten, und werden Sie so schnell wie möglich einer Gruppe zuweisen. Wenn Sie stattdessen lieber manuell einer anderen Gruppe beitreten oder Ihre eigene Gruppe erstellen möchten, können Sie den Pool mit dem Button unten verlassen.',
       leaveRandomGroupPool: 'Pool verlassen',
@@ -691,6 +695,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme.',
       singleParticipantAutomaticAssignment:
         'Sie sind der einzige Teilnehmer in Ihrer Gruppe. Sobald die Frist für die Gruppenbildung abgelaufen ist am {groupFormationDeadline} oder der Dozent die Gruppenbildung manuell gestoppt hat, werden Sie automatisch einer zufälligen Gruppe zugewiesen.',
+      maxNumberOfGroupMembers:
+        'Deine Gruppe hat die maximale Anzahl von Teilnehmenden erreicht, wie von deinem Dozierenden festgelegt. Es können keine weiteren Studierenden dieser Gruppe beitreten.',
+      nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
     },
   },
   manage: {
@@ -1425,7 +1432,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       preferredGroupSizeTooltip:
         'Die bevorzugte Anzahl Studierender in einer Gruppe. Nach Erstellen des Kurses kann diese Einstellung nicht mehr verändert werden. Wenn Studierende die automatisierte Gruppenbildungsfunktion wählen, wird der Algorithmus so viele Gruppen wie möglich mit dieser Grösse erstellen.',
       groupDeadlineChangedToPast:
-        'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von 15 Minuten automatisch Gruppen zugewiesen, wenn möglich.',
+        'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Schaltfläche auf der Kursübersicht.',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',

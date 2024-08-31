@@ -18,7 +18,7 @@ function GroupCreationActions({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div className="grid h-max grid-cols-1 gap-4 md:grid-cols-3">
       <GroupCreationBlock courseId={courseId} setSelectedTab={setSelectedTab} />
       <GroupJoinBlock courseId={courseId} setSelectedTab={setSelectedTab} />
       <RandomGroupBlock courseId={courseId} />

@@ -649,7 +649,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
-  joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup

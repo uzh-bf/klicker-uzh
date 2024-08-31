@@ -59,7 +59,7 @@ function GroupAction({
 
   if (!buttonMode && typeof onSubmit !== 'undefined') {
     return (
-      <div className="border-uzh-grey-80 flex flex-col items-center rounded-md border border-solid p-3">
+      <div className="border-uzh-grey-80 flex h-full flex-col items-center rounded-md border border-solid p-3">
         <TitleIcon />
         <Formik
           initialValues={{ value: '' }}

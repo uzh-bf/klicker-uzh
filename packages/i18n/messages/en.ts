@@ -441,6 +441,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       randomGroup: 'Random Group',
       createJoinRandomGroup:
         'Click here to be automatically assigned to a random group with other students.',
+      joinGroupError:
+        'An error occurred while joining the group. Please try again.',
+      joinGroupFull:
+        'This group has already reached the maximum number of participants. Please choose a different group.',
       inRandomGroupPool:
         'You selected to be assigned automatically to a group of participants in your course. We are currently waiting for more people to join the pool and will assign you to a group as soon as possible. Should you want to join another group manually instead, or create your own group, you can leave the pool with the button below.',
       leaveRandomGroupPool: 'Leave Pool',
@@ -693,6 +697,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
       singleParticipantAutomaticAssignment:
         'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
+      maxNumberOfGroupMembers:
+        'Your group has reached the maximum number of participants as specified by your lecturer. No further students will be able to join this group.',
+      nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
     },
   },
   manage: {
@@ -1406,7 +1413,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       preferredGroupSizeTooltip:
         'The preferred number of students in a group. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
       groupDeadlineChangedToPast:
-        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within 15 minutes, if possible.',
+        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the course overview.',
     },
     course: {
       modifyCourse: 'Modify course',
