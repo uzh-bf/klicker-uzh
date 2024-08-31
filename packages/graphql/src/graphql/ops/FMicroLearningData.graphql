@@ -1,29 +1,19 @@
 #import "./FElementData.graphql"
 
-fragment PracticeQuizData on PracticeQuiz {
+fragment MicroLearningData on MicroLearning {
   id
-  status
   name
+  status
   displayName
   description
   pointsMultiplier
-  resetTimeDays
-  availableFrom
-  orderType
-  numOfStacks
-  # previouslyAnswered
-  # previousScore
-  # previousPointsAwarded
-  # totalTrials
-  # stacksWithQuestions
-  # numOfQuestions
-
+  scheduledStartAt
+  scheduledEndAt
   course {
     id
     displayName
     color
   }
-
   stacks {
     id
     type

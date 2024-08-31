@@ -1407,6 +1407,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       editMicrolearning: 'Edit microlearning',
+      duplicateMicroLearning: 'Duplicate microlearning',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
@@ -1426,6 +1427,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionMicrolearning:
         'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
       editPracticeQuiz: 'Edit practice quiz',
+      duplicatePracticeQuiz: 'Duplicate practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
       deletePracticeQuiz: 'Delete practice quiz',
       confirmDeletionPracticeQuiz:

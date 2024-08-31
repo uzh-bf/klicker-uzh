@@ -895,6 +895,8 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
+  getSingleMicroLearning(id: String!): MicroLearning
+  getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails

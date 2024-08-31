@@ -3,9 +3,9 @@ import {
   Course,
   Element,
   GetGroupActivityDocument,
-  GetMicroLearningDocument,
-  GetPracticeQuizDocument,
   GetSingleLiveSessionDocument,
+  GetSingleMicroLearningDocument,
+  GetSinglePracticeQuizDocument,
   GetUserCoursesDocument,
   GroupActivity,
   MicroLearning,
@@ -68,22 +68,24 @@ function ElementCreation({
     }
   )
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
-    GetMicroLearningDocument,
+    GetSingleMicroLearningDocument,
     {
       variables: { id: elementId || '' },
       skip:
         !elementId ||
         (editMode !== WizardMode.Microlearning &&
+          duplicationMode !== WizardMode.Microlearning &&
           conversionMode !== 'microLearningToPracticeQuiz'),
     }
   )
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
-    GetPracticeQuizDocument,
+    GetSinglePracticeQuizDocument,
     {
       variables: { id: elementId || '' },
       skip:
         !elementId ||
-        editMode !== WizardMode.PracticeQuiz ||
+        (editMode !== WizardMode.PracticeQuiz &&
+          duplicationMode !== WizardMode.PracticeQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
     }
   )
@@ -91,7 +93,10 @@ function ElementCreation({
     GetGroupActivityDocument,
     {
       variables: { id: elementId || '' },
-      skip: !elementId || editMode !== WizardMode.GroupActivity,
+      skip:
+        !elementId ||
+        (editMode !== WizardMode.GroupActivity &&
+          duplicationMode !== WizardMode.GroupActivity),
     }
   )
 
@@ -119,10 +124,17 @@ function ElementCreation({
       (editMode === WizardMode.LiveQuiz ||
         duplicationMode === WizardMode.LiveQuiz) &&
       liveLoading) ||
-    (elementId && editMode === WizardMode.Microlearning && microLoading) ||
-    (elementId && editMode === WizardMode.PracticeQuiz && learningLoading) ||
     (elementId &&
-      editMode === WizardMode.GroupActivity &&
+      (editMode === WizardMode.Microlearning ||
+        duplicationMode === WizardMode.Microlearning) &&
+      microLoading) ||
+    (elementId &&
+      (editMode === WizardMode.PracticeQuiz ||
+        duplicationMode === WizardMode.PracticeQuiz) &&
+      learningLoading) ||
+    (elementId &&
+      (editMode === WizardMode.GroupActivity ||
+        duplicationMode === WizardMode.GroupActivity) &&
       groupActivityLoading) ||
     (elementId &&
       conversionMode === 'microLearningToPracticeQuiz' &&
@@ -135,12 +147,13 @@ function ElementCreation({
   let initialDataPracticeQuiz: PracticeQuiz | undefined = undefined
   if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroLearning) {
     initialDataPracticeQuiz = {
-      name: `${dataMicroLearning.microLearning?.name} (converted)`,
-      displayName: dataMicroLearning.microLearning?.displayName,
-      description: dataMicroLearning.microLearning?.description,
-      stacks: dataMicroLearning.microLearning?.stacks,
-      pointsMultiplier: dataMicroLearning.microLearning?.pointsMultiplier,
-      course: dataMicroLearning.microLearning?.course,
+      name: `${dataMicroLearning.getSingleMicroLearning?.name} (converted)`,
+      displayName: dataMicroLearning.getSingleMicroLearning?.displayName,
+      description: dataMicroLearning.getSingleMicroLearning?.description,
+      stacks: dataMicroLearning.getSingleMicroLearning?.stacks,
+      pointsMultiplier:
+        dataMicroLearning.getSingleMicroLearning?.pointsMultiplier,
+      course: dataMicroLearning.getSingleMicroLearning?.course,
     } as PracticeQuiz
   }
 
@@ -165,8 +178,11 @@ function ElementCreation({
     { gamifiedCourses: [], nonGamifiedCourses: [] }
   ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
 
+  console.log('edit mode', editMode)
+  console.log('practice quiz', dataPracticeQuiz)
+
   return (
-    <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18rem] md:min-h-[18rem]">
+    <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18.25rem] md:min-h-[18.25rem]">
       <div className="h-full w-full">
         {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
@@ -196,13 +212,13 @@ function ElementCreation({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
-              dataMicroLearning?.microLearning
+              dataMicroLearning?.getSingleMicroLearning
                 ? duplicationMode === WizardMode.Microlearning
                   ? ({
-                      ...dataMicroLearning.microLearning,
-                      name: `${dataMicroLearning.microLearning.name} (Copy)`,
+                      ...dataMicroLearning.getSingleMicroLearning,
+                      name: `${dataMicroLearning.getSingleMicroLearning.name} (Copy)`,
                     } as MicroLearning)
-                  : (dataMicroLearning.microLearning as MicroLearning)
+                  : (dataMicroLearning.getSingleMicroLearning as MicroLearning)
                 : undefined
             }
             selection={selection}
@@ -218,13 +234,13 @@ function ElementCreation({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
-              dataPracticeQuiz?.practiceQuiz
+              dataPracticeQuiz?.getSinglePracticeQuiz
                 ? duplicationMode === WizardMode.PracticeQuiz
                   ? ({
-                      ...dataPracticeQuiz.practiceQuiz,
-                      name: `${dataPracticeQuiz.practiceQuiz.name} (Copy)`,
+                      ...dataPracticeQuiz.getSinglePracticeQuiz,
+                      name: `${dataPracticeQuiz.getSinglePracticeQuiz.name} (Copy)`,
                     } as PracticeQuiz)
-                  : (dataPracticeQuiz.practiceQuiz as PracticeQuiz)
+                  : (dataPracticeQuiz.getSinglePracticeQuiz as PracticeQuiz)
                 : initialDataPracticeQuiz
             }
             selection={selection}
