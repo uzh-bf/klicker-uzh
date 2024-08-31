@@ -39,7 +39,7 @@ interface ElementCreationProps {
   closeWizard: () => void
   elementId?: string
   editMode?: string
-  duplicationMode?: string
+  duplicationMode?: WizardMode
   conversionMode?: string
   selection: Record<number, Element>
   resetSelection: () => void
@@ -132,7 +132,7 @@ function ElementCreation({
   }
 
   // initialize practice quiz data from microlearning
-  let initialDataPracticeQuiz: PracticeQuiz | undefined
+  let initialDataPracticeQuiz: PracticeQuiz | undefined = undefined
   if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroLearning) {
     initialDataPracticeQuiz = {
       name: `${dataMicroLearning.microLearning?.name} (converted)`,
@@ -178,11 +178,10 @@ function ElementCreation({
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz
                   ? ({
-                      ...dataLiveSession?.liveSession,
+                      ...dataLiveSession.liveSession,
                       name: `${dataLiveSession.liveSession.name} (Copy)`,
-                      displayName: dataLiveSession.liveSession.displayName,
                     } as Session)
-                  : (dataLiveSession?.liveSession as Session)
+                  : (dataLiveSession.liveSession as Session)
                 : undefined
             }
             selection={selection}
@@ -197,7 +196,14 @@ function ElementCreation({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
-              (dataMicroLearning?.microLearning as MicroLearning) ?? undefined
+              dataMicroLearning?.microLearning
+                ? duplicationMode === WizardMode.Microlearning
+                  ? ({
+                      ...dataMicroLearning.microLearning,
+                      name: `${dataMicroLearning.microLearning.name} (Copy)`,
+                    } as MicroLearning)
+                  : (dataMicroLearning.microLearning as MicroLearning)
+                : undefined
             }
             selection={selection}
             resetSelection={resetSelection}
@@ -212,8 +218,14 @@ function ElementCreation({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             initialValues={
-              (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ??
-              initialDataPracticeQuiz
+              dataPracticeQuiz?.practiceQuiz
+                ? duplicationMode === WizardMode.PracticeQuiz
+                  ? ({
+                      ...dataPracticeQuiz.practiceQuiz,
+                      name: `${dataPracticeQuiz.practiceQuiz.name} (Copy)`,
+                    } as PracticeQuiz)
+                  : (dataPracticeQuiz.practiceQuiz as PracticeQuiz)
+                : initialDataPracticeQuiz
             }
             selection={selection}
             resetSelection={resetSelection}

@@ -154,7 +154,7 @@ function Index() {
             elementId={router.query.elementId as string}
             editMode={router.query.editMode as string}
             conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as string}
+            duplicationMode={router.query.duplicationMode as WizardMode}
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />
