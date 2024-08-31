@@ -5,6 +5,13 @@ import {
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 
+type ExtendedElement =
+  | Pick<Element, (typeof RELEVANT_KEYS)[number]>
+  | {
+      id: string
+      questionId: number
+    }
+
 const RELEVANT_KEYS = [
   'id',
   'name',
@@ -17,14 +24,14 @@ const RELEVANT_KEYS = [
 
 const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
 
-export function processQuestionData(question: Element) {
+export function processQuestionData(question: Element): ExtendedElement {
   return {
     ...(extractRelevantKeys(question) as Pick<
       Element,
       (typeof RELEVANT_KEYS)[number]
     >),
     id: `${question.id}-v${question.version}`,
-    elementId: question.id,
+    questionId: question.id,
   }
 }
 
