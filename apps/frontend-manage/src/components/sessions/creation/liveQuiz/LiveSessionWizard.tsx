@@ -42,19 +42,6 @@ export interface LiveQuizWizardStepProps {
   closeWizard: () => void
 }
 
-const formDefaultValues = {
-  name: '',
-  displayName: '',
-  description: '',
-  blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
-  courseId: '',
-  multiplier: '1',
-  isGamificationEnabled: false,
-  isConfusionFeedbackEnabled: true,
-  isLiveQAEnabled: false,
-  isModerationEnabled: true,
-}
-
 interface LiveSessionWizardProps {
   title: string
   gamifiedCourses: ElementSelectCourse[]
@@ -135,6 +122,19 @@ function LiveSessionWizard({
       })
     ),
   })
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
+    courseId: '',
+    multiplier: '1',
+    isGamificationEnabled: false,
+    isConfusionFeedbackEnabled: true,
+    isLiveQAEnabled: false,
+    isModerationEnabled: true,
+  }
 
   const workflowItems = [
     {

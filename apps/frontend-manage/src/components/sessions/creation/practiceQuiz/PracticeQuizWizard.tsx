@@ -43,27 +43,6 @@ export interface PracticeQuizWizardStepProps {
   closeWizard: () => void
 }
 
-const formDefaultValues = {
-  name: '',
-  displayName: '',
-  description: '',
-  stacks: [
-    {
-      displayName: '',
-      description: '',
-      elementIds: [],
-      titles: [],
-      types: [],
-      hasSampleSolutions: [],
-    },
-  ],
-  multiplier: '1',
-  courseId: undefined,
-  order: ElementOrderType.SpacedRepetition,
-  availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
-  resetTimeDays: '6',
-}
-
 // TODO: add free text questions to accepted types?
 const acceptedTypes = [
   ElementType.Sc,
@@ -174,6 +153,27 @@ function PracticeQuizWizard({
       )
       .min(1),
   })
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elementIds: [],
+        titles: [],
+        types: [],
+        hasSampleSolutions: [],
+      },
+    ],
+    multiplier: '1',
+    courseId: undefined,
+    order: ElementOrderType.SpacedRepetition,
+    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
+    resetTimeDays: '6',
+  }
 
   const workflowItems = [
     {

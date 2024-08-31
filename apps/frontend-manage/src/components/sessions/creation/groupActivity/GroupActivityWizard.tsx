@@ -44,25 +44,6 @@ export interface GroupActivityWizardStepProps {
   closeWizard: () => void
 }
 
-const formDefaultValues = {
-  name: '',
-  displayName: '',
-  description: '',
-  clues: [],
-  stack: {
-    displayName: '',
-    description: '',
-    elementIds: [],
-    titles: [],
-    types: [],
-    hasSampleSolutions: [],
-  },
-  startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-  endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
-  multiplier: '1',
-  courseId: undefined,
-}
-
 const acceptedTypes = [
   ElementType.Sc,
   ElementType.Mc,
@@ -182,6 +163,25 @@ function GroupActivityWizard({
       )
       .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
   })
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    clues: [],
+    stack: {
+      displayName: '',
+      description: '',
+      elementIds: [],
+      titles: [],
+      types: [],
+      hasSampleSolutions: [],
+    },
+    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: undefined,
+  }
 
   const workflowItems = [
     {

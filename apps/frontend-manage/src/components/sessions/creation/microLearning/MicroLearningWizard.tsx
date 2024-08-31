@@ -42,26 +42,6 @@ export interface MicroLearningWizardStepProps {
   closeWizard: () => void
 }
 
-const formDefaultValues = {
-  name: '',
-  displayName: '',
-  description: '',
-  stacks: [
-    {
-      displayName: '',
-      description: '',
-      elementIds: [],
-      titles: [],
-      types: [],
-      hasSampleSolutions: [],
-    },
-  ],
-  startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
-  endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-  multiplier: '1',
-  courseId: undefined,
-}
-
 // TODO: add free text questions to accepted types?
 const acceptedTypes = [
   ElementType.Sc,
@@ -163,6 +143,26 @@ function MicroLearningWizard({
       )
       .min(1),
   })
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elementIds: [],
+        titles: [],
+        types: [],
+        hasSampleSolutions: [],
+      },
+    ],
+    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
+    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    multiplier: '1',
+    courseId: undefined,
+  }
 
   const workflowItems = [
     {
