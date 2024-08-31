@@ -1844,20 +1844,6 @@ export async function respondToQuestion(
         ? StackFeedbackStatus.CORRECT
         : StackFeedbackStatus.PARTIAL
 
-  console.log({
-    ...evaluation,
-    pointsAwarded,
-    newPointsFrom,
-    xpAwarded,
-    newXpFrom,
-    solutions:
-      elementData.type === 'FREE_TEXT' ? elementData.options.solutions : null,
-    solutionRanges:
-      elementData.type === 'NUMERICAL'
-        ? elementData.options.solutionRanges
-        : null,
-  })
-
   return {
     ...updatedInstance,
     evaluation: evaluation
