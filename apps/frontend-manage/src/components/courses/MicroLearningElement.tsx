@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -6,7 +6,6 @@ import {
   faHandPointer,
   faHourglassEnd,
   faHourglassStart,
-  faLink,
   faLock,
   faPencil,
   faPlay,
@@ -18,6 +17,7 @@ import {
   MicroLearning,
   PublicationStatus,
   UnpublishMicroLearningDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
+import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
@@ -45,6 +46,10 @@ function MicroLearningElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/microlearning/${microLearning.id}/`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
@@ -68,16 +73,64 @@ function MicroLearningElement({
     ],
   })
 
+  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+    [PublicationStatus.Draft]: (
+      <StatusTag
+        color="bg-gray-200"
+        status={t('shared.generic.draft')}
+        icon={faPencil}
+      />
+    ),
+    [PublicationStatus.Published]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.published')}
+        icon={isFuture ? faClock : isPast ? faCheck : faPlay}
+      />
+    ),
+    [PublicationStatus.Scheduled]: <div />,
+  }
+
   return (
     <div
-      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
+      className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
       data-cy={`microlearning-${microLearning.name}`}
     >
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex-1">
         <Ellipsis maxLength={50} className={{ markdown: 'font-bold' }}>
           {microLearning.name || ''}
         </Ellipsis>
 
+        <div className="mb-1 text-sm italic">
+          {t('pwa.microLearning.numOfQuestionSets', {
+            number: microLearning.numOfStacks || '0',
+          })}
+        </div>
+        <div className="flex flex-row gap-4 text-sm">
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassStart} />
+            <div>
+              {t('manage.course.startAt', {
+                time: dayjs(microLearning.scheduledStartAt)
+                  .local()
+                  .format('DD.MM.YYYY, HH:mm'),
+              })}
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassEnd} />
+            <div>
+              {t('manage.course.endAt', {
+                time: dayjs(microLearning.scheduledEndAt)
+                  .local()
+                  .format('DD.MM.YYYY, HH:mm'),
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-end justify-between gap-4">
         <div className="flex flex-row items-center gap-3 text-sm">
           {microLearning.status === PublicationStatus.Draft && (
             <>
@@ -90,27 +143,20 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  {
-                    label: (
-                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                        <FontAwesomeIcon
-                          icon={faLink}
-                          size="sm"
-                          className="w-4"
-                        />
-                        <div>{t('manage.course.copyAccessLink')}</div>
-                      </div>
-                    ),
-                    onClick: () => {
-                      try {
-                        navigator.clipboard.writeText(href)
-                        setCopyToast(true)
-                      } catch (e) {}
-                    },
-                    data: {
-                      cy: `copy-microlearning-link-${microLearning.name}`,
-                    },
-                  },
+                  getAccessLink({
+                    href,
+                    setCopyToast,
+                    t,
+                    name: microLearning.name,
+                  }),
+                  dataUser?.userProfile?.catalyst
+                    ? getLTIAccessLink({
+                        href,
+                        setCopyToast,
+                        t,
+                        name: microLearning.name,
+                      })
+                    : [],
                   {
                     label: (
                       <MicroLearningPreviewLink
@@ -150,13 +196,8 @@ function MicroLearningElement({
                     onClick: () => setDeletionModal(true),
                     data: { cy: `delete-microlearning-${microLearning.name}` },
                   },
-                ]}
+                ].flat()}
                 triggerIcon={faHandPointer}
-              />
-              <StatusTag
-                color="bg-gray-200"
-                status={t('shared.generic.draft')}
-                icon={faPencil}
               />
             </>
           )}
@@ -175,6 +216,14 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
+                  dataUser?.userProfile?.catalyst
+                    ? getLTIAccessLink({
+                        href,
+                        setCopyToast,
+                        t,
+                        name: microLearning.name,
+                      })
+                    : [],
                   {
                     label: (
                       <MicroLearningPreviewLink
@@ -233,43 +282,14 @@ function MicroLearningElement({
                         },
                       ]
                     : []),
-                ]}
+                ].flat()}
                 triggerIcon={faHandPointer}
-              />
-              <StatusTag
-                color="bg-green-300"
-                status={t('shared.generic.published')}
-                icon={isFuture ? faClock : isPast ? faCheck : faPlay}
               />
             </>
           )}
         </div>
-      </div>
-      <div className="mb-1 text-sm italic">
-        {t('pwa.microLearning.numOfQuestionSets', {
-          number: microLearning.numOfStacks || '0',
-        })}
-      </div>
-      <div className="flex flex-row gap-4 text-sm">
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassStart} />
-          <div>
-            {t('manage.course.startAt', {
-              time: dayjs(microLearning.scheduledStartAt)
-                .local()
-                .format('DD.MM.YYYY, HH:mm'),
-            })}
-          </div>
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassEnd} />
-          <div>
-            {t('manage.course.endAt', {
-              time: dayjs(microLearning.scheduledEndAt)
-                .local()
-                .format('DD.MM.YYYY, HH:mm'),
-            })}
-          </div>
+        <div className="flex flex-row gap-2">
+          {statusMap[microLearning.status ?? PublicationStatus.Draft]}
         </div>
       </div>
 
@@ -279,7 +299,7 @@ function MicroLearningElement({
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkMicrolearningCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
       <DeletionModal
         title={t('manage.course.deleteMicrolearning')}
