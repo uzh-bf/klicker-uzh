@@ -12,7 +12,7 @@ import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -42,6 +42,37 @@ export interface PracticeQuizWizardStepProps {
   onNextStep?: (newValues: PracticeQuizFormValues) => void
   closeWizard: () => void
 }
+
+const formDefaultValues = {
+  name: '',
+  displayName: '',
+  description: '',
+  stacks: [
+    {
+      displayName: '',
+      description: '',
+      elementIds: [],
+      titles: [],
+      types: [],
+      hasSampleSolutions: [],
+    },
+  ],
+  multiplier: '1',
+  courseId: undefined,
+  order: ElementOrderType.SpacedRepetition,
+  availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
+  resetTimeDays: '6',
+}
+
+// TODO: add free text questions to accepted types?
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.Flashcard,
+  ElementType.Content,
+]
 
 interface PracticeQuizWizardProps {
   title: string
@@ -79,16 +110,6 @@ function PracticeQuizWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
-
-  // TODO: add free text questions to accepted types?
-  const acceptedTypes = [
-    ElementType.Sc,
-    ElementType.Mc,
-    ElementType.Kprim,
-    ElementType.Numerical,
-    ElementType.Flashcard,
-    ElementType.Content,
-  ]
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -175,27 +196,6 @@ function PracticeQuizWizard({
     },
   ]
 
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    stacks: [
-      {
-        displayName: '',
-        description: '',
-        elementIds: [],
-        titles: [],
-        types: [],
-        hasSampleSolutions: [],
-      },
-    ],
-    multiplier: '1',
-    courseId: undefined,
-    order: ElementOrderType.SpacedRepetition,
-    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
-    resetTimeDays: '6',
-  }
-
   const [formData, setFormData] = useState<PracticeQuizFormValues>({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
@@ -238,19 +238,22 @@ function PracticeQuizWizard({
 
   const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
   const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
-  const handleSubmit = async (values: PracticeQuizFormValues) => {
-    submitPracticeQuizForm({
-      id: initialValues?.id,
-      conversion,
-      values,
-      createPracticeQuiz,
-      editPracticeQuiz,
-      setSelectedCourseId,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-      setEditMode,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: PracticeQuizFormValues) => {
+      submitPracticeQuizForm({
+        id: initialValues?.id,
+        conversion,
+        values,
+        createPracticeQuiz,
+        editPracticeQuiz,
+        setSelectedCourseId,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+        setEditMode,
+      })
+    },
+    [conversion, createPracticeQuiz, editPracticeQuiz, initialValues?.id]
+  )
 
   return (
     <>

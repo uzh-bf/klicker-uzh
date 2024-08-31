@@ -427,7 +427,7 @@ function QuestionEditModal({
   }, [dataQuestion?.question, mode])
 
   if (!question || Object.keys(question).length === 0) {
-    return <div></div>
+    return <div />
   }
 
   return (
@@ -439,6 +439,7 @@ function QuestionEditModal({
       enableReinitialize={true}
       initialValues={question}
       validationSchema={questionManipulationSchema}
+      // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values) => {
         const common = {
           id: questionId,
