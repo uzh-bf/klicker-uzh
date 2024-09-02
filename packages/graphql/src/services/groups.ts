@@ -187,7 +187,11 @@ export async function joinParticipantGroup(
     },
     include: {
       course: true,
-      participants: true,
+      participants: {
+        include: {
+          leaderboards: true,
+        },
+      },
     },
   })
 
@@ -203,6 +207,22 @@ export async function joinParticipantGroup(
     return 'FULL'
   }
 
+  // fetch the current participants score
+  const lbEntry = await ctx.prisma.leaderboardEntry.findFirst({
+    where: {
+      participantId: ctx.user.sub,
+      courseId: courseId,
+      type: LeaderboardType.COURSE,
+    },
+  })
+
+  const numGroupMembersOld = participantGroup.participants.length
+  const aggregateScore =
+    participantGroup.averageMemberScore * numGroupMembersOld +
+    (lbEntry?.score ?? 0)
+  const aggregateCount = numGroupMembersOld + 1
+  const averageMemberScore = Math.round(aggregateScore / aggregateCount)
+
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
     where: {
@@ -217,6 +237,7 @@ export async function joinParticipantGroup(
           id: ctx.user.sub,
         },
       },
+      averageMemberScore: averageMemberScore,
     },
     include: {
       participants: true,
@@ -242,7 +263,11 @@ export async function leaveParticipantGroup(
       id: groupId,
     },
     include: {
-      participants: true,
+      participants: {
+        include: {
+          leaderboards: true,
+        },
+      },
     },
   })
 
@@ -266,6 +291,27 @@ export async function leaveParticipantGroup(
     return null
   }
 
+  // compute new average member score for the group without the participant that is leaving
+  const aggregate = participantGroup.participants.reduce(
+    (acc, participant) => {
+      // skip the participant that is about to leave
+      if (participant.id === ctx.user.sub) return acc
+
+      const matchingLeaderboard = participant.leaderboards.find(
+        (lb) => lb.courseId === courseId && lb.type === LeaderboardType.COURSE
+      )
+      return {
+        sum: acc.sum + (matchingLeaderboard?.score ?? 0),
+        count: acc.count + 1,
+      }
+    },
+    {
+      sum: 0,
+      count: 0,
+    }
+  )
+  const averageMemberScore = Math.round(aggregate.sum / aggregate.count)
+
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
     where: {
@@ -277,6 +323,7 @@ export async function leaveParticipantGroup(
           id: ctx.user.sub,
         },
       },
+      averageMemberScore: averageMemberScore,
     },
     include: {
       participants: true,
