@@ -527,9 +527,7 @@ export async function manipulateGroupActivity(
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
-            // TODO: fix type errors related to elementData
             const initialResults =
-              // @ts-expect-error
               getInitialElementResults(processedElementData)
 
             return {
@@ -575,10 +573,7 @@ export async function manipulateGroupActivity(
     where: {
       id: id ?? newId,
     },
-    // TODO: fix type errors related to createOrUpdateJSON
-    // @ts-expect-error
     create: createOrUpdateJSON,
-    // @ts-expect-error
     update: createOrUpdateJSON,
   })
 
