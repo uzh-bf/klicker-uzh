@@ -44,16 +44,23 @@ function CourseLiveQuizzes({
   ) {
     return (
       <Layout>
-        <UserNotification
-          type="warning"
-          message={t('pwa.general.noLiveQuizzesActive')}
-        />
+        <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
+          <div className="font-bold">
+            {t.rich('pwa.general.activeLiveQuizzes')}
+          </div>
+          <div className="mt-2 space-y-1">
+            <UserNotification
+              type="warning"
+              message={t('pwa.general.noLiveQuizzesActive')}
+            />
+          </div>
+        </div>
       </Layout>
     )
   }
 
   return (
-    <Layout>
+    <Layout course={data.runningSessionsCourse[0].course ?? undefined}>
       <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
         <div className="font-bold">
           {t.rich('pwa.general.activeLiveQuizzesInCourse', {

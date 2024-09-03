@@ -281,6 +281,7 @@ export default {
       noLiveQuizzesActive: 'No live quizzes active.',
       activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
       activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
+      activeLiveQuizzes: 'Active live quizzes',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
