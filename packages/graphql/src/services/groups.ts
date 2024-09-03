@@ -197,6 +197,7 @@ async function createRandomGroup(
   await ctx.prisma.$transaction([
     ctx.prisma.participantGroup.create({
       data: {
+        randomlyAssigned: true,
         name: groupName,
         code: code,
         course: {
@@ -372,6 +373,7 @@ export async function manualRandomGroupAssignments(
   })
 
   const newGroups = groupParticipantIds!.map((group) => ({
+    randomlyAssigned: true,
     name:
       uniqueNamesGenerator({
         dictionaries: [colors, adjectives, animals],
@@ -391,6 +393,7 @@ export async function manualRandomGroupAssignments(
   const updatedCourse = await ctx.prisma.course.update({
     where: { id: courseId },
     data: {
+      groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
       participantGroups: {
         create: newGroups,
       },
