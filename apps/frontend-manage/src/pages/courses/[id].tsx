@@ -231,7 +231,7 @@ function CourseOverviewPage() {
                     {t('shared.leaderboard.rank')}
                   </TableHead>
                   <TableHead>{t('shared.leaderboard.username')}</TableHead>
-                  <TableHead>{t('shared.leaderboard.email')}</TableHead>
+                  {/* <TableHead>{t('shared.leaderboard.email')}</TableHead> */}
                   <TableHead>{t('shared.leaderboard.points')}</TableHead>
                 </>
               }

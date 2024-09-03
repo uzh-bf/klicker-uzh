@@ -41,7 +41,7 @@ function TableWithDownload({
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.rank}</TableCell>
               <TableCell>{item.username}</TableCell>
-              <TableCell>{item.email}</TableCell>
+              {/* <TableCell>{item.email}</TableCell> */}
               <TableCell>{item.score}</TableCell>
             </TableRow>
           ))}
