@@ -1421,6 +1421,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Link für die Einbettung per LTI (z. B. in OpenOLAT) wurde in die Zwischenablage kopiert.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
+      linkLTILiveQuizzesLabel: 'Live Quizzes',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',

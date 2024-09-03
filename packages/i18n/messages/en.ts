@@ -1407,6 +1407,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
+      linkLTILiveQuizzesLabel: 'Live Quizzes',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
       publishMicrolearning: 'Publish microlearning',
