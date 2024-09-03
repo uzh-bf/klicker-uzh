@@ -327,6 +327,31 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      runningRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.runningRandomGroupAssignments(ctx)
+        },
+      }),
+
+      finalRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.finalRandomGroupAssignments(ctx)
+        },
+      }),
+
+      manualRandomGroupAssignments: t.withAuth(asParticipant).field({
+        type: Course,
+        nullable: true,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.manualRandomGroupAssignments(args, ctx)
+        },
+      }),
+
       joinParticipantGroup: t.withAuth(asParticipant).string({
         nullable: true,
         args: {
