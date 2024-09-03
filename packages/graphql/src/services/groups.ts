@@ -186,7 +186,7 @@ async function createRandomGroup(
     courseId,
     groupParticipantIds,
   }: { courseId: string; groupParticipantIds: string[] },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
   const groupName =
@@ -1768,4 +1768,27 @@ export async function finalizeGroupActivityGrading(
   await ctx.prisma.$transaction(promises)
 
   return updatedGroupActivity
+}
+
+export async function getCourseGroups(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      participantGroups: {
+        include: {
+          participants: true,
+        },
+      },
+      groupAssignmentPoolEntries: {
+        include: {
+          participant: true,
+        },
+      },
+    },
+  })
+
+  return course
 }

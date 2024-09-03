@@ -106,6 +106,7 @@
    "GetControlCourse": "88f7734aa4fd0d77bcf607916ed3e6aee305171448d19d6be9604f845b0c2594",
    "GetControlCourses": "f62c7d2cb59eb42a077e6d527c90f4838a2888cb9a9f60259979114b6a3b759f",
    "GetControlSession": "b8c4ffa6c9e4afc12951870740c1f348011e1e5fa320333443ecef1789e75fb4",
+   "GetCourseGroups": "f7489f9c015a202fb189d5b20ddffc6e45cbe716f7665747b6a266a1f823e20f",
    "GetCourseOverviewData": "394a4b86087798237bab8c7db79377727caf1edb3e805d1ed86ba6f795494177",
    "GetCoursePracticeQuiz": "5b9c0a2e83fa442635459fdd77a56c1618a639078e17ce82310f32660e253794",
    "GetFeedbacks": "b33e84156822ff5ba3013fb1ddb31eae21ecfd40c1249b6e9db361ed774a83f8",

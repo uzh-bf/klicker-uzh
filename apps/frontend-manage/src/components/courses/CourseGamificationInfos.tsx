@@ -1,8 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  Course,
-  ManualRandomGroupAssignmentsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -12,10 +8,6 @@ import GroupsList from './GroupsList'
 import IndividualLeaderboard from './IndividualLeaderboard'
 
 function CourseGamificationInfos({ course }: { course: Course }) {
-  const [
-    manualRandomGroupAssignments,
-    { loading: randomGroupCreationLoading },
-  ] = useMutation(ManualRandomGroupAssignmentsDocument)
   const [tabValue, setTabValue] = useState('ind-leaderboard')
   const t = useTranslations()
 
@@ -66,7 +58,7 @@ function CourseGamificationInfos({ course }: { course: Course }) {
         </Tabs.TabList>
         <IndividualLeaderboard course={course} />
         <GroupsLeaderboard course={course} />
-        <GroupsList course={course} />
+        <GroupsList courseId={course.id} />
       </Tabs>
     </div>
   )

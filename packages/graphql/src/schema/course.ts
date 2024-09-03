@@ -4,11 +4,13 @@ import builder from '../builder.js'
 import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
 import { IMicroLearning, MicroLearningRef } from './microLearning.js'
 import type {
+  IGroupAssignmentPoolEntryRef,
   IParticipant,
   IParticipantGroup,
   IParticipation,
 } from './participant.js'
 import {
+  GroupAssignmentPoolEntryRef,
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
@@ -24,11 +26,11 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
   participantGroups?: IParticipantGroup[]
+  groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
@@ -103,6 +105,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     participantGroups: t.expose('participantGroups', {
       type: [ParticipantGroupRef],
+      nullable: true,
+    }),
+    groupAssignmentPoolEntries: t.expose('groupAssignmentPoolEntries', {
+      type: [GroupAssignmentPoolEntryRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
