@@ -28,6 +28,7 @@ export interface ICourse extends DB.Course {
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
+  participantGroups?: IParticipantGroup[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
@@ -98,6 +99,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     microLearnings: t.expose('microLearnings', {
       type: [MicroLearningRef],
+      nullable: true,
+    }),
+    participantGroups: t.expose('participantGroups', {
+      type: [ParticipantGroupRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
