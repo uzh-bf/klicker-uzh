@@ -2,12 +2,12 @@ name: Test graphql package logic functionalities
 
 on:
   push:
-    # branches: ['v3', 'v3*']
+    branches: ['v3', 'v3*']
     paths:
       - 'packages/graphql/**'
       - '.github/workflows/test-graphql.yml'
   pull_request:
-    # branches: ['v3', 'v3*']
+    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'packages/graphql/**'
