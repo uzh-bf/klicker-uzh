@@ -19,7 +19,6 @@ import CourseManipulationModal, {
 } from './modals/CourseManipulationModal'
 
 interface CourseOverviewHeaderProps {
-  id: string
   course: Omit<
     Course,
     'leaderboard' | 'sessions' | 'practiceQuizzes' | 'microLearnings'
@@ -30,7 +29,6 @@ interface CourseOverviewHeaderProps {
 }
 
 function CourseOverviewHeader({
-  id,
   course,
   name,
   pinCode,
@@ -73,7 +71,7 @@ function CourseOverviewHeader({
           <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
         </Button>
         <CourseQRModal
-          relativeLink={`/course/${id}/join?pin=${pinCode}`}
+          relativeLink={`/course/${course.id}/join?pin=${pinCode}`}
           triggerText={t('manage.course.joinCourse')}
           className={{ modal: 'w-[40rem]' }}
           dataTrigger={{ cy: 'course-join-button' }}
@@ -93,21 +91,21 @@ function CourseOverviewHeader({
               dataUser?.userProfile?.catalyst
                 ? [
                     getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
                       setCopyToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}/docs`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
                       setCopyToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}/liveQuizzes`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
                       setCopyToast,
                       t,
                       name,
