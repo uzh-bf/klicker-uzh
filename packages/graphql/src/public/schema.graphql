@@ -544,6 +544,7 @@ scalar Json
 
 type LeaderboardEntry {
   avatar: String
+  email: String!
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int

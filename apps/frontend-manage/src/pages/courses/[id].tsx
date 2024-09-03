@@ -237,12 +237,7 @@ function CourseOverviewPage() {
                 },
               ]}
               itemIdentifier="id"
-              items={
-                course.leaderboard?.map((item) => ({
-                  ...item,
-                  email: item.username + '@klicker.com',
-                })) ?? []
-              }
+              items={course.leaderboard ?? []}
               csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
             />
           </div>
