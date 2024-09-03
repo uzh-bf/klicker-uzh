@@ -209,6 +209,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      runningSessionsCourse: t.field({
+        nullable: true,
+        type: [Session],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getRunningSessionsCourse(args, ctx)
+        },
+      }),
+
       userRunningSessions: asUser.field({
         nullable: true,
         type: [Session],

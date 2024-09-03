@@ -278,8 +278,10 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
-      noSessionsActive: 'No quizzes active.',
-      activeSessionsBy: 'Active quizzes by <i>{name}</i>',
+      noLiveQuizzesActive: 'No live quizzes active.',
+      activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
+      activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
+      activeLiveQuizzes: 'Active live quizzes',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -1448,6 +1450,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
+      linkLTILiveQuizzesLabel: 'Live Quizzes',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
       publishMicrolearning: 'Publish microlearning',

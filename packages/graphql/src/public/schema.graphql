@@ -914,6 +914,7 @@ type Query {
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   runningSessions(shortname: String!): [Session!]
+  runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session

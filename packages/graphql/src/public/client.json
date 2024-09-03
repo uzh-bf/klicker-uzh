@@ -120,6 +120,7 @@
    "GetPublicParticipantProfile": "5732c91f4344a09b5a1e531f9a61a1584ccc529c26199f732ae9a15c21ba1af3",
    "GetRunningSession": "7606be1ed9ad01c26535cc9d45e04a431930443a99aeda6440beb9422ad56e28",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
+   "GetRunningSessionsCourse": "dea0ffd684088b5fd57cb4b1a7a0fe6d7cfda1a8af50557696330aad05816c6e",
    "GetSessionEvaluation": "501c94ebe98c52b2ecf1c7feccf6c58612c599a034aa1a4a71724b8670752559",
    "GetSessionHMAC": "4db837cd1133fbd15929e0e13cef25dc30c6283f9e2d74505fc750e5493c5613",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",

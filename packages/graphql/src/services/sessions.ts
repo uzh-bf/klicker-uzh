@@ -1476,6 +1476,36 @@ export async function getRunningSessions(
   return userWithSessions.sessions
 }
 
+export async function getRunningSessionsCourse(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: SessionStatus.RUNNING,
+        },
+      },
+    },
+  })
+
+  const sessionList =
+    course?.sessions.map((session) => {
+      session.course = { id: course.id, displayName: course.displayName }
+      return session
+    }) ?? []
+
+  return sessionList
+}
+
 export async function getUserRunningSessions(ctx: ContextWithUser) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {

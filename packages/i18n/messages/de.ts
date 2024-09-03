@@ -278,8 +278,10 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
-      noSessionsActive: 'Keine Sessions aktiv.',
-      activeSessionsBy: 'Aktive Sessions von <i>{name}</i>',
+      noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
+      activeLiveQuizzesBy: 'Aktive Live Quizzes von <i>{name}</i>',
+      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in Kurs <i>{name}</i>',
+      activeLiveQuizzes: 'Aktive Live Quizzes',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
@@ -1467,6 +1469,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Link für die Einbettung per LTI (z. B. in OpenOLAT) wurde in die Zwischenablage kopiert.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
+      linkLTILiveQuizzesLabel: 'Live Quizzes',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',
