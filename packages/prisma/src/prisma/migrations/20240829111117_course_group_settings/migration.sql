@@ -6,6 +6,6 @@
 */
 -- AlterTable
 ALTER TABLE "Course" ADD COLUMN     "isGroupCreationEnabled" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "maxGroupSize" INTEGER DEFAULT 5,
-ADD COLUMN     "preferredGroupSize" INTEGER DEFAULT 3,
+ADD COLUMN     "maxGroupSize" INTEGER NOT NULL DEFAULT 5,
+ADD COLUMN     "preferredGroupSize" INTEGER NOT NULL DEFAULT 3,
 ALTER COLUMN "groupDeadlineDate" SET NOT NULL;
