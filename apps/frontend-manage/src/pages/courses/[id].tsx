@@ -210,20 +210,7 @@ function CourseOverviewPage() {
           <div className="w-full border-l md:w-1/3 md:pl-2">
             <H3>{t('manage.course.courseLeaderboard')}</H3>
 
-            <TableWithDownload
-              head={
-                <>
-                  <TableHead className="w-[100px]">
-                    {t('shared.leaderboard.rank')}
-                  </TableHead>
-                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
-                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
-                </>
-              }
-              items={course.leaderboard ?? []}
-            />
-
-            <div className="mt-2 text-right text-sm italic text-gray-500">
+            <div className="text-md mb-2 text-slate-600">
               <div>
                 {t('manage.course.participantsLeaderboard', {
                   number: course.numOfActiveParticipants,
@@ -236,6 +223,26 @@ function CourseOverviewPage() {
                 })}
               </div>
             </div>
+
+            <TableWithDownload
+              head={
+                <>
+                  <TableHead className="w-[100px]">
+                    {t('shared.leaderboard.rank')}
+                  </TableHead>
+                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
+                  <TableHead>{t('shared.leaderboard.email')}</TableHead>
+                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
+                </>
+              }
+              items={
+                course.leaderboard?.map((item) => ({
+                  ...item,
+                  email: item.username + '@klicker.com',
+                })) ?? []
+              }
+              onDownload={() => null}
+            />
           </div>
         )}
       </div>

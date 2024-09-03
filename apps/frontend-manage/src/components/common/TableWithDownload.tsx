@@ -1,3 +1,6 @@
+import { faDownload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import {
   Table,
   TableBody,
@@ -10,9 +13,17 @@ import { useTranslations } from 'next-intl'
 function TableWithDownload({
   head,
   items,
+  onDownload,
 }: {
   head: React.ReactNode
-  items: any[]
+  items: {
+    id: number
+    rank: number
+    username: string
+    email: string
+    score: number
+  }[]
+  onDownload?: () => void
 }) {
   const t = useTranslations()
 
@@ -30,12 +41,22 @@ function TableWithDownload({
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.rank}</TableCell>
               <TableCell>{item.username}</TableCell>
+              <TableCell>{item.email}</TableCell>
               <TableCell>{item.score}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <div>DOWNLOAD</div>
+      {typeof onDownload === 'function' && (
+        <div className="mt-4 text-right text-sm italic text-gray-500">
+          <Button onClick={() => null}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faDownload} />
+            </Button.Icon>
+            <Button.Label>{t('shared.table.download')}</Button.Label>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

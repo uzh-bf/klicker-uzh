@@ -1,5 +1,8 @@
 export default {
   shared: {
+    table: {
+      download: 'Download as CSV',
+    },
     questions: {
       roundedTo: 'Round to {accuracy} decimal places.',
       numInvalidValue:

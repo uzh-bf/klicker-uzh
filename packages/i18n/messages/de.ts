@@ -1,5 +1,8 @@
 export default {
   shared: {
+    table: {
+      download: 'Als CSV herunterladen',
+    },
     questions: {
       roundedTo: 'Rundet auf {accuracy} Nachkommastellen.',
       numInvalidValue:
