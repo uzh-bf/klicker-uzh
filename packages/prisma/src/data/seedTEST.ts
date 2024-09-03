@@ -237,9 +237,47 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  // add participants 30 to 35 to single groups
+  const PARTICIPANT_GROUP_IDS_SINGLE = [
+    'af6758da-8667-43a3-9e7f-02fc1a441261',
+    '6f7f65bb-84aa-4ec4-b52e-46b36d1c302b',
+    'c07d7f8e-9299-4809-aed7-331cae09f347',
+    '38de3f21-abb8-4982-a51d-e654f62ebe34',
+    'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
+  ]
+  const singleParticipantGroups = await Promise.all(
+    PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
+      const code = 100000 + Math.floor(Math.random() * 900000)
+
+      return prisma.participantGroup.upsert({
+        where: {
+          id,
+        },
+        create: {
+          id,
+          name: `Single Gruppe ${ix + 1}`,
+          code: code,
+          courseId: COURSE_ID_TEST,
+          participants: {
+            connect: [
+              {
+                id: PARTICIPANT_IDS[ix + 29],
+              },
+            ],
+          },
+          averageMemberScore: Math.round(ix * 100 + 500),
+        },
+        update: {
+          name: `Single Gruppe ${ix + 1}`,
+          code: code,
+        },
+      })
+    })
+  )
+
   // add the participants 30-50 to the random assignment pool
   const randomAssignmentPool = await Promise.all(
-    PARTICIPANT_IDS.slice(30, 50).map(async (id) => {
+    PARTICIPANT_IDS.slice(35).map(async (id) => {
       return prisma.groupAssignmentPoolEntry.upsert({
         where: {
           courseId_participantId: {
