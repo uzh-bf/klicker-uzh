@@ -1507,6 +1507,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enableGamificationWarning:
         'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
       poolForRandomAssignment: 'Pool for Random Assignment',
+      randomGroupsNotPossible:
+        'No random groups can be formed with a single student in the assignment pool or in a group with one participant. Please consider extending the group formation deadline in the course settings at the top.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

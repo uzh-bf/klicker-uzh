@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faShuffle } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseGroupsDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Tabs } from '@uzh-bf/design-system'
+import { Button, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ParticipantListEntry from './ParticipantListEntry'
 
@@ -21,6 +23,14 @@ function GroupsList({ courseId }: { courseId: string }) {
   const pool = data?.getCourseGroups?.groupAssignmentPoolEntries ?? []
   const groups = data?.getCourseGroups?.participantGroups ?? []
 
+  // count the number of groups with only one participant
+  const groupsOfOne = groups.filter(
+    (group) => group.participants?.length === 1
+  ).length
+  const randomAssignmentNotPossible =
+    (pool.length === 1 && groupsOfOne === 0) ||
+    (pool.length === 0 && groupsOfOne === 1)
+
   return (
     <Tabs.TabContent
       value="groups"
@@ -36,7 +46,32 @@ function GroupsList({ courseId }: { courseId: string }) {
             key={entry.id}
           />
         ))}
+        {randomAssignmentNotPossible && (
+          <UserNotification
+            type="warning"
+            message={t('manage.course.randomGroupsNotPossible')}
+          />
+        )}
+        <Button
+          className={{
+            root: 'bg-primary-80 mt-2 h-8 w-max gap-4 self-end text-white',
+          }}
+          // TODO: hide functionality behind confirmation modal
+          onClick={async () =>
+            await manualRandomGroupAssignments({
+              variables: { courseId: courseId },
+            })
+          }
+          loading={randomGroupCreationLoading}
+          disabled={randomAssignmentNotPossible}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faShuffle} />
+          </Button.Icon>
+          <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
+        </Button>
       </div>
+
       {groups.map((group) => (
         <div key={group.id}>
           <div className="font-bold">{group.name}</div>
@@ -48,20 +83,6 @@ function GroupsList({ courseId }: { courseId: string }) {
           ))}
         </div>
       ))}
-
-      <Button
-        className={{
-          root: 'bg-primary-80 float-right mt-4 w-max self-end text-white',
-        }}
-        onClick={async () =>
-          await manualRandomGroupAssignments({
-            variables: { courseId: courseId },
-          })
-        }
-        loading={randomGroupCreationLoading}
-      >
-        {t('manage.course.assignRandomGroups')}
-      </Button>
     </Tabs.TabContent>
   )
 }

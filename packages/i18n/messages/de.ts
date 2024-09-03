@@ -1527,6 +1527,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',
       poolForRandomAssignment: 'Pool for Zufällige Zuweisung',
+      randomGroupsNotPossible:
+        'Es können keine zufälligen Gruppen gebildet werden, wenn sich nur ein Studierender im Zuweisungspool oder in einer Gruppe mit einem Teilnehmenden befindet. Bitte überprüfen Sie die Einstellungen für die Gruppenbildung im Kurs.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
