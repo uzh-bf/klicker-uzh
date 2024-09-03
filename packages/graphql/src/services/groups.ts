@@ -342,6 +342,14 @@ async function resolveSingleParticipantGroups(
     },
   })
 
+  // invalidate cache for the resolve participant groups
+  singleParticipantGroups.forEach(({ groupId }) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+  })
+
   return courseExtendedPool
 }
 
@@ -504,6 +512,18 @@ export async function manualRandomGroupAssignments(
     include: {
       participantGroups: true,
     },
+  })
+
+  // invalidate the cache of the course and the group assignment pool entries
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id: courseId,
+  })
+  courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupAssignmentPoolEntry',
+      id: entry.id,
+    })
   })
 
   return updatedCourse
