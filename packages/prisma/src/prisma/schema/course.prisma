@@ -17,10 +17,8 @@ model Course {
 
   isGroupCreationEnabled    Boolean  @default(true)
   groupDeadlineDate         DateTime
-  // TODO: make required after applying migration and remove default
-  preferredGroupSize        Int?     @default(3)
-  // TODO: make required after applying migration and remove default
-  maxGroupSize              Int?     @default(5)
+  preferredGroupSize        Int      @default(3)
+  maxGroupSize              Int      @default(5)
   randomAssignmentFinalized Boolean  @default(false)
 
   sessions                   LiveSession[]

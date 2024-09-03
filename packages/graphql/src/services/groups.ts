@@ -196,7 +196,7 @@ export async function joinParticipantGroup(
   })
 
   // if no participant group exists in this course with the provided code, return failure
-  if (!participantGroup) {
+  if (!participantGroup || !participantGroup.course) {
     return 'FAILURE'
   }
 
