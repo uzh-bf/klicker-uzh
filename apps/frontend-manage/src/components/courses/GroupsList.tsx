@@ -33,20 +33,22 @@ function GroupsList({ courseId }: { courseId: string }) {
     <>
       <Tabs.TabContent
         value="groups"
-        className={{ root: 'flex h-full flex-col gap-4 p-2' }}
+        className={{ root: 'flex h-full flex-col gap-2 p-2' }}
       >
         <div className="font-bold">
           {t('manage.course.poolForRandomAssignment')}
         </div>
 
-        <div>
-          {pool.map((entry) => (
-            <ParticipantListEntry
-              participant={entry.participant!}
-              key={entry.id}
-            />
-          ))}
-        </div>
+        {pool.length > 0 && (
+          <div>
+            {pool.map((entry) => (
+              <ParticipantListEntry
+                participant={entry.participant!}
+                key={entry.id}
+              />
+            ))}
+          </div>
+        )}
 
         {randomAssignmentNotPossible && (
           <UserNotification
@@ -58,9 +60,9 @@ function GroupsList({ courseId }: { courseId: string }) {
         <Button
           className={{
             root: twMerge(
-              'bg-primary-80 mt-2 h-8 w-max gap-4 self-end text-white',
+              'bg-primary-80 h-8 w-max gap-4 self-end text-white',
               randomAssignmentNotPossible &&
-                'hover:bg-primar-80 cursor-not-allowed bg-opacity-50'
+                'hover:bg-primar-40 bg-primary-40 cursor-not-allowed bg-opacity-50'
             ),
           }}
           onClick={() => setOpen(true)}
