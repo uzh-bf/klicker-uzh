@@ -225,6 +225,7 @@ export async function runningRandomGroupAssignments(ctx: Context) {
   // fetch all courses with future group deadlines
   const courses = await ctx.prisma.course.findMany({
     where: {
+      randomAssignmentFinalized: false,
       isGroupCreationEnabled: true,
       groupDeadlineDate: {
         gt: new Date(),
@@ -296,6 +297,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
   // fetch all courses with past group deadlines
   const courses = await ctx.prisma.course.findMany({
     where: {
+      randomAssignmentFinalized: false,
       isGroupCreationEnabled: true,
       groupDeadlineDate: {
         lte: new Date(),
@@ -336,6 +338,14 @@ export async function finalRandomGroupAssignments(ctx: Context) {
         ctx
       )
     }
+
+    // set random assignment as finalized on course
+    await ctx.prisma.course.update({
+      where: { id: course.id },
+      data: {
+        randomAssignmentFinalized: true,
+      },
+    })
   }
 
   return true
@@ -349,6 +359,8 @@ export async function manualRandomGroupAssignments(
   const course = await ctx.prisma.course.findUnique({
     where: {
       id: courseId,
+      randomAssignmentFinalized: false,
+      isGroupCreationEnabled: true,
     },
     include: {
       groupAssignmentPoolEntries: {
@@ -394,6 +406,7 @@ export async function manualRandomGroupAssignments(
     where: { id: courseId },
     data: {
       groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
+      randomAssignmentFinalized: true,
       participantGroups: {
         create: newGroups,
       },
