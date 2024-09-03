@@ -17,10 +17,6 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
-import {
-  splitGroupsFinal,
-  splitGroupsRunning,
-} from 'src/lib/randomizedGroups.js'
 import { ElementInstanceOptions } from 'src/ops.js'
 import {
   adjectives,
@@ -30,6 +26,10 @@ import {
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
+import {
+  splitGroupsFinal,
+  splitGroupsRunning,
+} from '../lib/randomizedGroups.js'
 import { shuffle } from '../lib/util.js'
 import { ResponseCorrectness, StackInput } from '../types/app.js'
 import {

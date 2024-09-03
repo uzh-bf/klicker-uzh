@@ -700,6 +700,7 @@ export type Mutation = {
   editTag?: Maybe<Tag>;
   enableCourseGamification?: Maybe<Course>;
   endSession?: Maybe<Session>;
+  finalRandomGroupAssignments: Scalars['Boolean']['output'];
   finalizeGroupActivityGrading?: Maybe<GroupActivity>;
   flagElement?: Maybe<ElementFeedback>;
   generateLoginToken?: Maybe<User>;
@@ -723,6 +724,7 @@ export type Mutation = {
   manipulateFlashcardElement?: Maybe<Element>;
   manipulateFreeTextQuestion?: Maybe<Element>;
   manipulateNumericalQuestion?: Maybe<Element>;
+  manualRandomGroupAssignments?: Maybe<Course>;
   markMicroLearningCompleted?: Maybe<Participation>;
   pinFeedback?: Maybe<Feedback>;
   publishFeedback?: Maybe<Feedback>;
@@ -735,6 +737,7 @@ export type Mutation = {
   resolveFeedback?: Maybe<Feedback>;
   respondToElementStack?: Maybe<StackFeedback>;
   respondToFeedback?: Maybe<Feedback>;
+  runningRandomGroupAssignments: Scalars['Boolean']['output'];
   sendMagicLink?: Maybe<Scalars['Boolean']['output']>;
   sendPushNotifications: Scalars['Boolean']['output'];
   softDeleteLiveSession?: Maybe<Session>;
@@ -1190,6 +1193,11 @@ export type MutationManipulateNumericalQuestionArgs = {
   pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
   status?: InputMaybe<ElementStatus>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+
+export type MutationManualRandomGroupAssignmentsArgs = {
+  courseId: Scalars['String']['input'];
 };
 
 
