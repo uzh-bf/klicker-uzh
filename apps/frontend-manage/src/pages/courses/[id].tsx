@@ -31,9 +31,10 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
-  const [manualRandomGroupAssignments] = useMutation(
-    ManualRandomGroupAssignmentsDocument
-  )
+  const [
+    manualRandomGroupAssignments,
+    { loading: randomGroupCreationLoading },
+  ] = useMutation(ManualRandomGroupAssignmentsDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -231,6 +232,7 @@ function CourseOverviewPage() {
             variables: { courseId: course.id },
           })
         }
+        loading={randomGroupCreationLoading}
       >
         ASSIGN RANDOM GROUPS
       </Button>
