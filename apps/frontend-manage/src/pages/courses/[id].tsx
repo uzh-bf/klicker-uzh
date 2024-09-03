@@ -8,6 +8,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, Tabs } from '@uzh-bf/design-system'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@uzh-bf/design-system/dist/future'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -72,133 +77,136 @@ function CourseOverviewPage() {
           numOfParticipants={course.numOfParticipants ?? 0}
         />
       </div>
-      <div className="flex flex-col md:flex-row">
-        <div
-          className={twMerge(
-            'w-full',
-            data?.course?.isGamificationEnabled && 'md:w-2/3'
-          )}
+
+      <ResizablePanelGroup direction="horizontal" className="w-full">
+        <ResizablePanel
+          defaultSize={data?.course?.isGamificationEnabled ? 50 : 100}
         >
-          <div className="md:mr-2">
-            <H2>{t('manage.course.courseElements')}</H2>
-            <Tabs
-              defaultValue="liveSessions"
-              value={tabValue}
-              onValueChange={(newValue: string) => setTabValue(newValue)}
-            >
-              <Tabs.TabList>
-                <Tabs.Tab
-                  key="tab-liveSessions"
+          <div className={twMerge('w-full')}>
+            <div className="md:mr-2">
+              <H2>{t('manage.course.courseElements')}</H2>
+              <Tabs
+                defaultValue="liveSessions"
+                value={tabValue}
+                onValueChange={(newValue: string) => setTabValue(newValue)}
+              >
+                <Tabs.TabList>
+                  <Tabs.Tab
+                    key="tab-liveSessions"
+                    value="liveSessions"
+                    label={t('manage.general.sessions')}
+                    className={{
+                      root: 'border border-solid',
+                      label: twMerge(
+                        'text-base',
+                        tabValue === 'liveSessions' && 'font-bold'
+                      ),
+                    }}
+                    data={{ cy: 'tab-liveSessions' }}
+                  />
+                  <Tabs.Tab
+                    key="tab-practiceQuizzes"
+                    value="practiceQuizzes"
+                    className={{
+                      root: 'border border-solid',
+                      label: twMerge(
+                        'text-base',
+                        tabValue === 'practiceQuizzes' && 'font-bold'
+                      ),
+                    }}
+                    data={{ cy: 'tab-practiceQuizzes' }}
+                  >
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <div>{t('shared.generic.practiceQuizzes')}</div>
+                      <CrownIcon />
+                    </div>
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    key="tab-microLearnings"
+                    value="microLearnings"
+                    className={{
+                      root: 'border border-solid',
+                      label: twMerge(
+                        'text-base',
+                        tabValue === 'microLearnings' && 'font-bold'
+                      ),
+                    }}
+                    data={{ cy: 'tab-microLearnings' }}
+                  >
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <div>{t('shared.generic.microlearnings')}</div>
+                      <CrownIcon />
+                    </div>
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    key="tab-groupActivities"
+                    value="groupActivities"
+                    className={{
+                      root: 'border border-solid',
+                      label: twMerge(
+                        'text-base',
+                        tabValue === 'groupActivities' && 'font-bold'
+                      ),
+                    }}
+                    data={{ cy: 'tab-groupActivities' }}
+                  >
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <div>{t('shared.generic.groupActivities')}</div>
+                      <CrownIcon />
+                    </div>
+                  </Tabs.Tab>
+                </Tabs.TabList>
+                <Tabs.TabContent
+                  key="content-liveSessions"
                   value="liveSessions"
-                  label={t('manage.general.sessions')}
-                  className={{
-                    root: 'border border-solid',
-                    label: twMerge(
-                      'text-base',
-                      tabValue === 'liveSessions' && 'font-bold'
-                    ),
-                  }}
-                  data={{ cy: 'tab-liveSessions' }}
-                />
-                <Tabs.Tab
-                  key="tab-practiceQuizzes"
+                  className={{ root: 'px-0 py-2' }}
+                >
+                  <LiveQuizList sessions={course.sessions ?? []} />
+                </Tabs.TabContent>
+                <Tabs.TabContent
+                  key="content-practiceQuizzes"
                   value="practiceQuizzes"
-                  className={{
-                    root: 'border border-solid',
-                    label: twMerge(
-                      'text-base',
-                      tabValue === 'practiceQuizzes' && 'font-bold'
-                    ),
-                  }}
-                  data={{ cy: 'tab-practiceQuizzes' }}
+                  className={{ root: 'px-0 py-2' }}
                 >
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <div>{t('shared.generic.practiceQuizzes')}</div>
-                    <CrownIcon />
-                  </div>
-                </Tabs.Tab>
-                <Tabs.Tab
-                  key="tab-microLearnings"
+                  <PracticeQuizList
+                    practiceQuizzes={course.practiceQuizzes ?? []}
+                    courseId={course.id}
+                    userCatalyst={user?.userProfile?.catalyst}
+                  />
+                </Tabs.TabContent>
+                <Tabs.TabContent
+                  key="content-microlearnings"
                   value="microLearnings"
-                  className={{
-                    root: 'border border-solid',
-                    label: twMerge(
-                      'text-base',
-                      tabValue === 'microLearnings' && 'font-bold'
-                    ),
-                  }}
-                  data={{ cy: 'tab-microLearnings' }}
+                  className={{ root: 'px-0 py-2' }}
                 >
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <div>{t('shared.generic.microlearnings')}</div>
-                    <CrownIcon />
-                  </div>
-                </Tabs.Tab>
-                <Tabs.Tab
-                  key="tab-groupActivities"
+                  <MicroLearningList
+                    microLearnings={course.microLearnings ?? []}
+                    courseId={course.id}
+                    userCatalyst={user?.userProfile?.catalyst}
+                  />
+                </Tabs.TabContent>
+                <Tabs.TabContent
+                  key="content-groupActivities"
                   value="groupActivities"
-                  className={{
-                    root: 'border border-solid',
-                    label: twMerge(
-                      'text-base',
-                      tabValue === 'groupActivities' && 'font-bold'
-                    ),
-                  }}
-                  data={{ cy: 'tab-groupActivities' }}
+                  className={{ root: 'px-0 py-2' }}
                 >
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <div>{t('shared.generic.groupActivities')}</div>
-                    <CrownIcon />
-                  </div>
-                </Tabs.Tab>
-              </Tabs.TabList>
-              <Tabs.TabContent
-                key="content-liveSessions"
-                value="liveSessions"
-                className={{ root: 'px-0 py-2' }}
-              >
-                <LiveQuizList sessions={course.sessions ?? []} />
-              </Tabs.TabContent>
-              <Tabs.TabContent
-                key="content-practiceQuizzes"
-                value="practiceQuizzes"
-                className={{ root: 'px-0 py-2' }}
-              >
-                <PracticeQuizList
-                  practiceQuizzes={course.practiceQuizzes ?? []}
-                  courseId={course.id}
-                  userCatalyst={user?.userProfile?.catalyst}
-                />
-              </Tabs.TabContent>
-              <Tabs.TabContent
-                key="content-microlearnings"
-                value="microLearnings"
-                className={{ root: 'px-0 py-2' }}
-              >
-                <MicroLearningList
-                  microLearnings={course.microLearnings ?? []}
-                  courseId={course.id}
-                  userCatalyst={user?.userProfile?.catalyst}
-                />
-              </Tabs.TabContent>
-              <Tabs.TabContent
-                key="content-groupActivities"
-                value="groupActivities"
-                className={{ root: 'px-0 py-2' }}
-              >
-                <GroupActivityList
-                  groupActivities={course.groupActivities ?? []}
-                  courseId={course.id}
-                  userCatalyst={user?.userProfile?.catalyst}
-                />
-              </Tabs.TabContent>
-            </Tabs>
+                  <GroupActivityList
+                    groupActivities={course.groupActivities ?? []}
+                    courseId={course.id}
+                    userCatalyst={user?.userProfile?.catalyst}
+                  />
+                </Tabs.TabContent>
+              </Tabs>
+            </div>
           </div>
-        </div>
+        </ResizablePanel>
+        <ResizableHandle />
         {data?.course?.isGamificationEnabled && (
-          <CourseGamificationInfos course={course} />
+          <ResizablePanel defaultSize={50}>
+            <CourseGamificationInfos course={course} />
+          </ResizablePanel>
         )}
-      </div>
+      </ResizablePanelGroup>
     </Layout>
   )
 }

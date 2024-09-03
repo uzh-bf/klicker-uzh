@@ -12,7 +12,7 @@ function CourseGamificationInfos({ course }: { course: Course }) {
   const t = useTranslations()
 
   return (
-    <div className="mt-8 w-full border-l md:w-1/3 md:pl-2">
+    <div className="mt-8 w-full pl-2">
       <Tabs
         defaultValue="ind-leaderboard"
         value={tabValue}

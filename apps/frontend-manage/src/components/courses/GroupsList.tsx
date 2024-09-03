@@ -33,53 +33,58 @@ function GroupsList({ courseId }: { courseId: string }) {
     <>
       <Tabs.TabContent
         value="groups"
-        className={{ root: 'flex flex-col gap-3 p-2' }}
+        className={{ root: 'flex h-full flex-col gap-4 p-2' }}
       >
+        <div className="font-bold">
+          {t('manage.course.poolForRandomAssignment')}
+        </div>
+
         <div>
-          <div className="font-bold">
-            {t('manage.course.poolForRandomAssignment')}
-          </div>
           {pool.map((entry) => (
             <ParticipantListEntry
               participant={entry.participant!}
               key={entry.id}
             />
           ))}
-          {randomAssignmentNotPossible && (
-            <UserNotification
-              type="warning"
-              message={t('manage.course.randomGroupsNotPossible')}
-            />
-          )}
-          <Button
-            className={{
-              root: twMerge(
-                'bg-primary-80 mt-2 h-8 w-max gap-4 self-end text-white',
-                randomAssignmentNotPossible &&
-                  'hover:bg-primar-80 cursor-not-allowed bg-opacity-50'
-              ),
-            }}
-            onClick={() => setOpen(true)}
-            disabled={randomAssignmentNotPossible}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faShuffle} />
-            </Button.Icon>
-            <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
-          </Button>
         </div>
 
-        {groups.map((group) => (
-          <div key={group.id}>
-            <div className="font-bold">{group.name}</div>
-            {group.participants?.map((participant) => (
-              <ParticipantListEntry
-                participant={participant}
-                key={participant.id}
-              />
-            ))}
-          </div>
-        ))}
+        {randomAssignmentNotPossible && (
+          <UserNotification
+            type="warning"
+            message={t('manage.course.randomGroupsNotPossible')}
+          />
+        )}
+
+        <Button
+          className={{
+            root: twMerge(
+              'bg-primary-80 mt-2 h-8 w-max gap-4 self-end text-white',
+              randomAssignmentNotPossible &&
+                'hover:bg-primar-80 cursor-not-allowed bg-opacity-50'
+            ),
+          }}
+          onClick={() => setOpen(true)}
+          disabled={randomAssignmentNotPossible}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faShuffle} />
+          </Button.Icon>
+          <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
+        </Button>
+
+        <div className="grid max-h-[500px] flex-1 grid-cols-2 gap-2 overflow-y-auto">
+          {groups.map((group) => (
+            <div key={group.id} className="rounded border p-2">
+              <div className="font-bold">{group.name}</div>
+              {group.participants?.map((participant) => (
+                <ParticipantListEntry
+                  participant={participant}
+                  key={participant.id}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </Tabs.TabContent>
       <AssignmentConfirmationModal
         courseId={courseId}
