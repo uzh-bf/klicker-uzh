@@ -162,7 +162,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
 
     score: t.exposeFloat('score'),
     username: t.exposeString('username'),
-    email: t.exposeString('email'),
+    email: t.exposeString('email', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
     lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
