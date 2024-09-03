@@ -23,5 +23,5 @@ export default {
     preflight: false,
     aspectRatio: false,
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: ['@tailwindcss/typography'],
 }

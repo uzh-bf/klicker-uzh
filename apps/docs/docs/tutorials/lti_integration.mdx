@@ -1,0 +1,38 @@
+---
+title: Integration with LTI
+hide_title: true
+---
+
+# Integration with LTI
+
+KlickerUZH can be used within an LMS (Learning Management System) through the LTI 1.3 standard. When integrated, KlickerUZH can use the LMS's authentication mechanism to authenticate students (or to create an account for them) and grant them access to the corresponding KlickerUZH content.
+
+## Set-up with UZH OLAT
+
+KlickerUZH can be integrated with OpenOLAT through the LTI 1.3 standard. To create an OLAT element for KlickerUZH, follow these steps:
+
+Within KlickerUZH:
+
+1. Open the course overview of the course linked with the KlickerUZH activity you would like to integrate with OLAT.
+2. From the dropdown menu on the corresponding activity, select "Copy LTI link".
+
+Within your OLAT course:
+
+1. Open the course editor.
+2. Add a new OLAT element and select the "LTI page" type.
+3. Open the "Page content" tab.
+4. Select "KlickerUZH" in the "LTI provider" dropdown.
+5. Enter the URL of the KlickerUZH app in the "LTI URL" field.
+6. Activate the "Skip LTI launch page" checkbox.
+7. Click on the "Save" button and publish your changes.
+
+## Recommended OLAT Structure
+
+We recommend the following structure for the OLAT course when integrating KlickerUZH:
+
+- An OLAT structure called "KlickerUZH" that serves as a container for all KlickerUZH elements. The OLAT structure can be linked to the KlickerUZH student documentation (/docs).
+- One OLAT element called "Manage account" that allows students to create an account for KlickerUZH and/or to edit their profile after doing so.
+- One OLAT element called "Leaderboard" that displays the leaderboards of the course and allows students to manage groups. This element is optional and primarily intended for gamified courses.
+- One OLAT element per quiz that should be provided to students.
+
+The following screenshot shows an example of the recommended structure:

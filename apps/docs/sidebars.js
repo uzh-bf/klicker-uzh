@@ -8,12 +8,13 @@ module.exports = {
     'Tutorials for Lecturers': [
       'tutorials/question_management',
       'tutorials/course_management',
-      'tutorials/delegated_access',
       'tutorials/live_quiz',
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
       'tutorials/group_activity',
+      'tutorials/delegated_access',
+      // 'tutorials/lti_integration',
     ],
     'Tutorials for Participants': [
       'student_tutorials/student_accounts',

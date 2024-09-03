@@ -1,5 +1,8 @@
 export default {
   shared: {
+    table: {
+      download: 'Als CSV herunterladen',
+    },
     questions: {
       roundedTo: 'Rundet auf {accuracy} Nachkommastellen.',
       numInvalidValue:
@@ -221,6 +224,9 @@ export default {
       averagePoints: 'Durchschnittliche Punkte: {number}',
       noPointsCollected:
         'Bisher wurden im Rahmen dieser Session noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
+      rank: 'Rang',
+      username: 'Nutzername',
+      email: 'E-Mail',
     },
     error: {
       '404': '404 Seite nicht gefunden',

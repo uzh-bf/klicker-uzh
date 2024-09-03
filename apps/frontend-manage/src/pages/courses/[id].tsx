@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import TableWithDownload from '@components/common/TableWithDownload'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -6,9 +7,9 @@ import {
   ManualRandomGroupAssignmentsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H2, Tabs } from '@uzh-bf/design-system'
+import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
+import { TableHead } from '@uzh-bf/design-system/dist/future'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -202,12 +203,8 @@ function CourseOverviewPage() {
         </div>
         {data?.course?.isGamificationEnabled && (
           <div className="w-full border-l md:w-1/3 md:pl-2">
-            <H2>{t('manage.course.courseLeaderboard')}</H2>
-            <Leaderboard
-              className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
-              leaderboard={course.leaderboard ?? []}
-            />
-            <div className="mt-2 text-right text-sm italic text-gray-500">
+            <H3>{t('manage.course.courseLeaderboard')}</H3>
+            <div className="text-md mb-2 text-slate-600">
               <div>
                 {t('manage.course.participantsLeaderboard', {
                   number: course.numOfActiveParticipants,
@@ -220,6 +217,26 @@ function CourseOverviewPage() {
                 })}
               </div>
             </div>
+
+            <TableWithDownload
+              head={
+                <>
+                  <TableHead className="w-[100px]">
+                    {t('shared.leaderboard.rank')}
+                  </TableHead>
+                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
+                  {/* <TableHead>{t('shared.leaderboard.email')}</TableHead> */}
+                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
+                </>
+              }
+              items={
+                course.leaderboard?.map((item) => ({
+                  ...item,
+                  email: item.username + '@klicker.com',
+                })) ?? []
+              }
+              onDownload={() => null}
+            />
           </div>
         )}
       </div>

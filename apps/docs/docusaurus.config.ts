@@ -1,7 +1,7 @@
-// @ts-check
+import type * as Preset from '@docusaurus/preset-classic'
+import type { Config } from '@docusaurus/types'
 
-/** @type {import('@docusaurus/types').Config} */
-const config = {
+const config: Config = {
   trailingSlash: true,
   title: 'KlickerUZH',
   tagline: 'Open Source Audience Interaction',
@@ -26,7 +26,7 @@ const config = {
         docs: {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: './sidebars.js',
           editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/v3/apps/docs',
           routeBasePath: '/',
           lastVersion: 'current',
@@ -37,12 +37,18 @@ const config = {
             },
           },
         },
-        pages: {},
+        pages: {
+          editUrl:
+            'https://github.com/facebook/docusaurus/tree/main/website/src/pages',
+          editLocalizedFiles: true,
+          showLastUpdateAuthor: true,
+          showLastUpdateTime: true,
+        },
         sitemap: {},
         theme: {
-          customCss: [require.resolve('./src/css/custom.css')],
+          customCss: ['./src/css/custom.css'],
         },
-      },
+      } satisfies Preset.Options,
     ],
   ],
   plugins: [
@@ -99,7 +105,7 @@ const config = {
     announcementBar: {
       id: 'release_v3',
       content:
-        'We are now regularly offering introductory courses through UZH Central IT. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
+        'We are offering introductory courses on Zoom. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,
@@ -187,7 +193,7 @@ const config = {
         width: 250,
         // height: 51,
       },
-      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department and Finance (https://www.df.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
+      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department of Finance (https://www.df.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       links: [
         {
           title: 'Docs',
