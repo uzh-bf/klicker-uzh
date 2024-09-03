@@ -24,6 +24,7 @@ import { seedEmailTemplates } from './seedEmailTemplates.js'
 import { seedLevels } from './seedLevels.js'
 import { seedUsers } from './seedUsers.js'
 
+// uuids for 50 participants
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',
   '0b7c946c-cfc9-4b82-ac97-b058bf48924b',
@@ -49,8 +50,35 @@ export const PARTICIPANT_IDS = [
   'd9fc5c24-4357-4a8f-ac5b-d56e6b22690d',
   '7013c323-12c5-45c4-8af4-40474bb08f27',
   'ef14f3c6-24b1-44eb-a464-63cede2255b3',
+  'ed9e23c5-4187-48ba-9d73-07db86dbea08',
+  '3e88cf14-7399-437a-addc-ef59087351de',
+  'b155f01d-5bad-4378-9509-d96153b90d7e',
+  '24e623bb-3d98-4a48-a2a0-f46b4dda4501',
+  'ee6ff037-5d39-495b-ade3-295c23ed0cd7',
+  '26544dd7-1688-43ec-9dba-8ed374c0a164',
+  '30e328cd-f4c8-4c03-8e64-301fcffa410c',
+  '783d3c6a-0a27-4caf-a2d3-ff30ec08e463',
+  '13cda4e6-3971-4b70-b938-3f6afd936870',
+  '7ac7ba41-f652-4218-b3b3-b5b11110c0e8',
+  '88bfe576-5d29-4311-a699-e4f87bf82d7b',
+  '794e1197-5aca-4354-a121-67c5ecb437a8',
+  '7b6e18cb-346f-44e6-88fe-cc31d217b01b',
+  '12099d4e-c36f-4e4d-bef7-f92496081129',
+  '24f3192e-90e9-45b9-80f7-059eb683ec9a',
+  'cbda0cb9-0c71-4efd-a2ef-b2c9eea60598',
+  '03759c75-62e5-4f78-9ccc-4672d8f0a091',
+  '9151b3c4-4e20-4b0c-8d44-2e7d274c1914',
+  '2f726355-e304-4bb0-b2ad-b734a3b3603f',
+  'f9b17cc1-d83a-4c3d-94f9-8a200bb8cd1b',
+  '6bdd44c1-248b-4581-a971-6db8d2b24534',
+  '1500f62b-4a56-4405-af08-4b12bb103ac1',
+  '6c832cc9-17ab-4923-a7fc-c72cef128c31',
+  '0c586267-55fb-4aba-9cb6-cee09cd737ae',
+  'ec8952c2-2972-4160-ad90-3ecf96425f8d',
+  'b687a300-b5e7-43dd-a49e-aea9ff30aadc',
 ]
 
+// uuids for 14 participant groups
 export const PARTICIPANT_GROUP_IDS = [
   '9c4940c1-87ca-47a7-afc4-cd85656df3e7',
   '4fc5c849-5a2b-437c-a6fd-91daac4e556a',
@@ -63,6 +91,9 @@ export const PARTICIPANT_GROUP_IDS = [
   'fb1c3685-f51e-4585-8444-dbbe2ddb76a4',
   'f2f843c6-a35e-46d7-9574-902e1d134d6c',
   'd822a233-c6d4-4cb5-a7b8-4a265d7ffaa0',
+  '7d9571fd-fdf4-4392-8293-768539896c09',
+  '278057ff-f1c2-49a0-9ab1-bcbc4c6473b7',
+  '11c06c89-0cb4-4d8e-b052-b711f327b8c4',
 ]
 
 async function seedTest(prisma: Prisma.PrismaClient) {
@@ -86,7 +117,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -103,7 +137,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -120,7 +157,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 482748273,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: false,
       groupDeadlineDate: new Date('2025-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -167,9 +207,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  // create participations for all participants
+  // create participations for all the first 30 participants
   const participations = await Promise.all(
-    PARTICIPANT_IDS.map(async (id, ix) => {
+    PARTICIPANT_IDS.slice(0, 30).map(async (id, ix) => {
       return prisma.participation.upsert({
         where: {
           courseId_participantId: {
@@ -193,6 +233,71 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         update: {
           isActive: true,
         },
+      })
+    })
+  )
+
+  // add participants 30 to 35 to single groups
+  const PARTICIPANT_GROUP_IDS_SINGLE = [
+    'af6758da-8667-43a3-9e7f-02fc1a441261',
+    '6f7f65bb-84aa-4ec4-b52e-46b36d1c302b',
+    'c07d7f8e-9299-4809-aed7-331cae09f347',
+    '38de3f21-abb8-4982-a51d-e654f62ebe34',
+    'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
+  ]
+  const singleParticipantGroups = await Promise.all(
+    PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
+      const code = 100000 + Math.floor(Math.random() * 900000)
+
+      return prisma.participantGroup.upsert({
+        where: {
+          id,
+        },
+        create: {
+          id,
+          name: `Single Gruppe ${ix + 1}`,
+          code: code,
+          courseId: COURSE_ID_TEST,
+          participants: {
+            connect: [
+              {
+                id: PARTICIPANT_IDS[ix + 29],
+              },
+            ],
+          },
+          averageMemberScore: Math.round(ix * 100 + 500),
+        },
+        update: {
+          name: `Single Gruppe ${ix + 1}`,
+          code: code,
+        },
+      })
+    })
+  )
+
+  // add the participants 30-50 to the random assignment pool
+  const randomAssignmentPool = await Promise.all(
+    PARTICIPANT_IDS.slice(35).map(async (id) => {
+      return prisma.groupAssignmentPoolEntry.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId: id,
+          },
+        },
+        create: {
+          course: {
+            connect: {
+              id: COURSE_ID_TEST,
+            },
+          },
+          participant: {
+            connect: {
+              id: id,
+            },
+          },
+        },
+        update: {},
       })
     })
   )

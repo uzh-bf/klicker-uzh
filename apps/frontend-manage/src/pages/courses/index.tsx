@@ -1,20 +1,27 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPeopleGroup, faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateCourseDocument,
+  GetUserCoursesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
-import CourseCreationModal from '../../components/courses/modals/CourseCreationModal'
+import CourseManipulationModal, {
+  CourseManipulationFormData,
+} from '../../components/courses/modals/CourseManipulationModal'
 
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
+  const [createCourse] = useMutation(CreateCourseDocument)
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const {
     loading: loadingCourses,
@@ -71,9 +78,64 @@ function CourseSelectionPage() {
               />
             </div>
           )}
-          <CourseCreationModal
+          <CourseManipulationModal
             modalOpen={createCourseModal}
             onModalClose={() => showCreateCourseModal(false)}
+            onSubmit={async (
+              values: CourseManipulationFormData,
+              setSubmitting,
+              setShowErrorToast
+            ) => {
+              try {
+                // convert dates to UTC
+                const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
+                  .utc()
+                  .toISOString()
+                const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
+                  .utc()
+                  .toISOString()
+                const groupDeadlineDateUTC = dayjs(
+                  values.groupCreationDeadline + 'T23:59:59.999'
+                )
+                  .utc()
+                  .toISOString()
+
+                const result = await createCourse({
+                  variables: {
+                    name: values.name,
+                    displayName: values.displayName,
+                    description: values.description,
+                    color: values.color,
+                    startDate: startDateUTC,
+                    endDate: endDateUTC,
+                    isGamificationEnabled: values.isGamificationEnabled,
+                    isGroupCreationEnabled: values.isGroupCreationEnabled,
+                    groupDeadlineDate: groupDeadlineDateUTC,
+                    maxGroupSize: parseInt(String(values.maxGroupSize)),
+                    preferredGroupSize: parseInt(
+                      String(values.preferredGroupSize)
+                    ),
+                  },
+                  refetchQueries: [
+                    {
+                      query: GetUserCoursesDocument,
+                    },
+                  ],
+                })
+
+                if (result.data?.createCourse) {
+                  showCreateCourseModal(false)
+                  router.push(`/courses/${result.data.createCourse.id}`)
+                } else {
+                  setShowErrorToast(true)
+                  setSubmitting(false)
+                }
+              } catch (error) {
+                setShowErrorToast(true)
+                setSubmitting(false)
+                console.log(error)
+              }
+            }}
           />
         </div>
       </div>

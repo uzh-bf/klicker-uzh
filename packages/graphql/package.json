@@ -32,6 +32,7 @@
     "node-schedule": "2.1.1",
     "nodemailer": "6.9.14",
     "ramda": "0.29.0",
+    "unique-names-generator": "4.7.1",
     "uuid": "9.0.1",
     "validator": "13.11.0",
     "zod": "3.21.4"
@@ -71,6 +72,7 @@
     "nyc": "15.1.0",
     "size-limit": "8.2.4",
     "source-map-support": "0.5.21",
+    "ts-jest": "29.1.0",
     "ts-node": "10.9.1",
     "ts-node-dev": "2.0.0",
     "tsup": "7.2.0",
@@ -94,7 +96,8 @@
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
-    "size": "size-limit"
+    "size": "size-limit",
+    "test": "jest"
   },
   "engines": {
     "node": "=20"

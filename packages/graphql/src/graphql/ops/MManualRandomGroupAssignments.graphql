@@ -1,0 +1,21 @@
+mutation ManualRandomGroupAssignments($courseId: String!) {
+  manualRandomGroupAssignments(courseId: $courseId) {
+    id
+    displayName
+    groupDeadlineDate
+
+    participantGroups {
+      id
+      name
+      code
+      averageMemberScore
+      groupActivityScore
+      participants {
+        id
+        username
+        score
+        email
+      }
+    }
+  }
+}

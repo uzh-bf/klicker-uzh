@@ -327,9 +327,33 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinParticipantGroup: t.withAuth(asParticipant).field({
+      runningRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.runningRandomGroupAssignments(ctx)
+        },
+      }),
+
+      finalRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.finalRandomGroupAssignments(ctx)
+        },
+      }),
+
+      manualRandomGroupAssignments: t.withAuth(asUser).field({
+        type: Course,
         nullable: true,
-        type: ParticipantGroup,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.manualRandomGroupAssignments(args, ctx)
+        },
+      }),
+
+      joinParticipantGroup: t.withAuth(asParticipant).string({
+        nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
           code: t.arg.int({ required: true }),
@@ -466,6 +490,26 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      joinRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.joinRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
+      leaveRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.leaveRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
       bookmarkElementStack: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],
@@ -534,30 +578,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SessionService.cancelSession(args, ctx)
-        },
-      }),
-
-      changeCourseColor: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          color: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseColor(args, ctx)
-        },
-      }),
-
-      changeCourseDescription: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          input: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseDescription(args, ctx)
         },
       }),
 
@@ -925,7 +945,10 @@ export const Mutation = builder.mutationType({
           color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          isGroupCreationEnabled: t.arg.boolean({ required: true }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+          maxGroupSize: t.arg.int({ required: true }),
+          preferredGroupSize: t.arg.int({ required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: true },
@@ -937,16 +960,27 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseDates: t.withAuth(asUserFullAccess).field({
+      updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
-          courseId: t.arg.string({ required: true }),
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: false }),
+          displayName: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: false }),
           endDate: t.arg({ type: 'Date', required: false }),
+          isGroupCreationEnabled: t.arg.boolean({ required: false }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: false },
+          }),
+          isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
-          return CourseService.changeCourseDates(args, ctx)
+          return CourseService.updateCourseSettings(args, ctx)
         },
       }),
 

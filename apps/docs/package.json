@@ -21,6 +21,7 @@
     "@gabrielcsapo/docusaurus-plugin-matomo": "0.1.2",
     "@mdx-js/react": "3.0.1",
     "@uzh-bf/design-system": "3.0.0-alpha.26",
+    "@tsconfig/docusaurus": "1.0.5",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "nodemon": "3.0.1",

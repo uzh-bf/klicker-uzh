@@ -1,14 +1,14 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
+import TableWithDownload from '@components/common/TableWithDownload'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
+  ManualRandomGroupAssignmentsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
-
-import TableWithDownload from '@components/common/TableWithDownload'
 import { TableHead } from '@uzh-bf/design-system/dist/future'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -17,7 +17,6 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
-import CourseSettings from '../../components/courses/CourseSettings'
 import GroupActivityList from '../../components/courses/GroupActivityList'
 import LiveQuizList from '../../components/courses/LiveQuizList'
 import MicroLearningList from '../../components/courses/MicroLearningList'
@@ -33,6 +32,10 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
+  const [
+    manualRandomGroupAssignments,
+    { loading: randomGroupCreationLoading },
+  ] = useMutation(ManualRandomGroupAssignmentsDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -69,18 +72,10 @@ function CourseOverviewPage() {
     <Layout>
       <div className="mb-4 w-full">
         <CourseOverviewHeader
-          id={course.id}
+          course={course}
           name={course.name}
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}
-        />
-        <CourseSettings
-          id={course.id}
-          description={course.description}
-          isGamificationEnabled={course.isGamificationEnabled}
-          courseColor={course.color}
-          startDate={course.startDate}
-          endDate={course.endDate}
         />
       </div>
       <div className="flex flex-col md:flex-row">
@@ -209,7 +204,6 @@ function CourseOverviewPage() {
         {data?.course?.isGamificationEnabled && (
           <div className="w-full border-l md:w-1/3 md:pl-2">
             <H3>{t('manage.course.courseLeaderboard')}</H3>
-
             <div className="text-md mb-2 text-slate-600">
               <div>
                 {t('manage.course.participantsLeaderboard', {
@@ -246,6 +240,19 @@ function CourseOverviewPage() {
           </div>
         )}
       </div>
+      <Button
+        className={{
+          root: 'bg-primary-80 mt-4 w-max self-end text-white',
+        }}
+        onClick={async () =>
+          await manualRandomGroupAssignments({
+            variables: { courseId: course.id },
+          })
+        }
+        loading={randomGroupCreationLoading}
+      >
+        ASSIGN RANDOM GROUPS
+      </Button>
     </Layout>
   )
 }

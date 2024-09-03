@@ -28,6 +28,7 @@ export interface ICourse extends DB.Course {
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
+  participantGroups?: IParticipantGroup[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
@@ -65,10 +66,13 @@ export const Course = builder.objectType(CourseRef, {
     startDate: t.expose('startDate', { type: 'Date' }),
     endDate: t.expose('endDate', { type: 'Date' }),
 
+    isGroupCreationEnabled: t.exposeBoolean('isGroupCreationEnabled'),
     groupDeadlineDate: t.expose('groupDeadlineDate', {
       type: 'Date',
       nullable: true,
     }),
+    maxGroupSize: t.exposeInt('maxGroupSize', { nullable: true }),
+    preferredGroupSize: t.exposeInt('preferredGroupSize', { nullable: true }),
 
     notificationEmail: t.exposeString('notificationEmail', {
       nullable: true,
@@ -82,8 +86,8 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
     sessions: t.expose('sessions', {
       type: [SessionRef],
@@ -95,6 +99,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     microLearnings: t.expose('microLearnings', {
       type: [MicroLearningRef],
+      nullable: true,
+    }),
+    participantGroups: t.expose('participantGroups', {
+      type: [ParticipantGroupRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {

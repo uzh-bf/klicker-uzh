@@ -446,6 +446,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createGroup: 'Gruppe erstellen',
       joinGroup: 'Gruppe beitreten',
       groupName: 'Gruppenname',
+      randomGroup: 'Zufällige Gruppe',
+      createJoinRandomGroup:
+        'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
+      joinGroupError:
+        'Beim Beitreten zur Gruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      joinGroupFull:
+        'Diese Gruppe hat bereits die maximale Anzahl Teilnehmer erreicht. Bitte wählen Sie eine andere Gruppe.',
+      inRandomGroupPool:
+        'Sie haben sich entschieden, automatisch einer Gruppe von Studierenden in Ihrem Kurs zugewiesen zu werden. Wir warten derzeit darauf, dass mehr Personen dem Pool beitreten, und werden Sie so schnell wie möglich einer Gruppe zuweisen. Wenn Sie stattdessen lieber manuell einer anderen Gruppe beitreten oder Ihre eigene Gruppe erstellen möchten, können Sie den Pool mit dem Button unten verlassen.',
+      leaveRandomGroupPool: 'Pool verlassen',
       code: 'Code',
       individualLeaderboard: 'Individuelles Leaderboard',
       groupLeaderboard: 'Gruppenleaderboard',
@@ -691,6 +701,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.',
       joinLeaderboard:
         'Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme.',
+      singleParticipantAutomaticAssignment:
+        'Sie sind der einzige Teilnehmer in Ihrer Gruppe. Sobald die Frist für die Gruppenbildung abgelaufen ist am {groupFormationDeadline} oder der Dozent die Gruppenbildung manuell gestoppt hat, werden Sie automatisch einer zufälligen Gruppe zugewiesen.',
+      maxNumberOfGroupMembers:
+        'Deine Gruppe hat die maximale Anzahl von Teilnehmenden erreicht, wie von deinem Dozierenden festgelegt. Es können keine weiteren Studierenden dieser Gruppe beitreten.',
+      nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
     },
   },
   manage: {
@@ -1395,8 +1410,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.',
       courseColor: 'Kursfarbe',
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
+      groupDeadlineFuture:
+        'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
+      groupDeadlineBeforeEnd:
+        'Die Deadline für die Gruppenbildung muss vor dem Kursenddatum liegen.',
+      groupDeadlineReq:
+        'Bitte geben Sie ein gültiges Datum für die Gruppenbildung an.',
+      maxGroupSizeMin: 'Die maximale Gruppengrösse muss mindestens 2 betragen.',
+      maxGroupSizeLargerThanPreferred:
+        'Die maximale Gruppengrösse muss strikt grösser als die bevorzugte Gruppengrösse sein, um sicherzustellen, dass automatisch generierte Gruppen niemals die maximale Gruppengrösse überschreiten.',
+      maxGroupSizeReq:
+        'Bitte geben Sie eine gültige maximale Gruppengrösse an.',
+      preferredGroupSizeMin:
+        'Die bevorzugte Gruppengrösse muss mindestens 2 betragen.',
+      preferredGroupSizeReq:
+        'Bitte geben Sie eine gültige bevorzugte Gruppengrösse an.',
+      gamificationTooltip:
+        'Gamifizierung kann nach Erstellung des Kurses nur noch aktiviert (nicht mehr deaktiviert) werden.',
+      groupCreationEnabled: 'Gruppenbildung möglich',
+      groupCreationEnabledTooltip:
+        'Wenn Sie diese Einstellung deaktivieren, können Studierende in diesem Kurs keine Gruppen bilden und Sie können keine Gruppenaktivitäten erstellen. Diese Einstellung kann in der Kursübersicht geändert werden.',
+      groupCreationDeadline: 'Deadline Gruppenbildung',
+      groupCreationDeadlineTooltip:
+        'Studierende können bis zur Deadline neue Gruppen erstellen oder einer bestehenden Gruppe beitreten.',
+      maxGroupSize: 'Maximale Gruppengrösse',
+      maxGroupSizeTooltip:
+        'Die maximale Anzahl Studierender in einer Gruppe. Nach Erstellen des Kurses kann diese Einstellung nicht mehr verändert werden. Die minimale Gruppengrösse ist auf zwei Teilnehmende festgelegt, um eine zufällige Gruppenbildung zu ermöglichen.',
+      preferredGroupSize: 'Bevorzugte Gruppengrösse',
+      preferredGroupSizeTooltip:
+        'Die bevorzugte Anzahl Studierender in einer Gruppe. Nach Erstellen des Kurses kann diese Einstellung nicht mehr verändert werden. Wenn Studierende die automatisierte Gruppenbildungsfunktion wählen, wird der Algorithmus so viele Gruppen wie möglich mit dieser Grösse erstellen.',
+      groupDeadlineChangedToPast:
+        'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Schaltfläche auf der Kursübersicht.',
     },
     course: {
+      modifyCourse: 'Kurs bearbeiten',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',

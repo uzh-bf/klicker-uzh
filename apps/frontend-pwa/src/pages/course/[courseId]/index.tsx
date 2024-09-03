@@ -1,47 +1,36 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
-  GetParticipantGroupsDocument,
   GroupActivityInstance,
   JoinCourseDocument,
-  JoinParticipantGroupDocument,
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import {
-  Button,
-  FormikNumberField,
-  FormikTextField,
-  H3,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import Rank1Img from 'public/rank1.svg'
+import Rank2Img from 'public/rank2.svg'
+import Rank3Img from 'public/rank3.svg'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import Tabs from '../../../components/common/Tabs'
-import GroupVisualization from '../../../components/participant/GroupVisualization'
+import GroupActivityList from '../../../components/groupActivity/GroupActivityList'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-
-import { Markdown } from '@klicker-uzh/markdown'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import getParticipantToken from '@lib/getParticipantToken'
-import useParticipantToken from '@lib/useParticipantToken'
-import Rank1Img from 'public/rank1.svg'
-import Rank2Img from 'public/rank2.svg'
-import Rank3Img from 'public/rank3.svg'
-import GroupActivityList from '../../../components/groupActivity/GroupActivityList'
-
-// TODO: replace fields in this component through our own design system components
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
+import GroupVisualization from '../../../components/participant/groups/GroupVisualization'
 
 interface Props {
   courseId: string
@@ -84,8 +73,6 @@ function CourseOverview({
     ],
   })
 
-  const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
-  const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   useEffect(() => {
@@ -122,6 +109,7 @@ function CourseOverview({
     groupLeaderboard,
     groupLeaderboardStatistics,
     groupActivityInstances,
+    inRandomGroupPool,
   } = data.getCourseOverviewData
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
@@ -200,6 +188,7 @@ function CourseOverview({
                   ))}
 
                 {course.isGamificationEnabled &&
+                  course.isGroupCreationEnabled &&
                   !course.isGroupDeadlinePassed &&
                   (data.participantGroups?.length ?? 0) < 1 && (
                     <Tabs.Tab
@@ -304,61 +293,63 @@ function CourseOverview({
                       </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col justify-between gap-8">
-                      <div>
-                        <H3 className={{ root: 'mb-4' }}>
-                          {t('pwa.courses.groupLeaderboard')}
-                        </H3>
+                    {course.isGroupCreationEnabled && (
+                      <div className="flex flex-1 flex-col justify-between gap-8">
+                        <div>
+                          <H3 className={{ root: 'mb-4' }}>
+                            {t('pwa.courses.groupLeaderboard')}
+                          </H3>
 
-                        <Leaderboard
-                          leaderboard={
-                            filteredGroupLeaderboard?.map((entry) => ({
-                              id: entry.id,
-                              username: entry.name,
-                              score: entry.score,
-                              rank: entry.rank,
-                              isMember: entry.isMember ?? false,
-                            })) || []
-                          }
-                          hideAvatars={true}
-                        />
+                          <Leaderboard
+                            leaderboard={
+                              filteredGroupLeaderboard?.map((entry) => ({
+                                id: entry.id,
+                                username: entry.name,
+                                score: entry.score,
+                                rank: entry.rank,
+                                isMember: entry.isMember ?? false,
+                              })) || []
+                            }
+                            hideAvatars={true}
+                          />
 
-                        {!groupLeaderboard ||
-                          (groupLeaderboard.length === 0 && (
-                            <div className="mt-6">
-                              {t('pwa.courses.noGroups')}
+                          {!groupLeaderboard ||
+                            (groupLeaderboard.length === 0 && (
+                              <div className="mt-6">
+                                {t('pwa.courses.noGroups')}
+                              </div>
+                            ))}
+                          {groupLeaderboard &&
+                            groupLeaderboard.length !== 0 &&
+                            filteredGroupLeaderboard?.length === 0 && (
+                              <div>{t('pwa.courses.noGroupPoints')}</div>
+                            )}
+
+                          <div className="mb-2 mt-4 text-right text-sm text-slate-600">
+                            <div>
+                              {t('shared.leaderboard.participantCount', {
+                                number:
+                                  groupLeaderboardStatistics?.participantCount,
+                              })}
                             </div>
-                          ))}
-                        {groupLeaderboard &&
-                          groupLeaderboard.length !== 0 &&
-                          filteredGroupLeaderboard?.length === 0 && (
-                            <div>{t('pwa.courses.noGroupPoints')}</div>
-                          )}
-
-                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
-                          <div>
-                            {t('shared.leaderboard.participantCount', {
-                              number:
-                                groupLeaderboardStatistics?.participantCount,
-                            })}
-                          </div>
-                          <div>
-                            {t('shared.leaderboard.averagePoints', {
-                              number:
-                                groupLeaderboardStatistics?.averageScore?.toFixed(
-                                  2
-                                ),
-                            })}
+                            <div>
+                              {t('shared.leaderboard.averagePoints', {
+                                number:
+                                  groupLeaderboardStatistics?.averageScore?.toFixed(
+                                    2
+                                  ),
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
-                        {t.rich('pwa.courses.groupLeaderboardUpdate', {
-                          b: () => <br />,
-                        })}
+                        <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
+                          {t.rich('pwa.courses.groupLeaderboardUpdate', {
+                            b: () => <br />,
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
@@ -423,8 +414,12 @@ function CourseOverview({
               {course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
                   <Tabs.TabContent key={group.id} value={group.id}>
-                    <div className="flex flex-col gap-4">
-                      <H3 className={{ root: 'flex flex-row justify-between' }}>
+                    <div className="flex flex-col gap-2">
+                      <H3
+                        className={{
+                          root: 'flex flex-row justify-between',
+                        }}
+                      >
                         <div>
                           {t('shared.generic.group')} {group.name}
                         </div>
@@ -433,13 +428,48 @@ function CourseOverview({
 
                       <div className="flex flex-row flex-wrap gap-4">
                         <div className="flex flex-1 flex-col">
-                          <div className="mb-2">
-                            {!participation?.isActive && (
-                              <UserNotification
-                                type="warning"
-                                message={t('pwa.groupActivity.joinLeaderboard')}
-                              />
-                            )}
+                          {(!participation?.isActive ||
+                            group.participants!.length === 1 ||
+                            group.participants!.length ===
+                              course.maxGroupSize) && (
+                            <div className="mb-2 flex flex-col gap-2">
+                              {!participation?.isActive && (
+                                <UserNotification
+                                  type="warning"
+                                  message={t(
+                                    'pwa.groupActivity.joinLeaderboard'
+                                  )}
+                                />
+                              )}
+                              {group.participants?.length === 1 && (
+                                <UserNotification
+                                  type="info"
+                                  message={t(
+                                    'pwa.groupActivity.singleParticipantAutomaticAssignment',
+                                    {
+                                      groupFormationDeadline: dayjs(
+                                        course.groupDeadlineDate
+                                      ).format('DD.MM.YYYY HH:mm'),
+                                    }
+                                  )}
+                                />
+                              )}
+                              {group.participants!.length ===
+                                course.maxGroupSize && (
+                                <UserNotification
+                                  type="info"
+                                  message={t(
+                                    'pwa.groupActivity.maxNumberOfGroupMembers'
+                                  )}
+                                />
+                              )}
+                            </div>
+                          )}
+                          <div className="mb-1 self-end text-sm italic">
+                            {t('pwa.groupActivity.nOfMaxParticipants', {
+                              numParticipants: group.participants!.length,
+                              maxParticipants: course.maxGroupSize,
+                            })}
                           </div>
                           <Leaderboard
                             leaderboard={
@@ -463,7 +493,10 @@ function CourseOverview({
                                         groupId: group.id,
                                       },
                                       refetchQueries: [
-                                        GetCourseOverviewDataDocument,
+                                        {
+                                          query: GetCourseOverviewDataDocument,
+                                          variables: { courseId: courseId },
+                                        },
                                       ],
                                     })
 
@@ -511,89 +544,11 @@ function CourseOverview({
 
               {course.isGamificationEnabled && (
                 <Tabs.TabContent key="create" value="create">
-                  <H3>{t('pwa.courses.createGroup')}</H3>
-                  <Formik
-                    initialValues={{ groupName: '' }}
-                    onSubmit={async (values) => {
-                      const result = await createParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          name: values.groupName,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetParticipantGroupsDocument,
-                            variables: { courseId: courseId },
-                          },
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId: courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.createParticipantGroup?.id) {
-                        setSelectedTab(result.data.createParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikTextField
-                          name="groupName"
-                          placeholder={t('pwa.courses.groupName')}
-                          className={{ root: 'w-full md:w-52' }}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'create-new-participant-group' }}
-                        >
-                          {t('shared.generic.create')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
-
-                  <H3 className={{ root: 'mt-4' }}>
-                    {t('pwa.courses.joinGroup')}
-                  </H3>
-                  <Formik
-                    initialValues={{ code: '' }}
-                    onSubmit={async (values) => {
-                      const result = await joinParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          code: Number(values.code) >> 0,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.joinParticipantGroup?.id) {
-                        setSelectedTab(result.data.joinParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikNumberField
-                          name="code"
-                          placeholder={t('pwa.courses.code')}
-                          className={{ root: 'w-full md:w-52' }}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'join-participant-group' }}
-                        >
-                          {t('shared.generic.join')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
+                  <GroupCreationActions
+                    courseId={courseId}
+                    setSelectedTab={setSelectedTab}
+                    inRandomGroupPool={inRandomGroupPool ?? false}
+                  />
                 </Tabs.TabContent>
               )}
             </Tabs>
