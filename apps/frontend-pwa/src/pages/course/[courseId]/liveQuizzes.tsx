@@ -5,7 +5,7 @@ import { GetRunningSessionsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -42,7 +42,14 @@ function CourseLiveQuizzes({
     !data.runningSessionsCourse?.length ||
     data.runningSessionsCourse.length === 0
   ) {
-    return <div>{t('pwa.general.noLiveQuizzesActive')}</div>
+    return (
+      <Layout>
+        <UserNotification
+          type="warning"
+          message={t('pwa.general.noLiveQuizzesActive')}
+        />
+      </Layout>
+    )
   }
 
   return (
