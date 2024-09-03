@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.15...v3.2.0-alpha.16) (2024-09-03)
+
+
+### Enhancements
+
+* add list of all running live quizzes of a course ([#4232](https://github.com/uzh-bf/klicker-uzh/issues/4232)) ([ea8852b](https://github.com/uzh-bf/klicker-uzh/commit/ea8852b60641566714e954cc967fca0775e2b875))
+
 ## [3.2.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.14...v3.2.0-alpha.15) (2024-08-31)
 
 
