@@ -9,7 +9,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
-import { TableHead } from '@uzh-bf/design-system/dist/future'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -219,23 +218,32 @@ function CourseOverviewPage() {
             </div>
 
             <TableWithDownload
-              head={
-                <>
-                  <TableHead className="w-[100px]">
-                    {t('shared.leaderboard.rank')}
-                  </TableHead>
-                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
-                  {/* <TableHead>{t('shared.leaderboard.email')}</TableHead> */}
-                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
-                </>
-              }
+              columns={[
+                {
+                  id: 'rank',
+                  label: t('shared.leaderboard.rank'),
+                },
+                {
+                  id: 'username',
+                  label: t('shared.leaderboard.username'),
+                },
+                {
+                  id: 'email',
+                  label: t('shared.leaderboard.email'),
+                },
+                {
+                  id: 'score',
+                  label: t('shared.leaderboard.points'),
+                },
+              ]}
+              itemIdentifier="id"
               items={
                 course.leaderboard?.map((item) => ({
                   ...item,
                   email: item.username + '@klicker.com',
                 })) ?? []
               }
-              onDownload={() => null}
+              csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
             />
           </div>
         )}
