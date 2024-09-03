@@ -53,9 +53,11 @@ vapid:
   privateKey: ''
 
 cron:
-  dailyGroupScores: "* * * * *"
-  pushNotifications: "*/5 * * * *"
-  practiceQuizPublications: "*/5 * * * *"
+  dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
+  pushNotifications: "*/5 * * * *" # runs every 5 minutes
+  practiceQuizPublications: "*/5 * * * *" # runs every 5 minutes
+  runningRandomGroups: "0 0 * * *" # running at midnight
+  finalRandomGroups: "0 0 * * *" # running at midnight
   token: ""
 
 auth:
