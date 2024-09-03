@@ -67,18 +67,25 @@ function CourseOverviewHeader({
               dataUser?.userProfile?.catalyst
                 ? [
                     getLTIAccessLink({
-                      href: `/course/${id}`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}`,
                       setCopyToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
-                      href: `/course/${id}/docs`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}/docs`,
                       setCopyToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIDocsLabel'),
+                    }),
+                    getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${id}/liveQuizzes`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                   ]
                 : [],
