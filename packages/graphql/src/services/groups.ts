@@ -17,7 +17,14 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
+import { splitGroupsRunning } from 'src/lib/randomizedGroups.js'
 import { ElementInstanceOptions } from 'src/ops.js'
+import {
+  adjectives,
+  animals,
+  colors,
+  uniqueNamesGenerator,
+} from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { shuffle } from '../lib/util.js'
@@ -166,6 +173,108 @@ export async function leaveRandomCourseGroupPool(
   } catch (e) {
     return false
   }
+}
+
+export async function runningRandomGroupAssignments(ctx: Context) {
+  // fetch all courses with future group deadlines
+  const courses = await ctx.prisma.course.findMany({
+    where: {
+      isGroupCreationEnabled: true,
+      groupDeadlineDate: {
+        gt: new Date(),
+      },
+    },
+    include: {
+      groupAssignmentPoolEntries: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  })
+
+  // filter the courses down to those, which contain more than 2 * preferredGroupSize participants in the pool
+  const coursesToUpdate = courses.filter(
+    (course) =>
+      course.groupAssignmentPoolEntries.length >= 2 * course.preferredGroupSize
+  )
+
+  // update the group assignments for all courses that have enough participants in the pool
+  for (const course of coursesToUpdate) {
+    const { participantIds, poolEntryIds } =
+      course.groupAssignmentPoolEntries.reduce<{
+        participantIds: string[]
+        poolEntryIds: number[]
+      }>(
+        (acc, entry) => {
+          acc.participantIds.push(entry.participantId)
+          acc.poolEntryIds.push(entry.id)
+          return acc
+        },
+        { participantIds: [], poolEntryIds: [] }
+      )
+
+    // split the participants into groups
+    const { groups } = splitGroupsRunning({
+      participantIds,
+      preferredGroupSize: course.preferredGroupSize,
+    })
+
+    for (const participantGroupIds of groups) {
+      const code = 100000 + Math.floor(Math.random() * 900000)
+      const groupName =
+        uniqueNamesGenerator({
+          dictionaries: [colors, adjectives, animals],
+          separator: ' ',
+          style: 'capital',
+        }) + 's'
+
+      // create group and remove participants from the pool
+      await ctx.prisma.$transaction([
+        ctx.prisma.participantGroup.create({
+          data: {
+            name: groupName,
+            code: code,
+            course: {
+              connect: {
+                id: course.id,
+              },
+            },
+            participants: {
+              connect: participantGroupIds.map((id) => ({ id })),
+            },
+          },
+        }),
+        ctx.prisma.groupAssignmentPoolEntry.deleteMany({
+          where: {
+            participantId: {
+              in: participantGroupIds,
+            },
+          },
+        }),
+      ])
+    }
+
+    // invalidate the corresponding participants, course and group assignment pool entries in the cache
+    ctx.emitter.emit('invalidate', {
+      typename: 'Course',
+      id: course.id,
+    })
+    participantIds.forEach((participantId) => {
+      ctx.emitter.emit('invalidate', {
+        typename: 'Participant',
+        id: participantId,
+      })
+    })
+    poolEntryIds.forEach((poolEntryId) => {
+      ctx.emitter.emit('invalidate', {
+        typename: 'GroupAssignmentPoolEntry',
+        id: poolEntryId,
+      })
+    })
+  }
+
+  return true
 }
 
 interface JoinParticipantGroupArgs {
