@@ -334,7 +334,11 @@ async function resolveSingleParticipantGroups(
       },
     },
     include: {
-      groupAssignmentPoolEntries: true,
+      groupAssignmentPoolEntries: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
     },
   })
 
