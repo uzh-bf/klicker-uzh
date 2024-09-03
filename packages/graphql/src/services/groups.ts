@@ -486,9 +486,6 @@ export async function manualRandomGroupAssignments(
     participants: {
       connect: group.map((id) => ({ id })),
     },
-    course: {
-      connect: { id: courseId },
-    },
   }))
 
   // update the course

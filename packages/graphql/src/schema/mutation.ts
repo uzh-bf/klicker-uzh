@@ -341,7 +341,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manualRandomGroupAssignments: t.withAuth(asParticipant).field({
+      manualRandomGroupAssignments: t.withAuth(asUser).field({
         type: Course,
         nullable: true,
         args: {

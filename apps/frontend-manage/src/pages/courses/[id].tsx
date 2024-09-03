@@ -1,8 +1,9 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
+  ManualRandomGroupAssignmentsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -30,6 +31,9 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
+  const [manualRandomGroupAssignments] = useMutation(
+    ManualRandomGroupAssignmentsDocument
+  )
 
   useEffect(() => {
     if (data && !data.course) {
@@ -218,6 +222,18 @@ function CourseOverviewPage() {
           </div>
         )}
       </div>
+      <Button
+        className={{
+          root: 'bg-primary-80 mt-4 w-max self-end text-white',
+        }}
+        onClick={async () =>
+          await manualRandomGroupAssignments({
+            variables: { courseId: course.id },
+          })
+        }
+      >
+        ASSIGN RANDOM GROUPS
+      </Button>
     </Layout>
   )
 }
