@@ -33,7 +33,7 @@
     "@fortawesome/free-regular-svg-icons": "6.6.0",
     "@fortawesome/free-solid-svg-icons": "6.6.0",
     "@fortawesome/react-fontawesome": "0.2.2",
-    "@uzh-bf/design-system": "3.0.0-alpha.22",
+    "@uzh-bf/design-system": "3.0.0-alpha.25",
     "dayjs": "1.11.12",
     "formik": "2.4.6",
     "js-cookie": "3.0.5",
