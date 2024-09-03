@@ -5,9 +5,11 @@ import {
   GetSingleCourseDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
+
+import TableWithDownload from '@components/common/TableWithDownload'
+import { TableHead } from '@uzh-bf/design-system/dist/future'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -207,10 +209,20 @@ function CourseOverviewPage() {
         {data?.course?.isGamificationEnabled && (
           <div className="w-full border-l md:w-1/3 md:pl-2">
             <H3>{t('manage.course.courseLeaderboard')}</H3>
-            <Leaderboard
-              className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
-              leaderboard={course.leaderboard ?? []}
+
+            <TableWithDownload
+              head={
+                <>
+                  <TableHead className="w-[100px]">
+                    {t('shared.leaderboard.rank')}
+                  </TableHead>
+                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
+                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
+                </>
+              }
+              items={course.leaderboard ?? []}
             />
+
             <div className="mt-2 text-right text-sm italic text-gray-500">
               <div>
                 {t('manage.course.participantsLeaderboard', {

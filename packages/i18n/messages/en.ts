@@ -221,6 +221,9 @@ export default {
       averagePoints: 'Average points: {number}',
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
+      rank: 'Rank',
+      username: 'Username',
+      email: 'Email',
     },
     error: {
       '404': '404 Page not found',
