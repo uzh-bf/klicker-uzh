@@ -1,0 +1,12 @@
+query GetRunningSessionsCourse($courseId: String!) {
+  runningSessionsCourse(courseId: $courseId) {
+    id
+    name
+    displayName
+    linkTo
+    course {
+      id
+      displayName
+    }
+  }
+}

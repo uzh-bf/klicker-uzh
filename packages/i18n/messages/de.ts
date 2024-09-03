@@ -278,8 +278,9 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
-      noSessionsActive: 'Keine Sessions aktiv.',
-      activeSessionsBy: 'Aktive Sessions von <i>{name}</i>',
+      noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
+      activeLiveQuizzesBy: 'Aktive Live Quizzes von <i>{name}</i>',
+      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in Kurs <i>{name}</i>',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
