@@ -150,6 +150,7 @@ type Course {
   numOfActiveParticipants: Int
   numOfParticipants: Int
   owner: User
+  participantGroups: [ParticipantGroup!]
   pinCode: Int
   practiceQuizzes: [PracticeQuiz!]
   preferredGroupSize: Int
