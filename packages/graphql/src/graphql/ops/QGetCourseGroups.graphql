@@ -7,6 +7,7 @@ query GetCourseGroups($courseId: String!) {
         id
         username
         email
+        avatar
       }
     }
     groupAssignmentPoolEntries {
@@ -15,6 +16,7 @@ query GetCourseGroups($courseId: String!) {
         id
         username
         email
+        avatar
       }
     }
   }

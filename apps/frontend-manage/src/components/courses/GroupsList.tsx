@@ -3,8 +3,9 @@ import {
   GetCourseGroupsDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Tabs } from '@uzh-bf/design-system'
+import { Button, Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import ParticipantListEntry from './ParticipantListEntry'
 
 function GroupsList({ courseId }: { courseId: string }) {
   const t = useTranslations()
@@ -21,22 +22,32 @@ function GroupsList({ courseId }: { courseId: string }) {
   const groups = data?.getCourseGroups?.participantGroups ?? []
 
   return (
-    <Tabs.TabContent value="groups" className={{ root: 'p-2' }}>
+    <Tabs.TabContent
+      value="groups"
+      className={{ root: 'flex flex-col gap-3 p-2' }}
+    >
       <div>
-        <div>POOL</div>
-        {pool.map((entry) => entry.participant?.id)}
-      </div>
-      <div>
-        <div>GROUPS</div>
-        {groups.map((group) => (
-          <div key={group.id}>
-            <H3>{group.name}</H3>
-            {group.participants?.map((participant) => (
-              <div key={participant.id}>{participant.id}</div>
-            ))}
-          </div>
+        <div className="font-bold">
+          {t('manage.course.poolForRandomAssignment')}
+        </div>
+        {pool.map((entry) => (
+          <ParticipantListEntry
+            participant={entry.participant!}
+            key={entry.id}
+          />
         ))}
       </div>
+      {groups.map((group) => (
+        <div key={group.id}>
+          <div className="font-bold">{group.name}</div>
+          {group.participants?.map((participant) => (
+            <ParticipantListEntry
+              participant={participant}
+              key={participant.id}
+            />
+          ))}
+        </div>
+      ))}
 
       <Button
         className={{

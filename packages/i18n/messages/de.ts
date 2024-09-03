@@ -192,6 +192,7 @@ export default {
       availability: 'Verfügbarkeit',
       taskDescription: 'Aufgabenstellung',
       color: 'Farbe',
+      groups: 'Gruppen',
     },
     contentInput: {
       boldStyle:
@@ -1525,6 +1526,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableGamification: 'Gamifizierung aktivieren',
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',
+      poolForRandomAssignment: 'Pool for Zufällige Zuweisung',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

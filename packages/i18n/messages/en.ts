@@ -192,6 +192,7 @@ export default {
       availability: 'Availability',
       taskDescription: 'Task description',
       color: 'Color',
+      groups: 'Groups',
     },
     contentInput: {
       boldStyle:
@@ -1505,6 +1506,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enableGamification: 'Enable gamification',
       enableGamificationWarning:
         'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
+      poolForRandomAssignment: 'Pool for Random Assignment',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
