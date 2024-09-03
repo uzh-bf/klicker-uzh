@@ -15,6 +15,7 @@ mutation ManualRandomGroupAssignments($courseId: String!) {
         username
         score
         email
+        avatar
       }
     }
   }

@@ -1,5 +1,8 @@
 import { useMutation } from '@apollo/client'
-import { ManualRandomGroupAssignmentsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetCourseGroupsDocument,
+  ManualRandomGroupAssignmentsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -16,7 +19,34 @@ function AssignmentConfirmationModal({
   const [
     manualRandomGroupAssignments,
     { loading: randomGroupCreationLoading },
-  ] = useMutation(ManualRandomGroupAssignmentsDocument)
+  ] = useMutation(ManualRandomGroupAssignmentsDocument, {
+    refetchQueries: [
+      {
+        query: GetCourseGroupsDocument,
+        variables: { courseId: courseId },
+      },
+    ],
+    // TODO: use update for more efficiency - does not work properly yet
+    // update: (cache, { data }) => {
+    //   const cacheData = cache.readQuery({
+    //     query: GetCourseGroupsDocument,
+    //     variables: { courseId: courseId },
+    //   })
+    //   cache.writeQuery({
+    //     query: GetCourseGroupsDocument,
+    //     variables: { courseId: courseId },
+    //     data: {
+    //       getCourseGroups: {
+    //         ...cacheData?.getCourseGroups,
+    //         groupAssignmentPoolEntries: [],
+    //         participantGroups: [
+    //           ...(data?.manualRandomGroupAssignments?.participantGroups ?? []),
+    //         ],
+    //       },
+    //     },
+    //   })
+    // },
+  })
 
   return (
     <Modal
