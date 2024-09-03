@@ -1,4 +1,4 @@
-name: Test graphql package functionalities
+name: Test graphql package logic functionalities
 
 on:
   push:
