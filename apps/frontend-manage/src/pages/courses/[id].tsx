@@ -1,15 +1,13 @@
-import { useMutation, useQuery } from '@apollo/client'
-import TableWithDownload from '@components/common/TableWithDownload'
+import { useQuery } from '@apollo/client'
+import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
-  ManualRandomGroupAssignmentsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
-import { TableHead } from '@uzh-bf/design-system/dist/future'
+import { Button, H2, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -32,10 +30,6 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
-  const [
-    manualRandomGroupAssignments,
-    { loading: randomGroupCreationLoading },
-  ] = useMutation(ManualRandomGroupAssignmentsDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -202,57 +196,9 @@ function CourseOverviewPage() {
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (
-          <div className="w-full border-l md:w-1/3 md:pl-2">
-            <H3>{t('manage.course.courseLeaderboard')}</H3>
-            <div className="text-md mb-2 text-slate-600">
-              <div>
-                {t('manage.course.participantsLeaderboard', {
-                  number: course.numOfActiveParticipants,
-                })}
-                /{course.numOfParticipants}
-              </div>
-              <div>
-                {t('manage.course.avgPoints', {
-                  points: course.averageActiveScore?.toFixed(2),
-                })}
-              </div>
-            </div>
-
-            <TableWithDownload
-              head={
-                <>
-                  <TableHead className="w-[100px]">
-                    {t('shared.leaderboard.rank')}
-                  </TableHead>
-                  <TableHead>{t('shared.leaderboard.username')}</TableHead>
-                  {/* <TableHead>{t('shared.leaderboard.email')}</TableHead> */}
-                  <TableHead>{t('shared.leaderboard.points')}</TableHead>
-                </>
-              }
-              items={
-                course.leaderboard?.map((item) => ({
-                  ...item,
-                  email: item.username + '@klicker.com',
-                })) ?? []
-              }
-              onDownload={() => null}
-            />
-          </div>
+          <CourseGamificationInfos course={course} />
         )}
       </div>
-      <Button
-        className={{
-          root: 'bg-primary-80 mt-4 w-max self-end text-white',
-        }}
-        onClick={async () =>
-          await manualRandomGroupAssignments({
-            variables: { courseId: course.id },
-          })
-        }
-        loading={randomGroupCreationLoading}
-      >
-        ASSIGN RANDOM GROUPS
-      </Button>
     </Layout>
   )
 }
