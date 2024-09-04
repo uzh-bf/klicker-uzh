@@ -30,6 +30,7 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
 
   return (
     <Toast
+      dismissible
       duration={5000}
       type="error"
       openExternal={open}

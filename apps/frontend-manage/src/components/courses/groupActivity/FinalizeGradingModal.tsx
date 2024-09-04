@@ -84,6 +84,7 @@ function FinalizeGradingModal({
         </div>
       </Modal>
       <Toast
+        dismissible
         openExternal={successToast}
         setOpenExternal={setSuccessToast}
         type="success"
@@ -92,6 +93,7 @@ function FinalizeGradingModal({
         {t('manage.groupActivity.finalizeGradingSuccess')}
       </Toast>
       <Toast
+        dismissible
         openExternal={errorToast}
         setOpenExternal={setErrorToast}
         type="error"

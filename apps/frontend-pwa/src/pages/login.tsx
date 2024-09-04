@@ -140,6 +140,7 @@ function Login() {
         )}
       </Formik>
       <Toast
+        dismissible
         type="error"
         duration={6000}
         openExternal={showError}
@@ -148,6 +149,7 @@ function Login() {
         {error}
       </Toast>
       <Toast
+        dismissible
         type="success"
         duration={8000}
         openExternal={showSuccess}

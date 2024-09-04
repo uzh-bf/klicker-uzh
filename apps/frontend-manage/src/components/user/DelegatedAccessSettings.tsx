@@ -336,9 +336,11 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
           </Formik>
         </div>
         <Toast
+          dismissible
           openExternal={copiedPassword}
           setOpenExternal={setCopiedPassword}
           type="success"
+          duration={4000}
         >
           {t('manage.settings.copiedPassword')}
         </Toast>

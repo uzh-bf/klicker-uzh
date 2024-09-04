@@ -36,9 +36,11 @@ function PracticeQuizAccessLink({
         <div>{t('manage.course.copyAccessLink')}</div>
       </Button>
       <Toast
+        dismissible
         openExternal={copyToast}
         setOpenExternal={setCopyToast}
         type="success"
+        duration={4000}
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkAccessCopied')}

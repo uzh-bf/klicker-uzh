@@ -60,6 +60,7 @@ function GroupJoinBlock({
         data={undefined}
       />
       <Toast
+        dismissible
         type="error"
         duration={6000}
         openExternal={showError}
@@ -69,6 +70,7 @@ function GroupJoinBlock({
         {t('pwa.courses.joinGroupError')}
       </Toast>
       <Toast
+        dismissible
         type="warning"
         duration={6000}
         openExternal={fullMessage}
