@@ -1,14 +1,22 @@
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupsLeaderboard from './GroupsLeaderboard'
 import GroupsList from './GroupsList'
 import IndividualLeaderboard from './IndividualLeaderboard'
 
-function CourseGamificationInfos({ course }: { course: Course }) {
-  const [tabValue, setTabValue] = useState('ind-leaderboard')
+interface CourseGamificationInfosProps {
+  course: Course
+  tabValue: string
+  setTabValue: (newValue: string) => void
+}
+
+function CourseGamificationInfos({
+  course,
+  tabValue,
+  setTabValue,
+}: CourseGamificationInfosProps) {
   const t = useTranslations()
 
   return (
