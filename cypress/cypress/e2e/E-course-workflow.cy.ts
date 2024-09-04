@@ -61,9 +61,11 @@ describe('Test course creation and editing functionalities', () => {
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="student-course-create-group"]').click()
     cy.get('[data-cy="enter-random-group-pool"]').click()
     cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
 
@@ -77,15 +79,13 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="tab-groups"]').click()
 
     // check if first student is in pool, but assignment is still not possible
-    cy.get('[data-cy="random-group-assignment-cool"]').findByText(
+    cy.get('[data-cy="random-group-assignment-pool"]').findByText(
       Cypress.env('STUDENT_USERNAME')
     )
-    cy.get('[data-cy="assign-random-groups"]')
-      .should('exist')
-      .should('be.disabled')
+    cy.get('[data-cy="assign-random-groups"]').should('exist')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
-      'exist'
-    )
+      'not.exist'
+    ) // -> there are groups with a single participant available
 
     // login as the student without group and join the random pool as well
     cy.clearAllCookies()
@@ -94,19 +94,29 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
-      .type(Cypress.env('STUDENT_NOGROUP'))
+      .type(Cypress.env('STUDENT_USERNAME2'))
     cy.get('[data-cy="password-field"]')
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.wait(1000)
     cy.get('[data-cy="student-course-create-group"]').click()
     cy.get('[data-cy="enter-random-group-pool"]').click()
     cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
 
     // check if first student is in pool, but assignment is still not possible
-    cy.get('[data-cy="random-group-assignment-cool"]').findByText(
-      Cypress.env('STUDENT_NOGROUP')
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
+    cy.get('[data-cy="tab-groups"]').click()
+    cy.get('[data-cy="random-group-assignment-pool"]').findByText(
+      Cypress.env('STUDENT_USERNAME2')
     )
     cy.get('[data-cy="assign-random-groups"]')
       .should('exist')
@@ -117,13 +127,8 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="assign-random-groups"]').click()
     cy.get('[data-cy="confirm-random-group-assignment"]').click()
 
-    // check that participants are no longer in pool
-    cy.get('[data-cy="random-group-assignment-cool"]')
-      .findByText(Cypress.env('STUDENT_USERNAME'))
-      .should('not.exist')
-    cy.get('[data-cy="random-group-assignment-cool"]')
-      .findByText(Cypress.env('STUDENT_NOGROUP'))
-      .should('not.exist')
+    // check that the pool with participants does no longer exist
+    cy.get('[data-cy="random-group-assignment-pool"]').should('not.exist')
   })
 
   it('Test the creation of a new course', () => {

@@ -90,6 +90,7 @@ function GroupAction({
       }}
       onClick={onClick}
       disabled={loading}
+      data={data}
     >
       <TitleIcon />
       <div>{explanation}</div>
