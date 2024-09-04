@@ -1418,6 +1418,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
       groupDeadlineBeforeEnd:
         'Die Deadline für die Gruppenbildung muss vor dem Kursenddatum liegen.',
+      groupDeadlineAfterStart:
+        'Die Deadline für die Gruppenbildung muss nach dem Kursstartdatum liegen.',
       groupDeadlineReq:
         'Bitte geben Sie ein gültiges Datum für die Gruppenbildung an.',
       maxGroupSizeMin: 'Die maximale Gruppengrösse muss mindestens 2 betragen.',

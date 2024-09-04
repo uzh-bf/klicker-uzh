@@ -84,6 +84,10 @@ function CourseManipulationModal({
         groupCreationDeadline: initialValues?.groupDeadlineDate
           ? yup
               .date()
+              .min(
+                yup.ref('startDate'),
+                t('manage.courseList.groupDeadlineAfterStart')
+              )
               .max(
                 yup.ref('endDate'),
                 t('manage.courseList.groupDeadlineBeforeEnd')
