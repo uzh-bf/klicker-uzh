@@ -56,7 +56,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
-      .type(Cypress.env('STUDENT_USERNAME'))
+      .type(Cypress.env('STUDENT_USERNAME10'))
     cy.get('[data-cy="password-field"]')
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))
@@ -80,7 +80,7 @@ describe('Test course creation and editing functionalities', () => {
 
     // check if first student is in pool, but assignment is still not possible
     cy.get('[data-cy="random-group-assignment-pool"]').findByText(
-      Cypress.env('STUDENT_USERNAME')
+      Cypress.env('STUDENT_USERNAME10')
     )
     cy.get('[data-cy="assign-random-groups"]').should('exist')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
@@ -94,7 +94,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
-      .type(Cypress.env('STUDENT_USERNAME2'))
+      .type(Cypress.env('STUDENT_USERNAME11'))
     cy.get('[data-cy="password-field"]')
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))
@@ -116,7 +116,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
     cy.get('[data-cy="tab-groups"]').click()
     cy.get('[data-cy="random-group-assignment-pool"]').findByText(
-      Cypress.env('STUDENT_USERNAME2')
+      Cypress.env('STUDENT_USERNAME11')
     )
     cy.get('[data-cy="assign-random-groups"]')
       .should('exist')
