@@ -1511,6 +1511,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       poolForRandomAssignment: 'Pool for Random Assignment',
       randomGroupsNotPossible:
         'No random groups can be formed with a single student in the assignment pool or in a group with one participant. Please consider extending the group formation deadline in the course settings at the top.',
+      groupAssignmentFinalizedMessage:
+        'The group assignment has been finalized either manually by you or automatically by the system, since the group deadline passed. To re-enable the creation of groups, simply move the group deadline date in the course settings to the future.',
       finalizeRandomGroupAssignment: 'Finalize Random Group Assignment',
       confirmRandomGroupAssignment: `Once you confirm the finalization of the random group assignment, the following actions will be performed automatically by KlickerUZH:
         <ul><li>All students remaining in the random assignment pool will be assigned to randomized groups.</li>

@@ -9,7 +9,13 @@ import { twMerge } from 'tailwind-merge'
 import ParticipantListEntry from './ParticipantListEntry'
 import AssignmentConfirmationModal from './groups/AssignmentConfirmationModal'
 
-function GroupsList({ courseId }: { courseId: string }) {
+function GroupsList({
+  courseId,
+  groupCreationFinalized,
+}: {
+  courseId: string
+  groupCreationFinalized: boolean
+}) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
 
@@ -50,29 +56,37 @@ function GroupsList({ courseId }: { courseId: string }) {
           </div>
         )}
 
-        {randomAssignmentNotPossible && (
+        {!groupCreationFinalized && randomAssignmentNotPossible && (
           <UserNotification
             type="warning"
             message={t('manage.course.randomGroupsNotPossible')}
           />
         )}
+        {groupCreationFinalized && (
+          <UserNotification
+            type="warning"
+            message={t('manage.course.groupAssignmentFinalizedMessage')}
+          />
+        )}
 
-        <Button
-          className={{
-            root: twMerge(
-              'bg-primary-80 h-8 w-max gap-4 self-end text-white',
-              randomAssignmentNotPossible &&
-                'hover:bg-primar-40 bg-primary-40 cursor-not-allowed bg-opacity-50'
-            ),
-          }}
-          onClick={() => setOpen(true)}
-          disabled={randomAssignmentNotPossible}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faShuffle} />
-          </Button.Icon>
-          <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
-        </Button>
+        {!groupCreationFinalized && (
+          <Button
+            className={{
+              root: twMerge(
+                'bg-primary-80 h-8 w-max gap-4 self-end text-white',
+                randomAssignmentNotPossible &&
+                  'hover:bg-primar-40 bg-primary-40 cursor-not-allowed bg-opacity-50'
+              ),
+            }}
+            onClick={() => setOpen(true)}
+            disabled={randomAssignmentNotPossible}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faShuffle} />
+            </Button.Icon>
+            <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
+          </Button>
+        )}
 
         <div className="grid max-h-[500px] flex-1 grid-cols-2 gap-2 overflow-y-auto">
           {groups.map((group) => (

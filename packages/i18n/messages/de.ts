@@ -1531,6 +1531,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       poolForRandomAssignment: 'Pool for Zufällige Zuweisung',
       randomGroupsNotPossible:
         'Es können keine zufälligen Gruppen gebildet werden, wenn sich nur ein Studierender im Zuweisungspool oder in einer Gruppe mit einem Teilnehmenden befindet. Bitte überprüfen Sie die Einstellungen für die Gruppenbildung im Kurs.',
+      groupAssignmentFinalizedMessage:
+        'Die Gruppenzuweisung wurde entweder manuell von Ihnen oder automatisch durch das System finalisiert, da die Gruppendeadline abgelaufen ist. Um die Erstellung von Gruppen wieder zu ermöglichen, verschieben Sie einfach die Deadline zur Gruppenbildung in den Kurseinstellungen in die Zukunft.',
       finalizeRandomGroupAssignment: 'Zufällige Gruppenzuweisung Finalisieren',
       confirmRandomGroupAssignment: `Sobald Sie die Finalisierung der zufälligen Gruppenzuweisung bestätigen, werden die folgenden Aktionen automatisch von KlickerUZH durchgeführt:
         <ul><li>Alle Studierenden, die sich noch im Pool der zufälligen Zuweisung befinden, werden in Gruppen eingeteilt.</li>
