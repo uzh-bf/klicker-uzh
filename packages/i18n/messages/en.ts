@@ -1424,7 +1424,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       preferredGroupSizeTooltip:
         'The preferred number of students in a group. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
       groupDeadlineChangedToPast:
-        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the course overview.',
+        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
     },
     course: {
       modifyCourse: 'Modify course',
