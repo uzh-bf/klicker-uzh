@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/markdown",
-  "version": "3.2.0-alpha.16",
+  "version": "3.2.0-alpha.17",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",

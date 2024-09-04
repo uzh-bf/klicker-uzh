@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.16...v3.2.0-alpha.17) (2024-09-04)
+
+
+### Features
+
+* add settings for randomized group assignment ([#4218](https://github.com/uzh-bf/klicker-uzh/issues/4218)) ([ca902ab](https://github.com/uzh-bf/klicker-uzh/commit/ca902ab862a46c446f6bdfbfe6256f7ccf6df85d))
+
+
+### Bug Fixes
+
+* **analytics:** competency aggregation ([aa982fc](https://github.com/uzh-bf/klicker-uzh/commit/aa982fc9a94d26078cd961da4e9b8642edd116cb))
+* **apps/frontend-manage:** make sure that element font size on stack creation remains consistent ([f17a414](https://github.com/uzh-bf/klicker-uzh/commit/f17a4149d2f618807d45e0000a120fdac5d82ec6))
+* ensure that group deadline and course end dates can be modified ([c151f5f](https://github.com/uzh-bf/klicker-uzh/commit/c151f5f0086fbc87416191bfdbb5fad6fa6b0f9e))
+
+
+### Enhancements
+
+* add backend logic and cronjobs for randomized group creation ([#4234](https://github.com/uzh-bf/klicker-uzh/issues/4234)) ([bd254c3](https://github.com/uzh-bf/klicker-uzh/commit/bd254c35ba9293d33808b79020c09df27cbc32e5))
+* add emails for automated group assignment failures and send teams notifications from cronjobs ([#4241](https://github.com/uzh-bf/klicker-uzh/issues/4241)) ([17f08da](https://github.com/uzh-bf/klicker-uzh/commit/17f08da0b3cadfe0fe8e050c60f180d4d8d8ba5b))
+* add frontend components for individual leaderboard and group overview ([#4237](https://github.com/uzh-bf/klicker-uzh/issues/4237)) ([49c5fae](https://github.com/uzh-bf/klicker-uzh/commit/49c5fae10ba18c54b69c8a50c3e767069925e74c))
+* add functionality to rename participant groups ([#4239](https://github.com/uzh-bf/klicker-uzh/issues/4239)) ([ef03bc8](https://github.com/uzh-bf/klicker-uzh/commit/ef03bc8159adc4f9b1b0b053b3da42152de4f9ec))
+* add logic to join and leave randomized group creation pool ([#4222](https://github.com/uzh-bf/klicker-uzh/issues/4222)) ([276c120](https://github.com/uzh-bf/klicker-uzh/commit/276c120a51065ef9c3035d53cb7dcac1cd6c15d3))
+* add trigger for random group creation (triggered by lecturer) ([#4236](https://github.com/uzh-bf/klicker-uzh/issues/4236)) ([49c8f16](https://github.com/uzh-bf/klicker-uzh/commit/49c8f163b8fe2709a96b9b6cc85c23cd5d25769d))
+* **apps/frontend-manage:** make TableWithDownload generically usable, display real user emails ([#4238](https://github.com/uzh-bf/klicker-uzh/issues/4238)) ([bf39950](https://github.com/uzh-bf/klicker-uzh/commit/bf39950ef6cd5cc285aacc173d188e41becd9526))
+* **docs:** update dev page on website, fix styling issues in docs, upgrade docusaurus ([#4226](https://github.com/uzh-bf/klicker-uzh/issues/4226)) ([f1f9107](https://github.com/uzh-bf/klicker-uzh/commit/f1f91079f7886934b05c90f61d98d4a6d5e8d554))
+* hide functionalities for randomized group creation on finalization of assignments ([#4240](https://github.com/uzh-bf/klicker-uzh/issues/4240)) ([1a002d1](https://github.com/uzh-bf/klicker-uzh/commit/1a002d1e8c608012d35f9e111a0891acb84e86a3))
+* implement group assignment logic for randomized participant groups ([#4233](https://github.com/uzh-bf/klicker-uzh/issues/4233)) ([4b20b93](https://github.com/uzh-bf/klicker-uzh/commit/4b20b9360f00f186b1e2e223659bf497f009fceb))
+* improve leaderboard table on course overview ([#4235](https://github.com/uzh-bf/klicker-uzh/issues/4235)) ([4d00a7b](https://github.com/uzh-bf/klicker-uzh/commit/4d00a7baeb7e6ad8ec4fae4b121c55f4acf2555e))
+* improve styling of groups overview and extend tests for random group assignment ([#4242](https://github.com/uzh-bf/klicker-uzh/issues/4242)) ([ec3934c](https://github.com/uzh-bf/klicker-uzh/commit/ec3934cb2df630757fb96ed000e1d7e40dce86a5))
+* limit the maximum number of participants that can join a group ([#4230](https://github.com/uzh-bf/klicker-uzh/issues/4230)) ([8987898](https://github.com/uzh-bf/klicker-uzh/commit/89878987fa451a3b64cf6e6cbd73114f5e24cfc5))
+* **packages/graphql:** update the average group scores when participants join or leave ([#4231](https://github.com/uzh-bf/klicker-uzh/issues/4231)) ([a1b31a8](https://github.com/uzh-bf/klicker-uzh/commit/a1b31a8cf95fe4f59c11f75f2e3e602d6731562e))
+
 ## [3.2.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.15...v3.2.0-alpha.16) (2024-09-03)
 
 
