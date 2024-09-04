@@ -1,7 +1,6 @@
 import TableWithDownload from '@components/common/TableWithDownload'
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
-import { TableHead } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 
 function IndividualLeaderboard({ course }: { course: Course }) {
@@ -24,23 +23,27 @@ function IndividualLeaderboard({ course }: { course: Course }) {
       </div>
 
       <TableWithDownload
-        head={
-          <>
-            <TableHead className="w-[100px]">
-              {t('shared.leaderboard.rank')}
-            </TableHead>
-            <TableHead>{t('shared.leaderboard.username')}</TableHead>
-            {/* <TableHead>{t('shared.leaderboard.email')}</TableHead> */}
-            <TableHead>{t('shared.leaderboard.points')}</TableHead>
-          </>
-        }
-        items={
-          course.leaderboard?.map((item) => ({
-            ...item,
-            email: item.username + '@klicker.com',
-          })) ?? []
-        }
-        onDownload={() => null}
+        columns={[
+          {
+            id: 'rank',
+            label: t('shared.leaderboard.rank'),
+          },
+          {
+            id: 'username',
+            label: t('shared.leaderboard.username'),
+          },
+          {
+            id: 'email',
+            label: t('shared.leaderboard.email'),
+          },
+          {
+            id: 'score',
+            label: t('shared.leaderboard.points'),
+          },
+        ]}
+        itemIdentifier="id"
+        items={course.leaderboard ?? []}
+        csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
       />
     </Tabs.TabContent>
   )
