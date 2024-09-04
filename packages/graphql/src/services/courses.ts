@@ -504,10 +504,7 @@ export async function updateCourseSettings(
   if (!course) return null
 
   const currentStartDatePast = course.startDate < new Date()
-  const currentEndDatePast = course.endDate < new Date()
-  const currentGroupDeadlinePast = course.groupDeadlineDate < new Date()
   const newStartDatePast = startDate ? startDate < new Date() : false
-  const newEndDatePast = endDate ? endDate < new Date() : false
   const newGroupDeadlinePast = groupDeadlineDate
     ? groupDeadlineDate < new Date()
     : false
@@ -525,16 +522,12 @@ export async function updateCourseSettings(
         currentStartDatePast || newStartDatePast || !startDate
           ? undefined
           : startDate,
-      endDate:
-        currentEndDatePast || newEndDatePast || !endDate ? undefined : endDate,
+      endDate: endDate ?? undefined,
       isGroupCreationEnabled:
         course.isGroupCreationEnabled || !isGroupCreationEnabled
           ? undefined
           : isGroupCreationEnabled,
-      groupDeadlineDate:
-        currentGroupDeadlinePast || newGroupDeadlinePast || !groupDeadlineDate
-          ? undefined
-          : groupDeadlineDate,
+      groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
       isGamificationEnabled:
         course.isGamificationEnabled || !isGamificationEnabled

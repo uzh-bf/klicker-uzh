@@ -1402,6 +1402,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
         'The group creation deadline must be before the course end date.',
+      groupDeadlineAfterStart:
+        'The group creation deadline must be after the course start date.',
       groupDeadlineReq: 'Please specify a valid group creation deadline.',
       maxGroupSizeMin: 'The maximum group size must be at least 2.',
       maxGroupSizeLargerThanPreferred:
