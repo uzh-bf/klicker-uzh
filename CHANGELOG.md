@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.17...v3.2.0-alpha.18) (2024-09-04)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve data table, improve layout on course overview ([#4244](https://github.com/uzh-bf/klicker-uzh/issues/4244)) ([a1b8fcd](https://github.com/uzh-bf/klicker-uzh/commit/a1b8fcdda12e864ace1ace1b34532e56b486ad9c))
+
 ## [3.2.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.16...v3.2.0-alpha.17) (2024-09-04)
 
 
