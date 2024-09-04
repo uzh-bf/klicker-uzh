@@ -2,6 +2,9 @@ export default {
   shared: {
     table: {
       download: 'Download as CSV',
+      noResults: 'No results.',
+      previous: 'Previous',
+      next: 'Next',
     },
     questions: {
       roundedTo: 'Round to {accuracy} decimal places.',

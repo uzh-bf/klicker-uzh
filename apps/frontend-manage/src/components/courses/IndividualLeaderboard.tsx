@@ -1,4 +1,4 @@
-import TableWithDownload from '@components/common/TableWithDownload'
+import DataTable from '@components/common/DataTable'
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -22,27 +22,27 @@ function IndividualLeaderboard({ course }: { course: Course }) {
         </div>
       </div>
 
-      <TableWithDownload
+      <DataTable
         columns={[
           {
-            id: 'rank',
-            label: t('shared.leaderboard.rank'),
+            accessorKey: 'rank',
+            header: t('shared.leaderboard.rank'),
           },
           {
-            id: 'username',
-            label: t('shared.leaderboard.username'),
+            accessorKey: 'username',
+            header: t('shared.leaderboard.username'),
           },
           {
-            id: 'email',
-            label: t('shared.leaderboard.email'),
+            accessorKey: 'email',
+            header: t('shared.leaderboard.email'),
+            csvOnly: true,
           },
           {
-            id: 'score',
-            label: t('shared.leaderboard.points'),
+            accessorKey: 'score',
+            header: t('shared.leaderboard.points'),
           },
         ]}
-        itemIdentifier="id"
-        items={course.leaderboard ?? []}
+        data={course.leaderboard ?? []}
         csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
       />
     </Tabs.TabContent>

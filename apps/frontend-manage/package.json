@@ -18,6 +18,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.6.1",
+    "@tanstack/react-table": "8.20.5",
     "@uzh-bf/design-system": "3.0.0-alpha.26",
     "d3": "7.8.4",
     "dayjs": "1.11.12",

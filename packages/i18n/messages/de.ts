@@ -2,6 +2,9 @@ export default {
   shared: {
     table: {
       download: 'Als CSV herunterladen',
+      noResults: 'Keine Ergebnisse.',
+      previous: 'Zurück',
+      next: 'Weiter',
     },
     questions: {
       roundedTo: 'Rundet auf {accuracy} Nachkommastellen.',
