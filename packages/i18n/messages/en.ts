@@ -63,6 +63,11 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      preferred: 'preferred',
+      groupSize: 'Group Size',
+      courseDuration: 'Course Duration',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
       download: 'Download',
       open: 'Open preview',
       profile: 'Profile',
@@ -198,6 +203,8 @@ export default {
       groups: 'Groups',
       pleaseReview:
         'Please review the following instructions. This action cannot be undone.',
+      comingSoon: 'Coming soon...',
+      pinCode: 'PIN Code',
     },
     contentInput: {
       boldStyle:
@@ -1372,6 +1379,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noFeedbacks: 'No feedbacks received or pinned yet...',
     },
     courseList: {
+      showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
       noCoursesFound: 'No courses found.',

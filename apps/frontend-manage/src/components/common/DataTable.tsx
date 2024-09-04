@@ -12,6 +12,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -34,6 +35,8 @@ interface DataTableProps<TData, TValue> {
     tableHeader?: string
     tableCell?: string
   }
+  footerContent?: React.ReactNode
+  isPaginated?: boolean
 }
 
 function DataTable<TData, TValue>({
@@ -41,6 +44,8 @@ function DataTable<TData, TValue>({
   data,
   csvFilename,
   className,
+  footerContent,
+  isPaginated,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
 
@@ -48,7 +53,7 @@ function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
     state: {
       columnVisibility: columns.reduce<Record<string, boolean>>(
         (acc, column) => ({
@@ -70,37 +75,10 @@ function DataTable<TData, TValue>({
   }, [columns])
 
   return (
-    <div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {t('shared.table.previous')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {t('shared.table.next')}
-        </Button>
-      </div>
-
-      <Table
-        containerClassName={twMerge(
-          'h-fit max-h-[500px] overflow-y-auto relative',
-          className?.table
-        )}
-      >
+    <>
+      <Table containerClassName={twMerge(className?.table)}>
         <TableHeader
-          className={twMerge(
-            'sticky top-0 z-10 bg-white shadow-sm',
-            className?.tableHeader
-          )}
+          className={twMerge('bg-white shadow-sm', className?.tableHeader)}
         >
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -145,10 +123,16 @@ function DataTable<TData, TValue>({
             </TableRow>
           )}
         </TableBody>
+
+        {typeof footerContent !== 'undefined' && (
+          <TableFooter>
+            <TableRow>{footerContent}</TableRow>
+          </TableFooter>
+        )}
       </Table>
 
-      {typeof csvFilename === 'string' && (
-        <div className="mt-4 text-right text-sm italic text-gray-500">
+      <div className="flex items-center justify-between space-x-2 py-2 text-sm">
+        {typeof csvFilename === 'string' && (
           <CsvDownloader
             meta
             wrapColumnChar='"'
@@ -165,9 +149,30 @@ function DataTable<TData, TValue>({
               <Button.Label>{t('shared.table.download')}</Button.Label>
             </Button>
           </CsvDownloader>
-        </div>
-      )}
-    </div>
+        )}
+
+        {isPaginated && (
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              {t('shared.table.previous')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              {t('shared.table.next')}
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 

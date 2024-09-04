@@ -45,14 +45,12 @@ function CourseOverviewHeader({
   })
 
   return (
-    <div className="flex flex-row items-center justify-between">
-      <H1 data={{ cy: 'course-name-with-pin' }} className={{ root: 'flex-1' }}>
-        {t('manage.course.nameWithPin', {
-          name: name,
-          pin: String(pinCode)
-            .match(/.{1,3}/g)
-            ?.join(' '),
-        })}
+    <div className="flex flex-row flex-wrap items-center justify-between">
+      <H1
+        data={{ cy: 'course-name-with-pin' }}
+        className={{ root: 'flex-1 whitespace-nowrap' }}
+      >
+        {name}
       </H1>
       <div className="mb-2 flex flex-row items-center gap-3">
         <div className="italic">
@@ -84,7 +82,7 @@ function CourseOverviewHeader({
             className={{
               trigger: 'px-2 py-4',
               item: 'p-1 hover:bg-gray-200',
-              viewport: 'bg-white',
+              viewport: 'z-10 bg-white',
             }}
             trigger={t('manage.course.otherActions')}
             items={[

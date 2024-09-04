@@ -1,4 +1,5 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import Image from 'next/image'
 
 function ParticipantListEntry({
@@ -22,7 +23,9 @@ function ParticipantListEntry({
         />
       </div>
       <div className="text-sm">{participant.username}</div>
-      <div className="text-sm italic">{participant.email}</div>
+      <div className="text-sm italic">
+        <Ellipsis maxLength={25}>{participant.email ?? ''}</Ellipsis>
+      </div>
     </div>
   )
 }

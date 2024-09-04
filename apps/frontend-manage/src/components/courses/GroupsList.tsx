@@ -39,14 +39,17 @@ function GroupsList({
     <>
       <Tabs.TabContent
         value="groups"
-        className={{ root: 'flex h-full flex-col gap-2 p-2' }}
+        className={{ root: '@container flex flex-col gap-2 p-2' }}
       >
         <div className="font-bold">
           {t('manage.course.poolForRandomAssignment')}
         </div>
 
         {pool.length > 0 && (
-          <div>
+          <div
+            className="@xl:grid-cols-2 grid"
+            data-cy="random-group-assignment-pool"
+          >
             {pool.map((entry) => (
               <ParticipantListEntry
                 participant={entry.participant!}
@@ -80,6 +83,7 @@ function GroupsList({
             }}
             onClick={() => setOpen(true)}
             disabled={randomAssignmentNotPossible}
+            data={{ cy: 'assign-random-groups' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faShuffle} />
@@ -88,9 +92,12 @@ function GroupsList({
           </Button>
         )}
 
-        <div className="grid max-h-[500px] flex-1 grid-cols-2 gap-2 overflow-y-auto">
+        <div className="@xl:grid-cols-2 grid flex-1 gap-2">
           {groups.map((group) => (
-            <div key={group.id} className="rounded border p-2">
+            <div
+              key={group.id}
+              className="border-uzh-grey-80 rounded border p-2"
+            >
               <div className="font-bold">{group.name}</div>
               {group.participants?.map((participant) => (
                 <ParticipantListEntry

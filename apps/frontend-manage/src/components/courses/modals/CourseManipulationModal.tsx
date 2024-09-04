@@ -228,7 +228,6 @@ function CourseManipulationModal({
                     tooltip={t('manage.courseList.endDateTooltip')}
                     data={{ cy: 'course-end-date' }}
                     dataButton={{ cy: 'course-end-date-button' }}
-                    disabled={endDatePast}
                     required
                   />
                   <FormikColorPicker

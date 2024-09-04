@@ -63,6 +63,11 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      preferred: 'bevorzugt',
+      groupSize: 'Gruppengrösse',
+      courseDuration: 'Kursdauer',
+      enabled: 'Aktiviert',
+      disabled: 'Deaktiviert',
       download: 'Herunterladen',
       open: 'Vorschau öffnen',
       profile: 'Profil',
@@ -198,6 +203,8 @@ export default {
       groups: 'Gruppen',
       pleaseReview:
         'Bitte beachten Sie die folgenden Hinweise. Diese Aktion kann nicht rückgängig gemacht werden.',
+      comingSoon: 'Coming soon...',
+      pinCode: 'PIN Code',
     },
     contentInput: {
       boldStyle:
@@ -1385,6 +1392,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noFeedbacks: 'Bisher wurden keine Feedbacks eingegeben oder angepinnt...',
     },
     courseList: {
+      showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
       noCoursesFound: 'Es konnten keine Kurse gefunden werden.',
