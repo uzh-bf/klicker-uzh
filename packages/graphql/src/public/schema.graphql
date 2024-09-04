@@ -136,6 +136,7 @@ type Course {
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
+  groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
@@ -498,6 +499,13 @@ enum GroupActivityStatus {
   DRAFT
   GRADED
   PUBLISHED
+}
+
+type GroupAssignmentPoolEntry {
+  courseId: ID!
+  id: ID!
+  participant: Participant
+  participantId: ID!
 }
 
 type GroupLeaderboardEntry {
@@ -898,6 +906,7 @@ type Query {
   feedbacks(id: String!): [Feedback!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User

@@ -192,6 +192,9 @@ export default {
       availability: 'Verfügbarkeit',
       taskDescription: 'Aufgabenstellung',
       color: 'Farbe',
+      groups: 'Gruppen',
+      pleaseReview:
+        'Bitte beachten Sie die folgenden Hinweise. Diese Aktion kann nicht rückgängig gemacht werden.',
     },
     contentInput: {
       boldStyle:
@@ -1457,6 +1460,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noMicrolearnings: 'Keine Microlearnings vorhanden',
       noGroupActivities: 'Keine Gruppenaktivitäten vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
+      groupLeaderboard: 'Gruppen Leaderboard',
+      groups: 'Gruppen',
+      assignRandomGroups: 'Zufällige Gruppen zuweisen',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
       runningSession: 'Laufende Session',
@@ -1522,6 +1528,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableGamification: 'Gamifizierung aktivieren',
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',
+      poolForRandomAssignment: 'Pool for Zufällige Zuweisung',
+      randomGroupsNotPossible:
+        'Es können keine zufälligen Gruppen gebildet werden, wenn sich nur ein Studierender im Zuweisungspool oder in einer Gruppe mit einem Teilnehmenden befindet. Bitte überprüfen Sie die Einstellungen für die Gruppenbildung im Kurs.',
+      finalizeRandomGroupAssignment: 'Zufällige Gruppenzuweisung Finalisieren',
+      confirmRandomGroupAssignment: `Sobald Sie die Finalisierung der zufälligen Gruppenzuweisung bestätigen, werden die folgenden Aktionen automatisch von KlickerUZH durchgeführt:
+        <ul><li>Alle Studierenden, die sich noch im Pool der zufälligen Zuweisung befinden, werden in Gruppen eingeteilt.</li>
+        <li>Gruppen mit nur einem Teilnehmer werden gelöscht und die entsprechenden Studierenden werden in Gruppen eingeteilt.</li>
+        <li>Die Zuweisung zu zufälligen Gruppen kann nicht rückgängig gemacht werden!</li>
+        <li>Die Möglichkeit für Studierende, Gruppen manuell über die Studierenden-App zu erstellen oder zu verlassen, wird automatisch deaktiviert. Wenn Sie diese Möglichkeit wieder aktivieren möchten, verschieben Sie einfach das Gruppendeadline-Datum in den Kurseinstellungen in die Zukunft.</li></ul>`,
     },
     groupActivity: {
       activityMissingOrNotCompleted:

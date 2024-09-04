@@ -186,7 +186,7 @@ async function createRandomGroup(
     courseId,
     groupParticipantIds,
   }: { courseId: string; groupParticipantIds: string[] },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
   const groupName =
@@ -340,6 +340,14 @@ async function resolveSingleParticipantGroups(
         },
       },
     },
+  })
+
+  // invalidate cache for the resolve participant groups
+  singleParticipantGroups.forEach(({ groupId }) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
   })
 
   return courseExtendedPool
@@ -504,6 +512,18 @@ export async function manualRandomGroupAssignments(
     include: {
       participantGroups: true,
     },
+  })
+
+  // invalidate the cache of the course and the group assignment pool entries
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id: courseId,
+  })
+  courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupAssignmentPoolEntry',
+      id: entry.id,
+    })
   })
 
   return updatedCourse
@@ -1768,4 +1788,27 @@ export async function finalizeGroupActivityGrading(
   await ctx.prisma.$transaction(promises)
 
   return updatedGroupActivity
+}
+
+export async function getCourseGroups(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      participantGroups: {
+        include: {
+          participants: true,
+        },
+      },
+      groupAssignmentPoolEntries: {
+        include: {
+          participant: true,
+        },
+      },
+    },
+  })
+
+  return course
 }

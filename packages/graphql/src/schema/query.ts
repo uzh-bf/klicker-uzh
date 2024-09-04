@@ -346,6 +346,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCourseGroups: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getCourseGroups(args, ctx)
+        },
+      }),
+
       sessionHMAC: asUser.field({
         nullable: true,
         type: 'String',

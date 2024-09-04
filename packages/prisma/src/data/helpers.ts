@@ -106,8 +106,22 @@ export async function prepareParticipant({
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
+  const availableAvatars = [
+    '43de5cc3e88371b82515e365b61ca4f56b3fff76',
+    'd6a8459b605f0caca2d132821e3c7213004a6a28',
+    'f812911166dee1e4943bd781ed658845812d71be',
+    '217ed4744160a52219711edc6636550d49b6d672',
+  ]
+
+  // with probability 60%, select one of the available avatars at random
+  const avatar =
+    Math.random() < 0.6
+      ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
+      : undefined
+
   const data = {
     ...args,
+    avatar: avatar,
     password: hashedPassword,
     username,
     email: `${username}@test.uzh.ch`,
