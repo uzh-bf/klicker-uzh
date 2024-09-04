@@ -1,37 +1,46 @@
-import TableWithDownload from '@components/common/TableWithDownload'
+import DataTable from '@components/common/DataTable'
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
+import { TableCell } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 
 function IndividualLeaderboard({ course }: { course: Course }) {
   const t = useTranslations()
 
   return (
-    <Tabs.TabContent value="ind-leaderboard" className={{ root: 'p-2' }}>
-      <TableWithDownload
+    <Tabs.TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
+      <DataTable
+        isPaginated
         columns={[
           {
-            id: 'rank',
-            label: t('shared.leaderboard.rank'),
+            accessorKey: 'rank',
+            header: t('shared.leaderboard.rank'),
           },
           {
-            id: 'username',
-            label: t('shared.leaderboard.username'),
+            accessorKey: 'username',
+            header: t('shared.leaderboard.username'),
           },
           {
-            id: 'email',
-            label: t('shared.leaderboard.email'),
+            accessorKey: 'email',
+            header: t('shared.leaderboard.email'),
+            csvOnly: true,
           },
           {
-            id: 'score',
-            label: t('shared.leaderboard.points'),
+            accessorKey: 'score',
+            header: t('shared.leaderboard.points'),
           },
         ]}
-        itemIdentifier="id"
-        items={course.leaderboard ?? []}
+        data={course.leaderboard ?? []}
         csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
-        summary={
-          <div className="text-md mb-2 text-slate-600">
+        className={{
+          tableHeader: 'h-7 p-2',
+          tableCell: 'h-7 p-2',
+        }}
+        footerContent={
+          <TableCell
+            colSpan={3}
+            className="px-1 py-2 text-right text-slate-700"
+          >
             <div>
               {t('manage.course.participantsLeaderboard', {
                 number: course.numOfActiveParticipants,
@@ -43,12 +52,8 @@ function IndividualLeaderboard({ course }: { course: Course }) {
                 points: course.averageActiveScore?.toFixed(2),
               })}
             </div>
-          </div>
+          </TableCell>
         }
-        className={{
-          tableHeader: 'h-7 p-2',
-          tableCell: 'h-7 p-2',
-        }}
       />
     </Tabs.TabContent>
   )

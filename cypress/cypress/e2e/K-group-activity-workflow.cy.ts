@@ -425,7 +425,7 @@ describe('Create and solve a group activity', () => {
 
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.get('[data-cy="password-login"]').click()
-    cy.get('[data-cy="username-field"]').click().type('testuser12')
+    cy.get('[data-cy="username-field"]').click().type('testuser15')
     cy.get('[data-cy="password-field"]')
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))

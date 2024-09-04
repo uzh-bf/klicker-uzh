@@ -27,7 +27,7 @@ function LiveQuizList({ sessions }: LiveQuizListProps) {
   const t = useTranslations()
 
   return (
-    <>
+    <div className="">
       {sessions && sessions.length > 0 ? (
         <div className="flex flex-col gap-2">
           {sort((a, b) => {
@@ -43,7 +43,7 @@ function LiveQuizList({ sessions }: LiveQuizListProps) {
       ) : (
         <div>{t('manage.course.noSessions')}</div>
       )}
-    </>
+    </div>
   )
 }
 
