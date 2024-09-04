@@ -73,8 +73,8 @@ export const Course = builder.objectType(CourseRef, {
       type: 'Date',
       nullable: true,
     }),
-    maxGroupSize: t.exposeInt('maxGroupSize', { nullable: true }),
-    preferredGroupSize: t.exposeInt('preferredGroupSize', { nullable: true }),
+    maxGroupSize: t.exposeInt('maxGroupSize'),
+    preferredGroupSize: t.exposeInt('preferredGroupSize'),
 
     notificationEmail: t.exposeString('notificationEmail', {
       nullable: true,

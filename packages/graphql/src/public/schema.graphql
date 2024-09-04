@@ -144,7 +144,7 @@ type Course {
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
-  maxGroupSize: Int
+  maxGroupSize: Int!
   microLearnings: [MicroLearning!]
   name: String!
   notificationEmail: String
@@ -154,7 +154,7 @@ type Course {
   participantGroups: [ParticipantGroup!]
   pinCode: Int
   practiceQuizzes: [PracticeQuiz!]
-  preferredGroupSize: Int
+  preferredGroupSize: Int!
   sessions: [Session!]
   startDate: Date!
   updatedAt: Date
@@ -685,6 +685,7 @@ type Mutation {
   publishPracticeQuiz(id: String!): PracticeQuiz
   publishScheduledPracticeQuizzes: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback

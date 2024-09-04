@@ -700,6 +700,33 @@ export async function leaveParticipantGroup(
   }
 }
 
+export async function renameParticipantGroup(
+  {
+    groupId,
+    name,
+  }: {
+    groupId: string
+    name: string
+  },
+  ctx: ContextWithUser
+) {
+  const updatedGroup = await ctx.prisma.participantGroup.update({
+    where: {
+      id: groupId,
+    },
+    data: {
+      name,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'ParticipantGroup',
+    id: groupId,
+  })
+
+  return updatedGroup
+}
+
 interface GetParticipantGroupsArgs {
   courseId: string
 }

@@ -76,7 +76,7 @@ function GroupActivityList({
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
+                  <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faPlay} />
                     <div>{t('pwa.groupActivity.available')}</div>
                   </div>
@@ -93,7 +93,7 @@ function GroupActivityList({
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
+                  <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faUserGroup} />
                     <div>{t('pwa.groupActivity.started')}</div>
                   </div>
@@ -110,7 +110,7 @@ function GroupActivityList({
                     activity={activity}
                     label={t('pwa.groupActivity.openGroupActivity')}
                   />
-                  <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
+                  <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faClock} />
                     <div>{t('pwa.groupActivity.submitted')}</div>
                   </div>
@@ -121,7 +121,7 @@ function GroupActivityList({
               groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
-                  <div className="flex h-max flex-row items-center gap-2 rounded bg-slate-300 px-2 py-0.5 text-sm">
+                  <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-slate-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faXmark} />
                     <div>{t('pwa.groupActivity.past')}</div>
                   </div>
@@ -133,7 +133,7 @@ function GroupActivityList({
               groupActivityInstances[activity.id]?.decisionsSubmittedAt &&
               (!groupActivityInstances[activity.id]?.results ||
                 !groupActivityInstances[activity.id]?.resultsComputedAt) && (
-                <div className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
+                <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
                   <FontAwesomeIcon icon={faClock} />
                   <div>{t('pwa.groupActivity.submitted')}</div>
                 </div>
@@ -151,7 +151,7 @@ function GroupActivityList({
                   />
                   {groupActivityInstances[activity.id]?.results.passed ? (
                     <div
-                      className="flex h-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm"
+                      className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm"
                       data-cy="group-activity-passed-tag"
                     >
                       <FontAwesomeIcon icon={faCheck} />
@@ -159,7 +159,7 @@ function GroupActivityList({
                     </div>
                   ) : (
                     <div
-                      className="flex h-max flex-row items-center gap-2 rounded bg-red-400 px-2 py-0.5 text-sm"
+                      className="flex h-max w-max flex-row items-center gap-2 rounded bg-red-400 px-2 py-0.5 text-sm"
                       data-cy="group-activity-failed-tag"
                     >
                       <FontAwesomeIcon icon={faXmark} />
