@@ -8,20 +8,6 @@ function IndividualLeaderboard({ course }: { course: Course }) {
 
   return (
     <Tabs.TabContent value="ind-leaderboard" className={{ root: 'p-2' }}>
-      <div className="text-md mb-2 flex flex-col items-end text-slate-600">
-        <div>
-          {t('manage.course.participantsLeaderboard', {
-            number: course.numOfActiveParticipants,
-          })}
-          /{course.numOfParticipants}
-        </div>
-        <div>
-          {t('manage.course.avgPoints', {
-            points: course.averageActiveScore?.toFixed(2),
-          })}
-        </div>
-      </div>
-
       <TableWithDownload
         columns={[
           {
@@ -44,6 +30,25 @@ function IndividualLeaderboard({ course }: { course: Course }) {
         itemIdentifier="id"
         items={course.leaderboard ?? []}
         csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
+        summary={
+          <div className="text-md mb-2 text-slate-600">
+            <div>
+              {t('manage.course.participantsLeaderboard', {
+                number: course.numOfActiveParticipants,
+              })}
+              /{course.numOfParticipants}
+            </div>
+            <div>
+              {t('manage.course.avgPoints', {
+                points: course.averageActiveScore?.toFixed(2),
+              })}
+            </div>
+          </div>
+        }
+        className={{
+          tableHeader: 'h-7 p-2',
+          tableCell: 'h-7 p-2',
+        }}
       />
     </Tabs.TabContent>
   )

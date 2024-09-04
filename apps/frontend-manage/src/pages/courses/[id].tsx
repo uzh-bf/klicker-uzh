@@ -88,7 +88,7 @@ function CourseOverviewPage() {
 
       <ResizablePanelGroup direction="horizontal" className="w-full">
         <ResizablePanel
-          defaultSize={data?.course?.isGamificationEnabled ? 50 : 100}
+          defaultSize={data?.course?.isGamificationEnabled ? 60 : 100}
         >
           <div className={twMerge('w-full')}>
             <div className="md:mr-2">
@@ -210,7 +210,7 @@ function CourseOverviewPage() {
         </ResizablePanel>
         <ResizableHandle />
         {data?.course?.isGamificationEnabled && (
-          <ResizablePanel defaultSize={50}>
+          <ResizablePanel defaultSize={40}>
             <CourseGamificationInfos
               course={course}
               tabValue={gamificationTabValue}

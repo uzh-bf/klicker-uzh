@@ -195,6 +195,7 @@ export default {
       groups: 'Groups',
       pleaseReview:
         'Please review the following instructions. This action cannot be undone.',
+      comingSoon: 'Coming soon...',
     },
     contentInput: {
       boldStyle:
