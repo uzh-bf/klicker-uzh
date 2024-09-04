@@ -24,7 +24,7 @@ function ParticipantListEntry({
       </div>
       <div className="text-sm">{participant.username}</div>
       <div className="text-sm italic">
-        <Ellipsis maxLength={25}>{participant.email ?? ''}</Ellipsis>
+        <Ellipsis maxLines={1}>{participant.email ?? ''}</Ellipsis>
       </div>
     </div>
   )
