@@ -10,8 +10,8 @@ export function RandomizedGroupCreationFailure({
 }) {
   return (
     <Layout
-      title="KlickerUZH - Participant Account Activation"
-      preview="KlickerUZH - Your Account Activation Link"
+      title="KlickerUZH - Randomized Group Creation Failure"
+      preview="KlickerUZH - Randomized Group Creation Failure"
     >
       <Section className="p-8 pt-0">
         <Heading className="pb-4 text-2xl font-semibold">
