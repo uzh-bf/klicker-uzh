@@ -51,19 +51,11 @@ function GroupView({
   return (
     <Tabs.TabContent key={group.id} value={group.id}>
       <div className="flex flex-col gap-2">
-        <H3
-          className={{
-            root: 'flex flex-row justify-between',
-          }}
-        >
-          <div>
-            {t('shared.generic.group')} {group.name}
-          </div>
-          <div>{group.code}</div>
-        </H3>
-
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
+            <H3>
+              {t('shared.generic.group')} {group.name}
+            </H3>
             {(!participation.isActive ||
               group.participants!.length === 1 ||
               group.participants!.length === maxGroupSize) && (
@@ -154,10 +146,13 @@ function GroupView({
               </div>
             </div>
           </div>
-          <GroupVisualization
-            groupName={group.name}
-            participants={group.participants!}
-          />
+          <div className="flex flex-1 flex-col items-center md:flex-none">
+            <H3 className={{ root: 'self-end' }}>{group.code}</H3>
+            <GroupVisualization
+              groupName={group.name}
+              participants={group.participants!}
+            />
+          </div>
         </div>
 
         {(groupActivities.length ?? -1) > 0 && (
