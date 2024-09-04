@@ -11,6 +11,7 @@ export default defineConfig({
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',
+    STUDENT_NOGROUP: 'testuser40',
     STUDENT_EMAIL: 'testuser1@test.uzh.ch',
     STUDENT_PASSWORD: 'abcd',
 

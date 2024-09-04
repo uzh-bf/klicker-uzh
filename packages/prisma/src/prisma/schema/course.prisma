@@ -8,13 +8,18 @@ model Course {
   name                  String
   displayName           String
   description           String?
-  color                 String    @default("#eaa07d")
+  color                 String   @default("#eaa07d")
   startDate             DateTime
   endDate               DateTime
-  groupDeadlineDate     DateTime?
   notificationEmail     String?
-  isGamificationEnabled Boolean   @default(true)
-  areAnalyticsValid     Boolean   @default(false)
+  isGamificationEnabled Boolean  @default(true)
+  areAnalyticsValid     Boolean  @default(false)
+
+  isGroupCreationEnabled    Boolean  @default(true)
+  groupDeadlineDate         DateTime
+  preferredGroupSize        Int      @default(3)
+  maxGroupSize              Int      @default(5)
+  randomAssignmentFinalized Boolean  @default(false)
 
   sessions                   LiveSession[]
   elementStacks              ElementStack[]
@@ -35,6 +40,7 @@ model Course {
   aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
   responses                  QuestionResponse[]
+  groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?

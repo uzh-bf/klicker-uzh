@@ -12,9 +12,11 @@ function CopyConfirmationToast({
 
   return (
     <Toast
+      dismissible
       openExternal={open}
       setOpenExternal={setOpen}
       type="success"
+      duration={4000}
       className={{ root: 'w-[24rem]' }}
     >
       {t('manage.course.linkAccessCopied')}

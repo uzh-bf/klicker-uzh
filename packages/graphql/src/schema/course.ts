@@ -4,11 +4,13 @@ import builder from '../builder.js'
 import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
 import { IMicroLearning, MicroLearningRef } from './microLearning.js'
 import type {
+  IGroupAssignmentPoolEntryRef,
   IParticipant,
   IParticipantGroup,
   IParticipation,
 } from './participant.js'
 import {
+  GroupAssignmentPoolEntryRef,
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
@@ -24,10 +26,11 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
+  participantGroups?: IParticipantGroup[]
+  groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
@@ -65,10 +68,14 @@ export const Course = builder.objectType(CourseRef, {
     startDate: t.expose('startDate', { type: 'Date' }),
     endDate: t.expose('endDate', { type: 'Date' }),
 
+    isGroupCreationEnabled: t.exposeBoolean('isGroupCreationEnabled'),
     groupDeadlineDate: t.expose('groupDeadlineDate', {
       type: 'Date',
       nullable: true,
     }),
+    maxGroupSize: t.exposeInt('maxGroupSize'),
+    preferredGroupSize: t.exposeInt('preferredGroupSize'),
+    randomAssignmentFinalized: t.exposeBoolean('randomAssignmentFinalized'),
 
     notificationEmail: t.exposeString('notificationEmail', {
       nullable: true,
@@ -82,8 +89,8 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
     sessions: t.expose('sessions', {
       type: [SessionRef],
@@ -95,6 +102,14 @@ export const Course = builder.objectType(CourseRef, {
     }),
     microLearnings: t.expose('microLearnings', {
       type: [MicroLearningRef],
+      nullable: true,
+    }),
+    participantGroups: t.expose('participantGroups', {
+      type: [ParticipantGroupRef],
+      nullable: true,
+    }),
+    groupAssignmentPoolEntries: t.expose('groupAssignmentPoolEntries', {
+      type: [GroupAssignmentPoolEntryRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
@@ -137,6 +152,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
 
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
+  email: string
   avatar?: string | null
   rank: number
   lastBlockOrder?: number
@@ -153,6 +169,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
 
     score: t.exposeFloat('score'),
     username: t.exposeString('username'),
+    email: t.exposeString('email', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
     lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),

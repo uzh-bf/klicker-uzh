@@ -71,6 +71,7 @@ function Activation() {
       </H2>
       <Loader />
       <Toast
+        dismissible
         type="error"
         duration={8000}
         openExternal={showError}

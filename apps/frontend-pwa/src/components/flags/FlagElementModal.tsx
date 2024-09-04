@@ -33,6 +33,7 @@ function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
 
   return (
     <Toast
+      dismissible
       duration={5000}
       type="error"
       openExternal={open}
@@ -54,6 +55,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
 
   return (
     <Toast
+      dismissible
       duration={5000}
       type="success"
       openExternal={open}

@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url)
 type AVAILABLE_EMAIL_TEMPLATES =
   | 'MagicLinkRequested'
   | 'ParticipantAccountActivation'
+  | 'RandomizedGroupCreationFailure'
 
 let transport: nodemailer.Transporter | undefined
 

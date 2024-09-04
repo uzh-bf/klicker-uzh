@@ -45,7 +45,7 @@ function CourseQRModal({
       title="QR Code"
       trigger={
         <Button
-          className={{ root: '!mr-0 w-full' }}
+          className={{ root: '!mr-0 w-full gap-2' }}
           onClick={() => setModalOpen(true)}
           data={dataTrigger}
         >
