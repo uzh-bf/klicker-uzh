@@ -5,56 +5,111 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableHeader,
   TableRow,
 } from '@uzh-bf/design-system/dist/future'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import CsvDownloader from 'react-csv-downloader'
+import { twMerge } from 'tailwind-merge'
 
 function TableWithDownload({
-  head,
+  columns,
   items,
-  onDownload,
+  itemIdentifier,
+  csvFilename,
+  className,
 }: {
-  head: React.ReactNode
-  items: {
-    id: number
-    rank: number
-    username: string
-    email: string
-    score: number
+  columns: {
+    id: string
+    label: string
   }[]
-  onDownload?: () => void
+  items: Record<string, string | number | null>[]
+  itemIdentifier: string
+  csvFilename?: string
+  className?: {
+    table?: string
+    tableHeader?: string
+    tableCell?: string
+  }
 }) {
   const t = useTranslations()
+
+  const data = useMemo(() => {
+    return items.map((item) => {
+      return columns.reduce<Record<string, string | number | null>>(
+        (acc, column) => {
+          return {
+            ...acc,
+            [itemIdentifier]: item[itemIdentifier],
+            [column.id]: item[column.id] ?? '',
+          }
+        },
+        {}
+      )
+    })
+  }, [columns, items, itemIdentifier])
 
   return (
     <div>
       <Table
         className=""
-        containerClassName="h-fit max-h-[500px] overflow-y-auto relative"
+        containerClassName={twMerge(
+          'h-fit max-h-[500px] overflow-y-auto relative',
+          className?.table
+        )}
       >
-        <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
-          <TableRow>{head}</TableRow>
+        <TableHeader
+          className={twMerge(
+            'sticky top-0 z-10 bg-white shadow-sm',
+            className?.tableHeader
+          )}
+        >
+          <TableRow>
+            {columns.map((column) => (
+              <TableHead key={column.id} className={className?.tableCell}>
+                {column.label}
+              </TableHead>
+            ))}
+          </TableRow>
         </TableHeader>
+
         <TableBody className="">
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">{item.rank}</TableCell>
-              <TableCell>{item.username}</TableCell>
-              {/* <TableCell>{item.email}</TableCell> */}
-              <TableCell>{item.score}</TableCell>
+          {data.map((item) => (
+            <TableRow key={item[itemIdentifier]}>
+              {columns.map((column) => (
+                <TableCell
+                  key={item[itemIdentifier] + column.id}
+                  className={className?.tableCell}
+                >
+                  {item[column.id]}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      {typeof onDownload === 'function' && (
+
+      {typeof csvFilename === 'string' && (
         <div className="mt-4 text-right text-sm italic text-gray-500">
-          <Button onClick={() => null}>
-            <Button.Icon>
-              <FontAwesomeIcon icon={faDownload} />
-            </Button.Icon>
-            <Button.Label>{t('shared.table.download')}</Button.Label>
-          </Button>
+          <CsvDownloader
+            meta
+            wrapColumnChar='"'
+            suffix={dayjs().format('YYYY-MM-DD')}
+            filename={csvFilename}
+            columns={columns}
+            datas={data as Record<string, string>[]}
+            separator=";"
+          >
+            <Button>
+              <Button.Icon>
+                <FontAwesomeIcon icon={faDownload} />
+              </Button.Icon>
+              <Button.Label>{t('shared.table.download')}</Button.Label>
+            </Button>
+          </CsvDownloader>
         </div>
       )}
     </div>

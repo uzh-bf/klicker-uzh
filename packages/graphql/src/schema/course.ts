@@ -145,6 +145,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
 
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
+  email: string
   avatar?: string | null
   rank: number
   lastBlockOrder?: number
@@ -161,6 +162,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
 
     score: t.exposeFloat('score'),
     username: t.exposeString('username'),
+    email: t.exposeString('email', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
     lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
