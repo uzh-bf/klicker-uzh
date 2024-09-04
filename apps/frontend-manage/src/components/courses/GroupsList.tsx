@@ -46,7 +46,10 @@ function GroupsList({
         </div>
 
         {pool.length > 0 && (
-          <div className="grid grid-cols-2">
+          <div
+            className="grid grid-cols-2"
+            data-cy="random-group-assignment-cool"
+          >
             {pool.map((entry) => (
               <ParticipantListEntry
                 participant={entry.participant!}

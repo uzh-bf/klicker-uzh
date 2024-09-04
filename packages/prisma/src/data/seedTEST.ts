@@ -209,7 +209,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // create participations for all the first 30 participants
   const participations = await Promise.all(
-    PARTICIPANT_IDS.slice(0, 30).map(async (id, ix) => {
+    PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participation.upsert({
         where: {
           courseId_participantId: {
