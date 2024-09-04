@@ -222,7 +222,7 @@ function StackBlockCreation({
                 <Ellipsis
                   // maxLines={2}
                   maxLength={40}
-                  className={{ content: 'prose-sm' }}
+                  className={{ content: 'text-xs' }}
                 >
                   {title}
                 </Ellipsis>
