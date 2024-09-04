@@ -11,7 +11,7 @@ export function RandomizedGroupCreationFailure({
   return (
     <Layout
       title="KlickerUZH - Randomized Group Creation Failure"
-      preview="KlickerUZH - Randomized Group Creation Failure"
+      preview="KlickerUZH - Failed Automated Group Creation"
     >
       <Section className="p-8 pt-0">
         <Heading className="pb-4 text-2xl font-semibold">
