@@ -79,9 +79,11 @@ function CreateAccountJoinForm() {
         )}
       </Formik>
       <Toast
+        dismissible
         openExternal={errorToast}
         setOpenExternal={setErrorToast}
         type="error"
+        duration={6000}
       >
         {t('pwa.login.coursePinInvalid')}
       </Toast>

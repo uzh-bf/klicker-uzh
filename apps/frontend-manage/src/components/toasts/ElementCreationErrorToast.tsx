@@ -16,6 +16,7 @@ function ElementCreationErrorToast({
 
   return (
     <Toast
+      dismissible
       duration={6000}
       openExternal={open}
       setOpenExternal={setOpen}

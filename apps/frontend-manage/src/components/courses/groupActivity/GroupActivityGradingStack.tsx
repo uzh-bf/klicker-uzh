@@ -380,6 +380,7 @@ function GroupActivityGradingStack({
             </Button>
             <EditingDetector />
             <Toast
+              dismissible
               openExternal={successToast}
               setOpenExternal={setSuccessToast}
               type="success"
@@ -388,6 +389,7 @@ function GroupActivityGradingStack({
               {t('manage.groupActivity.stackGradingSuccess')}
             </Toast>
             <Toast
+              dismissible
               openExternal={errorToast}
               setOpenExternal={setErrorToast}
               type="error"

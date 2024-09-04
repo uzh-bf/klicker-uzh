@@ -67,6 +67,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
         <AccountDeletionForm />
       </div>
       <Toast
+        dismissible
         type="error"
         openExternal={showError}
         setOpenExternal={setShowError}
@@ -75,6 +76,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
         {t('pwa.profile.editProfileFailed')}
       </Toast>
       <Toast
+        dismissible
         type="success"
         openExternal={showSuccess}
         setOpenExternal={setShowSuccess}

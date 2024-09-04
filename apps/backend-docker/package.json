@@ -57,7 +57,7 @@
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
     "@types/ws": "^8.5.9",
-    "@uzh-bf/design-system": "3.0.0-alpha.26",
+    "@uzh-bf/design-system": "3.0.0-alpha.27",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.4.5",
