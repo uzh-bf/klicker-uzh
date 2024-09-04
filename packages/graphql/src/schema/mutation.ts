@@ -407,6 +407,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      renameParticipantGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantGroup,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.renameParticipantGroup(args, ctx)
+        },
+      }),
+
       subscribeToPush: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participation,

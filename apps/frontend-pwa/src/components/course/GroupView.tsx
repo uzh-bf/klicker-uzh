@@ -17,6 +17,7 @@ import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import GroupActivityList from '../groupActivity/GroupActivityList'
 import GroupVisualization from '../participant/groups/GroupVisualization'
+import EditableGroupName from './EditableGroupName'
 
 interface GroupViewProps {
   group: Omit<ParticipantGroup, 'participants'> & {
@@ -53,9 +54,7 @@ function GroupView({
       <div className="flex flex-col gap-2">
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
-            <H3>
-              {t('shared.generic.group')} {group.name}
-            </H3>
+            <EditableGroupName groupId={group.id} groupName={group.name} />
             {(!participation.isActive ||
               group.participants!.length === 1 ||
               group.participants!.length === maxGroupSize) && (
