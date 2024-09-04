@@ -3,6 +3,7 @@ mutation ManualRandomGroupAssignments($courseId: String!) {
     id
     displayName
     groupDeadlineDate
+    randomAssignmentFinalized
 
     participantGroups {
       id

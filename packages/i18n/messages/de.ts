@@ -195,6 +195,7 @@ export default {
       groups: 'Gruppen',
       pleaseReview:
         'Bitte beachten Sie die folgenden Hinweise. Diese Aktion kann nicht rückgängig gemacht werden.',
+      comingSoon: 'Coming soon...',
     },
     contentInput: {
       boldStyle:

@@ -20,6 +20,7 @@ function TableWithDownload({
   items,
   itemIdentifier,
   csvFilename,
+  summary,
   className,
 }: {
   columns: {
@@ -29,6 +30,7 @@ function TableWithDownload({
   items: Record<string, string | number | null>[]
   itemIdentifier: string
   csvFilename?: string
+  summary?: React.ReactNode
   className?: {
     table?: string
     tableHeader?: string
@@ -93,7 +95,8 @@ function TableWithDownload({
       </Table>
 
       {typeof csvFilename === 'string' && (
-        <div className="mt-4 text-right text-sm italic text-gray-500">
+        <div className="mt-4 flex flex-row justify-between text-sm text-gray-500">
+          <div>{summary}</div>
           <CsvDownloader
             meta
             wrapColumnChar='"'

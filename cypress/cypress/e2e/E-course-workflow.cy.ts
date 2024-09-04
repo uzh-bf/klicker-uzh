@@ -8,6 +8,129 @@ describe('Test course creation and editing functionalities', () => {
   const testCourseName = 'Testkurs'
   const currentYear = new Date().getFullYear()
 
+  it('Test the assignment of random groups in the seeded test course', () => {
+    const testCourse = 'Testkurs'
+
+    // log into frontend-manage
+    cy.loginLecturer()
+
+    // switch to course list
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
+
+    // switch to the group leaderboard, assign random groups and verify that groups have been created
+    cy.get('[data-cy="tab-groups"]').click()
+    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="cancel-random-group-assignment"]').click()
+    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="confirm-random-group-assignment"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="assign-random-groups"]').should('not.exist')
+    cy.findByText(
+      messages.manage.course.groupAssignmentFinalizedMessage
+    ).should('exist')
+
+    // move course end date and group creation deadline to the future, making random group assignment possible again
+    cy.get('[data-cy="course-settings-button"]').click()
+    cy.get('[data-cy="course-end-date-button"]').click()
+    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 3}-01-01`)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 2}-01-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+    cy.get('[data-cy="assign-random-groups"]')
+      .should('exist')
+      .should('be.disabled')
+    cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
+      'exist'
+    )
+
+    // login with first student that is part of a group - leave group and join pool
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="student-course-create-group"]').click()
+    cy.get('[data-cy="enter-random-group-pool"]').click()
+    cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
+
+    // login as the lecturer again and check the course overview
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
+    cy.get('[data-cy="tab-groups"]').click()
+
+    // check if first student is in pool, but assignment is still not possible
+    cy.get('[data-cy="random-group-assignment-pool"]').findByText(
+      Cypress.env('STUDENT_USERNAME')
+    )
+    cy.get('[data-cy="assign-random-groups"]').should('exist')
+    cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
+      'not.exist'
+    ) // -> there are groups with a single participant available
+
+    // login as the student without group and join the random pool as well
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="password-login"]').click()
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME2'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="student-course-create-group"]').click()
+    cy.get('[data-cy="enter-random-group-pool"]').click()
+    cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
+
+    // check if first student is in pool, but assignment is still not possible
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
+    cy.get('[data-cy="tab-groups"]').click()
+    cy.get('[data-cy="random-group-assignment-pool"]').findByText(
+      Cypress.env('STUDENT_USERNAME2')
+    )
+    cy.get('[data-cy="assign-random-groups"]')
+      .should('exist')
+      .should('not.be.disabled')
+    cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="confirm-random-group-assignment"]').click()
+
+    // check that the pool with participants does no longer exist
+    cy.get('[data-cy="random-group-assignment-pool"]').should('not.exist')
+  })
+
   it('Test the creation of a new course', () => {
     // log into frontend-manage
     cy.loginLecturer()

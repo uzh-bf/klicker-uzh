@@ -46,7 +46,10 @@ function GroupsList({
         </div>
 
         {pool.length > 0 && (
-          <div>
+          <div
+            className="grid grid-cols-2"
+            data-cy="random-group-assignment-pool"
+          >
             {pool.map((entry) => (
               <ParticipantListEntry
                 participant={entry.participant!}
@@ -80,6 +83,7 @@ function GroupsList({
             }}
             onClick={() => setOpen(true)}
             disabled={randomAssignmentNotPossible}
+            data={{ cy: 'assign-random-groups' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faShuffle} />

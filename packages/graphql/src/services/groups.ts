@@ -299,13 +299,13 @@ export async function runningRandomGroupAssignments(ctx: Context) {
 
       await sendTeamsNotifications(
         'graphql/runningRandomGroupAssignments',
-        `Successfully assigned new random groups for ${course.name} (rolling assignment).`
+        `Successfully assigned new random groups for ${course.name} (id: ${course.id}; rolling assignment).`
       )
     } catch (e) {
       console.error(e)
       await sendTeamsNotifications(
         'graphql/runningRandomGroupAssignments',
-        `Failed to assign groups for course ${course.name} (rolling assignment) with error: ${
+        `Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
           e || 'missing'
         }`
       )
@@ -419,7 +419,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
 
       await sendTeamsNotifications(
         'graphql/finalRandomGroupAssignments',
-        `Resolved all single participant groups for course ${course.name}.`
+        `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
       )
 
       const poolParticipantIds =
@@ -457,7 +457,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
 
         await sendTeamsNotifications(
           'graphql/finalRandomGroupAssignments',
-          `Failure of automatic group assignment - single participant in pool for course ${course.name}. Sent E-Mail to course owner with id ${course.ownerId}.`
+          `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
         )
 
         continue
@@ -487,7 +487,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
       console.error(e)
       await sendTeamsNotifications(
         'graphql/finalRandomGroupAssignments',
-        `Failed to finalize random group assignments for course ${course.name} with error: ${
+        `Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${
           e || 'missing'
         }`
       )
@@ -596,7 +596,7 @@ export async function manualRandomGroupAssignments(
 
     await sendTeamsNotifications(
       'graphql/manualRandomGroupAssignments',
-      `Successfully completed random group assignment for course ${course.name}.`
+      `Successfully completed random group assignment for course ${course.name} (id: ${course.id}).`
     )
 
     return updatedCourse
@@ -604,7 +604,7 @@ export async function manualRandomGroupAssignments(
     console.error(e)
     await sendTeamsNotifications(
       'graphql/manualRandomGroupAssignments',
-      `Random group creation failed for course ${course.name} with error: ${
+      `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
         e || 'missing'
       }`
     )
