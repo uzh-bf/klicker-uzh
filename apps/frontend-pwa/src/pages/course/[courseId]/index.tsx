@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import GroupView from '@components/course/GroupView'
 import {
   GetCourseOverviewDataDocument,
   GroupActivityInstance,
@@ -14,8 +15,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
+import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -25,12 +25,9 @@ import Rank3Img from 'public/rank3.svg'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
-import Tabs from '../../../components/common/Tabs'
-import GroupActivityList from '../../../components/groupActivity/GroupActivityList'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
-import GroupVisualization from '../../../components/participant/groups/GroupVisualization'
 
 interface Props {
   courseId: string
@@ -411,135 +408,25 @@ function CourseOverview({
                 </Tabs.TabContent>
               )}
 
-              {course.isGamificationEnabled &&
+              {participant &&
+                participation &&
+                course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
-                  <Tabs.TabContent key={group.id} value={group.id}>
-                    <div className="flex flex-col gap-2">
-                      <H3
-                        className={{
-                          root: 'flex flex-row justify-between',
-                        }}
-                      >
-                        <div>
-                          {t('shared.generic.group')} {group.name}
-                        </div>
-                        <div>{group.code}</div>
-                      </H3>
-
-                      <div className="flex flex-row flex-wrap gap-4">
-                        <div className="flex flex-1 flex-col">
-                          {(!participation?.isActive ||
-                            group.participants!.length === 1 ||
-                            group.participants!.length ===
-                              course.maxGroupSize) && (
-                            <div className="mb-2 flex flex-col gap-2">
-                              {!participation?.isActive && (
-                                <UserNotification
-                                  type="warning"
-                                  message={t(
-                                    'pwa.groupActivity.joinLeaderboard'
-                                  )}
-                                />
-                              )}
-                              {group.participants?.length === 1 && (
-                                <UserNotification
-                                  type="info"
-                                  message={t(
-                                    'pwa.groupActivity.singleParticipantAutomaticAssignment',
-                                    {
-                                      groupFormationDeadline: dayjs(
-                                        course.groupDeadlineDate
-                                      ).format('DD.MM.YYYY HH:mm'),
-                                    }
-                                  )}
-                                />
-                              )}
-                              {group.participants!.length ===
-                                course.maxGroupSize && (
-                                <UserNotification
-                                  type="info"
-                                  message={t(
-                                    'pwa.groupActivity.maxNumberOfGroupMembers'
-                                  )}
-                                />
-                              )}
-                            </div>
-                          )}
-                          <div className="mb-1 self-end text-sm italic">
-                            {t('pwa.groupActivity.nOfMaxParticipants', {
-                              numParticipants: group.participants!.length,
-                              maxParticipants: course.maxGroupSize,
-                            })}
-                          </div>
-                          <Leaderboard
-                            leaderboard={
-                              group.participants?.map((participant) => {
-                                return {
-                                  ...participant,
-                                  score: participant.score ?? 0,
-                                  rank: participant.rank ?? 1,
-                                  level: participant.level ?? 1,
-                                }
-                              }) ?? []
-                            }
-                            participant={participant}
-                            onLeave={
-                              course.isGroupDeadlinePassed
-                                ? undefined
-                                : () => {
-                                    leaveParticipantGroup({
-                                      variables: {
-                                        courseId,
-                                        groupId: group.id,
-                                      },
-                                      refetchQueries: [
-                                        {
-                                          query: GetCourseOverviewDataDocument,
-                                          variables: { courseId: courseId },
-                                        },
-                                      ],
-                                    })
-
-                                    setSelectedTab('global')
-                                  }
-                            }
-                            hidePodium
-                            podiumImgSrc={{
-                              rank1: Rank1Img,
-                              rank2: Rank2Img,
-                              rank3: Rank3Img,
-                            }}
-                          />
-                          <div className="mt-6 w-60 self-end text-sm text-slate-600">
-                            <div className="flex flex-row justify-between">
-                              <div>{t('pwa.courses.membersScore')}</div>
-                              <div>{group.averageMemberScore}</div>
-                            </div>
-                            <div className="flex flex-row justify-between">
-                              <div>{t('pwa.courses.groupActivityScore')}</div>
-                              <div>{group.groupActivityScore}</div>
-                            </div>
-                            <div className="flex flex-row justify-between font-bold">
-                              <div>{t('pwa.courses.totalScore')}</div>
-                              <div>{group.score}</div>
-                            </div>
-                          </div>
-                        </div>
-                        <GroupVisualization
-                          groupName={group.name}
-                          participants={group.participants!}
-                        />
-                      </div>
-
-                      {(course.groupActivities?.length ?? -1) > 0 && (
-                        <GroupActivityList
-                          groupId={group.id}
-                          groupActivities={course.groupActivities}
-                          groupActivityInstances={indexedGroupActivityInstances}
-                        />
-                      )}
-                    </div>
-                  </Tabs.TabContent>
+                  <GroupView
+                    key={group.id}
+                    group={group}
+                    participation={participation}
+                    participant={participant}
+                    groupActivities={course.groupActivities ?? []}
+                    groupActivityInstances={indexedGroupActivityInstances}
+                    courseId={course.id}
+                    maxGroupSize={course.maxGroupSize}
+                    groupDeadlineDate={course.groupDeadlineDate}
+                    isGroupDeadlinePassed={
+                      course.isGroupDeadlinePassed ?? false
+                    }
+                    setSelectedTab={setSelectedTab}
+                  />
                 ))}
 
               {course.isGamificationEnabled && (
