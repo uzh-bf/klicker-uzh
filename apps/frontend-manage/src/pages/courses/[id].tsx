@@ -29,6 +29,8 @@ function CourseOverviewPage() {
   const t = useTranslations()
   const router = useRouter()
   const [tabValue, setTabValue] = useState('liveSessions')
+  const [gamificationTabValue, setGamificationTabValue] =
+    useState('ind-leaderboard')
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -47,6 +49,12 @@ function CourseOverviewPage() {
       setTabValue(router.query.tab as string)
     }
   }, [router.query.tab])
+
+  useEffect(() => {
+    if (router.query.gamificationTab) {
+      setGamificationTabValue(router.query.gamificationTab as string)
+    }
+  }, [router.query.gamificationTab])
 
   if (error) {
     return <div>{error.message}</div>
@@ -203,7 +211,11 @@ function CourseOverviewPage() {
         <ResizableHandle />
         {data?.course?.isGamificationEnabled && (
           <ResizablePanel defaultSize={50}>
-            <CourseGamificationInfos course={course} />
+            <CourseGamificationInfos
+              course={course}
+              tabValue={gamificationTabValue}
+              setTabValue={setGamificationTabValue}
+            />
           </ResizablePanel>
         )}
       </ResizablePanelGroup>

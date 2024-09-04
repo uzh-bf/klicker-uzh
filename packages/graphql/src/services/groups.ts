@@ -33,7 +33,8 @@ import {
   splitGroupsFinal,
   splitGroupsRunning,
 } from '../lib/randomizedGroups.js'
-import { shuffle } from '../lib/util.js'
+import { sendTeamsNotifications, shuffle } from '../lib/util.js'
+import * as EmailService from '../services/email.js'
 import { ResponseCorrectness, StackInput } from '../types/app.js'
 import {
   RespondToElementStackInput,
@@ -186,7 +187,7 @@ async function createRandomGroup(
     courseId,
     groupParticipantIds,
   }: { courseId: string; groupParticipantIds: string[] },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
   const groupName =
@@ -251,46 +252,64 @@ export async function runningRandomGroupAssignments(ctx: Context) {
 
   // update the group assignments for all courses that have enough participants in the pool
   for (const course of coursesToUpdate) {
-    const { participantIds, poolEntryIds } =
-      course.groupAssignmentPoolEntries.reduce<{
-        participantIds: string[]
-        poolEntryIds: number[]
-      }>(
-        (acc, entry) => {
-          acc.participantIds.push(entry.participantId)
-          acc.poolEntryIds.push(entry.id)
-          return acc
-        },
-        { participantIds: [], poolEntryIds: [] }
+    try {
+      const { participantIds, poolEntryIds } =
+        course.groupAssignmentPoolEntries.reduce<{
+          participantIds: string[]
+          poolEntryIds: number[]
+        }>(
+          (acc, entry) => {
+            acc.participantIds.push(entry.participantId)
+            acc.poolEntryIds.push(entry.id)
+            return acc
+          },
+          { participantIds: [], poolEntryIds: [] }
+        )
+
+      // split the participants into groups
+      const { groups } = splitGroupsRunning({
+        participantIds,
+        preferredGroupSize: course.preferredGroupSize,
+      })
+
+      for (const groupParticipantIds of groups) {
+        await createRandomGroup(
+          { courseId: course.id, groupParticipantIds },
+          ctx
+        )
+      }
+
+      // invalidate the corresponding participants, course and group assignment pool entries in the cache
+      ctx.emitter.emit('invalidate', {
+        typename: 'Course',
+        id: course.id,
+      })
+      participantIds.forEach((participantId) => {
+        ctx.emitter.emit('invalidate', {
+          typename: 'Participant',
+          id: participantId,
+        })
+      })
+      poolEntryIds.forEach((poolEntryId) => {
+        ctx.emitter.emit('invalidate', {
+          typename: 'GroupAssignmentPoolEntry',
+          id: poolEntryId,
+        })
+      })
+
+      await sendTeamsNotifications(
+        'graphql/runningRandomGroupAssignments',
+        `Successfully assigned new random groups for ${course.name} (rolling assignment).`
       )
-
-    // split the participants into groups
-    const { groups } = splitGroupsRunning({
-      participantIds,
-      preferredGroupSize: course.preferredGroupSize,
-    })
-
-    for (const groupParticipantIds of groups) {
-      await createRandomGroup({ courseId: course.id, groupParticipantIds }, ctx)
+    } catch (e) {
+      console.error(e)
+      await sendTeamsNotifications(
+        'graphql/runningRandomGroupAssignments',
+        `Failed to assign groups for course ${course.name} (rolling assignment) with error: ${
+          e || 'missing'
+        }`
+      )
     }
-
-    // invalidate the corresponding participants, course and group assignment pool entries in the cache
-    ctx.emitter.emit('invalidate', {
-      typename: 'Course',
-      id: course.id,
-    })
-    participantIds.forEach((participantId) => {
-      ctx.emitter.emit('invalidate', {
-        typename: 'Participant',
-        id: participantId,
-      })
-    })
-    poolEntryIds.forEach((poolEntryId) => {
-      ctx.emitter.emit('invalidate', {
-        typename: 'GroupAssignmentPoolEntry',
-        id: poolEntryId,
-      })
-    })
   }
 
   return true
@@ -379,6 +398,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           },
         },
       },
+      owner: true,
     },
   })
 
@@ -388,45 +408,92 @@ export async function finalRandomGroupAssignments(ctx: Context) {
   )
 
   for (const course of coursesToUpdate) {
-    // resolve all groups with a single participant and add them to the pool ids
-    // update the course table in case the operation is interrupted to ensure that no ids are lost
-    const courseId = course.id
-    const courseExtendedPool = await resolveSingleParticipantGroups(
-      { course },
-      ctx
-    )
-
-    const poolParticipantIds =
-      courseExtendedPool.groupAssignmentPoolEntries.map(
-        (entry) => entry.participantId
-      )
-
-    // if only one participant is in the pool, send an email to the lecturer to extend group deadline
-    if (poolParticipantIds.length === 0 || poolParticipantIds.length === 1) {
-      // TODO: send email and continue with next iteration
-      continue
-    }
-
-    // compute finalized group distribution
-    const groups = splitGroupsFinal({
-      participantIds: poolParticipantIds,
-      preferredGroupSize: course.preferredGroupSize,
-    })
-
-    for (const group of groups!) {
-      await createRandomGroup(
-        { courseId: courseId, groupParticipantIds: group },
+    try {
+      // resolve all groups with a single participant and add them to the pool ids
+      // update the course table in case the operation is interrupted to ensure that no ids are lost
+      const courseId = course.id
+      const courseExtendedPool = await resolveSingleParticipantGroups(
+        { course },
         ctx
       )
-    }
 
-    // set random assignment as finalized on course
-    await ctx.prisma.course.update({
-      where: { id: courseId },
-      data: {
-        randomAssignmentFinalized: true,
-      },
-    })
+      await sendTeamsNotifications(
+        'graphql/finalRandomGroupAssignments',
+        `Resolved all single participant groups for course ${course.name}.`
+      )
+
+      const poolParticipantIds =
+        courseExtendedPool.groupAssignmentPoolEntries.map(
+          (entry) => entry.participantId
+        )
+
+      // if only one participant is in the pool, send an email to the lecturer to extend group deadline
+      if (poolParticipantIds.length === 0 || poolParticipantIds.length === 1) {
+        const courseGroupsOverviewLink = `${
+          process.env.NODE_ENV === 'production' ? 'https' : 'http'
+        }://${process.env.APP_MANAGE_DOMAIN}/courses/${course.id}?gamificationTab=groups`
+
+        const emailHtml = await EmailService.hydrateTemplate(
+          {
+            templateName: 'RandomizedGroupCreationFailure',
+            variables: {
+              COURSE_NAME: course.name,
+              LINK: courseGroupsOverviewLink,
+            },
+          },
+          ctx
+        )
+
+        if (!emailHtml) {
+          continue
+        }
+
+        await EmailService.sendEmail({
+          to: course.owner.email,
+          subject: `KlickerUZH - Group Creation for Course ${course.name}`,
+          text: `The automated random group creation for your course ${course.name} has failed. Please refer to the course overview for more details and to change the group creation deadline: ${courseGroupsOverviewLink}.`,
+          html: emailHtml,
+        })
+
+        await sendTeamsNotifications(
+          'graphql/finalRandomGroupAssignments',
+          `Failure of automatic group assignment - single participant in pool for course ${course.name}. Sent E-Mail to course owner with id ${course.ownerId}.`
+        )
+
+        continue
+      }
+
+      // compute finalized group distribution
+      const groups = splitGroupsFinal({
+        participantIds: poolParticipantIds,
+        preferredGroupSize: course.preferredGroupSize,
+      })
+
+      for (const group of groups!) {
+        await createRandomGroup(
+          { courseId: courseId, groupParticipantIds: group },
+          ctx
+        )
+      }
+
+      // set random assignment as finalized on course
+      await ctx.prisma.course.update({
+        where: { id: courseId },
+        data: {
+          randomAssignmentFinalized: true,
+        },
+      })
+    } catch (e) {
+      console.error(e)
+      await sendTeamsNotifications(
+        'graphql/finalRandomGroupAssignments',
+        `Failed to finalize random group assignments for course ${course.name} with error: ${
+          e || 'missing'
+        }`
+      )
+
+      continue
+    }
   }
 
   return true
@@ -467,66 +534,83 @@ export async function manualRandomGroupAssignments(
     return null
   }
 
-  // resolve all groups with a single participant and add them to the pool ids
-  // update the course table in case the operation is interrupted to ensure that no ids are lost
-  const courseExtendedPool = await resolveSingleParticipantGroups(
-    { course },
-    ctx
-  )
+  try {
+    // resolve all groups with a single participant and add them to the pool ids
+    // update the course table in case the operation is interrupted to ensure that no ids are lost
+    const courseExtendedPool = await resolveSingleParticipantGroups(
+      { course },
+      ctx
+    )
 
-  // run the final group assignment logic and update the course accordingly
-  const groupParticipantIds = splitGroupsFinal({
-    participantIds: courseExtendedPool.groupAssignmentPoolEntries.map(
-      (entry) => entry.participantId
-    ),
-    preferredGroupSize: course.preferredGroupSize,
-  })
-
-  const newGroups = groupParticipantIds!.map((group) => ({
-    randomlyAssigned: true,
-    name:
-      uniqueNamesGenerator({
-        dictionaries: [colors, adjectives, animals],
-        separator: ' ',
-        style: 'capital',
-      }) + 's',
-    code: 100000 + Math.floor(Math.random() * 900000),
-    participants: {
-      connect: group.map((id) => ({ id })),
-    },
-  }))
-
-  // update the course
-  const updatedCourse = await ctx.prisma.course.update({
-    where: { id: courseId },
-    data: {
-      groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
-      randomAssignmentFinalized: true,
-      participantGroups: {
-        create: newGroups,
-      },
-      groupAssignmentPoolEntries: {
-        deleteMany: {},
-      },
-    },
-    include: {
-      participantGroups: true,
-    },
-  })
-
-  // invalidate the cache of the course and the group assignment pool entries
-  ctx.emitter.emit('invalidate', {
-    typename: 'Course',
-    id: courseId,
-  })
-  courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'GroupAssignmentPoolEntry',
-      id: entry.id,
+    // run the final group assignment logic and update the course accordingly
+    const groupParticipantIds = splitGroupsFinal({
+      participantIds: courseExtendedPool.groupAssignmentPoolEntries.map(
+        (entry) => entry.participantId
+      ),
+      preferredGroupSize: course.preferredGroupSize,
     })
-  })
 
-  return updatedCourse
+    const newGroups = groupParticipantIds!.map((group) => ({
+      randomlyAssigned: true,
+      name:
+        uniqueNamesGenerator({
+          dictionaries: [colors, adjectives, animals],
+          separator: ' ',
+          style: 'capital',
+        }) + 's',
+      code: 100000 + Math.floor(Math.random() * 900000),
+      participants: {
+        connect: group.map((id) => ({ id })),
+      },
+    }))
+
+    // update the course
+    const updatedCourse = await ctx.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
+        randomAssignmentFinalized: true,
+        participantGroups: {
+          create: newGroups,
+        },
+        groupAssignmentPoolEntries: {
+          deleteMany: {},
+        },
+      },
+      include: {
+        participantGroups: true,
+      },
+    })
+
+    // invalidate the cache of the course and the group assignment pool entries
+    ctx.emitter.emit('invalidate', {
+      typename: 'Course',
+      id: courseId,
+    })
+    courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
+      ctx.emitter.emit('invalidate', {
+        typename: 'GroupAssignmentPoolEntry',
+        id: entry.id,
+      })
+    })
+
+    await sendTeamsNotifications(
+      'graphql/manualRandomGroupAssignments',
+      `Successfully completed random group assignment for course ${course.name}.`
+    )
+
+    return updatedCourse
+  } catch (e) {
+    console.error(e)
+    await sendTeamsNotifications(
+      'graphql/manualRandomGroupAssignments',
+      `Random group creation failed for course ${course.name} with error: ${
+        e || 'missing'
+      }`
+    )
+
+    return null
+  }
 }
 
 interface JoinParticipantGroupArgs {
