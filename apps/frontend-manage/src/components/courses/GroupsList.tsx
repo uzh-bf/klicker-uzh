@@ -46,7 +46,7 @@ function GroupsList({
         </div>
 
         {pool.length > 0 && (
-          <div>
+          <div className="grid grid-cols-2">
             {pool.map((entry) => (
               <ParticipantListEntry
                 participant={entry.participant!}
