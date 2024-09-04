@@ -8,6 +8,50 @@ describe('Test course creation and editing functionalities', () => {
   const testCourseName = 'Testkurs'
   const currentYear = new Date().getFullYear()
 
+  it('Test the assignment of random groups in the seeded test course', () => {
+    const testCourse = 'Testkurs'
+
+    // log into frontend-manage
+    cy.loginLecturer()
+
+    // switch to course list
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should('contain', testCourse)
+
+    // switch to the group leaderboard, assign random groups and verify that groups have been created
+    cy.get('[data-cy="tab-groups"]').click()
+    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="cancel-random-group-assignment"]').click()
+    cy.get('[data-cy="assign-random-groups"]').click()
+    cy.get('[data-cy="confirm-random-group-assignment"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="assign-random-groups"]').should('not.exist')
+    cy.findByText(
+      messages.manage.course.groupAssignmentFinalizedMessage
+    ).should('exist')
+
+    // move course end date and group creation deadline to the future, making random group assignment possible again
+    cy.get('[data-cy="course-settings-button"]').click()
+    cy.get('[data-cy="course-end-date-button"]').click()
+    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 3}-01-01`)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="group-creation-deadline-button"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').type(
+      `${currentYear + 2}-01-01`
+    )
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+    cy.get('[data-cy="assign-random-groups"]')
+      .should('exist')
+      .should('be.disabled')
+    cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
+      'exist'
+    )
+
+    // TODO: extend test with two students that join the random pool and can be combined into a group again (after one student, the submission button should remain disabled and the same error message should be shown)
+  })
+
   it('Test the creation of a new course', () => {
     // log into frontend-manage
     cy.loginLecturer()

@@ -80,6 +80,7 @@ function GroupsList({
             }}
             onClick={() => setOpen(true)}
             disabled={randomAssignmentNotPossible}
+            data={{ cy: 'assign-random-groups' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faShuffle} />
