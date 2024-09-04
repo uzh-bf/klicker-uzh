@@ -58,7 +58,10 @@ function CourseGamificationInfos({ course }: { course: Course }) {
         </Tabs.TabList>
         <IndividualLeaderboard course={course} />
         <GroupsLeaderboard course={course} />
-        <GroupsList courseId={course.id} />
+        <GroupsList
+          courseId={course.id}
+          groupCreationFinalized={course.randomAssignmentFinalized}
+        />
       </Tabs>
     </div>
   )

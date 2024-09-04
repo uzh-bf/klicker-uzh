@@ -75,6 +75,7 @@ export const Course = builder.objectType(CourseRef, {
     }),
     maxGroupSize: t.exposeInt('maxGroupSize'),
     preferredGroupSize: t.exposeInt('preferredGroupSize'),
+    randomAssignmentFinalized: t.exposeBoolean('randomAssignmentFinalized'),
 
     notificationEmail: t.exposeString('notificationEmail', {
       nullable: true,
