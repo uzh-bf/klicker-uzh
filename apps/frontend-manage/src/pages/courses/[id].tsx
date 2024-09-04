@@ -35,8 +35,6 @@ function CourseOverviewPage() {
   })
   const { data: user } = useQuery(UserProfileDocument)
 
-  const [showCourseDetails, setShowCourseDetails] = useState<boolean>(false)
-
   useEffect(() => {
     if (data && !data.course) {
       router.push('/404')
