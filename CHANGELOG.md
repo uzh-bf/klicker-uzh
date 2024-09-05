@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.18...v3.2.0-alpha.19) (2024-09-05)
+
+
+### Dependencies
+
+* **apps/func-*:** upgrade azure functions dependencies ([3148512](https://github.com/uzh-bf/klicker-uzh/commit/3148512e62cc32c845c91f27531332bf0cd5ed50))
+
+
+### Enhancements
+
+* improve handled edge cases in group assignment cronjobs ([#4247](https://github.com/uzh-bf/klicker-uzh/issues/4247)) ([8c1bdd2](https://github.com/uzh-bf/klicker-uzh/commit/8c1bdd261a1a582b8709005682407cc3ce6c1edb))
+
 ## [3.2.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.17...v3.2.0-alpha.18) (2024-09-04)
 
 
