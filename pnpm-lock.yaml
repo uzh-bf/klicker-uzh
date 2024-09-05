@@ -1146,11 +1146,11 @@ importers:
   apps/func-migration-v2-export:
     dependencies:
       '@azure/functions':
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.5.1
+        version: 4.5.1
       '@azure/storage-blob':
-        specifier: 12.15.0
-        version: 12.15.0
+        specifier: 12.24.0
+        version: 12.24.0
       axios:
         specifier: 1.4.0
         version: 1.4.0
@@ -1174,8 +1174,8 @@ importers:
         specifier: ^20.16.1
         version: 20.16.1
       azure-functions-core-tools:
-        specifier: 4.0.5801
-        version: 4.0.5801
+        specifier: 4.0.5907
+        version: 4.0.5907
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1195,11 +1195,11 @@ importers:
   apps/func-migration-v3-import:
     dependencies:
       '@azure/functions':
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.5.1
+        version: 4.5.1
       '@azure/storage-blob':
-        specifier: 12.15.0
-        version: 12.15.0
+        specifier: 12.24.0
+        version: 12.24.0
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1229,8 +1229,8 @@ importers:
         specifier: ^9.0.8
         version: 9.0.8
       azure-functions-core-tools:
-        specifier: 4.0.5801
-        version: 4.0.5801
+        specifier: 4.0.5907
+        version: 4.0.5907
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -2473,6 +2473,10 @@ packages:
     resolution: {integrity: sha512-45WDaJZiTmvaIOPSdWWKL5NgzgUWsNzXDNlF7oCMLS43lE602qG7XE6Hdg9ewPWBj55URHRU7UWTHk4uDVqBGg==}
     engines: {node: '>=18.0'}
 
+  '@azure/functions@4.5.1':
+    resolution: {integrity: sha512-ikiw1IrM2W9NlQM3XazcX+4Sq3XAjZi4eeG22B5InKC2x5i7MatGF2S/Gn1ACZ+fEInwu+Ru9J8DlnBv1/hIvg==}
+    engines: {node: '>=18.0'}
+
   '@azure/identity@1.5.2':
     resolution: {integrity: sha512-vqyeRbd2i0h9F4mqW5JbkP1xfabqKQ21l/81osKhpOQ2LtwaJW6nw4+0PsVYnxcbPHFCIZt6EWAk74a3OGYZJA==}
     engines: {node: '>=12.0.0'}
@@ -2525,6 +2529,10 @@ packages:
   '@azure/storage-blob@12.15.0':
     resolution: {integrity: sha512-e7JBKLOFi0QVJqqLzrjx1eL3je3/Ug2IQj24cTM9b85CsnnFjLGeGjJVIjbGGZaytewiCEG7r3lRwQX7fKj0/w==}
     engines: {node: '>=14.0.0'}
+
+  '@azure/storage-blob@12.24.0':
+    resolution: {integrity: sha512-l8cmWM4C7RoNCBOImoFMxhTXe1Lr+8uQ/IgnhRNMpfoA9bAFWoLG4XrWm6O5rKXortreVQuD+fc1hbzWklOZbw==}
+    engines: {node: '>=18.0.0'}
 
   '@babel/code-frame@7.12.11':
     resolution: {integrity: sha512-Zt1yodBx1UcyiePMSkWnU4hPqhwq7hGi2nFL1LeA3EUl+q2LQx16MISgJ0+z7dnmgvP9QtIleuETGOiOH1RcIw==}
@@ -8140,6 +8148,12 @@ packages:
 
   azure-functions-core-tools@4.0.5801:
     resolution: {integrity: sha512-6riuUu7X9yI3A9HtYDg8dx8bgb6NGtd+2sRaiXLMDJ0wpS6v/7lyeyXYMLG7OHMvItrhPYP619rRvu33l1tmTg==}
+    engines: {node: '>=6.9.1'}
+    os: [win32, darwin, linux]
+    hasBin: true
+
+  azure-functions-core-tools@4.0.5907:
+    resolution: {integrity: sha512-QeyBf/9Z3sziPXIU7fGcLgCFhXLo+uO3ILLvbb0Zse46VC5SWWfscbAb023xoUXhWXlf7KXjWwvKgyJpAeG20A==}
     engines: {node: '>=6.9.1'}
     os: [win32, darwin, linux]
     hasBin: true
@@ -17278,6 +17292,12 @@ snapshots:
       long: 4.0.0
       undici: 5.28.4
 
+  '@azure/functions@4.5.1':
+    dependencies:
+      cookie: 0.6.0
+      long: 4.0.0
+      undici: 5.28.4
+
   '@azure/identity@1.5.2(debug@4.3.6)':
     dependencies:
       '@azure/core-auth': 1.7.2
@@ -17428,6 +17448,24 @@ snapshots:
       tslib: 2.6.3
     transitivePeerDependencies:
       - encoding
+
+  '@azure/storage-blob@12.24.0':
+    dependencies:
+      '@azure/abort-controller': 1.1.0
+      '@azure/core-auth': 1.7.2
+      '@azure/core-client': 1.9.2
+      '@azure/core-http-compat': 2.1.2
+      '@azure/core-lro': 2.7.2
+      '@azure/core-paging': 1.6.2
+      '@azure/core-rest-pipeline': 1.16.3
+      '@azure/core-tracing': 1.1.2
+      '@azure/core-util': 1.9.2
+      '@azure/core-xml': 1.4.3
+      '@azure/logger': 1.1.4
+      events: 3.3.0
+      tslib: 2.7.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@babel/code-frame@7.12.11':
     dependencies:
@@ -21721,7 +21759,7 @@ snapshots:
       '@azure/core-auth': 1.7.2
       '@azure/identity': 4.4.1
       '@azure/msal-node': 2.13.0
-      '@azure/storage-blob': 12.15.0
+      '@azure/storage-blob': 12.24.0
       '@feathersjs/hooks': 0.6.5
       '@microsoft/dev-tunnels-contracts': 1.1.9
       '@microsoft/dev-tunnels-management': 1.1.9
@@ -25880,6 +25918,16 @@ snapshots:
       deep-equal: 2.2.3
 
   azure-functions-core-tools@4.0.5801:
+    dependencies:
+      chalk: 3.0.0
+      extract-zip: 2.0.1(supports-color@8.1.1)
+      https-proxy-agent: 5.0.0
+      progress: 2.0.3
+      rimraf: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
+
+  azure-functions-core-tools@4.0.5907:
     dependencies:
       chalk: 3.0.0
       extract-zip: 2.0.1(supports-color@8.1.1)
