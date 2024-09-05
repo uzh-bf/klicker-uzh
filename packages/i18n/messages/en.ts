@@ -1532,6 +1532,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         <li>Groups with a single participant will be deleted and the corresponding students will be assigned to randomized groups.</li>
         <li>The assignment to random groups cannot be undone!</li>
         <li>The possibility for students to create / leave groups manually through the student app will be automatically deactivated. Should you wish to re-enable this possibility, simply move the group deadline date in the course settings to the future.</li></ul>`,
+      groupAssignmentFailed:
+        'An error occurred during the group assignment. Please check that sufficiently many students are in the assignment pool and try again.',
+      groupAssignmentSuccessful:
+        'The group assignment was successful. All students from the pool were assigned to random groups.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
