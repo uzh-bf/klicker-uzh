@@ -1552,6 +1552,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         <li>Gruppen mit nur einem Teilnehmer werden gelöscht und die entsprechenden Studierenden werden in Gruppen eingeteilt.</li>
         <li>Die Zuweisung zu zufälligen Gruppen kann nicht rückgängig gemacht werden!</li>
         <li>Die Möglichkeit für Studierende, Gruppen manuell über die Studierenden-App zu erstellen oder zu verlassen, wird automatisch deaktiviert. Wenn Sie diese Möglichkeit wieder aktivieren möchten, verschieben Sie einfach das Gruppendeadline-Datum in den Kurseinstellungen in die Zukunft.</li></ul>`,
+      groupAssignmentFailed:
+        'Beim Zuweisen der Gruppen ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob genügend Studierende im Zuweisungspool sind und versuchen Sie es erneut.',
+      groupAssignmentSuccessful:
+        'Die Gruppenzuweisung war erfolgreich. Alle Studierenden aus dem Pool wurden in zufällige Gruppen eingeteilt.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

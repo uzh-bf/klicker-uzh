@@ -29,7 +29,7 @@ export function splitGroupsFinal({
 }: RandomGroupAssignmentArgs) {
   // if only a single participant is left, return null and handle this case on level above
   if (participantIds.length === 1) {
-    return null
+    return []
   }
 
   // check if groups with the preferred size can be created
