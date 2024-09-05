@@ -110,6 +110,7 @@ function AssignmentConfirmationModal({
           openExternal={showError}
           setOpenExternal={setShowError}
           duration={5000}
+          className={{ root: 'max-w-[30rem]' }}
         >
           {t('manage.course.groupAssignmentFailed')}
         </Toast>
@@ -121,6 +122,7 @@ function AssignmentConfirmationModal({
           openExternal={showSuccess}
           setOpenExternal={setShowSuccess}
           duration={5000}
+          className={{ root: 'max-w-[30rem]' }}
         >
           {t('manage.course.groupAssignmentSuccessful')}
         </Toast>
