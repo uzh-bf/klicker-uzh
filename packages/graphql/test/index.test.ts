@@ -121,7 +121,8 @@ describe('@klicker-uzh/graphql', () => {
       participantIds: participantIds0,
       preferredGroupSize: 2,
     })
-    expect(groups0).toBeNull()
+    expect(groups0).not.toBeNull()
+    expect(groups0).toHaveLength(0)
 
     // total 2 participants -> create one group with 2 members
     const participantIds = ['1', '2']
@@ -253,7 +254,8 @@ describe('@klicker-uzh/graphql', () => {
       participantIds: participantIds0,
       preferredGroupSize: 3,
     })
-    expect(groups0).toBeNull()
+    expect(groups0).not.toBeNull()
+    expect(groups0).toHaveLength(0)
 
     // total 2 participants -> create one group with 2 members
     const participantIds = ['1', '2']
@@ -407,7 +409,8 @@ describe('@klicker-uzh/graphql', () => {
       participantIds: participantIds0,
       preferredGroupSize: 7,
     })
-    expect(groups0).toBeNull()
+    expect(groups0).not.toBeNull()
+    expect(groups0).toHaveLength(0)
 
     // total 2 participants -> create one group with 2 members
     const participantIds = ['1', '2']
