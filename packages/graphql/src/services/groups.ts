@@ -402,12 +402,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
     },
   })
 
-  // filter for courses, which have a non-empty participant group pool
-  const coursesToUpdate = courses.filter(
-    (course) => course.groupAssignmentPoolEntries.length > 0
-  )
-
-  for (const course of coursesToUpdate) {
+  for (const course of courses) {
     try {
       // resolve all groups with a single participant and add them to the pool ids
       // update the course table in case the operation is interrupted to ensure that no ids are lost
@@ -427,8 +422,20 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           (entry) => entry.participantId
         )
 
+      // if the assignment pool is empty, set the finalization boolean and return success
+      if (poolParticipantIds.length === 0) {
+        await ctx.prisma.course.update({
+          where: { id: courseId },
+          data: {
+            randomAssignmentFinalized: true,
+          },
+        })
+
+        return true
+      }
+
       // if only one participant is in the pool, send an email to the lecturer to extend group deadline
-      if (poolParticipantIds.length === 0 || poolParticipantIds.length === 1) {
+      if (poolParticipantIds.length === 1) {
         const courseGroupsOverviewLink = `${
           process.env.NODE_ENV === 'production' ? 'https' : 'http'
         }://${process.env.APP_MANAGE_DOMAIN}/courses/${course.id}?gamificationTab=groups`
@@ -469,7 +476,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
         preferredGroupSize: course.preferredGroupSize,
       })
 
-      for (const group of groups!) {
+      for (const group of groups) {
         await createRandomGroup(
           { courseId: courseId, groupParticipantIds: group },
           ctx
@@ -483,6 +490,11 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           randomAssignmentFinalized: true,
         },
       })
+
+      await sendTeamsNotifications(
+        'graphql/finalRandomGroupAssignments',
+        `Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`
+      )
     } catch (e) {
       console.error(e)
       await sendTeamsNotifications(
@@ -529,8 +541,8 @@ export async function manualRandomGroupAssignments(
     },
   })
 
-  // notify the user if the pool is empty or only contains one participant
-  if (!course || course.groupAssignmentPoolEntries.length < 2) {
+  // do nothing if the course does not exist
+  if (!course) {
     return null
   }
 
@@ -541,6 +553,29 @@ export async function manualRandomGroupAssignments(
       { course },
       ctx
     )
+
+    await sendTeamsNotifications(
+      'graphql/manualRandomGroupAssignments',
+      `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
+    )
+
+    // if the assignment pool is empty, set the finalization boolean and return course
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
+      const courseUpdated = await ctx.prisma.course.update({
+        where: { id: courseId },
+        data: {
+          randomAssignmentFinalized: true,
+        },
+      })
+
+      return courseUpdated
+    }
+
+    // if there is only exactly one participant in the pool, return null - do not update course
+    // case is already handled in the frontend with a disabled button
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) {
+      return null
+    }
 
     // run the final group assignment logic and update the course accordingly
     const groupParticipantIds = splitGroupsFinal({
@@ -596,7 +631,7 @@ export async function manualRandomGroupAssignments(
 
     await sendTeamsNotifications(
       'graphql/manualRandomGroupAssignments',
-      `Successfully completed random group assignment for course ${course.name} (id: ${course.id}).`
+      `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`
     )
 
     return updatedCourse
