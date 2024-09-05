@@ -62,6 +62,7 @@ function AssignmentConfirmationModal({
                 variables: { courseId: courseId },
               })
               if (res.data?.manualRandomGroupAssignments) {
+                setShowSuccess(true)
                 setOpen(false)
               } else {
                 console.error('Error while creating random groups')
