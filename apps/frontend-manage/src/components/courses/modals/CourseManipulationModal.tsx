@@ -292,32 +292,35 @@ function CourseManipulationModal({
                           dataButton={{ cy: 'group-creation-deadline-button' }}
                           required
                         />
-                        {initialValues ? (
-                          <div className="font-bold text-gray-600">
+                        {initialValues &&
+                        initialValues.isGroupCreationEnabled ? (
+                          <div className="mt-2 font-bold text-gray-600">
                             <div>{`${t('manage.courseList.maxGroupSize')}: ${initialValues.maxGroupSize}`}</div>{' '}
                             <div>{`${t('manage.courseList.preferredGroupSize')}: ${initialValues.preferredGroupSize}`}</div>
                           </div>
                         ) : (
-                          <FormikNumberField
-                            name="maxGroupSize"
-                            label={t('manage.courseList.maxGroupSize')}
-                            tooltip={t('manage.courseList.maxGroupSizeTooltip')}
-                            data={{ cy: 'max-group-size' }}
-                            className={{ root: 'max-w-52' }}
-                            required
-                          />
-                        )}
-                        {!initialValues && (
-                          <FormikNumberField
-                            name="preferredGroupSize"
-                            label={t('manage.courseList.preferredGroupSize')}
-                            tooltip={t(
-                              'manage.courseList.preferredGroupSizeTooltip'
-                            )}
-                            data={{ cy: 'preferred-group-size' }}
-                            className={{ root: 'max-w-52' }}
-                            required
-                          />
+                          <>
+                            <FormikNumberField
+                              name="maxGroupSize"
+                              label={t('manage.courseList.maxGroupSize')}
+                              tooltip={t(
+                                'manage.courseList.maxGroupSizeTooltip'
+                              )}
+                              data={{ cy: 'max-group-size' }}
+                              className={{ root: 'max-w-52' }}
+                              required
+                            />
+                            <FormikNumberField
+                              name="preferredGroupSize"
+                              label={t('manage.courseList.preferredGroupSize')}
+                              tooltip={t(
+                                'manage.courseList.preferredGroupSizeTooltip'
+                              )}
+                              data={{ cy: 'preferred-group-size' }}
+                              className={{ root: 'max-w-52' }}
+                              required
+                            />
+                          </>
                         )}
                       </div>
                     )}
