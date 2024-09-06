@@ -87,6 +87,87 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
+const sendActivationEmailRateLimitStore: Record<
+  string,
+  { count: number; lastRequest: number }
+> = {}
+
+export async function sendActivationEmail(
+  {
+    participantId,
+    participantEmail,
+  }: {
+    participantId: string
+    participantEmail: string
+  },
+  ctx: Context
+) {
+  const RATE_LIMIT = 5 // Maximum number of requests
+  const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+
+  const currentTime = Date.now()
+
+  if (!sendActivationEmailRateLimitStore[participantEmail]) {
+    sendActivationEmailRateLimitStore[participantEmail] = {
+      count: 1,
+      lastRequest: currentTime,
+    }
+  } else {
+    const { count, lastRequest } =
+      sendActivationEmailRateLimitStore[participantEmail]
+    if (currentTime - lastRequest < TIME_WINDOW) {
+      if (count >= RATE_LIMIT) {
+        throw new Error('Rate limit exceeded. Please try again later.')
+      }
+      sendActivationEmailRateLimitStore[participantEmail].count += 1
+    } else {
+      sendActivationEmailRateLimitStore[participantEmail] = {
+        count: 1,
+        lastRequest: currentTime,
+      }
+    }
+  }
+
+  const activationJWT = JWT.sign(
+    {
+      sub: participantId,
+      role: UserRole.PARTICIPANT,
+      scope: UserLoginScope.ACTIVATION,
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '60 minutes',
+    }
+  )
+
+  const activationLink = `${
+    process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+
+  const emailHtml = await EmailService.hydrateTemplate(
+    {
+      templateName: 'ParticipantAccountActivation',
+      variables: { LINK: activationLink },
+    },
+    ctx
+  )
+
+  if (!emailHtml) return null
+
+  await sendTeamsNotifications(
+    'graphql/createParticipantAccount',
+    `Account activation email sent to ${participantEmail} with activation link ${activationLink}`
+  )
+
+  await EmailService.sendEmail({
+    to: participantEmail,
+    subject: 'KlickerUZH - Account Activation',
+    text: `Please click on the following link to activate your KlickerUZH account: ${activationLink} (validity: 60 minutes)`,
+    html: emailHtml,
+  })
+}
+
 export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {
@@ -158,10 +239,10 @@ export async function loginParticipant(
   return participant.id
 }
 
-const rateLimitStore: Record<string, { count: number; lastRequest: number }> =
-  {}
-const RATE_LIMIT = 5 // Maximum number of requests
-const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+const sendMagicLinkRateLimitStore: Record<
+  string,
+  { count: number; lastRequest: number }
+> = {}
 
 interface SendMagicLinkArgs {
   usernameOrEmail: string
@@ -171,24 +252,28 @@ export async function sendMagicLink(
   { usernameOrEmail }: SendMagicLinkArgs,
   ctx: Context
 ) {
-  const trimmedUsernameOrEmail = usernameOrEmail.trim()
+  const RATE_LIMIT = 5 // Maximum number of requests
+  const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
 
   const currentTime = Date.now()
 
-  if (!rateLimitStore[trimmedUsernameOrEmail]) {
-    rateLimitStore[trimmedUsernameOrEmail] = {
+  const trimmedUsernameOrEmail = usernameOrEmail.trim()
+
+  if (!sendMagicLinkRateLimitStore[trimmedUsernameOrEmail]) {
+    sendMagicLinkRateLimitStore[trimmedUsernameOrEmail] = {
       count: 1,
       lastRequest: currentTime,
     }
   } else {
-    const { count, lastRequest } = rateLimitStore[trimmedUsernameOrEmail]
+    const { count, lastRequest } =
+      sendMagicLinkRateLimitStore[trimmedUsernameOrEmail]
     if (currentTime - lastRequest < TIME_WINDOW) {
       if (count >= RATE_LIMIT) {
         throw new Error('Rate limit exceeded. Please try again later.')
       }
-      rateLimitStore[trimmedUsernameOrEmail].count += 1
+      sendMagicLinkRateLimitStore[trimmedUsernameOrEmail].count += 1
     } else {
-      rateLimitStore[trimmedUsernameOrEmail] = {
+      sendMagicLinkRateLimitStore[trimmedUsernameOrEmail] = {
         count: 1,
         lastRequest: currentTime,
       }
@@ -605,44 +690,13 @@ export async function createParticipantAccount(
       return participant
     })
 
-    const activationJWT = JWT.sign(
+    await sendActivationEmail(
       {
-        sub: participant.id,
-        role: UserRole.PARTICIPANT,
-        scope: UserLoginScope.ACTIVATION,
-      },
-      process.env.APP_SECRET as string,
-      {
-        algorithm: 'HS256',
-        expiresIn: '60 minutes',
-      }
-    )
-
-    const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http'
-    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
-
-    const emailHtml = await EmailService.hydrateTemplate(
-      {
-        templateName: 'ParticipantAccountActivation',
-        variables: { LINK: activationLink },
+        participantId: participant.id,
+        participantEmail: participant.email!,
       },
       ctx
     )
-
-    if (!emailHtml) return null
-
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email} with activation link ${activationLink}`
-    )
-
-    await EmailService.sendEmail({
-      to: email,
-      subject: 'KlickerUZH - Account Activation',
-      text: `Please click on the following link to activate your KlickerUZH account: ${activationLink} (validity: 60 minutes)`,
-      html: emailHtml,
-    })
 
     return {
       participant,
@@ -1279,4 +1333,24 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       blocks: true,
     },
   })
+}
+
+export async function requestActivationEmail({}, ctx: ContextWithUser) {
+  const user = await ctx.prisma.participant.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+  })
+
+  if (!user?.email) return false
+
+  await sendActivationEmail(
+    {
+      participantId: user.id,
+      participantEmail: user.email,
+    },
+    ctx
+  )
+
+  return true
 }

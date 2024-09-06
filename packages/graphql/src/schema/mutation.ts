@@ -290,6 +290,13 @@ export const Mutation = builder.mutationType({
 
       // ----- PARTICIPANT OPERATIONS
       // #region
+      requestActivationEmail: t.withAuth(asParticipant).boolean({
+        nullable: true,
+        resolve(_, args, ctx) {
+          return AccountService.requestActivationEmail(args, ctx)
+        },
+      }),
+
       joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,

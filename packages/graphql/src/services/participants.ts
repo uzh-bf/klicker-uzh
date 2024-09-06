@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail.js'
 import { Context, ContextWithUser } from '../lib/context.js'
+import { sendActivationEmail } from './accounts.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -15,58 +16,76 @@ export async function updateParticipantProfile(
   { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
-  if (typeof username === 'string') {
-    if (username.length < 5 || username.length > 15) {
-      return null
-    }
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!participant) return null
+
+  const newParticipantData: {
+    isProfilePublic?: boolean
+    email?: string
+    username?: string
+    password?: string
+    isEmailValid?: boolean
+  } = {
+    isProfilePublic:
+      typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+    email: undefined,
+    username: undefined,
+    password: undefined,
+    isEmailValid: undefined,
   }
 
-  if (typeof email === 'string') {
-    if (!isEmail(email)) {
-      return null
-    }
-  }
-
-  // check that username corresponds to no other participant
-  if (username) {
+  if (
+    typeof username === 'string' &&
+    username.length >= 5 &&
+    username.length <= 15
+  ) {
+    // check that username corresponds to no other participant
     const existingParticipant = await ctx.prisma.participant.findUnique({
       where: { username: username.trim() },
     })
 
-    if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
-      return null
+    if (!existingParticipant || existingParticipant.id === ctx.user.sub) {
+      newParticipantData.username = username.trim()
     }
   }
 
-  if (typeof password === 'string') {
-    if (password.length >= 8) {
-      const hashedPassword = await bcrypt.hash(password, 12)
-      return ctx.prisma.participant.update({
-        where: { id: ctx.user.sub },
-        data: {
-          isProfilePublic:
-            typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-          email: email?.toLowerCase(),
-          password: hashedPassword,
-          username: username?.trim() ?? undefined,
-        },
-      })
-    } else {
-      // TODO: return error
-    }
+  if (
+    typeof email === 'string' &&
+    isEmail(email) &&
+    // ensure that email cannot be changed for SSO accounts if it is set already
+    !(
+      participant.isSSOAccount &&
+      typeof participant.email === 'string' &&
+      participant.email !== ''
+    )
+  ) {
+    newParticipantData.email = email.toLowerCase()
+    newParticipantData.isEmailValid = false
+
+    await sendActivationEmail(
+      {
+        participantId: ctx.user.sub,
+        participantEmail: email,
+      },
+      ctx
+    )
   }
 
-  const participant = await ctx.prisma.participant.update({
+  if (typeof password === 'string' && password.length >= 8) {
+    newParticipantData.password = await bcrypt.hash(password, 12)
+  }
+
+  const updatedParticipant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: {
-      isProfilePublic:
-        typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-      email: email?.toLowerCase(),
-      username: username?.trim(),
+      ...newParticipantData,
     },
   })
 
-  return participant
+  return updatedParticipant
 }
 
 interface UpdateParticipantAvatarArgs {
