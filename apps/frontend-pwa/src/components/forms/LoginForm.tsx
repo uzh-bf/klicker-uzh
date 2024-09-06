@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { faKey, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
@@ -139,7 +139,7 @@ export function LoginForm({
                       data={{ cy: 'magic-link-login' }}
                     >
                       <Button.Icon>
-                        <FontAwesomeIcon icon={faWandMagicSparkles} />
+                        <FontAwesomeIcon icon={faEnvelope} />
                       </Button.Icon>
                       <Button.Label>
                         {t('pwa.general.magicLinkLogin')}

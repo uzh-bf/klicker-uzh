@@ -105,7 +105,7 @@ export default {
       usernameError: 'Bitte geben Sie Ihren Nutzernamen oder E-Mail ein.',
       passwordError: 'Bitte geben Sie Ihr Passwort ein.',
       studentLoginError:
-        'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "Magic Link Login" Funktion.',
+        'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "E-Mail Login" Funktion.',
       systemError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
       error: 'Fehler',
       back: 'Zurück',
@@ -268,18 +268,18 @@ export default {
   },
   pwa: {
     general: {
-      magicLinkLogin: 'Login mit Magic-Link',
+      magicLinkLogin: 'Login mit E-Mail',
       passwordLogin: 'Login mit Passwort',
       magicLinkSent:
         'Falls ein Account existiert, wurde ein einmaliger Login-Link an die hinterlegte E-Mail Adresse gesendet.',
       activationMailSent:
         'Ein Aktivierungslink wurde an die E-Mail Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang.',
       processingLogin:
-        'Ihr Magic-Link Login wird verarbeitet. Bitte warten Sie einen Moment.',
+        'Ihr E-Mail Login wird verarbeitet. Bitte warten Sie einen Moment.',
       processingActivation:
         'Ihr Account-Aktivierung wird verarbeitet. Bitte warten Sie einen Moment.',
       magicLinkLoginFailed:
-        'Der Magic-Link Login ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
+        'Der E-Mail Login ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
       accountActivationFailed:
         'Die Account-Aktivierung ist fehlgeschlagen. Sie werden auf die Login-Seite weitergeleitet.',
       waitingForActivation:
@@ -1497,6 +1497,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',

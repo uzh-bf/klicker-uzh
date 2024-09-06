@@ -431,7 +431,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           },
         })
 
-        return true
+        continue
       }
 
       // if only one participant is in the pool, send an email to the lecturer to extend group deadline
