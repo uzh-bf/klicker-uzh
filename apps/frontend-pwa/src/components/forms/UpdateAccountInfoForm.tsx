@@ -136,7 +136,11 @@ function UpdateAccountInfoForm({
                 ) : null}
                 <div className="mb-2 space-y-3">
                   <FormikTextField
-                    disabled={user?.isSSOAccount}
+                    disabled={
+                      user?.isSSOAccount &&
+                      typeof user.email === 'string' &&
+                      user.email !== ''
+                    }
                     name="email"
                     label={t('shared.generic.email')}
                     className={{

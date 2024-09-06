@@ -805,7 +805,9 @@ type Participant {
   email: String
   id: ID!
   isActive: Boolean!
+  isEmailValid: Boolean
   isProfilePublic: Boolean
+  isSSOAccount: Boolean
   isSelf: Boolean
   lastLoginAt: Date
   level: Int
