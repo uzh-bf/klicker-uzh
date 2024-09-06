@@ -1,0 +1,29 @@
+meta {
+  name: runningRandomGroupAssignments
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{API_URL}}
+  body: json
+  auth: none
+}
+
+headers {
+  x-graphql-yoga-csrf: abcd
+  x-token: {{CRON_TOKEN}}
+}
+
+body:json {
+  {
+    "operationName": "RunningRandomGroupAssignments",
+    "variables": {},
+    "extensions": {
+      "persistedQuery": {
+        "version": 1,
+        "sha256Hash": "1f398f3c12df252a9276be320eb2c2b7bab45d9da585bf4dd20d400f6ce6f219"
+      }
+    }
+  }
+}
