@@ -412,6 +412,13 @@ export async function changeParticipantLocale(
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
+    include: {
+      participantGroups: {
+        include: {
+          participants: true,
+        },
+      },
+    },
   })
 
   if (!participant) return false
@@ -421,10 +428,25 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
     maxAge: 0,
   })
 
-  await ctx.prisma.participant.delete({
-    where: { id: ctx.user.sub },
-  })
+  // if a participant group is empty after the participant leaves it, delete the group as well
+  let deletionPromises: any[] = []
+  for (const group of participant.participantGroups) {
+    if (group.participants.length === 1) {
+      deletionPromises.push(
+        ctx.prisma.participantGroup.delete({
+          where: { id: group.id },
+        })
+      )
+    }
+  }
 
+  deletionPromises.push(
+    ctx.prisma.participant.delete({
+      where: { id: ctx.user.sub },
+    })
+  )
+
+  await ctx.prisma.$transaction(deletionPromises)
   return true
 }
 
