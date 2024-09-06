@@ -314,8 +314,12 @@ describe('Test course creation and editing functionalities', () => {
     )
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="max-group-size"]').should('not.exist')
-    cy.get('[data-cy="preferred-group-size"]').should('not.exist')
+    cy.get('[data-cy="max-group-size"]').should('have.value', '5')
+    cy.get('[data-cy="max-group-size"]').clear().type('10')
+    cy.get('[data-cy="max-group-size"]').should('have.value', '10')
+    cy.get('[data-cy="preferred-group-size"]').should('have.value', '3')
+    cy.get('[data-cy="preferred-group-size"]').clear().type('4')
+    cy.get('[data-cy="preferred-group-size"]').should('have.value', '4')
     cy.get('[data-cy="manipulate-course-submit"]').click()
 
     // check if the group creation deadline has been set correctly
