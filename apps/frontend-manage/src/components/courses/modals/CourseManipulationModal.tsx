@@ -154,8 +154,8 @@ function CourseManipulationModal({
           isGamificationEnabled: initialValues?.isGamificationEnabled ?? true,
           isGroupCreationEnabled: initialValues?.isGroupCreationEnabled ?? true,
           groupCreationDeadline: groupDeadlineDateInit,
-          maxGroupSize: initialValues?.maxGroupSize ?? 5,
-          preferredGroupSize: initialValues?.preferredGroupSize ?? 3,
+          maxGroupSize: initialValues?.maxGroupSize ?? undefined,
+          preferredGroupSize: initialValues?.preferredGroupSize ?? undefined,
         }}
         onSubmit={async (values, { setSubmitting }) =>
           onSubmit(values, setSubmitting, setShowErrorToast)
