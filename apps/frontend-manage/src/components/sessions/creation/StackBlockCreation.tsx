@@ -394,7 +394,7 @@ function StackBlockCreation({
             <FontAwesomeIcon icon={faBars} />
           </Button.Icon>
           <Button.Label>
-            {t('manage.sessionForms.pasteSelection', {
+            {t('manage.sessionForms.pasteSelectionElements', {
               count: Object.keys(selection).length,
             })}
           </Button.Label>

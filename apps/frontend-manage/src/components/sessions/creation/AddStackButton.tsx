@@ -119,7 +119,7 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.pasteSingleQuestions', {
+              {t('manage.sessionForms.pasteSingleElementsStack', {
                 count: Object.keys(selection).length,
               })}
             </div>
