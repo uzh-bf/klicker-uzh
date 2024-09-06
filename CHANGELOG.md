@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.19...v3.2.0-alpha.20) (2024-09-06)
+
+
+### Bug Fixes
+
+* allow to choose group sizes on group enabling and fix final random group generation cronjob function ([#4248](https://github.com/uzh-bf/klicker-uzh/issues/4248)) ([625be35](https://github.com/uzh-bf/klicker-uzh/commit/625be351a87578977b242f5bd792a98a25f24f4a))
+* **apps/frontend-manage:** ensure that course sizes remain editable when activating group formation ([69b1d48](https://github.com/uzh-bf/klicker-uzh/commit/69b1d48d3dbf248d7264ef9b1fc333f6745e91bc))
+* **packages/graphql:** delete participant groups on deletion of participant if empty ([#4249](https://github.com/uzh-bf/klicker-uzh/issues/4249)) ([dd8a47e](https://github.com/uzh-bf/klicker-uzh/commit/dd8a47e9c2580c1defe465d6f597d171ce5b4075))
+
 ## [3.2.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.18...v3.2.0-alpha.19) (2024-09-05)
 
 
