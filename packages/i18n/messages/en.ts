@@ -1478,6 +1478,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
       publishMicrolearning: 'Publish microlearning',

@@ -109,6 +109,13 @@ function CourseOverviewHeader({
                       name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
+                    getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTIAccountManagement'),
+                    }),
                   ]
                 : [],
             ].flat()}

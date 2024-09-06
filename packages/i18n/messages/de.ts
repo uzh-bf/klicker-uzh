@@ -1497,6 +1497,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
       publishMicrolearning: 'Microlearning veröffentlichen',
