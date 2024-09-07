@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.20...v3.2.0-alpha.21) (2024-09-07)
+
+
+### Bug Fixes
+
+* ensure that validation in quesiton edit modal works properly ([#4251](https://github.com/uzh-bf/klicker-uzh/issues/4251)) ([5e26453](https://github.com/uzh-bf/klicker-uzh/commit/5e2645381465ccfbf26dac17d2f36b380ef9e4bf))
+* require that the user specifies sample solutions for open questions when activated ([#4252](https://github.com/uzh-bf/klicker-uzh/issues/4252)) ([0c5aa6b](https://github.com/uzh-bf/klicker-uzh/commit/0c5aa6b1c15e00813f4485e9380d53728ca527c7))
+
 ## [3.2.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.19...v3.2.0-alpha.20) (2024-09-06)
 
 
