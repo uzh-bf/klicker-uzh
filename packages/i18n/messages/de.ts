@@ -929,6 +929,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',
       addAnswer: 'Neue Antwort hinzufügen',
+      restrictions: 'Einschränkungen',
       solutionRanges: 'Lösungsbereiche',
       solutionRangesTooltip:
         'Geben Sie hier die Intervalle an, die als korrekt gewertet werden sollen.',
@@ -1234,6 +1235,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       FTMaxLength: 'Die maximale Länge der Lösung muss mindestens 1 betragen.',
       solutionRequired:
         'Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.',
+      NRMinLessThanMaxSol:
+        'Das Minimum eines Lösungsintervalls muss kleiner als das Maximum sein.',
+      NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
       NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
       solutionRangeRequired:
         'Bitte geben Sie mindestens einen Lösungsbereich an.',

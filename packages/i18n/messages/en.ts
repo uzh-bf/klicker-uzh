@@ -930,6 +930,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
       addAnswer: 'Add new answer',
+      restrictions: 'Restrictions',
       solutionRanges: 'Solution ranges',
       solutionRangesTooltip:
         'Enter the intervals that should be considered correct here.',
@@ -1224,6 +1225,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The maximum length of a free text question response has to be at least 1.',
       solutionRequired:
         'Please enter at least one solution of deactivate the sample solution.',
+      NRMinLessThanMaxSol:
+        'The minimum value of a solution interval must be less than its maximum value.',
+      NRMinLessThanMax:
+        'The minimum value must be less than the maximum value.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
       NumberQuestionsRequired: 'At least one answer option must be given',
