@@ -12,6 +12,16 @@ describe('Create questions', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
     cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SC.typeLabel)
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CONTENT.typeLabel)
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="select-question-status"]').click()
     cy.get(
@@ -34,6 +44,16 @@ describe('Create questions', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
     cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SC.typeLabel)
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.FLASHCARD.typeLabel)
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
     cy.get('[data-cy="select-question-status"]').click()
     cy.get(
