@@ -71,7 +71,7 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function createValidationSchema(t) {
+function createValidationSchema(t: ReturnType<typeof useTranslations>) {
   return Yup.object().shape({
     status: Yup.string().oneOf(Object.values(ElementStatus)),
     name: Yup.string().required(t('manage.formErrors.questionName')),
@@ -227,7 +227,9 @@ function createValidationSchema(t) {
             solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
               is: true,
               then: (schema) =>
-                schema.min(1, t('manage.formErrors.solutionRangeRequired')),
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRangeRequired')),
             }),
           })
         }
@@ -249,7 +251,9 @@ function createValidationSchema(t) {
             solutions: baseSolutions.when('hasSampleSolution', {
               is: true,
               then: (schema) =>
-                schema.min(1, t('manage.formErrors.solutionRequired')),
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRequired')),
             }),
           })
         }
