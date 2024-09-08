@@ -56,7 +56,11 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // course settings
@@ -158,6 +162,8 @@ describe('Different live-quiz workflows', () => {
       'disabled'
     )
 
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
@@ -230,6 +236,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="open-block-1-settings"]').click()
     cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
     cy.get('[data-cy="close-block-settings"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // EDITING - check if the same values as before has been stored and modify them

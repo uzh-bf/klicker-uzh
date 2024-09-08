@@ -87,12 +87,16 @@ describe('Different microlearning workflows', () => {
       .click()
       .type(microLearningName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
       .type(microLearningDisplayName)
     cy.get('[data-cy="insert-microlearning-description"]')
       .click()
       .type(description)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
@@ -115,6 +119,8 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3 - add questions
@@ -210,6 +216,8 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
 
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // navigate to list of microlearnings

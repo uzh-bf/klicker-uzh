@@ -49,12 +49,16 @@ describe('Different practice quiz workflows', () => {
       .click()
       .type(practiceQuizName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .type(practiceQuizDisplayName)
     cy.get('[data-cy="insert-practice-quiz-description"]')
       .click()
       .type(description)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
@@ -90,6 +94,8 @@ describe('Different practice quiz workflows', () => {
       .should('exist')
       .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
     const dataTransfer = new DataTransfer()
@@ -119,6 +125,8 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer3,
     })
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()

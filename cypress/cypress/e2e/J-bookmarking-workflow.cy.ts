@@ -43,7 +43,11 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="create-practice-quiz"]').click()
     cy.get('[data-cy="insert-practice-quiz-name"]').type(quizName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]').type(quizName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
@@ -51,6 +55,8 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="next-or-submit"]').click({ force: true })
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
     const dataTransfer = new DataTransfer()
@@ -62,6 +68,8 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="create-new-element"]').click()
     cy.get('[data-cy="cancel-session-creation"] > div').click()
