@@ -39,6 +39,7 @@ export interface LiveQuizWizardStepProps {
   onSubmit?: (newValues: LiveSessionFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: LiveSessionFormValues) => void
+  onPrevStep?: (newValues: LiveSessionFormValues) => void
   closeWizard: () => void
 }
 
@@ -304,6 +305,10 @@ function LiveSessionWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <LiveQuizSettingsStep
@@ -322,6 +327,10 @@ function LiveSessionWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <LiveQuizQuestionsStep
@@ -339,6 +348,10 @@ function LiveSessionWizard({
             onSubmit={(newValues: LiveSessionFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
         ]}

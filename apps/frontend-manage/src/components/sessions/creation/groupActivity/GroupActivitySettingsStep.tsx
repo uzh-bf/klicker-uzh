@@ -26,6 +26,7 @@ function GroupActivitySettingsStep({
   gamifiedCourses,
   nonGamifiedCourses,
   setStepValidity,
+  onPrevStep,
   onNextStep,
   closeWizard,
 }: GroupActivityWizardStepProps) {
@@ -133,6 +134,7 @@ function GroupActivitySettingsStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

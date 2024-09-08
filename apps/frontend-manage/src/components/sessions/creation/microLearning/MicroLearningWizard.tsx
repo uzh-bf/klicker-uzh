@@ -38,6 +38,7 @@ export interface MicroLearningWizardStepProps {
   nonGamifiedCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: MicroLearningFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onPrevStep?: (newValues: MicroLearningFormValues) => void
   onNextStep?: (newValues: MicroLearningFormValues) => void
   closeWizard: () => void
 }
@@ -318,6 +319,10 @@ function MicroLearningWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <MicroLearningSettingsStep
@@ -336,6 +341,10 @@ function MicroLearningWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <StackCreationStep
@@ -351,6 +360,10 @@ function MicroLearningWizard({
             stepValidity={stepValidity}
             validationSchema={stackValiationSchema}
             setStepValidity={setStepValidity}
+            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             onSubmit={(newValues: MicroLearningFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }

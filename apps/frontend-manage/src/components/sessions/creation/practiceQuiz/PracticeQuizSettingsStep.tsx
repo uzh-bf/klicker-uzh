@@ -31,6 +31,7 @@ function PracticeQuizSettingsStep({
   nonGamifiedCourses,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: PracticeQuizWizardStepProps) {
   const t = useTranslations()
@@ -182,6 +183,7 @@ function PracticeQuizSettingsStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

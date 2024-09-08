@@ -12,6 +12,7 @@ function MicroLearningDescriptionStep({
   validationSchema,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: MicroLearningWizardStepProps) {
   const t = useTranslations()
@@ -31,6 +32,7 @@ function MicroLearningDescriptionStep({
       stepValidity={stepValidity}
       setStepValidity={setStepValidity}
       onNextStep={onNextStep}
+      onPrevStep={onPrevStep}
       closeWizard={closeWizard}
     />
   )
