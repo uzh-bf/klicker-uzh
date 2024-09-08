@@ -278,6 +278,7 @@ function MicroLearningWizard({
             }}
             onRestartForm={() => {
               setIsWizardCompleted(false)
+              closeWizard()
             }}
             resetForm={() => setFormData(formDefaultValues)}
             setStepNumber={setActiveStep}

@@ -72,7 +72,6 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="create-new-element"]').click()
-    cy.get('[data-cy="cancel-session-creation"] > div').click()
 
     // create microlearning with second question
     const currentYear = new Date().getFullYear()
