@@ -39,6 +39,7 @@ export interface PracticeQuizWizardStepProps {
   nonGamifiedCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: PracticeQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onPrevStep?: (newValues: PracticeQuizFormValues) => void
   onNextStep?: (newValues: PracticeQuizFormValues) => void
   closeWizard: () => void
 }
@@ -328,6 +329,10 @@ function PracticeQuizWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <PracticeQuizSettingsStep
@@ -346,6 +351,10 @@ function PracticeQuizWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <StackCreationStep
@@ -361,6 +370,10 @@ function PracticeQuizWizard({
             stepValidity={stepValidity}
             validationSchema={stackValiationSchema}
             setStepValidity={setStepValidity}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             onSubmit={(newValues: PracticeQuizFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }

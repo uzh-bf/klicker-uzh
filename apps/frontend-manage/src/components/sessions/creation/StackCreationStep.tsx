@@ -34,6 +34,7 @@ function StackCreationStep({
   stepValidity,
   validationSchema,
   setStepValidity,
+  onPrevStep,
   onSubmit,
   closeWizard,
 }: MicroLearningStackCreationStepProps | PracticeQuizStackCreationStepProps) {
@@ -91,6 +92,7 @@ function StackCreationStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

@@ -38,6 +38,7 @@ function GroupActivityStackClues({
   stepValidity,
   validationSchema,
   setStepValidity,
+  onPrevStep,
   onSubmit,
   closeWizard,
 }: GroupActivityStackCluesProps) {
@@ -203,6 +204,7 @@ function GroupActivityStackClues({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

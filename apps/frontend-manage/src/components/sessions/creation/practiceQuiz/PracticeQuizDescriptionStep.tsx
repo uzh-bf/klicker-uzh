@@ -12,6 +12,7 @@ function PracticeQuizDescriptionStep({
   validationSchema,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: PracticeQuizWizardStepProps) {
   const t = useTranslations()
@@ -31,6 +32,7 @@ function PracticeQuizDescriptionStep({
       stepValidity={stepValidity}
       setStepValidity={setStepValidity}
       onNextStep={onNextStep}
+      onPrevStep={onPrevStep}
       closeWizard={closeWizard}
     />
   )

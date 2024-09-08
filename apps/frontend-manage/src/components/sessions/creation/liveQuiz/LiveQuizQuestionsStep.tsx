@@ -22,6 +22,7 @@ function LiveQuizQuestionsStep({
   validationSchema,
   setStepValidity,
   onSubmit,
+  onPrevStep,
   closeWizard,
   selection,
   resetSelection,
@@ -78,6 +79,7 @@ function LiveQuizQuestionsStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

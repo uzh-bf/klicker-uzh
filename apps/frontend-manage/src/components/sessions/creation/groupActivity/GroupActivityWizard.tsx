@@ -40,6 +40,7 @@ export interface GroupActivityWizardStepProps {
   nonGamifiedCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: GroupActivityFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onPrevStep?: (newValues: GroupActivityFormValues) => void
   onNextStep?: (newValues: GroupActivityFormValues) => void
   closeWizard: () => void
 }
@@ -344,6 +345,10 @@ function GroupActivityWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <GroupActivitySettingsStep
@@ -362,6 +367,10 @@ function GroupActivityWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <GroupActivityStackClues
@@ -377,6 +386,10 @@ function GroupActivityWizard({
             stepValidity={stepValidity}
             validationSchema={stackCluesValiationSchema}
             setStepValidity={setStepValidity}
+            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             onSubmit={(newValues: GroupActivityFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }

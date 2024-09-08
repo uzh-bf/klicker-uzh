@@ -12,6 +12,7 @@ function GroupActivityDescriptionStep({
   validationSchema,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: GroupActivityWizardStepProps) {
   const t = useTranslations()
@@ -32,6 +33,7 @@ function GroupActivityDescriptionStep({
       activeStep={activeStep}
       stepValidity={stepValidity}
       setStepValidity={setStepValidity}
+      onPrevStep={onPrevStep}
       onNextStep={onNextStep}
       closeWizard={closeWizard}
     />
