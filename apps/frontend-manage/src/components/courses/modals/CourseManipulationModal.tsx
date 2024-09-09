@@ -42,8 +42,8 @@ export interface CourseManipulationFormData {
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
   groupCreationDeadline: string
-  maxGroupSize: number
-  preferredGroupSize: number
+  maxGroupSize?: number
+  preferredGroupSize?: number
 }
 
 function CourseManipulationModal({
@@ -270,9 +270,11 @@ function CourseManipulationModal({
                       }
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
-                      tooltip={t(
-                        'manage.courseList.groupCreationEnabledTooltip'
-                      )}
+                      tooltip={
+                        values.isGamificationEnabled
+                          ? t('manage.courseList.groupCreationEnabledTooltip')
+                          : t('manage.courseList.groupCreationDisabledTooltip')
+                      }
                       className={{
                         label: 'font-bold text-gray-600',
                       }}
@@ -340,6 +342,17 @@ function CourseManipulationModal({
                 <div className="text-sm text-red-700">{errors.description}</div>
               )}
             </div>
+            {values.isGamificationEnabled && (
+              <UserNotification
+                type="info"
+                message={
+                  values.isGroupCreationEnabled
+                    ? t('manage.courseList.gamificationGroupsFixed')
+                    : t('manage.courseList.gamificationFixed')
+                }
+                className={{ root: 'mt-2' }}
+              />
+            )}
             <Button
               disabled={!isValid || isSubmitting}
               type="submit"

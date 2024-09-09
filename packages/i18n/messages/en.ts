@@ -1432,19 +1432,25 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       gamificationTooltip:
         'Gamification can only be activated (not deactivated) after the course has been created.',
       groupCreationEnabled: 'Group Creation',
+      groupCreationDisabledTooltip:
+        'To enable group creation for your students, please first activate gamification for this course.',
       groupCreationEnabledTooltip:
-        'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. This setting can be modified on the course overview.',
+        'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. If deactivated initially, this option can be activated later on the course overview.',
       groupCreationDeadline: 'Group Creation Deadline',
       groupCreationDeadlineTooltip:
         'Students can create new groups or join an existing one until the deadline.',
       maxGroupSize: 'Maximum Group Size',
       maxGroupSizeTooltip:
-        'The maximum number of students in a group. The minimum group size is fixed to two participants to enable randomized group creation',
+        'The maximum number of students in a group. After the creation of the course, this setting cannot be modified anymore. The minimum group size is fixed to two participants to enable randomized group creation',
       preferredGroupSize: 'Preferred Group Size',
       preferredGroupSizeTooltip:
-        'The preferred number of students in a group. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
+        'The preferred number of students in a group. After the creation of the course, this setting cannot be modified anymore. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
       groupDeadlineChangedToPast:
         'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
+      gamificationGroupsFixed:
+        'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
+      gamificationFixed:
+        'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
     },
     course: {
       modifyCourse: 'Modify course',
