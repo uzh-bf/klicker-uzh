@@ -15,7 +15,7 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
       'tutorials/delegated_access',
-      // 'tutorials/lti_integration',
+      'tutorials/lti_integration',
     ],
     'Tutorials for Participants': [
       'student_tutorials/student_accounts',
