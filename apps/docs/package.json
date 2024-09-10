@@ -44,7 +44,7 @@
   "scripts": {
     "build": "docusaurus build",
     "deploy": "docusaurus deploy",
-    "dev:docs": "docusaurus start  --port 5000",
+    "dev:docs": "docusaurus start  --port 5500",
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
     "rename-version": "docusaurus-rename-version",
