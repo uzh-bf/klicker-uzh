@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.21...v3.2.0-alpha.22) (2024-09-11)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** illustrate mean, meadian and other statistics with float precision ([#4256](https://github.com/uzh-bf/klicker-uzh/issues/4256)) ([8e15428](https://github.com/uzh-bf/klicker-uzh/commit/8e15428a30620f035ef07e2bb74cc3a76d616581))
+
+
+### Enhancements
+
+* **apps/docs:** extend documentation on randomized group creation, LTI integration and available element types ([#4255](https://github.com/uzh-bf/klicker-uzh/issues/4255)) ([8c3c62d](https://github.com/uzh-bf/klicker-uzh/commit/8c3c62d31202e1c8ca75013c7f7bcd7aba34a728))
+* **apps/frontend-manage:** add back button to activity creation wizards ([#4253](https://github.com/uzh-bf/klicker-uzh/issues/4253)) ([67a20f3](https://github.com/uzh-bf/klicker-uzh/commit/67a20f3f2032c89b4a1c11981b4e1ea13979a26e))
+
 ## [3.2.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.20...v3.2.0-alpha.21) (2024-09-07)
 
 
