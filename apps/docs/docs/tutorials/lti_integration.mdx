@@ -3,36 +3,89 @@ title: Integration with LTI
 hide_title: true
 ---
 
-# Integration with LTI
+# Integration with LTI (Example: UZH OLAT)
 
 KlickerUZH can be used within an LMS (Learning Management System) through the LTI 1.3 standard. When integrated, KlickerUZH can use the LMS's authentication mechanism to authenticate students (or to create an account for them) and grant them access to the corresponding KlickerUZH content.
 
-## Set-up with UZH OLAT
+How shall I structure my KlickerUZH elements?
+When integrating KlickerUZH into an online course (e.g., on OLAT at UZH) several components can be included. We suggest the following structure to effectively set up your course.
 
-KlickerUZH can be integrated with OpenOLAT through the LTI 1.3 standard. To create an OLAT element for KlickerUZH, follow these steps:
+Create a KlickerUZH structure with the following LTI pages:
 
-Within KlickerUZH:
+<img
+  style={{ float: 'right', width: 200 }}
+  alt="LTI OLAT Integration - OLAT Structure"
+  src="/img_v3/lti_olat/olat_structure.png"
+/>
 
-1. Open the course overview of the course linked with the KlickerUZH activity you would like to integrate with OLAT.
-2. From the dropdown menu on the corresponding activity, select "Copy LTI link".
+1. Course overview and documentation: At the very top of your KlickerUZH course page, you can add a description entailing an overview of how the KlickerUZH will be used in your course, including the timing and purpose of its features. This section can also include information on initial login and account setup. The information given in this text box can then be integrated into your OLAT course, providing your students with an overview and guidance.
 
-Within your OLAT course:
+2. Live Quiz and Q&A: Make sure to integrate a page where your students can access the live quizzes and Q&A sessions (if you are using them) directly from OLAT.
 
-1. Open the course editor.
-2. Add a new OLAT element and select the "LTI page" type.
-3. Open the "Page content" tab.
-4. Select "KlickerUZH" in the "LTI provider" dropdown.
-5. Enter the URL of the KlickerUZH app in the "LTI URL" field.
-6. Activate the "Skip LTI launch page" checkbox.
-7. Click on the "Save" button and publish your changes.
+3. Leaderboard: If your course includes gamification elements and/or groups and group activities, it makes sense to dedicate a page to the leaderboard (where students can also manage their groups). Motivate students by presenting the leaderboard that tracks individual and group points from time to time.
 
-## Recommended OLAT Structure
+4. Manage Account: This page allows students to create or update their profile and manage their KlickerUZH account. This is the first place students should visit if they have not used KlickerUZH before and want to participate with an account. After creating an account here, they will be automatically logged in on all other pages within OLAT.
 
-We recommend the following structure for the OLAT course when integrating KlickerUZH:
+In the self-learning area of your OLAT course, it makes sense to embed Practice Quizzes created with KlickerUZH as one OLAT element per practice quiz.
 
-- An OLAT structure called "KlickerUZH" that serves as a container for all KlickerUZH elements. The OLAT structure can be linked to the KlickerUZH student documentation (/docs).
-- One OLAT element called "Manage account" that allows students to create an account for KlickerUZH and/or to edit their profile after doing so.
-- One OLAT element called "Leaderboard" that displays the leaderboards of the course and allows students to manage groups. This element is optional and primarily intended for gamified courses.
-- One OLAT element per quiz that should be provided to students.
+How can I integrate KlickerUZH pages into my OLAT course?
+To successfully integrate the KlickerUZH pages into your OLAT course, follow the steps outlined below. These instructions are only applicable for UZH members. Our LTI-Integration is currently not supported outside of the UZH OLAT environment (if you would like to use it at your institution, please have the administrators of your learning management system reach out to us).
 
-The following screenshot shows an example of the recommended structure:
+To embed a KlickerUZH element in OLAT, you always start by creating a new course element of the type “LTI Page”. The subsequent steps depend on the type of KlickerUZH element you would like to create (as listed below).
+
+1. Course overview and documentation:
+
+   - To integrate the course overview and student documentation, go to “Page content” on your newly added LTI page. Here, you can choose “KlickerUZH” as your LTI version – this way many settings are configured automatically.
+   - Additionally, add the correct URL for your KlickerUZH course. This URL can be found in the top right corner of your KlickerUZH course page under “Other actions” > “Copy LTI link (Documentation)”.
+   - Activate “Skip launch page”.
+
+![LTI OLAT Integration - LTI Setting Selection](/img_v3/lti_olat/olat_dropdown.png)
+
+<img
+  style={{ width: 300 }}
+  alt="LTI OLAT Integration - Course Overview and Documentation Integration"
+  src="/img_v3/lti_olat/lti_link_documentation.png"
+/>
+
+2. Live Quiz and Q&A:
+
+   - This is also an LTI page which shall be added as a new course element. The procedure is the same as above, just that the URL is a different one.
+   - For the Live Quiz and Q&A you can find the correct URL in the top right corner of your KlickerUZH course page under “Other actions” > “Copy LTI link (Live Quizzes)”.
+   - Activate “Skip launch page”.
+
+<img
+  style={{ width: 300 }}
+  alt="LTI OLAT Integration - Live Quiz List Integration"
+  src="/img_v3/lti_olat/lti_link_live_quizzes.png"
+/>
+
+3. Leaderboard:
+
+   - The leaderboard is also integrated into an LTI page.
+   - Activate “Skip launch page”.
+   - The correct URL can be found in the top right corner of your KlickerUZH course page under “Other actions” > “Copy LTI link (Leaderboard)”.
+
+<img
+  style={{ width: 300 }}
+  alt="LTI OLAT Integration - Leaderboard Integration"
+  src="/img_v3/lti_olat/lti_link_leaderboard.png"
+/>
+
+4. Manage Account:
+
+   - Create another LTI page using the following URL: https://lti.klicker.uzh.ch?redirectTo=https://pwa.klicker.uzh.ch/createAccount. Optionally, it can also be copied from the same dropdown menu as the other URLs.
+   - Activate both “Skip launch page” and “Transmit E-Mail address”. This step is crucial, as we can only ensure the integrity of the new accounts if the e-mail is transmitted.
+   - This link is the same for all courses in KlickerUZH.
+
+![LTI OLAT Integration - Account Management](/img_v3/lti_olat/olat_account_management.png)
+
+5. Activity Links:
+   - As with the previous elements, you can add an LTI page to your self-learning modules and select KlickerUZH as your LTI Version.
+   - The correct URL to integrate practice quizzes / microlearning / live quizzes can be found on the KlickerUZH course page, under “Practice Quizzes” > “Other actions” > “Copy LTI link” (or the corresponding action dropdowns for the other activity types).
+   - Activate “Skip launch page”.
+
+<img
+  style={{ width: 800 }}
+  alt="LTI OLAT Integration - Activity Links"
+  src="/img_v3/lti_olat/olat_pq_integration_link.png"
+/>

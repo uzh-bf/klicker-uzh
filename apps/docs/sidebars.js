@@ -6,7 +6,8 @@ module.exports = {
       'getting_started/migration',
     ],
     'Tutorials for Lecturers': [
-      'tutorials/question_management',
+      'tutorials/supported_element_types',
+      'tutorials/element_management',
       'tutorials/course_management',
       'tutorials/live_quiz',
       'tutorials/live_qa',
@@ -14,7 +15,7 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
       'tutorials/delegated_access',
-      // 'tutorials/lti_integration',
+      'tutorials/lti_integration',
     ],
     'Tutorials for Participants': [
       'student_tutorials/student_accounts',
