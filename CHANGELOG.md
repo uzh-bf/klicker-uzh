@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.22...v3.2.0-alpha.23) (2024-09-11)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** limit group activity creation to courses where group creation is enabled ([#4259](https://github.com/uzh-bf/klicker-uzh/issues/4259)) ([2cb5d11](https://github.com/uzh-bf/klicker-uzh/commit/2cb5d110f64089a8612d13d289f3c170a983f727))
+
 ## [3.2.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.21...v3.2.0-alpha.22) (2024-09-11)
 
 
