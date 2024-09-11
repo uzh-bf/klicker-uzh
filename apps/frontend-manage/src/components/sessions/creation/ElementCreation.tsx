@@ -31,7 +31,8 @@ export type ElementSelectCourse = {
   label: string
   value: string
   isGamified: boolean
-  data: { cy: string }
+  isGroupCreationEnabled: boolean
+  data?: { cy: string }
 }
 
 interface ElementCreationProps {
@@ -109,10 +110,16 @@ function ElementCreation({
   const courseSelection = useMemo(
     () =>
       dataCourses?.userCourses?.map(
-        (course: Pick<Course, 'id' | 'name' | 'isGamificationEnabled'>) => ({
+        (
+          course: Pick<
+            Course,
+            'id' | 'name' | 'isGamificationEnabled' | 'isGroupCreationEnabled'
+          >
+        ) => ({
           label: course.name,
           value: course.id,
           isGamified: course.isGamificationEnabled,
+          isGroupCreationEnabled: course.isGroupCreationEnabled,
         })
       ),
     [dataCourses]
@@ -157,27 +164,6 @@ function ElementCreation({
     } as PracticeQuiz
   }
 
-  const { gamifiedCourses, nonGamifiedCourses } = courseSelection?.reduce<{
-    gamifiedCourses: ElementSelectCourse[]
-    nonGamifiedCourses: ElementSelectCourse[]
-  }>(
-    (acc, course) => {
-      if (course.isGamified) {
-        acc.gamifiedCourses.push({
-          ...course,
-          data: { cy: `select-course-${course.label}` },
-        })
-      } else {
-        acc.nonGamifiedCourses.push({
-          ...course,
-          data: { cy: `select-course-${course.label}` },
-        })
-      }
-      return acc
-    },
-    { gamifiedCourses: [], nonGamifiedCourses: [] }
-  ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
-
   return (
     <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18.25rem] md:min-h-[18.25rem]">
       <div className="h-full w-full">
@@ -185,8 +171,7 @@ function ElementCreation({
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            courses={courseSelection ?? []}
             initialValues={
               dataLiveSession?.liveSession
                 ? duplicationMode === WizardMode.LiveQuiz
@@ -206,8 +191,7 @@ function ElementCreation({
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            courses={courseSelection ?? []}
             initialValues={
               dataMicroLearning?.getSingleMicroLearning
                 ? duplicationMode === WizardMode.Microlearning
@@ -228,8 +212,7 @@ function ElementCreation({
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            courses={courseSelection ?? []}
             initialValues={
               dataPracticeQuiz?.getSinglePracticeQuiz
                 ? duplicationMode === WizardMode.PracticeQuiz
@@ -250,8 +233,7 @@ function ElementCreation({
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            courses={courseSelection ?? []}
             selection={selection}
             resetSelection={resetSelection}
             initialValues={

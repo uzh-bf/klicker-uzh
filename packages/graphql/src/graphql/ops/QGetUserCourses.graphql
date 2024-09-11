@@ -6,6 +6,7 @@ query GetUserCourses {
     pinCode
     isArchived
     isGamificationEnabled
+    isGroupCreationEnabled
     description
     createdAt
     updatedAt

@@ -9,6 +9,7 @@ import {
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
@@ -45,8 +46,7 @@ export interface LiveQuizWizardStepProps {
 
 interface LiveSessionWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   initialValues?: Partial<Session>
   selection: Record<number, Element>
   resetSelection: () => void
@@ -56,8 +56,7 @@ interface LiveSessionWizardProps {
 
 function LiveSessionWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   initialValues,
   selection,
   resetSelection,
@@ -74,6 +73,10 @@ function LiveSessionWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
+
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),

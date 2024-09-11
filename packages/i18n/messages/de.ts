@@ -205,6 +205,8 @@ export default {
         'Bitte beachten Sie die folgenden Hinweise. Diese Aktion kann nicht rückgängig gemacht werden.',
       comingSoon: 'Coming soon...',
       pinCode: 'PIN Code',
+      withGroups: 'Mit Gruppen',
+      withoutGroups: 'Ohne Gruppen',
     },
     contentInput: {
       boldStyle:
@@ -1152,8 +1154,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes können alle Elemente ausser Freitext-Fragen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
-      missingGamifiedCourses:
-        'Für die Erstellung dieses Elementtyps ist ein gamifizierter Kurs erforderlich. Bitte aktivieren Sie die Gamifizierung in einem Ihrer bestehenden Kurse oder erstellen Sie einen neuen gamifizierten Kurs.',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:
@@ -1167,7 +1167,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
       groupActivityNoCourse:
-        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
       groupActivityIntroductionName:
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       groupActivityLecturerDocs:
