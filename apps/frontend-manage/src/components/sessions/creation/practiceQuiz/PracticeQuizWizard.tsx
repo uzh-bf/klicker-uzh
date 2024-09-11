@@ -7,6 +7,7 @@ import {
   ElementType,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
@@ -56,8 +57,7 @@ const acceptedTypes = [
 
 interface PracticeQuizWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   closeWizard: () => void
   initialValues?: PracticeQuiz
   selection: Record<number, Element>
@@ -68,8 +68,7 @@ interface PracticeQuizWizardProps {
 
 function PracticeQuizWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   closeWizard,
   initialValues,
   selection,
@@ -91,6 +90,10 @@ function PracticeQuizWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
+
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),

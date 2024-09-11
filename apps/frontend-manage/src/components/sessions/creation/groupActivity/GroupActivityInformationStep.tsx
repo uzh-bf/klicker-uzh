@@ -15,19 +15,17 @@ function GroupActivityInformationStep({
   editMode,
   formRef,
   formData,
-  continueDisabled,
   activeStep,
   stepValidity,
   validationSchema,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  coursesWithGroups,
+  coursesWithoutGroups,
   setStepValidity,
   onNextStep,
   closeWizard,
 }: GroupActivityWizardStepProps) {
   const t = useTranslations()
-  const noCourse =
-    gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+  const noCoursesWithGroups = coursesWithGroups?.length === 0
 
   return (
     <Formik
@@ -47,7 +45,7 @@ function GroupActivityInformationStep({
           <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="flex flex-row">
               <div className="w-full md:w-1/2">
-                {noCourse ? (
+                {noCoursesWithGroups ? (
                   <UserNotification
                     type="error"
                     message={t('manage.sessionForms.groupActivityNoCourse')}
@@ -137,7 +135,7 @@ function GroupActivityInformationStep({
               stepValidity={stepValidity}
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
-              continueDisabled={continueDisabled}
+              continueDisabled={noCoursesWithGroups}
               onCloseWizard={closeWizard}
             />
           </div>

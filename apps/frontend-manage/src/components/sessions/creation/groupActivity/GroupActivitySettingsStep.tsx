@@ -1,6 +1,6 @@
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
+import useGroupsCourseGrouping from '@lib/hooks/useGroupsCourseGrouping'
 import {
   FormikDateField,
   FormikSelectField,
@@ -23,18 +23,18 @@ function GroupActivitySettingsStep({
   activeStep,
   stepValidity,
   validationSchema,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  coursesWithGroups,
+  coursesWithoutGroups,
   setStepValidity,
   onPrevStep,
   onNextStep,
   closeWizard,
 }: GroupActivityWizardStepProps) {
   const t = useTranslations()
-  const groupedCourses = useGamifiedCourseGrouping({
-    gamifiedCourses: gamifiedCourses ?? [],
-    nonGamifiedCourses:
-      nonGamifiedCourses?.map((course) => {
+  const groupedCourses = useGroupsCourseGrouping({
+    coursesWithGroups: coursesWithGroups ?? [],
+    coursesWithoutGroups:
+      coursesWithoutGroups?.map((course) => {
         return { ...course, disabled: true }
       }) ?? [],
   })

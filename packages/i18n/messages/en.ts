@@ -205,6 +205,8 @@ export default {
         'Please review the following instructions. This action cannot be undone.',
       comingSoon: 'Coming soon...',
       pinCode: 'PIN Code',
+      withGroups: 'With groups',
+      withoutGroups: 'Without groups',
     },
     contentInput: {
       boldStyle:
@@ -1145,8 +1147,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Practice quizzes can contain all elements except free-text questions.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
-      missingGamifiedCourses:
-        'For the creation of this type of element, a gamified course is required. Please enable gamification in one of your existing courses or create a new gamified course.',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:
@@ -1160,7 +1160,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEdited:
         'Your group activity <b>{name}</b> has been edited successfully.',
       groupActivityNoCourse:
-        'Group activities must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+        'Group activities must always be assigned to a course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
       groupActivityIntroductionName:
         'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       groupActivityLecturerDocs:

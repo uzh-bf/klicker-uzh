@@ -7,6 +7,7 @@ import {
   GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGroupsSplit from '@lib/hooks/useCoursesGroupsSplit'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
@@ -36,8 +37,8 @@ export interface GroupActivityWizardStepProps {
   activeStep: number
   stepValidity: boolean[]
   validationSchema: any
-  gamifiedCourses?: ElementSelectCourse[]
-  nonGamifiedCourses?: ElementSelectCourse[]
+  coursesWithGroups?: ElementSelectCourse[]
+  coursesWithoutGroups?: ElementSelectCourse[]
   onSubmit?: (newValues: GroupActivityFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: GroupActivityFormValues) => void
@@ -57,8 +58,7 @@ const acceptedTypes = [
 interface GroupActivityWizardProps {
   title: string
   closeWizard: () => void
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   selection: Record<number, Element>
   resetSelection: () => void
   initialValues?: GroupActivity
@@ -67,8 +67,7 @@ interface GroupActivityWizardProps {
 function GroupActivityWizard({
   title,
   closeWizard,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   selection,
   resetSelection,
   initialValues,
@@ -87,6 +86,10 @@ function GroupActivityWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
+
+  const { coursesWithGroups, coursesWithoutGroups } = useCoursesGroupsSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -317,14 +320,12 @@ function GroupActivityWizard({
             editMode={editMode}
             formRef={formRef}
             formData={formData}
-            continueDisabled={
-              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
-            }
             activeStep={activeStep}
             stepValidity={stepValidity}
             validationSchema={nameValidationSchema}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            coursesWithGroups={coursesWithGroups}
+            coursesWithoutGroups={coursesWithoutGroups}
+            continueDisabled={coursesWithGroups?.length === 0}
             setStepValidity={setStepValidity}
             onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
@@ -361,8 +362,8 @@ function GroupActivityWizard({
             activeStep={activeStep}
             stepValidity={stepValidity}
             validationSchema={settingsValidationSchema}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
+            coursesWithGroups={coursesWithGroups}
+            coursesWithoutGroups={coursesWithoutGroups}
             setStepValidity={setStepValidity}
             onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))

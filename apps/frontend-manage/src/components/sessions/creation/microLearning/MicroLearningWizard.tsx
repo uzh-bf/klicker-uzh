@@ -6,6 +6,7 @@ import {
   ElementType,
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
@@ -55,8 +56,7 @@ const acceptedTypes = [
 
 interface MicroLearningWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   initialValues?: MicroLearning
   selection: Record<number, Element>
   resetSelection: () => void
@@ -66,8 +66,7 @@ interface MicroLearningWizardProps {
 
 function MicroLearningWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   initialValues,
   selection,
   resetSelection,
@@ -87,6 +86,10 @@ function MicroLearningWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
+
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
