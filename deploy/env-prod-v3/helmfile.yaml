@@ -12,7 +12,9 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
+      - dfDomain: '{{ requiredEnv "DF_DOMAIN" }}'
+
+        teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
 
         appSecret: '{{ requiredEnv "APP_SECRET" }}'
 

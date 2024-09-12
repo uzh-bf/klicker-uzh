@@ -73,11 +73,16 @@ Provider.onConnect((token, req, res) => {
   })
 
   if (typeof req.query.redirectTo === 'string') {
-    if (!req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string)) {
+    if (
+      !req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string) &&
+      !req.query.redirectTo.includes(process.env.DF_DOMAIN as string)
+    ) {
       throw new Error(
-        'COOKIE_DOMAIN is not part of redirectTo. Please check your configuration.'
+        'COOKIE_DOMAIN or DF_DOMAIN is not part of redirectTo. Please check your configuration.'
       )
     }
+
+    // TODO: treat DF_DOMAIN separately with different secret
 
     const url = req.query.redirectTo as string
     console.log('Redirecting to:', url)
@@ -86,12 +91,15 @@ Provider.onConnect((token, req, res) => {
     if (
       !process.env.LTI_REDIRECT_URL.includes(
         process.env.COOKIE_DOMAIN as string
-      )
+      ) &&
+      !process.env.LTI_REDIRECT_URL.includes(process.env.DF_DOMAIN as string)
     ) {
       throw new Error(
-        'COOKIE_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
+        'COOKIE_DOMAIN or DF_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
       )
     }
+
+    // TODO: treat DF_DOMAIN separately with different secret
 
     const url = process.env.LTI_REDIRECT_URL as string
     console.log('Redirecting to:', url)
