@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.23...v3.2.0-alpha.24) (2024-09-12)
+
+
+### Enhancements
+
+* **apps/lti:** treat DF_DOMAIN differently in LTI service ([b79bbbb](https://github.com/uzh-bf/klicker-uzh/commit/b79bbbb224097a9923203a00ef5e36c13a606ba2))
+
 ## [3.2.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.22...v3.2.0-alpha.23) (2024-09-11)
 
 
