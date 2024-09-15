@@ -1002,7 +1002,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The description of the stack is displayed above the questions in the stack.',
       stackDescriptionPlaceholder: 'Enter description here...',
       microlearningTypes:
-        'A microlearning can contain all element types except from free-text questions.',
+        'A microlearning can contain all available element types.',
       microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
       microlearningEdited:
@@ -1111,7 +1111,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
-      elementSolutionReq: 'Please only add questions with solution.',
+      elementSolutionReq:
+        'For all element types except from free text questions, a sample solution must be defined.',
       practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
       practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
       practiceQuizDescription:
@@ -1144,7 +1145,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSEQUENTIAL: 'Sequential',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizTypes:
-        'Practice quizzes can contain all elements except free-text questions.',
+        'Practice quizzes can contain all available element types.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
       selectGamifiedCourse:
