@@ -29,15 +29,19 @@ function FTEvaluation({ options, evaluation }: Props) {
 
   return (
     <div>
-      <div className="mb-4">
-        <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
-        <div>
-          {Object.keys(answers)
-            .map((key) => `${key} (${answers[key]?.count})`)
-            .filter((count) => typeof count !== 'undefined')
-            .join(', ')}
+      {Object.keys(answers).length > 0 && (
+        <div className="mb-4">
+          <div className="font-bold">
+            {t('pwa.practiceQuiz.othersAnswered')}
+          </div>
+          <div>
+            {Object.keys(answers)
+              .map((key) => `${key} (${answers[key]?.count})`)
+              .filter((count) => typeof count !== 'undefined')
+              .join(', ')}
+          </div>
         </div>
-      </div>
+      )}
       {solutions.length > 0 && (
         <div>
           <div className="font-bold">{t('shared.generic.sampleSolution')}</div>
