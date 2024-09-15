@@ -14,6 +14,8 @@ describe('Different microlearning workflows', () => {
   it('creates and publishes a micro learning that should be visible to students', () => {
     const questionTitle = uuid()
     const question = uuid()
+    const questionTitle2 = uuid()
+    const question2 = uuid()
     const FTquestionTitle = 'FT ' + uuid()
     const FTquestion = 'FT ' + uuid()
     const FCtitle = 'FC ' + uuid()
@@ -32,6 +34,15 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="set-correctness"]').click({ force: true })
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    // set up SC question without sample solution
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').click().type(questionTitle2)
+    cy.get('[data-cy="insert-question-text"]').click().type(question2)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -146,7 +157,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer2,
     })
-    cy.get('[data-cy="question-1-stack-0"]').should('not.exist') // question is rejected
+    // free text questions should also be accepted without sample solution
+    cy.get('[data-cy="question-1-stack-0"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add final stack with flashcard and content element
     const dataTransfer3 = new DataTransfer()
@@ -171,6 +184,22 @@ describe('Different microlearning workflows', () => {
       dataTransfer4,
     })
     cy.get('[data-cy="question-1-stack-1"]').contains(CTtitle)
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+
+    // SC question without sample solution should be rejected
+    const dataTransfer5 = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
+      .contains(questionTitle2)
+      .trigger('dragstart', {
+        dataTransfer5,
+      })
+    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
+      dataTransfer5,
+    })
+    cy.get('[data-cy="question-2-stack-1"]').contains(questionTitle2)
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
+    cy.get('[data-cy="delete-question-2-stack-1"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
     // TODO: extend test with description as soon as these fields work
@@ -254,6 +283,8 @@ describe('Different microlearning workflows', () => {
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // sign in as a student on a mobile device and respond to the all questions
