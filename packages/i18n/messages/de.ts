@@ -1002,6 +1002,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       stackDescriptionTooltip:
         'Die Beschreibung des Stacks wird oberhalb der Fragen im Stack angezeigt.',
       stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
+      stackFTQuestionsNoSL:
+        'Sie haben eine Freitext-Frage in diesem Stack ohne Musterlösung genutzt. Während dies Freitext-Fragen möglich ist, beachten Sie bitte, dass die Teilnehmenden eine Standardpunktzahl für die Beantwortung erhalten und keine Bewertungslogik angewendet wird.',
       microlearningTypes:
         'Microlearnings können alle verfügbaren Elemente enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',

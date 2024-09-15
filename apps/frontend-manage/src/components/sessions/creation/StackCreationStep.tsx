@@ -72,6 +72,7 @@ function StackCreationStep({
                           selection={selection}
                           resetSelection={resetSelection}
                           error={errors.stacks as any}
+                          highlightFTNoSL
                         />
                       )
                     )}

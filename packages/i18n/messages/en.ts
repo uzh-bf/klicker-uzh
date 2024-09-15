@@ -1001,6 +1001,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       stackDescriptionTooltip:
         'The description of the stack is displayed above the questions in the stack.',
       stackDescriptionPlaceholder: 'Enter description here...',
+      stackFTQuestionsNoSL:
+        'You included a free text question in without a sample solution in this stack. While this is possible for free text questions, please note that the participants will receive a default number of points for answering and no grading logic is applied.',
       microlearningTypes:
         'A microlearning can contain all available element types.',
       microlearningCreated:
