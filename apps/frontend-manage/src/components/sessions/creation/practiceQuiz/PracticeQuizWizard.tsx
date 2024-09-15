@@ -19,10 +19,7 @@ import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast
 import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, {
-  ElementStackFormValues,
-  PracticeQuizFormValues,
-} from '../WizardLayout'
+import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 import PracticeQuizSettingsStep from './PracticeQuizSettingsStep'
@@ -45,12 +42,12 @@ export interface PracticeQuizWizardStepProps {
   closeWizard: () => void
 }
 
-// TODO: add free text questions to accepted types?
 const acceptedTypes = [
   ElementType.Sc,
   ElementType.Mc,
   ElementType.Kprim,
   ElementType.Numerical,
+  ElementType.FreeText,
   ElementType.Flashcard,
   ElementType.Content,
 ]
@@ -134,25 +131,25 @@ function PracticeQuizWizard({
         yup.object().shape({
           displayName: yup.string(),
           description: yup.string(),
-          elementIds: yup
+          elements: yup
             .array()
-            .of(yup.number())
-            .min(1, t('manage.sessionForms.minOneElementPerStack')),
-          titles: yup.array().of(yup.string()),
-          types: yup
-            .array()
+            .min(1, t('manage.sessionForms.minOneElementPerStack'))
             .of(
-              yup
-                .string()
-                .oneOf(
-                  acceptedTypes,
-                  t('manage.sessionForms.practiceQuizTypes')
-                )
-            ),
-          hasSampleSolutions: yup
-            .array()
-            .of(
-              yup.boolean().isTrue(t('manage.sessionForms.elementSolutionReq'))
+              yup.object().shape({
+                id: yup.number(),
+                title: yup.string(),
+                type: yup
+                  .string()
+                  .oneOf(
+                    acceptedTypes,
+                    t('manage.sessionForms.practiceQuizTypes')
+                  ),
+                hasSampleSolution: yup.boolean().when('type', {
+                  is: (type: ElementType) => type !== ElementType.FreeText,
+                  then: (schema) =>
+                    schema.isTrue(t('manage.sessionForms.elementSolutionReq')),
+                }),
+              })
             ),
         })
       )
@@ -167,10 +164,7 @@ function PracticeQuizWizard({
       {
         displayName: '',
         description: '',
-        elementIds: [],
-        titles: [],
-        types: [],
-        hasSampleSolutions: [],
+        elements: [],
       },
     ],
     multiplier: '1',
@@ -210,21 +204,15 @@ function PracticeQuizWizard({
           return {
             displayName: stack.displayName ?? '',
             description: stack.description ?? '',
-            ...stack.elements!.reduce(
-              (acc: ElementStackFormValues, element) => {
-                acc.elementIds.push(parseInt(element.elementData.id))
-                acc.titles.push(element.elementData.name)
-                acc.types.push(element.elementData.type)
-                acc.hasSampleSolutions.push(true) // TODO: get value from element instance
-                return acc
-              },
-              {
-                elementIds: [],
-                titles: [],
-                types: [],
-                hasSampleSolutions: [],
+            elements: stack.elements!.map((element) => {
+              return {
+                id: parseInt(element.elementData.id),
+                title: element.elementData.name,
+                type: element.elementData.type,
+                hasSampleSolution:
+                  element.elementData.options?.hasSampleSolution ?? true,
               }
-            ),
+            }),
           }
         })
       : formDefaultValues.stacks,

@@ -61,7 +61,7 @@ function StackCreationStep({
                     {values.stacks.map(
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
-                          key={`${index}-${stack.elementIds.join('')}`}
+                          key={`stack-${index}-${stack.elements.map((e) => e.id).join('-')}`}
                           index={index}
                           stack={stack}
                           numOfStacks={values.stacks.length}

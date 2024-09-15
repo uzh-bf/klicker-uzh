@@ -29,7 +29,7 @@ function PracticeQuizPoints({ evaluation }: PracticeQuizPointsProps) {
         </div>
         {(evaluation.pointsAwarded !== null ||
           evaluation.xpAwarded !== null) && (
-          <div>
+          <div className="mb-2">
             <div className="font-bold">{t('shared.leaderboard.collected')}</div>
             <div>
               {evaluation.pointsAwarded !== null && (

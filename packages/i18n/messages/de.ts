@@ -1003,7 +1003,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Beschreibung des Stacks wird oberhalb der Fragen im Stack angezeigt.',
       stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       microlearningTypes:
-        'Microlearnings können alle Elemente ausser Freitext-Fragen enthalten.',
+        'Microlearnings können alle verfügbaren Elemente enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
       microlearningEdited:
         'Microlearning <b>{name}</b> erfolgreich modifiziert.',
@@ -1116,7 +1116,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
         'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen sowie Inhaltselemente und Flashcards enthalten.',
-      elementSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
+      elementSolutionReq:
+        'Für alle Fragetypen ausser Freitext fragen ist eine Musterlösung erforderlich.',
       practiceQuizCreated: 'Übungs-Quiz <b>{name}</b> erfolgreich erstellt.',
       practiceQuizUpdated: 'Übungs-Quiz <b>{name}</b> erfolgreich modifiziert.',
       practiceQuizDescription:
@@ -1151,7 +1152,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSEQUENTIAL: 'Sequenziell',
       practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizTypes:
-        'Übungs-Quizzes können alle Elemente ausser Freitext-Fragen enthalten.',
+        'Übungs-Quizzes können alle verfügbaren Element-Typen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       selectGamifiedCourse:
