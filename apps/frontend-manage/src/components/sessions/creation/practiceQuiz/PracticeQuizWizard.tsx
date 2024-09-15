@@ -209,7 +209,8 @@ function PracticeQuizWizard({
                 id: parseInt(element.elementData.id),
                 title: element.elementData.name,
                 type: element.elementData.type,
-                hasSampleSolution: true, // TODO: get value from element instance
+                hasSampleSolution:
+                  element.elementData.options.hasSampleSolution ?? true,
               }
             }),
           }
