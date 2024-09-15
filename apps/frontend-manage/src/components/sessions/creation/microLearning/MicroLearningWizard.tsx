@@ -199,7 +199,7 @@ function MicroLearningWizard({
                 title: element.elementData.name,
                 type: element.elementData.type,
                 hasSampleSolution:
-                  element.elementData.options.hasSampleSolution ?? true,
+                  element.elementData.options?.hasSampleSolution ?? true,
               }
             }),
           }
