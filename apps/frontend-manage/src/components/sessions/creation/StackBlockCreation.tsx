@@ -8,6 +8,7 @@ import {
   faCircleExclamation,
   faPlus,
   faTrash,
+  faWarning,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -38,6 +39,7 @@ interface StackBlockCreationMultipleProps extends StackBlockCreationProps {
   numOfStacks: number
   remove: (index: number) => void
   move: (from: number, to: number) => void
+  highlightFTNoSL?: boolean
   error?: ElementStackErrorValues[]
 }
 
@@ -45,6 +47,7 @@ interface StackBlockCreationSingleProps extends StackBlockCreationProps {
   numOfStacks?: never
   remove?: never
   move?: never
+  highlightFTNoSL?: never
   error?: ElementStackErrorValues
 }
 
@@ -59,6 +62,7 @@ function StackBlockCreation({
   selection,
   resetSelection,
   error,
+  highlightFTNoSL = false,
   singleStackMode = false,
   className,
 }:
@@ -91,6 +95,15 @@ function StackBlockCreation({
     []
   )
 
+  const FTQuestionNoSLCount = highlightFTNoSL
+    ? stack.elements.filter(
+        (element) =>
+          element.type === ElementType.FreeText &&
+          !element.hasSampleSolution &&
+          typeof element.hasSampleSolution !== 'undefined'
+      ).length
+    : 0
+
   return (
     <div
       key={index}
@@ -104,6 +117,18 @@ function StackBlockCreation({
               ? t('shared.generic.questions')
               : t('shared.generic.stackN', { number: index + 1 })}
           </div>
+          {highlightFTNoSL && FTQuestionNoSLCount > 0 && (
+            <Tooltip
+              tooltip={t('manage.sessionForms.stackFTQuestionsNoSL')}
+              delay={0}
+              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+            >
+              <FontAwesomeIcon
+                icon={faWarning}
+                className="mr-1 text-orange-500"
+              />
+            </Tooltip>
+          )}
           {error &&
             !singleStackMode &&
             Array.isArray(error) &&
@@ -112,7 +137,7 @@ function StackBlockCreation({
               <Tooltip
                 tooltip={<StackCreationErrors errors={error[index]} />}
                 delay={0}
-                className={{ tooltip: 'z-20 text-sm' }}
+                className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -124,7 +149,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
-              className={{ tooltip: 'z-20 text-sm' }}
+              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faCircleExclamation}
@@ -227,6 +252,14 @@ function StackBlockCreation({
                     className="mr-1 text-red-600"
                   />
                 )}
+                {highlightFTNoSL &&
+                  element.type === ElementType.FreeText &&
+                  !element.hasSampleSolution && (
+                    <FontAwesomeIcon
+                      icon={faWarning}
+                      className="mr-1 text-orange-500"
+                    />
+                  )}
                 <Button
                   basic
                   className={{
