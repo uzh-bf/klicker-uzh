@@ -202,7 +202,6 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
-    // TODO: extend test with description as soon as these fields work
     const title1 = 'Stack 1 Description Title'
     const title2 = 'Stack 2 Description Title'
     cy.get('[data-cy="open-stack-0-description"]').click()
@@ -308,6 +307,8 @@ describe('Different microlearning workflows', () => {
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="practice-quiz-continue"]').click()
 
