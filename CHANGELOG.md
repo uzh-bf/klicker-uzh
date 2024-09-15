@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.24...v3.2.0-alpha.25) (2024-09-15)
+
+
+### Features
+
+* allow adding free text questions without sample solution to practice quizzes and microlearnings ([#4260](https://github.com/uzh-bf/klicker-uzh/issues/4260)) ([3da722c](https://github.com/uzh-bf/klicker-uzh/commit/3da722c3e705ff56dadd599616f0aedbde490259))
+
 ## [3.2.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.23...v3.2.0-alpha.24) (2024-09-12)
 
 
