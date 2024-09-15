@@ -19,7 +19,6 @@ import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast
 import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
 import WizardLayout, {
-  ElementStackFormValues,
   GroupActivityClueFormValues,
   GroupActivityFormValues,
 } from '../WizardLayout'
@@ -122,17 +121,20 @@ function GroupActivityWizard({
 
   const stackCluesValiationSchema = yup.object().shape({
     stack: yup.object().shape({
-      elementIds: yup
+      elements: yup
         .array()
-        .of(yup.number())
-        .min(1, t('manage.sessionForms.minOneQuestionGroupActivity')),
-      titles: yup.array().of(yup.string()),
-      types: yup
-        .array()
+        .min(1, t('manage.sessionForms.minOneQuestionGroupActivity'))
         .of(
-          yup
-            .string()
-            .oneOf(acceptedTypes, t('manage.sessionForms.groupActivityTypes'))
+          yup.object().shape({
+            id: yup.number(),
+            title: yup.string(),
+            type: yup
+              .string()
+              .oneOf(
+                acceptedTypes,
+                t('manage.sessionForms.groupActivityTypes')
+              ),
+          })
         ),
     }),
     clues: yup
@@ -176,10 +178,7 @@ function GroupActivityWizard({
     stack: {
       displayName: '',
       description: '',
-      elementIds: [],
-      titles: [],
-      types: [],
-      hasSampleSolutions: [],
+      elements: [],
     },
     startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
     endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
@@ -226,20 +225,14 @@ function GroupActivityWizard({
       ? {
           displayName: initialValues?.stacks[0].displayName ?? '',
           description: initialValues?.stacks[0].description ?? '',
-          ...initialValues?.stacks[0].elements!.reduce(
-            (acc: ElementStackFormValues, element) => {
-              acc.elementIds.push(parseInt(element.elementData.id))
-              acc.titles.push(element.elementData.name)
-              acc.types.push(element.elementData.type)
-              return acc
-            },
-            {
-              elementIds: [],
-              titles: [],
-              types: [],
-              hasSampleSolutions: [],
+          elements: initialValues?.stacks[0].elements!.map((element) => {
+            return {
+              id: parseInt(element.elementData.id),
+              title: element.elementData.name,
+              type: element.elementData.type,
+              hasSampleSolution: false,
             }
-          ),
+          }),
         }
       : formDefaultValues.stack,
 

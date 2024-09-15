@@ -1,7 +1,4 @@
-import {
-  GetSingleCourseDocument,
-  StackElementsInput,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { GroupActivityFormValues } from '../WizardLayout'
 
@@ -41,12 +38,10 @@ async function submitGroupActivityForm({
           courseId: values.courseId,
           clues: values.clues,
           stack: {
-            elements: values.stack.elementIds.map<StackElementsInput>(
-              (id, ix) => ({
-                elementId: id,
-                order: ix,
-              })
-            ),
+            elements: values.stack.elements.map((element, ix) => ({
+              elementId: element.id,
+              order: ix,
+            })),
             order: 0,
           },
         },
@@ -73,12 +68,10 @@ async function submitGroupActivityForm({
           courseId: values.courseId,
           clues: values.clues,
           stack: {
-            elements: values.stack.elementIds.map<StackElementsInput>(
-              (id, ix) => ({
-                elementId: id,
-                order: ix,
-              })
-            ),
+            elements: values.stack.elements.map((element, ix) => ({
+              elementId: element.id,
+              order: ix,
+            })),
             order: 0,
           },
         },

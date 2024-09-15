@@ -39,19 +39,25 @@ export interface LiveQuizBlockErrorValues {
 export interface ElementStackFormValues {
   displayName?: string
   description?: string
-  elementIds: number[]
-  titles: string[]
-  types: ElementType[]
-  hasSampleSolutions: boolean[]
+  elements: {
+    id: number
+    title: string
+    type: ElementType
+    hasSampleSolution: boolean
+  }[]
 }
 
 export interface ElementStackErrorValues {
   displayName?: string
   description?: string
-  elementIds: string[]
-  titles: string[]
-  types: string[]
-  hasSampleSolutions: string[]
+  elements?:
+    | string
+    | {
+        id: string
+        title: string
+        type: string
+        hasSampleSolution: string
+      }[]
 }
 
 export interface LiveSessionFormValues extends CommonFormValues {

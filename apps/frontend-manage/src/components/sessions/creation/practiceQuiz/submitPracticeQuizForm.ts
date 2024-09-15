@@ -41,8 +41,8 @@ async function submitPracticeQuizForm({
             stack.description && stack.description.length > 0
               ? stack.description
               : undefined,
-          elements: stack.elementIds.map((elementId, ix) => {
-            return { elementId, order: ix }
+          elements: stack.elements.map((element, ix) => {
+            return { elementId: element.id, order: ix }
           }),
         }
       }),
