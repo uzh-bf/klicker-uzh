@@ -1145,7 +1145,9 @@ function evaluateElementResponse(
       return {
         feedbacks: [],
         numAnswers: results.total,
-        answers: results.responses ?? {},
+        answers: elementData.options.hasSampleSolution
+          ? (results.responses ?? {})
+          : {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correctness,
