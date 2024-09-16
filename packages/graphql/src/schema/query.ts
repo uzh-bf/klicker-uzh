@@ -209,6 +209,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      runningSessionsCourse: t.field({
+        nullable: true,
+        type: [Session],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getRunningSessionsCourse(args, ctx)
+        },
+      }),
+
       userRunningSessions: asUser.field({
         nullable: true,
         type: [Session],
@@ -274,6 +285,28 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningData(args, ctx)
+        },
+      }),
+
+      getSinglePracticeQuiz: asUser.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getSinglePracticeQuiz(args, ctx)
+        },
+      }),
+
+      getSingleMicroLearning: asUser.field({
+        nullable: true,
+        type: MicroLearning,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
           return MicroLearningService.getSingleMicroLearning(args, ctx)
         },
       }),
@@ -310,6 +343,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return GroupService.getParticipantGroups(args, ctx)
+        },
+      }),
+
+      getCourseGroups: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getCourseGroups(args, ctx)
         },
       }),
 
@@ -417,7 +461,6 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: getCourseOverviewData has no more type issues, but contains a lot of mappings and subsetting of existing types
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),

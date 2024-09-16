@@ -38,6 +38,7 @@ function GroupActivityStackClues({
   stepValidity,
   validationSchema,
   setStepValidity,
+  onPrevStep,
   onSubmit,
   closeWizard,
 }: GroupActivityStackCluesProps) {
@@ -65,7 +66,7 @@ function GroupActivityStackClues({
               <StackBlockCreation
                 singleStackMode
                 index={0}
-                key={`stack-${values.stack.elementIds.join('')}`}
+                key={`stack-${values.stack.elements.map((e) => e.id).join('-')}`}
                 stack={values.stack}
                 acceptedTypes={acceptedTypes}
                 replace={(_, newValue) => setFieldValue('stack', newValue)}
@@ -203,6 +204,7 @@ function GroupActivityStackClues({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

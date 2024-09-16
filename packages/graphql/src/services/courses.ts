@@ -174,6 +174,7 @@ export async function getCourseOverviewData(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
@@ -331,6 +332,16 @@ export async function getCourseOverviewData(
         return { ...entry, rank: ix + 1 }
       })
 
+      const groupCreationPoolEntry =
+        await ctx.prisma.groupAssignmentPoolEntry.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        })
+
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
@@ -351,6 +362,7 @@ export async function getCourseOverviewData(
               : 0,
         },
         groupActivityInstances,
+        inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
   }
@@ -392,7 +404,10 @@ interface CreateCourseArgs {
   color?: string | null
   startDate: Date
   endDate: Date
+  isGroupCreationEnabled?: boolean | null
   groupDeadlineDate?: Date | null
+  maxGroupSize?: number | null
+  preferredGroupSize?: number | null
   notificationEmail?: string | null
   isGamificationEnabled: boolean
 }
@@ -405,7 +420,10 @@ export async function createCourse(
     color,
     startDate,
     endDate,
+    isGroupCreationEnabled,
     groupDeadlineDate,
+    maxGroupSize,
+    preferredGroupSize,
     notificationEmail,
     isGamificationEnabled,
   }: CreateCourseArgs,
@@ -418,6 +436,8 @@ export async function createCourse(
   // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
   // endDate.setHours(endDate.getHours() - endDate.getTimezoneOffset() / 60)
 
+  const defaultMaxGroupSize = 5
+  const defaultPreferredGroupSize = 3
   const course = await ctx.prisma.course.create({
     data: {
       name: name.trim(),
@@ -426,7 +446,10 @@ export async function createCourse(
       color: color ?? '#CCD5ED',
       startDate: startDate,
       endDate: endDate,
+      isGroupCreationEnabled: isGroupCreationEnabled ?? true,
       groupDeadlineDate: groupDeadlineDate ?? endDate,
+      maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+      preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
       notificationEmail: notificationEmail,
       isGamificationEnabled: isGamificationEnabled,
       pinCode: randomPin,
@@ -439,6 +462,83 @@ export async function createCourse(
   })
 
   return course
+}
+
+interface UpdateCourseSettingsArgs {
+  id: string
+  name?: string | null
+  displayName?: string | null
+  description?: string | null
+  color?: string | null
+  startDate?: Date | null
+  endDate?: Date | null
+  isGroupCreationEnabled?: boolean | null
+  groupDeadlineDate?: Date | null
+  notificationEmail?: string | null
+  isGamificationEnabled?: boolean | null
+}
+
+export async function updateCourseSettings(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    color,
+    startDate,
+    endDate,
+    isGroupCreationEnabled,
+    groupDeadlineDate,
+    notificationEmail,
+    isGamificationEnabled,
+  }: UpdateCourseSettingsArgs,
+  ctx: ContextWithUser
+) {
+  // verify that no past dates are modified or enabled gamification / group creation settings are disabled
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!course) return null
+
+  const currentStartDatePast = course.startDate < new Date()
+  const newStartDatePast = startDate ? startDate < new Date() : false
+  const newGroupDeadlinePast = groupDeadlineDate
+    ? groupDeadlineDate < new Date()
+    : false
+
+  const updatedCourse = await ctx.prisma.course.update({
+    where: {
+      id,
+    },
+    data: {
+      name: name ?? undefined,
+      displayName: displayName ?? undefined,
+      description: description ?? undefined,
+      color: color ?? undefined,
+      startDate:
+        currentStartDatePast || newStartDatePast || !startDate
+          ? undefined
+          : startDate,
+      endDate: endDate ?? undefined,
+      isGroupCreationEnabled:
+        course.isGroupCreationEnabled || !isGroupCreationEnabled
+          ? undefined
+          : isGroupCreationEnabled,
+      groupDeadlineDate: groupDeadlineDate ?? undefined,
+      notificationEmail: notificationEmail ?? undefined,
+      isGamificationEnabled:
+        course.isGamificationEnabled || !isGamificationEnabled
+          ? undefined
+          : isGamificationEnabled,
+      // reset the random assignment tracking if the group deadline is extended
+      randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+    },
+  })
+
+  return updatedCourse
 }
 
 export async function getUserCourses(ctx: ContextWithUser) {
@@ -685,64 +785,6 @@ export async function getControlCourse(
           createdAt: 'desc',
         },
       },
-    },
-  })
-
-  return course
-}
-
-export async function changeCourseDescription(
-  { courseId, input }: { courseId: string; input: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      description: input,
-    },
-  })
-
-  return course
-}
-
-export async function changeCourseColor(
-  { courseId, color }: { courseId: string; color: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      color,
-    },
-  })
-
-  return course
-}
-
-interface ChangeCourseDates {
-  courseId: string
-  startDate?: Date | null
-  endDate?: Date | null
-}
-
-export async function changeCourseDates(
-  { courseId, startDate, endDate }: ChangeCourseDates,
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      ...(startDate && { startDate }),
-      ...(endDate && { endDate }),
     },
   })
 

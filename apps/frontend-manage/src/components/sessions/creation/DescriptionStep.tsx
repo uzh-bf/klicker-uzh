@@ -64,6 +64,7 @@ function DescriptionStep({
   validationSchema,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }:
   | MicroLearningDescriptionStepProps
@@ -133,6 +134,7 @@ function DescriptionStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

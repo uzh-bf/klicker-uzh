@@ -10,7 +10,7 @@ import {
   SMALL_BAR_THRESHOLD,
 } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Bar,
   BarChart as BarChartRecharts,
@@ -37,39 +37,40 @@ function BarChart({
   const t = useTranslations()
 
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = Object.values(
-    data.results as Record<string, { count: number; value: string }>
-  ).map((result, idx) => {
-    const labelIn =
-      result.count / data.participants > SMALL_BAR_THRESHOLD
-        ? result.count
-        : undefined
-    const labelOut =
-      result.count / data.participants <= SMALL_BAR_THRESHOLD
-        ? result.count
-        : undefined
-    const xLabel =
-      data.questionData.type === 'NUMERICAL'
-        ? Math.round(parseFloat(result.value) * 100) / 100
-        : String.fromCharCode(Number(idx) + 65)
-    return { count: result.count, labelIn, labelOut, xLabel }
-  })
+  const dataWithLabels = useMemo(() => {
+    const labeledData = Object.values(
+      data.results as Record<string, { count: number; value: string }>
+    ).map((result, idx) => {
+      const labelIn =
+        result.count / data.participants > SMALL_BAR_THRESHOLD
+          ? result.count
+          : undefined
+      const labelOut =
+        result.count / data.participants <= SMALL_BAR_THRESHOLD
+          ? result.count
+          : undefined
+      const xLabel =
+        data.questionData.type === 'NUMERICAL'
+          ? Math.round(parseFloat(result.value) * 100) / 100
+          : String.fromCharCode(Number(idx) + 65)
+      return { count: result.count, labelIn, labelOut, xLabel }
+    })
+    return labeledData.length > 0
+      ? labeledData
+      : [
+          {
+            count: 0,
+            labelIn: undefined,
+            labelOut: undefined,
+            xLabel: '0',
+          },
+        ]
+  }, [data.results, data.participants, data.questionData.type])
 
   return (
     <ResponsiveContainer className="pb-2" height="99%" width="99%">
       <BarChartRecharts
-        data={
-          dataWithLabels.length > 0
-            ? dataWithLabels
-            : [
-                {
-                  count: 0,
-                  labelIn: undefined,
-                  labelOut: undefined,
-                  xLabel: '0',
-                },
-              ]
-        }
+        data={dataWithLabels}
         margin={{
           bottom: 20,
           left: 20,

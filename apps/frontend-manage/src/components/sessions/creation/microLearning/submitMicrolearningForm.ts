@@ -13,6 +13,7 @@ interface MicroLearningFormProps {
   setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   setErrorToastOpen: (isOpen: boolean) => void
+  editMode: boolean
 }
 
 async function submitMicrolearningForm({
@@ -23,6 +24,7 @@ async function submitMicrolearningForm({
   setSelectedCourseId,
   setIsWizardCompleted,
   setErrorToastOpen,
+  editMode,
 }: MicroLearningFormProps) {
   try {
     let success = false
@@ -42,8 +44,8 @@ async function submitMicrolearningForm({
             stack.description && stack.description.length > 0
               ? stack.description
               : undefined,
-          elements: stack.elementIds.map((elementId, ix) => {
-            return { elementId, order: ix }
+          elements: stack.elements.map((element, ix) => {
+            return { elementId: element.id, order: ix }
           }),
         }
       }),
@@ -53,7 +55,7 @@ async function submitMicrolearningForm({
       courseId: values.courseId,
     }
 
-    if (id) {
+    if (editMode) {
       const result = await editMicroLearning({
         variables: {
           id,

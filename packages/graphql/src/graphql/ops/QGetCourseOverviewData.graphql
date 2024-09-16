@@ -1,6 +1,7 @@
 query GetCourseOverviewData($courseId: String!) {
   getCourseOverviewData(courseId: $courseId) {
     id
+    inRandomGroupPool
     participant {
       id
       avatar
@@ -23,6 +24,9 @@ query GetCourseOverviewData($courseId: String!) {
       isGamificationEnabled
       groupDeadlineDate
       isGroupDeadlinePassed
+      isGroupCreationEnabled
+      maxGroupSize
+      preferredGroupSize
 
       awards {
         id

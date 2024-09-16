@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.2.0-alpha.13",
+  "version": "3.2.0-alpha.26",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",
@@ -18,7 +18,8 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.22",
+    "@tanstack/react-table": "8.20.5",
+    "@uzh-bf/design-system": "3.0.0-alpha.29",
     "d3": "7.8.4",
     "dayjs": "1.11.12",
     "deepmerge": "4.3.1",
@@ -39,6 +40,7 @@
     "nookies": "2.5.2",
     "ramda": "0.29.0",
     "react": "18.3.1",
+    "react-csv-downloader": "3.1.0",
     "react-d3-speedometer": "2.1.0-rc.0",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
@@ -60,6 +62,7 @@
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
+    "@tailwindcss/container-queries": "0.1.1",
     "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
     "@types/d3": "^7.4.0",

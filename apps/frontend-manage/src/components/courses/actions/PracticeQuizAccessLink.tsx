@@ -30,18 +30,20 @@ function PracticeQuizAccessLink({
         className={{
           root: 'text-primary-100 flex flex-row items-center gap-1',
         }}
-        data={{ cy: `copy-practice-quiz-link-${practiceQuiz.name}` }}
+        data={{ cy: `copy-quiz-link-${practiceQuiz.name}` }}
       >
         <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
       </Button>
       <Toast
+        dismissible
         openExternal={copyToast}
         setOpenExternal={setCopyToast}
         type="success"
+        duration={4000}
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkPracticeQuizCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
     </>
   )

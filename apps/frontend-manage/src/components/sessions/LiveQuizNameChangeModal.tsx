@@ -140,16 +140,20 @@ function LiveQuizNameChangeModal({
         </Formik>
       </Modal>
       <Toast
+        dismissible
         openExternal={successToast}
         setOpenExternal={setSuccessToast}
         type="success"
+        duration={6000}
       >
         {t('manage.sessions.liveQuizNameChangeSuccess')}
       </Toast>
       <Toast
+        dismissible
         openExternal={errorToast}
         setOpenExternal={setErrorToast}
         type="error"
+        duration={6000}
       >
         {t('manage.sessions.liveQuizNameChangeError')}
       </Toast>

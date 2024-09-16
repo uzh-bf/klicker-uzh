@@ -4,7 +4,10 @@ import CatalystNotification from './CatalystNotification'
 import PracticeQuizElement from './PracticeQuizElement'
 
 interface PracticeQuizTileProps {
-  practiceQuizzes: Partial<PracticeQuiz>[]
+  practiceQuizzes: Pick<
+    PracticeQuiz,
+    'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
+  >[]
   courseId: string
   userCatalyst?: boolean
 }

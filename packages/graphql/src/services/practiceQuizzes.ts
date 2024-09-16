@@ -130,6 +130,34 @@ export async function getPracticeQuizData(
   return quiz
 }
 
+export async function getSinglePracticeQuiz(
+  { id }: { id: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  return quiz
+}
+
 interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
@@ -1117,7 +1145,9 @@ function evaluateElementResponse(
       return {
         feedbacks: [],
         numAnswers: results.total,
-        answers: results.responses ?? {},
+        answers: elementData.options.hasSampleSolution
+          ? (results.responses ?? {})
+          : {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correctness,
@@ -1336,7 +1366,9 @@ export async function respondToQuestion(
 
     // evaluate the correctness of the response
     const elementData = instance?.elementData
-    const correctness = evaluateAnswerCorrectness({ elementData, response })
+    const correctness = elementData.options.hasSampleSolution
+      ? evaluateAnswerCorrectness({ elementData, response })
+      : 1
 
     const updatedResults = updateQuestionResults({
       previousResults:
@@ -1430,7 +1462,7 @@ export async function respondToQuestion(
     updatedInstance.options.pointsMultiplier
   )
   const score = evaluation?.score || 0
-  const xp = evaluation?.xp || 0
+  const xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
@@ -1816,20 +1848,6 @@ export async function respondToQuestion(
         ? StackFeedbackStatus.CORRECT
         : StackFeedbackStatus.PARTIAL
 
-  console.log({
-    ...evaluation,
-    pointsAwarded,
-    newPointsFrom,
-    xpAwarded,
-    newXpFrom,
-    solutions:
-      elementData.type === 'FREE_TEXT' ? elementData.options.solutions : null,
-    solutionRanges:
-      elementData.type === 'NUMERICAL'
-        ? elementData.options.solutionRanges
-        : null,
-  })
-
   return {
     ...updatedInstance,
     evaluation: evaluation
@@ -1841,7 +1859,9 @@ export async function respondToQuestion(
           newXpFrom,
           solutions:
             elementData.type === 'FREE_TEXT'
-              ? elementData.options.solutions
+              ? elementData.options.hasSampleSolution
+                ? elementData.options.solutions
+                : []
               : null,
           solutionRanges:
             elementData.type === 'NUMERICAL'

@@ -2,12 +2,13 @@
 
 fragment PracticeQuizData on PracticeQuiz {
   id
+  status
   name
   displayName
-  status
   description
   pointsMultiplier
   resetTimeDays
+  availableFrom
   orderType
   numOfStacks
   # previouslyAnswered

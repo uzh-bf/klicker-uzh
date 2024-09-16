@@ -31,15 +31,17 @@ function MicroLearningAccessLink({
         className={{
           root: twMerge('text-primary-100 flex flex-row items-center gap-1'),
         }}
-        data={{ cy: `copy-microlearning-link-${microLearning.name}` }}
+        data={{ cy: `copy-quiz-link-${microLearning.name}` }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
       </Button>
       <Toast
+        dismissible
         openExternal={copyToast}
         setOpenExternal={setCopyToast}
         type="success"
+        duration={4000}
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkMicrolearningCopied')}

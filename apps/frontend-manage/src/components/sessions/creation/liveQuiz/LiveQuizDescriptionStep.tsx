@@ -12,6 +12,7 @@ function LiveQuizDescriptionStep({
   validationSchema,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: LiveQuizWizardStepProps) {
   const t = useTranslations()
@@ -31,6 +32,7 @@ function LiveQuizDescriptionStep({
       stepValidity={stepValidity}
       setStepValidity={setStepValidity}
       onNextStep={onNextStep}
+      onPrevStep={onPrevStep}
       closeWizard={closeWizard}
     />
   )

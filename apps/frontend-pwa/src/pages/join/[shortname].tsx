@@ -5,7 +5,7 @@ import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -42,21 +42,35 @@ function Join({
     !data.runningSessions?.length ||
     data.runningSessions.length === 0
   ) {
-    return <div>{t('pwa.general.noSessionsActive')}</div>
+    return (
+      <Layout>
+        <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
+          <div className="font-bold">
+            {t.rich('pwa.general.activeLiveQuizzes')}
+          </div>
+          <div className="mt-2 space-y-1">
+            <UserNotification
+              type="warning"
+              message={t('pwa.general.noLiveQuizzesActive')}
+            />
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   return (
     <Layout>
       <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
         <div className="font-bold">
-          {t.rich('pwa.general.activeSessionsBy', {
+          {t.rich('pwa.general.activeLiveQuizzesBy', {
             i: (text) => <span className="italic">{text}</span>,
             name: shortname,
           })}
         </div>
         <div className="mt-2 space-y-1">
           {data.runningSessions.map((session) => (
-            <div className="" key={session.id}>
+            <div key={session.id}>
               <Link href={`/session/${session.id}`}>
                 <Button
                   fluid

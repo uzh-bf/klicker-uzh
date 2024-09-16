@@ -11,6 +11,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
+import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -20,10 +21,7 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import {
   AllQuestionInstanceTypeData,
@@ -1476,6 +1474,36 @@ export async function getRunningSessions(
   if (!userWithSessions?.sessions) return []
 
   return userWithSessions.sessions
+}
+
+export async function getRunningSessionsCourse(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: SessionStatus.RUNNING,
+        },
+      },
+    },
+  })
+
+  const sessionList =
+    course?.sessions.map((session) => {
+      session.course = { id: course.id, displayName: course.displayName }
+      return session
+    }) ?? []
+
+  return sessionList
 }
 
 export async function getUserRunningSessions(ctx: ContextWithUser) {

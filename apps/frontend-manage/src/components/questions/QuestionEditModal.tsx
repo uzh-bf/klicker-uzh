@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import MultiplierSelector from '@components/sessions/creation/MultiplierSelector'
 import {
   faArrowDown,
   faArrowUp,
@@ -56,6 +55,7 @@ import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
+import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
@@ -71,7 +71,7 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function createValidationSchema(t) {
+function createValidationSchema(t: ReturnType<typeof useTranslations>) {
   return Yup.object().shape({
     status: Yup.string().oneOf(Object.values(ElementStatus)),
     name: Yup.string().required(t('manage.formErrors.questionName')),
@@ -95,11 +95,13 @@ function createValidationSchema(t) {
       const baseChoicesSchema = Yup.array().of(
         Yup.object().shape({
           ix: Yup.number(),
-          value: Yup.string().test({
-            message: t('manage.formErrors.answerContent'),
-            test: (content) =>
-              !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-          }),
+          value: Yup.string()
+            .required(t('manage.formErrors.answerContent'))
+            .test({
+              message: t('manage.formErrors.answerContent'),
+              test: (content) =>
+                !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+            }),
           correct: Yup.boolean().nullable(),
           feedback: Yup.string().when('hasAnswerFeedbacks', {
             is: true,
@@ -179,18 +181,18 @@ function createValidationSchema(t) {
           const baseSolutionRanges = Yup.array()
             .of(
               Yup.object().shape({
-                min: Yup.number().nullable(),
-                // TODO: min less than max if defined
-                // .when('max', {
-                //   is: (max) => typeof max !== 'undefined',
-                //   then: (schema) => schema.lessThan(Yup.ref('max')),
-                // }),
+                min: Yup.number()
+                  .nullable()
+                  // we can only handle one case to avoid cyclic dependencies
+                  .when('max', {
+                    is: (max?: number | null) => typeof max !== 'undefined',
+                    then: (schema) =>
+                      schema.lessThan(
+                        Yup.ref('max'),
+                        t('manage.formErrors.NRMinLessThanMaxSol')
+                      ),
+                  }),
                 max: Yup.number().nullable(),
-                // TODO: max more than min if defined
-                // .when('min', {
-                //   is: (min) => typeof min !== 'undefined',
-                //   then: (schema) => schema.moreThan(Yup.ref('min')),
-                // }),
               })
             )
             .nullable()
@@ -207,21 +209,27 @@ function createValidationSchema(t) {
               min: Yup.number()
                 .min(-1e30, t('manage.formErrors.NRUnderflow'))
                 .max(1e30, t('manage.formErrors.NROverflow'))
-                .nullable(),
-              // TODO: less than if max defined
-              // .lessThan(Yup.ref('max')),
+                .nullable()
+                .when('max', {
+                  is: (max?: number) => typeof max !== 'undefined',
+                  then: (schema) =>
+                    schema.lessThan(
+                      Yup.ref('max'),
+                      t('manage.formErrors.NRMinLessThanMax')
+                    ),
+                }),
               max: Yup.number()
                 .min(-1e30, t('manage.formErrors.NRUnderflow'))
                 .max(1e30, t('manage.formErrors.NROverflow'))
                 .nullable(),
-              // TODO: more than if min defined
-              // .moreThan(Yup.ref('min')),
             }),
 
             solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
               is: true,
               then: (schema) =>
-                schema.min(1, t('manage.formErrors.solutionRangeRequired')),
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRangeRequired')),
             }),
           })
         }
@@ -235,19 +243,17 @@ function createValidationSchema(t) {
 
           return schema.shape({
             hasSampleSolution: Yup.boolean(),
-
             restrictions: Yup.object().shape({
-              // TODO: ensure that this check does not fail if the user enters a number and then deletes it
               maxLength: Yup.number()
                 .min(1, t('manage.formErrors.FTMaxLength'))
                 .nullable(),
             }),
-
-            // TODO: ensure that this check does not fail if the user enters a feedback and then deactivates the sample solution option again
             solutions: baseSolutions.when('hasSampleSolution', {
               is: true,
               then: (schema) =>
-                schema.min(1, t('manage.formErrors.solutionRequired')),
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRequired')),
             }),
           })
         }
@@ -407,10 +413,21 @@ function QuestionEditModal({
           hasSampleSolution: false,
           hasAnswerFeedbacks: false,
           displayMode: ElementDisplayMode.List,
-          choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+          choices: [
+            { ix: 0, value: undefined, correct: false, feedback: undefined },
+          ],
         },
       }
     }
+
+    // const temp = dataQuestion?.question?.questionData?.options
+    const options =
+      dataQuestion?.question?.questionData?.__typename !==
+        'ContentElementQData' &&
+      dataQuestion?.question?.questionData?.__typename !==
+        'FlashcardElementQData'
+        ? dataQuestion?.question?.questionData?.options!
+        : null
 
     return dataQuestion?.question?.questionData
       ? {
@@ -421,24 +438,54 @@ function QuestionEditModal({
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
-          options: dataQuestion.question.questionData.options,
+          // TODO: improve this structure in new component - should not be manually defined! - figure out alternative way to convert all null values to undefined for form validation to work properly
+          options: options
+            ? {
+                hasSampleSolution: options.hasSampleSolution,
+                hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? undefined,
+                displayMode: options.displayMode ?? undefined,
+                unit: options.unit ?? undefined,
+                accuracy: options.accuracy ?? undefined,
+                placeholder: options.placeholder ?? undefined,
+                restrictions: options.restrictions
+                  ? {
+                      min: options.restrictions.min ?? undefined,
+                      max: options.restrictions.max ?? undefined,
+                      maxLength: options.restrictions.maxLength ?? undefined,
+                    }
+                  : undefined,
+                choices: options.choices
+                  ? options.choices.map((choice: any) => ({
+                      ix: choice.ix,
+                      value: choice.value,
+                      correct: choice.correct ?? undefined,
+                      feedback: choice.feedback ?? undefined,
+                    }))
+                  : undefined,
+                solutionRanges: options.solutionRanges
+                  ? options.solutionRanges.map((range: any) => ({
+                      min: range.min ?? undefined,
+                      max: range.max ?? undefined,
+                    }))
+                  : undefined,
+                solutions: options.solutions ?? undefined,
+              }
+            : undefined,
         }
       : {}
   }, [dataQuestion?.question, mode])
 
   if (!question || Object.keys(question).length === 0) {
-    return <div></div>
+    return <div />
   }
 
   return (
     <Formik
-      isInitialValid={[
-        QuestionEditMode.EDIT,
-        QuestionEditMode.DUPLICATE,
-      ].includes(mode)}
-      enableReinitialize={true}
+      validateOnMount
+      enableReinitialize
       initialValues={question}
       validationSchema={questionManipulationSchema}
+      // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values) => {
         const common = {
           id: questionId,
@@ -1382,12 +1429,12 @@ function QuestionEditModal({
 
                       {/* error messages specific to NR questions */}
                       {errors.options && errors.options.restrictions?.min && (
-                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                        <li>{`${t('manage.questionForms.restrictions')}: ${
                           errors.options.restrictions.min
                         }`}</li>
                       )}
                       {errors.options && errors.options.restrictions?.max && (
-                        <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                        <li>{`${t('manage.questionForms.restrictions')}: ${
                           errors.options.restrictions.max
                         }`}</li>
                       )}

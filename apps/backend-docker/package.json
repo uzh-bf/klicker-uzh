@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.2.0-alpha.13",
+  "version": "3.2.0-alpha.26",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -57,7 +57,7 @@
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
     "@types/ws": "^8.5.9",
-    "@uzh-bf/design-system": "3.0.0-alpha.22",
+    "@uzh-bf/design-system": "3.0.0-alpha.29",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.4.5",

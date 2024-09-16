@@ -62,47 +62,60 @@ function TableChart({
     }
   }, [data])
 
-  let columns = [
-    { label: t('manage.evaluation.count'), accessor: 'count', sortable: true },
-    {
-      label: t('manage.evaluation.value'),
-      accessor: 'value',
-      sortable: true,
-      formatter: ({ row }: { row: RowType }) => {
-        if (typeof row['value'] === 'string')
-          return (
-            <Markdown content={row['value']} className={{ img: 'max-h-32' }} />
-          )
-        return row['value']
+  const columns = useMemo(
+    () => [
+      {
+        label: t('manage.evaluation.count'),
+        accessor: 'count',
+        sortable: true,
       },
-    },
-    {
-      label: '%',
-      accessor: 'percentage',
-      sortable: true,
-      transformer: ({ row }: { row: RowType }) => row['percentage'] * 100,
-      formatter: ({ row }: { row: RowType }) =>
-        `${String(row['percentage'].toFixed())} %`,
-    },
-    ...(showSolution
-      ? [
-          {
-            label: 'T/F',
-            accessor: 'correct',
-            sortable: false,
-            formatter: ({ row }: { row: RowType }) => {
-              if (row['correct'] === true)
-                return (
-                  <FontAwesomeIcon icon={faCheck} className="text-green-700" />
-                )
-              if (row['correct'] === false)
-                return <FontAwesomeIcon icon={faX} className="text-red-600" />
-              return <>--</>
+      {
+        label: t('manage.evaluation.value'),
+        accessor: 'value',
+        sortable: true,
+        formatter: ({ row }: { row: RowType }) => {
+          if (typeof row['value'] === 'string')
+            return (
+              <Markdown
+                content={row['value']}
+                className={{ img: 'max-h-32' }}
+              />
+            )
+          return row['value']
+        },
+      },
+      {
+        label: '%',
+        accessor: 'percentage',
+        sortable: true,
+        transformer: ({ row }: { row: RowType }) => row['percentage'] * 100,
+        formatter: ({ row }: { row: RowType }) =>
+          `${String(row['percentage'].toFixed())} %`,
+      },
+      ...(showSolution
+        ? [
+            {
+              label: 'T/F',
+              accessor: 'correct',
+              sortable: false,
+              formatter: ({ row }: { row: RowType }) => {
+                if (row['correct'] === true)
+                  return (
+                    <FontAwesomeIcon
+                      icon={faCheck}
+                      className="text-green-700"
+                    />
+                  )
+                if (row['correct'] === false)
+                  return <FontAwesomeIcon icon={faX} className="text-red-600" />
+                return <>--</>
+              },
             },
-          },
-        ]
-      : []),
-  ]
+          ]
+        : []),
+    ],
+    [showSolution, t]
+  )
 
   const anythingSortable = columns.reduce(
     (acc, curr) => acc || curr.sortable,

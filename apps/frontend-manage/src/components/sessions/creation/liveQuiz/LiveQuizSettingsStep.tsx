@@ -27,6 +27,7 @@ function LiveQuizSettingsStep({
   nonGamifiedCourses,
   setStepValidity,
   onNextStep,
+  onPrevStep,
   closeWizard,
 }: LiveQuizWizardStepProps) {
   const t = useTranslations()
@@ -134,6 +135,7 @@ function LiveQuizSettingsStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>

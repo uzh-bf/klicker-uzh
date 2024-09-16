@@ -166,6 +166,25 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
   }),
 })
 
+export interface IGroupAssignmentPoolEntryRef
+  extends DB.GroupAssignmentPoolEntry {
+  participant?: IParticipant
+}
+export const GroupAssignmentPoolEntryRef =
+  builder.objectRef<IGroupAssignmentPoolEntryRef>('GroupAssignmentPoolEntry')
+export const GroupAssignmentPoolEntry = GroupAssignmentPoolEntryRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    participantId: t.exposeID('participantId'),
+    courseId: t.exposeID('courseId'),
+
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
+  }),
+})
+
 export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
@@ -219,6 +238,7 @@ export interface IParticipantLearningData {
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
   groupActivityInstances?: IGroupActivityInstance[]
+  inRandomGroupPool?: boolean
 }
 export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
@@ -267,6 +287,8 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
+
+    inRandomGroupPool: t.exposeBoolean('inRandomGroupPool', { nullable: true }),
   }),
 })
 

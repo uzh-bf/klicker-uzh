@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import ContentInput from '@components/common/ContentInput'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -22,9 +21,10 @@ import {
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import ContentInput from '../../common/ContentInput'
 
 interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void
@@ -44,10 +44,8 @@ function GroupActivityGradingStack({
   maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
-
   const [gradeGroupActivitySubmissions] = useMutation(
     GradeGroupActivitySubmissionDocument
   )
@@ -64,77 +62,82 @@ function GroupActivityGradingStack({
     return null
   }
 
-  if (!submission) {
-    return <div></div>
-  }
-
-  const results = submission.results
-  const findResponse = (elementId: number, type: ElementType) => {
-    const decision = submission.decisions.find(
-      (decision: GroupActivityDecision) => decision.instanceId === elementId
-    )
-
-    if (type === ElementType.FreeText) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.freeTextResponse,
-          valid: true,
-        },
-      }
-    } else if (type === ElementType.Sc || type === ElementType.Mc) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.choicesResponse,
-          valid: true,
-        },
-      }
-    } else if (type === ElementType.Kprim) {
-      const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
-        (acc, choice) => ({ ...acc, [choice]: false }),
-        {} as Record<number, boolean>
+  const results = submission?.results
+  const findResponse = useCallback(
+    (elementId: number, type: ElementType) => {
+      const decision = submission?.decisions.find(
+        (decision: GroupActivityDecision) => decision.instanceId === elementId
       )
 
-      return {
-        [elementId]: {
-          type: type,
-          response: decision.choicesResponse?.reduce(
-            (acc: Record<number, boolean>, choice: number) => ({
-              ...acc,
-              [choice]: true,
-            }),
-            responseObj as Record<number, boolean>
-          ),
-          valid: true,
-        },
-      }
-    } else if (type === ElementType.Numerical) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.numericalResponse,
-          valid: true,
-        },
-      }
-    }
-  }
+      if (type === ElementType.FreeText) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.freeTextResponse,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Sc || type === ElementType.Mc) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.choicesResponse,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Kprim) {
+        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
+          (acc, choice) => ({ ...acc, [choice]: false }),
+          {} as Record<number, boolean>
+        )
 
-  const gradingSchema = Yup.object().shape({
-    passed: Yup.boolean().required(
-      t('manage.groupActivity.passedMissingError')
-    ),
-    comment: Yup.string(),
-    grading: Yup.array().of(
-      Yup.object().shape({
-        instanceId: Yup.number().required(),
-        score: Yup.number()
-          .required(t('manage.groupActivity.scoreMissingError'))
-          .min(0, t('manage.groupActivity.scoreMissingError')),
-        feedback: Yup.string(),
-      })
-    ),
-  })
+        return {
+          [elementId]: {
+            type: type,
+            response: decision.choicesResponse?.reduce(
+              (acc: Record<number, boolean>, choice: number) => ({
+                ...acc,
+                [choice]: true,
+              }),
+              responseObj as Record<number, boolean>
+            ),
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Numerical) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.numericalResponse,
+            valid: true,
+          },
+        }
+      }
+    },
+    [submission?.decisions]
+  )
+
+  const gradingSchema = useMemo(() => {
+    Yup.object().shape({
+      passed: Yup.boolean().required(
+        t('manage.groupActivity.passedMissingError')
+      ),
+      comment: Yup.string(),
+      grading: Yup.array().of(
+        Yup.object().shape({
+          instanceId: Yup.number().required(),
+          score: Yup.number()
+            .required(t('manage.groupActivity.scoreMissingError'))
+            .min(0, t('manage.groupActivity.scoreMissingError')),
+          feedback: Yup.string(),
+        })
+      ),
+    })
+  }, [t])
+
+  if (!submission) {
+    return null
+  }
 
   return (
     <Formik
@@ -159,7 +162,7 @@ function GroupActivityGradingStack({
           })),
       }}
       validationSchema={gradingSchema}
-      onSubmit={async (values, { setSubmitting, resetForm, setTouched }) => {
+      onSubmit={async (values, { setSubmitting, resetForm }) => {
         setSubmitting(true)
         const result = await gradeGroupActivitySubmissions({
           variables: {
@@ -377,6 +380,7 @@ function GroupActivityGradingStack({
             </Button>
             <EditingDetector />
             <Toast
+              dismissible
               openExternal={successToast}
               setOpenExternal={setSuccessToast}
               type="success"
@@ -385,6 +389,7 @@ function GroupActivityGradingStack({
               {t('manage.groupActivity.stackGradingSuccess')}
             </Toast>
             <Toast
+              dismissible
               openExternal={errorToast}
               setOpenExternal={setErrorToast}
               type="error"

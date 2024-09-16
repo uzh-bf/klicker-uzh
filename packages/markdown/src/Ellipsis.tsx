@@ -114,7 +114,10 @@ function Ellipsis({
   const shortenedParsedContent = (
     <Prose
       className={{
-        root: 'prose-p:m-0 max-w-full flex-initial leading-6 text-black hover:text-black',
+        root: twMerge(
+          'prose-p:m-0 max-w-full flex-initial leading-6 text-black hover:text-black',
+          className?.content
+        ),
       }}
     >
       <Markdown

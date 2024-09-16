@@ -1,14 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { processQuestionData } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import { Context, ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { DisplayMode } from '../types/app.js'
@@ -414,6 +412,13 @@ export async function changeParticipantLocale(
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
+    include: {
+      participantGroups: {
+        include: {
+          participants: true,
+        },
+      },
+    },
   })
 
   if (!participant) return false
@@ -423,10 +428,25 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
     maxAge: 0,
   })
 
-  await ctx.prisma.participant.delete({
-    where: { id: ctx.user.sub },
-  })
+  // if a participant group is empty after the participant leaves it, delete the group as well
+  let deletionPromises: any[] = []
+  for (const group of participant.participantGroups) {
+    if (group.participants.length === 1) {
+      deletionPromises.push(
+        ctx.prisma.participantGroup.delete({
+          where: { id: group.id },
+        })
+      )
+    }
+  }
 
+  deletionPromises.push(
+    ctx.prisma.participant.delete({
+      where: { id: ctx.user.sub },
+    })
+  )
+
+  await ctx.prisma.$transaction(deletionPromises)
   return true
 }
 

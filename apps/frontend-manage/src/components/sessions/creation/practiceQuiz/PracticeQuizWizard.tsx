@@ -7,21 +7,19 @@ import {
   ElementType,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, {
-  ElementStackFormValues,
-  PracticeQuizFormValues,
-} from '../WizardLayout'
+import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 import PracticeQuizSettingsStep from './PracticeQuizSettingsStep'
@@ -39,36 +37,46 @@ export interface PracticeQuizWizardStepProps {
   nonGamifiedCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: PracticeQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onPrevStep?: (newValues: PracticeQuizFormValues) => void
   onNextStep?: (newValues: PracticeQuizFormValues) => void
   closeWizard: () => void
 }
 
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.FreeText,
+  ElementType.Flashcard,
+  ElementType.Content,
+]
+
 interface PracticeQuizWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   closeWizard: () => void
   initialValues?: PracticeQuiz
   selection: Record<number, Element>
   resetSelection: () => void
-  conversion?: boolean
+  editMode: boolean
+  conversion: boolean
 }
 
 function PracticeQuizWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   closeWizard,
   initialValues,
   selection,
   resetSelection,
-  conversion = false,
+  conversion,
+  editMode,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(!!initialValues && !conversion)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
   )
@@ -80,15 +88,9 @@ function PracticeQuizWizard({
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
 
-  // TODO: add free text questions to accepted types?
-  const acceptedTypes = [
-    ElementType.Sc,
-    ElementType.Mc,
-    ElementType.Kprim,
-    ElementType.Numerical,
-    ElementType.Flashcard,
-    ElementType.Content,
-  ]
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -129,30 +131,48 @@ function PracticeQuizWizard({
         yup.object().shape({
           displayName: yup.string(),
           description: yup.string(),
-          elementIds: yup
+          elements: yup
             .array()
-            .of(yup.number())
-            .min(1, t('manage.sessionForms.minOneElementPerStack')),
-          titles: yup.array().of(yup.string()),
-          types: yup
-            .array()
+            .min(1, t('manage.sessionForms.minOneElementPerStack'))
             .of(
-              yup
-                .string()
-                .oneOf(
-                  acceptedTypes,
-                  t('manage.sessionForms.practiceQuizTypes')
-                )
-            ),
-          hasSampleSolutions: yup
-            .array()
-            .of(
-              yup.boolean().isTrue(t('manage.sessionForms.elementSolutionReq'))
+              yup.object().shape({
+                id: yup.number(),
+                title: yup.string(),
+                type: yup
+                  .string()
+                  .oneOf(
+                    acceptedTypes,
+                    t('manage.sessionForms.practiceQuizTypes')
+                  ),
+                hasSampleSolution: yup.boolean().when('type', {
+                  is: (type: ElementType) => type !== ElementType.FreeText,
+                  then: (schema) =>
+                    schema.isTrue(t('manage.sessionForms.elementSolutionReq')),
+                }),
+              })
             ),
         })
       )
       .min(1),
   })
+
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    stacks: [
+      {
+        displayName: '',
+        description: '',
+        elements: [],
+      },
+    ],
+    multiplier: '1',
+    courseId: undefined,
+    order: ElementOrderType.SpacedRepetition,
+    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
+    resetTimeDays: '6',
+  }
 
   const workflowItems = [
     {
@@ -175,27 +195,6 @@ function PracticeQuizWizard({
     },
   ]
 
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    stacks: [
-      {
-        displayName: '',
-        description: '',
-        elementIds: [],
-        titles: [],
-        types: [],
-        hasSampleSolutions: [],
-      },
-    ],
-    multiplier: '1',
-    courseId: undefined,
-    order: ElementOrderType.SpacedRepetition,
-    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
-    resetTimeDays: '6',
-  }
-
   const [formData, setFormData] = useState<PracticeQuizFormValues>({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
@@ -205,21 +204,15 @@ function PracticeQuizWizard({
           return {
             displayName: stack.displayName ?? '',
             description: stack.description ?? '',
-            ...stack.elements!.reduce(
-              (acc: ElementStackFormValues, element) => {
-                acc.elementIds.push(parseInt(element.elementData.id))
-                acc.titles.push(element.elementData.name)
-                acc.types.push(element.elementData.type)
-                acc.hasSampleSolutions.push(true) // TODO: get value from element instance
-                return acc
-              },
-              {
-                elementIds: [],
-                titles: [],
-                types: [],
-                hasSampleSolutions: [],
+            elements: stack.elements!.map((element) => {
+              return {
+                id: parseInt(element.elementData.id),
+                title: element.elementData.name,
+                type: element.elementData.type,
+                hasSampleSolution:
+                  element.elementData.options?.hasSampleSolution ?? true,
               }
-            ),
+            }),
           }
         })
       : formDefaultValues.stacks,
@@ -238,19 +231,21 @@ function PracticeQuizWizard({
 
   const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
   const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
-  const handleSubmit = async (values: PracticeQuizFormValues) => {
-    submitPracticeQuizForm({
-      id: initialValues?.id,
-      conversion,
-      values,
-      createPracticeQuiz,
-      editPracticeQuiz,
-      setSelectedCourseId,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-      setEditMode,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: PracticeQuizFormValues) => {
+      submitPracticeQuizForm({
+        id: initialValues?.id,
+        values,
+        createPracticeQuiz,
+        editPracticeQuiz,
+        setSelectedCourseId,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+        editMode,
+      })
+    },
+    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+  )
 
   return (
     <>
@@ -284,6 +279,7 @@ function PracticeQuizWizard({
             }}
             onRestartForm={() => {
               setIsWizardCompleted(false)
+              closeWizard()
             }}
             resetForm={() => setFormData(formDefaultValues)}
             setStepNumber={setActiveStep}
@@ -325,6 +321,10 @@ function PracticeQuizWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <PracticeQuizSettingsStep
@@ -343,6 +343,10 @@ function PracticeQuizWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <StackCreationStep
@@ -358,6 +362,10 @@ function PracticeQuizWizard({
             stepValidity={stepValidity}
             validationSchema={stackValiationSchema}
             setStepValidity={setStepValidity}
+            onPrevStep={(newValues: Partial<PracticeQuizFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             onSubmit={(newValues: PracticeQuizFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }

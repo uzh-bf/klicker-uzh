@@ -31,12 +31,16 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="create-group-activity"]').click()
     cy.get('[data-cy="insert-groupactivity-name"]').click().type(name)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
       .type(displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
       .focus()
       .type(description)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // fill out the settings of the group activity
@@ -59,6 +63,8 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-end-date"]')
       .click()
       .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add clues to the group activity
@@ -142,6 +148,8 @@ describe('Create and solve a group activity', () => {
         dataTransfer,
       })
     }
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
@@ -425,7 +433,7 @@ describe('Create and solve a group activity', () => {
 
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.get('[data-cy="password-login"]').click()
-    cy.get('[data-cy="username-field"]').click().type('testuser12')
+    cy.get('[data-cy="username-field"]').click().type('testuser15')
     cy.get('[data-cy="password-field"]')
       .click()
       .type(Cypress.env('STUDENT_PASSWORD'))

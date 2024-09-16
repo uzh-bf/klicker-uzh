@@ -31,10 +31,14 @@ function AddStackButton({
         push({
           displayName: '',
           description: '',
-          elementIds: [item.id],
-          titles: [item.title],
-          types: [item.questionType],
-          hasSampleSolutions: [item.hasSampleSolution],
+          elements: [
+            {
+              id: item.id,
+              title: item.title,
+              type: item.questionType,
+              hasSampleSolution: item.hasSampleSolution,
+            },
+          ],
         })
       },
       collect: (monitor) => ({
@@ -54,29 +58,19 @@ function AddStackButton({
               root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              const { elementIds, titles, types, hasSampleSolutions } =
-                Object.values(selection).reduce<ElementStackFormValues>(
-                  (acc, question) => {
-                    acc.elementIds.push(question.id)
-                    acc.titles.push(question.name)
-                    acc.types.push(question.type)
-                    return acc
-                  },
-                  {
-                    elementIds: [],
-                    titles: [],
-                    types: [],
-                    hasSampleSolutions: [],
-                  }
-                )
+              const stackElements = Object.values(selection).map(
+                (question) => ({
+                  id: question.id,
+                  title: question.name,
+                  type: question.type,
+                  hasSampleSolution: question.options.hasSampleSolution,
+                })
+              )
 
               push({
                 displayName: '',
                 description: '',
-                elementIds: elementIds,
-                titles: titles,
-                types: types,
-                hasSampleSolutions: hasSampleSolutions,
+                elements: stackElements,
               })
               resetSelection?.()
             }}
@@ -102,10 +96,14 @@ function AddStackButton({
                 push({
                   displayName: '',
                   description: '',
-                  elementIds: [question.id],
-                  titles: [question.name],
-                  types: [question.type],
-                  hasSampleSolutions: [question.options.hasSampleSolution],
+                  elements: [
+                    {
+                      id: question.id,
+                      title: question.name,
+                      type: question.type,
+                      hasSampleSolution: question.options.hasSampleSolution,
+                    },
+                  ],
                 })
               })
               resetSelection?.()
@@ -119,7 +117,7 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.pasteSingleQuestions', {
+              {t('manage.sessionForms.pasteSingleElementsStack', {
                 count: Object.keys(selection).length,
               })}
             </div>
@@ -135,10 +133,7 @@ function AddStackButton({
           push({
             displayName: '',
             description: '',
-            elementIds: [],
-            titles: [],
-            types: [],
-            hasSampleSolutions: [],
+            elements: [],
           })
         }
         data-cy="drop-elements-add-stack"

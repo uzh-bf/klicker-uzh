@@ -73,7 +73,15 @@ function FreeTextQuestion({
         >
           <div className="flex flex-col gap-4 md:px-4">
             <div className="flex flex-row justify-between">
-              <PracticeQuizPoints evaluation={evaluation} />
+              <PracticeQuizPoints
+                evaluation={{
+                  ...evaluation,
+                  xpAwarded:
+                    evaluation.solutions.length === 0
+                      ? null
+                      : evaluation.xpAwarded,
+                }}
+              />
             </div>
             <FTEvaluation
               options={{

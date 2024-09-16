@@ -9,12 +9,13 @@ import {
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
@@ -39,13 +40,13 @@ export interface LiveQuizWizardStepProps {
   onSubmit?: (newValues: LiveSessionFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: LiveSessionFormValues) => void
+  onPrevStep?: (newValues: LiveSessionFormValues) => void
   closeWizard: () => void
 }
 
 interface LiveSessionWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   initialValues?: Partial<Session>
   selection: Record<number, Element>
   resetSelection: () => void
@@ -55,8 +56,7 @@ interface LiveSessionWizardProps {
 
 function LiveSessionWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   initialValues,
   selection,
   resetSelection,
@@ -73,6 +73,10 @@ function LiveSessionWizard({
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
+
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -123,6 +127,19 @@ function LiveSessionWizard({
     ),
   })
 
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
+    courseId: '',
+    multiplier: '1',
+    isGamificationEnabled: false,
+    isConfusionFeedbackEnabled: true,
+    isLiveQAEnabled: false,
+    isModerationEnabled: true,
+  }
+
   const workflowItems = [
     {
       title: t('shared.generic.information'),
@@ -144,19 +161,6 @@ function LiveSessionWizard({
       tooltipDisabled: t('manage.sessionForms.checkValues'),
     },
   ]
-
-  const formDefaultValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
-    courseId: '',
-    multiplier: '1',
-    isGamificationEnabled: false,
-    isConfusionFeedbackEnabled: true,
-    isLiveQAEnabled: false,
-    isModerationEnabled: true,
-  }
 
   const [formData, setFormData] = useState<LiveSessionFormValues>({
     name: initialValues?.name || formDefaultValues.name,
@@ -198,17 +202,20 @@ function LiveSessionWizard({
   const [editSession] = useMutation(EditSessionDocument)
   const [createSession, { data }] = useMutation(CreateSessionDocument)
   const [startSession] = useMutation(StartSessionDocument)
-  const handleSubmit = async (values: LiveSessionFormValues) => {
-    submitLiveSessionForm({
-      id: initialValues?.id,
-      editMode,
-      values,
-      createLiveSession: createSession,
-      editLiveSession: editSession,
-      setIsWizardCompleted,
-      setErrorToastOpen,
-    })
-  }
+  const handleSubmit = useCallback(
+    async (values: LiveSessionFormValues) => {
+      submitLiveSessionForm({
+        id: initialValues?.id,
+        editMode,
+        values,
+        createLiveSession: createSession,
+        editLiveSession: editSession,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+      })
+    },
+    [createSession, editMode, editSession, initialValues?.id]
+  )
 
   return (
     <>
@@ -242,6 +249,7 @@ function LiveSessionWizard({
             }}
             onRestartForm={() => {
               setIsWizardCompleted(false)
+              closeWizard()
             }}
             resetForm={() => setFormData(formDefaultValues)}
             setStepNumber={setActiveStep}
@@ -301,6 +309,10 @@ function LiveSessionWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <LiveQuizSettingsStep
@@ -319,6 +331,10 @@ function LiveSessionWizard({
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
           <LiveQuizQuestionsStep
@@ -336,6 +352,10 @@ function LiveSessionWizard({
             onSubmit={(newValues: LiveSessionFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
             closeWizard={closeWizard}
           />,
         ]}

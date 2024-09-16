@@ -45,7 +45,7 @@ export function QR({
   }, [canvasRef, path])
 
   return (
-    <div>
+    <div className="space-y-2">
       <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
         <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
           {process.env.NEXT_PUBLIC_PWA_URL}

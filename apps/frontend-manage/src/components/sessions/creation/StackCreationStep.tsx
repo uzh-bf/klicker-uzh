@@ -34,6 +34,7 @@ function StackCreationStep({
   stepValidity,
   validationSchema,
   setStepValidity,
+  onPrevStep,
   onSubmit,
   closeWizard,
 }: MicroLearningStackCreationStepProps | PracticeQuizStackCreationStepProps) {
@@ -60,7 +61,7 @@ function StackCreationStep({
                     {values.stacks.map(
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
-                          key={`${index}-${stack.elementIds.join('')}`}
+                          key={`stack-${index}-${stack.elements.map((e) => e.id).join('-')}`}
                           index={index}
                           stack={stack}
                           numOfStacks={values.stacks.length}
@@ -71,6 +72,7 @@ function StackCreationStep({
                           selection={selection}
                           resetSelection={resetSelection}
                           error={errors.stacks as any}
+                          highlightFTNoSL
                         />
                       )
                     )}
@@ -91,6 +93,7 @@ function StackCreationStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
           </div>
