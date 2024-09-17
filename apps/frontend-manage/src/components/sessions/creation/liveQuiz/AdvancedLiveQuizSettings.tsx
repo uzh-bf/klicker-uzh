@@ -85,11 +85,15 @@ function AdvancedLiveQuizSettings({
               data={[
                 {
                   time: 0,
-                  points: SUMMED_CORRECT_PTS + parseInt(maxBonusValue),
+                  points:
+                    SUMMED_CORRECT_PTS + (parseInt(maxBonusValue, 10) || 0),
                 },
-                { time: parseInt(timeToZeroValue), points: SUMMED_CORRECT_PTS },
                 {
-                  time: 2 * parseInt(timeToZeroValue),
+                  time: parseInt(timeToZeroValue, 10) || 0,
+                  points: SUMMED_CORRECT_PTS,
+                },
+                {
+                  time: 2 * (parseInt(timeToZeroValue, 10) || 0),
                   points: SUMMED_CORRECT_PTS,
                 },
               ]}
