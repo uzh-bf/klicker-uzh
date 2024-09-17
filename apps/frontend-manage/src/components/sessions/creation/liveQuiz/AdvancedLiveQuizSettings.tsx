@@ -111,7 +111,7 @@ function AdvancedLiveQuizSettings({
               </XAxis>
               <YAxis
                 dataKey="points"
-                domain={[0, parseInt(maxBonusValue) + 20]}
+                domain={[0, parseInt(maxBonusValue) + SUMMED_CORRECT_PTS + 10]}
                 type="number"
               />
 
@@ -125,9 +125,6 @@ function AdvancedLiveQuizSettings({
 
                     return (
                       <div className="border-primary-100 rounded border border-solid bg-white p-2 text-gray-600">
-                        <div className="font-bold">
-                          {payload[0].payload.windowStart}
-                        </div>
                         <div>
                           {t('manage.sessionForms.liveQuizAnswerTime', {
                             answerTime: time,

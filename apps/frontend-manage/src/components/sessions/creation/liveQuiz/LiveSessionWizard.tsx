@@ -201,9 +201,9 @@ function LiveSessionWizard({
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
     maxBonusPoints:
-      initialValues?.maxBonusPoints || formDefaultValues.maxBonusPoints,
+      initialValues?.maxBonusPoints ?? formDefaultValues.maxBonusPoints,
     timeToZeroBonus:
-      initialValues?.timeToZeroBonus || formDefaultValues.timeToZeroBonus,
+      initialValues?.timeToZeroBonus ?? formDefaultValues.timeToZeroBonus,
     isGamificationEnabled:
       initialValues?.isGamificationEnabled ??
       formDefaultValues.isGamificationEnabled,
