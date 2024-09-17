@@ -175,8 +175,8 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
-  maxBonusPoints
-  timeToZeroBonus
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
