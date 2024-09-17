@@ -1112,6 +1112,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a valid time to zero bonus points.',
       liveQuizTimeToZeroBonusMin:
         'The time to zero bonus points must be at least 1.',
+      liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
       practiceQuizNoCourse:
         'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       practiceQuizIntroductionName:

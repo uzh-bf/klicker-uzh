@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import {
   CartesianGrid,
+  Label,
   Line,
   LineChart,
   Tooltip as RechartsTooltip,
@@ -92,7 +93,8 @@ function AdvancedLiveQuizSettings({
                   points: SUMMED_CORRECT_PTS,
                 },
               ]}
-              margin={{ top: 0, right: 20, left: -20, bottom: 0 }}
+              margin={{ top: 0, right: 20, left: -20, bottom: 13 }}
+              height={150}
             >
               <CartesianGrid strokeDasharray="6 6" />
 
@@ -100,7 +102,13 @@ function AdvancedLiveQuizSettings({
                 dataKey="time"
                 domain={[0, 2 * parseInt(timeToZeroValue)]}
                 type="number"
-              />
+              >
+                <Label
+                  value={t('manage.sessionForms.liveQuizTSinceFirstCorrect')}
+                  offset={-10}
+                  position="insideBottom"
+                />
+              </XAxis>
               <YAxis
                 dataKey="points"
                 domain={[0, parseInt(maxBonusValue) + 20]}
