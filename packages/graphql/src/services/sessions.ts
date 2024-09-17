@@ -74,6 +74,8 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -88,6 +90,8 @@ export async function createSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -118,6 +122,8 @@ export async function createSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -167,6 +173,8 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints
+  timeToZeroBonus
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -182,6 +190,8 @@ export async function editSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -260,6 +270,8 @@ export async function editSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {

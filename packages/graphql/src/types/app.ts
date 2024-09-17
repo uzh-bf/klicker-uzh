@@ -271,6 +271,8 @@ export type AllElementTypeData =
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
   resetTimeDays?: number
+  maxBonusPoints?: number
+  timeToZeroBonus?: number
 }
 
 export type ElementResultsChoices = {

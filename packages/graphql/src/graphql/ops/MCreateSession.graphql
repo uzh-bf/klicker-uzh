@@ -5,6 +5,8 @@ mutation CreateSession(
   $blocks: [BlockInput!]!
   $courseId: String
   $multiplier: Int!
+  $maxBonusPoints: Int!
+  $timeToZeroBonus: Int!
   $isGamificationEnabled: Boolean!
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
@@ -17,6 +19,8 @@ mutation CreateSession(
     blocks: $blocks
     courseId: $courseId
     multiplier: $multiplier
+    maxBonusPoints: $maxBonusPoints
+    timeToZeroBonus: $timeToZeroBonus
     isGamificationEnabled: $isGamificationEnabled
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled
