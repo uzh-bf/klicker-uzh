@@ -213,6 +213,8 @@ model QuestionInstance {
   participants     Int  @default(0)
   pointsMultiplier Int  @default(1)
   resetTimeDays    Int?
+  maxBonusPoints   Int?
+  timeToZeroBonus  Int?
 
   /// [PrismaElementData]
   questionData Json

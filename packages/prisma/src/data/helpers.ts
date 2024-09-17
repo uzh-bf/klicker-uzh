@@ -209,12 +209,16 @@ export function prepareQuestionInstance({
   type,
   pointsMultiplier,
   resetTimeDays,
+  maxBonusPoints,
+  timeToZeroBonus,
   order,
 }: {
   question: Partial<Prisma.Element>
   type: QuestionInstanceType
   pointsMultiplier?: number
   resetTimeDays?: number
+  maxBonusPoints?: number
+  timeToZeroBonus?: number
   order?: number
 }): any {
   const common = {
@@ -222,6 +226,8 @@ export function prepareQuestionInstance({
     type,
     pointsMultiplier,
     resetTimeDays,
+    maxBonusPoints,
+    timeToZeroBonus,
     questionData: processQuestionData(question as Element),
     question: {
       connect: {
@@ -329,6 +335,8 @@ export async function prepareSession({
                 question,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: args.pointsMultiplier,
+                maxBonusPoints: 100,
+                timeToZeroBonus: 50,
               })
             )
 

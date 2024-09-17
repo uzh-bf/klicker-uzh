@@ -45,6 +45,8 @@ async function submitLiveSessionForm({
           blocks: blockQuestions,
           courseId: values.courseId,
           multiplier: values.courseId !== '' ? parseInt(values.multiplier) : 1,
+          maxBonusPoints: parseInt(String(values.maxBonusPoints)),
+          timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
             values.courseId !== '' && values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
@@ -77,6 +79,8 @@ async function submitLiveSessionForm({
           blocks: blockQuestions,
           courseId: values.courseId,
           multiplier: parseInt(values.multiplier),
+          maxBonusPoints: parseInt(String(values.maxBonusPoints)),
+          timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
             values.courseId !== '' && values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,

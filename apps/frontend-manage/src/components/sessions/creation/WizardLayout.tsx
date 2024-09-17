@@ -66,6 +66,8 @@ export interface LiveSessionFormValues extends CommonFormValues {
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
+  maxBonusPoints: number
+  timeToZeroBonus: number
 }
 
 export interface MicroLearningFormValues extends CommonFormValues {

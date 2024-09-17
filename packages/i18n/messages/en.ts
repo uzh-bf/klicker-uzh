@@ -1095,6 +1095,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizStudentDocs:
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
+      liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizMaxBonusPoints: 'Maximum bonus points',
+      liveQuizMaxBonusPointsTooltip:
+        'This is the maximum number of points a participant will receive during a gamified live quiz for a correct answer to a question with sample solution. The default value is {defaultValue}.',
+      liveQuizTimeToZeroBonus: 'Time to zero bonus points',
+      liveQuizTimeToZeroBonusTooltip:
+        'This is the time in seconds after the first correct answer at which a participant will receive zero bonus points for a correct answer. The default value is {defaultValue}.',
+      liveQuizTotalPointsCorrect: 'Total points for correct answer over time',
+      liveQuizAnswerTime: 'Answer time: {answerTime}',
+      liveQuizTotalAwardedPoints: 'Total points: {totalPoints}',
+      liveQuizMaxBonusPointsReq:
+        'Please enter a valid number of maximum bonus points.',
+      liveQuizMaxBonusPointsMin: 'The maximum bonus points must be at least 0.',
+      liveQuizTimeToZeroBonusReq:
+        'Please enter a valid time to zero bonus points.',
+      liveQuizTimeToZeroBonusMin:
+        'The time to zero bonus points must be at least 1.',
+      liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
       practiceQuizNoCourse:
         'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       practiceQuizIntroductionName:

@@ -111,6 +111,8 @@ model LiveSession {
   finishedAt       DateTime?
   linkTo           String?
   pointsMultiplier Int       @default(1)
+  maxBonusPoints   Int       @default(45)
+  timeToZeroBonus  Int       @default(20)
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus @default(PREPARED)
@@ -161,6 +163,8 @@ model LiveQuiz {
   finishedAt       DateTime?
   // linkTo           String? // TODO: drop this functionality/field?
   pointsMultiplier Int       @default(1)
+  maxBonusPoints   Int       @default(45)
+  timeToZeroBonus  Int       @default(20)
 
   accessMode AccessMode     @default(PUBLIC)
   status     LiveQuizStatus @default(PREPARED)

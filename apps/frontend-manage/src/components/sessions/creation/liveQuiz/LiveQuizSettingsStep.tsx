@@ -12,6 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
+import AdvancedLiveQuizSettings from './AdvancedLiveQuizSettings'
 import LiveQuizCourseMonitor from './LiveQuizCourseMonitor'
 import { LiveQuizWizardStepProps } from './LiveSessionWizard'
 
@@ -66,11 +67,22 @@ function LiveQuizSettingsStep({
                   values.isGamificationEnabled && 'border-orange-400'
                 )}
               >
-                <div className="flex flex-row items-center justify-center gap-2">
-                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-                  <div className="text-lg font-bold">
-                    {t('shared.generic.gamification')}
+                <div className="grid grid-cols-9">
+                  <div className="col-span-7 col-start-2 flex flex-row items-center justify-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faCrown}
+                      className="text-orange-400"
+                    />
+                    <div className="text-lg font-bold">
+                      {t('shared.generic.gamification')}
+                    </div>
                   </div>
+                  {values.isGamificationEnabled && (
+                    <AdvancedLiveQuizSettings
+                      maxBonusValue={String(values.maxBonusPoints)}
+                      timeToZeroValue={String(values.timeToZeroBonus)}
+                    />
+                  )}
                 </div>
                 <FormikSelectField
                   name="courseId"
