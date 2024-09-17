@@ -1041,6 +1041,7 @@ type Session {
   isModerationEnabled: Boolean!
   linkTo: String
   linkToJoin: String
+  maxBonusPoints: Int!
   name: String!
   namespace: String!
   numOfBlocks: Int
@@ -1049,6 +1050,7 @@ type Session {
   pointsMultiplier: Int!
   startedAt: Date
   status: SessionStatus!
+  timeToZeroBonus: Int!
   updatedAt: Date
 }
 

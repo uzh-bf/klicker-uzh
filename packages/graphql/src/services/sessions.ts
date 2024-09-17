@@ -862,6 +862,8 @@ export async function activateSessionBlock(
       sessionBlockId,
       type: questionData.type,
       pointsMultiplier: instance.pointsMultiplier,
+      maxBonusPoints: instance.maxBonusPoints,
+      timeToZeroBonus: instance.timeToZeroBonus,
     }
 
     switch (questionData.type) {
