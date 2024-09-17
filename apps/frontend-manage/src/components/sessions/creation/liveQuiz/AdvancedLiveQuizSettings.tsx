@@ -32,12 +32,17 @@ function AdvancedLiveQuizSettings({
       open={open}
       onClose={() => setOpen(false)}
       trigger={
-        <Button basic onClick={() => setOpen(true)}>
+        <Button
+          basic
+          onClick={() => setOpen(true)}
+          data={{ cy: 'live-quiz-advanced-settings' }}
+        >
           <FontAwesomeIcon icon={faGears} className="hover:text-primary-100" />
         </Button>
       }
       title={t('manage.sessionForms.liveQuizAdvancedSettings')}
       className={{ content: 'h-max min-h-max' }}
+      dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
     >
       <div className="flex flex-row">
         <div className="mr-8 w-1/2">
@@ -49,6 +54,9 @@ function AdvancedLiveQuizSettings({
             tooltip={t('manage.sessionForms.liveQuizMaxBonusPointsTooltip', {
               defaultValue: LQ_MAX_BONUS_POINTS,
             })}
+            data={{
+              cy: 'live-quiz-max-bonus-points',
+            }}
           />
           <FormikNumberField
             required
@@ -58,6 +66,9 @@ function AdvancedLiveQuizSettings({
             tooltip={t('manage.sessionForms.liveQuizTimeToZeroBonusTooltip', {
               defaultValue: LQ_TIME_TO_ZERO_BONUS,
             })}
+            data={{
+              cy: 'live-quiz-time-to-zero-bonus',
+            }}
           />
         </div>
         <div className="w-1/2">
