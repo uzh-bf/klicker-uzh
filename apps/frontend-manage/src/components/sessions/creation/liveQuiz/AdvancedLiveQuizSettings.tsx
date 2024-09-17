@@ -28,8 +28,6 @@ function AdvancedLiveQuizSettings({
   maxBonusValue: string
   timeToZeroValue: string
 }) {
-  console.log(SUMMED_CORRECT_PTS)
-
   const t = useTranslations()
   const [open, setOpen] = useState(false)
 
