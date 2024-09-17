@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.26...v3.2.0-alpha.27) (2024-09-17)
+
+
+### Features
+
+* add possibility to specify customized bonus points logic for live quizzes ([#4262](https://github.com/uzh-bf/klicker-uzh/issues/4262)) ([9b5d199](https://github.com/uzh-bf/klicker-uzh/commit/9b5d199559987f3b39ca4b03458a3663db9ae901))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that editor state is reset properly on closing after edit ([5e0be7e](https://github.com/uzh-bf/klicker-uzh/commit/5e0be7e1a02d8d4b0ff4c26ec420dc010e1d2f3d))
+* **apps/frontend-manage:** make sure that group activity results are shown correctly on the lecturer grading view ([#4263](https://github.com/uzh-bf/klicker-uzh/issues/4263)) ([6d393db](https://github.com/uzh-bf/klicker-uzh/commit/6d393dbb5b1f93c2fe0cd33a673b9ac2a84ad06f))
+
 ## [3.2.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.25...v3.2.0-alpha.26) (2024-09-15)
 
 
