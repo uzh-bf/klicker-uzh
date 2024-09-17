@@ -1,6 +1,8 @@
 import { faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  LQ_DEFAULT_CORRECT_POINTS,
+  LQ_DEFAULT_POINTS,
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
@@ -17,6 +19,8 @@ import {
   YAxis,
 } from 'recharts'
 
+const SUMMED_CORRECT_PTS = LQ_DEFAULT_POINTS + LQ_DEFAULT_CORRECT_POINTS
+
 function AdvancedLiveQuizSettings({
   maxBonusValue,
   timeToZeroValue,
@@ -24,6 +28,8 @@ function AdvancedLiveQuizSettings({
   maxBonusValue: string
   timeToZeroValue: string
 }) {
+  console.log(SUMMED_CORRECT_PTS)
+
   const t = useTranslations()
   const [open, setOpen] = useState(false)
 
@@ -78,9 +84,15 @@ function AdvancedLiveQuizSettings({
           <ResponsiveContainer className="mb-4" height={150}>
             <LineChart
               data={[
-                { time: 0, points: 10 + parseInt(maxBonusValue) },
-                { time: parseInt(timeToZeroValue), points: 10 },
-                { time: 2 * parseInt(timeToZeroValue), points: 10 },
+                {
+                  time: 0,
+                  points: SUMMED_CORRECT_PTS + parseInt(maxBonusValue),
+                },
+                { time: parseInt(timeToZeroValue), points: SUMMED_CORRECT_PTS },
+                {
+                  time: 2 * parseInt(timeToZeroValue),
+                  points: SUMMED_CORRECT_PTS,
+                },
               ]}
               margin={{ top: 0, right: 20, left: -20, bottom: 0 }}
             >
