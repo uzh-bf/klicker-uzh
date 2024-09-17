@@ -2,6 +2,9 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
+export const LQ_MAX_BONUS_POINTS = 45 // live quiz: maximum 45 bonus points for fastest answer
+export const LQ_TIME_TO_ZERO_BONUS = 20 // live quiz: seconds until the bonus points are zero
+
 export const CHART_TYPES: Record<string, string> = {
   BAR_CHART: 'BAR_CHART',
   CLOUD_CHART: 'CLOUD_CHART',

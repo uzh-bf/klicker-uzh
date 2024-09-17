@@ -1100,6 +1100,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizStudentDocs:
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
+      liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
+      liveQuizMaxBonusPoints: 'Maximale Bonuspunkte',
+      liveQuizMaxBonusPointsTooltip:
+        'Dies ist die maximale Anzahl von Bonuspunkten, die ein Teilnehmer während eines gamifizierten Live-Quiz für eine korrekte Antwort auf eine Frage mit Musterlösung erhalten wird. Der Standardwert beträgt {defaultValue}.',
+      liveQuizTimeToZeroBonus: 'Zeit bis zum Ende von Bonuspunkten',
+      liveQuizTimeToZeroBonusTooltip:
+        'Dies ist die Zeit in Sekunden nach der ersten korrekten Antwort, nach der ein Teilnehmer keine Bonuspunkte mehr für eine korrekte Antwort erhält. Der Standardwert beträgt {defaultValue}.',
+      liveQuizTotalPointsCorrect: 'Gesamtpunkte für korrekte Antwort über Zeit',
+      liveQuizAnswerTime: 'Zeitpunkt: {answerTime}',
+      liveQuizTotalAwardedPoints: 'Gesamtpunkte: {totalPoints}',
+      liveQuizMaxBonusPointsReq:
+        'Bitte geben Sie eine gültige Anzahl von maximalen Bonuspunkten ein.',
+      liveQuizMaxBonusPointsMin:
+        'Die maximalen Bonuspunkte müssen mindestens 0 betragen.',
+      liveQuizTimeToZeroBonusReq:
+        'Bitte geben Sie eine gültige Zeit bis zum Ende der Vergabe von Bonuspunkten ein.',
+      liveQuizTimeToZeroBonusMin:
+        'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
       practiceQuizNoCourse:
         'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:

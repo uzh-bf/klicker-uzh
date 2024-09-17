@@ -9,6 +9,10 @@ import {
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LQ_MAX_BONUS_POINTS,
+  LQ_TIME_TO_ZERO_BONUS,
+} from '@klicker-uzh/shared-components/src/constants'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
@@ -97,6 +101,14 @@ function LiveSessionWizard({
     isGamificationEnabled: yup
       .boolean()
       .required(t('manage.sessionForms.liveQuizGamified')),
+    maxBonusPoints: yup
+      .number()
+      .required(t('manage.sessionForms.liveQuizMaxBonusPointsReq'))
+      .min(0, t('manage.sessionForms.liveQuizMaxBonusPointsMin')),
+    timeToZeroBonus: yup
+      .number()
+      .required(t('manage.sessionForms.liveQuizTimeToZeroBonusReq'))
+      .min(1, t('manage.sessionForms.liveQuizTimeToZeroBonusMin')),
   })
 
   const questionsValidationSchema = yup.object().shape({
@@ -134,6 +146,8 @@ function LiveSessionWizard({
     blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
     courseId: '',
     multiplier: '1',
+    maxBonusPoints: LQ_MAX_BONUS_POINTS,
+    timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
     isConfusionFeedbackEnabled: true,
     isLiveQAEnabled: false,
@@ -186,6 +200,10 @@ function LiveSessionWizard({
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
+    maxBonusPoints:
+      initialValues?.maxBonusPoints || formDefaultValues.maxBonusPoints,
+    timeToZeroBonus:
+      initialValues?.timeToZeroBonus || formDefaultValues.timeToZeroBonus,
     isGamificationEnabled:
       initialValues?.isGamificationEnabled ??
       formDefaultValues.isGamificationEnabled,
