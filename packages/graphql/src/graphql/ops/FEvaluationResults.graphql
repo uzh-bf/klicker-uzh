@@ -9,7 +9,6 @@ fragment EvaluationResults on ActivityEvaluation {
       id
       type
       name
-      displayName
       content
       explanation
 
@@ -32,9 +31,20 @@ fragment EvaluationResults on ActivityEvaluation {
         results {
           totalAnswers
           maxLength
+          responses {
+            value
+            correct
+            count
+          }
+        }
+      }
+
+      ... on NumericalElementInstanceEvaluation {
+        results {
+          totalAnswers
           maxValue
           minValue
-          free {
+          responses {
             value
             correct
             count

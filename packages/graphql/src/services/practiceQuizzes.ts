@@ -12,6 +12,7 @@ import {
   ElementInstance,
   ElementInstanceType,
   ElementOrderType,
+  ElementStack,
   ElementStackType,
   ElementType,
   InstanceStatistics,
@@ -44,6 +45,7 @@ import {
 import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
+  Choice,
   ContentResults,
   ElementInstanceResults,
   ElementResultsChoices,
@@ -130,6 +132,125 @@ export async function getPracticeQuizData(
   return quiz
 }
 
+export function computeStackEvaluation(
+  stacks: (ElementStack & { elements: ElementInstance[] })[]
+) {
+  return stacks.map((stack) => {
+    return {
+      stackId: stack.id!,
+      stackName: stack.displayName,
+      stackDescription: stack.description,
+      stackOrder: stack.order!,
+
+      instances: stack.elements.flatMap((instance) => {
+        let hasSampleSolution = false
+        let hasAnswerFeedbacks = false
+        const instanceType = instance.elementData.type
+
+        if (
+          instanceType !== ElementType.FLASHCARD &&
+          instanceType !== ElementType.CONTENT
+        ) {
+          hasSampleSolution =
+            instance.elementData.options.hasSampleSolution ?? false
+          hasAnswerFeedbacks =
+            instance.elementData.options.hasAnswerFeedbacks ?? false
+        }
+
+        const commonInstanceData = {
+          id: instance.id,
+          type: instanceType,
+          name: instance.elementData.name,
+          content: instance.elementData.content,
+          explanation: instance.elementData.explanation,
+
+          hasSampleSolution,
+          hasAnswerFeedbacks,
+        }
+
+        if (
+          instanceType === ElementType.SC ||
+          instanceType === ElementType.MC ||
+          instanceType === ElementType.KPRIM
+        ) {
+          const instanceResults = instance.results as ElementResultsChoices
+          const choiceResults = instanceResults.choices
+          const availableChoices = instance.elementData.options
+            .choices as Choice[]
+
+          const choices = availableChoices.map((choice) => {
+            return {
+              value: choice.value,
+              count: choiceResults[choice.ix] ?? 0,
+              correct: choice.correct,
+              feedback: choice.feedback,
+            }
+          })
+
+          return {
+            ...commonInstanceData,
+            results: {
+              totalAnswers: instanceResults.total,
+              choices,
+            },
+          }
+        } else if (instanceType === ElementType.NUMERICAL) {
+          const instanceResults = instance.results as ElementResultsOpen
+          const options = instance.elementData
+            .options as NumericalQuestionOptions
+          const nrResponses = Object.values(instanceResults.responses)
+
+          return {
+            ...commonInstanceData,
+            results: {
+              totalAnswers: instanceResults.total,
+              maxValue: options.restrictions?.max,
+              minValue: options.restrictions?.min,
+              responses: nrResponses,
+              // TODO: extend with statistics
+            },
+          }
+        } else if (instanceType === ElementType.FREE_TEXT) {
+          const instanceResults = instance.results as ElementResultsOpen
+          const options = instance.elementData
+            .options as FreeTextQuestionOptions
+          const ftResponses = Object.values(instanceResults.responses)
+
+          return {
+            ...commonInstanceData,
+            results: {
+              totalAnswers: instanceResults.total,
+              maxLength: options.restrictions?.maxLength,
+              responses: ftResponses,
+            },
+          }
+        } else if (instanceType === ElementType.FLASHCARD) {
+          const instanceResults = instance.results as FlashcardResults
+
+          return {
+            ...commonInstanceData,
+            results: {
+              totalAnswers: instanceResults.total,
+              correctAnswers: instanceResults[FlashcardCorrectness.CORRECT],
+              partialAnswers: instanceResults[FlashcardCorrectness.PARTIAL],
+              wrongAnswers: instanceResults[FlashcardCorrectness.INCORRECT],
+            },
+          }
+        } else if (instanceType === ElementType.CONTENT) {
+          return {
+            ...commonInstanceData,
+            results: {
+              totalAnswers: instance.results.total,
+            },
+          }
+        } else {
+          return []
+        }
+      }),
+    }
+  })
+}
+
 export async function getPracticeQuizEvaluation(
   {
     id,
@@ -159,9 +280,20 @@ export async function getPracticeQuizEvaluation(
     },
   })
 
-  // TODO: compute evaluation
+  if (!practiceQuiz) {
+    return null
+  }
 
-  return null
+  // compute evaluation
+  const stackEvaluation = computeStackEvaluation(practiceQuiz.stacks)
+
+  return {
+    id: practiceQuiz.id,
+    name: practiceQuiz.name,
+    displayName: practiceQuiz.displayName,
+    description: practiceQuiz.description,
+    results: stackEvaluation,
+  }
 }
 
 export async function getSinglePracticeQuiz(

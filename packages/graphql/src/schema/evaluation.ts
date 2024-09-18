@@ -5,17 +5,17 @@ import { ElementType } from './questionData.js'
 
 // TODO: move types to separate file with type definitions?
 export interface IActivityEvaluation {
-  id: number
+  id: string
   name: string
-  displayName: string
+  displayName?: string | null
   description?: string | null
   results: IStackEvaluation[]
 }
 
 export interface IStackEvaluation {
   stackId: number
-  stackName: string
-  stackDescription: string
+  stackName?: string | null
+  stackDescription?: string | null
   stackOrder: number
   instances: IElementInstanceEvaluation[]
 }
@@ -24,7 +24,6 @@ export interface IElementInstanceEvaluation {
   id: number
   type: DB.ElementType
   name: string
-  displayName: string
   content: string
   explanation?: string | null
   hasSampleSolution: boolean
@@ -34,37 +33,10 @@ export interface IElementInstanceEvaluation {
 
 export type InstanceEvaluationResults =
   | IChoicesElementInstanceEvaluation
+  | INumericalElementInstanceEvaluation
   | IFreeElementInstanceEvaluation
   | IFlashcardElementInstanceEvaluation
   | IContentElementInstanceEvaluation
-
-interface IElementInstanceEvaluationResults<
-  Type extends DB.ElementType,
-  Results extends InstanceEvaluationResults,
-> {}
-
-export type ChoicesInstanceEvaluationData = IElementInstanceEvaluationResults<
-  'SC' | 'MC' | 'KPRIM',
-  IChoicesElementInstanceEvaluation
->
-export type FreeInstanceEvaluationData = IElementInstanceEvaluationResults<
-  'FREE_TEXT' | 'NUMERICAL',
-  IFreeElementInstanceEvaluation
->
-export type FlashcardInstanceEvaluationData = IElementInstanceEvaluationResults<
-  'FLASHCARD',
-  IFlashcardElementInstanceEvaluation
->
-export type ContentInstanceEvaluationData = IElementInstanceEvaluationResults<
-  'CONTENT',
-  IContentElementInstanceEvaluation
->
-
-export type AllInstanceEvaluationData =
-  | ChoicesInstanceEvaluationData
-  | FreeInstanceEvaluationData
-  | FlashcardInstanceEvaluationData
-  | ContentInstanceEvaluationData
 
 export interface IChoicesElementEvaluationResults {
   totalAnswers: number
@@ -81,12 +53,26 @@ export interface IChoicesElementInstanceEvaluation
   results: IChoicesElementEvaluationResults
 }
 
+export interface INumericalElementEvaluationResults {
+  totalAnswers: number
+  maxValue?: number | null
+  minValue?: number | null
+  responses: {
+    value: string
+    count: number
+    correct?: boolean | null
+  }[]
+}
+
+export interface INumericalElementInstanceEvaluation
+  extends IElementInstanceEvaluation {
+  results: INumericalElementEvaluationResults
+}
+
 export interface IFreeElementEvaluationResults {
   totalAnswers: number
   maxLength?: number | null
-  maxValue?: number | null
-  minValue?: number | null
-  free: {
+  responses: {
     value: string
     count: number
     correct?: boolean | null
@@ -128,9 +114,9 @@ export const ActivityEvaluationRef =
   builder.interfaceRef<IActivityEvaluation>('ActivityEvaluation')
 export const ActivityEvaluation = ActivityEvaluationRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id'),
+    id: t.exposeID('id'),
     name: t.exposeString('name'),
-    displayName: t.exposeString('displayName'),
+    displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
@@ -144,8 +130,8 @@ export const StackEvaluationRef =
 export const StackEvaluation = StackEvaluationRef.implement({
   fields: (t) => ({
     stackId: t.exposeInt('stackId'),
-    stackName: t.exposeString('stackName'),
-    stackDescription: t.exposeString('stackDescription'),
+    stackName: t.exposeString('stackName', { nullable: true }),
+    stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
     instances: t.field({
       type: [ElementInstanceEvaluationRef],
@@ -163,7 +149,6 @@ export const ElementInstanceEvaluation = ElementInstanceEvaluationRef.implement(
       id: t.exposeInt('id'),
       type: t.expose('type', { type: ElementType }),
       name: t.exposeString('name'),
-      displayName: t.exposeString('displayName'),
       content: t.exposeString('content'),
       explanation: t.exposeString('explanation', { nullable: true }),
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
@@ -227,7 +212,48 @@ export const ChoiceElementResults = ChoiceElementResultsRef.implement({
   }),
 })
 
-// ----- FREE ELEMENT EVALUATION INTERFACE -----
+// ----- NUMERICAL ELEMENT EVALUATION INTERFACE -----
+export const NumericalElementInstanceEvaluationRef =
+  builder.objectRef<INumericalElementInstanceEvaluation>(
+    'NumericalElementInstanceEvaluation'
+  )
+export const NumericalElementInstanceEvaluation =
+  NumericalElementInstanceEvaluationRef.implement({
+    interfaces: [ElementInstanceEvaluation],
+    fields: (t) => ({
+      results: t.expose('results', {
+        type: NumericalElementResults,
+      }),
+    }),
+  })
+
+export const NumericalElementResultsRef =
+  builder.objectRef<INumericalElementEvaluationResults>(
+    'NumericalElementResults'
+  )
+export const NumericalElementResults = NumericalElementResultsRef.implement({
+  fields: (t) => ({
+    totalAnswers: t.exposeInt('totalAnswers'),
+    maxValue: t.exposeInt('maxValue', { nullable: true }),
+    minValue: t.exposeInt('minValue', { nullable: true }),
+    responses: t.expose('responses', {
+      type: [NumericalElementResult],
+    }),
+  }),
+})
+
+export const NumericalElementResultRef = builder.objectRef<
+  INumericalElementEvaluationResults['responses'][0]
+>('NumericalElementResult')
+export const NumericalElementResult = NumericalElementResultRef.implement({
+  fields: (t) => ({
+    value: t.exposeString('value'),
+    count: t.exposeInt('count'),
+    correct: t.exposeBoolean('correct', { nullable: true }),
+  }),
+})
+
+// ----- FREE TEXT ELEMENT EVALUATION INTERFACE -----
 export const FreeElementInstanceEvaluationRef =
   builder.objectRef<IFreeElementInstanceEvaluation>(
     'FreeElementInstanceEvaluation'
@@ -248,16 +274,14 @@ export const FreeElementResults = FreeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
     maxLength: t.exposeInt('maxLength', { nullable: true }),
-    maxValue: t.exposeInt('maxValue', { nullable: true }),
-    minValue: t.exposeInt('minValue', { nullable: true }),
-    free: t.expose('free', {
+    responses: t.expose('responses', {
       type: [FreeElementResult],
     }),
   }),
 })
 
 export const FreeElementResultRef =
-  builder.objectRef<IFreeElementEvaluationResults['free'][0]>(
+  builder.objectRef<IFreeElementEvaluationResults['responses'][0]>(
     'FreeElementResult'
   )
 export const FreeElementResult = FreeElementResultRef.implement({

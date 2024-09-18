@@ -16,8 +16,8 @@ type Achievement {
 
 interface ActivityEvaluation {
   description: String
-  displayName: String!
-  id: Int!
+  displayName: String
+  id: ID!
   name: String!
   results: [StackEvaluation!]!
 }
@@ -93,7 +93,6 @@ type ChoicesElementData implements ElementData {
 
 type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
-  displayName: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -149,7 +148,6 @@ type ContentElementData implements ElementData {
 
 type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
-  displayName: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -267,7 +265,6 @@ type ElementInstance {
 
 interface ElementInstanceEvaluation {
   content: String!
-  displayName: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -390,7 +387,6 @@ type FlashcardElementData implements ElementData {
 
 type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
-  displayName: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -420,7 +416,6 @@ type FlashcardElementResults {
 
 type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
-  displayName: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -437,10 +432,8 @@ type FreeElementResult {
 }
 
 type FreeElementResults {
-  free: [FreeElementResult!]!
   maxLength: Int
-  maxValue: Int
-  minValue: Int
+  responses: [FreeElementResult!]!
   totalAnswers: Int!
 }
 
@@ -837,6 +830,30 @@ type NumericalElementData implements ElementData {
   type: ElementType!
 }
 
+type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: NumericalElementResults!
+  type: ElementType!
+}
+
+type NumericalElementResult {
+  correct: Boolean
+  count: Int!
+  value: String!
+}
+
+type NumericalElementResults {
+  maxValue: Int
+  minValue: Int
+  responses: [NumericalElementResult!]!
+  totalAnswers: Int!
+}
+
 type NumericalQuestionData implements QuestionData {
   content: String!
   elementId: Int
@@ -1219,9 +1236,9 @@ input StackElementsInput {
 
 interface StackEvaluation {
   instances: [ElementInstanceEvaluation!]!
-  stackDescription: String!
+  stackDescription: String
   stackId: Int!
-  stackName: String!
+  stackName: String
   stackOrder: Int!
 }
 

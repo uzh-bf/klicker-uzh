@@ -15,6 +15,7 @@ import { GraphQLError } from 'graphql'
 import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
+import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {
   id: string
@@ -91,9 +92,20 @@ export async function getMicroLearningEvaluation(
     },
   })
 
-  // TODO: compute evaluation
+  if (!microLearning) {
+    return null
+  }
 
-  return null
+  // compute evaluation
+  const stackEvaluation = computeStackEvaluation(microLearning.stacks)
+
+  return {
+    id: microLearning.id,
+    name: microLearning.name,
+    displayName: microLearning.displayName,
+    description: microLearning.description,
+    results: stackEvaluation,
+  }
 }
 
 export async function getSingleMicroLearning(
