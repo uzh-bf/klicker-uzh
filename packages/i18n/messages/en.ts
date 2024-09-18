@@ -69,7 +69,6 @@ export default {
       enabled: 'Enabled',
       disabled: 'Disabled',
       download: 'Download',
-      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
@@ -1472,6 +1471,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
       gamificationFixed:
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+      openPreview: 'Open preview',
+      openEvaluation: 'Open evaluation',
     },
     course: {
       modifyCourse: 'Modify course',

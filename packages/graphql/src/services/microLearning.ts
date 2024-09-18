@@ -62,6 +62,38 @@ export async function getMicroLearningData(
   return microLearning
 }
 
+export async function getMicroLearningEvaluation(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      status: PublicationStatus.PUBLISHED,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  return microLearning
+}
+
 export async function getSingleMicroLearning(
   { id }: GetMicroLearningArgs,
   ctx: ContextWithUser

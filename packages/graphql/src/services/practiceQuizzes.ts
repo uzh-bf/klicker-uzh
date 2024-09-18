@@ -130,6 +130,38 @@ export async function getPracticeQuizData(
   return quiz
 }
 
+export async function getPracticeQuizEvaluation(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      status: PublicationStatus.PUBLISHED,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  return practiceQuiz
+}
+
 export async function getSinglePracticeQuiz(
   { id }: { id: string },
   ctx: Context

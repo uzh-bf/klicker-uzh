@@ -227,7 +227,7 @@ export interface BaseElementData {
   content: string
   pointsMultiplier: number
   explanation?: string | null
-  options: object
+  options: object // TODO: possibly replacing this with Element options could resolve the frontend type issues?
 }
 
 export type BaseElementDataKeys = (keyof BaseElementData)[]

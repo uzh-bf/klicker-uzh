@@ -14,6 +14,14 @@ type Achievement {
   nameEN: String
 }
 
+interface ActivityEvaluation {
+  description: String
+  displayName: String!
+  id: Int!
+  name: String!
+  results: [StackEvaluation!]!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -50,6 +58,13 @@ type Choice {
   value: String!
 }
 
+interface ChoiceElementResults {
+  correct: Boolean
+  count: Int!
+  feedback: String
+  value: String!
+}
+
 input ChoiceInput {
   correct: Boolean
   feedback: String
@@ -74,6 +89,23 @@ type ChoicesElementData implements ElementData {
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
+}
+
+interface ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  displayName: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ChoicesElementResults!
+  type: ElementType!
+}
+
+interface ChoicesElementResults {
+  choices: [ChoiceElementResults!]!
+  totalAnswers: Int!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -115,6 +147,18 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
+interface ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  displayName: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ContentElementResults!
+  type: ElementType!
+}
+
 type ContentElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -124,6 +168,10 @@ type ContentElementQData implements QuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+interface ContentElementResults {
+  totalAnswers: Int!
 }
 
 type Course {
@@ -217,6 +265,17 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
+interface ElementInstanceEvaluation {
+  content: String!
+  displayName: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  type: ElementType!
+}
+
 type ElementInstanceOptions {
   pointsMultiplier: Int
   resetTimeDays: Int
@@ -306,6 +365,12 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+enum FlashcardCorrectness {
+  CORRECT
+  INCORRECT
+  PARTIAL
+}
+
 enum FlashcardCorrectnessType {
   CORRECT
   INCORRECT
@@ -323,6 +388,18 @@ type FlashcardElementData implements ElementData {
   type: ElementType!
 }
 
+interface FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  displayName: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FlashcardElementResults!
+  type: ElementType!
+}
+
 type FlashcardElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -332,6 +409,42 @@ type FlashcardElementQData implements QuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+interface FlashcardElementResult {
+  count: Int!
+  value: FlashcardCorrectness!
+}
+
+interface FlashcardElementResults {
+  studentGrading: [FlashcardElementResult!]!
+  totalAnswers: Int!
+}
+
+interface FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  displayName: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FreeElementResults!
+  type: ElementType!
+}
+
+interface FreeElementResult {
+  correct: Boolean
+  count: Int!
+  maxLength: Int
+  maxValue: Int
+  minValue: Int
+  value: String!
+}
+
+interface FreeElementResults {
+  free: [FreeElementResult!]!
+  totalAnswers: Int!
 }
 
 type FreeTextElementData implements ElementData {
@@ -912,8 +1025,10 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
+  getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
+  getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
@@ -1103,6 +1218,14 @@ input SolutionRangeInput {
 input StackElementsInput {
   elementId: Int!
   order: Int!
+}
+
+interface StackEvaluation {
+  instances: [ElementInstanceEvaluation!]!
+  stackDescription: String!
+  stackId: Int!
+  stackName: String!
+  stackOrder: Int!
 }
 
 type StackFeedback {

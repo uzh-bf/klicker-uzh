@@ -1,0 +1,50 @@
+query GetPracticeQuizEvaluation($id: String!) {
+  getPracticeQuizEvaluation(id: $id) {
+    id
+    name
+    displayName
+    description
+
+    results {
+      stackId
+      stackName
+      stackDescription
+      stackOrder
+
+      instances {
+        id
+        type
+        name
+        displayName
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        # results {
+        #   totalAnswers
+        #   choices {
+        #     value
+        #     count
+        #     correct
+        #     feedback
+        #   }
+        #   free {
+        #     value
+        #     correct
+        #     count
+        #     maxLength
+        #     maxValue
+        #     minValue
+        #   }
+        #   studentGrading {
+        #     value
+        #     correct
+        #     count
+        #   }
+        # }
+      }
+    }
+  }
+}

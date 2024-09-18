@@ -1,31 +1,30 @@
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
-interface PracticeQuizPreviewLinkProps {
-  practiceQuiz: Partial<PracticeQuiz>
-  href: string
+interface MicroLearningEvaluationLinkProps {
+  quizName: string
+  evaluationHref: string
 }
 
-function PracticeQuizPreviewLink({
-  practiceQuiz,
-  href,
-}: PracticeQuizPreviewLinkProps) {
+function MicroLearningEvaluationLink({
+  quizName,
+  evaluationHref,
+}: MicroLearningEvaluationLinkProps) {
   const t = useTranslations()
 
   return (
     <Link
-      href={href}
+      href={evaluationHref}
       target="_blank"
       className="text-primary-100 flex flex-row items-center gap-1"
-      data-cy={`open-practice-quiz-${practiceQuiz.name}`}
+      data-cy={`evaluation-microlearning-${quizName}`}
     >
       <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
-      <div>{t('manage.courseList.openPreview')}</div>
+      <div>{t('manage.courseList.openEvaluation')}</div>
     </Link>
   )
 }
 
-export default PracticeQuizPreviewLink
+export default MicroLearningEvaluationLink
