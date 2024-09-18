@@ -32,50 +32,91 @@ export interface IElementInstanceEvaluation {
   results: object // TODO: typing with results objects?!
 }
 
+export type InstanceEvaluationResults =
+  | IChoicesElementInstanceEvaluation
+  | IFreeElementInstanceEvaluation
+  | IFlashcardElementInstanceEvaluation
+  | IContentElementInstanceEvaluation
+
+interface IElementInstanceEvaluationResults<
+  Type extends DB.ElementType,
+  Results extends InstanceEvaluationResults,
+> {}
+
+export type ChoicesInstanceEvaluationData = IElementInstanceEvaluationResults<
+  'SC' | 'MC' | 'KPRIM',
+  IChoicesElementInstanceEvaluation
+>
+export type FreeInstanceEvaluationData = IElementInstanceEvaluationResults<
+  'FREE_TEXT' | 'NUMERICAL',
+  IFreeElementInstanceEvaluation
+>
+export type FlashcardInstanceEvaluationData = IElementInstanceEvaluationResults<
+  'FLASHCARD',
+  IFlashcardElementInstanceEvaluation
+>
+export type ContentInstanceEvaluationData = IElementInstanceEvaluationResults<
+  'CONTENT',
+  IContentElementInstanceEvaluation
+>
+
+export type AllInstanceEvaluationData =
+  | ChoicesInstanceEvaluationData
+  | FreeInstanceEvaluationData
+  | FlashcardInstanceEvaluationData
+  | ContentInstanceEvaluationData
+
+export interface IChoicesElementEvaluationResults {
+  totalAnswers: number
+  choices: {
+    value: string
+    count: number
+    correct?: boolean | null
+    feedback?: string | null
+  }[]
+}
+
 export interface IChoicesElementInstanceEvaluation
   extends IElementInstanceEvaluation {
-  results: {
-    totalAnswers: number
-    choices: {
-      value: string
-      count: number
-      correct?: boolean | null
-      feedback?: string | null
-    }[]
-  }
+  results: IChoicesElementEvaluationResults
+}
+
+export interface IFreeElementEvaluationResults {
+  totalAnswers: number
+  maxLength?: number | null
+  maxValue?: number | null
+  minValue?: number | null
+  free: {
+    value: string
+    count: number
+    correct?: boolean | null
+  }[]
 }
 
 export interface IFreeElementInstanceEvaluation
   extends IElementInstanceEvaluation {
-  results: {
-    totalAnswers: number
-    free: {
-      value: string
-      count: number
-      correct?: boolean | null
-      maxLength?: number | null
-      maxValue?: number | null
-      minValue?: number | null
-    }[]
-  }
+  results: IFreeElementEvaluationResults
+}
+
+export interface IFlashcardElementEvaluationResults {
+  totalAnswers: number
+  correctCount: number
+  partialCount: number
+  incorrectCount: number
 }
 
 export interface IFlashcardElementInstanceEvaluation
   extends IElementInstanceEvaluation {
-  results: {
-    totalAnswers: number
-    studentGrading: {
-      value: FlashcardCorrectnessType
-      count: number
-    }[]
-  }
+  results: IFlashcardElementEvaluationResults
+}
+
+export interface IContentElementEvaluationResults {
+  totalAnswers: number
 }
 
 export interface IContentElementInstanceEvaluation
   extends IElementInstanceEvaluation {
-  results: {
-    totalAnswers: number
-  }
+  results: IContentElementEvaluationResults
 }
 
 export const FlashcardCorrectness = builder.enumType('FlashcardCorrectness', {
@@ -150,7 +191,7 @@ export const ElementInstanceEvaluation = ElementInstanceEvaluationRef.implement(
 
 // ----- CHOICES ELEMENT EVALUATION INTERFACE -----
 export const ChoicesElementInstanceEvaluationRef =
-  builder.interfaceRef<IChoicesElementInstanceEvaluation>(
+  builder.objectRef<IChoicesElementInstanceEvaluation>(
     'ChoicesElementInstanceEvaluation'
   )
 export const ChoicesElementInstanceEvaluation =
@@ -163,9 +204,8 @@ export const ChoicesElementInstanceEvaluation =
     }),
   })
 
-export const ChoicesElementResultsRef = builder.interfaceRef<
-  IChoicesElementInstanceEvaluation['results']
->('ChoicesElementResults')
+export const ChoicesElementResultsRef =
+  builder.objectRef<IChoicesElementEvaluationResults>('ChoicesElementResults')
 export const ChoicesElementResults = ChoicesElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
@@ -175,8 +215,8 @@ export const ChoicesElementResults = ChoicesElementResultsRef.implement({
   }),
 })
 
-export const ChoiceElementResultsRef = builder.interfaceRef<
-  IChoicesElementInstanceEvaluation['results']['choices'][0]
+export const ChoiceElementResultsRef = builder.objectRef<
+  IChoicesElementEvaluationResults['choices'][0]
 >('ChoiceElementResults')
 export const ChoiceElementResults = ChoiceElementResultsRef.implement({
   fields: (t) => ({
@@ -189,7 +229,7 @@ export const ChoiceElementResults = ChoiceElementResultsRef.implement({
 
 // ----- FREE ELEMENT EVALUATION INTERFACE -----
 export const FreeElementInstanceEvaluationRef =
-  builder.interfaceRef<IFreeElementInstanceEvaluation>(
+  builder.objectRef<IFreeElementInstanceEvaluation>(
     'FreeElementInstanceEvaluation'
   )
 export const FreeElementInstanceEvaluation =
@@ -203,12 +243,13 @@ export const FreeElementInstanceEvaluation =
   })
 
 export const FreeElementResultsRef =
-  builder.interfaceRef<IFreeElementInstanceEvaluation['results']>(
-    'FreeElementResults'
-  )
+  builder.objectRef<IFreeElementEvaluationResults>('FreeElementResults')
 export const FreeElementResults = FreeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    maxLength: t.exposeInt('maxLength', { nullable: true }),
+    maxValue: t.exposeInt('maxValue', { nullable: true }),
+    minValue: t.exposeInt('minValue', { nullable: true }),
     free: t.expose('free', {
       type: [FreeElementResult],
     }),
@@ -216,7 +257,7 @@ export const FreeElementResults = FreeElementResultsRef.implement({
 })
 
 export const FreeElementResultRef =
-  builder.interfaceRef<IFreeElementInstanceEvaluation['results']['free'][0]>(
+  builder.objectRef<IFreeElementEvaluationResults['free'][0]>(
     'FreeElementResult'
   )
 export const FreeElementResult = FreeElementResultRef.implement({
@@ -224,15 +265,12 @@ export const FreeElementResult = FreeElementResultRef.implement({
     value: t.exposeString('value'),
     count: t.exposeInt('count'),
     correct: t.exposeBoolean('correct', { nullable: true }),
-    maxLength: t.exposeInt('maxLength', { nullable: true }),
-    maxValue: t.exposeInt('maxValue', { nullable: true }),
-    minValue: t.exposeInt('minValue', { nullable: true }),
   }),
 })
 
 // ----- FLASHCARD ELEMENT EVALUATION INTERFACE -----
 export const FlashcardElementInstanceEvaluationRef =
-  builder.interfaceRef<IFlashcardElementInstanceEvaluation>(
+  builder.objectRef<IFlashcardElementInstanceEvaluation>(
     'FlashcardElementInstanceEvaluation'
   )
 export const FlashcardElementInstanceEvaluation =
@@ -245,31 +283,22 @@ export const FlashcardElementInstanceEvaluation =
     }),
   })
 
-export const FlashcardElementResultsRef = builder.interfaceRef<
-  IFlashcardElementInstanceEvaluation['results']
->('FlashcardElementResults')
+export const FlashcardElementResultsRef =
+  builder.objectRef<IFlashcardElementEvaluationResults>(
+    'FlashcardElementResults'
+  )
 export const FlashcardElementResults = FlashcardElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
-    studentGrading: t.expose('studentGrading', {
-      type: [FlashcardElementResult],
-    }),
-  }),
-})
-
-export const FlashcardElementResultRef = builder.interfaceRef<
-  IFlashcardElementInstanceEvaluation['results']['studentGrading'][0]
->('FlashcardElementResult')
-export const FlashcardElementResult = FlashcardElementResultRef.implement({
-  fields: (t) => ({
-    value: t.expose('value', { type: FlashcardCorrectness }),
-    count: t.exposeInt('count'),
+    correctCount: t.exposeInt('correctCount'),
+    partialCount: t.exposeInt('partialCount'),
+    incorrectCount: t.exposeInt('incorrectCount'),
   }),
 })
 
 // ----- CONTENT ELEMENT EVALUATION INTERFACE -----
 export const ContentElementInstanceEvaluationRef =
-  builder.interfaceRef<IContentElementInstanceEvaluation>(
+  builder.objectRef<IContentElementInstanceEvaluation>(
     'ContentElementInstanceEvaluation'
   )
 export const ContentElementInstanceEvaluation =
@@ -282,9 +311,8 @@ export const ContentElementInstanceEvaluation =
     }),
   })
 
-export const ContentElementResultsRef = builder.interfaceRef<
-  IContentElementInstanceEvaluation['results']
->('ContentElementResults')
+export const ContentElementResultsRef =
+  builder.objectRef<IContentElementEvaluationResults>('ContentElementResults')
 export const ContentElementResults = ContentElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),

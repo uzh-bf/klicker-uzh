@@ -58,7 +58,7 @@ type Choice {
   value: String!
 }
 
-interface ChoiceElementResults {
+type ChoiceElementResults {
   correct: Boolean
   count: Int!
   feedback: String
@@ -91,7 +91,7 @@ type ChoicesElementData implements ElementData {
   type: ElementType!
 }
 
-interface ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
   displayName: String!
   explanation: String
@@ -103,7 +103,7 @@ interface ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation 
   type: ElementType!
 }
 
-interface ChoicesElementResults {
+type ChoicesElementResults {
   choices: [ChoiceElementResults!]!
   totalAnswers: Int!
 }
@@ -147,7 +147,7 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
-interface ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
   displayName: String!
   explanation: String
@@ -170,7 +170,7 @@ type ContentElementQData implements QuestionData {
   type: ElementType!
 }
 
-interface ContentElementResults {
+type ContentElementResults {
   totalAnswers: Int!
 }
 
@@ -388,7 +388,7 @@ type FlashcardElementData implements ElementData {
   type: ElementType!
 }
 
-interface FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
   displayName: String!
   explanation: String
@@ -411,17 +411,14 @@ type FlashcardElementQData implements QuestionData {
   type: ElementType!
 }
 
-interface FlashcardElementResult {
-  count: Int!
-  value: FlashcardCorrectness!
-}
-
-interface FlashcardElementResults {
-  studentGrading: [FlashcardElementResult!]!
+type FlashcardElementResults {
+  correctCount: Int!
+  incorrectCount: Int!
+  partialCount: Int!
   totalAnswers: Int!
 }
 
-interface FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
   content: String!
   displayName: String!
   explanation: String
@@ -433,17 +430,17 @@ interface FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
   type: ElementType!
 }
 
-interface FreeElementResult {
+type FreeElementResult {
   correct: Boolean
   count: Int!
-  maxLength: Int
-  maxValue: Int
-  minValue: Int
   value: String!
 }
 
-interface FreeElementResults {
+type FreeElementResults {
   free: [FreeElementResult!]!
+  maxLength: Int
+  maxValue: Int
+  minValue: Int
   totalAnswers: Int!
 }
 

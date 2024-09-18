@@ -22,28 +22,46 @@ query GetMicroLearningEvaluation($id: String!) {
         hasSampleSolution
         hasAnswerFeedbacks
 
-        # results {
-        #   totalAnswers
-        #   choices {
-        #     value
-        #     count
-        #     correct
-        #     feedback
-        #   }
-        #   free {
-        #     value
-        #     correct
-        #     count
-        #     maxLength
-        #     maxValue
-        #     minValue
-        #   }
-        #   studentGrading {
-        #     value
-        #     correct
-        #     count
-        #   }
-        # }
+        ... on ChoicesElementInstanceEvaluation {
+          results {
+            totalAnswers
+            choices {
+              value
+              count
+              correct
+              feedback
+            }
+          }
+        }
+
+        ... on FreeElementInstanceEvaluation {
+          results {
+            totalAnswers
+            maxLength
+            maxValue
+            minValue
+            free {
+              value
+              correct
+              count
+            }
+          }
+        }
+
+        ... on FlashcardElementInstanceEvaluation {
+          results {
+            totalAnswers
+            correctCount
+            partialCount
+            incorrectCount
+          }
+        }
+
+        ... on ContentElementInstanceEvaluation {
+          results {
+            totalAnswers
+          }
+        }
       }
     }
   }

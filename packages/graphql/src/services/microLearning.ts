@@ -91,7 +91,9 @@ export async function getMicroLearningEvaluation(
     },
   })
 
-  return microLearning
+  // TODO: compute evaluation
+
+  return null
 }
 
 export async function getSingleMicroLearning(

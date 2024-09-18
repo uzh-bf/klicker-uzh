@@ -631,7 +631,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ChoiceElementResults",
         "description": null,
         "fields": [
@@ -695,7 +695,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "INPUT_OBJECT",
@@ -997,7 +997,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ChoicesElementInstanceEvaluation",
         "description": null,
         "fields": [
@@ -1117,7 +1117,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "INTERFACE",
+                "kind": "OBJECT",
                 "name": "ChoicesElementResults",
                 "ofType": null
               }
@@ -1151,10 +1151,10 @@
           }
         ],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ChoicesElementResults",
         "description": null,
         "fields": [
@@ -1172,7 +1172,7 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "INTERFACE",
+                    "kind": "OBJECT",
                     "name": "ChoiceElementResults",
                     "ofType": null
                   }
@@ -1202,7 +1202,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",
@@ -1624,7 +1624,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ContentElementInstanceEvaluation",
         "description": null,
         "fields": [
@@ -1744,7 +1744,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "INTERFACE",
+                "kind": "OBJECT",
                 "name": "ContentElementResults",
                 "ofType": null
               }
@@ -1778,7 +1778,7 @@
           }
         ],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",
@@ -1910,7 +1910,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ContentElementResults",
         "description": null,
         "fields": [
@@ -1934,7 +1934,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",
@@ -3203,7 +3203,28 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": [
+          {
+            "kind": "OBJECT",
+            "name": "ChoicesElementInstanceEvaluation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "ContentElementInstanceEvaluation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "FlashcardElementInstanceEvaluation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "FreeElementInstanceEvaluation",
+            "ofType": null
+          }
+        ]
       },
       {
         "kind": "OBJECT",
@@ -4169,7 +4190,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "FlashcardElementInstanceEvaluation",
         "description": null,
         "fields": [
@@ -4289,7 +4310,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "INTERFACE",
+                "kind": "OBJECT",
                 "name": "FlashcardElementResults",
                 "ofType": null
               }
@@ -4323,7 +4344,7 @@
           }
         ],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",
@@ -4455,12 +4476,12 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
-        "name": "FlashcardElementResult",
+        "kind": "OBJECT",
+        "name": "FlashcardElementResults",
         "description": null,
         "fields": [
           {
-            "name": "count",
+            "name": "correctCount",
             "description": null,
             "args": [],
             "type": {
@@ -4476,51 +4497,32 @@
             "deprecationReason": null
           },
           {
-            "name": "value",
+            "name": "incorrectCount",
             "description": null,
             "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "ENUM",
-                "name": "FlashcardCorrectness",
+                "kind": "SCALAR",
+                "name": "Int",
                 "ofType": null
               }
             },
             "isDeprecated": false,
             "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": []
-      },
-      {
-        "kind": "INTERFACE",
-        "name": "FlashcardElementResults",
-        "description": null,
-        "fields": [
+          },
           {
-            "name": "studentGrading",
+            "name": "partialCount",
             "description": null,
             "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "INTERFACE",
-                    "name": "FlashcardElementResult",
-                    "ofType": null
-                  }
-                }
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -4546,7 +4548,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "SCALAR",
@@ -4559,7 +4561,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "FreeElementInstanceEvaluation",
         "description": null,
         "fields": [
@@ -4679,7 +4681,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "INTERFACE",
+                "kind": "OBJECT",
                 "name": "FreeElementResults",
                 "ofType": null
               }
@@ -4713,10 +4715,10 @@
           }
         ],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "FreeElementResult",
         "description": null,
         "fields": [
@@ -4743,6 +4745,57 @@
                 "kind": "SCALAR",
                 "name": "Int",
                 "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "value",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "FreeElementResults",
+        "description": null,
+        "fields": [
+          {
+            "name": "free",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "FreeElementResult",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,
@@ -4785,57 +4838,6 @@
             "deprecationReason": null
           },
           {
-            "name": "value",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": []
-      },
-      {
-        "kind": "INTERFACE",
-        "name": "FreeElementResults",
-        "description": null,
-        "fields": [
-          {
-            "name": "free",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "INTERFACE",
-                    "name": "FreeElementResult",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "totalAnswers",
             "description": null,
             "args": [],
@@ -4855,7 +4857,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",

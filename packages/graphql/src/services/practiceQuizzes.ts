@@ -159,7 +159,9 @@ export async function getPracticeQuizEvaluation(
     },
   })
 
-  return practiceQuiz
+  // TODO: compute evaluation
+
+  return null
 }
 
 export async function getSinglePracticeQuiz(
