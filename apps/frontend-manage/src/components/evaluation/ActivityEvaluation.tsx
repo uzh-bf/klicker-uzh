@@ -24,7 +24,7 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
   const [chartType, setChartType] = useState<string>('')
-  const [textSize, settextSize] = useReducer(sizeReducer, TextSizes['md'])
+  const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
   const instanceResults = stacks.flatMap((stack) => stack.instances)
 
@@ -154,7 +154,16 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
             'h-18'
         )}
       >
-        <EvaluationFooter />
+        <EvaluationFooter
+          activeStack={activeStack}
+          textSize={textSize}
+          setTextSize={setTextSize}
+          showSolution={showSolution}
+          setShowSolution={setShowSolution}
+          chartType={chartType}
+          setChartType={setChartType}
+          currentInstance={instanceResults[activeInstance]}
+        />
       </div>
     </>
   )

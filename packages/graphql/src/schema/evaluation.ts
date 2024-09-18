@@ -28,15 +28,15 @@ export interface IElementInstanceEvaluation {
   explanation?: string | null
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
-  results: object // TODO: typing with results objects?!
+  results: InstanceEvaluationResults
 }
 
 export type InstanceEvaluationResults =
-  | IChoicesElementInstanceEvaluation
-  | INumericalElementInstanceEvaluation
-  | IFreeElementInstanceEvaluation
-  | IFlashcardElementInstanceEvaluation
-  | IContentElementInstanceEvaluation
+  | IChoicesElementEvaluationResults
+  | INumericalElementEvaluationResults
+  | IFreeElementEvaluationResults
+  | IFlashcardElementEvaluationResults
+  | IContentElementEvaluationResults
 
 export interface IChoicesElementEvaluationResults {
   totalAnswers: number
