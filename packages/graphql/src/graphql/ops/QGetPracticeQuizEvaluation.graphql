@@ -1,3 +1,5 @@
+#import "./FEvaluationResults.graphql"
+
 query GetPracticeQuizEvaluation($id: String!) {
   getPracticeQuizEvaluation(id: $id) {
     id
@@ -5,64 +7,6 @@ query GetPracticeQuizEvaluation($id: String!) {
     displayName
     description
 
-    results {
-      stackId
-      stackName
-      stackDescription
-      stackOrder
-
-      instances {
-        id
-        type
-        name
-        displayName
-        content
-        explanation
-
-        hasSampleSolution
-        hasAnswerFeedbacks
-
-        ... on ChoicesElementInstanceEvaluation {
-          results {
-            totalAnswers
-            choices {
-              value
-              count
-              correct
-              feedback
-            }
-          }
-        }
-
-        ... on FreeElementInstanceEvaluation {
-          results {
-            totalAnswers
-            maxLength
-            maxValue
-            minValue
-            free {
-              value
-              correct
-              count
-            }
-          }
-        }
-
-        ... on FlashcardElementInstanceEvaluation {
-          results {
-            totalAnswers
-            correctCount
-            partialCount
-            incorrectCount
-          }
-        }
-
-        ... on ContentElementInstanceEvaluation {
-          results {
-            totalAnswers
-          }
-        }
-      }
-    }
+    ...EvaluationResults
   }
 }
