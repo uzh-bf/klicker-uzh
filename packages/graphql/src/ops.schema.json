@@ -114,7 +114,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "ActivityEvaluation",
         "description": null,
         "fields": [
@@ -188,7 +188,7 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "INTERFACE",
+                    "kind": "OBJECT",
                     "name": "StackEvaluation",
                     "ofType": null
                   }
@@ -202,7 +202,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "INPUT_OBJECT",
@@ -16016,7 +16016,7 @@
               }
             ],
             "type": {
-              "kind": "INTERFACE",
+              "kind": "OBJECT",
               "name": "ActivityEvaluation",
               "ofType": null
             },
@@ -16094,7 +16094,7 @@
               }
             ],
             "type": {
-              "kind": "INTERFACE",
+              "kind": "OBJECT",
               "name": "ActivityEvaluation",
               "ofType": null
             },
@@ -18626,7 +18626,7 @@
         "possibleTypes": null
       },
       {
-        "kind": "INTERFACE",
+        "kind": "OBJECT",
         "name": "StackEvaluation",
         "description": null,
         "fields": [
@@ -18714,7 +18714,7 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": []
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",

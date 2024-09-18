@@ -14,7 +14,7 @@ type Achievement {
   nameEN: String
 }
 
-interface ActivityEvaluation {
+type ActivityEvaluation {
   description: String
   displayName: String
   id: ID!
@@ -1234,7 +1234,7 @@ input StackElementsInput {
   order: Int!
 }
 
-interface StackEvaluation {
+type StackEvaluation {
   instances: [ElementInstanceEvaluation!]!
   stackDescription: String
   stackId: Int!

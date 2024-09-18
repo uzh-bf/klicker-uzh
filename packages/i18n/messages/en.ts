@@ -1398,6 +1398,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       barChart: 'Bar Chart',
       noStatistics:
         'Because of missing answers, no statistics are available yet.',
+      practiceQuizEvaluation: 'Practice Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

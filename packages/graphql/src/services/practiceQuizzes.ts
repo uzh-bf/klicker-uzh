@@ -231,9 +231,9 @@ export function computeStackEvaluation(
             ...commonInstanceData,
             results: {
               totalAnswers: instanceResults.total,
-              correctAnswers: instanceResults[FlashcardCorrectness.CORRECT],
-              partialAnswers: instanceResults[FlashcardCorrectness.PARTIAL],
-              wrongAnswers: instanceResults[FlashcardCorrectness.INCORRECT],
+              correctCount: instanceResults[FlashcardCorrectness.CORRECT],
+              partialCount: instanceResults[FlashcardCorrectness.PARTIAL],
+              incorrectCount: instanceResults[FlashcardCorrectness.INCORRECT],
             },
           }
         } else if (instanceType === ElementType.CONTENT) {

@@ -36,6 +36,7 @@ export type Achievement = {
 };
 
 export type ActivityEvaluation = {
+  __typename?: 'ActivityEvaluation';
   description?: Maybe<Scalars['String']['output']>;
   displayName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -2150,6 +2151,7 @@ export type StackElementsInput = {
 };
 
 export type StackEvaluation = {
+  __typename?: 'StackEvaluation';
   instances: Array<ElementInstanceEvaluation>;
   stackDescription?: Maybe<Scalars['String']['output']>;
   stackId: Scalars['Int']['output'];
@@ -2306,7 +2308,7 @@ export type ElementDataFragment = { __typename?: 'ElementInstance', elementData:
 
 export type ElementDataWithoutSolutionsFragment = { __typename?: 'ElementInstance', elementData: { __typename?: 'ChoicesElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'ContentElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FlashcardElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } };
 
-export type EvaluationResultsFragment = {};
+export type EvaluationResultsFragment = { __typename?: 'ActivityEvaluation', results: Array<{ __typename?: 'StackEvaluation', stackId: number, stackName?: string | null, stackDescription?: string | null, stackOrder: number, instances: Array<{ __typename?: 'ChoicesElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ChoicesElementResults', totalAnswers: number, choices: Array<{ __typename?: 'ChoiceElementResults', value: string, count: number, correct?: boolean | null, feedback?: string | null }> } } | { __typename?: 'ContentElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ContentElementResults', totalAnswers: number } } | { __typename?: 'FlashcardElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FlashcardElementResults', totalAnswers: number, correctCount: number, partialCount: number, incorrectCount: number } } | { __typename?: 'FreeElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FreeElementResults', totalAnswers: number, maxLength?: number | null, responses: Array<{ __typename?: 'FreeElementResult', value: string, correct?: boolean | null, count: number }> } } | { __typename?: 'NumericalElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'NumericalElementResults', totalAnswers: number, maxValue?: number | null, minValue?: number | null, responses: Array<{ __typename?: 'NumericalElementResult', value: string, correct?: boolean | null, count: number }> } }> }> };
 
 export type FeedbackDataFragment = { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> | null };
 
@@ -3292,7 +3294,7 @@ export type GetMicroLearningEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetMicroLearningEvaluationQuery = { __typename?: 'Query', getMicroLearningEvaluation?: never | null };
+export type GetMicroLearningEvaluationQuery = { __typename?: 'Query', getMicroLearningEvaluation?: { __typename?: 'ActivityEvaluation', id: string, name: string, displayName?: string | null, description?: string | null, results: Array<{ __typename?: 'StackEvaluation', stackId: number, stackName?: string | null, stackDescription?: string | null, stackOrder: number, instances: Array<{ __typename?: 'ChoicesElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ChoicesElementResults', totalAnswers: number, choices: Array<{ __typename?: 'ChoiceElementResults', value: string, count: number, correct?: boolean | null, feedback?: string | null }> } } | { __typename?: 'ContentElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ContentElementResults', totalAnswers: number } } | { __typename?: 'FlashcardElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FlashcardElementResults', totalAnswers: number, correctCount: number, partialCount: number, incorrectCount: number } } | { __typename?: 'FreeElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FreeElementResults', totalAnswers: number, maxLength?: number | null, responses: Array<{ __typename?: 'FreeElementResult', value: string, correct?: boolean | null, count: number }> } } | { __typename?: 'NumericalElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'NumericalElementResults', totalAnswers: number, maxValue?: number | null, minValue?: number | null, responses: Array<{ __typename?: 'NumericalElementResult', value: string, correct?: boolean | null, count: number }> } }> }> } | null };
 
 export type GetMicroLearningQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3344,7 +3346,7 @@ export type GetPracticeQuizEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetPracticeQuizEvaluationQuery = { __typename?: 'Query', getPracticeQuizEvaluation?: never | null };
+export type GetPracticeQuizEvaluationQuery = { __typename?: 'Query', getPracticeQuizEvaluation?: { __typename?: 'ActivityEvaluation', id: string, name: string, displayName?: string | null, description?: string | null, results: Array<{ __typename?: 'StackEvaluation', stackId: number, stackName?: string | null, stackDescription?: string | null, stackOrder: number, instances: Array<{ __typename?: 'ChoicesElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ChoicesElementResults', totalAnswers: number, choices: Array<{ __typename?: 'ChoiceElementResults', value: string, count: number, correct?: boolean | null, feedback?: string | null }> } } | { __typename?: 'ContentElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'ContentElementResults', totalAnswers: number } } | { __typename?: 'FlashcardElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FlashcardElementResults', totalAnswers: number, correctCount: number, partialCount: number, incorrectCount: number } } | { __typename?: 'FreeElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'FreeElementResults', totalAnswers: number, maxLength?: number | null, responses: Array<{ __typename?: 'FreeElementResult', value: string, correct?: boolean | null, count: number }> } } | { __typename?: 'NumericalElementInstanceEvaluation', id: number, type: ElementType, name: string, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, results: { __typename?: 'NumericalElementResults', totalAnswers: number, maxValue?: number | null, minValue?: number | null, responses: Array<{ __typename?: 'NumericalElementResult', value: string, correct?: boolean | null, count: number }> } }> }> } | null };
 
 export type GetPracticeQuizListQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3731,7 +3733,6 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
-    "ActivityEvaluation": [],
     "ElementData": [
       "ChoicesElementData",
       "ContentElementData",
@@ -3752,8 +3753,7 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       "FlashcardElementQData",
       "FreeTextQuestionData",
       "NumericalQuestionData"
-    ],
-    "StackEvaluation": []
+    ]
   }
 };
       export default result;

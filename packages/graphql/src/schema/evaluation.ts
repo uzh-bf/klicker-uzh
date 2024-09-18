@@ -111,7 +111,7 @@ export const FlashcardCorrectness = builder.enumType('FlashcardCorrectness', {
 
 // ----- ACTIVITY EVALUATION INTERFACE -----
 export const ActivityEvaluationRef =
-  builder.interfaceRef<IActivityEvaluation>('ActivityEvaluation')
+  builder.objectRef<IActivityEvaluation>('ActivityEvaluation')
 export const ActivityEvaluation = ActivityEvaluationRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -126,7 +126,7 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
 
 // ----- STACK EVALUATION INTERFACE -----
 export const StackEvaluationRef =
-  builder.interfaceRef<IStackEvaluation>('StackEvaluation')
+  builder.objectRef<IStackEvaluation>('StackEvaluation')
 export const StackEvaluation = StackEvaluationRef.implement({
   fields: (t) => ({
     stackId: t.exposeInt('stackId'),
