@@ -111,6 +111,7 @@ export default {
       home: 'Home',
       questions: 'Questions',
       question: 'Question',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',

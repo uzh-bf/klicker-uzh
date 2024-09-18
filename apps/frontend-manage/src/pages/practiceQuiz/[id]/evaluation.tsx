@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
 import Layout from '@components/Layout'
 import { GetPracticeQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -31,12 +32,11 @@ function PracticeQuizEvaluation() {
   }
 
   const evaluation = data?.getPracticeQuizEvaluation
-
   return (
-    <div>
-      <div>Practice Quiz Evaluation</div>
-      <div>{evaluation?.displayName}</div>
-    </div>
+    <ActivityEvaluation
+      activityName={evaluation?.displayName ?? ''}
+      stacks={evaluation?.results ?? []}
+    />
   )
 }
 
