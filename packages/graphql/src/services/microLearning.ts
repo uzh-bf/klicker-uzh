@@ -350,6 +350,8 @@ export async function publishMicroLearning(
     },
   })
 
+  ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+
   return microLearning
 }
 
@@ -377,6 +379,8 @@ export async function unpublishMicroLearning(
       },
     },
   })
+
+  ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
 
   return microLearning
 }

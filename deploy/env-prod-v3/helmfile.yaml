@@ -111,6 +111,8 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
+          replicaCount: 4
+
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
