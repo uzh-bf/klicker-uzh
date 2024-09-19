@@ -205,7 +205,7 @@ export function initializeApollo(
 
 export function addApolloState(
   client: ApolloClient<NormalizedCacheObject>,
-  pageProps: Omit<PageProps, '__APOLLO_STATE__'>
+  pageProps: Omit<PageProps, '__APOLLO_STATE__'> & { revalidate?: number }
 ) {
   if (pageProps?.props) {
     pageProps.props[APOLLO_STATE_PROP_NAME] = client.cache.extract()

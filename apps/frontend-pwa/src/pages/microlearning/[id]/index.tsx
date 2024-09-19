@@ -12,17 +12,32 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetStaticPaths, GetStaticPropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Layout from '../../../components/Layout'
 
-function MicrolearningIntroduction({ id }: { id: string }) {
+function MicrolearningIntroduction({
+  id,
+  participantToken,
+  cookiesAvailable,
+}: {
+  id: string
+  participantToken?: string
+  cookiesAvailable?: boolean
+}) {
   const t = useTranslations()
   const router = useRouter()
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
 
   const { loading, error, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
@@ -150,7 +165,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
   )
 }
 
-export async function getStaticProps(ctx: GetStaticPropsContext) {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.id !== 'string') {
     return {
       redirect: {
@@ -162,17 +177,19 @@ export async function getStaticProps(ctx: GetStaticPropsContext) {
 
   const apolloClient = initializeApollo()
 
-  try {
-    await apolloClient.query({
-      query: GetMicroLearningDocument,
-      variables: { id: ctx.params.id },
-    })
-  } catch (e) {
-    console.error(e)
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/404',
-        permanent: false,
+      props: {
+        participantToken,
+        cookiesAvailable,
+        id: ctx.params.id,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }
@@ -180,17 +197,11 @@ export async function getStaticProps(ctx: GetStaticPropsContext) {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      courseId: ctx.params.courseId,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
   })
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
 }
 
 export default MicrolearningIntroduction
