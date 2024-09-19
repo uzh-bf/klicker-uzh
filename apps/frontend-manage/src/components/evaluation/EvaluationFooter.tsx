@@ -4,7 +4,7 @@ import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   ACTIVE_CHART_TYPES,
-  CHART_TYPE,
+  ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -21,8 +21,8 @@ interface EvaluationFooterProps {
   }>
   showSolution: boolean
   setShowSolution: (newValue: boolean) => void
-  chartType: CHART_TYPE
-  setChartType: (newValue: CHART_TYPE) => void
+  chartType: ChartType
+  setChartType: (newValue: ChartType) => void
 }
 
 function EvaluationFooter({
@@ -97,7 +97,7 @@ function EvaluationFooter({
                 }
               })}
               value={chartType}
-              onChange={(newValue: CHART_TYPE) => setChartType(newValue)}
+              onChange={(newValue: ChartType) => setChartType(newValue)}
               data={{ cy: 'change-chart-type' }}
             />
           </div>

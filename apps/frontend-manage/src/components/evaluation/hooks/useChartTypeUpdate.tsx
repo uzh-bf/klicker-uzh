@@ -1,15 +1,15 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import {
   ACTIVE_CHART_TYPES,
-  CHART_TYPE,
+  ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
 import { useEffect } from 'react'
 
 interface UseChartTypeUpdateProps {
   activeInstance: number
   activeElementType: ElementType
-  chartType: CHART_TYPE
-  setChartType: (newType: CHART_TYPE) => void
+  chartType: ChartType
+  setChartType: (newType: ChartType) => void
 }
 
 function useChartTypeUpdate({

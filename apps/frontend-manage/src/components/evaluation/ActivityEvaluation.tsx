@@ -3,7 +3,7 @@ import {
   TextSizes,
 } from '@components/sessions/evaluation/constants'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { CHART_TYPE } from '@klicker-uzh/shared-components/src/constants'
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useReducer, useState } from 'react'
@@ -26,7 +26,7 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
-  const [chartType, setChartType] = useState<CHART_TYPE>(CHART_TYPE.UNSET)
+  const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
   const instanceResults = stacks.flatMap((stack) => stack.instances)
@@ -68,29 +68,14 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <div>
-          <div>REMOVE THIS DIV</div>
-          <div>ACTIVE STACK: {activeStack}</div>
-          <div>ACTIVE INSTANCE: {activeInstance}</div>
-        </div>
         {typeof activeStack === 'number' && (
           <ElementEvaluation
             currentInstance={instanceResults[activeInstance]}
+            textSize={textSize}
+            chartType={chartType}
+            showSolution={showSolution}
           />
         )}
-        {/* {currentInstance &&
-      !showConfusion &&
-      !showFeedbacks &&
-      !showLeaderboard && (
-        <QuestionEvaluation
-          currentInstance={currentInstance}
-          selectedInstance={selectedInstance}
-          showSolution={showSolution}
-          textSize={textSize}
-          chartType={chartType}
-          totalParticipants={currentInstance.participants}
-        />
-      )} */}
 
         {/* {showLeaderboard && !showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
