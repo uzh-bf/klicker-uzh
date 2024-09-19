@@ -2,20 +2,27 @@ import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
-import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ACTIVE_CHART_TYPES,
+  CHART_TYPE,
+} from '@klicker-uzh/shared-components/src/constants'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { Dispatch } from 'react'
 import { ActiveStackType } from './ActivityEvaluation'
+import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
   currentInstance: ElementInstanceEvaluation
   activeStack: ActiveStackType
-  textSize: { size: string }
-  setTextSize: (action: { type: string }) => void
+  textSize: TextSizeType
+  setTextSize: Dispatch<{
+    type: string
+  }>
   showSolution: boolean
   setShowSolution: (newValue: boolean) => void
-  chartType: string
-  setChartType: (newValue: string) => void
+  chartType: CHART_TYPE
+  setChartType: (newValue: CHART_TYPE) => void
 }
 
 function EvaluationFooter({
@@ -90,7 +97,7 @@ function EvaluationFooter({
                 }
               })}
               value={chartType}
-              onChange={(newValue: string) => setChartType(newValue)}
+              onChange={(newValue: CHART_TYPE) => setChartType(newValue)}
               data={{ cy: 'change-chart-type' }}
             />
           </div>

@@ -1397,6 +1397,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      unset: 'Unset',
       noStatistics:
         'Because of missing answers, no statistics are available yet.',
       practiceQuizEvaluation: 'Practice Quiz Evaluation',

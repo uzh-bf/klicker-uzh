@@ -3,11 +3,14 @@ import {
   TextSizes,
 } from '@components/sessions/evaluation/constants'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { CHART_TYPE } from '@klicker-uzh/shared-components/src/constants'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ElementEvaluation from './ElementEvaluation'
 import EvaluationFooter from './EvaluationFooter'
+import useChartTypeUpdate from './hooks/useChartTypeUpdate'
 import useStackInstanceMap from './hooks/useStackInstanceMap'
 import EvaluationNavigation from './navigation/EvaluationNavigation'
 
@@ -23,13 +26,21 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
-  const [chartType, setChartType] = useState<string>('')
+  const [chartType, setChartType] = useState<CHART_TYPE>(CHART_TYPE.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
   const instanceResults = stacks.flatMap((stack) => stack.instances)
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
+
+  // update the chart type as soon as the active instance changes
+  useChartTypeUpdate({
+    activeInstance,
+    activeElementType: instanceResults[activeInstance].type,
+    chartType,
+    setChartType,
+  })
 
   return (
     <>
@@ -62,6 +73,11 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
           <div>ACTIVE STACK: {activeStack}</div>
           <div>ACTIVE INSTANCE: {activeInstance}</div>
         </div>
+        {typeof activeStack === 'number' && (
+          <ElementEvaluation
+            currentInstance={instanceResults[activeInstance]}
+          />
+        )}
         {/* {currentInstance &&
       !showConfusion &&
       !showFeedbacks &&
