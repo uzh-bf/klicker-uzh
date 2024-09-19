@@ -126,7 +126,16 @@ export const AVATAR_OPTIONS: Record<
   // body: ['breasts', 'chest'],
 }
 
-export type CHART_LABELS =
+export enum ChartType {
+  UNSET = 'unset',
+  BAR_CHART = 'barChart',
+  HISTOGRAM = 'histogram',
+  WORD_CLOUD = 'wordCloud',
+  TABLE = 'table',
+}
+
+export type ChartLabels =
+  | 'manage.evaluation.unset'
   | 'manage.evaluation.table'
   | 'manage.evaluation.wordCloud'
   | 'manage.evaluation.histogram'
@@ -134,32 +143,35 @@ export type CHART_LABELS =
 
 export const ACTIVE_CHART_TYPES: Record<
   ElementType,
-  { label: CHART_LABELS; value: string }[]
+  { label: ChartLabels; value: ChartType }[]
 > = {
   [ElementType.FreeText]: [
-    { label: 'manage.evaluation.table', value: 'table' },
-    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
   ],
   [ElementType.Numerical]: [
-    { label: 'manage.evaluation.histogram', value: 'histogram' },
-    { label: 'manage.evaluation.table', value: 'table' },
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.histogram', value: ChartType.HISTOGRAM },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
   ],
   [ElementType.Sc]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Mc]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Kprim]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
-  [ElementType.Flashcard]: [],
-  [ElementType.Content]: [],
+  [ElementType.Flashcard]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
+  [ElementType.Content]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
 }
 
 export const STATISTICS_ORDER: string[] = [

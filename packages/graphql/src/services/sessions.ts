@@ -2093,7 +2093,6 @@ export async function getSessionEvaluation(
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
-      // FIXME: ensure this can be assigned to AllElementTypeData
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.29...v3.2.0-alpha.30) (2024-09-19)
+
+
+### Features
+
+* add evaluation view for asynchronous activities ([#4265](https://github.com/uzh-bf/klicker-uzh/issues/4265)) ([2ea3b69](https://github.com/uzh-bf/klicker-uzh/commit/2ea3b6998279d07c67c044a2ef4549b32a3c40d5))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** make sure that practice quiz does not rerender every second due to time tracking ([#4266](https://github.com/uzh-bf/klicker-uzh/issues/4266)) ([533be1b](https://github.com/uzh-bf/klicker-uzh/commit/533be1b445b9de9e479261a090862c59711ebd9f))
+
 ## [3.2.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.28...v3.2.0-alpha.29) (2024-09-19)
 
 

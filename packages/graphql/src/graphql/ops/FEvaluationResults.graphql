@@ -1,0 +1,76 @@
+fragment EvaluationResults on ActivityEvaluation {
+  results {
+    stackId
+    stackName
+    stackDescription
+    stackOrder
+
+    instances {
+      id
+      type
+      name
+      content
+      explanation
+
+      hasSampleSolution
+      hasAnswerFeedbacks
+
+      ... on ChoicesElementInstanceEvaluation {
+        results {
+          totalAnswers
+          choices {
+            value
+            count
+            correct
+            feedback
+          }
+        }
+      }
+
+      ... on FreeElementInstanceEvaluation {
+        results {
+          totalAnswers
+          maxLength
+          solutions
+          responses {
+            value
+            correct
+            count
+          }
+        }
+      }
+
+      ... on NumericalElementInstanceEvaluation {
+        results {
+          totalAnswers
+          maxValue
+          minValue
+          solutionRanges {
+            min
+            max
+          }
+          responses {
+            value
+            correct
+            count
+          }
+        }
+      }
+
+      ... on FlashcardElementInstanceEvaluation {
+        results {
+          totalAnswers
+          correctCount
+          partialCount
+          incorrectCount
+        }
+      }
+
+      ... on ContentElementInstanceEvaluation {
+        results {
+          totalAnswers
+        }
+      }
+    }
+  }
+}

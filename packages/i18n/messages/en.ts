@@ -69,7 +69,6 @@ export default {
       enabled: 'Enabled',
       disabled: 'Disabled',
       download: 'Download',
-      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
@@ -112,6 +111,7 @@ export default {
       home: 'Home',
       questions: 'Questions',
       question: 'Question',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',
@@ -1397,8 +1397,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      unset: 'Unset',
       noStatistics:
         'Because of missing answers, no statistics are available yet.',
+      practiceQuizEvaluation: 'Practice Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'At the moment, the selected chart type is not supported for this element type.',
+      noFlashcardEvaluation:
+        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
+      noContentEvaluation:
+        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -1472,6 +1481,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
       gamificationFixed:
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+      openPreview: 'Open preview',
+      openEvaluation: 'Open evaluation',
     },
     course: {
       modifyCourse: 'Modify course',

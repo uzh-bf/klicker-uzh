@@ -30,6 +30,7 @@ import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
+import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
@@ -62,6 +63,7 @@ function MicroLearningElement({
   })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/microlearning/${microLearning.id}/`
+  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
 
@@ -248,6 +250,15 @@ function MicroLearningElement({
                       <MicroLearningPreviewLink
                         microLearning={microLearning}
                         href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
+                  {
+                    label: (
+                      <MicroLearningEvaluationLink
+                        quizName={microLearning.name}
+                        evaluationHref={evaluationHref}
                       />
                     ),
                     onClick: () => null,

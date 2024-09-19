@@ -28,6 +28,7 @@ import { WizardMode } from '../sessions/creation/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
+import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
@@ -138,6 +139,7 @@ function PracticeQuizElement({
   })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
+  const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
   const statusMap: Record<PublicationStatus, React.ReactElement> = {
     [PublicationStatus.Draft]: (
@@ -348,6 +350,15 @@ function PracticeQuizElement({
                       <PracticeQuizPreviewLink
                         practiceQuiz={practiceQuiz}
                         href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
+                  {
+                    label: (
+                      <PracticeQuizEvaluationLink
+                        quizName={practiceQuiz.name}
+                        evaluationHref={evaluationHref}
                       />
                     ),
                     onClick: () => null,
