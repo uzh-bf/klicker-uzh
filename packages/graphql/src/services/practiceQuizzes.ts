@@ -174,14 +174,20 @@ export function computeStackEvaluation(
           instanceType === ElementType.KPRIM
         ) {
           const instanceResults = instance.results as ElementResultsChoices
+          const anonymousInstanceResults =
+            instance.anonymousResults as ElementResultsChoices
           const choiceResults = instanceResults.choices
+          const anonymousChoiceResults = anonymousInstanceResults.choices
           const availableChoices = instance.elementData.options
             .choices as Choice[]
 
+          // combine anonymous and participant results into new format
           const choices = availableChoices.map((choice) => {
             return {
               value: choice.value,
-              count: choiceResults[choice.ix] ?? 0,
+              count:
+                (choiceResults[choice.ix] ?? 0) +
+                (anonymousChoiceResults[choice.ix] ?? 0),
               correct: choice.correct,
               feedback: choice.feedback,
             }
@@ -190,20 +196,41 @@ export function computeStackEvaluation(
           return {
             ...commonInstanceData,
             results: {
-              totalAnswers: instanceResults.total,
+              totalAnswers:
+                instanceResults.total + anonymousInstanceResults.total,
               choices,
             },
           }
         } else if (instanceType === ElementType.NUMERICAL) {
           const instanceResults = instance.results as ElementResultsOpen
+          const anonymousInstanceResults =
+            instance.anonymousResults as ElementResultsOpen
           const options = instance.elementData
             .options as NumericalQuestionOptions
+
+          // combine anonymous and participant results into new format
           const nrResponses = Object.values(instanceResults.responses)
+          Object.values(anonymousInstanceResults.responses).forEach(
+            (response) => {
+              const ix = nrResponses.findIndex(
+                (r) => r.value === response.value
+              )
+              if (ix === -1) {
+                nrResponses.push(response)
+              } else {
+                nrResponses[ix] = {
+                  ...nrResponses[ix]!,
+                  count: nrResponses[ix]!.count + response.count,
+                }
+              }
+            }
+          )
 
           return {
             ...commonInstanceData,
             results: {
-              totalAnswers: instanceResults.total,
+              totalAnswers:
+                instanceResults.total + anonymousInstanceResults.total,
               maxValue: options.restrictions?.max,
               minValue: options.restrictions?.min,
               solutionRanges: options.solutionRanges,
@@ -213,14 +240,34 @@ export function computeStackEvaluation(
           }
         } else if (instanceType === ElementType.FREE_TEXT) {
           const instanceResults = instance.results as ElementResultsOpen
+          const anonymousInstanceResults =
+            instance.anonymousResults as ElementResultsOpen
           const options = instance.elementData
             .options as FreeTextQuestionOptions
+
+          // combine anonymous and participant results into new format
           const ftResponses = Object.values(instanceResults.responses)
+          Object.values(anonymousInstanceResults.responses).forEach(
+            (response) => {
+              const ix = ftResponses.findIndex(
+                (r) => r.value === response.value
+              )
+              if (ix === -1) {
+                ftResponses.push(response)
+              } else {
+                ftResponses[ix] = {
+                  ...ftResponses[ix]!,
+                  count: ftResponses[ix]!.count + response.count,
+                }
+              }
+            }
+          )
 
           return {
             ...commonInstanceData,
             results: {
-              totalAnswers: instanceResults.total,
+              totalAnswers:
+                instanceResults.total + anonymousInstanceResults.total,
               maxLength: options.restrictions?.maxLength,
               solutions: options.solutions,
               responses: ftResponses,
@@ -228,21 +275,31 @@ export function computeStackEvaluation(
           }
         } else if (instanceType === ElementType.FLASHCARD) {
           const instanceResults = instance.results as FlashcardResults
+          const anonymousInstanceResults =
+            instance.anonymousResults as FlashcardResults
 
           return {
             ...commonInstanceData,
             results: {
-              totalAnswers: instanceResults.total,
-              correctCount: instanceResults[FlashcardCorrectness.CORRECT],
-              partialCount: instanceResults[FlashcardCorrectness.PARTIAL],
-              incorrectCount: instanceResults[FlashcardCorrectness.INCORRECT],
+              totalAnswers:
+                instanceResults.total + anonymousInstanceResults.total,
+              correctCount:
+                instanceResults[FlashcardCorrectness.CORRECT] +
+                anonymousInstanceResults[FlashcardCorrectness.CORRECT],
+              partialCount:
+                instanceResults[FlashcardCorrectness.PARTIAL] +
+                anonymousInstanceResults[FlashcardCorrectness.PARTIAL],
+              incorrectCount:
+                instanceResults[FlashcardCorrectness.INCORRECT] +
+                anonymousInstanceResults[FlashcardCorrectness.INCORRECT],
             },
           }
         } else if (instanceType === ElementType.CONTENT) {
           return {
             ...commonInstanceData,
             results: {
-              totalAnswers: instance.results.total,
+              totalAnswers:
+                instance.results.total + instance.anonymousResults.total,
             },
           }
         } else {

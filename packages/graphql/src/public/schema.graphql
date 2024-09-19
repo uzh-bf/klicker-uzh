@@ -849,16 +849,16 @@ type NumericalElementResult {
 }
 
 type NumericalElementResults {
-  maxValue: Int
-  minValue: Int
+  maxValue: Float
+  minValue: Float
   responses: [NumericalElementResult!]!
   solutionRanges: [NumericalElementSolutions!]!
   totalAnswers: Int!
 }
 
 type NumericalElementSolutions {
-  max: Int
-  min: Int
+  max: Float
+  min: Float
 }
 
 type NumericalQuestionData implements QuestionData {

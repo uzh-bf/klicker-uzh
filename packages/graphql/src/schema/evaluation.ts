@@ -237,8 +237,8 @@ export const NumericalElementResultsRef =
 export const NumericalElementResults = NumericalElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
-    maxValue: t.exposeInt('maxValue', { nullable: true }),
-    minValue: t.exposeInt('minValue', { nullable: true }),
+    maxValue: t.exposeFloat('maxValue', { nullable: true }),
+    minValue: t.exposeFloat('minValue', { nullable: true }),
     solutionRanges: t.expose('solutionRanges', {
       type: [NumericalElementSolutions],
     }),
@@ -254,8 +254,8 @@ export const NumericalElementSolutionsRef = builder.objectRef<
 export const NumericalElementSolutions = NumericalElementSolutionsRef.implement(
   {
     fields: (t) => ({
-      min: t.exposeInt('min', { nullable: true }),
-      max: t.exposeInt('max', { nullable: true }),
+      min: t.exposeFloat('min', { nullable: true }),
+      max: t.exposeFloat('max', { nullable: true }),
     }),
   }
 )

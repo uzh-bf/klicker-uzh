@@ -1555,8 +1555,8 @@ export type NumericalElementResult = {
 
 export type NumericalElementResults = {
   __typename?: 'NumericalElementResults';
-  maxValue?: Maybe<Scalars['Int']['output']>;
-  minValue?: Maybe<Scalars['Int']['output']>;
+  maxValue?: Maybe<Scalars['Float']['output']>;
+  minValue?: Maybe<Scalars['Float']['output']>;
   responses: Array<NumericalElementResult>;
   solutionRanges: Array<NumericalElementSolutions>;
   totalAnswers: Scalars['Int']['output'];
@@ -1564,8 +1564,8 @@ export type NumericalElementResults = {
 
 export type NumericalElementSolutions = {
   __typename?: 'NumericalElementSolutions';
-  max?: Maybe<Scalars['Int']['output']>;
-  min?: Maybe<Scalars['Int']['output']>;
+  max?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
 };
 
 export type NumericalQuestionData = QuestionData & {
