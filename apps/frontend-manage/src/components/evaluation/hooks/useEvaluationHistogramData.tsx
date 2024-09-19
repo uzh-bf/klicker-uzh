@@ -1,4 +1,7 @@
-import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementType,
+  NumericalElementInstanceEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useMemo } from 'react'
 
@@ -12,6 +15,10 @@ function useEvaluationHistogramData({
   binCount,
 }: UseEvaluationHistogramDataProps) {
   const histogramData = useMemo(() => {
+    if (instance.type !== ElementType.Numerical) {
+      return null
+    }
+
     const responses = instance.results.responses.map((response) => ({
       value: parseFloat(response.value),
       count: response.count,

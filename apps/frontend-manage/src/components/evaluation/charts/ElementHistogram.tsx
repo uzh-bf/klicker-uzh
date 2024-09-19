@@ -48,7 +48,7 @@ function ElementHistogram({
     binCount: parseInt(numBins),
   })
 
-  if (!supportedElementTypes.includes(instance.type)) {
+  if (!supportedElementTypes.includes(instance.type) || !processedData) {
     return (
       <UserNotification type="warning">
         {t('manage.evaluation.chartTypeNotSupported')}
