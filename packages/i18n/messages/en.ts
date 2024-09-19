@@ -1404,6 +1404,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'At the moment, the selected chart type is not supported for this element type.',
+      noFlashcardEvaluation:
+        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
+      noContentEvaluation:
+        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

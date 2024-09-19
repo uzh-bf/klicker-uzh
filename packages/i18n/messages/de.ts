@@ -1417,6 +1417,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
+      noFlashcardEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
+      noContentEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
