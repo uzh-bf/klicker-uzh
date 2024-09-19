@@ -1,9 +1,12 @@
 import {
   ElementInstanceEvaluation,
   ElementType,
+  FreeElementInstanceEvaluation,
+  NumericalElementInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { TagCloud } from 'react-tagcloud'
 
 interface ElementWordcloudProps {
   instance: ElementInstanceEvaluation
@@ -19,7 +22,13 @@ function ElementWordcloud({
   const t = useTranslations()
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
 
-  // TODO: data format conversion with custom hook and feed into table component
+  const processedData = supportedElementTypes.includes(instance.type)
+    ? (
+        instance as
+          | NumericalElementInstanceEvaluation
+          | FreeElementInstanceEvaluation
+      ).results.responses
+    : []
 
   if (!supportedElementTypes.includes(instance.type)) {
     return (
@@ -29,7 +38,17 @@ function ElementWordcloud({
     )
   }
 
-  return <div>WORDCLOUD CHART</div>
+  return (
+    <div className="flex h-full w-full p-4">
+      <TagCloud
+        colorOptions={{ luminosity: 'dark' }}
+        maxSize={textSize.max}
+        minSize={textSize.min}
+        shuffle={false}
+        tags={processedData}
+      />
+    </div>
+  )
 }
 
 export default ElementWordcloud
