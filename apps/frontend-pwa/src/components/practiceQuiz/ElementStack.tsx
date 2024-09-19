@@ -15,7 +15,7 @@ import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStud
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -55,7 +55,8 @@ function ElementStack({
   hideBookmark = false,
 }: ElementStackProps) {
   const t = useTranslations()
-  const timeSpent = useComponentVisibleCounter()
+  const timeRef = useRef(0)
+  useComponentVisibleCounter({ timeRef })
 
   const [respondToElementStack] = useMutation(RespondToElementStackDocument)
   const elementFeedbacks = useStackElementFeedbacks({
@@ -222,7 +223,7 @@ function ElementStack({
               variables: {
                 stackId: stack.id,
                 courseId: courseId,
-                stackAnswerTime: timeSpent,
+                stackAnswerTime: timeRef.current,
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
