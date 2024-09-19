@@ -58,8 +58,8 @@ export interface INumericalElementEvaluationResults {
   maxValue?: number | null
   minValue?: number | null
   solutionRanges: { min?: number | null; max?: number | null }[]
-  responses: {
-    value: string
+  responseValues: {
+    value: number
     count: number
     correct?: boolean | null
   }[]
@@ -242,7 +242,7 @@ export const NumericalElementResults = NumericalElementResultsRef.implement({
     solutionRanges: t.expose('solutionRanges', {
       type: [NumericalElementSolutions],
     }),
-    responses: t.expose('responses', {
+    responseValues: t.expose('responseValues', {
       type: [NumericalElementResult],
     }),
   }),
@@ -261,11 +261,11 @@ export const NumericalElementSolutions = NumericalElementSolutionsRef.implement(
 )
 
 export const NumericalElementResultRef = builder.objectRef<
-  INumericalElementEvaluationResults['responses'][0]
+  INumericalElementEvaluationResults['responseValues'][0]
 >('NumericalElementResult')
 export const NumericalElementResult = NumericalElementResultRef.implement({
   fields: (t) => ({
-    value: t.exposeString('value'),
+    value: t.exposeFloat('value'),
     count: t.exposeInt('count'),
     correct: t.exposeBoolean('correct', { nullable: true }),
   }),

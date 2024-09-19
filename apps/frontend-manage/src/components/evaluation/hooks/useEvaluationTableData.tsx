@@ -31,7 +31,7 @@ function useEvaluationTableData({
   } else if (instance.type === ElementType.Numerical) {
     const results = (instance as NumericalElementInstanceEvaluation).results
 
-    return results.responses.map((response) => {
+    return results.responseValues.map((response) => {
       return {
         count: response.count,
         value: response.value,

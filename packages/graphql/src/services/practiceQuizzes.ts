@@ -210,14 +210,25 @@ export function computeStackEvaluation(
               .options as NumericalQuestionOptions
 
             // combine anonymous and participant results into new format
-            const nrResponses = Object.values(instanceResults.responses)
+            const nrResponses = Object.values(instanceResults.responses).map(
+              (response) => ({
+                value: parseFloat(response.value),
+                count: response.count,
+                correct: response.correct,
+              })
+            )
             Object.values(anonymousInstanceResults.responses).forEach(
               (response) => {
+                const responseValue = parseFloat(response.value)
                 const ix = nrResponses.findIndex(
-                  (r) => r.value === response.value
+                  (r) => Math.abs(r.value - responseValue) < Number.EPSILON
                 )
                 if (ix === -1) {
-                  nrResponses.push(response)
+                  nrResponses.push({
+                    value: responseValue,
+                    count: response.count,
+                    correct: response.correct,
+                  })
                 } else {
                   nrResponses[ix] = {
                     ...nrResponses[ix]!,
@@ -235,7 +246,7 @@ export function computeStackEvaluation(
                 maxValue: options.restrictions?.max,
                 minValue: options.restrictions?.min,
                 solutionRanges: options.solutionRanges,
-                responses: nrResponses,
+                responseValues: nrResponses,
                 // TODO: extend with statistics
               },
             }
