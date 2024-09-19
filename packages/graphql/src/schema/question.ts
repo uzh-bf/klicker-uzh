@@ -265,7 +265,7 @@ export const ElementInstance = ElementInstanceRef.implement({
 
     elementData: t.field({
       type: ElementDataRef,
-      resolve: (q) => q.elementData, // TODO: use something like this to resolve results?
+      resolve: (q) => q.elementData,
     }),
 
     options: t.expose('options', {
