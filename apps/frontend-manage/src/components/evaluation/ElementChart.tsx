@@ -1,4 +1,7 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementInstanceEvaluation,
+  NumericalElementInstanceEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import React from 'react'
@@ -34,7 +37,7 @@ function ElementChart({
   } else if (chartType === ChartType.HISTOGRAM) {
     return (
       <ElementHistogram
-        instance={instanceEvaluation}
+        instance={instanceEvaluation as NumericalElementInstanceEvaluation}
         showSolution={{ general: showSolution }}
         textSize={textSize.text}
       />
