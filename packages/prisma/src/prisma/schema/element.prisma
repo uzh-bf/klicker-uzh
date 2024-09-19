@@ -157,7 +157,7 @@ model ElementStack {
   originalId String? @unique
 
   type  ElementStackType
-  order Int?
+  order Int
 
   displayName String?
   description String?
