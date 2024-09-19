@@ -1415,6 +1415,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
       practiceQuizEvaluation: 'Übungs-Quiz Evaluation',
       microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

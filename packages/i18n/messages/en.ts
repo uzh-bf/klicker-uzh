@@ -1402,6 +1402,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Because of missing answers, no statistics are available yet.',
       practiceQuizEvaluation: 'Practice Quiz Evaluation',
       microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'At the moment, the selected chart type is not supported for this element type.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

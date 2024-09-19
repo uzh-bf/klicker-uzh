@@ -40,7 +40,7 @@ function ElementEvaluation({
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {currentInstance.type === ElementType.Sc && (
           <SCEvaluation
-            evaluation={currentInstance}
+            instanceEvaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}

@@ -73,7 +73,11 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
             currentInstance={instanceResults[activeInstance]}
             textSize={textSize}
             chartType={chartType}
-            showSolution={showSolution}
+            showSolution={
+              instanceResults[activeInstance].hasSampleSolution
+                ? showSolution
+                : false
+            }
           />
         )}
 

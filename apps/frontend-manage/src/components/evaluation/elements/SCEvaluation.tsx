@@ -1,18 +1,22 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesElementInstanceEvaluation,
+  ElementInstanceEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
-import Chart from '../Chart'
+import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
+import ChoicesSidebar from './ChoicesSidebar'
 
 interface SCEvaluationProps {
-  evaluation: ElementInstanceEvaluation
+  instanceEvaluation: ElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
 }
 
 function SCEvaluation({
-  evaluation,
+  instanceEvaluation,
   textSize,
   chartType,
   showSolution,
@@ -20,9 +24,9 @@ function SCEvaluation({
   return (
     <>
       <div className="order-2 flex-1 px-4 md:order-1">
-        <Chart
+        <ElementChart
           chartType={chartType}
-          data={currentInstance}
+          instanceEvaluation={instanceEvaluation}
           showSolution={showSolution}
           textSize={textSize}
         />
@@ -32,7 +36,13 @@ function SCEvaluation({
           'order-1 flex flex-none flex-col gap-2 border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
           textSize.text
         )}
-      ></div>
+      >
+        <ChoicesSidebar
+          instance={instanceEvaluation as ChoicesElementInstanceEvaluation}
+          textSize={textSize}
+          showSolution={showSolution}
+        />
+      </div>
     </>
   )
 }

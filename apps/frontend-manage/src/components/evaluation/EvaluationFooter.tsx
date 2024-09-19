@@ -79,11 +79,13 @@ function EvaluationFooter({
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}
             </div>
-            <Switch
-              checked={showSolution}
-              label={t('manage.evaluation.showSolution')}
-              onCheckedChange={(newValue) => setShowSolution(newValue)}
-            />
+            {currentInstance.hasSampleSolution && (
+              <Switch
+                checked={showSolution}
+                label={t('manage.evaluation.showSolution')}
+                onCheckedChange={(newValue) => setShowSolution(newValue)}
+              />
+            )}
             <Select
               contentPosition="popper"
               className={{
