@@ -18,7 +18,7 @@ function FTSidebar({ instance, textSize, showSolution }: FTSidebarProps) {
       </div>
       <ul>
         {instance.results.solutions?.map((keyword, innerIndex) => (
-          <li key={innerIndex}>{`- ${keyword}`}</li>
+          <li key={keyword}>{`- ${keyword}`}</li>
         ))}
       </ul>
     </div>
