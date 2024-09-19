@@ -1,7 +1,4 @@
-import {
-  ChoicesElementInstanceEvaluation,
-  ElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ChoicesElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import ElementChart from '../ElementChart'
@@ -9,7 +6,7 @@ import { TextSizeType } from '../textSizes'
 import ChoicesSidebar from './ChoicesSidebar'
 
 interface ChoicesEvaluationProps {
-  instanceEvaluation: ElementInstanceEvaluation
+  instanceEvaluation: ChoicesElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -38,7 +35,7 @@ function ChoicesEvaluation({
         )}
       >
         <ChoicesSidebar
-          instance={instanceEvaluation as ChoicesElementInstanceEvaluation}
+          instance={instanceEvaluation}
           textSize={textSize}
           showSolution={showSolution}
         />

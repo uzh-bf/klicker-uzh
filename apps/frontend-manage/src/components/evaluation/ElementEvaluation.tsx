@@ -1,6 +1,9 @@
 import {
+  ChoicesElementInstanceEvaluation,
   ElementInstanceEvaluation,
   ElementType,
+  FreeElementInstanceEvaluation,
+  NumericalElementInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   ChartType,
@@ -41,7 +44,9 @@ function ElementEvaluation({
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {QUESTION_GROUPS.CHOICES.includes(currentInstance.type) && (
           <ChoicesEvaluation
-            instanceEvaluation={currentInstance}
+            instanceEvaluation={
+              currentInstance as ChoicesElementInstanceEvaluation
+            }
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
@@ -49,14 +54,23 @@ function ElementEvaluation({
         )}
         {currentInstance.type === ElementType.Numerical && (
           <NREvaluation
-            instanceEvaluation={currentInstance}
+            instanceEvaluation={
+              currentInstance as NumericalElementInstanceEvaluation
+            }
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
           />
         )}
         {currentInstance.type === ElementType.FreeText && (
-          <FTEvaluation evaluation={currentInstance} />
+          <FTEvaluation
+            instanceEvaluation={
+              currentInstance as FreeElementInstanceEvaluation
+            }
+            textSize={textSize}
+            chartType={chartType}
+            showSolution={showSolution}
+          />
         )}
         {currentInstance.type === ElementType.Flashcard && (
           <FCEvaluation evaluation={currentInstance} />

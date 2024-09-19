@@ -1,7 +1,4 @@
-import {
-  ElementInstanceEvaluation,
-  NumericalElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import ElementChart from '../ElementChart'
@@ -9,7 +6,7 @@ import { TextSizeType } from '../textSizes'
 import NumericalSidebar from './NumericalSidebar'
 
 interface NREvaluationProps {
-  instanceEvaluation: ElementInstanceEvaluation
+  instanceEvaluation: NumericalElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -38,7 +35,7 @@ function NREvaluation({
         )}
       >
         <NumericalSidebar
-          instance={instanceEvaluation as NumericalElementInstanceEvaluation}
+          instance={instanceEvaluation}
           textSize={textSize}
           showSolution={showSolution}
         />
