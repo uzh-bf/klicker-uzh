@@ -8,19 +8,19 @@ import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import ChoicesSidebar from './ChoicesSidebar'
 
-interface SCEvaluationProps {
+interface ChoicesEvaluationProps {
   instanceEvaluation: ElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
 }
 
-function SCEvaluation({
+function ChoicesEvaluation({
   instanceEvaluation,
   textSize,
   chartType,
   showSolution,
-}: SCEvaluationProps) {
+}: ChoicesEvaluationProps) {
   return (
     <>
       <div className="order-2 flex-1 px-4 md:order-1">
@@ -47,4 +47,4 @@ function SCEvaluation({
   )
 }
 
-export default SCEvaluation
+export default ChoicesEvaluation

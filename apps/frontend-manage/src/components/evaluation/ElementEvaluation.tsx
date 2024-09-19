@@ -2,16 +2,17 @@ import {
   ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ChartType,
+  QUESTION_GROUPS,
+} from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import CTEvaluation from './elements/CTEvaluation'
+import ChoicesEvaluation from './elements/ChoicesEvaluation'
 import FCEvaluation from './elements/FCEvaluation'
 import FTEvaluation from './elements/FTEvaluation'
-import KPRIMEvaluation from './elements/KPRIMEvaluation'
-import MCEvaluation from './elements/MCEvaluation'
 import NREvaluation from './elements/NREvaluation'
 import QuestionCollapsible from './elements/QuestionCollapsible'
-import SCEvaluation from './elements/SCEvaluation'
 import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
@@ -38,19 +39,13 @@ function ElementEvaluation({
         />
       </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {currentInstance.type === ElementType.Sc && (
-          <SCEvaluation
+        {QUESTION_GROUPS.CHOICES.includes(currentInstance.type) && (
+          <ChoicesEvaluation
             instanceEvaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
           />
-        )}
-        {currentInstance.type === ElementType.Mc && (
-          <MCEvaluation evaluation={currentInstance} />
-        )}
-        {currentInstance.type === ElementType.Kprim && (
-          <KPRIMEvaluation evaluation={currentInstance} />
         )}
         {currentInstance.type === ElementType.Numerical && (
           <NREvaluation evaluation={currentInstance} />
