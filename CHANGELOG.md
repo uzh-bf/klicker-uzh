@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.28...v3.2.0-alpha.29) (2024-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** move microlearning index to server side props ([33d32cf](https://github.com/uzh-bf/klicker-uzh/commit/33d32cfdd2d6da90e1334f99b3894470ea14ba57))
+
 ## [3.2.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.27...v3.2.0-alpha.28) (2024-09-18)
 
 ## [3.2.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.26...v3.2.0-alpha.27) (2024-09-17)
