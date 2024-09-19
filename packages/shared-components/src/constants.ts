@@ -152,7 +152,6 @@ export const ACTIVE_CHART_TYPES: Record<
   [ElementType.Numerical]: [
     { label: 'manage.evaluation.histogram', value: ChartType.HISTOGRAM },
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
-    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
     { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
   ],
   [ElementType.Sc]: [

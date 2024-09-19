@@ -1,8 +1,6 @@
 import {
   ChoicesElementInstanceEvaluation,
   ElementInstanceEvaluation,
-  ElementType,
-  NumericalElementInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   QUESTION_GROUPS,
@@ -31,20 +29,6 @@ function useEvaluationBarChartData({
             ? choice.count
             : undefined,
         xLabel: String.fromCharCode(Number(idx) + 65),
-      }))
-    } else if (instance.type === ElementType.Numerical) {
-      const results = (instance as NumericalElementInstanceEvaluation).results
-      return results.responses.map((response, idx) => ({
-        count: response.count,
-        labelIn:
-          response.count / results.totalAnswers > SMALL_BAR_THRESHOLD
-            ? response.count
-            : undefined,
-        labelOut:
-          response.count / results.totalAnswers <= SMALL_BAR_THRESHOLD
-            ? response.count
-            : undefined,
-        xLabel: Math.round(parseFloat(response.value) * 100) / 100,
       }))
     } else {
       return []
