@@ -56,6 +56,7 @@ function useEvaluationTableColumns({
             />
           )
         },
+        className: 'w-10',
       },
       {
         header: numericValues
@@ -92,6 +93,7 @@ function useEvaluationTableColumns({
           const amount = parseFloat(row.getValue('percentage')) * 100
           return `${String(amount.toFixed())} %`
         },
+        className: 'w-8',
       },
       ...(showSolution
         ? [
@@ -113,6 +115,7 @@ function useEvaluationTableColumns({
                   return <FontAwesomeIcon icon={faX} className="text-red-600" />
                 return <>--</>
               },
+              className: 'w-8',
             },
           ]
         : []),

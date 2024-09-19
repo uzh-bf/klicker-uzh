@@ -28,6 +28,7 @@ import { twMerge } from 'tailwind-merge'
 interface DataTableProps<TData, TValue> {
   columns: (ColumnDef<TData, TValue> & {
     accessorKey: string
+    className?: string
     csvOnly?: boolean
   })[]
   data: TData[]
@@ -91,7 +92,10 @@ function DataTable<TData, TValue>({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  className={twMerge(className?.tableCell)}
+                  className={twMerge(
+                    className?.tableCell,
+                    columns.find((c) => c.accessorKey === header.id)?.className
+                  )}
                 >
                   {header.isPlaceholder
                     ? null
