@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react'
+import { MutableRefObject, useEffect, useState } from 'react'
 
-function useComponentVisibleCounter() {
+function useComponentVisibleCounter({
+  timeRef,
+}: {
+  timeRef: MutableRefObject<number>
+}) {
   const [inFocus, setInFocus] = useState(true)
-  const [timeSpent, setTimeSpent] = useState(0)
 
   // update time spent on stack if the stack is visible
   useEffect(() => {
     const timer = setInterval(() => {
       if (inFocus) {
-        setTimeSpent((current) => current + 1)
+        timeRef.current = timeRef.current + 1
       } else {
         clearInterval(timer)
       }
@@ -17,7 +20,7 @@ function useComponentVisibleCounter() {
     return () => {
       clearInterval(timer)
     }
-  }, [inFocus])
+  }, [inFocus, timeRef])
 
   // track if the current tab is in focus or not
   useEffect(() => {
@@ -30,8 +33,6 @@ function useComponentVisibleCounter() {
       window.removeEventListener('focus', handleFocus)
     }
   }, [])
-
-  return timeSpent
 }
 
 export default useComponentVisibleCounter
