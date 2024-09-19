@@ -12,6 +12,7 @@ import {
   ElementInstance,
   ElementInstanceType,
   ElementOrderType,
+  ElementStack,
   ElementStackType,
   ElementType,
   InstanceStatistics,
@@ -44,6 +45,7 @@ import {
 import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
+  Choice,
   ContentResults,
   ElementInstanceResults,
   ElementResultsChoices,
@@ -128,6 +130,238 @@ export async function getPracticeQuizData(
   }
 
   return quiz
+}
+
+export function computeStackEvaluation(
+  stacks: (ElementStack & { elements: ElementInstance[] })[]
+) {
+  return stacks.map((stack) => {
+    return {
+      stackId: stack.id!,
+      stackName: stack.displayName,
+      stackDescription: stack.description,
+      stackOrder: stack.order!,
+
+      instances: stack.elements.flatMap((instance) => {
+        let hasSampleSolution = false
+        let hasAnswerFeedbacks = false
+        const instanceType = instance.elementData.type
+
+        if (
+          instanceType !== ElementType.FLASHCARD &&
+          instanceType !== ElementType.CONTENT
+        ) {
+          hasSampleSolution =
+            instance.elementData.options.hasSampleSolution ?? false
+          hasAnswerFeedbacks =
+            instance.elementData.options.hasAnswerFeedbacks ?? false
+        }
+
+        const commonInstanceData = {
+          id: instance.id,
+          type: instanceType,
+          name: instance.elementData.name,
+          content: instance.elementData.content,
+          explanation: instance.elementData.explanation,
+
+          hasSampleSolution,
+          hasAnswerFeedbacks,
+        }
+
+        switch (instanceType) {
+          case ElementType.SC:
+          case ElementType.MC:
+          case ElementType.KPRIM: {
+            const instanceResults = instance.results as ElementResultsChoices
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsChoices
+            const choiceResults = instanceResults.choices
+            const anonymousChoiceResults = anonymousInstanceResults.choices
+            const availableChoices = instance.elementData.options
+              .choices as Choice[]
+
+            // combine anonymous and participant results into new format
+            const choices = availableChoices.map((choice) => {
+              return {
+                value: choice.value,
+                count:
+                  (choiceResults[choice.ix] ?? 0) +
+                  (anonymousChoiceResults[choice.ix] ?? 0),
+                correct: choice.correct,
+                feedback: choice.feedback,
+              }
+            })
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                choices,
+              },
+            }
+          }
+
+          case ElementType.NUMERICAL: {
+            const instanceResults = instance.results as ElementResultsOpen
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsOpen
+            const options = instance.elementData
+              .options as NumericalQuestionOptions
+
+            // combine anonymous and participant results into new format
+            const nrResponses = Object.values(instanceResults.responses)
+            Object.values(anonymousInstanceResults.responses).forEach(
+              (response) => {
+                const ix = nrResponses.findIndex(
+                  (r) => r.value === response.value
+                )
+                if (ix === -1) {
+                  nrResponses.push(response)
+                } else {
+                  nrResponses[ix] = {
+                    ...nrResponses[ix]!,
+                    count: nrResponses[ix]!.count + response.count,
+                  }
+                }
+              }
+            )
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                maxValue: options.restrictions?.max,
+                minValue: options.restrictions?.min,
+                solutionRanges: options.solutionRanges,
+                responses: nrResponses,
+                // TODO: extend with statistics
+              },
+            }
+          }
+
+          case ElementType.FREE_TEXT: {
+            const instanceResults = instance.results as ElementResultsOpen
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsOpen
+            const options = instance.elementData
+              .options as FreeTextQuestionOptions
+
+            // combine anonymous and participant results into new format
+            const ftResponses = Object.values(instanceResults.responses)
+            Object.values(anonymousInstanceResults.responses).forEach(
+              (response) => {
+                const ix = ftResponses.findIndex(
+                  (r) => r.value === response.value
+                )
+                if (ix === -1) {
+                  ftResponses.push(response)
+                } else {
+                  ftResponses[ix] = {
+                    ...ftResponses[ix]!,
+                    count: ftResponses[ix]!.count + response.count,
+                  }
+                }
+              }
+            )
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                maxLength: options.restrictions?.maxLength,
+                solutions: options.solutions,
+                responses: ftResponses,
+              },
+            }
+          }
+
+          case ElementType.FLASHCARD: {
+            const instanceResults = instance.results as FlashcardResults
+            const anonymousInstanceResults =
+              instance.anonymousResults as FlashcardResults
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                correctCount:
+                  instanceResults[FlashcardCorrectness.CORRECT] +
+                  anonymousInstanceResults[FlashcardCorrectness.CORRECT],
+                partialCount:
+                  instanceResults[FlashcardCorrectness.PARTIAL] +
+                  anonymousInstanceResults[FlashcardCorrectness.PARTIAL],
+                incorrectCount:
+                  instanceResults[FlashcardCorrectness.INCORRECT] +
+                  anonymousInstanceResults[FlashcardCorrectness.INCORRECT],
+              },
+            }
+          }
+
+          case ElementType.CONTENT: {
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instance.results.total + instance.anonymousResults.total,
+              },
+            }
+          }
+
+          default:
+            return []
+        }
+      }),
+    }
+  })
+}
+
+export async function getPracticeQuizEvaluation(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      status: PublicationStatus.PUBLISHED,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // compute evaluation
+  const stackEvaluation = computeStackEvaluation(practiceQuiz.stacks)
+
+  return {
+    id: practiceQuiz.id,
+    name: practiceQuiz.name,
+    displayName: practiceQuiz.displayName,
+    description: practiceQuiz.description,
+    results: stackEvaluation,
+  }
 }
 
 export async function getSinglePracticeQuiz(

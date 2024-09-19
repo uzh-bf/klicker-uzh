@@ -11,6 +11,7 @@ import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
 import { ElementFeedback } from './analytics.js'
 import { Course, LeaderboardEntry, StudentCourse } from './course.js'
+import { ActivityEvaluation } from './evaluation.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
 import {
@@ -278,6 +279,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPracticeQuizEvaluation: asUser.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+        },
+      }),
+
       microLearning: t.field({
         nullable: true,
         type: MicroLearning,
@@ -286,6 +298,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.getMicroLearningData(args, ctx)
+        },
+      }),
+
+      getMicroLearningEvaluation: asUser.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningEvaluation(args, ctx)
         },
       }),
 

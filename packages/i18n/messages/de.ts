@@ -69,7 +69,6 @@ export default {
       enabled: 'Aktiviert',
       disabled: 'Deaktiviert',
       download: 'Herunterladen',
-      open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
       yes: 'Ja',
@@ -112,6 +111,7 @@ export default {
       home: 'Home',
       questions: 'Fragen',
       question: 'Frage',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Erklärung',
@@ -1410,8 +1410,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloud: 'Word Cloud',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
+      unset: 'Nicht gesetzt',
       noStatistics:
         'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
+      practiceQuizEvaluation: 'Übungs-Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
+      noFlashcardEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
+      noContentEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -1491,6 +1500,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gamifizierung und Gruppenbildung werden für diesen Kurs aktiviert. Diese Einstellungen können nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte oder Teilnehmergruppen gebildet wurden. Wenn diese Optionen nicht initial aktiviert sind, können sie später aktiviert werden.',
       gamificationFixed:
         'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
+      openPreview: 'Vorschau öffnen',
+      openEvaluation: 'Evaluation öffnen',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',

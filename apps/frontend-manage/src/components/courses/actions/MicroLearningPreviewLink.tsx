@@ -23,7 +23,7 @@ function MicroLearningPreviewLink({
       data-cy={`open-microlearning-${microLearning.name}`}
     >
       <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
-      <div>{t('shared.generic.open')}</div>
+      <div>{t('manage.courseList.openPreview')}</div>
     </Link>
   )
 }
