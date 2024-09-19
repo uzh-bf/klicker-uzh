@@ -40,7 +40,10 @@ function ElementTableChart({
     ElementType.FreeText,
   ]
 
-  const columns = useEvaluationTableColumns({ showSolution })
+  const columns = useEvaluationTableColumns({
+    showSolution,
+    numericValues: instance.type === ElementType.Numerical,
+  })
   const tableData: EvaluationTableRowType[] = useEvaluationTableData({
     instance,
   })

@@ -1,27 +1,73 @@
-import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faSort,
+  faSortDown,
+  faSortUp,
+  faX,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
+import { Button } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
+  numericValues?: boolean
 }
 
 function useEvaluationTableColumns({
   showSolution,
+  numericValues = false,
 }: UseEvaluationTableColumnsProps) {
   const t = useTranslations()
+
+  const SortingButton = ({ column, title }: { column: any; title: string }) => {
+    return (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="h-7 !pl-0 hover:bg-transparent"
+      >
+        {title}
+        <FontAwesomeIcon
+          icon={
+            column.getIsSorted() === 'asc'
+              ? faSortUp
+              : column.getIsSorted() === 'desc'
+                ? faSortDown
+                : faSort
+          }
+          className="ml-2 h-3 w-3"
+        />
+      </Button>
+    )
+  }
 
   const columns = useMemo(
     () => [
       {
-        header: t('manage.evaluation.count'),
         accessorKey: 'count',
-        sortable: true,
+        header: ({ column }: any) => {
+          return (
+            <SortingButton
+              column={column}
+              title={t('manage.evaluation.count')}
+            />
+          )
+        },
       },
       {
-        header: t('manage.evaluation.value'),
+        header: numericValues
+          ? ({ column }: any) => {
+              return (
+                <SortingButton
+                  column={column}
+                  title={t('manage.evaluation.value')}
+                />
+              )
+            }
+          : t('manage.evaluation.value'),
         accessorKey: 'value',
         sortable: true,
         cell: ({ row }: any) => {
@@ -32,11 +78,14 @@ function useEvaluationTableColumns({
                 className={{ img: 'max-h-32' }}
               />
             )
+
           return row.getValue('value')
         },
       },
       {
-        header: '%',
+        header: ({ column }: any) => {
+          return <SortingButton column={column} title="%" />
+        },
         accessorKey: 'percentage',
         sortable: true,
         cell: ({ row }: any) => {
@@ -47,7 +96,9 @@ function useEvaluationTableColumns({
       ...(showSolution
         ? [
             {
-              header: 'T/F',
+              header: ({ column }: any) => {
+                return <SortingButton column={column} title="T/F" />
+              },
               accessorKey: 'correct',
               sortable: false,
               cell: ({ row }: any) => {

@@ -5,6 +5,8 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
 } from '@tanstack/react-table'
 import { Button } from '@uzh-bf/design-system'
@@ -19,7 +21,7 @@ import {
 } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import CsvDownloader from 'react-csv-downloader'
 import { twMerge } from 'tailwind-merge'
 
@@ -48,12 +50,15 @@ function DataTable<TData, TValue>({
   isPaginated,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
     state: {
       columnVisibility: columns.reduce<Record<string, boolean>>(
         (acc, column) => ({
@@ -62,6 +67,7 @@ function DataTable<TData, TValue>({
         }),
         {}
       ),
+      sorting,
     },
   })
 
