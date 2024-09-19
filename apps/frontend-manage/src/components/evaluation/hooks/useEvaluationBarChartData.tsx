@@ -44,7 +44,7 @@ function useEvaluationBarChartData({
           response.count / results.totalAnswers <= SMALL_BAR_THRESHOLD
             ? response.count
             : undefined,
-        xLabel: String.fromCharCode(Number(idx) + 65),
+        xLabel: Math.round(parseFloat(response.value) * 100) / 100,
       }))
     } else {
       return []

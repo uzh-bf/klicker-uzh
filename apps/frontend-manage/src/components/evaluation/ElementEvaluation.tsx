@@ -48,7 +48,12 @@ function ElementEvaluation({
           />
         )}
         {currentInstance.type === ElementType.Numerical && (
-          <NREvaluation evaluation={currentInstance} />
+          <NREvaluation
+            instanceEvaluation={currentInstance}
+            textSize={textSize}
+            chartType={chartType}
+            showSolution={showSolution}
+          />
         )}
         {currentInstance.type === ElementType.FreeText && (
           <FTEvaluation evaluation={currentInstance} />

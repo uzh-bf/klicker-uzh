@@ -57,6 +57,7 @@ export interface INumericalElementEvaluationResults {
   totalAnswers: number
   maxValue?: number | null
   minValue?: number | null
+  solutionRanges: { min?: number | null; max?: number | null }[]
   responses: {
     value: string
     count: number
@@ -72,6 +73,7 @@ export interface INumericalElementInstanceEvaluation
 export interface IFreeElementEvaluationResults {
   totalAnswers: number
   maxLength?: number | null
+  solutions?: string[] | null
   responses: {
     value: string
     count: number
@@ -161,6 +163,7 @@ export const ElementInstanceEvaluation = ElementInstanceEvaluationRef.implement(
         case DB.ElementType.KPRIM:
           return 'ChoicesElementInstanceEvaluation'
         case DB.ElementType.NUMERICAL:
+          return 'NumericalElementInstanceEvaluation'
         case DB.ElementType.FREE_TEXT:
           return 'FreeElementInstanceEvaluation'
         case DB.ElementType.FLASHCARD:
@@ -236,11 +239,26 @@ export const NumericalElementResults = NumericalElementResultsRef.implement({
     totalAnswers: t.exposeInt('totalAnswers'),
     maxValue: t.exposeInt('maxValue', { nullable: true }),
     minValue: t.exposeInt('minValue', { nullable: true }),
+    solutionRanges: t.expose('solutionRanges', {
+      type: [NumericalElementSolutions],
+    }),
     responses: t.expose('responses', {
       type: [NumericalElementResult],
     }),
   }),
 })
+
+export const NumericalElementSolutionsRef = builder.objectRef<
+  INumericalElementEvaluationResults['solutionRanges'][0]
+>('NumericalElementSolutions')
+export const NumericalElementSolutions = NumericalElementSolutionsRef.implement(
+  {
+    fields: (t) => ({
+      min: t.exposeInt('min', { nullable: true }),
+      max: t.exposeInt('max', { nullable: true }),
+    }),
+  }
+)
 
 export const NumericalElementResultRef = builder.objectRef<
   INumericalElementEvaluationResults['responses'][0]
@@ -274,6 +292,7 @@ export const FreeElementResults = FreeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
     maxLength: t.exposeInt('maxLength', { nullable: true }),
+    solutions: t.exposeStringList('solutions', { nullable: true }),
     responses: t.expose('responses', {
       type: [FreeElementResult],
     }),

@@ -206,6 +206,7 @@ export function computeStackEvaluation(
               totalAnswers: instanceResults.total,
               maxValue: options.restrictions?.max,
               minValue: options.restrictions?.min,
+              solutionRanges: options.solutionRanges,
               responses: nrResponses,
               // TODO: extend with statistics
             },
@@ -221,6 +222,7 @@ export function computeStackEvaluation(
             results: {
               totalAnswers: instanceResults.total,
               maxLength: options.restrictions?.maxLength,
+              solutions: options.solutions,
               responses: ftResponses,
             },
           }

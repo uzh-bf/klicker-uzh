@@ -1,4 +1,5 @@
 import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { TextSizeType } from '../sessions/evaluation/constants'
@@ -22,8 +23,7 @@ function ElementChart({
 }: ElementChartProps): React.ReactElement {
   const t = useTranslations()
 
-  if (chartType === 'table') {
-    // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
+  if (chartType === ChartType.TABLE) {
     return (
       <ElementTableChart
         instance={instanceEvaluation}
@@ -31,7 +31,7 @@ function ElementChart({
         textSize={textSize.textLg}
       />
     )
-  } else if (chartType === 'histogram') {
+  } else if (chartType === ChartType.HISTOGRAM) {
     return (
       <ElementHistogram
         instance={instanceEvaluation}
@@ -39,7 +39,7 @@ function ElementChart({
         textSize={textSize.text}
       />
     )
-  } else if (chartType === 'wordCloud') {
+  } else if (chartType === ChartType.WORD_CLOUD) {
     return (
       <ElementWordcloud
         instance={instanceEvaluation}
@@ -47,7 +47,7 @@ function ElementChart({
         textSize={{ min: textSize.min, max: textSize.max }}
       />
     )
-  } else if (chartType === 'barChart') {
+  } else if (chartType === ChartType.BAR_CHART) {
     return (
       <ElementBarChart
         instance={instanceEvaluation}

@@ -434,6 +434,7 @@ type FreeElementResult {
 type FreeElementResults {
   maxLength: Int
   responses: [FreeElementResult!]!
+  solutions: [String!]
   totalAnswers: Int!
 }
 
@@ -851,7 +852,13 @@ type NumericalElementResults {
   maxValue: Int
   minValue: Int
   responses: [NumericalElementResult!]!
+  solutionRanges: [NumericalElementSolutions!]!
   totalAnswers: Int!
+}
+
+type NumericalElementSolutions {
+  max: Int
+  min: Int
 }
 
 type NumericalQuestionData implements QuestionData {

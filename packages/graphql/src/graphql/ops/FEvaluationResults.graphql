@@ -31,6 +31,7 @@ fragment EvaluationResults on ActivityEvaluation {
         results {
           totalAnswers
           maxLength
+          solutions
           responses {
             value
             correct
@@ -44,6 +45,10 @@ fragment EvaluationResults on ActivityEvaluation {
           totalAnswers
           maxValue
           minValue
+          solutionRanges {
+            min
+            max
+          }
           responses {
             value
             correct
