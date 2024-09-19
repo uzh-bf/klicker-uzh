@@ -120,7 +120,7 @@ function useEvaluationTableColumns({
           ]
         : []),
     ],
-    [showSolution, t]
+    [showSolution, numericValues, t]
   )
 
   return columns

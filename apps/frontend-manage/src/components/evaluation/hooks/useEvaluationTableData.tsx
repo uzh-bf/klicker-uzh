@@ -29,6 +29,7 @@ function useEvaluationTableData({
       }
     })
   } else if (instance.type === ElementType.Numerical) {
+    // TODO: check why multiple identical numbers are treated as different values - e.g. 70 for Excel question
     const results = (instance as NumericalElementInstanceEvaluation).results
 
     return results.responseValues.map((response) => {
