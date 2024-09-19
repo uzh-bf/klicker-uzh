@@ -140,7 +140,7 @@ export function computeStackEvaluation(
       stackId: stack.id!,
       stackName: stack.displayName,
       stackDescription: stack.description,
-      stackOrder: stack.order!,
+      stackOrder: stack.order,
 
       instances: stack.elements.flatMap((instance) => {
         let hasSampleSolution = false
