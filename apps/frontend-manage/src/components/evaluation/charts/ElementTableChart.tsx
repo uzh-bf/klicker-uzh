@@ -1,11 +1,11 @@
+import DataTable from '@components/common/DataTable'
 import { faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Table, UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
@@ -56,7 +56,17 @@ function ElementTableChart({
   return (
     <div className="h-full overflow-y-auto">
       <div>
-        <Table
+        <DataTable
+          isPaginated
+          columns={columns}
+          data={tableData}
+          csvFilename={`${instance.name}_results`}
+          className={{
+            tableHeader: 'h-7 p-2',
+            tableCell: 'h-7 p-2',
+          }}
+        />
+        {/* <Table
           key={instance.id}
           forwardedRef={ref}
           data={tableData}
@@ -76,7 +86,7 @@ function ElementTableChart({
               ? 'desc'
               : undefined
           }
-        />
+        /> */}
 
         <Button
           onClick={() => ref.current?.reset()}

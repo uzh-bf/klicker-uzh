@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { EvaluationTableRowType } from '../charts/ElementTableChart'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
@@ -17,49 +16,49 @@ function useEvaluationTableColumns({
   const columns = useMemo(
     () => [
       {
-        label: t('manage.evaluation.count'),
-        accessor: 'count',
+        header: t('manage.evaluation.count'),
+        accessorKey: 'count',
         sortable: true,
       },
       {
-        label: t('manage.evaluation.value'),
-        accessor: 'value',
+        header: t('manage.evaluation.value'),
+        accessorKey: 'value',
         sortable: true,
-        formatter: ({ row }: { row: EvaluationTableRowType }) => {
-          if (typeof row['value'] === 'string')
+        cell: ({ row }: any) => {
+          if (typeof row.getValue('value') === 'string')
             return (
               <Markdown
-                content={row['value']}
+                content={row.getValue('value')}
                 className={{ img: 'max-h-32' }}
               />
             )
-          return row['value']
+          return row.getValue('value')
         },
       },
       {
-        label: '%',
-        accessor: 'percentage',
+        header: '%',
+        accessorKey: 'percentage',
         sortable: true,
-        transformer: ({ row }: { row: EvaluationTableRowType }) =>
-          row['percentage'] * 100,
-        formatter: ({ row }: { row: EvaluationTableRowType }) =>
-          `${String(row['percentage'].toFixed())} %`,
+        cell: ({ row }: any) => {
+          const amount = parseFloat(row.getValue('percentage')) * 100
+          return `${String(amount.toFixed())} %`
+        },
       },
       ...(showSolution
         ? [
             {
-              label: 'T/F',
-              accessor: 'correct',
+              header: 'T/F',
+              accessorKey: 'correct',
               sortable: false,
-              formatter: ({ row }: { row: EvaluationTableRowType }) => {
-                if (row['correct'] === true)
+              cell: ({ row }: any) => {
+                if (row.getValue('correct') === true)
                   return (
                     <FontAwesomeIcon
                       icon={faCheck}
                       className="text-green-700"
                     />
                   )
-                if (row['correct'] === false)
+                if (row.getValue('correct') === false)
                   return <FontAwesomeIcon icon={faX} className="text-red-600" />
                 return <>--</>
               },
