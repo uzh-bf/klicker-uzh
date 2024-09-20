@@ -1,7 +1,5 @@
-// @ts-check
-
 /** @type {import("syncpack").RcFile} */
-const config = {
+export default {
   customTypes: {},
   dependencyTypes: [
     'dev',
@@ -15,7 +13,6 @@ const config = {
   filter: '.',
   indent: '  ',
   semverGroups: [],
-  semverRange: '',
   sortAz: [
     'dependencies',
     'devDependencies',
@@ -55,5 +52,3 @@ const config = {
   ],
   versionGroups: [],
 }
-
-module.exports = config
