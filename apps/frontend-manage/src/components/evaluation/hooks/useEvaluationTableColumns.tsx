@@ -10,24 +10,35 @@ import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
+  textSize: string
   numericValues?: boolean
 }
 
 function useEvaluationTableColumns({
   showSolution,
+  textSize,
   numericValues = false,
 }: UseEvaluationTableColumnsProps) {
   const t = useTranslations()
 
-  const SortingButton = ({ column, title }: { column: any; title: string }) => {
+  const SortingButton = ({
+    column,
+    title,
+    buttonTextSize,
+  }: {
+    column: any
+    title: string
+    buttonTextSize: string
+  }) => {
     return (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="h-7 !pl-0 hover:bg-transparent"
+        className={twMerge('h-7 !pl-0 hover:bg-transparent', buttonTextSize)}
       >
         {title}
         <FontAwesomeIcon
@@ -52,6 +63,7 @@ function useEvaluationTableColumns({
           return (
             <SortingButton
               column={column}
+              buttonTextSize={textSize}
               title={t('manage.evaluation.count')}
             />
           )
@@ -64,6 +76,7 @@ function useEvaluationTableColumns({
               return (
                 <SortingButton
                   column={column}
+                  buttonTextSize={textSize}
                   title={t('manage.evaluation.value')}
                 />
               )
@@ -84,20 +97,32 @@ function useEvaluationTableColumns({
       },
       {
         header: ({ column }: any) => {
-          return <SortingButton column={column} title="%" />
+          return (
+            <SortingButton
+              column={column}
+              buttonTextSize={textSize}
+              title="%"
+            />
+          )
         },
         accessorKey: 'percentage',
         cell: ({ row }: any) => {
           const amount = parseFloat(row.getValue('percentage')) * 100
           return `${String(amount.toFixed())} %`
         },
-        className: 'w-8',
+        className: 'w-20',
       },
       ...(showSolution
         ? [
             {
               header: ({ column }: any) => {
-                return <SortingButton column={column} title="T/F" />
+                return (
+                  <SortingButton
+                    column={column}
+                    buttonTextSize={textSize}
+                    title="T/F"
+                  />
+                )
               },
               accessorKey: 'correct',
               cell: ({ row }: any) => {
@@ -112,12 +137,12 @@ function useEvaluationTableColumns({
                   return <FontAwesomeIcon icon={faX} className="text-red-600" />
                 return <>--</>
               },
-              className: 'w-8',
+              className: 'w-14',
             },
           ]
         : []),
     ],
-    [showSolution, numericValues, t]
+    [showSolution, numericValues, textSize, t]
   )
 
   return columns

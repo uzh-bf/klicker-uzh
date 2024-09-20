@@ -6,6 +6,7 @@ import {
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
 import useEvaluationTableData from '../hooks/useEvaluationTableData'
 
@@ -40,6 +41,7 @@ function ElementTableChart({
 
   const columns = useEvaluationTableColumns({
     showSolution,
+    textSize,
     numericValues: instance.type === ElementType.Numerical,
   })
   const tableData: EvaluationTableRowType[] = useEvaluationTableData({
@@ -64,8 +66,8 @@ function ElementTableChart({
           data={tableData}
           csvFilename={`${instance.name}_results`}
           className={{
-            tableHeader: 'h-7 p-2',
-            tableCell: 'h-7 p-2',
+            tableHeader: twMerge('h-7 p-2', textSize),
+            tableCell: twMerge('h-7 p-2', textSize),
           }}
         />
       </div>
