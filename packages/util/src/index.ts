@@ -3,7 +3,7 @@ import {
   ElementType,
   type Element,
 } from '@klicker-uzh/prisma'
-import * as R from 'ramda'
+import { pick } from 'ramda'
 
 type ExtendedElement =
   | Pick<Element, (typeof RELEVANT_KEYS)[number]>
@@ -22,7 +22,7 @@ const RELEVANT_KEYS = [
   'options',
 ] as const
 
-const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
+const extractRelevantKeys = pick<any>(RELEVANT_KEYS)
 
 export function processQuestionData(question: Element): ExtendedElement {
   return {
