@@ -31,7 +31,7 @@ function ElementChart({
       <ElementTableChart
         instance={instanceEvaluation}
         showSolution={showSolution}
-        textSize={textSize.textLg}
+        textSize={textSize.text}
       />
     )
   } else if (chartType === ChartType.HISTOGRAM) {
