@@ -1,11 +1,9 @@
 import DataTable from '@components/common/DataTable'
-import { faRepeat } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
@@ -61,6 +59,7 @@ function ElementTableChart({
       <div>
         <DataTable
           isPaginated
+          isResetSortingEnabled
           columns={columns}
           data={tableData}
           csvFilename={`${instance.name}_results`}
@@ -69,17 +68,6 @@ function ElementTableChart({
             tableCell: 'h-7 p-2',
           }}
         />
-
-        <Button
-          onClick={() => ref.current?.reset()}
-          className={{ root: 'float-right' }}
-          data={{ cy: 'reset-table-chart-sorting' }}
-        >
-          <Button.Icon className={{ root: 'mr-1.5' }}>
-            <FontAwesomeIcon icon={faRepeat} />
-          </Button.Icon>
-          <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
-        </Button>
       </div>
     </div>
   )

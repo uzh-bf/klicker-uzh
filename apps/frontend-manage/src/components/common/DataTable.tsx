@@ -1,12 +1,12 @@
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
+import { faDownload, faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ColumnDef,
+  SortingState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
 } from '@tanstack/react-table'
 import { Button } from '@uzh-bf/design-system'
@@ -40,6 +40,7 @@ interface DataTableProps<TData, TValue> {
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
+  isResetSortingEnabled?: boolean
 }
 
 function DataTable<TData, TValue>({
@@ -49,6 +50,7 @@ function DataTable<TData, TValue>({
   className,
   footerContent,
   isPaginated,
+  isResetSortingEnabled,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
   const [sorting, setSorting] = useState<SortingState>([])
@@ -161,26 +163,35 @@ function DataTable<TData, TValue>({
           </CsvDownloader>
         )}
 
-        {isPaginated && (
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              {t('shared.table.previous')}
+        <div className="flex flex-row gap-2">
+          {isResetSortingEnabled && (
+            <Button onClick={() => setSorting([])}>
+              <FontAwesomeIcon icon={faRepeat} />
+              <div>{t('manage.evaluation.resetSorting')}</div>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              {t('shared.table.next')}
-            </Button>
-          </div>
-        )}
+          )}
+
+          {isPaginated && (
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                {t('shared.table.previous')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                {t('shared.table.next')}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   )
