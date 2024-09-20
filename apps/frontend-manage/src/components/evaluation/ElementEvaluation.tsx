@@ -20,6 +20,7 @@ import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
+  activeInstance: number
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -28,6 +29,7 @@ interface ElementEvaluationProps {
 
 function ElementEvaluation({
   currentInstance,
+  activeInstance,
   textSize,
   chartType,
   showSolution,
@@ -37,6 +39,7 @@ function ElementEvaluation({
     <div className={twMerge('flex h-full flex-col', className)}>
       <div className="flex-none">
         <QuestionCollapsible
+          activeInstance={activeInstance}
           currentInstance={currentInstance}
           proseSize={textSize.prose}
         />
