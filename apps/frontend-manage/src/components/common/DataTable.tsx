@@ -1,10 +1,12 @@
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
+import { faDownload, faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ColumnDef,
+  SortingState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import { Button } from '@uzh-bf/design-system'
@@ -19,13 +21,14 @@ import {
 } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import CsvDownloader from 'react-csv-downloader'
 import { twMerge } from 'tailwind-merge'
 
 interface DataTableProps<TData, TValue> {
   columns: (ColumnDef<TData, TValue> & {
     accessorKey: string
+    className?: string
     csvOnly?: boolean
   })[]
   data: TData[]
@@ -37,6 +40,7 @@ interface DataTableProps<TData, TValue> {
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
+  isResetSortingEnabled?: boolean
 }
 
 function DataTable<TData, TValue>({
@@ -46,14 +50,18 @@ function DataTable<TData, TValue>({
   className,
   footerContent,
   isPaginated,
+  isResetSortingEnabled,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
     state: {
       columnVisibility: columns.reduce<Record<string, boolean>>(
         (acc, column) => ({
@@ -62,6 +70,7 @@ function DataTable<TData, TValue>({
         }),
         {}
       ),
+      sorting,
     },
   })
 
@@ -85,7 +94,10 @@ function DataTable<TData, TValue>({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  className={twMerge(className?.tableCell)}
+                  className={twMerge(
+                    className?.tableCell,
+                    columns.find((c) => c.accessorKey === header.id)?.className
+                  )}
                 >
                   {header.isPlaceholder
                     ? null
@@ -151,26 +163,35 @@ function DataTable<TData, TValue>({
           </CsvDownloader>
         )}
 
-        {isPaginated && (
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              {t('shared.table.previous')}
+        <div className="flex flex-row gap-2">
+          {isResetSortingEnabled && (
+            <Button onClick={() => setSorting([])}>
+              <FontAwesomeIcon icon={faRepeat} />
+              <div>{t('manage.evaluation.resetSorting')}</div>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              {t('shared.table.next')}
-            </Button>
-          </div>
-        )}
+          )}
+
+          {isPaginated && (
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                {t('shared.table.previous')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                {t('shared.table.next')}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   )

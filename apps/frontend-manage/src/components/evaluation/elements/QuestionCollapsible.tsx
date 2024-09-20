@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function QuestionCollapsible({
+  activeInstance,
   currentInstance,
   proseSize,
 }: {
+  activeInstance: number
   currentInstance: ElementInstanceEvaluation
   proseSize: string
 }) {
@@ -32,7 +34,7 @@ function QuestionCollapsible({
     }
 
     return () => setQuestionElem(null)
-  }, [questionCollapsed, questionElem])
+  }, [questionCollapsed, questionElem, activeInstance])
 
   const computedClassName = twMerge(
     questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',
@@ -48,14 +50,16 @@ function QuestionCollapsible({
       <div ref={(ref) => setQuestionElem(ref)} className={computedClassName}>
         <Prose
           className={{
-            root: twMerge(
-              'prose-p:m-0 prose-lg prose-img:m-0 max-w-full flex-initial leading-8',
-              proseSize
-            ),
+            root: 'max-w-full',
           }}
         >
           <Markdown
-            className={{ root: 'flex flex-row content-between' }}
+            className={{
+              root: twMerge(
+                'prose-p:m-0 prose-lg prose-img:m-0 flex flex-initial flex-row content-between leading-8',
+                proseSize
+              ),
+            }}
             content={currentInstance.content}
           />
         </Prose>

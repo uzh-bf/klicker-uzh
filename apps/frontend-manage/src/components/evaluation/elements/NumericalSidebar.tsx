@@ -16,7 +16,7 @@ function NumericalSidebar({
   const t = useTranslations()
 
   return (
-    <div>
+    <div className={textSize.textLg}>
       <div className="font-bold">
         {t('manage.evaluation.validSolutionRange')}:
       </div>
@@ -62,7 +62,7 @@ function NumericalSidebar({
         </UserNotification>
       )} */}
       {showSolution && instance.results.solutionRanges && (
-        <div>
+        <div className={textSize.textLg}>
           <div className="mt-4 font-bold">
             {t('manage.evaluation.correctSolutionRanges')}:
           </div>
