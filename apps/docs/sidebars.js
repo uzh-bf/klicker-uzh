@@ -28,7 +28,7 @@ module.exports = {
     ],
     Gamification: [
       'gamification/overview',
-      'gamification/points',
+      'gamification/grading_logic',
       'gamification/experience',
       'gamification/achievements',
       // 'gamification/awards',
