@@ -32,8 +32,8 @@
     "size-limit": "8.2.4",
     "tailwindcss": "3.4.9",
     "tailwindcss-radix": "3.0.3",
-    "tsup": "7.2.0",
-    "typescript": "5.4.5"
+    "tsup": "8.3.0",
+    "typescript": "5.6.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.6.0",

@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "@azure/service-bus": "7.9.0",
-    "@azure/storage-blob": "12.15.0",
+    "@azure/storage-blob": "12.24.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
@@ -50,7 +50,6 @@
     "@graphql-typed-document-node/core": "3.2.0",
     "@istanbuljs/nyc-config-typescript": "1.0.2",
     "@parcel/watcher": "2.2.0",
-    "@size-limit/preset-small-lib": "8.2.4",
     "@types/bcryptjs": "^2.4.2",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.3",
@@ -77,7 +76,6 @@
     "web-push": "3.6.7"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production run-s generate build:ts",
     "build:ts": "tsup --dts",
     "build:test": "run-s build:instrument build",

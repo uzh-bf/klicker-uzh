@@ -31,8 +31,8 @@
     "deepmerge": "4.3.1",
     "formik": "2.4.6",
     "generate-password": "1.7.0",
-    "graphql": "16.7.1",
-    "graphql-codegen-persisted-query-ids": "0.1.2",
+    "graphql": "16.9.0",
+    "graphql-codegen-persisted-query-ids": "0.2.0",
     "graphql-ws": "5.13.1",
     "js-cookie": "3.0.5",
     "jsonwebtoken": "9.0.2",
@@ -75,7 +75,7 @@
     "tailwindcss": "3.4.9",
     "tailwindcss-radix": "3.0.3",
     "ts-node": "10.9.1",
-    "typescript": "5.4.5",
+    "typescript": "5.6.2",
     "web-push": "3.6.7"
   },
   "scripts": {

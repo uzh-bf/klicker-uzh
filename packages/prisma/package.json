@@ -17,7 +17,6 @@
   "devDependencies": {
     "@klicker-uzh/transactional": "workspace:*",
     "@pothos/plugin-prisma": "3.60.0",
-    "@size-limit/preset-small-lib": "8.2.4",
     "@types/bcryptjs": "^2.4.2",
     "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
@@ -44,7 +43,6 @@
     "xml2js": "0.6.2"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "run-s generate build:copy",
     "build:copy": "node src/copy.cjs",
     "build:test": "pnpm run build",
@@ -83,8 +81,7 @@
     "seed:prod:flashcards": "ENV=development doppler run --config prd -- tsx src/data/seedFlashcards.ts",
     "seed:prod:repetitionPool": "ENV=development doppler run --config prd -- tsx src/data/seedRepetitionPool.ts",
     "seed:qa": "ENV=development doppler run --config stg -- tsx src/data/seedTEST.ts",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts",
-    "size": "size-limit"
+    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
   },
   "engines": {
     "node": "=20"
