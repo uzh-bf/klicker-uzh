@@ -22,13 +22,12 @@ function ElementWordcloud({
   const t = useTranslations()
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
 
-  const processedData = supportedElementTypes.includes(instance.type)
-    ? (
-        instance as
-          | NumericalElementInstanceEvaluation
-          | FreeElementInstanceEvaluation
-      ).results.responses
-    : []
+  const processedData =
+    instance.type === ElementType.Numerical
+      ? (instance as NumericalElementInstanceEvaluation).results.responseValues
+      : instance.type === ElementType.FreeText
+        ? (instance as FreeElementInstanceEvaluation).results.responses
+        : []
 
   if (!supportedElementTypes.includes(instance.type)) {
     return (

@@ -71,6 +71,7 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
         {typeof activeStack === 'number' && (
           <ElementEvaluation
             currentInstance={instanceResults[activeInstance]}
+            activeInstance={activeInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={

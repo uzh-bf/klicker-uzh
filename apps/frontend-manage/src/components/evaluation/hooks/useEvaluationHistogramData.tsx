@@ -19,8 +19,8 @@ function useEvaluationHistogramData({
       return null
     }
 
-    const responses = instance.results.responses.map((response) => ({
-      value: parseFloat(response.value),
+    const responses = instance.results.responseValues.map((response) => ({
+      value: response.value,
       count: response.count,
     }))
 

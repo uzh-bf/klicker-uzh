@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function QuestionCollapsible({
+  activeInstance,
   currentInstance,
   proseSize,
 }: {
+  activeInstance: number
   currentInstance: ElementInstanceEvaluation
   proseSize: string
 }) {
@@ -32,7 +34,7 @@ function QuestionCollapsible({
     }
 
     return () => setQuestionElem(null)
-  }, [questionCollapsed, questionElem])
+  }, [questionCollapsed, questionElem, activeInstance])
 
   const computedClassName = twMerge(
     questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',

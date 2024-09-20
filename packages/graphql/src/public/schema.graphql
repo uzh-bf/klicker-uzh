@@ -845,13 +845,13 @@ type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
 type NumericalElementResult {
   correct: Boolean
   count: Int!
-  value: String!
+  value: Float!
 }
 
 type NumericalElementResults {
   maxValue: Float
   minValue: Float
-  responses: [NumericalElementResult!]!
+  responseValues: [NumericalElementResult!]!
   solutionRanges: [NumericalElementSolutions!]!
   totalAnswers: Int!
 }

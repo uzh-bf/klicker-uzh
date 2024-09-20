@@ -1,13 +1,12 @@
-import { faRepeat } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import DataTable from '@components/common/DataTable'
 import {
   ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Table, UserNotification } from '@uzh-bf/design-system'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
 import useEvaluationTableData from '../hooks/useEvaluationTableData'
 
@@ -40,7 +39,11 @@ function ElementTableChart({
     ElementType.FreeText,
   ]
 
-  const columns = useEvaluationTableColumns({ showSolution })
+  const columns = useEvaluationTableColumns({
+    showSolution,
+    textSize,
+    numericValues: instance.type === ElementType.Numerical,
+  })
   const tableData: EvaluationTableRowType[] = useEvaluationTableData({
     instance,
   })
@@ -56,38 +59,17 @@ function ElementTableChart({
   return (
     <div className="h-full overflow-y-auto">
       <div>
-        <Table
-          key={instance.id}
-          forwardedRef={ref}
-          data={tableData}
+        <DataTable
+          isPaginated
+          isResetSortingEnabled
           columns={columns}
+          data={tableData}
+          csvFilename={`${instance.name}_results`}
           className={{
-            root: 'pb-4',
-            tableHeader: textSize,
-            body: `${textSize}`,
+            tableHeader: twMerge('h-7 p-2', textSize),
+            tableCell: twMerge('h-7 p-2', textSize),
           }}
-          defaultSortField={
-            !QUESTION_GROUPS.CHOICES.includes(instance.type)
-              ? 'count'
-              : undefined
-          }
-          defaultSortOrder={
-            !QUESTION_GROUPS.CHOICES.includes(instance.type)
-              ? 'desc'
-              : undefined
-          }
         />
-
-        <Button
-          onClick={() => ref.current?.reset()}
-          className={{ root: 'float-right' }}
-          data={{ cy: 'reset-table-chart-sorting' }}
-        >
-          <Button.Icon className={{ root: 'mr-1.5' }}>
-            <FontAwesomeIcon icon={faRepeat} />
-          </Button.Icon>
-          <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
-        </Button>
       </div>
     </div>
   )

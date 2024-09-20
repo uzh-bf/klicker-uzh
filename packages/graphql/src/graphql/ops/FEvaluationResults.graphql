@@ -49,7 +49,7 @@ fragment EvaluationResults on ActivityEvaluation {
             min
             max
           }
-          responses {
+          responseValues {
             value
             correct
             count

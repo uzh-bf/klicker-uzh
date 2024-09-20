@@ -13653,7 +13653,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "String",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -13696,7 +13696,7 @@
             "deprecationReason": null
           },
           {
-            "name": "responses",
+            "name": "responseValues",
             "description": null,
             "args": [],
             "type": {
