@@ -4,7 +4,7 @@ import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
-import ValidationPlugin from '@pothos/plugin-validation'
+import ZodPlugin from '@pothos/plugin-zod'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import './types/app'
@@ -14,6 +14,7 @@ import { Context, ContextWithUser } from './lib/context.js'
 const prisma = new PrismaClient({})
 
 const builder = new SchemaBuilder<{
+  DefaultFieldNullability: false
   Directives: {
     // TEMPLATE for future directives
     // oneOf: {
@@ -46,55 +47,56 @@ const builder = new SchemaBuilder<{
     }
   }
 }>({
-  authScopes: async (ctx) => ({
-    authenticated: !!ctx.user?.sub && ctx.user.scope !== UserLoginScope.OTP,
-    role: (role) => ctx.user?.role === role,
-    scope: (requiredScope) => {
-      switch (requiredScope) {
-        case UserLoginScope.ACCOUNT_OWNER:
-          return ctx?.user?.scope === UserLoginScope.ACCOUNT_OWNER
-
-        case UserLoginScope.FULL_ACCESS:
-          return (
-            typeof ctx?.user?.scope === 'string' &&
-            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
-              ctx.user.scope === UserLoginScope.FULL_ACCESS)
-          )
-
-        case UserLoginScope.SESSION_EXEC:
-          return (
-            typeof ctx?.user?.scope === 'string' &&
-            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
-              ctx.user.scope === UserLoginScope.FULL_ACCESS ||
-              ctx.user.scope === UserLoginScope.SESSION_EXEC)
-          )
-
-        case UserLoginScope.READ_ONLY:
-          return (
-            typeof ctx?.user?.scope === 'string' &&
-            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
-              ctx.user.scope === UserLoginScope.FULL_ACCESS ||
-              ctx.user.scope === UserLoginScope.SESSION_EXEC ||
-              ctx.user.scope === UserLoginScope.READ_ONLY)
-          )
-      }
-
-      return false
-    },
-    catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
-  }),
-  plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin, DirectivePlugin],
+  defaultFieldNullability: false,
+  plugins: [ScopeAuthPlugin, PrismaPlugin, ZodPlugin, DirectivePlugin],
   useGraphQLToolsUnorderedDirectives: true,
   prisma: {
     client: prisma,
     filterConnectionTotalCount: true,
   },
-  scopeAuthOptions: {
+  scopeAuth: {
     defaultStrategy: 'all',
     authorizeOnSubscribe: true,
     unauthorizedError: () => new GraphQLError('Unauthorized'),
+    authScopes: async (ctx) => ({
+      authenticated: !!ctx.user?.sub && ctx.user.scope !== UserLoginScope.OTP,
+      role: (role) => ctx.user?.role === role,
+      scope: (requiredScope) => {
+        switch (requiredScope) {
+          case UserLoginScope.ACCOUNT_OWNER:
+            return ctx?.user?.scope === UserLoginScope.ACCOUNT_OWNER
+
+          case UserLoginScope.FULL_ACCESS:
+            return (
+              typeof ctx?.user?.scope === 'string' &&
+              (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+                ctx.user.scope === UserLoginScope.FULL_ACCESS)
+            )
+
+          case UserLoginScope.SESSION_EXEC:
+            return (
+              typeof ctx?.user?.scope === 'string' &&
+              (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+                ctx.user.scope === UserLoginScope.FULL_ACCESS ||
+                ctx.user.scope === UserLoginScope.SESSION_EXEC)
+            )
+
+          case UserLoginScope.READ_ONLY:
+            return (
+              typeof ctx?.user?.scope === 'string' &&
+              (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+                ctx.user.scope === UserLoginScope.FULL_ACCESS ||
+                ctx.user.scope === UserLoginScope.SESSION_EXEC ||
+                ctx.user.scope === UserLoginScope.READ_ONLY)
+            )
+        }
+
+        return false
+      },
+      catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
+    }),
   },
-  validationOptions: {
+  zod: {
     validationError: (zodError, args, context, info) => {
       return new GraphQLError(
         zodError.issues.map((issue) => issue.message).join(', ')

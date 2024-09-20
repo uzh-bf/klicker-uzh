@@ -29,7 +29,6 @@
     "@prisma/nextjs-monorepo-workaround-plugin": "5.19.1",
     "cross-env": "7.0.3",
     "eslint-config-prettier": "9.1.0",
-    "husky": "8.0.3",
     "prettier": "3.3.3",
     "prettier-plugin-organize-imports": "4.0.0",
     "prettier-plugin-tailwindcss": "0.6.6",
