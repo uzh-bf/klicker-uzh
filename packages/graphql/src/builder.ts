@@ -49,12 +49,15 @@ const builder = new SchemaBuilder<{
 }>({
   defaultFieldNullability: false,
   plugins: [ScopeAuthPlugin, PrismaPlugin, ZodPlugin, DirectivePlugin],
-  useGraphQLToolsUnorderedDirectives: true,
   prisma: {
     client: prisma,
     filterConnectionTotalCount: true,
   },
+  directives: {
+    useGraphQLToolsUnorderedDirectives: true,
+  },
   scopeAuth: {
+    // @ts-expect-error 'all' seems not to be implemented with pothos v4?
     defaultStrategy: 'all',
     authorizeOnSubscribe: true,
     unauthorizedError: () => new GraphQLError('Unauthorized'),

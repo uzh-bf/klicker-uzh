@@ -7,7 +7,6 @@ import {
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
-import * as R from 'ramda'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
@@ -325,7 +324,11 @@ export async function prepareSession({
           blocks.map(async ({ questions, ...rest }) => {
             const questionData = await Promise.all(questions)
 
-            if (R.any(R.isNil, questionData)) {
+            if (
+              questionData.some(
+                (value) => value === null || typeof value === 'undefined'
+              )
+            ) {
               throw new Error('Invalid question data')
             }
 
@@ -357,7 +360,11 @@ export async function prepareSession({
           blocks.map(async ({ questions, ...rest }) => {
             const questionData = await Promise.all(questions)
 
-            if (R.any(R.isNil, questionData)) {
+            if (
+              questionData.some(
+                (value) => value === null || typeof value === 'undefined'
+              )
+            ) {
               throw new Error('Invalid question data')
             }
 
