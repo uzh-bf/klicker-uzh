@@ -5,7 +5,7 @@ module.exports = {
       'getting_started/core_concepts',
       'getting_started/migration',
     ],
-    'Tutorials for Lecturers': [
+    'Lecturer Application': [
       'tutorials/supported_element_types',
       'tutorials/element_management',
       'tutorials/course_management',
@@ -17,7 +17,7 @@ module.exports = {
       'tutorials/delegated_access',
       'tutorials/lti_integration',
     ],
-    'Tutorials for Participants': [
+    'Student Application': [
       'student_tutorials/student_accounts',
       'student_tutorials/klickeruzh_app',
       'student_tutorials/live_quiz',
