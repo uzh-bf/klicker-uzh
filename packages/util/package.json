@@ -21,7 +21,7 @@
     "typescript": "5.6.2"
   },
   "peerDependencies": {
-    "ramda": "0.29.0"
+    "remeda": "2.14.0"
   },
   "scripts": {
     "build": "run-s build:ts",

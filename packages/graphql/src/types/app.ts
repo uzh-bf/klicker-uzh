@@ -237,11 +237,9 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
   type: Type
   options: Options
   id: string
-  elementId: number | null // TODO - remove nullability
+  elementId?: number | null // TODO - remove nullability
   questionId?: number | null // TODO - remove questionId after migration
 }
-
-// export type FlashcardElementData = IElementData<'FLASHCARD', null>
 
 export type ChoicesElementData = IElementData<
   'SC' | 'MC' | 'KPRIM',

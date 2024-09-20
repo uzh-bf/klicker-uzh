@@ -24,6 +24,7 @@ import { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import {
+  AllElementTypeData,
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
 } from '../types/app.js'
@@ -118,7 +119,9 @@ export async function createSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(question)
+              const processedQuestionData = processQuestionData(
+                question
+              ) as AllElementTypeData
 
               return {
                 order: ix,
@@ -268,7 +271,9 @@ export async function editSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(question)
+              const processedQuestionData = processQuestionData(
+                question
+              ) as AllElementTypeData
 
               return {
                 order: ix,
