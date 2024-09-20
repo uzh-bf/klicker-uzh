@@ -16,7 +16,13 @@ export default {
     {
       range: '~',
       dependencyTypes: ['dev'],
-      dependencies: ['**'],
+      dependencies: ['!@types/**'],
+      packages: ['**'],
+    },
+    {
+      range: '^',
+      dependencyTypes: ['dev'],
+      dependencies: ['@types/**'],
       packages: ['**'],
     },
     {
