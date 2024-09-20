@@ -69,27 +69,6 @@ function ElementTableChart({
             tableCell: 'h-7 p-2',
           }}
         />
-        {/* <Table
-          key={instance.id}
-          forwardedRef={ref}
-          data={tableData}
-          columns={columns}
-          className={{
-            root: 'pb-4',
-            tableHeader: textSize,
-            body: `${textSize}`,
-          }}
-          defaultSortField={
-            !QUESTION_GROUPS.CHOICES.includes(instance.type)
-              ? 'count'
-              : undefined
-          }
-          defaultSortOrder={
-            !QUESTION_GROUPS.CHOICES.includes(instance.type)
-              ? 'desc'
-              : undefined
-          }
-        /> */}
 
         <Button
           onClick={() => ref.current?.reset()}

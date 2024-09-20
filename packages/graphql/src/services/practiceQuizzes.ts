@@ -210,33 +210,30 @@ export function computeStackEvaluation(
               .options as NumericalQuestionOptions
 
             // combine anonymous and participant results into new format
-            const nrResponses = Object.values(instanceResults.responses).map(
-              (response) => ({
-                value: parseFloat(response.value),
-                count: response.count,
-                correct: response.correct,
-              })
-            )
-            Object.values(anonymousInstanceResults.responses).forEach(
-              (response) => {
-                const responseValue = parseFloat(response.value)
-                const ix = nrResponses.findIndex(
-                  (r) => Math.abs(r.value - responseValue) < Number.EPSILON
-                )
-                if (ix === -1) {
-                  nrResponses.push({
-                    value: responseValue,
-                    count: response.count,
-                    correct: response.correct,
-                  })
-                } else {
-                  nrResponses[ix] = {
-                    ...nrResponses[ix]!,
-                    count: nrResponses[ix]!.count + response.count,
-                  }
+            const nrResponses = [
+              ...Object.values(instanceResults.responses),
+              ...Object.values(anonymousInstanceResults.responses),
+            ].reduce<
+              { value: number; count: number; correct?: boolean | null }[]
+            >((acc, response) => {
+              const responseValue = parseFloat(response.value)
+              const ix = acc.findIndex(
+                (r) => Math.abs(r.value - responseValue) < Number.EPSILON
+              )
+              if (ix === -1) {
+                acc.push({
+                  value: responseValue,
+                  count: response.count,
+                  correct: response.correct,
+                })
+              } else {
+                acc[ix] = {
+                  ...acc[ix]!,
+                  count: acc[ix]!.count + response.count,
                 }
               }
-            )
+              return acc
+            }, [])
 
             return {
               ...commonInstanceData,
@@ -260,22 +257,27 @@ export function computeStackEvaluation(
               .options as FreeTextQuestionOptions
 
             // combine anonymous and participant results into new format
-            const ftResponses = Object.values(instanceResults.responses)
-            Object.values(anonymousInstanceResults.responses).forEach(
-              (response) => {
-                const ix = ftResponses.findIndex(
-                  (r) => r.value === response.value
-                )
-                if (ix === -1) {
-                  ftResponses.push(response)
-                } else {
-                  ftResponses[ix] = {
-                    ...ftResponses[ix]!,
-                    count: ftResponses[ix]!.count + response.count,
-                  }
+            const ftResponses = [
+              ...Object.values(instanceResults.responses),
+              ...Object.values(anonymousInstanceResults.responses),
+            ].reduce<
+              { value: string; count: number; correct?: boolean | null }[]
+            >((acc, response) => {
+              const ix = acc.findIndex((r) => r.value === response.value)
+              if (ix === -1) {
+                acc.push({
+                  value: response.value,
+                  count: response.count,
+                  correct: response.correct,
+                })
+              } else {
+                acc[ix] = {
+                  ...acc[ix]!,
+                  count: acc[ix]!.count + response.count,
                 }
               }
-            )
+              return acc
+            }, [])
 
             return {
               ...commonInstanceData,

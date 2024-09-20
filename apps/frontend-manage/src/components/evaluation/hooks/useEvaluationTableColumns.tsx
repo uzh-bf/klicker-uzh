@@ -70,7 +70,6 @@ function useEvaluationTableColumns({
             }
           : t('manage.evaluation.value'),
         accessorKey: 'value',
-        sortable: true,
         cell: ({ row }: any) => {
           if (typeof row.getValue('value') === 'string')
             return (
@@ -88,7 +87,6 @@ function useEvaluationTableColumns({
           return <SortingButton column={column} title="%" />
         },
         accessorKey: 'percentage',
-        sortable: true,
         cell: ({ row }: any) => {
           const amount = parseFloat(row.getValue('percentage')) * 100
           return `${String(amount.toFixed())} %`
@@ -102,7 +100,6 @@ function useEvaluationTableColumns({
                 return <SortingButton column={column} title="T/F" />
               },
               accessorKey: 'correct',
-              sortable: false,
               cell: ({ row }: any) => {
                 if (row.getValue('correct') === true)
                   return (
