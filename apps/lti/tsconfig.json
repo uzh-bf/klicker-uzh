@@ -3,8 +3,6 @@
     "**/**/*"
   ],
   "compilerOptions": {
-    "baseUrl": ".",
-    "jsx": "react",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,14 +16,13 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    /* If NOT transpiling with TypeScript: */
-    "module": "preserve",
-    "noEmit": true,
-    /* If your code runs in the DOM: */
+    /* If transpiling with TypeScript: */
+    "module": "NodeNext",
+    "outDir": "dist",
+    "sourceMap": true,
+    /* If your code doesn't run in the DOM: */
     "lib": [
-      "es2022",
-      "dom",
-      "dom.iterable"
+      "es2022"
     ]
   }
 }

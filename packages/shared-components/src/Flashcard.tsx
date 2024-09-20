@@ -28,7 +28,7 @@ function Flashcard({
 }: FlashcardProps) {
   const t = useTranslations()
   const [isFlipped, setIsFlipped] = useState(
-    typeof existingResponse !== 'undefined' ?? false
+    typeof existingResponse !== 'undefined'
   )
 
   const handleFlip = () => {

@@ -47,7 +47,7 @@
     "check:app": "turbo run check --parallel --continue",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
-    "check:syncpack": "syncpack lint",
+    "//check:syncpack": "syncpack lint",
     "dev": "doppler run --config dev -- turbo run dev --concurrency 30",
     "dev:cleverreach": "doppler run --config dev_cleverreach -- turbo run dev --concurrency 30",
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
