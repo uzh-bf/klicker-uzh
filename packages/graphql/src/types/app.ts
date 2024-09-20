@@ -221,7 +221,7 @@ export interface BaseElementData {
   type: ElementType
 
   id: string
-  elementId: number | null // TODO - remove nullability
+  elementId?: number | null // TODO - remove nullability
   questionId?: number | null // TODO - remove questionId after migration
   name: string
   content: string

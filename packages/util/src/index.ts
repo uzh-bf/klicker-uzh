@@ -5,22 +5,6 @@ import {
 } from '@klicker-uzh/prisma'
 import { pick } from 'remeda'
 
-export type ProcessedQuestionData = Pick<
-  Element,
-  (typeof RELEVANT_KEYS)[number]
-> & {
-  id: string
-  questionId: number
-}
-
-export type ProcessedElementData = Pick<
-  Element,
-  (typeof RELEVANT_KEYS)[number]
-> & {
-  id: string
-  elementId: number
-}
-
 const RELEVANT_KEYS = [
   'name',
   'content',
@@ -30,7 +14,7 @@ const RELEVANT_KEYS = [
   'options',
 ] as const
 
-export function processQuestionData(question: Element): ProcessedQuestionData {
+export function processQuestionData(question: Element) {
   return {
     ...pick(question, RELEVANT_KEYS),
     id: `${question.id}-v${question.version}`,
@@ -62,8 +46,7 @@ const QUESTION_KEYS: ElementKeys[] = [
   'options',
 ]
 
-// TODO: add union type for return value as pick removes the properties
-export function processElementData(element: Element): ProcessedElementData {
+export function processElementData(element: Element) {
   if (element.type === ElementType.FLASHCARD) {
     return {
       ...pick(element, FLASHCARD_KEYS),

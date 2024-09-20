@@ -9,7 +9,7 @@ import { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { AllElementTypeData, DisplayMode } from '../types/app.js'
+import { DisplayMode } from '../types/app.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1244,10 +1244,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
         create: blockData.map(
           ({ questions, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questions.map((question, ix) => {
-              // typecast required to avoid circular dependency between graphql and util package
-              const processedQuestionData = processQuestionData(
-                question
-              ) as AllElementTypeData
+              const processedQuestionData = processQuestionData(question)
               return {
                 order: ix,
                 type: DB.QuestionInstanceType.SESSION,

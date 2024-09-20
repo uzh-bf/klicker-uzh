@@ -1631,9 +1631,6 @@ importers:
       nodemailer:
         specifier: 6.9.14
         version: 6.9.14
-      ramda:
-        specifier: 0.29.0
-        version: 0.29.0
       remeda:
         specifier: 2.14.0
         version: 2.14.0

@@ -32,7 +32,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
-import * as R from 'ramda'
+import { toLowerCase } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
@@ -1506,7 +1506,7 @@ export function updateQuestionResults({
         return { results: results, modified: false }
       }
 
-      const value = R.toLower(R.trim(response.value))
+      const value = toLowerCase(response.value.trim())
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
@@ -1847,7 +1847,7 @@ export async function respondToQuestion(
         }
         newAggResponses.total = newAggResponses.total + 1
       } else {
-        const value = R.toLower(R.trim(response.value!))
+        const value = toLowerCase(response.value!.trim())
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 

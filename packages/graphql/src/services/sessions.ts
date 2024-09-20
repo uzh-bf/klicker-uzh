@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import {
   AccessMode,
   ConfusionTimestep,
@@ -17,14 +15,12 @@ import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import * as R from 'ramda'
-import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
+import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
 import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import {
-  AllElementTypeData,
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
 } from '../types/app.js'
@@ -119,9 +115,7 @@ export async function createSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(
-                question
-              ) as AllElementTypeData
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
@@ -271,9 +265,7 @@ export async function editSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(
-                question
-              ) as AllElementTypeData
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
@@ -1004,7 +996,8 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed(
+        const results = mapValues(
+          omitBy(cacheObj, (_, key) => key === 'participants'),
           (count: number, responseHash: string) => {
             return {
               count: +count,
@@ -1012,8 +1005,7 @@ async function processCachedData({
                 acc[instance.id]['responseHashes'][responseHash] ??
                 responseHash,
             }
-          },
-          dissoc('participants', cacheObj)
+          }
         )
 
         return {
@@ -1322,9 +1314,9 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
                   ...questionData,
                   options: {
                     ...questionData.options,
-                    choices: questionData.options.choices.map(
-                      pick(['ix', 'value'])
-                    ),
+                    choices: questionData.options.choices.map((choice) => ({
+                      ...pick(choice, ['ix', 'value']),
+                    })),
                   },
                 },
               }
@@ -1420,13 +1412,11 @@ export async function getLeaderboard(
     }
   })
 
-  const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop('score')),
-    R.ascend(R.prop('username')),
-  ])
-
-  const sortedEntries: typeof preparedEntries =
-    sortByScoreAndUsername(preparedEntries)
+  const sortedEntries = sortBy(
+    preparedEntries,
+    [prop('score'), 'desc'],
+    [prop('username'), 'asc']
+  )
 
   const filteredEntries = sortedEntries.flatMap((entry, ix) => {
     return { ...entry, rank: ix + 1 }
@@ -2047,9 +2037,10 @@ export async function getSessionEvaluation(
       }
     )
 
-    activeInstanceResults = sortWith(
-      [ascend(prop('blockIx')), ascend(prop('instanceIx'))],
-      activeInstanceResults
+    activeInstanceResults = sortBy(
+      activeInstanceResults,
+      [prop('blockIx'), 'asc'],
+      [prop('instanceIx'), 'asc']
     )
   }
 

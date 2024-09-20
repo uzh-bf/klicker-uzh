@@ -1,6 +1,5 @@
 import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
-import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 
@@ -122,16 +121,18 @@ export async function getParticipations(
             },
           },
         },
+        orderBy: {
+          course: {
+            displayName: 'asc',
+          },
+        },
       },
     },
   })
 
   if (!participant) return []
 
-  return R.sort(
-    R.ascend(R.prop('course.displayName')),
-    participant.participations
-  )
+  return participant.participations
 }
 
 export async function getParticipation(
