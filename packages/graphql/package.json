@@ -2,7 +2,6 @@
   "name": "@klicker-uzh/graphql",
   "version": "3.2.0-alpha.31",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -77,15 +76,15 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s generate build:ts",
-    "build:ts": "tsup --dts",
-    "build:test": "run-s build:instrument build",
     "build:instrument": "nyc instrument --compact=false src instrumented",
+    "build:test": "run-s build:instrument build",
+    "build:ts": "tsup --dts",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:test": "pnpm run dev",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
     "dev:offline": "pnpm run dev",
+    "dev:test": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development doppler run --config dev -- tsx",
@@ -97,5 +96,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }

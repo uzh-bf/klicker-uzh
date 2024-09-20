@@ -1,6 +1,5 @@
 {
   "name": "@klicker-uzh/i18n",
-  "type": "module",
   "files": [
     "index.ts",
     "messages/"
@@ -13,5 +12,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }

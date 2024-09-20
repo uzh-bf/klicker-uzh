@@ -1,18 +1,31 @@
 /** @type {import("syncpack").RcFile} */
 export default {
-  customTypes: {},
-  dependencyTypes: [
-    'dev',
-    'local',
-    'overrides',
-    'peer',
-    'pnpmOverrides',
-    'prod',
-    'resolutions',
+  semverGroups: [
+    {
+      range: '',
+      dependencyTypes: [
+        'prod',
+        'resolutions',
+        'overrides',
+        'pnpmOverrides',
+        'local',
+      ],
+      dependencies: ['**'],
+      packages: ['**'],
+    },
+    {
+      range: '~',
+      dependencyTypes: ['dev'],
+      dependencies: ['**'],
+      packages: ['**'],
+    },
+    {
+      range: '^',
+      dependencyTypes: ['peer'],
+      dependencies: ['**'],
+      packages: ['**'],
+    },
   ],
-  filter: '.',
-  indent: '  ',
-  semverGroups: [],
   sortAz: [
     'dependencies',
     'devDependencies',
@@ -43,12 +56,11 @@ export default {
     'volta',
     'packageManager',
   ],
-  source: [
-    'package.json',
-    'apps/*/package.json',
-    'packages/*/package.json',
-    'cypress/package.json',
-    'docs/package.json',
-  ],
-  versionGroups: [],
+  // source: [
+  //   'package.json',
+  //   'apps/*/package.json',
+  //   'packages/*/package.json',
+  //   'cypress/package.json',
+  //   'docs/package.json',
+  // ],
 }

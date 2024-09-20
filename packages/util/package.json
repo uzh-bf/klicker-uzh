@@ -2,7 +2,6 @@
   "name": "@klicker-uzh/util",
   "version": "3.1.0",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -26,8 +25,8 @@
   },
   "scripts": {
     "build": "run-s build:ts",
-    "build:ts": "cross-env NODE_ENV=production tsup",
     "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production tsup",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
@@ -38,5 +37,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }

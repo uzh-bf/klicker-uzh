@@ -2,7 +2,6 @@
   "name": "@klicker-uzh/lti-service",
   "version": "3.1.2-rc.2",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -26,12 +25,12 @@
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "tsup",
     "check": "tsc --noEmit",
-    "dev:lti": "npm-run-all --parallel dev:build dev:run",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
     "dev:build": "tsup --watch",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
+    "dev:lti": "npm-run-all --parallel dev:build dev:run",
     "dev:offline": "pnpm run dev",
-    "dev:test": "cross-env NODE_ENV=test pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
+    "dev:test": "cross-env NODE_ENV=test pnpm run dev",
     "start": "node dist/index.js"
   },
   "engines": {
@@ -39,5 +38,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }

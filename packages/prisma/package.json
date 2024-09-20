@@ -2,15 +2,11 @@
   "name": "@klicker-uzh/prisma",
   "version": "3.2.0-alpha.31",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "peerDependencies": {
-    "@klicker-uzh/util": "workspace:*"
-  },
   "dependencies": {
     "@prisma/client": "5.19.1"
   },
@@ -42,6 +38,9 @@
     "uuidv4": "6.2.13",
     "xml2js": "0.6.2"
   },
+  "peerDependencies": {
+    "@klicker-uzh/util": "workspace:*"
+  },
   "scripts": {
     "build": "run-s generate build:copy",
     "build:copy": "node src/copy.cjs",
@@ -59,10 +58,10 @@
     "prisma:push:qa": "doppler run --config stg -- pnpm run prisma:push:raw",
     "prisma:push:raw": "prisma db push --schema=src/prisma/schema",
     "prisma:reset": "doppler run --config dev -- pnpm run prisma:reset:raw",
-    "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
     "prisma:reset:qa": "doppler run --config stg -- pnpm run prisma:reset:raw",
     "prisma:reset:raw": "prisma migrate reset --schema=src/prisma/schema --skip-seed",
     "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema",
+    "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
     "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema",
     "prisma:setup": "run-s prisma:reset prisma:push seed",
@@ -72,12 +71,12 @@
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema",
     "script": "ENV=development doppler run --config dev -- tsx",
-    "script:qa": "ENV=development doppler run --config stg -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
+    "script:qa": "ENV=development doppler run --config stg -- tsx",
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev tsx src/data/seedAchievements.ts",
-    "seed:prod:achievements": "ENV=production doppler run --config prd -- tsx src/data/seedAchievements.ts",
     "seed:flashcards": "ENV=development doppler run --config dev tsx src/data/seedFlashcards.ts",
+    "seed:prod:achievements": "ENV=production doppler run --config prd -- tsx src/data/seedAchievements.ts",
     "seed:prod:flashcards": "ENV=development doppler run --config prd -- tsx src/data/seedFlashcards.ts",
     "seed:prod:repetitionPool": "ENV=development doppler run --config prd -- tsx src/data/seedRepetitionPool.ts",
     "seed:qa": "ENV=development doppler run --config stg -- tsx src/data/seedTEST.ts",
@@ -91,5 +90,6 @@
   },
   "prisma": {
     "seed": "pnpm run seed"
-  }
+  },
+  "type": "module"
 }
