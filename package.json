@@ -26,7 +26,7 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@prisma/nextjs-monorepo-workaround-plugin": "5.18.0",
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.19.1",
     "cross-env": "7.0.3",
     "eslint-config-prettier": "9.1.0",
     "husky": "8.0.3",
