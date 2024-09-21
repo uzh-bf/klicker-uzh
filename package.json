@@ -53,7 +53,7 @@
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
     "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline --concurrency 30",
     "dev:test": "cross-env NODE_ENV=test turbo run dev:test",
     "format": "prettier --write . --config .prettierrc.mjs",
     "format:check": "prettier --check . --config .prettierrc.mjs",
