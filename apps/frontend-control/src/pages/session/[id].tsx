@@ -15,8 +15,8 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import * as R from 'ramda'
 import { useEffect, useState } from 'react'
+import { sort } from 'remeda'
 import Layout from '../../components/Layout'
 import SessionBlock from '../../components/sessions/SessionBlock'
 
@@ -55,9 +55,9 @@ function RunningSession() {
   useEffect(() => {
     if (!sessionData?.controlSession?.blocks) return
 
-    const sortedBlocks = R.sort(
-      (a, b) => a.order - b.order,
-      sessionData?.controlSession?.blocks
+    const sortedBlocks = sort(
+      sessionData?.controlSession?.blocks,
+      (a, b) => a.order - b.order
     )
 
     if (!sortedBlocks) return

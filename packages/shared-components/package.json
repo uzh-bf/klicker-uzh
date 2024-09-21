@@ -12,7 +12,6 @@
     "@types/js-cookie": "^3.0.3",
     "@types/lodash": "^4.14.196",
     "@types/node": "^20.16.1",
-    "@types/ramda": "^0.29.3",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "10.4.14",

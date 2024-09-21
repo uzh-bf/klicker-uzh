@@ -550,15 +550,15 @@ importers:
       nookies:
         specifier: 2.5.2
         version: 2.5.2
-      ramda:
-        specifier: 0.29.0
-        version: 0.29.0
       react:
         specifier: 18.3.1
         version: 18.3.1
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
+      remeda:
+        specifier: 2.14.0
+        version: 2.14.0
       sharp:
         specifier: 0.32.4
         version: 0.32.4
@@ -2029,9 +2029,6 @@ importers:
       '@types/node':
         specifier: ^20.16.1
         version: 20.16.1
-      '@types/ramda':
-        specifier: ^0.29.3
-        version: 0.29.12
       '@types/react':
         specifier: ^18.3.4
         version: 18.3.4

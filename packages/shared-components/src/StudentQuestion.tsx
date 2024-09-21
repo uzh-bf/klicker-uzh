@@ -7,7 +7,6 @@ import {
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { without } from 'ramda'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -103,7 +102,7 @@ export const StudentQuestion = ({
         }
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
-          const newInputValue = without([choice], inputValue)
+          const newInputValue = inputValue.filter((c) => c !== choice)
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
