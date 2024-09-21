@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
+import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
 import { ElementStackFormValues } from './WizardLayout'
@@ -50,7 +50,7 @@ function AddStackButton({
 
   return (
     <div className="flex flex-row gap-2">
-      {selection && !R.isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <div className="flex flex-col gap-1.5">
           <Button
             fluid

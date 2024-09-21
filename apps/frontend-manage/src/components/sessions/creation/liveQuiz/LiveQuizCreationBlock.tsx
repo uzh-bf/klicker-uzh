@@ -14,9 +14,9 @@ import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
+import { isEmpty, swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../../questions/Question'
 import {
@@ -204,20 +204,20 @@ function LiveQuizCreationBlock({
                     ) {
                       replace(index, {
                         ...block,
-                        questionIds: R.move(
+                        questionIds: swapIndices(
+                          block.questionIds,
                           questionIdx,
-                          questionIdx - 1,
-                          block.questionIds
+                          questionIdx - 1
                         ),
-                        titles: R.move(
+                        titles: swapIndices(
+                          block.titles,
                           questionIdx,
-                          questionIdx - 1,
-                          block.titles
+                          questionIdx - 1
                         ),
-                        types: R.move(
+                        types: swapIndices(
+                          block.types,
                           questionIdx,
-                          questionIdx - 1,
-                          block.types
+                          questionIdx - 1
                         ),
                       })
                     }
@@ -243,20 +243,20 @@ function LiveQuizCreationBlock({
                     ) {
                       replace(index, {
                         ...block,
-                        questionIds: R.move(
+                        questionIds: swapIndices(
+                          block.questionIds,
                           questionIdx,
-                          questionIdx + 1,
-                          block.questionIds
+                          questionIdx + 1
                         ),
-                        titles: R.move(
+                        titles: swapIndices(
+                          block.titles,
                           questionIdx,
-                          questionIdx + 1,
-                          block.titles
+                          questionIdx + 1
                         ),
-                        types: R.move(
+                        types: swapIndices(
+                          block.types,
                           questionIdx,
-                          questionIdx + 1,
-                          block.types
+                          questionIdx + 1
                         ),
                       })
                     }
@@ -297,7 +297,7 @@ function LiveQuizCreationBlock({
           )
         })}
       </div>
-      {selection && !R.isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <Button
           fluid
           className={{
