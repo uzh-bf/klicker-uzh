@@ -13,14 +13,13 @@
     "@sentry/node": "7.103.0",
     "ioredis": "5.4.1",
     "jsonwebtoken": "9.0.2",
-    "ramda": "0.29.0"
+    "remeda": "2.14.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.16.1",
-    "@types/ramda": "^0.29.3",
     "@uzh-bf/design-system": "3.0.0-alpha.29",
     "azure-functions-core-tools": "4.0.5907",
     "cross-env": "7.0.3",
