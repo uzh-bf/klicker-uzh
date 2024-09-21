@@ -28,119 +28,125 @@ jobs:
         with:
           version: 9.10.0
           run_install: true
-      - name: Build all required packages
+
+      - name: Build all packages and apps
         run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../graphql
-          pnpm run build
-          cd ../markdown
-          pnpm run build
-          cd ../shared-components
           pnpm run build
 
       - name: Check prisma package typescript types
         shell: bash
+        working-directory: packages/prisma
         run: |
-          cd packages/prisma
           pnpm run check
+
       - name: Check grading package typescript types
         if: always() # Run this step even if the previous one fails
         shell: bash
+        working-directory: packages/grading
         run: |
-          cd packages/grading
           pnpm run check
+
       - name: Check util package typescript types
         if: always() # Run this step even if the previous one fails
         shell: bash
+        working-directory: packages/util
         run: |
-          cd packages/util
           pnpm run check
+
       - name: Check graphql package typescript types
         if: always() # Run this step even if the previous one fails
         shell: bash
+        working-directory: packages/graphql
         run: |
-          cd packages/graphql
           pnpm run check
+
       - name: Check lti package typescript types
         if: always()
         shell: bash
+        working-directory: packages/lti
         run: |
-          cd packages/lti
           pnpm run check
+
       - name: Check shared-components package typescript types
         if: always()
         shell: bash
+        working-directory: packages/shared-components
         run: |
-          cd packages/shared-components
           pnpm run check
+
       - name: Check v2 export function typescript types
         if: always()
         shell: bash
+        working-directory: apps/func-migration-v2-export
         run: |
-          cd apps/func-migration-v2-export
           pnpm run check
+
       - name: Check v3 import function typescript types
         if: always()
         shell: bash
+        working-directory: apps/func-migration-v3-import
         run: |
-          cd apps/func-migration-v3-import
           pnpm run check
+
       - name: Check backend-docker typescript types
         if: always()
         shell: bash
+        working-directory: apps/backend-docker
         run: |
-          cd apps/backend-docker
           pnpm run check
+
       - name: Check frontend-pwa typescript types
         if: always()
         shell: bash
+        working-directory: apps/frontend-pwa
         run: |
-          cd apps/frontend-pwa
           pnpm run check
+
       - name: Check frontend-manage typescript types
         if: always()
         shell: bash
+        working-directory: apps/frontend-manage
         run: |
-          cd apps/frontend-manage
           pnpm run check
+
       - name: Check frontend-control typescript types
         if: always()
         shell: bash
+        working-directory: apps/frontend-control
         run: |
-          cd apps/frontend-control
           pnpm run check
+
       - name: Check frontend-auth typescript types
         if: always()
         shell: bash
+        working-directory: apps/auth
         run: |
-          cd apps/auth
           pnpm run check
+
       - name: Check office-addin typescript types
         if: always()
         shell: bash
+        working-directory: apps/office-addin
         run: |
-          cd apps/office-addin
           pnpm run check
+
       - name: Check func-response-processor typescript types
         if: always()
         shell: bash
+        working-directory: apps/func-response-processor
         run: |
-          cd apps/func-response-processor
           pnpm run check
+
       - name: Check func-incoming-responses typescript types
         if: always()
         shell: bash
+        working-directory: apps/func-incoming-responses
         run: |
-          cd apps/func-incoming-responses
           pnpm run check
+
       - name: Check apps/lti typescript types
         if: always()
         shell: bash
+        working-directory: apps/lti
         run: |
-          cd apps/lti
           pnpm run check
