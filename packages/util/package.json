@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.16.1",
-    "@types/ramda": "^0.29.3",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "eslint": "8.45.0",
