@@ -1,4 +1,4 @@
-import { any, equals, toLower, trim } from 'ramda'
+import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
   responseCount: number
@@ -30,7 +30,7 @@ export function gradeQuestionSC({
 }: GradeQuestionChoicesArgs): number | null {
   if (!solution || solution.length === 0) return null
 
-  if (equals(response, solution)) return 1
+  if (isDeepEqual(response, solution)) return 1
 
   return 0
 }
@@ -98,8 +98,8 @@ export function gradeQuestionNumerical({
     return true
   })
 
-  // if the response is within any of the solution ranges
-  if (any(Boolean, withinRanges)) return 1
+  // if the response is within one of the solution ranges
+  if (withinRanges.some((match) => match === true)) return 1
 
   // TODO: maybe incorporate distance from ranges for partial credit?
 
@@ -118,10 +118,10 @@ export function gradeQuestionFreeText({
   if (!solutions || solutions.length === 0) return null
 
   const matchingSolutions = solutions.map(
-    (solution) => toLower(trim(solution)) === toLower(trim(response))
+    (solution) => toLowerCase(solution.trim()) === toLowerCase(response.trim())
   )
 
-  if (any(Boolean, matchingSolutions)) return 1
+  if (matchingSolutions.some((match) => match === true)) return 1
 
   return 0
 }

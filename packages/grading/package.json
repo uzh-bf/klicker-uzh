@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "ramda": "0.29.0"
+    "remeda": "2.14.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",
