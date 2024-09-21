@@ -1,7 +1,5 @@
 {
-  "include": [
-    "**/**/*"
-  ],
+  "include": ["**/**/*"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
@@ -27,14 +25,8 @@
     "composite": true,
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */
-    "lib": [
-      "es2022"
-    ],
+    "lib": ["es2022"],
     "rootDir": "."
   },
-  "exclude": [
-    "src/prisma/client",
-    "src/scripts",
-    "dist"
-  ]
+  "exclude": ["src/prisma/client", "src/scripts", "dist"]
 }
