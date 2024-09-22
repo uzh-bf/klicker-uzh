@@ -701,7 +701,7 @@ export async function getCourseData(
         acc.activeLBEntries.push({
           id: entry.id,
           score: entry.score,
-          rank: acc.activeCount + 1,
+          rank: acc.activeCount,
           courseId: entry.courseId,
           level: levelFromXp(entry.participation!.participant.xp),
           email: entry.participation!.participant.email,

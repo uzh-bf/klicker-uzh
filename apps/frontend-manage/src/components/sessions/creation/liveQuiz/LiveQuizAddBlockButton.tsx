@@ -48,7 +48,7 @@ function LiveQuizAddBlockButton({
 
   return (
     <div className="flex flex-row gap-2">
-      {selection && isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <div className="flex flex-col gap-1.5">
           <Button
             fluid
