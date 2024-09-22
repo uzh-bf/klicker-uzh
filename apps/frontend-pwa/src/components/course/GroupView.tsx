@@ -203,14 +203,19 @@ function GroupView({
                   name="content"
                   label="Message"
                   className={{ input: 'text-sm' }}
+                  data={{ cy: 'group-message-textarea' }}
                 />
-                <Button type="submit" className={{ root: 'mt-2' }}>
+                <Button
+                  type="submit"
+                  className={{ root: 'mt-2' }}
+                  data={{ cy: 'group-message-submit' }}
+                >
                   {t('shared.generic.send')}
                 </Button>
               </Form>
             </Formik>
 
-            <div className="mt-4 flex flex-col gap-1">
+            <div className="mt-4 flex flex-col gap-1" data-cy="group-messages">
               {group.messages?.map((message) => (
                 <div
                   key={message.id}
