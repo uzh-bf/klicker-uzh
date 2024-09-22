@@ -176,47 +176,47 @@ function GroupView({
           />
         )}
 
-        {group.messages && group.messages.length > 0 && (
-          <div className="mt-4">
-            <H3 className={{ root: 'border-b pb-2' }}>
-              {t('shared.generic.groupMessages')}
-            </H3>
+        <div className="mt-4">
+          <H3 className={{ root: 'border-b pb-2' }}>
+            {t('shared.generic.groupMessages')}
+          </H3>
 
-            <Formik
-              initialValues={{
-                content: '',
-              }}
-              onSubmit={async (values) => {
-                await addMessageToGroup({
-                  variables: { groupId: group.id, content: values.content },
-                  refetchQueries: [
-                    {
-                      query: GetCourseOverviewDataDocument,
-                      variables: { courseId },
-                    },
-                  ],
-                })
-              }}
-            >
-              <Form>
-                <FormikTextareaField
-                  name="content"
-                  label="Message"
-                  className={{ input: 'text-sm' }}
-                  data={{ cy: 'group-message-textarea' }}
-                />
-                <Button
-                  type="submit"
-                  className={{ root: 'mt-2' }}
-                  data={{ cy: 'group-message-submit' }}
-                >
-                  {t('shared.generic.send')}
-                </Button>
-              </Form>
-            </Formik>
+          <Formik
+            initialValues={{
+              content: '',
+            }}
+            onSubmit={async (values) => {
+              await addMessageToGroup({
+                variables: { groupId: group.id, content: values.content },
+                refetchQueries: [
+                  {
+                    query: GetCourseOverviewDataDocument,
+                    variables: { courseId },
+                  },
+                ],
+              })
+            }}
+          >
+            <Form>
+              <FormikTextareaField
+                name="content"
+                label="Message"
+                className={{ input: 'text-sm' }}
+                data={{ cy: 'group-message-textarea' }}
+              />
+              <Button
+                type="submit"
+                className={{ root: 'mt-2' }}
+                data={{ cy: 'group-message-submit' }}
+              >
+                {t('shared.generic.send')}
+              </Button>
+            </Form>
+          </Formik>
 
+          {group.messages && group.messages.length > 0 && (
             <div className="mt-4 flex flex-col gap-1" data-cy="group-messages">
-              {group.messages?.map((message) => (
+              {group.messages.map((message) => (
                 <div
                   key={message.id}
                   className="flex flex-row justify-between gap-4 border-b pb-1 pt-1 last:border-0"
@@ -254,8 +254,8 @@ function GroupView({
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Tabs.TabContent>
   )
