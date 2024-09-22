@@ -621,6 +621,15 @@ type GroupLeaderboardEntry {
   score: Float!
 }
 
+type GroupMessage {
+  content: String!
+  createdAt: Date!
+  group: ParticipantGroup
+  id: Int!
+  participant: Participant
+  updatedAt: Date!
+}
+
 type InstanceEvaluation {
   answers: Json
   choices: Json
@@ -721,6 +730,7 @@ type Mutation {
   activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelSession(id: String!): Session
   changeEmailSettings(projectUpdates: Boolean!): User
@@ -963,6 +973,7 @@ type ParticipantGroup {
   code: Int!
   groupActivityScore: Int!
   id: ID!
+  messages: [GroupMessage!]
   name: String!
   participants: [Participant!]
   score: Float

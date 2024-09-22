@@ -24,6 +24,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
+  GroupMessage,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
@@ -290,6 +291,18 @@ export const Mutation = builder.mutationType({
 
       // ----- PARTICIPANT OPERATIONS
       // #region
+      addMessageToGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: GroupMessage,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.addMessageToGroup(args, ctx)
+        },
+      }),
+
       joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,

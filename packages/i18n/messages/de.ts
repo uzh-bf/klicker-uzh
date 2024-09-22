@@ -63,6 +63,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
       courseDuration: 'Kursdauer',
