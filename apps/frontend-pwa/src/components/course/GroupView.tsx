@@ -185,7 +185,7 @@ function GroupView({
             initialValues={{
               content: '',
             }}
-            onSubmit={async (values) => {
+            onSubmit={async (values, { resetForm }) => {
               await addMessageToGroup({
                 variables: { groupId: group.id, content: values.content },
                 refetchQueries: [
@@ -195,6 +195,7 @@ function GroupView({
                   },
                 ],
               })
+              resetForm()
             }}
           >
             <Form>
