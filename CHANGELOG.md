@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.31...v3.2.0-alpha.32) (2024-09-22)
+
+
+### Features
+
+* add simple group chat to allow communication in random groups ([#4271](https://github.com/uzh-bf/klicker-uzh/issues/4271)) ([6566344](https://github.com/uzh-bf/klicker-uzh/commit/65663444b2dad50e7bfdfbde68485543c9b159fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that question text size on evaluation adjusts to corresponding setting ([0b00100](https://github.com/uzh-bf/klicker-uzh/commit/0b00100e7af2fab104064f2423c39f3d4ed8c073))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** introduce new table component on asynchronous activity evaluation ([#4268](https://github.com/uzh-bf/klicker-uzh/issues/4268)) ([28d56d7](https://github.com/uzh-bf/klicker-uzh/commit/28d56d7517495bb1f605e572095829ad0d812dd3))
+
 ## [3.2.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.30...v3.2.0-alpha.31) (2024-09-19)
 
 ## [3.2.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.29...v3.2.0-alpha.30) (2024-09-19)
