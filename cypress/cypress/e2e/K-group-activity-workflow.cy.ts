@@ -308,6 +308,19 @@ describe('Create and solve a group activity', () => {
       .should('exist')
   })
 
+  it('can send a message to the group', function () {
+    cy.loginStudent()
+
+    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get('[data-cy="group-message-textarea"]').type('hello group!')
+    cy.get('[data-cy="group-message-submit"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="group-message-textarea"]').should('have.value', '')
+    cy.get('[data-cy="group-messages"]').should('contain', 'hello group!')
+  })
+
   it('take part in the seeded group activity', function () {
     cy.loginStudent()
     const activityDisplayName = 'Gruppenquest Published'
