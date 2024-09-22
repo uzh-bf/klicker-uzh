@@ -12149,6 +12149,18 @@
             "deprecationReason": null
           },
           {
+            "name": "requestActivationEmail",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "requestMigrationToken",
             "description": null,
             "args": [
@@ -14559,7 +14571,31 @@
             "deprecationReason": null
           },
           {
+            "name": "isEmailValid",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "isProfilePublic",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isSSOAccount",
             "description": null,
             "args": [],
             "type": {

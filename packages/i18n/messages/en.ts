@@ -595,6 +595,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       solvedAt: 'Resolved at {date}',
     },
     profile: {
+      emailInactive:
+        'Your email address is not yet activated. Click {button} to request an activation email.',
       publicProfile: 'Profile Visibility',
       isProfilePublic:
         'Should your profile and pseudonym be displayed to other participants? If you deactivate this option, you will be displayed as Anonymous to other participants. Note that you will see all other participants as Anonymous as well.',

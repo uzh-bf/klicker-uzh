@@ -596,6 +596,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       solvedAt: 'Gelöst am {date}',
     },
     profile: {
+      emailInactive:
+        'Deine E-Mail-Adresse ist noch nicht aktiviert. Klicke {button}, um eine Aktivierungs-E-Mail zu beantragen.',
       publicProfile: 'Profilsichtbarkeit',
       isProfilePublic:
         'Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden? Wenn Du diese Option deaktivierst, sehen dich andere Teilnehmende nur noch als Anonymous, Du alle anderen Teilnehmenden allerdings auch.',

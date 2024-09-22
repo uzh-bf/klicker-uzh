@@ -99,6 +99,8 @@ export const Participant = ParticipantRef.implement({
     username: t.exposeString('username', { nullable: false }),
     isActive: t.exposeBoolean('isActive', { nullable: false }),
     isProfilePublic: t.exposeBoolean('isProfilePublic', { nullable: true }),
+    isSSOAccount: t.exposeBoolean('isSSOAccount', { nullable: true }),
+    isEmailValid: t.exposeBoolean('isEmailValid', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     avatarSettings: t.expose('avatarSettings', {
       type: 'Json',

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CheckParticipantNameAvailableDocument,
   Participant,
+  RequestActivationEmailDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -42,6 +43,8 @@ function UpdateAccountInfoForm({
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
   >(true)
+
+  const [requestActivationEmail] = useMutation(RequestActivationEmailDocument)
 
   return (
     <Formik
@@ -133,12 +136,10 @@ function UpdateAccountInfoForm({
                 ) : null}
                 <div className="mb-2 space-y-3">
                   <FormikTextField
-                    // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
                     disabled={
-                      user?.email !== '' &&
-                      user?.email !== null &&
-                      typeof user?.email !== 'undefined' &&
-                      !!values.email
+                      user?.isSSOAccount &&
+                      typeof user.email === 'string' &&
+                      user.email !== ''
                     }
                     name="email"
                     label={t('shared.generic.email')}
@@ -147,6 +148,17 @@ function UpdateAccountInfoForm({
                     }}
                     data={{ cy: 'update-account-email' }}
                   />
+                  {!user.isEmailValid && (
+                    <div>
+                      {t.rich('pwa.profile.emailInactive', {
+                        button: (
+                          <Button onClick={() => requestActivationEmail()}>
+                            here
+                          </Button>
+                        ),
+                      })}
+                    </div>
+                  )}
                   <DebouncedUsernameField
                     t={t}
                     name="username"
