@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.32...v3.2.0-alpha.33) (2024-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question preview on live quiz works as expected ([#4272](https://github.com/uzh-bf/klicker-uzh/issues/4272)) ([977ad2a](https://github.com/uzh-bf/klicker-uzh/commit/977ad2ab1825d55138ae50606da9c5313b466449))
+* **apps/frontend-pwa:** show correct avatar and add form validation to group messages ([#4273](https://github.com/uzh-bf/klicker-uzh/issues/4273)) ([9729fd0](https://github.com/uzh-bf/klicker-uzh/commit/9729fd0bf165fbbe250da19774c16a2a2a7b1b90))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve layout of group messages ([#4274](https://github.com/uzh-bf/klicker-uzh/issues/4274)) ([8744f99](https://github.com/uzh-bf/klicker-uzh/commit/8744f99cf05be83d3f8a500aed79e0d81045677e))
+
 ## [3.2.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.31...v3.2.0-alpha.32) (2024-09-22)
 
 
