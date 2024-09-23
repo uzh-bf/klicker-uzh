@@ -150,7 +150,7 @@ function SessionBlock({
             passHref
           >
             <a
-              data-cy={`open-embedding-link-session-${instance.id}`}
+              data-cy={`open-question-live-quiz-${instance.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >
