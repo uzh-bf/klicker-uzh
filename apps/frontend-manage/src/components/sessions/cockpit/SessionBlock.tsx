@@ -146,11 +146,14 @@ function SessionBlock({
           <Link
             href={`/questions/${instance.questionData!.questionId}`}
             className="text-sm hover:text-slate-700"
-            target="_blank"
             legacyBehavior
             passHref
           >
-            <a data-cy={`open-embedding-link-session-${instance.id}`}>
+            <a
+              data-cy={`open-question-live-quiz-${instance.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {instance.questionData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
             </a>
