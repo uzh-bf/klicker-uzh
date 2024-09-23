@@ -186,14 +186,14 @@ function GroupView({
 
           <div className="bg-uzh-grey-20 mt-2 rounded p-2">
             <div
-              className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-3 overflow-scroll"
+              className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-1.5 overflow-scroll"
               data-cy="group-messages"
             >
               {group.messages?.map((message, ix) => {
                 const ownMesssage = message.participant?.id === participant.id
                 const nextMessageSameUser =
-                  ix > 0 &&
-                  group.messages![ix - 1]?.participant?.id ===
+                  ix + 1 < group.messages!.length &&
+                  group.messages![ix + 1]?.participant?.id ===
                     message.participant?.id
 
                 return (
@@ -204,23 +204,10 @@ function GroupView({
                       ownMesssage && 'self-end'
                     )}
                   >
-                    <div
-                      className={twMerge(
-                        'w-full rounded border border-gray-300 bg-white px-1 py-0.5',
-                        ownMesssage && 'bg-uzh-blue-20'
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <div className="text-sm">{message.content}</div>
-                        <div className="self-end whitespace-nowrap text-xs text-slate-600">
-                          {dayjs(message.createdAt).format('DD.MM.YYYY HH:mm')}
-                        </div>
-                      </div>
-                    </div>
                     {!nextMessageSameUser && (
                       <div
                         className={twMerge(
-                          'flex flex-row items-end gap-1 text-xs text-slate-600',
+                          'mt-1.5 flex flex-row items-end gap-1 text-xs text-slate-600',
                           ownMesssage && 'justify-end'
                         )}
                       >
@@ -251,6 +238,19 @@ function GroupView({
                         </div>
                       </div>
                     )}
+                    <div
+                      className={twMerge(
+                        'w-full rounded border border-gray-300 bg-white px-1 py-0.5',
+                        ownMesssage && 'bg-uzh-blue-20'
+                      )}
+                    >
+                      <div className="flex flex-col">
+                        <div className="text-sm">{message.content}</div>
+                        <div className="self-end whitespace-nowrap text-xs text-slate-600">
+                          {dayjs(message.createdAt).format('DD.MM.YYYY HH:mm')}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )
               })}
