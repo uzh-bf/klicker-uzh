@@ -63,6 +63,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
       courseDuration: 'Course Duration',
@@ -680,6 +681,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     achievements: {
       notAchievedYet: 'Not achieved yet',
       noAchievements: 'No achievements yet.',
+    },
+    groups: {
+      messageRequired: 'Please enter a message before submitting.',
     },
     groupActivity: {
       startAt: 'Start: {time}',

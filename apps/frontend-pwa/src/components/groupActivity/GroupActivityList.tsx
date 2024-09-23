@@ -32,7 +32,7 @@ function GroupActivityList({
   const t = useTranslations()
 
   return (
-    <div className="mt-8">
+    <div className="mt-4">
       <H3>{t('shared.generic.groupActivities')}</H3>
       <div className="flex flex-col gap-1 border-t pt-2">
         {groupActivities?.map((activity) => (
