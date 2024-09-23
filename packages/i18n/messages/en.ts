@@ -682,6 +682,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       notAchievedYet: 'Not achieved yet',
       noAchievements: 'No achievements yet.',
     },
+    groups: {
+      messageRequired: 'Please enter a message before submitting.',
+    },
     groupActivity: {
       startAt: 'Start: {time}',
       endAt: 'End: {time}',

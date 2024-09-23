@@ -678,6 +678,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noAchievements: 'Bisher keine Errungenschaften.',
       notAchievedYet: 'Noch nicht erreicht',
     },
+    groups: {
+      messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
+    },
     groupActivity: {
       startAt: 'Start: {time}',
       endAt: 'Ende: {time}',
