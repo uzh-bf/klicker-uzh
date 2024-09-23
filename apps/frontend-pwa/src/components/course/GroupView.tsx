@@ -186,46 +186,74 @@ function GroupView({
 
           <div className="bg-uzh-grey-20 mt-2 rounded p-2">
             <div
-              className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-1 overflow-scroll"
+              className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-3 overflow-scroll"
               data-cy="group-messages"
             >
-              {group.messages?.map((message) => (
-                <div
-                  key={message.id}
-                  className="flex flex-row justify-between gap-4 border-t pb-1 pt-1 first:border-0"
-                >
-                  <div className="space-y-2">
+              {group.messages?.map((message, ix) => {
+                const ownMesssage = message.participant?.id === participant.id
+                const nextMessageSameUser =
+                  ix > 0 &&
+                  group.messages![ix - 1]?.participant?.id ===
+                    message.participant?.id
+
+                return (
+                  <div
+                    key={message.id}
+                    className={twMerge(
+                      'flex w-[80%] flex-col gap-0.5 self-start',
+                      ownMesssage && 'self-end'
+                    )}
+                  >
                     <div
                       className={twMerge(
-                        'flex flex-row items-end gap-1 text-xs text-slate-600',
-                        message.participant?.id === participant.id &&
-                          'font-bold'
+                        'w-full rounded border border-gray-300 bg-white px-1 py-0.5',
+                        ownMesssage && 'bg-uzh-blue-20'
                       )}
                     >
-                      {message.participant?.avatar && (
-                        <Image
-                          key={message.participant.avatar}
-                          src={
-                            message.participant.avatar
-                              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${message.participant.avatar}.svg`
-                              : '/user-solid.svg'
-                          }
-                          alt=""
-                          height={25}
-                          width={25}
-                        />
-                      )}
-                      <div>{message.participant?.username}</div>
+                      <div className="flex flex-col">
+                        <div className="text-sm">{message.content}</div>
+                        <div className="self-end whitespace-nowrap text-xs text-slate-600">
+                          {dayjs(message.createdAt).format('DD.MM.YYYY HH:mm')}
+                        </div>
+                      </div>
                     </div>
-                    <div className="whitespace-nowrap text-xs text-slate-600">
-                      {dayjs(message.createdAt).format('DD.MM.YYYY HH:mm')}
-                    </div>
+                    {!nextMessageSameUser && (
+                      <div
+                        className={twMerge(
+                          'flex flex-row items-end gap-1 text-xs text-slate-600',
+                          ownMesssage && 'justify-end'
+                        )}
+                      >
+                        {message.participant?.avatar && (
+                          <Image
+                            key={message.participant.avatar}
+                            src={
+                              message.participant.avatar
+                                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${message.participant.avatar}.svg`
+                                : '/user-solid.svg'
+                            }
+                            alt=""
+                            height={25}
+                            width={25}
+                            className={twMerge(
+                              'order-1',
+                              ownMesssage && 'order-2'
+                            )}
+                          />
+                        )}
+                        <div
+                          className={twMerge(
+                            'order-2',
+                            ownMesssage && 'order-1'
+                          )}
+                        >
+                          {message.participant?.username}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="prose prose-sm w-full max-w-none break-all">
-                    {message.content}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <Formik
