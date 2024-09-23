@@ -152,6 +152,7 @@ function SessionBlock({
             <a
               data-cy={`open-embedding-link-session-${instance.id}`}
               target="_blank"
+              rel="noopener noreferrer"
             >
               {instance.questionData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
