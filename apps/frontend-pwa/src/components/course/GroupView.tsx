@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddMessageToGroupDocument,
   GetCourseOverviewDataDocument,
@@ -178,61 +180,19 @@ function GroupView({
         )}
 
         <div className="mt-4">
-          <H3 className={{ root: 'border-b pb-2' }}>
+          <H3 className={{ root: 'border-b' }}>
             {t('shared.generic.groupMessages')}
           </H3>
 
-          <Formik
-            validateOnMount
-            initialValues={{
-              content: '',
-            }}
-            validationSchema={Yup.object({
-              content: Yup.string().required(t('pwa.groups.messageRequired')),
-            })}
-            onSubmit={async (values, { resetForm, setSubmitting }) => {
-              await addMessageToGroup({
-                variables: { groupId: group.id, content: values.content },
-                refetchQueries: [
-                  {
-                    query: GetCourseOverviewDataDocument,
-                    variables: { courseId },
-                  },
-                ],
-              })
-              resetForm()
-              setSubmitting(false)
-            }}
-          >
-            {({ isValid, isSubmitting }) => (
-              <Form>
-                <FormikTextareaField
-                  name="content"
-                  label="Message"
-                  className={{ input: 'text-sm' }}
-                  data={{ cy: 'group-message-textarea' }}
-                />
-                <Button
-                  type="submit"
-                  className={{ root: 'bg-primary-100 mt-2 h-7 text-white' }}
-                  data={{
-                    cy: 'group-message-submit',
-                  }}
-                  disabled={!isValid || isSubmitting}
-                  loading={isSubmitting}
-                >
-                  {t('shared.generic.send')}
-                </Button>
-              </Form>
-            )}
-          </Formik>
-
-          {group.messages && group.messages.length > 0 && (
-            <div className="mt-4 flex flex-col gap-1" data-cy="group-messages">
-              {group.messages.map((message) => (
+          <div className="bg-uzh-grey-20 mt-2 rounded p-2">
+            <div
+              className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-1 overflow-scroll"
+              data-cy="group-messages"
+            >
+              {group.messages?.map((message) => (
                 <div
                   key={message.id}
-                  className="flex flex-row justify-between gap-4 border-b pb-1 pt-1 last:border-0"
+                  className="flex flex-row justify-between gap-4 border-t pb-1 pt-1 first:border-0"
                 >
                   <div className="space-y-2">
                     <div
@@ -267,7 +227,57 @@ function GroupView({
                 </div>
               ))}
             </div>
-          )}
+
+            <Formik
+              validateOnMount
+              initialValues={{
+                content: '',
+              }}
+              validationSchema={Yup.object({
+                content: Yup.string().required(t('pwa.groups.messageRequired')),
+              })}
+              onSubmit={async (values, { resetForm, setSubmitting }) => {
+                await addMessageToGroup({
+                  variables: { groupId: group.id, content: values.content },
+                  refetchQueries: [
+                    {
+                      query: GetCourseOverviewDataDocument,
+                      variables: { courseId },
+                    },
+                  ],
+                })
+                resetForm()
+                setSubmitting(false)
+              }}
+            >
+              {({ isValid, isSubmitting }) => (
+                <Form className="flex flex-row items-center gap-1.5">
+                  <FormikTextareaField
+                    name="content"
+                    className={{ input: 'text-sm' }}
+                    data={{ cy: 'group-message-textarea' }}
+                  />
+                  <Button
+                    type="submit"
+                    className={{
+                      root: twMerge(
+                        'bg-primary-100 flex h-8 w-8 items-center justify-center rounded-full text-white',
+                        (!isValid || isSubmitting) &&
+                          'bg-primary-20 cursor-not-allowed'
+                      ),
+                    }}
+                    data={{
+                      cy: 'group-message-submit',
+                    }}
+                    disabled={!isValid || isSubmitting}
+                    loading={isSubmitting}
+                  >
+                    <FontAwesomeIcon icon={faPaperPlane} className="mr-0.5" />
+                  </Button>
+                </Form>
+              )}
+            </Formik>
+          </div>
         </div>
       </div>
     </Tabs.TabContent>
