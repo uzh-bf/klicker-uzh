@@ -190,7 +190,7 @@ function GroupView({
               data-cy="group-messages"
             >
               {group.messages?.map((message, ix) => {
-                const ownMesssage = message.participant?.id === participant.id
+                const ownMessage = message.participant?.id === participant.id
                 const nextMessageSameUser =
                   ix + 1 < group.messages!.length &&
                   group.messages![ix + 1]?.participant?.id ===
@@ -201,14 +201,14 @@ function GroupView({
                     key={message.id}
                     className={twMerge(
                       'flex w-[80%] flex-col gap-0.5 self-start',
-                      ownMesssage && 'self-end'
+                      ownMessage && 'self-end'
                     )}
                   >
                     {!nextMessageSameUser && (
                       <div
                         className={twMerge(
                           'mt-1.5 flex flex-row items-end gap-1 text-xs text-slate-600',
-                          ownMesssage && 'justify-end'
+                          ownMessage && 'justify-end'
                         )}
                       >
                         {message.participant?.avatar && (
@@ -224,14 +224,14 @@ function GroupView({
                             width={25}
                             className={twMerge(
                               'order-1',
-                              ownMesssage && 'order-2'
+                              ownMessage && 'order-2'
                             )}
                           />
                         )}
                         <div
                           className={twMerge(
                             'order-2',
-                            ownMesssage && 'order-1'
+                            ownMessage && 'order-1'
                           )}
                         >
                           {message.participant?.username}
@@ -241,7 +241,7 @@ function GroupView({
                     <div
                       className={twMerge(
                         'w-full rounded border border-gray-300 bg-white px-1 py-0.5',
-                        ownMesssage && 'bg-uzh-blue-20'
+                        ownMessage && 'bg-uzh-blue-20'
                       )}
                     >
                       <div className="flex flex-col">
