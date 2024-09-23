@@ -184,7 +184,7 @@ function GroupView({
             {t('shared.generic.groupMessages')}
           </H3>
 
-          <div className="bg-uzh-grey-20 mt-2 rounded p-2">
+          <div className="bg-uzh-grey-20 mt-2 rounded px-2 pb-2">
             <div
               className="mb-2 flex max-h-80 min-h-40 flex-col-reverse gap-1.5 overflow-scroll"
               data-cy="group-messages"
