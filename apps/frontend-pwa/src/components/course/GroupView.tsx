@@ -26,6 +26,7 @@ import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
 import GroupActivityList from '../groupActivity/GroupActivityList'
 import GroupVisualization from '../participant/groups/GroupVisualization'
 import EditableGroupName from './EditableGroupName'
@@ -182,10 +183,14 @@ function GroupView({
           </H3>
 
           <Formik
+            validateOnMount
             initialValues={{
               content: '',
             }}
-            onSubmit={async (values, { resetForm }) => {
+            validationSchema={Yup.object({
+              content: Yup.string().required(t('pwa.groups.messageRequired')),
+            })}
+            onSubmit={async (values, { resetForm, setSubmitting }) => {
               await addMessageToGroup({
                 variables: { groupId: group.id, content: values.content },
                 refetchQueries: [
@@ -196,23 +201,30 @@ function GroupView({
                 ],
               })
               resetForm()
+              setSubmitting(false)
             }}
           >
-            <Form>
-              <FormikTextareaField
-                name="content"
-                label="Message"
-                className={{ input: 'text-sm' }}
-                data={{ cy: 'group-message-textarea' }}
-              />
-              <Button
-                type="submit"
-                className={{ root: 'mt-2' }}
-                data={{ cy: 'group-message-submit' }}
-              >
-                {t('shared.generic.send')}
-              </Button>
-            </Form>
+            {({ isValid, isSubmitting }) => (
+              <Form>
+                <FormikTextareaField
+                  name="content"
+                  label="Message"
+                  className={{ input: 'text-sm' }}
+                  data={{ cy: 'group-message-textarea' }}
+                />
+                <Button
+                  type="submit"
+                  className={{ root: 'bg-primary-100 mt-2 h-7 text-white' }}
+                  data={{
+                    cy: 'group-message-submit',
+                  }}
+                  disabled={!isValid || isSubmitting}
+                  loading={isSubmitting}
+                >
+                  {t('shared.generic.send')}
+                </Button>
+              </Form>
+            )}
           </Formik>
 
           {group.messages && group.messages.length > 0 && (
@@ -230,12 +242,12 @@ function GroupView({
                           'font-bold'
                       )}
                     >
-                      {participant.avatar && (
+                      {message.participant?.avatar && (
                         <Image
-                          key={participant.avatar}
+                          key={message.participant.avatar}
                           src={
-                            participant.avatar
-                              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
+                            message.participant.avatar
+                              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${message.participant.avatar}.svg`
                               : '/user-solid.svg'
                           }
                           alt=""
