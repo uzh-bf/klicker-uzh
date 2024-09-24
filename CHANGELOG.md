@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.34...v3.2.0-alpha.35) (2024-09-24)
+
+
+### Bug Fixes
+
+* add missing translation for access link copy to clipboard ([d951488](https://github.com/uzh-bf/klicker-uzh/commit/d951488adb5376678fad1e59eb791fe8581cddec))
+
 ## [3.2.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.33...v3.2.0-alpha.34) (2024-09-24)
 
 
