@@ -782,7 +782,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
+  loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID

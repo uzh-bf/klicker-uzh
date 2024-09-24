@@ -662,10 +662,11 @@ export async function createParticipantAccount(
 
 interface LoginParticipantWithLtiArgs {
   signedLtiData: string
+  courseId?: string | null
 }
 
 export async function loginParticipantWithLti(
-  { signedLtiData }: LoginParticipantWithLtiArgs,
+  { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
   const ltiData = JWT.verify(
@@ -718,6 +719,30 @@ export async function loginParticipantWithLti(
   }
 
   if (!account?.participant) return null
+
+  if (courseId) {
+    await ctx.prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: account.participant.id,
+        },
+      },
+      create: {
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participant: {
+          connect: {
+            id: account.participant.id,
+          },
+        },
+      },
+      update: {},
+    })
+  }
 
   const jwt = await doParticipantLogin(
     {

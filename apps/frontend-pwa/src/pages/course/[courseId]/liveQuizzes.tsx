@@ -141,6 +141,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
+    courseId: ctx.params.courseId,
     ctx,
   })
 
