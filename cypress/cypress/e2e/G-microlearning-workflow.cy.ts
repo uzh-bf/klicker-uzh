@@ -304,11 +304,12 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').should(
+      'have.value',
+      'Free text answer'
+    )
+    cy.get('[data-cy="practice-quiz-continue"]').click() // skip first already answered question (fetch from backend)
 
     // answer FC and CT
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
