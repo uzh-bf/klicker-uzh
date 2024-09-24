@@ -2397,6 +2397,32 @@ export async function respondToElementStack(
   { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
+  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
+  if (ctx.user?.sub) {
+    const stack = await ctx.prisma.elementStack.findUnique({
+      where: { id: stackId },
+      include: {
+        microLearning: true,
+        elements: {
+          include: {
+            responses: {
+              where: {
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (
+      stack?.microLearning &&
+      stack.elements.some((element) => element.responses.length > 0)
+    ) {
+      return null
+    }
+  }
+
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: IInstanceEvaluation[] = []
