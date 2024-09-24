@@ -1378,6 +1378,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noConfusionFeedbacksYet:
         'Diese Session enthält bisher keine Confusion Feedbacks.',
       totalParticipants: 'Total Teilnehmende: {number}',
+      totalParticipantsInclAnon:
+        'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',

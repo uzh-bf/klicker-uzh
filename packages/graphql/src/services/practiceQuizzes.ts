@@ -197,6 +197,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 choices,
               },
             }
@@ -240,6 +241,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 maxValue: options.restrictions?.max,
                 minValue: options.restrictions?.min,
                 solutionRanges: options.solutionRanges,
@@ -284,6 +286,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 maxLength: options.restrictions?.maxLength,
                 solutions: options.solutions,
                 responses: ftResponses,
@@ -301,6 +304,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 correctCount:
                   instanceResults[FlashcardCorrectness.CORRECT] +
                   anonymousInstanceResults[FlashcardCorrectness.CORRECT],
@@ -320,6 +324,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instance.results.total + instance.anonymousResults.total,
+                anonymousAnswers: instance.anonymousResults.total,
               },
             }
           }

@@ -1365,6 +1365,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noConfusionFeedbacksYet:
         'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
+      totalParticipantsInclAnon:
+        'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',

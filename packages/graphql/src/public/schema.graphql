@@ -103,6 +103,7 @@ type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
 }
 
 type ChoicesElementResults {
+  anonymousAnswers: Int!
   choices: [ChoiceElementResults!]!
   totalAnswers: Int!
 }
@@ -169,6 +170,7 @@ type ContentElementQData implements QuestionData {
 }
 
 type ContentElementResults {
+  anonymousAnswers: Int!
   totalAnswers: Int!
 }
 
@@ -408,6 +410,7 @@ type FlashcardElementQData implements QuestionData {
 }
 
 type FlashcardElementResults {
+  anonymousAnswers: Int!
   correctCount: Int!
   incorrectCount: Int!
   partialCount: Int!
@@ -432,6 +435,7 @@ type FreeElementResult {
 }
 
 type FreeElementResults {
+  anonymousAnswers: Int!
   maxLength: Int
   responses: [FreeElementResult!]!
   solutions: [String!]
@@ -859,6 +863,7 @@ type NumericalElementResult {
 }
 
 type NumericalElementResults {
+  anonymousAnswers: Int!
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
