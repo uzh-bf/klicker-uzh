@@ -27,7 +27,7 @@ function Login() {
   const [showError, setShowError] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
-  const [magicLinkLogin, setMagicLinkLogin] = useState(true)
+  const [magicLinkLogin, setMagicLinkLogin] = useState(false)
 
   const loginSchema = (magicLinkState: boolean) => {
     if (!magicLinkState) {
