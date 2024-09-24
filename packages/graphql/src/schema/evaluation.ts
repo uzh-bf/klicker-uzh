@@ -40,6 +40,7 @@ export type InstanceEvaluationResults =
 
 export interface IChoicesElementEvaluationResults {
   totalAnswers: number
+  anonymousAnswers: number
   choices: {
     value: string
     count: number
@@ -55,6 +56,7 @@ export interface IChoicesElementInstanceEvaluation
 
 export interface INumericalElementEvaluationResults {
   totalAnswers: number
+  anonymousAnswers: number
   maxValue?: number | null
   minValue?: number | null
   solutionRanges: { min?: number | null; max?: number | null }[]
@@ -72,6 +74,7 @@ export interface INumericalElementInstanceEvaluation
 
 export interface IFreeElementEvaluationResults {
   totalAnswers: number
+  anonymousAnswers: number
   maxLength?: number | null
   solutions?: string[] | null
   responses: {
@@ -88,6 +91,7 @@ export interface IFreeElementInstanceEvaluation
 
 export interface IFlashcardElementEvaluationResults {
   totalAnswers: number
+  anonymousAnswers: number
   correctCount: number
   partialCount: number
   incorrectCount: number
@@ -100,6 +104,7 @@ export interface IFlashcardElementInstanceEvaluation
 
 export interface IContentElementEvaluationResults {
   totalAnswers: number
+  anonymousAnswers: number
 }
 
 export interface IContentElementInstanceEvaluation
@@ -197,6 +202,7 @@ export const ChoicesElementResultsRef =
 export const ChoicesElementResults = ChoicesElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
     choices: t.expose('choices', {
       type: [ChoiceElementResults],
     }),
@@ -237,6 +243,7 @@ export const NumericalElementResultsRef =
 export const NumericalElementResults = NumericalElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
     maxValue: t.exposeFloat('maxValue', { nullable: true }),
     minValue: t.exposeFloat('minValue', { nullable: true }),
     solutionRanges: t.expose('solutionRanges', {
@@ -291,6 +298,7 @@ export const FreeElementResultsRef =
 export const FreeElementResults = FreeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
     maxLength: t.exposeInt('maxLength', { nullable: true }),
     solutions: t.exposeStringList('solutions', { nullable: true }),
     responses: t.expose('responses', {
@@ -333,6 +341,7 @@ export const FlashcardElementResultsRef =
 export const FlashcardElementResults = FlashcardElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
     correctCount: t.exposeInt('correctCount'),
     partialCount: t.exposeInt('partialCount'),
     incorrectCount: t.exposeInt('incorrectCount'),
@@ -359,5 +368,6 @@ export const ContentElementResultsRef =
 export const ContentElementResults = ContentElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
   }),
 })
