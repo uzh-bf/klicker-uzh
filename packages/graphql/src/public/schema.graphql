@@ -1067,6 +1067,7 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

@@ -74,6 +74,7 @@ function MicrolearningInstance() {
             }
             withParticipant={!!selfData?.self}
             hideBookmark
+            singleSubmission
           />
         </div>
       </div>
