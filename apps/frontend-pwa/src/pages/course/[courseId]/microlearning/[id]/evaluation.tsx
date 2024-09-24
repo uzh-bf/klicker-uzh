@@ -94,6 +94,7 @@ function MicrolearningEvaluation() {
                       ?.pointsAwarded !== 'undefined' &&
                       aggregatedResults.evaluation[stack.id]?.pointsAwarded !==
                         null &&
+                      participation?.getParticipation?.isActive &&
                       `${
                         aggregatedResults.evaluation[stack.id]?.pointsAwarded
                       }/`}

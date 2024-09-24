@@ -86,7 +86,6 @@ Cypress.Commands.add(
 Cypress.Commands.add('loginStudent', () => {
   cy.clearAllCookies()
   cy.visit(Cypress.env('URL_STUDENT'))
-  cy.get('[data-cy="password-login"]').click()
   cy.get('[data-cy="username-field"]')
     .click()
     .type(Cypress.env('STUDENT_USERNAME'))
