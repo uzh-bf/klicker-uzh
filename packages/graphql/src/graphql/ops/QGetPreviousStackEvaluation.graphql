@@ -24,6 +24,8 @@ query GetPreviousStackEvaluation($stackId: Int!) {
       newXpFrom
       solutions
       solutionRanges
+      lastResponse
+      correctness
     }
   }
 }

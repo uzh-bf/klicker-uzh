@@ -127,7 +127,7 @@ export const QuestionFeedback = builder
 export interface IInstanceEvaluation {
   instanceId: number
   pointsMultiplier?: number
-  explanation?: string
+  explanation?: string | null
   feedbacks?: IQuestionFeedback[]
   choices?: object[]
   numAnswers?: number
@@ -140,6 +140,8 @@ export interface IInstanceEvaluation {
   newXpFrom?: Date
   solutions?: string[]
   solutionRanges?: { min?: number | null; max?: number | null }[]
+  lastResponse?: object | null
+  correctness?: number | null
 }
 export const InstanceEvaluation = builder
   .objectRef<IInstanceEvaluation>('InstanceEvaluation')
@@ -175,6 +177,8 @@ export const InstanceEvaluation = builder
         type: 'Json',
         nullable: true,
       }),
+      lastResponse: t.expose('lastResponse', { type: 'Json', nullable: true }),
+      correctness: t.exposeFloat('correctness', { nullable: true }),
     }),
   })
 

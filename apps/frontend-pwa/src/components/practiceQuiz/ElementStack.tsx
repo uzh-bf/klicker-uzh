@@ -99,35 +99,70 @@ function ElementStack({
     setStudentResponse,
   })
 
-  // TODO: if single submission is enabled, try fetching the evaluation from the server and block submission if it exists
-  // TODO: set stack storage with obtained evaluation content to disable button and show evaluation there for past elements
+  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
   const { data: evaluationData } = useQuery(
     GetPreviousStackEvaluationDocument,
     {
-      skip: !singleSubmission,
+      skip: !singleSubmission || !!stackStorage,
       variables: {
         stackId: stack.id,
       },
     }
   )
 
+  // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
     if (
       singleSubmission &&
+      !stackStorage &&
       evaluationData?.getPreviousStackEvaluation &&
       evaluationData.getPreviousStackEvaluation.evaluations &&
       evaluationData.getPreviousStackEvaluation.evaluations.length > 0
     ) {
       const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
-      const score = evaluationData?.getPreviousStackEvaluation.score
-      const status = evaluationData?.getPreviousStackEvaluation.status
 
       setStackStorage(
         evaluations.reduce((acc, evaluation) => {
+          const elementType = stack.elements!.find(
+            (element) => element.id === evaluation.instanceId
+          )!.elementType
+
+          let response: StudentResponseType[0]['response']
+
+          if (elementType === ElementType.Flashcard) {
+            response = evaluation.lastResponse
+              .correctness as FlashcardCorrectnessType
+          } else if (elementType === ElementType.Content) {
+            response = evaluation.lastResponse.viewed as boolean
+          } else if (
+            elementType === ElementType.Sc ||
+            elementType === ElementType.Mc ||
+            elementType === ElementType.Kprim
+          ) {
+            const storedChoices = evaluation.lastResponse.choices as number[]
+            response = storedChoices.reduce(
+              (acc, choice) => {
+                return {
+                  ...acc,
+                  [choice]: true,
+                }
+              },
+              {} as Record<number, boolean>
+            )
+          } else if (
+            elementType === ElementType.Numerical ||
+            elementType === ElementType.FreeText
+          ) {
+            response = evaluation.lastResponse.value
+          }
+
           return {
             ...acc,
             [evaluation.instanceId]: {
-              // TODO: load student response correctly
+              type: elementType,
+              response,
+              correct: evaluation.correctness,
+              valid: true,
               evaluation,
             },
           }
@@ -136,14 +171,18 @@ function ElementStack({
 
       // set status and score according to returned correctness
       setStudentResponse({})
-      if (typeof setStepStatus !== 'undefined') {
-        setStepStatus({
-          status,
-          score,
-        })
-      }
+
+      // ? if used for practice quizzes, optionally set the step status here
+      // const score = evaluationData?.getPreviousStackEvaluation.score
+      // const status = evaluationData?.getPreviousStackEvaluation.status
+      // if (typeof setStepStatus !== 'undefined') {
+      //   setStepStatus({
+      //     status,
+      //     score,
+      //   })
+      // }
     }
-  }, [evaluationData, setStackStorage, setStepStatus, singleSubmission])
+  }, [evaluationData, setStackStorage, singleSubmission, stack, stackStorage])
 
   return (
     <div className="pb-12">

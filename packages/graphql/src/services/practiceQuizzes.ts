@@ -57,6 +57,7 @@ import {
   NumericalElementData,
   QuestionResponse,
   QuestionResponseChoices,
+  QuestionResponseContent,
   QuestionResponseFlashcard,
   QuestionResponseValue,
   StackFeedbackStatus,
@@ -2187,8 +2188,6 @@ export async function getPreviousStackEvaluation(
     },
   })
 
-  console.log(stackEvaluation)
-
   // if no previous response exists, return null
   if (
     !stackEvaluation ||
@@ -2223,6 +2222,9 @@ export async function getPreviousStackEvaluation(
           ...element.elementData,
           instanceId: element.id,
           score: 0,
+          correctness: null,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseFlashcard,
         }
       } else if (element.elementType === ElementType.CONTENT) {
         stackFeedback = combineStackStatus({
@@ -2234,6 +2236,9 @@ export async function getPreviousStackEvaluation(
           ...element.elementData,
           instanceId: element.id,
           score: 0,
+          correctness: 1,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseContent,
         }
       } else if (
         element.elementType === ElementType.SC ||
@@ -2255,12 +2260,26 @@ export async function getPreviousStackEvaluation(
           element.options.pointsMultiplier
         )
 
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
         return {
           ...evaluation,
           ...element.elementData,
           instanceId: element.id,
           pointsAwarded: evaluation?.score,
           xpAwarded: evaluation?.xp,
+          correctness,
+          lastResponse,
         } as IInstanceEvaluation
       } else if (element.elementType === ElementType.NUMERICAL) {
         const elementData = element.elementData as NumericalElementData
@@ -2278,6 +2297,18 @@ export async function getPreviousStackEvaluation(
           element.options.pointsMultiplier
         )
 
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
         return {
           ...evaluation,
           ...element.elementData,
@@ -2287,6 +2318,8 @@ export async function getPreviousStackEvaluation(
           solutionRanges: elementData.options.hasSampleSolution
             ? elementData.options.solutionRanges
             : [],
+          correctness,
+          lastResponse,
         } as IInstanceEvaluation
       } else if (element.elementType === ElementType.FREE_TEXT) {
         const elementData = element.elementData as FreeTextElementData
@@ -2304,6 +2337,18 @@ export async function getPreviousStackEvaluation(
           element.options.pointsMultiplier
         )
 
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
         return {
           ...evaluation,
           ...element.elementData,
@@ -2313,6 +2358,8 @@ export async function getPreviousStackEvaluation(
           solutions: elementData.options.hasSampleSolution
             ? elementData.options.solutions
             : [],
+          correctness,
+          lastResponse,
         } as IInstanceEvaluation
       } else {
         throw new Error(
