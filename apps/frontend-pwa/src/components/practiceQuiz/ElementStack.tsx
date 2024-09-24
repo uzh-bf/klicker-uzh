@@ -136,8 +136,7 @@ function ElementStack({
             response = evaluation.lastResponse.viewed as boolean
           } else if (
             elementType === ElementType.Sc ||
-            elementType === ElementType.Mc ||
-            elementType === ElementType.Kprim
+            elementType === ElementType.Mc
           ) {
             const storedChoices = evaluation.lastResponse.choices as number[]
             response = storedChoices.reduce(
@@ -149,6 +148,12 @@ function ElementStack({
               },
               {} as Record<number, boolean>
             )
+          } else if (elementType === ElementType.Kprim) {
+            const storedChoices = evaluation.lastResponse.choices as number[]
+            response = { 0: false, 1: false, 2: false, 3: false }
+            storedChoices.forEach((choice) => {
+              response[choice] = true
+            })
           } else if (
             elementType === ElementType.Numerical ||
             elementType === ElementType.FreeText
