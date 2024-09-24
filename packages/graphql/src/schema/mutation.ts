@@ -282,6 +282,7 @@ export const Mutation = builder.mutationType({
         type: ParticipantTokenData,
         args: {
           signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
