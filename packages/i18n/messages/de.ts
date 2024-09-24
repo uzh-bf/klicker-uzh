@@ -208,6 +208,7 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'Mit Gruppen',
       withoutGroups: 'Ohne Gruppen',
+      forgotPassword: 'Passwort vergessen?',
     },
     contentInput: {
       boldStyle:
@@ -626,6 +627,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
       emailMissing:
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
+      forgotPasswordInfo:
+        'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
     },
     avatar: {
       hair: 'Frisur',

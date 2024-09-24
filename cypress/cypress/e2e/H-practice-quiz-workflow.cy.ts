@@ -145,7 +145,6 @@ describe('Different practice quiz workflows', () => {
     // sign in as student and answer practice quiz
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -313,7 +312,6 @@ describe('Different practice quiz workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -325,7 +323,6 @@ describe('Different practice quiz workflows', () => {
     // check if practice quiz is visible to the students
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -390,7 +387,6 @@ describe('Different practice quiz workflows', () => {
     // check if practice quiz is visible to the students
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -575,7 +571,6 @@ describe('Different practice quiz workflows', () => {
     // sign in as student and answer practice quiz
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -790,7 +785,6 @@ describe('Different practice quiz workflows', () => {
     // sign in as student and answer practice quiz
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
