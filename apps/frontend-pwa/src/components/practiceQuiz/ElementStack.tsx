@@ -123,53 +123,60 @@ function ElementStack({
 
       setStackStorage(
         evaluations.reduce((acc, evaluation) => {
-          const elementType = stack.elements!.find(
+          const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
-          )!.elementType
+          )
 
-          let response: StudentResponseType[0]['response']
+          if (!foundElement) {
+            // Handle the error, log a warning, or skip this evaluation
+            console.warn(`Element with ID ${evaluation.instanceId} not found.`)
+            return acc
+          } else {
+            const elementType = foundElement.elementType
+            let response: StudentResponseType[0]['response']
 
-          if (elementType === ElementType.Flashcard) {
-            response = evaluation.lastResponse
-              .correctness as FlashcardCorrectnessType
-          } else if (elementType === ElementType.Content) {
-            response = evaluation.lastResponse.viewed as boolean
-          } else if (
-            elementType === ElementType.Sc ||
-            elementType === ElementType.Mc
-          ) {
-            const storedChoices = evaluation.lastResponse.choices as number[]
-            response = storedChoices.reduce(
-              (acc, choice) => {
-                return {
-                  ...acc,
-                  [choice]: true,
-                }
+            if (elementType === ElementType.Flashcard) {
+              response = evaluation.lastResponse
+                .correctness as FlashcardCorrectnessType
+            } else if (elementType === ElementType.Content) {
+              response = evaluation.lastResponse.viewed as boolean
+            } else if (
+              elementType === ElementType.Sc ||
+              elementType === ElementType.Mc
+            ) {
+              const storedChoices = evaluation.lastResponse.choices as number[]
+              response = storedChoices.reduce(
+                (acc, choice) => {
+                  return {
+                    ...acc,
+                    [choice]: true,
+                  }
+                },
+                {} as Record<number, boolean>
+              )
+            } else if (elementType === ElementType.Kprim) {
+              const storedChoices = evaluation.lastResponse.choices as number[]
+              response = { 0: false, 1: false, 2: false, 3: false }
+              storedChoices.forEach((choice) => {
+                response[choice] = true
+              })
+            } else if (
+              elementType === ElementType.Numerical ||
+              elementType === ElementType.FreeText
+            ) {
+              response = evaluation.lastResponse.value
+            }
+
+            return {
+              ...acc,
+              [evaluation.instanceId]: {
+                type: elementType,
+                response,
+                correct: evaluation.correctness,
+                valid: true,
+                evaluation,
               },
-              {} as Record<number, boolean>
-            )
-          } else if (elementType === ElementType.Kprim) {
-            const storedChoices = evaluation.lastResponse.choices as number[]
-            response = { 0: false, 1: false, 2: false, 3: false }
-            storedChoices.forEach((choice) => {
-              response[choice] = true
-            })
-          } else if (
-            elementType === ElementType.Numerical ||
-            elementType === ElementType.FreeText
-          ) {
-            response = evaluation.lastResponse.value
-          }
-
-          return {
-            ...acc,
-            [evaluation.instanceId]: {
-              type: elementType,
-              response,
-              correct: evaluation.correctness,
-              valid: true,
-              evaluation,
-            },
+            }
           }
         }, {} as StudentResponseType)
       )
