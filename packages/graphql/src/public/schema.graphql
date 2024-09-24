@@ -637,9 +637,11 @@ type GroupMessage {
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  correctness: Float
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
+  lastResponse: Json
   newPointsFrom: Date
   newXpFrom: Date
   numAnswers: Int
@@ -1067,6 +1069,7 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
