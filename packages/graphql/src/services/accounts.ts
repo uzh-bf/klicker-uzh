@@ -721,7 +721,7 @@ export async function loginParticipantWithLti(
   if (!account?.participant) return null
 
   if (courseId) {
-    await ctx.prisma.participation.upsert({
+    const participation = await ctx.prisma.participation.upsert({
       where: {
         courseId_participantId: {
           courseId,
@@ -742,6 +742,8 @@ export async function loginParticipantWithLti(
       },
       update: {},
     })
+
+    console.log('participation', participation)
   }
 
   const jwt = await doParticipantLogin(
