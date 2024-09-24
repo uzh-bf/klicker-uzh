@@ -61,7 +61,7 @@ function MicroLearningElement({
     fetchPolicy: 'cache-only',
   })
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}microlearning/${microLearning.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
   const evaluationHref = `/course/${courseId}/microLearning/${microLearning.id}/evaluation`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
