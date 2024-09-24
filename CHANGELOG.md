@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.33...v3.2.0-alpha.34) (2024-09-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** do not show collected points when participating anonymously in microlearning ([8d81e80](https://github.com/uzh-bf/klicker-uzh/commit/8d81e8009e326d3a554f197a1c7fe562e34cf9d0))
+* create a participation when logging in via LTI from a page within the course directory, redirect to new microlearning page with courseId param ([#4276](https://github.com/uzh-bf/klicker-uzh/issues/4276)) ([d298dda](https://github.com/uzh-bf/klicker-uzh/commit/d298dda96a45881e180c6303931c976f761fe22a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** clearly mark email login to work as forgot password functionality ([#4275](https://github.com/uzh-bf/klicker-uzh/issues/4275)) ([a837902](https://github.com/uzh-bf/klicker-uzh/commit/a83790294bc338d4f316bc63d78259bbb5521e8a))
+* ensure that each element stack in microlearning can only be submitted once ([#4278](https://github.com/uzh-bf/klicker-uzh/issues/4278)) ([f97dd60](https://github.com/uzh-bf/klicker-uzh/commit/f97dd6055f785459bb9f6498681624d93d9faa2c))
+* show anonymous participant count on async activity evaluation ([#4277](https://github.com/uzh-bf/klicker-uzh/issues/4277)) ([0ac88ee](https://github.com/uzh-bf/klicker-uzh/commit/0ac88ee21d96f7d97672820e2472f97afc7604e1))
+
 ## [3.2.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.32...v3.2.0-alpha.33) (2024-09-23)
 
 
