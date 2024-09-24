@@ -2174,7 +2174,7 @@ export async function getPreviousStackEvaluation(
   }
 
   const stackEvaluation = await ctx.prisma.elementStack.findUnique({
-    where: { id: stackId },
+    where: { id: stackId, type: ElementStackType.MICROLEARNING },
     include: {
       elements: {
         include: {
