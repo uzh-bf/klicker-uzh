@@ -30,7 +30,7 @@ import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
-import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
+import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
@@ -61,7 +61,8 @@ function MicroLearningElement({
     fetchPolicy: 'cache-only',
   })
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/microlearning/${microLearning.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
+  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
 
@@ -167,15 +168,15 @@ function MicroLearningElement({
                         name: microLearning.name,
                       })
                     : [],
-                  {
-                    label: (
-                      <MicroLearningPreviewLink
-                        microLearning={microLearning}
-                        href={href}
-                      />
-                    ),
-                    onClick: () => null,
-                  },
+                  // {
+                  //   label: (
+                  //     <MicroLearningPreviewLink
+                  //       microLearning={microLearning}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
                   {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
@@ -243,11 +244,20 @@ function MicroLearningElement({
                         name: microLearning.name,
                       })
                     : [],
+                  // {
+                  //   label: (
+                  //     <MicroLearningPreviewLink
+                  //       microLearning={microLearning}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
                   {
                     label: (
-                      <MicroLearningPreviewLink
-                        microLearning={microLearning}
-                        href={href}
+                      <MicroLearningEvaluationLink
+                        quizName={microLearning.name}
+                        evaluationHref={evaluationHref}
                       />
                     ),
                     onClick: () => null,

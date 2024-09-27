@@ -74,6 +74,8 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -88,6 +90,8 @@ export async function createSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -103,6 +107,8 @@ export async function createSession(
       displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -118,6 +124,8 @@ export async function createSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -167,6 +175,8 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -182,6 +192,8 @@ export async function editSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -245,6 +257,8 @@ export async function editSession(
       displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled: isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -260,6 +274,8 @@ export async function editSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -850,6 +866,8 @@ export async function activateSessionBlock(
       sessionBlockId,
       type: questionData.type,
       pointsMultiplier: instance.pointsMultiplier,
+      maxBonusPoints: instance.maxBonusPoints,
+      timeToZeroBonus: instance.timeToZeroBonus,
     }
 
     switch (questionData.type) {
@@ -2075,7 +2093,6 @@ export async function getSessionEvaluation(
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
-      // FIXME: ensure this can be assigned to AllElementTypeData
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],

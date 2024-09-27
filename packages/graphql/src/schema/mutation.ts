@@ -24,6 +24,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
+  GroupMessage,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
@@ -281,6 +282,7 @@ export const Mutation = builder.mutationType({
         type: ParticipantTokenData,
         args: {
           signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
@@ -290,6 +292,18 @@ export const Mutation = builder.mutationType({
 
       // ----- PARTICIPANT OPERATIONS
       // #region
+      addMessageToGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: GroupMessage,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.addMessageToGroup(args, ctx)
+        },
+      }),
+
       joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
@@ -797,6 +811,8 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
+          maxBonusPoints: t.arg.int({ required: true }),
+          timeToZeroBonus: t.arg.int({ required: true }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
@@ -821,6 +837,8 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
+          maxBonusPoints: t.arg.int({ required: true }),
+          timeToZeroBonus: t.arg.int({ required: true }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),

@@ -96,6 +96,8 @@ function AudienceInteraction({
                 <a
                   className="inline-flex items-center gap-1"
                   data-cy={`open-lecturer-overview-session-${sessionName}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                   {t('manage.cockpit.lecturerView')}

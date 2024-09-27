@@ -7,9 +7,11 @@ import nookies from 'nookies'
 
 export default async function getParticipantToken({
   apolloClient,
+  courseId,
   ctx,
 }: {
   apolloClient: ApolloClient<NormalizedCacheObject>
+  courseId?: string
   ctx: GetServerSidePropsContext
 }) {
   const { req, res, query } = ctx
@@ -21,12 +23,13 @@ export default async function getParticipantToken({
   let participantToken: string | undefined | null =
     cookies['participant_token'] ?? query.participantToken
 
-  if (participantToken) {
-    return {
-      participantToken,
-      cookiesAvailable: !!cookies['participant_token'],
-    }
-  }
+  // TODO: reintroduce this after issues with participation creation are in the past
+  // if (participantToken) {
+  //   return {
+  //     participantToken,
+  //     cookiesAvailable: !!cookies['participant_token'],
+  //   }
+  // }
 
   try {
     let result
@@ -55,6 +58,7 @@ export default async function getParticipantToken({
             mutation: LoginParticipantWithLtiDocument,
             variables: {
               signedLtiData: token,
+              courseId,
             },
           })
         }
@@ -92,6 +96,7 @@ export default async function getParticipantToken({
           mutation: LoginParticipantWithLtiDocument,
           variables: {
             signedLtiData,
+            courseId,
           },
         })
       }

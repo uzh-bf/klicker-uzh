@@ -46,15 +46,16 @@ function Repetition() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.repetition')}
         </H1>
-        {courses?.length &&
-          courses.map((course) => (
-            <CourseCollapsible
-              key={`list-${course.id}`}
-              courseId={course.id}
-              courseName={course.displayName}
-              elements={course.elements}
-            />
-          ))}
+        {courses?.length
+          ? courses.map((course) => (
+              <CourseCollapsible
+                key={`list-${course.id}`}
+                courseId={course.id}
+                courseName={course.displayName}
+                elements={course.elements}
+              />
+            ))
+          : null}
 
         {courses?.length === 0 && (
           <UserNotification

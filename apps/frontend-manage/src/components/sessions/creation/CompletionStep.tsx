@@ -53,7 +53,12 @@ function CompletionStep({
           <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
         </Button>
         {editMode ? (
-          <Button onClick={onCloseWizard}>
+          <Button
+            onClick={() => {
+              onCloseWizard()
+              router.push({ pathname: '/' }, undefined, { shallow: true })
+            }}
+          >
             <Button.Icon>
               <FontAwesomeIcon icon={faXmark} />
             </Button.Icon>

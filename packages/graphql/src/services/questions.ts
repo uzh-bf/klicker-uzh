@@ -538,6 +538,8 @@ export async function updateQuestionInstances(
   const instanceData: {
     instanceId: number
     multiplier: number
+    maxBonusPoints: number | undefined
+    timeToZeroBonus: number | undefined
     sessionId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
@@ -546,6 +548,8 @@ export async function updateQuestionInstances(
       {
         instanceId: number
         multiplier: number
+        maxBonusPoints: number | undefined
+        timeToZeroBonus: number | undefined
         sessionId: string | undefined
         practiceQuizId: string | undefined
         microLearningId: string | undefined
@@ -560,6 +564,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.sessionBlock.session.pointsMultiplier,
+            maxBonusPoints: instance.sessionBlock.session.maxBonusPoints,
+            timeToZeroBonus: instance.sessionBlock.session.timeToZeroBonus,
             sessionId: instance.sessionBlock.session.id,
             practiceQuizId: undefined,
             microLearningId: undefined,
@@ -572,6 +578,8 @@ export async function updateQuestionInstances(
       {
         instanceId: number
         multiplier: number
+        maxBonusPoints: number | undefined
+        timeToZeroBonus: number | undefined
         sessionId: string | undefined
         practiceQuizId: string | undefined
         microLearningId: string | undefined
@@ -586,6 +594,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.elementStack.microLearning.pointsMultiplier,
+            maxBonusPoints: undefined,
+            timeToZeroBonus: undefined,
             sessionId: undefined,
             practiceQuizId: undefined,
             microLearningId: instance.elementStack.microLearning.id,
@@ -602,6 +612,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+            maxBonusPoints: undefined,
+            timeToZeroBonus: undefined,
             sessionId: undefined,
             practiceQuizId: instance.elementStack.practiceQuiz.id,
             microLearningId: undefined,
@@ -619,6 +631,8 @@ export async function updateQuestionInstances(
         async ({
           instanceId,
           multiplier,
+          maxBonusPoints,
+          timeToZeroBonus,
           sessionId,
           practiceQuizId,
           microLearningId,
@@ -639,6 +653,8 @@ export async function updateQuestionInstances(
                 questionData: newQuestionData,
                 results: newResults,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints,
+                timeToZeroBonus,
               },
             })
 

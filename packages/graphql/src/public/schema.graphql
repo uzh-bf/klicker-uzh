@@ -14,6 +14,14 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityEvaluation {
+  description: String
+  displayName: String
+  id: ID!
+  name: String!
+  results: [StackEvaluation!]!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -50,6 +58,13 @@ type Choice {
   value: String!
 }
 
+type ChoiceElementResults {
+  correct: Boolean
+  count: Int!
+  feedback: String
+  value: String!
+}
+
 input ChoiceInput {
   correct: Boolean
   feedback: String
@@ -74,6 +89,23 @@ type ChoicesElementData implements ElementData {
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
+}
+
+type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ChoicesElementResults!
+  type: ElementType!
+}
+
+type ChoicesElementResults {
+  anonymousAnswers: Int!
+  choices: [ChoiceElementResults!]!
+  totalAnswers: Int!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -115,6 +147,17 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
+type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ContentElementResults!
+  type: ElementType!
+}
+
 type ContentElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -124,6 +167,11 @@ type ContentElementQData implements QuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+type ContentElementResults {
+  anonymousAnswers: Int!
+  totalAnswers: Int!
 }
 
 type Course {
@@ -217,6 +265,16 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
+interface ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  type: ElementType!
+}
+
 type ElementInstanceOptions {
   pointsMultiplier: Int
   resetTimeDays: Int
@@ -306,6 +364,12 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+enum FlashcardCorrectness {
+  CORRECT
+  INCORRECT
+  PARTIAL
+}
+
 enum FlashcardCorrectnessType {
   CORRECT
   INCORRECT
@@ -323,6 +387,17 @@ type FlashcardElementData implements ElementData {
   type: ElementType!
 }
 
+type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FlashcardElementResults!
+  type: ElementType!
+}
+
 type FlashcardElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -332,6 +407,39 @@ type FlashcardElementQData implements QuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+type FlashcardElementResults {
+  anonymousAnswers: Int!
+  correctCount: Int!
+  incorrectCount: Int!
+  partialCount: Int!
+  totalAnswers: Int!
+}
+
+type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FreeElementResults!
+  type: ElementType!
+}
+
+type FreeElementResult {
+  correct: Boolean
+  count: Int!
+  value: String!
+}
+
+type FreeElementResults {
+  anonymousAnswers: Int!
+  maxLength: Int
+  responses: [FreeElementResult!]!
+  solutions: [String!]
+  totalAnswers: Int!
 }
 
 type FreeTextElementData implements ElementData {
@@ -517,12 +625,23 @@ type GroupLeaderboardEntry {
   score: Float!
 }
 
+type GroupMessage {
+  content: String!
+  createdAt: Date!
+  group: ParticipantGroup
+  id: Int!
+  participant: Participant
+  updatedAt: Date!
+}
+
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  correctness: Float
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
+  lastResponse: Json
   newPointsFrom: Date
   newXpFrom: Date
   numAnswers: Int
@@ -617,6 +736,7 @@ type Mutation {
   activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelSession(id: String!): Session
   changeEmailSettings(projectUpdates: Boolean!): User
@@ -633,7 +753,7 @@ type Mutation {
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
@@ -649,7 +769,7 @@ type Mutation {
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
@@ -668,7 +788,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
+  loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
@@ -725,6 +845,37 @@ type NumericalElementData implements ElementData {
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
+}
+
+type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: NumericalElementResults!
+  type: ElementType!
+}
+
+type NumericalElementResult {
+  correct: Boolean
+  count: Int!
+  value: Float!
+}
+
+type NumericalElementResults {
+  anonymousAnswers: Int!
+  maxValue: Float
+  minValue: Float
+  responseValues: [NumericalElementResult!]!
+  solutionRanges: [NumericalElementSolutions!]!
+  totalAnswers: Int!
+}
+
+type NumericalElementSolutions {
+  max: Float
+  min: Float
 }
 
 type NumericalQuestionData implements QuestionData {
@@ -829,6 +980,7 @@ type ParticipantGroup {
   code: Int!
   groupActivityScore: Int!
   id: ID!
+  messages: [GroupMessage!]
   name: String!
   participants: [Participant!]
   score: Float
@@ -912,9 +1064,12 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
+  getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
+  getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
@@ -1041,6 +1196,7 @@ type Session {
   isModerationEnabled: Boolean!
   linkTo: String
   linkToJoin: String
+  maxBonusPoints: Int!
   name: String!
   namespace: String!
   numOfBlocks: Int
@@ -1049,6 +1205,7 @@ type Session {
   pointsMultiplier: Int!
   startedAt: Date
   status: SessionStatus!
+  timeToZeroBonus: Int!
   updatedAt: Date
 }
 
@@ -1101,6 +1258,14 @@ input SolutionRangeInput {
 input StackElementsInput {
   elementId: Int!
   order: Int!
+}
+
+type StackEvaluation {
+  instances: [ElementInstanceEvaluation!]!
+  stackDescription: String
+  stackId: Int!
+  stackName: String
+  stackOrder: Int!
 }
 
 type StackFeedback {

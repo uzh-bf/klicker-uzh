@@ -81,7 +81,13 @@ function GroupActivityGradingStack({
         return {
           [elementId]: {
             type: type,
-            response: decision?.choicesResponse,
+            response: decision?.choicesResponse?.reduce(
+              (acc: Record<number, boolean>, choice: any) => ({
+                ...acc,
+                [choice]: true,
+              }),
+              {}
+            ),
             valid: true,
           },
         }
@@ -214,7 +220,7 @@ function GroupActivityGradingStack({
             )}
             {elements.map((element, ix) => (
               <div key={element.id} className="flex flex-col">
-                <H3 className={{ root: '-mb-2 border-t border-gray-400 pt-2' }}>
+                <H3 className={{ root: 'border-t border-gray-400 pt-2' }}>
                   {element.elementData.name}
                 </H3>
                 <StudentElement

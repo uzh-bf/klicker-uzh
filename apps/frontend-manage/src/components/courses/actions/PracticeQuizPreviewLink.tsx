@@ -23,7 +23,7 @@ function PracticeQuizPreviewLink({
       data-cy={`open-practice-quiz-${practiceQuiz.name}`}
     >
       <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
-      <div>{t('shared.generic.open')}</div>
+      <div>{t('manage.courseList.openPreview')}</div>
     </Link>
   )
 }

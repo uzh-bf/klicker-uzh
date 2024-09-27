@@ -63,13 +63,13 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
       courseDuration: 'Course Duration',
       enabled: 'Enabled',
       disabled: 'Disabled',
       download: 'Download',
-      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
@@ -112,6 +112,7 @@ export default {
       home: 'Home',
       questions: 'Questions',
       question: 'Question',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',
@@ -207,6 +208,7 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'With groups',
       withoutGroups: 'Without groups',
+      forgotPassword: 'Forgot password?',
     },
     contentInput: {
       boldStyle:
@@ -629,6 +631,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataStorage: '',
       emailMissing:
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
+      forgotPasswordInfo:
+        'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
     },
     avatar: {
       hair: 'Hair',
@@ -680,6 +684,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     achievements: {
       notAchievedYet: 'Not achieved yet',
       noAchievements: 'No achievements yet.',
+    },
+    groups: {
+      messageRequired: 'Please enter a message before submitting.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1098,6 +1105,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizStudentDocs:
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
+      liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizMaxBonusPoints: 'Maximum bonus points',
+      liveQuizMaxBonusPointsTooltip:
+        'This is the maximum number of points a participant will receive during a gamified live quiz for a correct answer to a question with sample solution. The default value is {defaultValue}.',
+      liveQuizTimeToZeroBonus: 'Time to zero bonus points',
+      liveQuizTimeToZeroBonusTooltip:
+        'This is the time in seconds after the first correct answer at which a participant will receive zero bonus points for a correct answer. The default value is {defaultValue}.',
+      liveQuizTotalPointsCorrect: 'Total points for correct answer over time',
+      liveQuizAnswerTime: 'Answer time: {answerTime}',
+      liveQuizTotalAwardedPoints: 'Total points: {totalPoints}',
+      liveQuizMaxBonusPointsReq:
+        'Please enter a valid number of maximum bonus points.',
+      liveQuizMaxBonusPointsMin: 'The maximum bonus points must be at least 0.',
+      liveQuizTimeToZeroBonusReq:
+        'Please enter a valid time to zero bonus points.',
+      liveQuizTimeToZeroBonusMin:
+        'The time to zero bonus points must be at least 1.',
+      liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
       practiceQuizNoCourse:
         'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
       practiceQuizIntroductionName:
@@ -1343,6 +1368,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noConfusionFeedbacksYet:
         'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
+      totalParticipantsInclAnon:
+        'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
@@ -1382,8 +1409,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      unset: 'Unset',
       noStatistics:
         'Because of missing answers, no statistics are available yet.',
+      practiceQuizEvaluation: 'Practice Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'At the moment, the selected chart type is not supported for this element type.',
+      noFlashcardEvaluation:
+        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
+      noContentEvaluation:
+        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -1457,6 +1493,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
       gamificationFixed:
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+      openPreview: 'Open preview',
+      openEvaluation: 'Open evaluation',
     },
     course: {
       modifyCourse: 'Modify course',

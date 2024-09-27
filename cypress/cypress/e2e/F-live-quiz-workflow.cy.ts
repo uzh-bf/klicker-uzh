@@ -37,6 +37,9 @@ describe('Different live-quiz workflows', () => {
     const courseGamified = 'Testkurs'
     const courseNonGamified = 'Non-Gamified Course'
 
+    const maxBonusPoints = 200
+    const timeToZeroBonus = 100
+
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle1)
     cy.get('[data-cy="insert-question-text"]').click().type(question1)
@@ -68,6 +71,7 @@ describe('Different live-quiz workflows', () => {
       .should('exist')
       .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
+    cy.get('[data-cy="live-quiz-advanced-settings"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseGamified)
@@ -79,6 +83,18 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseGamified)
+
+    cy.get('[data-cy="live-quiz-advanced-settings"]').should('exist').click()
+    cy.get('[data-cy="live-quiz-max-bonus-points"]')
+      .click()
+      .clear()
+      .type(String(maxBonusPoints))
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]')
+      .click()
+      .clear()
+      .type(String(timeToZeroBonus))
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
+
     cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
@@ -261,6 +277,16 @@ describe('Different live-quiz workflows', () => {
 
     // check settings and modify them
     cy.get('[data-cy="select-course"]').contains(courseGamified)
+    cy.get('[data-cy="live-quiz-advanced-settings"]').should('exist').click()
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').should(
+      'have.value',
+      maxBonusPoints
+    )
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').should(
+      'have.value',
+      timeToZeroBonus
+    )
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
@@ -904,9 +930,11 @@ describe('Different live-quiz workflows', () => {
     cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
     cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
     cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
-    cy.get(`[data-cy="open-lecturer-overview-session-${sessionName}"]`).click()
-    cy.findByText(feedback1).should('exist')
-    cy.findByText(feedback2).should('not.exist')
+
+    // is now added in separate tab and therefore not visible in test
+    // cy.get(`[data-cy="open-lecturer-overview-session-${sessionName}"]`).click()
+    // cy.findByText(feedback1).should('exist')
+    // cy.findByText(feedback2).should('not.exist')
 
     // delete feedback response
     cy.visit(Cypress.env('URL_MANAGE'))

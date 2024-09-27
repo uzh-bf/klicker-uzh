@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.2.0-alpha.26",
+  "version": "3.2.0-alpha.35",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -86,7 +86,7 @@
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
-    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node --env-file=.env ./dist/index.js'",
+    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node ./dist/index.js'",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config dist/index.js",
     "script": "doppler run --config dev -- tsx",

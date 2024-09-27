@@ -28,7 +28,7 @@ import { WizardMode } from '../sessions/creation/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
-import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
+import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
@@ -138,6 +138,7 @@ function PracticeQuizElement({
   })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
+  const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
   const statusMap: Record<PublicationStatus, React.ReactElement> = {
     [PublicationStatus.Draft]: (
@@ -223,15 +224,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
-                  {
-                    label: (
-                      <PracticeQuizPreviewLink
-                        practiceQuiz={practiceQuiz}
-                        href={href}
-                      />
-                    ),
-                    onClick: () => null,
-                  },
+                  // {
+                  //   label: (
+                  //     <PracticeQuizPreviewLink
+                  //       practiceQuiz={practiceQuiz}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
                   {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
@@ -343,11 +344,20 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
+                  // {
+                  //   label: (
+                  //     <PracticeQuizPreviewLink
+                  //       practiceQuiz={practiceQuiz}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
                   {
                     label: (
-                      <PracticeQuizPreviewLink
-                        practiceQuiz={practiceQuiz}
-                        href={href}
+                      <PracticeQuizEvaluationLink
+                        quizName={practiceQuiz.name}
+                        evaluationHref={evaluationHref}
                       />
                     ),
                     onClick: () => null,

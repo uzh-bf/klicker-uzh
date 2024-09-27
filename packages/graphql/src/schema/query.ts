@@ -11,6 +11,7 @@ import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
 import { ElementFeedback } from './analytics.js'
 import { Course, LeaderboardEntry, StudentCourse } from './course.js'
+import { ActivityEvaluation } from './evaluation.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
 import {
@@ -20,7 +21,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant.js'
-import { ElementStack, PracticeQuiz } from './practiceQuizzes.js'
+import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
 import { Feedback, Session, SessionEvaluation } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
@@ -278,6 +279,28 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPreviousStackEvaluation: t.field({
+        nullable: true,
+        type: StackFeedback,
+        args: {
+          stackId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
+        },
+      }),
+
+      getPracticeQuizEvaluation: asUser.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+        },
+      }),
+
       microLearning: t.field({
         nullable: true,
         type: MicroLearning,
@@ -286,6 +309,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.getMicroLearningData(args, ctx)
+        },
+      }),
+
+      getMicroLearningEvaluation: asUser.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningEvaluation(args, ctx)
         },
       }),
 

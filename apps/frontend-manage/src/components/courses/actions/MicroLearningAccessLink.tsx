@@ -44,7 +44,7 @@ function MicroLearningAccessLink({
         duration={4000}
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkMicrolearningCopied')}
+        {t('manage.course.linkAccessCopied')}
       </Toast>
     </>
   )

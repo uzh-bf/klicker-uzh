@@ -59,6 +59,8 @@ export const Session = SessionRef.implement({
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    maxBonusPoints: t.exposeInt('maxBonusPoints'),
+    timeToZeroBonus: t.exposeInt('timeToZeroBonus'),
 
     status: t.expose('status', { type: SessionStatus }),
     accessMode: t.expose('accessMode', { type: SessionAccessMode }),

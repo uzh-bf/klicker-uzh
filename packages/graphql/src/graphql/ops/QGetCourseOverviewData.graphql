@@ -93,6 +93,17 @@ query GetCourseOverviewData($courseId: String!) {
     averageMemberScore
     groupActivityScore
     score
+    messages {
+      id
+      content
+      participant {
+        id
+        username
+        avatar
+      }
+      createdAt
+      updatedAt
+    }
     participants {
       id
       username

@@ -63,13 +63,13 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
       courseDuration: 'Kursdauer',
       enabled: 'Aktiviert',
       disabled: 'Deaktiviert',
       download: 'Herunterladen',
-      open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
       yes: 'Ja',
@@ -112,6 +112,7 @@ export default {
       home: 'Home',
       questions: 'Fragen',
       question: 'Frage',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Erklärung',
@@ -207,6 +208,7 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'Mit Gruppen',
       withoutGroups: 'Ohne Gruppen',
+      forgotPassword: 'Passwort vergessen?',
     },
     contentInput: {
       boldStyle:
@@ -625,6 +627,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
       emailMissing:
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
+      forgotPasswordInfo:
+        'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
     },
     avatar: {
       hair: 'Frisur',
@@ -676,6 +680,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     achievements: {
       noAchievements: 'Bisher keine Errungenschaften.',
       notAchievedYet: 'Noch nicht erreicht',
+    },
+    groups: {
+      messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1103,6 +1110,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizStudentDocs:
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
+      liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
+      liveQuizMaxBonusPoints: 'Maximale Bonuspunkte',
+      liveQuizMaxBonusPointsTooltip:
+        'Dies ist die maximale Anzahl von Bonuspunkten, die ein Teilnehmer während eines gamifizierten Live-Quiz für eine korrekte Antwort auf eine Frage mit Musterlösung erhalten wird. Der Standardwert beträgt {defaultValue}.',
+      liveQuizTimeToZeroBonus: 'Zeit bis zum Ende von Bonuspunkten',
+      liveQuizTimeToZeroBonusTooltip:
+        'Dies ist die Zeit in Sekunden nach der ersten korrekten Antwort, nach der ein Teilnehmer keine Bonuspunkte mehr für eine korrekte Antwort erhält. Der Standardwert beträgt {defaultValue}.',
+      liveQuizTotalPointsCorrect: 'Gesamtpunkte für korrekte Antwort über Zeit',
+      liveQuizAnswerTime: 'Zeitpunkt: {answerTime}',
+      liveQuizTotalAwardedPoints: 'Gesamtpunkte: {totalPoints}',
+      liveQuizMaxBonusPointsReq:
+        'Bitte geben Sie eine gültige Anzahl von maximalen Bonuspunkten ein.',
+      liveQuizMaxBonusPointsMin:
+        'Die maximalen Bonuspunkte müssen mindestens 0 betragen.',
+      liveQuizTimeToZeroBonusReq:
+        'Bitte geben Sie eine gültige Zeit bis zum Ende der Vergabe von Bonuspunkten ein.',
+      liveQuizTimeToZeroBonusMin:
+        'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
+      liveQuizTSinceFirstCorrect: 'Zeit seit erster korrekter Antwort [s]',
       practiceQuizNoCourse:
         'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:
@@ -1355,6 +1381,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noConfusionFeedbacksYet:
         'Diese Session enthält bisher keine Confusion Feedbacks.',
       totalParticipants: 'Total Teilnehmende: {number}',
+      totalParticipantsInclAnon:
+        'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
@@ -1394,8 +1422,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloud: 'Word Cloud',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
+      unset: 'Nicht gesetzt',
       noStatistics:
         'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
+      practiceQuizEvaluation: 'Übungs-Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
+      noFlashcardEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
+      noContentEvaluation:
+        'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -1475,6 +1512,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gamifizierung und Gruppenbildung werden für diesen Kurs aktiviert. Diese Einstellungen können nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte oder Teilnehmergruppen gebildet wurden. Wenn diese Optionen nicht initial aktiviert sind, können sie später aktiviert werden.',
       gamificationFixed:
         'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
+      openPreview: 'Vorschau öffnen',
+      openEvaluation: 'Evaluation öffnen',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
