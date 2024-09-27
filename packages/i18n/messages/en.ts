@@ -208,6 +208,7 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'With groups',
       withoutGroups: 'Without groups',
+      forgotPassword: 'Forgot password?',
     },
     contentInput: {
       boldStyle:
@@ -630,6 +631,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataStorage: '',
       emailMissing:
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
+      forgotPasswordInfo:
+        'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
     },
     avatar: {
       hair: 'Hair',
@@ -1362,6 +1365,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noConfusionFeedbacksYet:
         'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
+      totalParticipantsInclAnon:
+        'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',

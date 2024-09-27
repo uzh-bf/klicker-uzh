@@ -103,6 +103,7 @@ type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
 }
 
 type ChoicesElementResults {
+  anonymousAnswers: Int!
   choices: [ChoiceElementResults!]!
   totalAnswers: Int!
 }
@@ -169,6 +170,7 @@ type ContentElementQData implements QuestionData {
 }
 
 type ContentElementResults {
+  anonymousAnswers: Int!
   totalAnswers: Int!
 }
 
@@ -408,6 +410,7 @@ type FlashcardElementQData implements QuestionData {
 }
 
 type FlashcardElementResults {
+  anonymousAnswers: Int!
   correctCount: Int!
   incorrectCount: Int!
   partialCount: Int!
@@ -432,6 +435,7 @@ type FreeElementResult {
 }
 
 type FreeElementResults {
+  anonymousAnswers: Int!
   maxLength: Int
   responses: [FreeElementResult!]!
   solutions: [String!]
@@ -633,9 +637,11 @@ type GroupMessage {
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  correctness: Float
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
+  lastResponse: Json
   newPointsFrom: Date
   newXpFrom: Date
   numAnswers: Int
@@ -782,7 +788,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
+  loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
@@ -859,6 +865,7 @@ type NumericalElementResult {
 }
 
 type NumericalElementResults {
+  anonymousAnswers: Int!
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
@@ -1062,6 +1069,7 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

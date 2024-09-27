@@ -1139,6 +1139,22 @@
         "description": null,
         "fields": [
           {
+            "name": "anonymousAnswers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "choices",
             "description": null,
             "args": [],
@@ -1878,6 +1894,22 @@
         "name": "ContentElementResults",
         "description": null,
         "fields": [
+          {
+            "name": "anonymousAnswers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "totalAnswers",
             "description": null,
@@ -4418,6 +4450,22 @@
         "description": null,
         "fields": [
           {
+            "name": "anonymousAnswers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "correctCount",
             "description": null,
             "args": [],
@@ -4698,6 +4746,22 @@
         "name": "FreeElementResults",
         "description": null,
         "fields": [
+          {
+            "name": "anonymousAnswers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "maxLength",
             "description": null,
@@ -6874,6 +6938,18 @@
             "deprecationReason": null
           },
           {
+            "name": "correctness",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "explanation",
             "description": null,
             "args": [],
@@ -6917,6 +6993,18 @@
                 "name": "Int",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "lastResponse",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Json",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -11261,6 +11349,18 @@
             "description": null,
             "args": [
               {
+                "name": "courseId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "signedLtiData",
                 "description": null,
                 "type": {
@@ -13816,6 +13916,22 @@
         "description": null,
         "fields": [
           {
+            "name": "anonymousAnswers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "maxValue",
             "description": null,
             "args": [],
@@ -16360,6 +16476,35 @@
                   "ofType": null
                 }
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "getPreviousStackEvaluation",
+            "description": null,
+            "args": [
+              {
+                "name": "stackId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "StackFeedback",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null

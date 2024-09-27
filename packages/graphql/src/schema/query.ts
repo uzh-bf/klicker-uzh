@@ -21,7 +21,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant.js'
-import { ElementStack, PracticeQuiz } from './practiceQuizzes.js'
+import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
 import { Feedback, Session, SessionEvaluation } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
@@ -276,6 +276,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return PracticeQuizService.getPracticeQuizData(args, ctx)
+        },
+      }),
+
+      getPreviousStackEvaluation: t.field({
+        nullable: true,
+        type: StackFeedback,
+        args: {
+          stackId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 

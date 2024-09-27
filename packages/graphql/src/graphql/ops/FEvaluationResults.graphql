@@ -18,6 +18,7 @@ fragment EvaluationResults on ActivityEvaluation {
       ... on ChoicesElementInstanceEvaluation {
         results {
           totalAnswers
+          anonymousAnswers
           choices {
             value
             count
@@ -30,6 +31,7 @@ fragment EvaluationResults on ActivityEvaluation {
       ... on FreeElementInstanceEvaluation {
         results {
           totalAnswers
+          anonymousAnswers
           maxLength
           solutions
           responses {
@@ -43,6 +45,7 @@ fragment EvaluationResults on ActivityEvaluation {
       ... on NumericalElementInstanceEvaluation {
         results {
           totalAnswers
+          anonymousAnswers
           maxValue
           minValue
           solutionRanges {
@@ -60,6 +63,7 @@ fragment EvaluationResults on ActivityEvaluation {
       ... on FlashcardElementInstanceEvaluation {
         results {
           totalAnswers
+          anonymousAnswers
           correctCount
           partialCount
           incorrectCount
@@ -69,6 +73,7 @@ fragment EvaluationResults on ActivityEvaluation {
       ... on ContentElementInstanceEvaluation {
         results {
           totalAnswers
+          anonymousAnswers
         }
       }
     }

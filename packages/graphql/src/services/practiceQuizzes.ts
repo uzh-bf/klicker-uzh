@@ -46,14 +46,20 @@ import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
   Choice,
+  ChoicesElementData,
   ContentResults,
   ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
   FlashcardResults,
+  FreeTextElementData,
+  NumericalElementData,
   QuestionResponse,
   QuestionResponseChoices,
+  QuestionResponseContent,
+  QuestionResponseFlashcard,
+  QuestionResponseValue,
   StackFeedbackStatus,
   StackInput,
 } from '../types/app.js'
@@ -61,6 +67,12 @@ import {
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
+
+const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> = {
+  [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
+  [FlashcardCorrectness.PARTIAL]: StackFeedbackStatus.PARTIAL,
+  [FlashcardCorrectness.CORRECT]: StackFeedbackStatus.CORRECT,
+}
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -197,6 +209,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 choices,
               },
             }
@@ -240,6 +253,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 maxValue: options.restrictions?.max,
                 minValue: options.restrictions?.min,
                 solutionRanges: options.solutionRanges,
@@ -284,6 +298,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 maxLength: options.restrictions?.maxLength,
                 solutions: options.solutions,
                 responses: ftResponses,
@@ -301,6 +316,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
                 correctCount:
                   instanceResults[FlashcardCorrectness.CORRECT] +
                   anonymousInstanceResults[FlashcardCorrectness.CORRECT],
@@ -320,6 +336,7 @@ export function computeStackEvaluation(
               results: {
                 totalAnswers:
                   instance.results.total + instance.anonymousResults.total,
+                anonymousAnswers: instance.anonymousResults.total,
               },
             }
           }
@@ -707,14 +724,6 @@ async function respondToFlashcard(
       : null
 
     // create result from flashcard response
-    const flashcardResultMap: Record<
-      FlashcardCorrectness,
-      StackFeedbackStatus
-    > = {
-      [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
-      [FlashcardCorrectness.PARTIAL]: StackFeedbackStatus.PARTIAL,
-      [FlashcardCorrectness.CORRECT]: StackFeedbackStatus.CORRECT,
-    }
     const result = {
       grading: flashcardResultMap[response],
       score: null,
@@ -2105,13 +2114,13 @@ export async function respondToQuestion(
           xpAwarded,
           newXpFrom,
           solutions:
-            elementData.type === 'FREE_TEXT'
+            elementData.type === ElementType.FREE_TEXT
               ? elementData.options.hasSampleSolution
                 ? elementData.options.solutions
                 : []
               : null,
           solutionRanges:
-            elementData.type === 'NUMERICAL'
+            elementData.type === ElementType.NUMERICAL
               ? elementData.options.solutionRanges
               : null,
         }
@@ -2155,6 +2164,220 @@ function combineStackStatus({
   return prevStatus
 }
 
+export async function getPreviousStackEvaluation(
+  { stackId }: { stackId: number },
+  ctx: Context
+) {
+  // previous results only exist for logged in users
+  if (!ctx.user?.sub) {
+    return null
+  }
+
+  const stackEvaluation = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId, type: ElementStackType.MICROLEARNING },
+    include: {
+      elements: {
+        include: {
+          responses: {
+            where: {
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // if no previous response exists, return null
+  if (
+    !stackEvaluation ||
+    !stackEvaluation.elements ||
+    !stackEvaluation.elements[0] ||
+    !stackEvaluation.elements[0].responses
+  ) {
+    return null
+  }
+
+  // aggregate the evaluation content from the responses
+  let stackScore: number | undefined = undefined
+  let stackFeedback = StackFeedbackStatus.UNANSWERED
+
+  // TODO: investigate if this logic can be combined with content of the respondToElementStack
+  // function once it is refactored and split up into smaller functions
+  const evaluations: IInstanceEvaluation[] = stackEvaluation.elements.flatMap(
+    (element) => {
+      if (!element.responses || element.responses.length === 0) {
+        return []
+      }
+
+      if (element.elementType === ElementType.FLASHCARD) {
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseFlashcard
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: flashcardResultMap[lastResponse.correctness],
+        })
+
+        return {
+          ...element.elementData,
+          instanceId: element.id,
+          score: 0,
+          correctness: null,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseFlashcard,
+        }
+      } else if (element.elementType === ElementType.CONTENT) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: StackFeedbackStatus.CORRECT,
+        })
+
+        return {
+          ...element.elementData,
+          instanceId: element.id,
+          score: 0,
+          correctness: 1,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseContent,
+        }
+      } else if (
+        element.elementType === ElementType.SC ||
+        element.elementType === ElementType.MC ||
+        element.elementType === ElementType.KPRIM
+      ) {
+        const elementData = element.elementData as ChoicesElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseChoices
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else if (element.elementType === ElementType.NUMERICAL) {
+        const elementData = element.elementData as NumericalElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseValue
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          solutionRanges: elementData.options.hasSampleSolution
+            ? elementData.options.solutionRanges
+            : [],
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else if (element.elementType === ElementType.FREE_TEXT) {
+        const elementData = element.elementData as FreeTextElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseValue
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          solutions: elementData.options.hasSampleSolution
+            ? elementData.options.solutions
+            : [],
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else {
+        throw new Error(
+          'Evaluation of previous stack answers not implemented for type ' +
+            element.elementType
+        )
+      }
+    }
+  )
+
+  return {
+    id: stackEvaluation.id,
+    status: stackFeedback,
+    score: stackScore,
+    evaluations,
+  }
+}
+
 export interface RespondToElementStackInput {
   stackId: number
   courseId: string
@@ -2174,6 +2397,32 @@ export async function respondToElementStack(
   { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
+  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
+  if (ctx.user?.sub) {
+    const stack = await ctx.prisma.elementStack.findUnique({
+      where: { id: stackId },
+      include: {
+        microLearning: true,
+        elements: {
+          include: {
+            responses: {
+              where: {
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (
+      stack?.microLearning &&
+      stack.elements.some((element) => element.responses.length > 0)
+    ) {
+      return null
+    }
+  }
+
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: IInstanceEvaluation[] = []

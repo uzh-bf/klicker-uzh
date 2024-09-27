@@ -872,7 +872,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 200,
+            migrationIdOffset: 300,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -912,7 +912,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -953,7 +953,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -1006,7 +1006,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 600,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1051,7 +1051,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 700,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1092,7 +1092,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 500,
+            migrationIdOffset: 800,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1133,7 +1133,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 600,
+            migrationIdOffset: 900,
             flashcards: flashcards,
             questions: questionsTest.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT
