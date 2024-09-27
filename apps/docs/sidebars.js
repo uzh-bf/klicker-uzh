@@ -15,6 +15,7 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
       'tutorials/delegated_access',
+      'tutorials/ppt_integration',
       'tutorials/lti_integration',
     ],
     'Student Application': [
