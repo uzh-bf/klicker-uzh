@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.2.0-alpha.35",
+  "version": "3.2.0-alpha.36",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",

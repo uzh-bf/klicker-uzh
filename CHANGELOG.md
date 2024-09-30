@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.35...v3.2.0-alpha.36) (2024-09-30)
+
+
+### Bug Fixes
+
+* ensure that originalId uniqueness is only enforced per user to allow same migration into multiple new accounts ([#4279](https://github.com/uzh-bf/klicker-uzh/issues/4279)) ([6e0bf17](https://github.com/uzh-bf/klicker-uzh/commit/6e0bf17221d1e25b62edfc3a4c960c36cf8b2ea7))
+
 ## [3.2.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.34...v3.2.0-alpha.35) (2024-09-24)
 
 
