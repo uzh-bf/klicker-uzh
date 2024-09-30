@@ -182,7 +182,10 @@ export function prepareQuestion({
 
     return {
       where: {
-        originalId: args.originalId,
+        ownerId_originalId: {
+          ownerId: args.ownerId,
+          originalId: args.originalId,
+        },
       },
       create: data,
       update: data,
@@ -197,7 +200,10 @@ export function prepareQuestion({
 
   return {
     where: {
-      originalId: args.originalId,
+      ownerId_originalId: {
+        ownerId: args.ownerId,
+        originalId: args.originalId,
+      },
     },
     create: data,
     update: data,
@@ -1071,7 +1077,10 @@ export async function prepareFlashcardsFromFile(
     quizInfo.elements.map(async (data: any) => {
       const flashcard = await prismaClient.element.upsert({
         where: {
-          originalId: data.originalId,
+          ownerId_originalId: {
+            ownerId: userId,
+            originalId: data.originalId,
+          },
         },
         create: {
           ...data,
