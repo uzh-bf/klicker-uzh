@@ -57,12 +57,16 @@ function CourseArchiveModal({
             setOpen(false)
           }}
           className={{ root: 'bg-primary-100 text-white' }}
+          data={{ cy: 'course-archive-modal-confirm' }}
         >
           {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={() => setOpen(false)}>
+        <Button
+          onClick={() => setOpen(false)}
+          data={{ cy: 'course-archive-modal-cancel' }}
+        >
           {t('shared.generic.close')}
         </Button>
       }

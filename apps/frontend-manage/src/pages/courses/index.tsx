@@ -71,6 +71,7 @@ function CourseSelectionPage() {
                 root: 'hover:text-primary-100 flex flex-row items-center gap-3',
               }}
               onClick={() => setShowArchive((prev) => !prev)}
+              data={{ cy: 'toggle-course-archive' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={showArchive ? faInbox : faArchive} />
@@ -110,6 +111,7 @@ function CourseSelectionPage() {
                         showArchiveModal(true)
                       }}
                       disabled={dayjs(course.endDate).isAfter(dayjs())}
+                      data={{ cy: `archive-course-${course.name}` }}
                     >
                       <FontAwesomeIcon
                         icon={course.isArchived ? faInbox : faArchive}
@@ -119,6 +121,7 @@ function CourseSelectionPage() {
                       className={{
                         root: 'flex h-10 w-10 items-center justify-center border border-red-600',
                       }}
+                      data={{ cy: `delete-course-${course.name}` }}
                     >
                       <FontAwesomeIcon icon={faTrashCan} />
                     </Button>

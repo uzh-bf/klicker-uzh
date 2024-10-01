@@ -128,8 +128,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const courseTest2 = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST2,
-      name: 'Abrakadabra',
-      displayName: 'Abrakadabra',
+      name: 'Testkurs 2',
+      displayName: 'Testkurs 2',
       description: 'Das ist ein Testkurs. Hier wird getestet. Abrakadabra!',
       isGamificationEnabled: true,
       ownerId: USER_ID_TEST,
