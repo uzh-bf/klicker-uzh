@@ -136,7 +136,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       color: '#ff0000',
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
-      endDate: new Date('2030-01-01T23:59'),
+      endDate: new Date('2024-01-01T23:59'),
       isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
       maxGroupSize: 5,

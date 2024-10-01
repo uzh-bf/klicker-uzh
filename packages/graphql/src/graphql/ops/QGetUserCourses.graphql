@@ -9,6 +9,8 @@ query GetUserCourses {
     isGamificationEnabled
     isGroupCreationEnabled
     description
+    startDate
+    endDate
     createdAt
     updatedAt
   }

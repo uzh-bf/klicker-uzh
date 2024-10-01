@@ -32,6 +32,7 @@ function CourseSelectionPage() {
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [selectedCourseArchived, setSelectedCourseArchived] = useState(false)
   const [archiveModal, showArchiveModal] = useState(false)
@@ -50,17 +51,43 @@ function CourseSelectionPage() {
     )
   }
 
+  const courses = dataCourses?.userCourses
+    ?.filter((course) => {
+      return showArchive ? true : !course.isArchived
+    })
+    .sort((a, b) => {
+      return dayjs(b.startDate).diff(dayjs(a.startDate))
+    })
+
   return (
     <Layout>
       <div className="flex w-full justify-center">
         <div className="flex w-max flex-col">
-          <H3>{t('manage.courseList.selectCourse')}:</H3>
-          {dataCourses?.userCourses && dataCourses.userCourses.length > 0 ? (
+          <div className="mr-24 flex flex-row justify-between">
+            <H3>{t('manage.courseList.selectCourse')}:</H3>
+            <Button
+              basic
+              className={{
+                root: 'hover:text-primary-100 flex flex-row items-center gap-3',
+              }}
+              onClick={() => setShowArchive((prev) => !prev)}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={showArchive ? faInbox : faArchive} />
+              </Button.Icon>
+              <Button.Label>
+                {showArchive
+                  ? t('manage.courseList.hideArchive')
+                  : t('manage.courseList.showArchive')}
+              </Button.Label>
+            </Button>
+          </div>
+          {courses && courses.length > 0 ? (
             <div className="w-[20rem] md:w-[40rem]">
               <div className="flex flex-col gap-2">
-                {dataCourses.userCourses.map((course) => (
+                {courses.map((course) => (
                   <div
-                    className="flex flex-row items-start gap-2"
+                    className="flex flex-row items-center gap-2"
                     key={course.id}
                   >
                     <CourseListButton
@@ -69,6 +96,8 @@ function CourseSelectionPage() {
                       label={course.name}
                       color={course.color}
                       isArchived={course.isArchived}
+                      startDate={course.startDate}
+                      endDate={course.endDate}
                       data={{ cy: `course-list-button-${course.name}` }}
                     />
                     <Button
@@ -80,6 +109,7 @@ function CourseSelectionPage() {
                         setSelectedCourseArchived(course.isArchived)
                         showArchiveModal(true)
                       }}
+                      disabled={dayjs(course.endDate).isAfter(dayjs())}
                     >
                       <FontAwesomeIcon
                         icon={course.isArchived ? faInbox : faArchive}

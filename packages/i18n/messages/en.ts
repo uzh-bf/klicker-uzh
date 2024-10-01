@@ -1496,9 +1496,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
-        'Please confirm that you want to archive this course. Archived courses will remain accessible to students.',
+        'Please confirm that you want to archive this course. Archived courses and their activities will remain accessible to students.',
       confirmCourseUnarchive:
         'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
+      showArchive: 'Show archive',
+      hideArchive: 'Hide archive',
     },
     course: {
       modifyCourse: 'Modify course',
