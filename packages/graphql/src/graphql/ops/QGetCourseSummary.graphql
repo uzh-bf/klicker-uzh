@@ -1,0 +1,10 @@
+query GetCourseSummary($courseId: String!) {
+  getCourseSummary(courseId: $courseId) {
+    numOfLiveQuizzes
+    numOfPracticeQuizzes
+    numOfMicroLearnings
+    numOfGroupActivities
+    numOfLeaderboardEntries
+    numOfParticipantGroups
+  }
+}

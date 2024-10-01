@@ -12,7 +12,6 @@ import {
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
-import CourseArchiveModal from '@components/courses/modals/CourseArchiveModal'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -22,6 +21,8 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
+import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
+import CourseDeletionModal from '../../components/courses/modals/CourseDeletionModal'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from '../../components/courses/modals/CourseManipulationModal'
@@ -36,6 +37,7 @@ function CourseSelectionPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [selectedCourseArchived, setSelectedCourseArchived] = useState(false)
   const [archiveModal, showArchiveModal] = useState(false)
+  const [deletionModal, showDeletionModal] = useState(false)
 
   const {
     loading: loadingCourses,
@@ -121,6 +123,10 @@ function CourseSelectionPage() {
                       className={{
                         root: 'flex h-10 w-10 items-center justify-center border border-red-600',
                       }}
+                      onClick={() => {
+                        setSelectedCourseId(course.id)
+                        showDeletionModal(true)
+                      }}
                       data={{ cy: `delete-course-${course.name}` }}
                     >
                       <FontAwesomeIcon icon={faTrashCan} />
@@ -158,6 +164,11 @@ function CourseSelectionPage() {
             setOpen={showArchiveModal}
             courseId={selectedCourseId}
             isArchived={selectedCourseArchived}
+          />
+          <CourseDeletionModal
+            open={deletionModal}
+            setOpen={showDeletionModal}
+            courseId={selectedCourseId}
           />
           <CourseManipulationModal
             modalOpen={createCourseModal}

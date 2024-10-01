@@ -257,7 +257,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Single Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -353,7 +353,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {

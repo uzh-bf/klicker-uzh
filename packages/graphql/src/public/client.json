@@ -113,6 +113,7 @@
    "GetCourseGroups": "b273f652a6ee76b9eee6d99f4f64b277480502f674f6145d7d0b706d53f25e6e",
    "GetCourseOverviewData": "491709198eaf968baa824207896fb1ab4bf976f27a8f54554c704ef8fc8d842e",
    "GetCoursePracticeQuiz": "5b9c0a2e83fa442635459fdd77a56c1618a639078e17ce82310f32660e253794",
+   "GetCourseSummary": "39bd66ce7aca02bfed5e30dccad8973e871a337c7e6f6e8a11e06abb8aee2014",
    "GetFeedbacks": "b33e84156822ff5ba3013fb1ddb31eae21ecfd40c1249b6e9db361ed774a83f8",
    "GetGradingGroupActivity": "79c2a520d7da8752514c6c34383596a36a40f9d9a67c4850e819a30e61b63bae",
    "GetGroupActivity": "bc04bd4d995633af0a94f2ca24b203d9c39ca557dd5f12589fa41419a505b11d",

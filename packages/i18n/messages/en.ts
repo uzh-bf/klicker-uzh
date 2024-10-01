@@ -1505,6 +1505,29 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
       showArchive: 'Show archive',
       hideArchive: 'Hide archive',
+      deleteCourse: 'Delete course',
+      courseDeletionMessage:
+        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course.',
+      noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
+      disconnectLiveQuizzes:
+        '{number} live quizzes will be disconnected from the course. They can still be accessed through the live quiz list.',
+      noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
+      deletePracticeQuizzes:
+        '{number} practice quizzes (including their results) will be irreversibly deleted.',
+      noMicroLearningsToDelete: 'This course contains no microlearnings.',
+      deleteMicroLearnings:
+        '{number} microlearnings (including their results) will be irreversibly deleted.',
+      noGroupActivitiesToDelete: 'This course contains no group activities.',
+      deleteGroupActivities:
+        '{number} group activities (including their submissions) will be irreversibly deleted.',
+      noParticipantGroupsToDelete:
+        'This course contains no participant groups.',
+      deleteParticipantGroups:
+        '{number} participant groups will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'This course contains no leaderboard entries.',
+      deleteLeaderboardEntries:
+        '{number} leaderboard entries will be irreversibly deleted.',
     },
     course: {
       modifyCourse: 'Modify course',

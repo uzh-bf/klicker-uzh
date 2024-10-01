@@ -617,6 +617,41 @@ export async function getActiveUserCourses(ctx: ContextWithUser) {
   return userCourses?.courses ?? []
 }
 
+export async function getCourseSummary(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          sessions: true,
+          practiceQuizzes: true,
+          microLearnings: true,
+          groupActivities: true,
+          leaderboard: true,
+          participantGroups: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  return {
+    numOfLiveQuizzes: course._count.sessions,
+    numOfPracticeQuizzes: course._count.practiceQuizzes,
+    numOfMicroLearnings: course._count.microLearnings,
+    numOfGroupActivities: course._count.groupActivities,
+    numOfLeaderboardEntries: course._count.leaderboard,
+    numOfParticipantGroups: course._count.participantGroups,
+  }
+}
+
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
     where: {
