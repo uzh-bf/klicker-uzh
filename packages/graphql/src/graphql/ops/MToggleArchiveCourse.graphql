@@ -1,0 +1,6 @@
+mutation ToggleArchiveCourse($id: String!, $isArchived: Boolean!) {
+  toggleArchiveCourse(id: $id, isArchived: $isArchived) {
+    id
+    isArchived
+  }
+}

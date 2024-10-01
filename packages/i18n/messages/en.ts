@@ -209,6 +209,7 @@ export default {
       withGroups: 'With groups',
       withoutGroups: 'Without groups',
       forgotPassword: 'Forgot password?',
+      archived: 'Archived',
     },
     contentInput: {
       boldStyle:
@@ -1496,6 +1497,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
       openPreview: 'Open preview',
       openEvaluation: 'Open evaluation',
+      archiveCourse: 'Archive course',
+      unarchiveCourse: 'Unarchive course',
+      confirmCourseArchive:
+        'Please confirm that you want to archive this course. Archived courses and their activities will remain accessible to students.',
+      confirmCourseUnarchive:
+        'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
+      showArchive: 'Show archive',
+      hideArchive: 'Hide archive',
     },
     course: {
       modifyCourse: 'Modify course',

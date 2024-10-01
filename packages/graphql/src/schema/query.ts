@@ -183,6 +183,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getActiveUserCourses: asUser.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return CourseService.getActiveUserCourses(ctx)
+        },
+      }),
+
       participantCourses: asParticipant.field({
         nullable: true,
         type: [Course],

@@ -1014,6 +1014,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      toggleArchiveCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.toggleArchiveCourse(args, ctx)
+        },
+      }),
+
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Element],
