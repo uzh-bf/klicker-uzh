@@ -1,6 +1,8 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface CourseListButtonProps {
@@ -9,6 +11,7 @@ interface CourseListButtonProps {
   icon: IconDefinition
   label: string
   color?: string
+  isArchived?: boolean
   data?: {
     cy?: string
     test?: string
@@ -21,14 +24,17 @@ function CourseListButton({
   icon,
   label,
   color,
+  isArchived,
   data,
 }: CourseListButtonProps) {
+  const t = useTranslations()
+
   return (
     <Button
       key={key}
       className={{
         root: twMerge(
-          'border-uzh-grey-100 w-full rounded-md border border-solid p-2',
+          'border-uzh-grey-100 flex w-full flex-row justify-between rounded-md border border-solid p-2',
           typeof color !== 'undefined' && '!border-b-4'
         ),
       }}
@@ -36,10 +42,11 @@ function CourseListButton({
       onClick={onClick}
       data={data}
     >
-      <Button.Icon className={{ root: 'ml-1 mr-3' }}>
+      <div className="ml-1 flex flex-row items-center gap-3">
         <FontAwesomeIcon icon={icon} />
-      </Button.Icon>
-      <Button.Label>{label}</Button.Label>
+        <div>{label}</div>
+      </div>
+      {isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
     </Button>
   )
 }

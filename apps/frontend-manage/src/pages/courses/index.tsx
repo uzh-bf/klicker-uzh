@@ -1,12 +1,20 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPeopleGroup, faPlusCircle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArchive,
+  faInbox,
+  faPeopleGroup,
+  faPlusCircle,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
+import CourseArchiveModal from '@components/courses/modals/CourseArchiveModal'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -22,7 +30,12 @@ function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
   const [createCourse] = useMutation(CreateCourseDocument)
+
   const [createCourseModal, showCreateCourseModal] = useState(false)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [selectedCourseArchived, setSelectedCourseArchived] = useState(false)
+  const [archiveModal, showArchiveModal] = useState(false)
+
   const {
     loading: loadingCourses,
     error: errorCourses,
@@ -43,23 +56,52 @@ function CourseSelectionPage() {
         <div className="flex w-max flex-col">
           <H3>{t('manage.courseList.selectCourse')}:</H3>
           {dataCourses?.userCourses && dataCourses.userCourses.length > 0 ? (
-            <div className="w-[20rem] md:w-[30rem]">
+            <div className="w-[20rem] md:w-[40rem]">
               <div className="flex flex-col gap-2">
                 {dataCourses.userCourses.map((course) => (
-                  <CourseListButton
+                  <div
+                    className="flex flex-row items-start gap-2"
                     key={course.id}
-                    onClick={() => router.push(`/courses/${course.id}`)}
-                    icon={faPeopleGroup}
-                    label={course.name}
-                    data={{ cy: `course-list-button-${course.name}` }}
-                  />
+                  >
+                    <CourseListButton
+                      onClick={() => router.push(`/courses/${course.id}`)}
+                      icon={faPeopleGroup}
+                      label={course.name}
+                      color={course.color}
+                      isArchived={course.isArchived}
+                      data={{ cy: `course-list-button-${course.name}` }}
+                    />
+                    <Button
+                      className={{
+                        root: 'flex h-10 w-10 items-center justify-center',
+                      }}
+                      onClick={() => {
+                        setSelectedCourseId(course.id)
+                        setSelectedCourseArchived(course.isArchived)
+                        showArchiveModal(true)
+                      }}
+                    >
+                      <FontAwesomeIcon
+                        icon={course.isArchived ? faInbox : faArchive}
+                      />
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'flex h-10 w-10 items-center justify-center border border-red-600',
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTrashCan} />
+                    </Button>
+                  </div>
                 ))}
-                <CourseListButton
-                  onClick={() => showCreateCourseModal(true)}
-                  icon={faPlusCircle}
-                  label={t('manage.courseList.createNewCourse')}
-                  data={{ cy: 'course-list-button-new-course' }}
-                />
+                <div className="mr-24">
+                  <CourseListButton
+                    onClick={() => showCreateCourseModal(true)}
+                    icon={faPlusCircle}
+                    label={t('manage.courseList.createNewCourse')}
+                    data={{ cy: 'course-list-button-new-course' }}
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -78,6 +120,12 @@ function CourseSelectionPage() {
               />
             </div>
           )}
+          <CourseArchiveModal
+            open={archiveModal}
+            setOpen={showArchiveModal}
+            courseId={selectedCourseId}
+            isArchived={selectedCourseArchived}
+          />
           <CourseManipulationModal
             modalOpen={createCourseModal}
             onModalClose={() => showCreateCourseModal(false)}

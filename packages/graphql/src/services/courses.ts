@@ -464,6 +464,28 @@ export async function createCourse(
   return course
 }
 
+interface ToggleArchiveCourseProps {
+  id: string
+  isArchived: boolean
+}
+
+export async function toggleArchiveCourse(
+  { id, isArchived }: ToggleArchiveCourseProps,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isArchived,
+    },
+  })
+
+  return course
+}
+
 interface UpdateCourseSettingsArgs {
   id: string
   name?: string | null
