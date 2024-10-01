@@ -477,6 +477,9 @@ export async function toggleArchiveCourse(
     where: {
       id,
       ownerId: ctx.user.sub,
+      endDate: {
+        lte: new Date(),
+      },
     },
     data: {
       isArchived,
