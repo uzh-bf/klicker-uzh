@@ -457,6 +457,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
+
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -683,6 +684,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     groups: {
       messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
+      nameRequired: 'Bitte geben Sie einen Gruppennamen ein.',
+      pinRequired: 'Bitte geben Sie eine PIN ein.',
+      pinNumeric: 'Die 6-stellige PIN muss numerisch sein.',
     },
     groupActivity: {
       startAt: 'Start: {time}',

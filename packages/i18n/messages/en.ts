@@ -457,6 +457,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
+
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -687,6 +688,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     groups: {
       messageRequired: 'Please enter a message before submitting.',
+      nameRequired: 'Please enter a group name.',
+      pinRequired: 'Please enter a valid group PIN.',
+      pinNumeric: 'The PIN must have a six-digit numeric value.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
