@@ -21,6 +21,7 @@ interface GroupActionButtonProps extends GroupActionProps {
   onClick: () => void
   explanation: string
   onSubmit?: never
+  validationSchema?: never
   placeholder?: never
   textSubmit?: never
 }
@@ -29,6 +30,7 @@ interface GroupActionFormProps extends GroupActionProps {
   onSubmit: (value: string) => Promise<void>
   placeholder: string
   textSubmit: string
+  validationSchema?: any
   onClick?: never
   explanation?: never
 }
@@ -42,6 +44,7 @@ function GroupAction({
   explanation,
   placeholder,
   textSubmit,
+  validationSchema,
   data,
   buttonMode,
 }: GroupActionButtonProps | GroupActionFormProps) {
@@ -63,20 +66,29 @@ function GroupAction({
         <TitleIcon />
         <Formik
           initialValues={{ value: '' }}
-          onSubmit={async (values) => await onSubmit(values.value)}
+          onSubmit={async (values) => await onSubmit(values.value.trim())}
+          validationSchema={validationSchema}
+          validateOnMount
         >
-          <Form className="w-full px-2">
-            <div className="flex flex-row gap-4">
-              <FormikTextField
-                name="value"
-                placeholder={placeholder}
-                className={{ root: 'w-full' }}
-              />
-              <Button type="submit" data={data} loading={loading}>
-                {textSubmit}
-              </Button>
-            </div>
-          </Form>
+          {({ isValid }) => (
+            <Form className="w-full px-2">
+              <div className="flex flex-row gap-4">
+                <FormikTextField
+                  name="value"
+                  placeholder={placeholder}
+                  className={{ root: 'w-full' }}
+                />
+                <Button
+                  type="submit"
+                  data={data}
+                  loading={loading}
+                  disabled={!isValid}
+                >
+                  {textSubmit}
+                </Button>
+              </div>
+            </Form>
+          )}
         </Formik>
       </div>
     )
