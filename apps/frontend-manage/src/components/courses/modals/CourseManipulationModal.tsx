@@ -139,7 +139,7 @@ function CourseManipulationModal({
       }
       open={modalOpen}
       onClose={onModalClose}
-      className={{ content: 'h-max' }}
+      className={{ content: 'h-max !w-full' }}
     >
       <Formik
         validateOnMount
