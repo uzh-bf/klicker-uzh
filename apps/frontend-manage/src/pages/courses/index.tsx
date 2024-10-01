@@ -66,7 +66,7 @@ function CourseSelectionPage() {
         <div className="flex w-[30rem] flex-col md:w-[40rem]">
           <div className="flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
-            {(dataCourses?.userCourses?.length ?? -1) > 0 ? (
+            {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
               <Button
                 basic
                 className={{
@@ -148,7 +148,7 @@ function CourseSelectionPage() {
             <div
               className={twMerge(
                 'w-full',
-                (dataCourses?.userCourses?.length ?? -1) > 0 && 'md:pr-24'
+                (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
               )}
             >
               <UserNotification

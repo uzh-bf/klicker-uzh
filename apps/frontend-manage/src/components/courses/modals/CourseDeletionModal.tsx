@@ -50,21 +50,23 @@ interface CourseDeletionModalProps {
   courseId: string | null
 }
 
-const initialConfirmations = {
-  disconnectLiveQuizzes: false,
-  deletePracticeQuizzes: false,
-  deleteMicroLearnings: false,
-  deleteGroupActivities: false,
-  deleteParticipantGroups: false,
-  deleteLeaderboardEntries: false,
-}
-
 function CourseDeletionModal({
   open,
   setOpen,
   courseId,
 }: CourseDeletionModalProps) {
-  const [confirmations, setConfirmations] = useState(initialConfirmations)
+  const initialConfirmations = {
+    disconnectLiveQuizzes: false,
+    deletePracticeQuizzes: false,
+    deleteMicroLearnings: false,
+    deleteGroupActivities: false,
+    deleteParticipantGroups: false,
+    deleteLeaderboardEntries: false,
+  }
+
+  const [confirmations, setConfirmations] = useState({
+    ...initialConfirmations,
+  })
   const t = useTranslations()
 
   // fetch course information
@@ -109,7 +111,7 @@ function CourseDeletionModal({
       deleteLeaderboardEntries:
         data.getCourseSummary.numOfLeaderboardEntries === 0,
     })
-  }, [courseId, data])
+  }, [courseId, data?.getCourseSummary])
 
   if (!courseId || !data?.getCourseSummary) {
     return null
@@ -120,7 +122,10 @@ function CourseDeletionModal({
   return (
     <Modal
       open={open}
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        setOpen(false)
+        setConfirmations({ ...initialConfirmations })
+      }}
       className={{ content: 'h-max min-h-max !w-max' }}
       title={t('manage.courseList.deleteCourse')}
       onPrimaryAction={
@@ -143,6 +148,7 @@ function CourseDeletionModal({
               },
             })
             setOpen(false)
+            setConfirmations({ ...initialConfirmations })
           }}
           className={{
             root: 'bg-red-700 text-white hover:bg-red-800 hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
@@ -154,7 +160,10 @@ function CourseDeletionModal({
       }
       onSecondaryAction={
         <Button
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false)
+            setConfirmations({ ...initialConfirmations })
+          }}
           data={{ cy: 'course-deletion-modal-cancel' }}
         >
           {t('shared.generic.close')}
@@ -176,8 +185,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.disconnectLiveQuizzes = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              disconnectLiveQuizzes: true,
+            }))
           }}
           confirmed={confirmations.disconnectLiveQuizzes}
           data={{ cy: 'course-deletion-live-quiz-confirm' }}
@@ -191,8 +202,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.deletePracticeQuizzes = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              deletePracticeQuizzes: true,
+            }))
           }}
           confirmed={confirmations.deletePracticeQuizzes}
           data={{ cy: 'course-deletion-practice-quiz-confirm' }}
@@ -206,8 +219,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.deleteMicroLearnings = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              deleteMicroLearnings: true,
+            }))
           }}
           confirmed={confirmations.deleteMicroLearnings}
           data={{ cy: 'course-deletion-micro-learning-confirm' }}
@@ -221,8 +236,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.deleteGroupActivities = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              deleteGroupActivities: true,
+            }))
           }}
           confirmed={confirmations.deleteGroupActivities}
           data={{ cy: 'course-deletion-group-activity-confirm' }}
@@ -236,8 +253,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.deleteParticipantGroups = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              deleteParticipantGroups: true,
+            }))
           }}
           confirmed={confirmations.deleteParticipantGroups}
           data={{ cy: 'course-deletion-participant-group-confirm' }}
@@ -251,8 +270,10 @@ function CourseDeletionModal({
                 })
           }
           onClick={() => {
-            confirmations.deleteLeaderboardEntries = true
-            setConfirmations({ ...confirmations })
+            setConfirmations((prev) => ({
+              ...prev,
+              deleteLeaderboardEntries: true,
+            }))
           }}
           confirmed={confirmations.deleteLeaderboardEntries}
           data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
