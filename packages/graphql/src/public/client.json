@@ -102,6 +102,7 @@
    "CheckParticipantNameAvailable": "c5183b985742c2d90b0f0f45d8b18c402cd8535add2f8b0a9194ef50799a1fb7",
    "CheckShortnameAvailable": "03a02f5db0a7415ed420529f1ee27248586f2d6593ca514a81a5d4b4037eaf1f",
    "CheckValidCoursePin": "2126ef90ecc0ffc980dd92bbd62dfa48387a97d210d5edf4f6a1116a41fb0483",
+   "GetActiveUserCourses": "b225d08587a8de98377c0f6dd0f8e8c3c1d3c8a954c1beab907a156c717f28d6",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
    "GetBookmarkedElementStacks": "6e2fdc0536490130be16dd79613e539d96b8f76896b7f4d10d2fb58849f3735d",
    "GetBookmarksPracticeQuiz": "162b4bf626d9ea2356883d0a5d85f564dc4e9428c0cc2030fcd68130f3b82184",
