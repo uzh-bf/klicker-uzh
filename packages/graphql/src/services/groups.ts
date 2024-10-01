@@ -58,7 +58,7 @@ export async function createParticipantGroup(
       id: courseId,
     },
   })
-  if (!course || !course.isGroupCreationEnabled) {
+  if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
     return null
   }
 
@@ -829,12 +829,16 @@ export async function renameParticipantGroup(
   },
   ctx: ContextWithUser
 ) {
+  if (name.trim() === '') {
+    return null
+  }
+
   const updatedGroup = await ctx.prisma.participantGroup.update({
     where: {
       id: groupId,
     },
     data: {
-      name,
+      name: name.trim(),
     },
   })
 
