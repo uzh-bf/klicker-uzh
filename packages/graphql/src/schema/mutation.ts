@@ -618,6 +618,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      deleteCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.deleteCourse(args, ctx)
+        },
+      }),
+
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,

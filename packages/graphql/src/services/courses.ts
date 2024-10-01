@@ -652,6 +652,25 @@ export async function getCourseSummary(
   }
 }
 
+export async function deleteCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedCourse = await ctx.prisma.course.delete({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id,
+  })
+
+  return deletedCourse
+}
+
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
     where: {

@@ -1,7 +1,11 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCheck, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetCourseSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  DeleteCourseDocument,
+  GetCourseSummaryDocument,
+  GetUserCoursesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -18,7 +22,7 @@ function CourseDeletionItem({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center justify-between border-b pb-2">
+    <div className="flex h-10 flex-row items-center justify-between border-b pb-2">
       <div className="flex flex-row items-center gap-4">
         <FontAwesomeIcon icon={faExclamationCircle} className="text-red-600" />
         <div className="mr-4">{label}</div>
@@ -63,8 +67,25 @@ function CourseDeletionModal({
     skip: !courseId,
   })
 
-  // TODO: create mutation that aborts all live quizzes and deletes all data
-  const loading = false
+  const [deleteCourse, { loading: courseDeleting }] = useMutation(
+    DeleteCourseDocument,
+    {
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUserCoursesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserCoursesDocument,
+          data: {
+            userCourses:
+              data?.userCourses?.filter(
+                (e) => e.id !== res.data?.deleteCourse?.id
+              ) ?? [],
+          },
+        })
+      },
+    }
+  )
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
@@ -98,13 +119,23 @@ function CourseDeletionModal({
       title={t('manage.courseList.deleteCourse')}
       onPrimaryAction={
         <Button
-          loading={loading}
+          loading={courseDeleting}
           disabled={
             queryLoading ||
             Object.values(confirmations).some((confirmation) => !confirmation)
           }
           onClick={async () => {
-            alert('Course deletion not implemented yet')
+            await deleteCourse({
+              variables: { id: courseId },
+
+              optimisticResponse: {
+                __typename: 'Mutation',
+                deleteCourse: {
+                  __typename: 'Course',
+                  id: courseId,
+                },
+              },
+            })
             setOpen(false)
           }}
           className={{

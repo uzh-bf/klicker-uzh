@@ -19,6 +19,7 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
@@ -39,11 +40,9 @@ function CourseSelectionPage() {
   const [archiveModal, showArchiveModal] = useState(false)
   const [deletionModal, showDeletionModal] = useState(false)
 
-  const {
-    loading: loadingCourses,
-    error: errorCourses,
-    data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
+  const { loading: loadingCourses, data: dataCourses } = useQuery(
+    GetUserCoursesDocument
+  )
 
   if (loadingCourses) {
     return (
@@ -64,29 +63,31 @@ function CourseSelectionPage() {
   return (
     <Layout>
       <div className="flex w-full justify-center">
-        <div className="flex w-max flex-col">
-          <div className="mr-24 flex flex-row justify-between">
+        <div className="flex w-[30rem] flex-col md:w-[40rem]">
+          <div className="flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
-            <Button
-              basic
-              className={{
-                root: 'hover:text-primary-100 flex flex-row items-center gap-3',
-              }}
-              onClick={() => setShowArchive((prev) => !prev)}
-              data={{ cy: 'toggle-course-archive' }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={showArchive ? faInbox : faArchive} />
-              </Button.Icon>
-              <Button.Label>
-                {showArchive
-                  ? t('manage.courseList.hideArchive')
-                  : t('manage.courseList.showArchive')}
-              </Button.Label>
-            </Button>
+            {(dataCourses?.userCourses?.length ?? -1) > 0 ? (
+              <Button
+                basic
+                className={{
+                  root: 'hover:text-primary-100 mr-24 flex flex-row items-center gap-3',
+                }}
+                onClick={() => setShowArchive((prev) => !prev)}
+                data={{ cy: 'toggle-course-archive' }}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={showArchive ? faInbox : faArchive} />
+                </Button.Icon>
+                <Button.Label>
+                  {showArchive
+                    ? t('manage.courseList.hideArchive')
+                    : t('manage.courseList.showArchive')}
+                </Button.Label>
+              </Button>
+            ) : null}
           </div>
           {courses && courses.length > 0 ? (
-            <div className="w-[20rem] md:w-[40rem]">
+            <div className="w-full">
               <div className="flex flex-col gap-2">
                 {courses.map((course) => (
                   <div
@@ -144,7 +145,12 @@ function CourseSelectionPage() {
               </div>
             </div>
           ) : (
-            <div className="w-[20rem] md:w-[30rem]">
+            <div
+              className={twMerge(
+                'w-full',
+                (dataCourses?.userCourses?.length ?? -1) > 0 && 'md:pr-24'
+              )}
+            >
               <UserNotification
                 type="warning"
                 className={{ root: 'text-normal mb-3' }}

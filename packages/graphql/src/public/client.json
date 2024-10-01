@@ -22,6 +22,7 @@
    "CreateSession": "4aeec0571ba6f0ad2e6f942ba4615848b5c6b71972359c6f3d35d58ca8a2dd71",
    "CreateUserLogin": "e73c6e12667bbaccdb5ae060522bab74096df7f59c2ebb5c80a510d9c8c4a3de",
    "DeactivateSessionBlock": "d85cf3639b0cc43c6e7cfceb3f5c92ba48428785aac73bab6cda9c61b82e0a65",
+   "DeleteCourse": "3ebaaef059b01c0e1e3cfd1ffdb26ae73736419dd2ec47817ad88f3127730a6c",
    "DeleteFeedback": "70f28a4f203bd22f603277945bd7ef89fc753440f7c773de8112f80490efa211",
    "DeleteFeedbackResponse": "7eac63926733ec1181be78d17985f991e5eaba3e5c43d9c5f385dcafc283f63f",
    "DeleteGroupActivity": "175787b750442e9549cad8454fda5f7dd41d9009023d80784da7aa6a0595eb68",
