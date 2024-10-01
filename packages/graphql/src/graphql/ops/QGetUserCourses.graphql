@@ -3,6 +3,7 @@ query GetUserCourses {
     id
     name
     displayName
+    color
     pinCode
     isArchived
     isGamificationEnabled

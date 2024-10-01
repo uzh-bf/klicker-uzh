@@ -1,12 +1,14 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
 
 interface CourseListButtonProps {
   key?: string
   onClick: () => void
   icon: IconDefinition
   label: string
+  color?: string
   data?: {
     cy?: string
     test?: string
@@ -18,14 +20,19 @@ function CourseListButton({
   onClick,
   icon,
   label,
+  color,
   data,
 }: CourseListButtonProps) {
   return (
     <Button
       key={key}
       className={{
-        root: 'bg-uzh-grey-40 border-uzh-grey-100 w-full rounded-md border border-solid p-2',
+        root: twMerge(
+          'border-uzh-grey-100 w-full rounded-md border border-solid p-2',
+          typeof color !== 'undefined' && '!border-b-4'
+        ),
       }}
+      style={{ borderBottomColor: color }}
       onClick={onClick}
       data={data}
     >
