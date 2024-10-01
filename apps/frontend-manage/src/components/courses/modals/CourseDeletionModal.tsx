@@ -14,10 +14,12 @@ function CourseDeletionItem({
   label,
   confirmed,
   onClick,
+  data,
 }: {
   label: string
   confirmed: boolean
   onClick: () => void
+  data?: { cy?: string; test?: string }
 }) {
   const t = useTranslations()
 
@@ -30,7 +32,11 @@ function CourseDeletionItem({
       {confirmed ? (
         <FontAwesomeIcon icon={faCheck} className="text-green-700" />
       ) : (
-        <Button onClick={onClick} className={{ root: 'h-7 border-red-600' }}>
+        <Button
+          onClick={onClick}
+          className={{ root: 'h-7 border-red-600' }}
+          data={data}
+        >
           {t('shared.generic.confirm')}
         </Button>
       )}
@@ -174,6 +180,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.disconnectLiveQuizzes}
+          data={{ cy: 'course-deletion-live-quiz-confirm' }}
         />
         <CourseDeletionItem
           label={
@@ -188,6 +195,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.deletePracticeQuizzes}
+          data={{ cy: 'course-deletion-practice-quiz-confirm' }}
         />
         <CourseDeletionItem
           label={
@@ -202,6 +210,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.deleteMicroLearnings}
+          data={{ cy: 'course-deletion-micro-learning-confirm' }}
         />
         <CourseDeletionItem
           label={
@@ -216,6 +225,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.deleteGroupActivities}
+          data={{ cy: 'course-deletion-group-activity-confirm' }}
         />
         <CourseDeletionItem
           label={
@@ -230,6 +240,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.deleteParticipantGroups}
+          data={{ cy: 'course-deletion-participant-group-confirm' }}
         />
         <CourseDeletionItem
           label={
@@ -244,6 +255,7 @@ function CourseDeletionModal({
             setConfirmations({ ...confirmations })
           }}
           confirmed={confirmations.deleteLeaderboardEntries}
+          data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
         />
       </div>
     </Modal>
