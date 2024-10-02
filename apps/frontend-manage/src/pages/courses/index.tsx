@@ -169,12 +169,14 @@ function CourseSelectionPage() {
             open={archiveModal}
             setOpen={showArchiveModal}
             courseId={selectedCourseId}
+            setSelectedCourseId={setSelectedCourseId}
             isArchived={selectedCourseArchived}
           />
           <CourseDeletionModal
             open={deletionModal}
             setOpen={showDeletionModal}
             courseId={selectedCourseId}
+            setSelectedCourseId={setSelectedCourseId}
           />
           <CourseManipulationModal
             modalOpen={createCourseModal}
