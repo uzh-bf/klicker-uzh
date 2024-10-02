@@ -275,7 +275,7 @@ function GroupActivityElement({
               )}
               {!isPast && !isFuture && (
                 <Button
-                  onClick={async () => setExtensionModal(true)}
+                  onClick={() => setExtensionModal(true)}
                   data={{
                     cy: `extend-groupActivity-${groupActivity.name}`,
                   }}
@@ -283,7 +283,7 @@ function GroupActivityElement({
                 >
                   <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
                     <FontAwesomeIcon icon={faCalendar} className="w-[1.1rem]" />
-                    <div>{t('manage.course.extendMicroLearning')}</div>
+                    <div>{t('manage.course.extendGroupActivity')}</div>
                   </div>
                 </Button>
               )}
