@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faCalendar,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
@@ -30,6 +34,7 @@ import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import DeletionModal from './modals/DeletionModal'
+import ExtensionModal from './modals/ExtensionModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
@@ -44,6 +49,7 @@ function GroupActivityElement({
   const router = useRouter()
 
   const [deletionModal, setDeletionModal] = useState(false)
+  const [extensionModal, setExtensionModal] = useState(false)
   const isFuture = dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(groupActivity.scheduledEndAt).isBefore(dayjs())
 
@@ -267,6 +273,20 @@ function GroupActivityElement({
                   </div>
                 </Button>
               )}
+              {!isPast && !isFuture && (
+                <Button
+                  onClick={async () => setExtensionModal(true)}
+                  data={{
+                    cy: `extend-groupActivity-${groupActivity.name}`,
+                  }}
+                  basic
+                >
+                  <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                    <FontAwesomeIcon icon={faCalendar} className="w-[1.1rem]" />
+                    <div>{t('manage.course.extendMicroLearning')}</div>
+                  </div>
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -285,6 +305,16 @@ function GroupActivityElement({
         setOpen={setDeletionModal}
         primaryData={{ cy: 'confirm-delete-groupActivity' }}
         secondaryData={{ cy: 'cancel-delete-groupActivity' }}
+      />
+      <ExtensionModal
+        type="groupActivity"
+        id={groupActivity.id}
+        currentEndDate={groupActivity.scheduledEndAt}
+        courseId={courseId}
+        title={t('manage.course.extendGroupActivity')}
+        description={t('manage.course.extendGroupActivityDescription')}
+        open={extensionModal}
+        setOpen={setExtensionModal}
       />
     </div>
   )

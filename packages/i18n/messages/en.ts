@@ -1589,6 +1589,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionGroupActivity:
         'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
       unpublishGroupActivity: 'Unpublish group activity',
+      extendGroupActivity: 'Extend group activity',
+      extendGroupActivityDescription:
+        'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
