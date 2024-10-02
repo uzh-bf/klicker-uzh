@@ -1546,6 +1546,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
+      extendMicroLearning: 'Extend microlearning',
+      extendMicroLearningDescription:
+        'Use this dialogue to modify the end date of the microlearning. Please note that only future dates can be set as end dates.',
+      newEndDate: 'New end date',
+      futureEndDateRequired:
+        'Please enter an end date that lies in the future.',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',

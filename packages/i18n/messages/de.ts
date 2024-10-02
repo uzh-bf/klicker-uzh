@@ -1565,6 +1565,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
+      extendMicroLearning: 'Microlearning verlängern',
+      extendMicroLearningDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum des Microlearnings zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
+      newEndDate: 'Neues Enddatum',
+      futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
