@@ -658,4 +658,59 @@ describe('Create and solve a group activity', () => {
       `${scores2[4]}/25 Points`
     )
   })
+
+  it('extends a seeded and running microlearning', () => {
+    const courseName = 'Testkurs'
+    const groupActivityName = 'Gruppenquest Published'
+    const currentYear = new Date().getFullYear()
+
+    // navigate to course overview
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+
+    // open extension modal
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+
+    // change the end date and check if the changes are saved
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 10}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // check that changing the date to the past does not work
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // change the end date once again to something in the future
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 15}-10-12T23:00`)
+    cy.get('[data-cy="extend-activity-confirm"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `12.10.${currentYear + 15}, 23:00`
+    )
+  })
 })

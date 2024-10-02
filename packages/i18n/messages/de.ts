@@ -195,6 +195,7 @@ export default {
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
@@ -209,6 +210,7 @@ export default {
       withGroups: 'Mit Gruppen',
       withoutGroups: 'Ohne Gruppen',
       forgotPassword: 'Passwort vergessen?',
+      archived: 'Archiviert',
     },
     contentInput: {
       boldStyle:
@@ -457,6 +459,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
+
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -683,6 +686,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     groups: {
       messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
+      nameRequired: 'Bitte geben Sie einen Gruppennamen ein.',
+      pinRequired: 'Bitte geben Sie eine PIN ein.',
+      pinNumeric: 'Die 6-stellige PIN muss numerisch sein.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1511,6 +1517,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
       openPreview: 'Vorschau öffnen',
       openEvaluation: 'Evaluation öffnen',
+      archiveCourse: 'Kurs archivieren',
+      unarchiveCourse: 'Kurs wiederherstellen',
+      confirmCourseArchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs archivieren möchten. Archivierte Kurse und darin enthaltene Aktivitäten bleiben für Studierende zugänglich.',
+      confirmCourseUnarchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs wieder aktivieren möchten. Wiederhergestellte Kurse werden Studierenden anders angezeigt.',
+      showArchive: 'Archiv anzeigen',
+      hideArchive: 'Archiv verbergen',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
@@ -1552,6 +1566,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
+      extendMicroLearning: 'Microlearning verlängern',
+      extendMicroLearningDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum des Microlearnings zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
+      newEndDate: 'Neues Enddatum',
+      futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
@@ -1590,6 +1609,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionGroupActivity:
         'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       unpublishGroupActivity: 'Veröffentlichung aufheben',
+      extendGroupActivity: 'Gruppenaktivität verlängern',
+      extendGroupActivityDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',

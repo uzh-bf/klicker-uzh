@@ -773,6 +773,8 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
+  extendGroupActivity(endDate: Date!, id: String!): GroupActivity
+  extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalRandomGroupAssignments: Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
@@ -819,6 +821,7 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishGroupActivity(id: String!): GroupActivity
@@ -1058,6 +1061,7 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseGroups(courseId: String!): Course

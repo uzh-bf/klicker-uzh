@@ -464,6 +464,31 @@ export async function createCourse(
   return course
 }
 
+interface ToggleArchiveCourseProps {
+  id: string
+  isArchived: boolean
+}
+
+export async function toggleArchiveCourse(
+  { id, isArchived }: ToggleArchiveCourseProps,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      endDate: {
+        lte: new Date(),
+      },
+    },
+    data: {
+      isArchived,
+    },
+  })
+
+  return course
+}
+
 interface UpdateCourseSettingsArgs {
   id: string
   name?: string | null
@@ -548,6 +573,40 @@ export async function getUserCourses(ctx: ContextWithUser) {
     },
     include: {
       courses: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
+  // sort courses by archived or not
+  const archivedSortedCourses =
+    userCourses?.courses.sort((a, b) => {
+      return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+    }) ?? []
+
+  // sort courses by start date descending
+  const startDateSortedCourses = archivedSortedCourses.sort((a, b) => {
+    return a.startDate > b.startDate ? -1 : a.startDate < b.startDate ? 1 : 0
+  })
+
+  return startDateSortedCourses
+}
+
+export async function getActiveUserCourses(ctx: ContextWithUser) {
+  const userCourses = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      courses: {
+        where: {
+          endDate: {
+            gte: new Date(),
+          },
+          isArchived: false,
+        },
         orderBy: {
           createdAt: 'desc',
         },

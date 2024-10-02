@@ -1,5 +1,5 @@
-query GetUserCourses {
-  userCourses {
+query GetActiveUserCourses {
+  getActiveUserCourses {
     id
     name
     displayName

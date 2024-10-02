@@ -385,6 +385,33 @@ export async function unpublishMicroLearning(
   return microLearning
 }
 
+export async function extendMicroLearning(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  return await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      scheduledEndAt: { gt: new Date() },
+    },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+}
+
 interface DeleteMicroLearningArgs {
   id: string
 }

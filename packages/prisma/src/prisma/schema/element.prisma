@@ -31,7 +31,7 @@ model Element {
 
   version Int @default(1) // used to track question versions, incremented on each update
 
-  originalId String? @unique
+  originalId String?
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
@@ -60,6 +60,8 @@ model Element {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
 }
 
 enum ElementInstanceType {
@@ -72,7 +74,7 @@ enum ElementInstanceType {
 model ElementInstance {
   id Int @id @default(autoincrement())
 
-  originalId String? @unique
+  originalId String?
 
   // TODO: remove after migration to new data structure
   migrationId String
@@ -110,6 +112,7 @@ model ElementInstance {
 
   @@unique([type, migrationId])
   @@unique([type, elementStackId, order])
+  @@unique([ownerId, originalId])
 }
 
 model InstanceStatistics {
@@ -205,7 +208,7 @@ enum QuestionInstanceType {
 model QuestionInstance {
   id Int @id @default(autoincrement())
 
-  originalId String? @unique
+  originalId String?
 
   type  QuestionInstanceType?
   order Int?
@@ -234,6 +237,7 @@ model QuestionInstance {
   updatedAt DateTime @updatedAt
 
   @@unique([type, sessionBlockId, order])
+  @@unique([ownerId, originalId])
 }
 
 // #endregion
@@ -246,7 +250,7 @@ model Tag {
 
   order Int @default(0)
 
-  originalId String? @unique
+  originalId String?
 
   questions Element[]
 
@@ -257,6 +261,7 @@ model Tag {
   updatedAt DateTime @updatedAt
 
   @@unique([ownerId, name])
+  @@unique([ownerId, originalId])
 }
 
 // #endregion
@@ -271,13 +276,15 @@ model MediaFile {
   type        String
   description String?
 
-  originalId String? @unique
+  originalId String?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
 }
 
 // #endregion

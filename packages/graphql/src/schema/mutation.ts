@@ -1014,6 +1014,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      toggleArchiveCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.toggleArchiveCourse(args, ctx)
+        },
+      }),
+
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Element],
@@ -1220,6 +1232,20 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      extendMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.extendMicroLearning(args, ctx)
+          },
+        }),
+
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1260,6 +1286,20 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      extendGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.extendGroupActivity(args, ctx)
           },
         }),
 

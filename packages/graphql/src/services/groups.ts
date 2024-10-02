@@ -58,7 +58,7 @@ export async function createParticipantGroup(
       id: courseId,
     },
   })
-  if (!course || !course.isGroupCreationEnabled) {
+  if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
     return null
   }
 
@@ -829,12 +829,16 @@ export async function renameParticipantGroup(
   },
   ctx: ContextWithUser
 ) {
+  if (name.trim() === '') {
+    return null
+  }
+
   const updatedGroup = await ctx.prisma.participantGroup.update({
     where: {
       id: groupId,
     },
     data: {
-      name,
+      name: name.trim(),
     },
   })
 
@@ -1681,6 +1685,31 @@ export async function getGradingGroupActivity(
   }))
 
   return { ...groupActivity, activityInstances: mappedInstances }
+}
+
+export async function extendGroupActivity(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, ownerId: ctx.user.sub, scheduledEndAt: { gt: new Date() } },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+
+  return updatedGroupActivity
 }
 
 interface GradeGroupActivitySubmissionArgs {

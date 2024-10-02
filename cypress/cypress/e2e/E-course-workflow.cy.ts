@@ -436,4 +436,41 @@ describe('Test course creation and editing functionalities', () => {
 
     // TODO: join the course created above (extract the pin after generation)
   })
+
+  it('Test archiving and deleting courses', () => {
+    const runningCourse = 'Testkurs'
+    const pastCourse = 'Testkurs 2'
+
+    // log into frontend-manage
+    cy.loginLecturer()
+
+    // switch to course list
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${runningCourse}"]`).should('exist')
+    cy.get(`[data-cy="course-list-button-${pastCourse}"]`).should('exist')
+
+    // check the archiving functionality
+    cy.get(`[data-cy="archive-course-${runningCourse}"]`).should('be.disabled')
+    cy.get(`[data-cy="archive-course-${pastCourse}"]`)
+      .should('not.be.disabled')
+      .click()
+    cy.findByText(messages.manage.courseList.confirmCourseArchive).should(
+      'exist'
+    )
+    cy.get('[data-cy="course-archive-modal-cancel"]').click()
+    cy.get(`[data-cy="archive-course-${pastCourse}"]`).click()
+    cy.get('[data-cy="course-archive-modal-confirm"]').click()
+    cy.get(`[data-cy="course-list-button-${pastCourse}"]`).should('not.exist')
+
+    // check out the archive and re-activate the past course
+    cy.get('[data-cy="toggle-course-archive"]').click()
+    cy.get(`[data-cy="course-list-button-${pastCourse}"]`).should('exist')
+    cy.get(`[data-cy="archive-course-${pastCourse}"]`).click()
+    cy.findByText(messages.manage.courseList.confirmCourseUnarchive).should(
+      'exist'
+    )
+    cy.get('[data-cy="course-archive-modal-confirm"]').click()
+    cy.get('[data-cy="toggle-course-archive"]').click()
+    cy.get(`[data-cy="course-list-button-${pastCourse}"]`).should('exist')
+  })
 })

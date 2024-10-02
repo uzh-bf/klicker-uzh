@@ -195,6 +195,7 @@ export default {
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} element(s)',
       stackN: 'Stack {number}',
       questionN: 'Question {number}',
       clueN: 'Clue {number}',
@@ -209,6 +210,7 @@ export default {
       withGroups: 'With groups',
       withoutGroups: 'Without groups',
       forgotPassword: 'Forgot password?',
+      archived: 'Archived',
     },
     contentInput: {
       boldStyle:
@@ -457,6 +459,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
+
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -687,6 +690,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     groups: {
       messageRequired: 'Please enter a message before submitting.',
+      nameRequired: 'Please enter a group name.',
+      pinRequired: 'Please enter a valid group PIN.',
+      pinNumeric: 'The PIN must have a six-digit numeric value.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1492,6 +1498,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
       openPreview: 'Open preview',
       openEvaluation: 'Open evaluation',
+      archiveCourse: 'Archive course',
+      unarchiveCourse: 'Unarchive course',
+      confirmCourseArchive:
+        'Please confirm that you want to archive this course. Archived courses and their activities will remain accessible to students.',
+      confirmCourseUnarchive:
+        'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
+      showArchive: 'Show archive',
+      hideArchive: 'Hide archive',
     },
     course: {
       modifyCourse: 'Modify course',
@@ -1533,6 +1547,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
+      extendMicroLearning: 'Extend microlearning',
+      extendMicroLearningDescription:
+        'Use this dialogue to modify the end date of the microlearning. Please note that only future dates can be set as end dates.',
+      newEndDate: 'New end date',
+      futureEndDateRequired:
+        'Please enter an end date that lies in the future.',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
@@ -1570,6 +1590,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionGroupActivity:
         'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
       unpublishGroupActivity: 'Unpublish group activity',
+      extendGroupActivity: 'Extend group activity',
+      extendGroupActivityDescription:
+        'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
