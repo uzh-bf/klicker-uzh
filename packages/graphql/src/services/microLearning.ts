@@ -395,6 +395,11 @@ export async function extendMicroLearning(
   },
   ctx: ContextWithUser
 ) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
   return await ctx.prisma.microLearning.update({
     where: {
       id,
