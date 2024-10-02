@@ -1687,6 +1687,31 @@ export async function getGradingGroupActivity(
   return { ...groupActivity, activityInstances: mappedInstances }
 }
 
+export async function extendGroupActivity(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, ownerId: ctx.user.sub, scheduledEndAt: { gt: new Date() } },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+
+  return updatedGroupActivity
+}
+
 interface GradeGroupActivitySubmissionArgs {
   id: number
   gradingDecisions: {

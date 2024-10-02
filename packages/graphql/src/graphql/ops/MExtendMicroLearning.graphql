@@ -1,0 +1,6 @@
+mutation ExtendMicroLearning($id: String!, $endDate: Date!) {
+  extendMicroLearning(id: $id, endDate: $endDate) {
+    id
+    scheduledEndAt
+  }
+}
