@@ -195,6 +195,7 @@ export default {
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',

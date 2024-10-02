@@ -1586,7 +1586,10 @@ export async function getUserSessions(ctx: ContextWithUser) {
 
   return user?.sessions.map((session) => ({
     ...session,
-    blocks: session.blocks,
+    blocks: session.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: block.instances[0]?.participants,
+    })),
     course: session.course ? session.course : undefined,
     numOfBlocks: session._count?.blocks,
     numOfQuestions: session.blocks.reduce(
