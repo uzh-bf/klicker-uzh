@@ -4,11 +4,12 @@ import {
   ExtendMicroLearningDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, DateChanger, Modal } from '@uzh-bf/design-system'
+import { Button, FormikDateField, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
 
 interface ExtensionModalProps {
   type: 'microLearning' | 'groupActivity'
@@ -32,118 +33,113 @@ function ExtensionModal({
   setOpen,
 }: ExtensionModalProps) {
   const t = useTranslations()
-  const [endDate, setEndDate] = useState(currentEndDate)
-  const [editing, setEditing] = useState(false)
-  const [extendMicroLearning, { loading: submittingMicroLearning }] =
-    useMutation(ExtendMicroLearningDocument, {
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-      ],
-    })
-  const [extendGroupActivity, { loading: submittingGroupActivity }] =
-    useMutation(ExtendGroupActivityDocument, {
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-      ],
-    })
+  const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument, {
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
+  const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument, {
+    refetchQueries: [
+      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+    ],
+  })
 
   return (
     <Modal
-      onPrimaryAction={
-        <Button
-          loading={submittingMicroLearning || submittingGroupActivity}
-          disabled={
-            dayjs(endDate).isSame(currentEndDate) ||
-            dayjs(endDate).isBefore(dayjs())
-          }
-          onClick={async () => {
-            if (
-              !dayjs(endDate).isSame(currentEndDate) &&
-              !dayjs(endDate).isBefore(dayjs())
-            ) {
-              const utcEndDate = dayjs(endDate).utc().format()
-
-              if (type === 'microLearning') {
-                await extendMicroLearning({
-                  variables: {
-                    id,
-                    endDate: utcEndDate,
-                  },
-                  optimisticResponse: {
-                    __typename: 'Mutation',
-                    extendMicroLearning: {
-                      __typename: 'MicroLearning',
-                      id,
-                      scheduledEndAt: utcEndDate,
-                    },
-                  },
-                })
-              } else if (type === 'groupActivity') {
-                await extendGroupActivity({
-                  variables: {
-                    id,
-                    endDate: utcEndDate,
-                  },
-                  optimisticResponse: {
-                    __typename: 'Mutation',
-                    extendGroupActivity: {
-                      __typename: 'GroupActivity',
-                      id,
-                      scheduledEndAt: utcEndDate,
-                    },
-                  },
-                })
-              }
-            }
-            setOpen(false)
-          }}
-          className={{
-            root: twMerge(
-              'bg-primary-100 font-bold text-white',
-              (dayjs(endDate).isSame(currentEndDate) ||
-                dayjs(endDate).isBefore(dayjs())) &&
-                'bg-primary-40 cursor-not-allowed'
-            ),
-          }}
-          data={{ cy: 'extend-activity-confirm' }}
-        >
-          {t('shared.generic.confirm')}
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setOpen(false)}
-          data={{ cy: 'extend-activity-cancel' }}
-        >
-          {t('shared.generic.cancel')}
-        </Button>
-      }
       onClose={(): void => setOpen(false)}
       open={open}
       hideCloseButton={true}
       title={title}
       className={{
-        content: 'h-max min-h-max w-[40rem] self-center pt-0',
+        content: 'h-max min-h-max w-[40rem] self-center !pb-0',
         title: 'text-xl',
       }}
     >
       <div className="space-y-3">
         <div>{description}</div>
-        <DateChanger
-          required
-          error={
-            dayjs(endDate).isBefore(dayjs())
-              ? t('manage.course.futureEndDateRequired')
-              : undefined
-          }
-          date={endDate.toString()}
-          label={t('manage.course.newEndDate')}
-          labelType="large"
-          edit={editing}
-          onEdit={() => setEditing(true)}
-          onSave={(date: string) => setEndDate(new Date(date))}
-          data={{ cy: 'extend-activity-date' }}
-        />
+        <Formik
+          initialValues={{
+            endDate: dayjs(currentEndDate).local().format('YYYY-MM-DDTHH:mm'),
+          }}
+          validationSchema={Yup.object().shape({
+            endDate: Yup.date()
+              .required()
+              .min(new Date(), t('manage.course.futureEndDateRequired')),
+          })}
+          onSubmit={async (values, { setSubmitting }) => {
+            const utcEndDate = dayjs(values.endDate).utc().format()
+            setSubmitting(true)
+
+            if (type === 'microLearning') {
+              await extendMicroLearning({
+                variables: {
+                  id,
+                  endDate: utcEndDate,
+                },
+                optimisticResponse: {
+                  __typename: 'Mutation',
+                  extendMicroLearning: {
+                    __typename: 'MicroLearning',
+                    id,
+                    scheduledEndAt: utcEndDate,
+                  },
+                },
+              })
+            } else if (type === 'groupActivity') {
+              await extendGroupActivity({
+                variables: {
+                  id,
+                  endDate: utcEndDate,
+                },
+                optimisticResponse: {
+                  __typename: 'Mutation',
+                  extendGroupActivity: {
+                    __typename: 'GroupActivity',
+                    id,
+                    scheduledEndAt: utcEndDate,
+                  },
+                },
+              })
+            }
+
+            setSubmitting(false)
+            setOpen(false)
+          }}
+        >
+          {({ isValid, isSubmitting }) => (
+            <Form>
+              <FormikDateField
+                required
+                name="endDate"
+                label={t('manage.course.newEndDate')}
+                labelType="large"
+                data={{ cy: 'extend-activity-date' }}
+              />
+              <div className="mt-3 flex flex-row justify-between">
+                <Button
+                  onClick={(): void => setOpen(false)}
+                  data={{ cy: 'extend-activity-cancel' }}
+                >
+                  {t('shared.generic.cancel')}
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  disabled={!isValid}
+                  className={{
+                    root: twMerge(
+                      'bg-primary-100 font-bold text-white',
+                      !isValid && 'bg-primary-40 cursor-not-allowed'
+                    ),
+                  }}
+                  data={{ cy: 'extend-activity-confirm' }}
+                >
+                  {t('shared.generic.confirm')}
+                </Button>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </div>
     </Modal>
   )
