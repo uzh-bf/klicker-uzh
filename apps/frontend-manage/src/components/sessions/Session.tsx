@@ -9,6 +9,7 @@ import {
   faPencil,
   faPlay,
   faTrash,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -21,8 +22,7 @@ import {
   SoftDeleteLiveSessionDocument,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
+import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -319,40 +319,61 @@ function Session({ session }: SessionProps) {
             </div>
           }
         >
-          <div className="my-2 flex flex-row gap-2 overflow-y-scroll">
+          <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
             {session.blocks?.map((block, index) => (
-              <div key={block.id} className="flex flex-col gap-1">
-                <div className="italic">
-                  {t('manage.sessions.blockXQuestions', {
-                    block: index + 1,
-                    questions: block.instances?.length,
+              <div
+                key={block.id}
+                className="w-64 min-w-52 border-r border-black pr-4 last:border-r-0 last:pr-0"
+              >
+                <div className="flex flex-row justify-between">
+                  <H4>
+                    {t('shared.generic.blockN', {
+                      number: index + 1,
+                    })}
+                  </H4>
+                  {block.numOfParticipants ? (
+                    <div className="flex flex-row items-center">
+                      <div>{block.numOfParticipants}</div>
+                      <FontAwesomeIcon
+                        icon={faUserGroup}
+                        className="ml-1 w-4"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <div>
+                  {block.instances?.map((instance) => (
+                    <Link
+                      href={`/questions/${instance.questionData!.questionId}`}
+                      className="text-sm hover:text-slate-700"
+                      key={instance.id}
+                      legacyBehavior
+                      passHref
+                    >
+                      <a
+                        data-cy={`open-question-live-quiz-${instance.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <div className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm">
+                          <div>
+                            {instance.questionData?.name} (
+                            {t(`shared.${instance.questionData!.type}.short`)})
+                          </div>
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            className="h-3 w-3"
+                          />
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
+                <div className="float-right text-sm">
+                  {t('shared.generic.Nelements', {
+                    number: block.instances?.length,
                   })}
                 </div>
-                {block.instances?.map((instance) => (
-                  <div
-                    key={instance.id}
-                    className="border-uzh-grey-100 w-60 rounded-md border border-solid text-sm"
-                  >
-                    <div className="bg-uzh-grey-40 flex flex-row justify-between px-1 py-0.5">
-                      <Ellipsis
-                        className={{ markdown: 'text-base font-bold' }}
-                        maxLength={20}
-                      >
-                        {instance.questionData!.name}
-                      </Ellipsis>
-
-                      <div className="italic">
-                        ({t(`shared.${instance.questionData!.type}.short`)})
-                      </div>
-                    </div>
-                    <Ellipsis
-                      maxLength={50}
-                      className={{ markdown: 'px-1 text-sm' }}
-                    >
-                      {instance.questionData!.content}
-                    </Ellipsis>
-                  </div>
-                ))}
               </div>
             ))}
           </div>
