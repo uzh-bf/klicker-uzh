@@ -55,7 +55,7 @@ function ExtensionModal({
         title: 'text-xl',
       }}
     >
-      <div className="space-y-3">
+      <div className="space-y-3" data-cy="activity-extension-modal">
         <div>{description}</div>
         <Formik
           initialValues={{
