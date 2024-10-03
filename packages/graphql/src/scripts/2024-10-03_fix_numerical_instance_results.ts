@@ -59,20 +59,16 @@ async function run() {
     console.log('OLD RESULTS', instance.results)
     console.log('NEW RESULTS', newResults)
 
-    promises.push(
-      prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
-        data: {
-          results: newResults,
-        },
-      })
-    )
+    // ! Uncomment this to apply the changes to the database
+    await prisma.elementInstance.update({
+      where: {
+        id: instance.id,
+      },
+      data: {
+        results: newResults,
+      },
+    })
   }
-
-  // ! Uncomment this line to apply the changes to the database
-  // await prisma.$transaction(promises)
 }
 
 await run()
