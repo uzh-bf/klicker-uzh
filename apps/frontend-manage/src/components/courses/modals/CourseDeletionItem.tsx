@@ -24,8 +24,8 @@ function CourseDeletionItem({
   const t = useTranslations()
 
   return (
-    <div className="flex h-10 flex-row items-center justify-between border-b pb-2">
-      <div className="flex flex-row items-center gap-4">
+    <div className="flex h-10 flex-row items-center justify-between border-b pb-2 pl-2">
+      <div className="flex flex-row items-center gap-3.5">
         <FontAwesomeIcon
           icon={notApplicable ? faInfoCircle : faExclamationCircle}
           className={twMerge(
@@ -36,7 +36,12 @@ function CourseDeletionItem({
                 : 'text-red-600'
           )}
         />
-        <div className={twMerge('mr-4', notApplicable && 'text-gray-500')}>
+        <div
+          className={twMerge(
+            'mr-4',
+            (notApplicable || confirmed) && 'text-gray-500'
+          )}
+        >
           {label}
         </div>
       </div>

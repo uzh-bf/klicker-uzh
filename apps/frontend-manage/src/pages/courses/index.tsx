@@ -9,7 +9,7 @@ import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
@@ -67,23 +67,17 @@ function CourseSelectionPage() {
           <div className="flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
             {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
-              <Button
-                basic
+              <Switch
+                checked={showArchive}
+                onCheckedChange={(newValue) => setShowArchive(newValue)}
                 className={{
-                  root: 'hover:text-primary-100 mr-24 flex flex-row items-center gap-3',
+                  root: 'mr-24 flex flex-row items-center gap-3',
+                  label: 'mr-0 font-normal',
                 }}
-                onClick={() => setShowArchive((prev) => !prev)}
                 data={{ cy: 'toggle-course-archive' }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={showArchive ? faInbox : faArchive} />
-                </Button.Icon>
-                <Button.Label>
-                  {showArchive
-                    ? t('manage.courseList.hideArchive')
-                    : t('manage.courseList.showArchive')}
-                </Button.Label>
-              </Button>
+                label={t('manage.courseList.showArchive')}
+                size="sm"
+              />
             ) : null}
           </div>
           {courses && courses.length > 0 ? (
