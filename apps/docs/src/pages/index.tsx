@@ -1,5 +1,6 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useState, useEffect } from 'react';
 import Layout from '@theme/Layout'
 import { Button, H2, H3, Prose } from '@uzh-bf/design-system'
 
@@ -84,6 +85,7 @@ function TitleImage() {
     </div>
   )
 }
+
 
 function CTA() {
   return (
@@ -177,7 +179,46 @@ function FeatureFocusSection({ title, description, features, imgSrc }) {
   )
 }
 
+function HoverImage({ features }) {
+  const [hoveredImage, setHoveredImage] = useState(features[0].hoverImage);
+  const handleMouseEnter = (hoverImage) => {
+    setHoveredImage(hoverImage);
+  };
+
+
+  return (
+    <>
+      {features.map((feature) => (
+        <div key={feature.title} className="relative pl-9"
+        onMouseEnter={() => handleMouseEnter(feature.hoverImage)}>
+          <dt className="inline font-semibold text-gray-900">
+            {feature.title}
+          </dt>{' '}
+          <dd className="inline">{feature.text}</dd>
+        </div>
+      ))}
+      <img
+        src={hoveredImage}
+        alt="Feature specific screenshot"
+        className="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
+      />
+    </>
+  );
+}
+
 function FeatureSection({ title, description, features, imgSrc }) {
+  // Initialize with the hover image of the first feature
+  const [hoveredImage, setHoveredImage] = useState(imgSrc);
+
+  const handleMouseEnter = (hoverImage) => {
+    setHoveredImage(hoverImage);
+  };
+
+  const handleMouseLeave = () => {
+    // On mouse leave, reset to the hover image of the first feature
+    setHoveredImage(features[0]?.hoverImage);
+  };
+
   return (
     <div className="overflow-hidden bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -192,7 +233,12 @@ function FeatureSection({ title, description, features, imgSrc }) {
               </p>
               <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
                 {features.map((feature) => (
-                  <div key={feature.title} className="relative pl-9">
+                  <div
+                    key={feature.title}
+                    className="relative pl-9"
+                    onMouseEnter={() => handleMouseEnter(feature.hoverImage)}
+                    onMouseLeave={handleMouseLeave}
+                  >
                     <dt className="inline font-semibold text-gray-900">
                       <FontAwesomeIcon
                         aria-hidden="true"
@@ -208,17 +254,18 @@ function FeatureSection({ title, description, features, imgSrc }) {
             </div>
           </div>
           <img
-            src={imgSrc}
-            alt="Product screenshot"
+            src={hoveredImage}
+            alt="Feature specific screenshot"
             className="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
-            // width={2432}
-            // height={1442}
           />
         </div>
       </div>
     </div>
-  )
+  );
 }
+
+
+
 
 function UseCaseOverview() {
   return (
@@ -250,28 +297,52 @@ function UseCaseOverview() {
   )
 }
 
+const features = [
+  {
+    title: "Feature 1",
+    text: "This is the first feature description.",
+    hoverImage: "https://via.placeholder.com/600x400?text=Feature+1+Image"
+  },
+  {
+    title: "Feature 2",
+    text: "This is the second feature description.",
+    hoverImage: "https://via.placeholder.com/600x400?text=Feature+2+Image"
+  },
+  {
+    title: "Feature 3",
+    text: "This is the third feature description.",
+    hoverImage: "https://via.placeholder.com/600x400?text=Feature+3+Image"
+  }
+];
 function Home() {
   return (
     <Layout>
       <TitleImage />
       <FeatureSection
-        title="Synchronous Interaction"
+        title="Synchronous Interaction all the time"
         description="Interact your students during class and drive engagement with
           your materials."
-        imgSrc="/img_v3/sync_interaction.png"
+        imgSrc="/img_v3/synchronous_interaction.png"
         features={[
           {
             title: 'Live Quizzes',
             icon: faArrowRight,
             text: 'You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.',
+            hoverImage: '/img_v3/live_quiz.png',
           },
           {
             title: 'Live Q&A',
             icon: faArrowRight,
             text: 'You can enable Live Q&A as part of a Live Quiz and use it during class. Students can ask questions anonymously and upvote questions from other students.',
+            hoverImage: '/img_v3/live_quiz.png'
           },
         ]}
       />
+      <HoverImage
+              features={features}
+      >
+
+      </HoverImage>
       <FeatureSection
         title="Asynchronous Interaction"
         description="Foster engagement and interaction with your contents outside of class."
