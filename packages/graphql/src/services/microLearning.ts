@@ -271,7 +271,7 @@ export async function manipulateMicroLearning(
                 elementType: element.type,
                 migrationId: uuidv4(),
                 order: elem.order,
-                type: ElementInstanceType.PRACTICE_QUIZ,
+                type: ElementInstanceType.MICROLEARNING,
                 elementData: processedElementData,
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
