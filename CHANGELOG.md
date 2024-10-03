@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.37...v3.2.0-rc.0) (2024-10-03)
+
+
+### Bug Fixes
+
+* add missing instructions for answer selection on SC and MC questions in asynchronous activities ([c6ecc9c](https://github.com/uzh-bf/klicker-uzh/commit/c6ecc9cc070b3ab6b51d687fe96206ae20264cb9))
+* aggregated results on element instance for numerical questions need to be computed based on hashed value ([#4286](https://github.com/uzh-bf/klicker-uzh/issues/4286)) ([2e09c5b](https://github.com/uzh-bf/klicker-uzh/commit/2e09c5beed82dd9406d5a49bb35730993402a86a))
+* ensure that aggregated responses for open questions are consistent with response details ([#4288](https://github.com/uzh-bf/klicker-uzh/issues/4288)) ([538caf2](https://github.com/uzh-bf/klicker-uzh/commit/538caf20b14bdc8a94a618755972d88bb55ab645))
+* ensure that element instances in microlearning have correct type ([#4285](https://github.com/uzh-bf/klicker-uzh/issues/4285)) ([2d3a9d0](https://github.com/uzh-bf/klicker-uzh/commit/2d3a9d0ddebc29a3bf9a6ca4ea38c865d8062cfb))
+
+
+### Enhancements
+
+* **apps/docs:** extend documentation with group activity videos and additional sections on gamification ([#4269](https://github.com/uzh-bf/klicker-uzh/issues/4269)) ([f8c1f54](https://github.com/uzh-bf/klicker-uzh/commit/f8c1f547e647c402fdc218671c3705c7717f2ba7))
+
 ## [3.2.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.36...v3.2.0-alpha.37) (2024-10-03)
 
 
