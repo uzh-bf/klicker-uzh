@@ -72,20 +72,16 @@ async function run() {
         console.log('NEW Aggregated Responses:', aggregatedResponses)
       }
 
-      responseUpdates.push(
-        prisma.questionResponse.update({
-          where: {
-            id: response.id,
-          },
-          data: {
-            aggregatedResponses,
-          },
-        })
-      )
+      // ! Uncomment to apply migration
+      // await prisma.questionResponse.update({
+      //   where: {
+      //     id: response.id,
+      //   },
+      //   data: {
+      //     aggregatedResponses,
+      //   },
+      // })
     }
-
-    // ! Uncomment this line to apply the changes to the database
-    // await prisma.$transaction(responseUpdates)
   }
 }
 
