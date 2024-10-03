@@ -2,16 +2,23 @@
 title: Element Management
 ---
 
-## What is a question?
+## What is an element?
 
-![Question Editor](/img_v3/question.png)
+![Element Editor](/img_v3/question.png)
 
-Questions serve as the fundamental building blocks of KlickerUZH. The question pool builds the home screen of KlickerUZH, providing a central hub for creating and editing questions. To gain a basic understanding of the role of questions in KlickerUZH, please refer to the Core Concept - Questions and Use case section.
+Elements serve as the fundamental building blocks of KlickerUZH. The element library builds the home screen of KlickerUZH, providing a central hub for creating and editing elements. To gain a basic understanding of the role of elements in KlickerUZH, please refer to the Core Concept - Elements and Use case section.
 
-1. There are 5 different question types: Single Choice (SC), Multiple Choice (MC), Essay/Free Text(FT), Numerical Response (NR), and Kprim (KP).
-2. A pedagogical reflection should precede the creation of questions, as different question types may be more appropriate for different learning settings or learning goals. For more pedagogical considerations, refer to use cases or to: https://teachingtools.uzh.ch/en/tools/multiple-choice-co-aufgaben-erstellen
+There are several different element types:
 
-## How can I create a question?
+- **Questions**: Single Choice (SC), Multiple Choice (MC), Kprim (KP), Free Text (FT), and Numerical Response (NR)
+- **Flashcards** (FC)
+- **Content Elements** (CT)
+
+:::info
+A pedagogical reflection should precede the creation of elements, as different element types may be more appropriate for different learning settings or learning goals. For more pedagogical considerations, refer to use cases or to UZH Teaching Tools: e.g., https://teachingtools.uzh.ch/en/tools/multiple-choice-co-aufgaben-erstellen
+:::
+
+## How can I create an element?
 
 <iframe
   id="kmsembed-0_c4db0dw8"
@@ -26,18 +33,36 @@ Questions serve as the fundamental building blocks of KlickerUZH. The question p
   referrerPolicy="no-referrer-when-downgrade"
   sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
   frameborder="0"
-  title="KlickerUZH - Question Preparation"
+  title="KlickerUZH - Element Creation"
 ></iframe>
 
-1. The question title is visible to participants and should offer an idea about the subject of the question.
-2. Questions can be valued weighted differently using a multiplier. A multiplier awards a correct answer with either x1, x2, x3, or x4 points, if the question is applied within a gamified context.
-3. A generic answer (Erklärung) can optionally be entered to be displayed to participants after they answer the question, regardless of their response. Generic answers can be used for all question types, however they are only displayed immediately after answering questions in Microlearning or Practice Quiz learning activities. In live quizzes, generic answers are not displayed as the intention is for the answers to be discussed in class. Only the students' points are transferred to leaderboard, when gamification is enabled.
-4. Sample solutions (Musterlösung) can optionally be provided for all answer types. Inputting sample solutions is mandatory for automatic grading of choice-based question types. Providing sample solutions for free-text questions is only recommended when specific words or terms are being queried. To account for capitalization or different spellings, multiple sample solution options can be entered.
-5. Answer-feedbacks (Antwort-Feedbacks) can only be entered for choice-based question types (SC/MC/Kprim). The difference between answer-feedbacks and a generic explanation (Erklärung) is that with answer-feedbacks, each answer option can receive specific feedback to enhance the learning effect.
-6. For Numerical Questions, hints regarding the range of the number can be provided under Options. Additionally, the precision option allows specifying the desired number of decimal places, including whether rounding should be applied.
-7. The preview section demonstrates how the questions will appear to participants. Choice-based questions can be displayed either in a list format or as a grid.
+When creating elements, consider the following:
 
-## How can I manage created questions (e.g., edit, search, sort)?
+- **Element Title**: Is visible to participants and provide an idea about the element's subject.
+- **Weighting**: Elements can be weighted using multipliers (x1, x2, x3, or x4) to award points in gamified contexts.
+- **Generic Explanation**:
+  - Optional for all element types
+  - Displayed to participants after interaction, regardless of response
+  - Shown immediately in Microlearning or Practice Quiz activities
+  - Not displayed in live quizzes (intended for class discussion)
+- **Sample Solutions**:
+  - Optionally available for question-type elements
+  - Mandatory for automatic grading of choice-based or numerical questions
+  - Recommended for free-text questions only when querying specific words/terms
+  - Multiple options can be entered to account for capitalization or spelling variations
+- **Answer Feedbacks**:
+  - Optionally available for choice-based question types (SC/MC/Kprim)
+  - Allows specific feedback for each answer option, enhancing learning effect
+- **Input Restrictions**:
+  - Available for numerical and free-text questions (NR and FT)
+  - Can restrict the range of numbers that can be entered
+  - Can restrict the length of free-text responses
+  - Precision option specifies desired decimal places and rounding
+- **Preview**:
+  - Demonstrates how elements will appear to participants
+  - Choice-based questions can be displayed in list or grid format
+
+## How can I manage created elements (e.g., edit, search, sort)?
 
 <iframe
   id="kmsembed-0_gm5oobzo"
@@ -55,10 +80,21 @@ Questions serve as the fundamental building blocks of KlickerUZH. The question p
   title="KlickerUZH - Element Management"
 ></iframe>
 
-Since elements (i.e., questions, flashcards, and content elements) can be integrated into various learning activities and reused multiple times, understanding how to edit and arrange them is crucial.
+Elements (questions, flashcards, and content elements) are the building blocks of learning activities in KlickerUZH. They can be reused across various activities, making efficient management crucial. Here's how you can organize and manipulate your elements:
 
-1. Questions can be grouped based on tags and It is possible to search for question titles in the search field.
-2. Questions can be listed by creation date or by title (alphabetically, from a -> z or from z -> a)
-3. Questions can be edited, duplicated (and subsequently edited), and deleted. However, any edits made to questions will not affect their status in ongoing implementations within various learning activities. Deleted questions cannot be restored, but they will persist within existing sessions.
-4. To keep the question pool organized, there is the option to archive questions and retrieve them from the archive at a later time.
-5. Questions are the basic building blockof of the 4 learning activities. Most questions can be used in any of the 4 activities, but some restrictions apply. For more details about embedding questions into different learning activities, please refer to the tutorial/workflow section Learning Activities.
+**Organizing Elements**
+
+- **Grouping**: Use tags to categorize elements
+- **Searching**: Find elements by title using the search field
+- **Sorting**: List elements by creation/modification date or alphabetically (A-Z or Z-A)
+- **Archiving**: Keep your element pool tidy by archiving and later retrieving elements
+
+**Manipulating Elements**
+
+- **Edit**: Modify existing elements. Edits to elements do not affect their status in ongoing learning activities unless explicitly activated in the edit dialog.
+- **Duplicate**: Create copies of elements for further editing
+- **Delete**: Remove unwanted elements (note: this action is irreversible)
+
+:::info
+Most elements can be used in any learning activity, with some restrictions. For detailed information on embedding elements into different activities, refer to the following sections. Remember, elements are persistent within existing sessions, even if deleted from your element pool.
+:::
