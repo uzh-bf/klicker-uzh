@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 
 async function run() {
   const prisma = new PrismaClient()
+  let counter = 0
 
   const instances = await prisma.elementInstance.findMany({
     include: {
@@ -82,6 +83,9 @@ async function run() {
       //   },
       // })
     }
+
+    counter++
+    console.log('Processed element', counter, '/', instances.length)
   }
 }
 
