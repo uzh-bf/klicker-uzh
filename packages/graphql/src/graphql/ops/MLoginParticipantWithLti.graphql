@@ -1,5 +1,5 @@
-mutation LoginParticipantWithLti($signedLtiData: String!) {
-  loginParticipantWithLti(signedLtiData: $signedLtiData) {
+mutation LoginParticipantWithLti($signedLtiData: String!, $courseId: String) {
+  loginParticipantWithLti(signedLtiData: $signedLtiData, courseId: $courseId) {
     participant {
       id
     }

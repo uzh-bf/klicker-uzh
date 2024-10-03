@@ -10,7 +10,12 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
 import { ElementFeedback } from './analytics.js'
-import { Course, LeaderboardEntry, StudentCourse } from './course.js'
+import {
+  Course,
+  CourseSummary,
+  LeaderboardEntry,
+  StudentCourse,
+} from './course.js'
 import { ActivityEvaluation } from './evaluation.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
@@ -21,7 +26,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant.js'
-import { ElementStack, PracticeQuiz } from './practiceQuizzes.js'
+import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
 import { Feedback, Session, SessionEvaluation } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
@@ -183,6 +188,25 @@ export const Query = builder.queryType({
         },
       }),
 
+      getActiveUserCourses: asUser.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return CourseService.getActiveUserCourses(ctx)
+        },
+      }),
+
+      getCourseSummary: asUser.field({
+        nullable: true,
+        type: CourseSummary,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseSummary(args, ctx)
+        },
+      }),
+
       participantCourses: asParticipant.field({
         nullable: true,
         type: [Course],
@@ -276,6 +300,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return PracticeQuizService.getPracticeQuizData(args, ctx)
+        },
+      }),
+
+      getPreviousStackEvaluation: t.field({
+        nullable: true,
+        type: StackFeedback,
+        args: {
+          stackId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 

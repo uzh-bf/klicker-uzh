@@ -2,11 +2,11 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   Element,
+  GetActiveUserCoursesDocument,
   GetGroupActivityDocument,
   GetSingleLiveSessionDocument,
   GetSingleMicroLearningDocument,
   GetSinglePracticeQuizDocument,
-  GetUserCoursesDocument,
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
@@ -105,11 +105,11 @@ function ElementCreation({
     loading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
+  } = useQuery(GetActiveUserCoursesDocument)
 
   const courseSelection = useMemo(
     () =>
-      dataCourses?.userCourses?.map(
+      dataCourses?.getActiveUserCourses?.map(
         (
           course: Pick<
             Course,

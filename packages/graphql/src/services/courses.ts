@@ -471,6 +471,31 @@ export async function createCourse(
   return course
 }
 
+interface ToggleArchiveCourseProps {
+  id: string
+  isArchived: boolean
+}
+
+export async function toggleArchiveCourse(
+  { id, isArchived }: ToggleArchiveCourseProps,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      endDate: {
+        lte: new Date(),
+      },
+    },
+    data: {
+      isArchived,
+    },
+  })
+
+  return course
+}
+
 interface UpdateCourseSettingsArgs {
   id: string
   name?: string | null
@@ -562,7 +587,97 @@ export async function getUserCourses(ctx: ContextWithUser) {
     },
   })
 
+  // sort courses by archived or not
+  const archivedSortedCourses =
+    userCourses?.courses.sort((a, b) => {
+      return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+    }) ?? []
+
+  // sort courses by start date descending
+  const startDateSortedCourses = archivedSortedCourses.sort((a, b) => {
+    return a.startDate > b.startDate ? -1 : a.startDate < b.startDate ? 1 : 0
+  })
+
+  return startDateSortedCourses
+}
+
+export async function getActiveUserCourses(ctx: ContextWithUser) {
+  const userCourses = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      courses: {
+        where: {
+          endDate: {
+            gte: new Date(),
+          },
+          isArchived: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
   return userCourses?.courses ?? []
+}
+
+export async function getCourseSummary(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          sessions: true,
+          practiceQuizzes: true,
+          microLearnings: true,
+          groupActivities: true,
+          leaderboard: true,
+          participantGroups: true,
+          participations: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  return {
+    numOfParticipations: course._count.participations,
+    numOfLiveQuizzes: course._count.sessions,
+    numOfPracticeQuizzes: course._count.practiceQuizzes,
+    numOfMicroLearnings: course._count.microLearnings,
+    numOfGroupActivities: course._count.groupActivities,
+    numOfLeaderboardEntries: course._count.leaderboard,
+    numOfParticipantGroups: course._count.participantGroups,
+  }
+}
+
+export async function deleteCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedCourse = await ctx.prisma.course.delete({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id,
+  })
+
+  return deletedCourse
 }
 
 export async function getParticipantCourses(ctx: ContextWithUser) {

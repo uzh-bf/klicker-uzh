@@ -271,7 +271,7 @@ export async function manipulateMicroLearning(
                 elementType: element.type,
                 migrationId: uuidv4(),
                 order: elem.order,
-                type: ElementInstanceType.PRACTICE_QUIZ,
+                type: ElementInstanceType.MICROLEARNING,
                 elementData: processedElementData,
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
@@ -383,6 +383,33 @@ export async function unpublishMicroLearning(
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
 
   return microLearning
+}
+
+export async function extendMicroLearning(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  return await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      scheduledEndAt: { gt: new Date() },
+    },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
 }
 
 interface DeleteMicroLearningArgs {

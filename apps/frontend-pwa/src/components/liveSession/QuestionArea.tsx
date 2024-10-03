@@ -248,12 +248,4 @@ function QuestionArea({
   )
 }
 
-export async function getStaticProps({ locale }: any) {
-  return {
-    props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
-    },
-  }
-}
-
 export default QuestionArea

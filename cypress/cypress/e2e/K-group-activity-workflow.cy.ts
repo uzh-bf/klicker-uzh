@@ -308,6 +308,19 @@ describe('Create and solve a group activity', () => {
       .should('exist')
   })
 
+  it('can send a message to the group', function () {
+    cy.loginStudent()
+
+    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get('[data-cy="group-message-textarea"]').type('hello group!')
+    cy.get('[data-cy="group-message-submit"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="group-message-textarea"]').should('have.value', '')
+    cy.get('[data-cy="group-messages"]').should('contain', 'hello group!')
+  })
+
   it('take part in the seeded group activity', function () {
     cy.loginStudent()
     const activityDisplayName = 'Gruppenquest Published'
@@ -432,7 +445,6 @@ describe('Create and solve a group activity', () => {
     cy.clearLocalStorage()
 
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]').click().type('testuser15')
     cy.get('[data-cy="password-field"]')
       .click()
@@ -604,7 +616,6 @@ describe('Create and solve a group activity', () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME2'))
@@ -645,6 +656,61 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-grading-feedback-4"]').should(
       'contain',
       `${scores2[4]}/25 Points`
+    )
+  })
+
+  it('extends a seeded and running microlearning', () => {
+    const courseName = 'Testkurs'
+    const groupActivityName = 'Gruppenquest Published'
+    const currentYear = new Date().getFullYear()
+
+    // navigate to course overview
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+
+    // open extension modal
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+
+    // change the end date and check if the changes are saved
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 10}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // check that changing the date to the past does not work
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // change the end date once again to something in the future
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 15}-10-12T23:00`)
+    cy.get('[data-cy="extend-activity-confirm"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `12.10.${currentYear + 15}, 23:00`
     )
   })
 })

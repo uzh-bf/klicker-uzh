@@ -54,7 +54,7 @@ enum SessionBlockStatus {
 model SessionBlock {
   id Int @id @default(autoincrement())
 
-  originalId String? @unique
+  originalId String?
 
   order  Int
   status SessionBlockStatus @default(SCHEDULED)
@@ -76,6 +76,7 @@ model SessionBlock {
   updatedAt DateTime @updatedAt
 
   @@unique([sessionId, order])
+  @@unique([sessionId, originalId])
 }
 
 // TODO: delete after migration
@@ -95,7 +96,7 @@ enum AccessMode {
 model LiveSession {
   id String @id @default(uuid()) @db.Uuid
 
-  originalId                 String? @unique
+  originalId                 String?
   isLiveQAEnabled            Boolean @default(false)
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
@@ -135,6 +136,8 @@ model LiveSession {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
 }
 
 enum LiveQuizStatus {

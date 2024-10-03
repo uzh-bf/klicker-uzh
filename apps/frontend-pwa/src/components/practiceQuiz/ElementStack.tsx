@@ -1,8 +1,9 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectnessType,
+  GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,7 +16,7 @@ import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStud
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -39,6 +40,7 @@ interface ElementStackProps {
   withParticipant?: boolean
   bookmarks?: number[] | null
   hideBookmark?: boolean
+  singleSubmission?: boolean
 }
 
 function ElementStack({
@@ -53,6 +55,7 @@ function ElementStack({
   withParticipant = false,
   bookmarks,
   hideBookmark = false,
+  singleSubmission = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
@@ -96,6 +99,103 @@ function ElementStack({
     setStudentResponse,
   })
 
+  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
+  const { data: evaluationData } = useQuery(
+    GetPreviousStackEvaluationDocument,
+    {
+      skip: !singleSubmission || !!stackStorage,
+      variables: {
+        stackId: stack.id,
+      },
+    }
+  )
+
+  // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
+  useEffect(() => {
+    if (
+      singleSubmission &&
+      !stackStorage &&
+      evaluationData?.getPreviousStackEvaluation &&
+      evaluationData.getPreviousStackEvaluation.evaluations &&
+      evaluationData.getPreviousStackEvaluation.evaluations.length > 0
+    ) {
+      const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
+
+      setStackStorage(
+        evaluations.reduce((acc, evaluation) => {
+          const foundElement = stack.elements?.find(
+            (element) => element.id === evaluation.instanceId
+          )
+
+          if (!foundElement) {
+            // Handle the error, log a warning, or skip this evaluation
+            console.warn(`Element with ID ${evaluation.instanceId} not found.`)
+            return acc
+          } else {
+            const elementType = foundElement.elementType
+            let response: StudentResponseType[0]['response']
+
+            if (elementType === ElementType.Flashcard) {
+              response = evaluation.lastResponse
+                .correctness as FlashcardCorrectnessType
+            } else if (elementType === ElementType.Content) {
+              response = evaluation.lastResponse.viewed as boolean
+            } else if (
+              elementType === ElementType.Sc ||
+              elementType === ElementType.Mc
+            ) {
+              const storedChoices = evaluation.lastResponse.choices as number[]
+              response = storedChoices.reduce(
+                (acc, choice) => {
+                  return {
+                    ...acc,
+                    [choice]: true,
+                  }
+                },
+                {} as Record<number, boolean>
+              )
+            } else if (elementType === ElementType.Kprim) {
+              const storedChoices = evaluation.lastResponse.choices as number[]
+              response = { 0: false, 1: false, 2: false, 3: false }
+              storedChoices.forEach((choice) => {
+                response[choice] = true
+              })
+            } else if (
+              elementType === ElementType.Numerical ||
+              elementType === ElementType.FreeText
+            ) {
+              response = evaluation.lastResponse.value
+            }
+
+            return {
+              ...acc,
+              [evaluation.instanceId]: {
+                type: elementType,
+                response,
+                correct: evaluation.correctness,
+                valid: true,
+                evaluation,
+              },
+            }
+          }
+        }, {} as StudentResponseType)
+      )
+
+      // set status and score according to returned correctness
+      setStudentResponse({})
+
+      // ? if used for practice quizzes, optionally set the step status here
+      // const score = evaluationData?.getPreviousStackEvaluation.score
+      // const status = evaluationData?.getPreviousStackEvaluation.status
+      // if (typeof setStepStatus !== 'undefined') {
+      //   setStepStatus({
+      //     status,
+      //     score,
+      //   })
+      // }
+    }
+  }, [evaluationData, setStackStorage, singleSubmission, stack, stackStorage])
+
   return (
     <div className="pb-12">
       <div className="w-full">
@@ -122,7 +222,7 @@ function ElementStack({
           </div>
         )}
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 md:gap-12">
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
@@ -282,6 +382,11 @@ function ElementStack({
               },
             })
 
+            if (!result.data || !result.data?.respondToElementStack) {
+              console.error('Error submitting response')
+              return
+            }
+
             setStackStorage(
               Object.entries(studentResponse).reduce((acc, [key, value]) => {
                 return {
@@ -289,18 +394,13 @@ function ElementStack({
                   [key]: {
                     ...value,
                     evaluation:
-                      result.data?.respondToElementStack?.evaluations?.find(
+                      result.data!.respondToElementStack!.evaluations?.find(
                         (evaluation) => evaluation.instanceId === parseInt(key)
                       ),
                   },
                 }
               }, {} as StudentResponseType)
             )
-
-            if (!result.data?.respondToElementStack) {
-              console.error('Error submitting response')
-              return
-            }
 
             // set status and score according to returned correctness
             const grading = result.data?.respondToElementStack

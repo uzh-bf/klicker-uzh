@@ -267,7 +267,6 @@ describe('Different microlearning workflows', () => {
     // sign in as student on a laptop and respond to one question
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -292,7 +291,6 @@ describe('Different microlearning workflows', () => {
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.viewport('iphone-x')
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -306,11 +304,12 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microLearningDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').should(
+      'have.value',
+      'Free text answer'
+    )
+    cy.get('[data-cy="practice-quiz-continue"]').click() // skip first already answered question (fetch from backend)
 
     // answer FC and CT
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
@@ -412,7 +411,6 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -524,7 +522,6 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -630,7 +627,6 @@ describe('Different microlearning workflows', () => {
     // sign in as student
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -780,7 +776,6 @@ describe('Different microlearning workflows', () => {
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -819,7 +814,6 @@ describe('Different microlearning workflows', () => {
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -1331,7 +1325,6 @@ describe('Different microlearning workflows', () => {
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="password-login"]').click()
     cy.get('[data-cy="username-field"]')
       .click()
       .type(Cypress.env('STUDENT_USERNAME'))
@@ -1357,5 +1350,61 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(500)
     cy.get('[data-cy="finish-microlearning"]').click()
+  })
+
+  it('extends a seeded and running microlearning', () => {
+    const microLearningName = 'Test Microlearning'
+
+    // navigate to course overview
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+
+    // open extension modal
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="extend-microlearning-${microLearningName}"]`).click()
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="extend-microlearning-${microLearningName}"]`).click()
+
+    // change the end date and check if the changes are saved
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 10}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').click()
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // check that changing the date to the past does not work
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="extend-microlearning-${microLearningName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // change the end date once again to something in the future
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="extend-microlearning-${microLearningName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 15}-10-12T23:00`)
+    cy.get('[data-cy="extend-activity-confirm"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
+      `12.10.${currentYear + 15}, 23:00`
+    )
   })
 })

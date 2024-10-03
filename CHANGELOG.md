@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.37...v3.2.0-rc.0) (2024-10-03)
+
+
+### Bug Fixes
+
+* add missing instructions for answer selection on SC and MC questions in asynchronous activities ([c6ecc9c](https://github.com/uzh-bf/klicker-uzh/commit/c6ecc9cc070b3ab6b51d687fe96206ae20264cb9))
+* aggregated results on element instance for numerical questions need to be computed based on hashed value ([#4286](https://github.com/uzh-bf/klicker-uzh/issues/4286)) ([2e09c5b](https://github.com/uzh-bf/klicker-uzh/commit/2e09c5beed82dd9406d5a49bb35730993402a86a))
+* ensure that aggregated responses for open questions are consistent with response details ([#4288](https://github.com/uzh-bf/klicker-uzh/issues/4288)) ([538caf2](https://github.com/uzh-bf/klicker-uzh/commit/538caf20b14bdc8a94a618755972d88bb55ab645))
+* ensure that element instances in microlearning have correct type ([#4285](https://github.com/uzh-bf/klicker-uzh/issues/4285)) ([2d3a9d0](https://github.com/uzh-bf/klicker-uzh/commit/2d3a9d0ddebc29a3bf9a6ca4ea38c865d8062cfb))
+
+
+### Enhancements
+
+* **apps/docs:** extend documentation with group activity videos and additional sections on gamification ([#4269](https://github.com/uzh-bf/klicker-uzh/issues/4269)) ([f8c1f54](https://github.com/uzh-bf/klicker-uzh/commit/f8c1f547e647c402fdc218671c3705c7717f2ba7))
+
+## [3.2.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.36...v3.2.0-alpha.37) (2024-10-03)
+
+
+### Features
+
+* add possibility to archive past courses ([#4281](https://github.com/uzh-bf/klicker-uzh/issues/4281)) ([e71423a](https://github.com/uzh-bf/klicker-uzh/commit/e71423aea55f3a3027fa373d2c0b549191ea404f))
+* add possibility to delete courses ([#4282](https://github.com/uzh-bf/klicker-uzh/issues/4282)) ([8d6cfa0](https://github.com/uzh-bf/klicker-uzh/commit/8d6cfa03768b73f2bdf04a718b3976ece22371ee))
+* add possibility to extend microlearnings and group activities before end date ([#4283](https://github.com/uzh-bf/klicker-uzh/issues/4283)) ([7c84a59](https://github.com/uzh-bf/klicker-uzh/commit/7c84a597a3258e0bfdf9dcda6baee0f26408912b))
+
+
+### Bug Fixes
+
+* ensure that participant group names cannot be empty ([#4280](https://github.com/uzh-bf/klicker-uzh/issues/4280)) ([ba3fdda](https://github.com/uzh-bf/klicker-uzh/commit/ba3fdda3ec8724a6e04caaf09a62740645b839f2))
+
+
+### Enhancements
+
+* improve live quiz list and show participants on completed quizzes ([#4284](https://github.com/uzh-bf/klicker-uzh/issues/4284)) ([e356d43](https://github.com/uzh-bf/klicker-uzh/commit/e356d437c8fdc47cf0e96c1273e4bc9a75be521b))
+
+## [3.2.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.35...v3.2.0-alpha.36) (2024-09-30)
+
+
+### Bug Fixes
+
+* ensure that originalId uniqueness is only enforced per user to allow same migration into multiple new accounts ([#4279](https://github.com/uzh-bf/klicker-uzh/issues/4279)) ([6e0bf17](https://github.com/uzh-bf/klicker-uzh/commit/6e0bf17221d1e25b62edfc3a4c960c36cf8b2ea7))
+
+## [3.2.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.34...v3.2.0-alpha.35) (2024-09-24)
+
+
+### Bug Fixes
+
+* add missing translation for access link copy to clipboard ([d951488](https://github.com/uzh-bf/klicker-uzh/commit/d951488adb5376678fad1e59eb791fe8581cddec))
+
+## [3.2.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.33...v3.2.0-alpha.34) (2024-09-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** do not show collected points when participating anonymously in microlearning ([8d81e80](https://github.com/uzh-bf/klicker-uzh/commit/8d81e8009e326d3a554f197a1c7fe562e34cf9d0))
+* create a participation when logging in via LTI from a page within the course directory, redirect to new microlearning page with courseId param ([#4276](https://github.com/uzh-bf/klicker-uzh/issues/4276)) ([d298dda](https://github.com/uzh-bf/klicker-uzh/commit/d298dda96a45881e180c6303931c976f761fe22a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** clearly mark email login to work as forgot password functionality ([#4275](https://github.com/uzh-bf/klicker-uzh/issues/4275)) ([a837902](https://github.com/uzh-bf/klicker-uzh/commit/a83790294bc338d4f316bc63d78259bbb5521e8a))
+* ensure that each element stack in microlearning can only be submitted once ([#4278](https://github.com/uzh-bf/klicker-uzh/issues/4278)) ([f97dd60](https://github.com/uzh-bf/klicker-uzh/commit/f97dd6055f785459bb9f6498681624d93d9faa2c))
+* show anonymous participant count on async activity evaluation ([#4277](https://github.com/uzh-bf/klicker-uzh/issues/4277)) ([0ac88ee](https://github.com/uzh-bf/klicker-uzh/commit/0ac88ee21d96f7d97672820e2472f97afc7604e1))
+
+## [3.2.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.32...v3.2.0-alpha.33) (2024-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question preview on live quiz works as expected ([#4272](https://github.com/uzh-bf/klicker-uzh/issues/4272)) ([977ad2a](https://github.com/uzh-bf/klicker-uzh/commit/977ad2ab1825d55138ae50606da9c5313b466449))
+* **apps/frontend-pwa:** show correct avatar and add form validation to group messages ([#4273](https://github.com/uzh-bf/klicker-uzh/issues/4273)) ([9729fd0](https://github.com/uzh-bf/klicker-uzh/commit/9729fd0bf165fbbe250da19774c16a2a2a7b1b90))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve layout of group messages ([#4274](https://github.com/uzh-bf/klicker-uzh/issues/4274)) ([8744f99](https://github.com/uzh-bf/klicker-uzh/commit/8744f99cf05be83d3f8a500aed79e0d81045677e))
+
+## [3.2.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.31...v3.2.0-alpha.32) (2024-09-22)
+
+
+### Features
+
+* add simple group chat to allow communication in random groups ([#4271](https://github.com/uzh-bf/klicker-uzh/issues/4271)) ([6566344](https://github.com/uzh-bf/klicker-uzh/commit/65663444b2dad50e7bfdfbde68485543c9b159fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that question text size on evaluation adjusts to corresponding setting ([0b00100](https://github.com/uzh-bf/klicker-uzh/commit/0b00100e7af2fab104064f2423c39f3d4ed8c073))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** introduce new table component on asynchronous activity evaluation ([#4268](https://github.com/uzh-bf/klicker-uzh/issues/4268)) ([28d56d7](https://github.com/uzh-bf/klicker-uzh/commit/28d56d7517495bb1f605e572095829ad0d812dd3))
+
 ## [3.2.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.30...v3.2.0-alpha.31) (2024-09-19)
 
 ## [3.2.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.29...v3.2.0-alpha.30) (2024-09-19)

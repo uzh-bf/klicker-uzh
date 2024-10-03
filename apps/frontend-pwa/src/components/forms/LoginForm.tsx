@@ -34,8 +34,8 @@ interface LoginFormProps {
   isSubmitting: boolean
   installAndroid?: string
   installIOS?: string
-  magicLinkLogin?: boolean
-  setMagicLinkLogin?: (value: boolean) => void
+  magicLinkLogin: boolean
+  setMagicLinkLogin: (value: boolean) => void
 }
 
 export function LoginForm({
@@ -120,6 +120,12 @@ export function LoginForm({
                 </UserNotification>
               ) : null}
 
+              {magicLinkLogin && (
+                <UserNotification type="info">
+                  {t('pwa.profile.forgotPasswordInfo')}
+                </UserNotification>
+              )}
+
               <FormikTextField
                 required
                 label={labelIdentifier}
@@ -128,12 +134,14 @@ export function LoginForm({
                 data={dataIdentifier}
               />
 
-              {magicLinkLogin && setMagicLinkLogin && (
+              {magicLinkLogin && (
                 <div className="mt-3 flex flex-col gap-2 md:mt-2">
                   {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
                     <Button
                       fluid
-                      className={{ root: 'justify-start gap-4' }}
+                      className={{
+                        root: 'bg-primary-80 justify-start gap-4 text-white',
+                      }}
                       type="submit"
                       disabled={isSubmitting}
                       data={{ cy: 'magic-link-login' }}
@@ -178,21 +186,19 @@ export function LoginForm({
                     type={passwordHidden ? 'password' : 'text'}
                   />
 
-                  <div className="flex w-full flex-row justify-between">
-                    {setMagicLinkLogin && (
-                      <Button
-                        className={{
-                          root: 'border-uzh-grey-80 mt-3 w-full !justify-center md:mt-2 md:w-max',
-                        }}
-                        onClick={() => setMagicLinkLogin(true)}
-                      >
-                        Back
-                      </Button>
-                    )}
-
+                  <div className="flex flex-row justify-between">
+                    <Button
+                      basic
+                      onClick={() => setMagicLinkLogin(true)}
+                      className={{
+                        root: 'text-primary-80 hover:text-primary-100 text-sm hover:underline',
+                      }}
+                    >
+                      {t('shared.generic.forgotPassword')}
+                    </Button>
                     <Button
                       className={{
-                        root: 'border-uzh-grey-80 mt-3 w-full !justify-center md:mt-2 md:w-max',
+                        root: 'border-uzh-grey-80 bg-primary-80 mt-3 !justify-center text-white md:mb-0 md:mt-2 md:w-max md:self-end',
                       }}
                       type="submit"
                       disabled={isSubmitting}
@@ -204,7 +210,7 @@ export function LoginForm({
                 </>
               )}
 
-              {installAndroid && onChrome && (
+              {!magicLinkLogin && installAndroid && onChrome && (
                 <div className="mt-4 flex flex-col justify-center md:hidden">
                   <UserNotification type="info" message={installAndroid}>
                     <Button
@@ -221,7 +227,7 @@ export function LoginForm({
                   </UserNotification>
                 </div>
               )}
-              {installIOS && oniOS && (
+              {!magicLinkLogin && installIOS && oniOS && (
                 <UserNotification
                   className={{ root: 'mt-4' }}
                   type="info"

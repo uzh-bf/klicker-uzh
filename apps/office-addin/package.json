@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.2.0-alpha.31",
+  "version": "3.2.0-rc.0",
   "license": "AGPL-3.0",
   "dependencies": {
     "@uzh-bf/design-system": "3.0.0-alpha.29",

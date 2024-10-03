@@ -128,15 +128,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const courseTest2 = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST2,
-      name: 'Abrakadabra',
-      displayName: 'Abrakadabra',
+      name: 'Testkurs 2',
+      displayName: 'Testkurs 2',
       description: 'Das ist ein Testkurs. Hier wird getestet. Abrakadabra!',
       isGamificationEnabled: true,
       ownerId: USER_ID_TEST,
-      color: '#016273',
+      color: '#ff0000',
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
-      endDate: new Date('2030-01-01T23:59'),
+      endDate: new Date('2024-01-01T23:59'),
       isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
       maxGroupSize: 5,
@@ -153,7 +153,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'This is a course without gamification.',
       isGamificationEnabled: false,
       ownerId: USER_ID_TEST,
-      color: '#016274',
+      color: '#166b16',
       pinCode: 482748273,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
@@ -257,7 +257,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Single Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -353,7 +353,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -872,7 +872,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 200,
+            migrationIdOffset: 300,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -912,7 +912,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -953,7 +953,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -1006,7 +1006,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 600,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1051,7 +1051,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 700,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1092,7 +1092,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 500,
+            migrationIdOffset: 800,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1133,7 +1133,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 600,
+            migrationIdOffset: 900,
             flashcards: flashcards,
             questions: questionsTest.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT

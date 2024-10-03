@@ -63,6 +63,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
       courseDuration: 'Kursdauer',
@@ -194,6 +195,7 @@ export default {
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
@@ -207,6 +209,8 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'Mit Gruppen',
       withoutGroups: 'Ohne Gruppen',
+      forgotPassword: 'Passwort vergessen?',
+      archived: 'Archiviert',
     },
     contentInput: {
       boldStyle:
@@ -455,6 +459,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
+
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -625,6 +630,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
       emailMissing:
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
+      forgotPasswordInfo:
+        'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
     },
     avatar: {
       hair: 'Frisur',
@@ -676,6 +683,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     achievements: {
       noAchievements: 'Bisher keine Errungenschaften.',
       notAchievedYet: 'Noch nicht erreicht',
+    },
+    groups: {
+      messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
+      nameRequired: 'Bitte geben Sie einen Gruppennamen ein.',
+      pinRequired: 'Bitte geben Sie eine PIN ein.',
+      pinNumeric: 'Die 6-stellige PIN muss numerisch sein.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1371,6 +1384,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noConfusionFeedbacksYet:
         'Diese Session enthält bisher keine Confusion Feedbacks.',
       totalParticipants: 'Total Teilnehmende: {number}',
+      totalParticipantsInclAnon:
+        'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
@@ -1502,6 +1517,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
       openPreview: 'Vorschau öffnen',
       openEvaluation: 'Evaluation öffnen',
+      archiveOnlyPastCourses:
+        'Nur Kurse mit einem Enddatum in der Vergangenheit können archiviert werden.',
+      archiveCourse: 'Kurs archivieren',
+      unarchiveCourse: 'Kurs wiederherstellen',
+      confirmCourseArchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs archivieren möchten. Archivierte Kurse und darin enthaltene Aktivitäten bleiben für Studierende zugänglich.',
+      confirmCourseUnarchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs wieder aktivieren möchten. Wiederhergestellte Kurse werden Studierenden anders angezeigt.',
+      showArchive: 'Archiv anzeigen',
+      hideArchive: 'Archiv verbergen',
+      deleteCourse: 'Kurs löschen',
+      courseDeletionMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
+      noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
+      deleteParticipations:
+        '{number} Teilnehmende dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
+      noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
+      disconnectLiveQuizzes:
+        '{number} Live-Quizzes werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',
+      noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
+      deletePracticeQuizzes:
+        '{number} Übungs-Quizzes (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+      noMicroLearningsToDelete: 'Dieser Kurs enthält keine Microlearnings.',
+      deleteMicroLearnings:
+        '{number} Microlearnings (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+      noGroupActivitiesToDelete:
+        'Dieser Kurs enthält keine Gruppenaktivitäten.',
+      deleteGroupActivities:
+        '{number} Gruppenaktivitäten (inklusive der zugehörigen Abgaben) werden unwiderruflich gelöscht.',
+      noParticipantGroupsToDelete:
+        'Dieser Kurs enthält keine Teilnehmergruppen.',
+      deleteParticipantGroups:
+        '{number} Teilnehmergruppen werden unwiderruflich gelöscht.',
+      noLeaderboardEntriesToDelete:
+        'Dieser Kurs enthält keine Leaderboard-Einträge.',
+      deleteLeaderboardEntries:
+        '{number} Leaderboard-Einträge werden unwiderruflich gelöscht.',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
@@ -1543,6 +1595,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
+      extendMicroLearning: 'Microlearning verlängern',
+      extendMicroLearningDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum des Microlearnings zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
+      newEndDate: 'Neues Enddatum',
+      futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
@@ -1581,6 +1638,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionGroupActivity:
         'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       unpublishGroupActivity: 'Veröffentlichung aufheben',
+      extendGroupActivity: 'Gruppenaktivität verlängern',
+      extendGroupActivityDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',

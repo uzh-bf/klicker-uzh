@@ -57,7 +57,7 @@ export async function createParticipantGroup(
       id: courseId,
     },
   })
-  if (!course || !course.isGroupCreationEnabled) {
+  if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
     return null
   }
 
@@ -828,12 +828,16 @@ export async function renameParticipantGroup(
   },
   ctx: ContextWithUser
 ) {
+  if (name.trim() === '') {
+    return null
+  }
+
   const updatedGroup = await ctx.prisma.participantGroup.update({
     where: {
       id: groupId,
     },
     data: {
-      name,
+      name: name.trim(),
     },
   })
 
@@ -866,6 +870,14 @@ export async function getParticipantGroups(
           },
         },
         include: {
+          messages: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            include: {
+              participant: true,
+            },
+          },
           participants: {
             include: {
               leaderboards: {
@@ -1671,6 +1683,31 @@ export async function getGradingGroupActivity(
   return { ...groupActivity, activityInstances: mappedInstances }
 }
 
+export async function extendGroupActivity(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, ownerId: ctx.user.sub, scheduledEndAt: { gt: new Date() } },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+
+  return updatedGroupActivity
+}
+
 interface GradeGroupActivitySubmissionArgs {
   id: number
   gradingDecisions: {
@@ -1953,4 +1990,51 @@ export async function getCourseGroups(
   })
 
   return course
+}
+
+export async function addMessageToGroup(
+  {
+    groupId,
+    content,
+  }: {
+    groupId: string
+    content: string
+  },
+  ctx: ContextWithUser
+) {
+  // ensure that the currently logged in user is actually a participant of the group
+  const group = await ctx.prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      participants: true,
+    },
+  })
+
+  if (!group) return null
+
+  // if the participant is not part of the group, return early
+  if (
+    !group.participants.some((participant) => participant.id === ctx.user.sub)
+  ) {
+    return null
+  }
+
+  // create a new message
+  const message = await ctx.prisma.groupMessage.create({
+    data: {
+      content,
+      group: {
+        connect: { id: groupId },
+      },
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+    },
+    include: {
+      group: true,
+      participant: true,
+    },
+  })
+
+  return message
 }

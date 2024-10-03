@@ -24,6 +24,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
+  GroupMessage,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
@@ -281,6 +282,7 @@ export const Mutation = builder.mutationType({
         type: ParticipantTokenData,
         args: {
           signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
@@ -290,6 +292,18 @@ export const Mutation = builder.mutationType({
 
       // ----- PARTICIPANT OPERATIONS
       // #region
+      addMessageToGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: GroupMessage,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.addMessageToGroup(args, ctx)
+        },
+      }),
+
       joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
@@ -601,6 +615,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.enableGamification(args, ctx)
+        },
+      }),
+
+      deleteCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.deleteCourse(args, ctx)
         },
       }),
 
@@ -1000,6 +1025,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      toggleArchiveCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.toggleArchiveCourse(args, ctx)
+        },
+      }),
+
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Element],
@@ -1206,6 +1243,20 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      extendMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.extendMicroLearning(args, ctx)
+          },
+        }),
+
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1246,6 +1297,20 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      extendGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.extendGroupActivity(args, ctx)
           },
         }),
 

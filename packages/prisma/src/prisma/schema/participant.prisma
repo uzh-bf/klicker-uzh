@@ -49,6 +49,7 @@ model Participant {
   participantAnalytics       ParticipantAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
+  messages                   GroupMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,9 +68,10 @@ model ParticipantGroup {
   groupActivities GroupActivityInstance[]
   awards          AwardEntry[]
   achievements    GroupAchievementInstance[]
+  messages        GroupMessage[]
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
-  courseId String? @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
 
   randomlyAssigned Boolean @default(false)
 
@@ -77,6 +79,21 @@ model ParticipantGroup {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, code])
+}
+
+model GroupMessage {
+  id Int @id @default(autoincrement())
+
+  content String
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Participation {
@@ -150,7 +167,7 @@ model LeaderboardEntry {
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String? @db.Uuid
 
   @@unique([type, participantId, sessionId])

@@ -42,9 +42,14 @@ function EvaluationFooter({
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="session-total-participants">
-            {t('manage.evaluation.totalParticipants', {
-              number: currentInstance.results.totalAnswers,
-            })}
+            {currentInstance.results.anonymousAnswers > 0
+              ? t('manage.evaluation.totalParticipantsInclAnon', {
+                  number: currentInstance.results.totalAnswers,
+                  anonymous: currentInstance.results.anonymousAnswers,
+                })
+              : t('manage.evaluation.totalParticipants', {
+                  number: currentInstance.results.totalAnswers,
+                })}
           </div>
           <div className="flex flex-row items-center gap-7">
             <div className="ml-2 flex flex-row items-center gap-2">

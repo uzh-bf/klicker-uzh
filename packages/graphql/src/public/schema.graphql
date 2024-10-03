@@ -103,6 +103,7 @@ type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
 }
 
 type ChoicesElementResults {
+  anonymousAnswers: Int!
   choices: [ChoiceElementResults!]!
   totalAnswers: Int!
 }
@@ -169,6 +170,7 @@ type ContentElementQData implements QuestionData {
 }
 
 type ContentElementResults {
+  anonymousAnswers: Int!
   totalAnswers: Int!
 }
 
@@ -205,6 +207,16 @@ type Course {
   sessions: [Session!]
   startDate: Date!
   updatedAt: Date
+}
+
+type CourseSummary {
+  numOfGroupActivities: Int!
+  numOfLeaderboardEntries: Int!
+  numOfLiveQuizzes: Int!
+  numOfMicroLearnings: Int!
+  numOfParticipantGroups: Int!
+  numOfParticipations: Int!
+  numOfPracticeQuizzes: Int!
 }
 
 """
@@ -408,6 +420,7 @@ type FlashcardElementQData implements QuestionData {
 }
 
 type FlashcardElementResults {
+  anonymousAnswers: Int!
   correctCount: Int!
   incorrectCount: Int!
   partialCount: Int!
@@ -432,6 +445,7 @@ type FreeElementResult {
 }
 
 type FreeElementResults {
+  anonymousAnswers: Int!
   maxLength: Int
   responses: [FreeElementResult!]!
   solutions: [String!]
@@ -621,12 +635,23 @@ type GroupLeaderboardEntry {
   score: Float!
 }
 
+type GroupMessage {
+  content: String!
+  createdAt: Date!
+  group: ParticipantGroup
+  id: Int!
+  participant: Participant
+  updatedAt: Date!
+}
+
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  correctness: Float
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
+  lastResponse: Json
   newPointsFrom: Date
   newXpFrom: Date
   numAnswers: Int
@@ -721,6 +746,7 @@ type Mutation {
   activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelSession(id: String!): Session
   changeEmailSettings(projectUpdates: Boolean!): User
@@ -740,6 +766,7 @@ type Mutation {
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
+  deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
@@ -757,6 +784,8 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endSession(id: String!): Session
+  extendGroupActivity(endDate: Date!, id: String!): GroupActivity
+  extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalRandomGroupAssignments: Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
@@ -772,7 +801,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
+  loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
@@ -803,6 +832,7 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishGroupActivity(id: String!): GroupActivity
@@ -849,6 +879,7 @@ type NumericalElementResult {
 }
 
 type NumericalElementResults {
+  anonymousAnswers: Int!
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
@@ -963,6 +994,7 @@ type ParticipantGroup {
   code: Int!
   groupActivityScore: Int!
   id: ID!
+  messages: [GroupMessage!]
   name: String!
   participants: [Participant!]
   score: Float
@@ -1040,10 +1072,12 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
@@ -1051,6 +1085,7 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

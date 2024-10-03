@@ -63,6 +63,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
       courseDuration: 'Course Duration',
@@ -194,6 +195,7 @@ export default {
       nonGamified: 'Non-Gamified',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} element(s)',
       stackN: 'Stack {number}',
       questionN: 'Question {number}',
       clueN: 'Clue {number}',
@@ -207,6 +209,8 @@ export default {
       pinCode: 'PIN Code',
       withGroups: 'With groups',
       withoutGroups: 'Without groups',
+      forgotPassword: 'Forgot password?',
+      archived: 'Archived',
     },
     contentInput: {
       boldStyle:
@@ -455,6 +459,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
+
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -629,6 +634,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataStorage: '',
       emailMissing:
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
+      forgotPasswordInfo:
+        'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
     },
     avatar: {
       hair: 'Hair',
@@ -680,6 +687,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     achievements: {
       notAchievedYet: 'Not achieved yet',
       noAchievements: 'No achievements yet.',
+    },
+    groups: {
+      messageRequired: 'Please enter a message before submitting.',
+      nameRequired: 'Please enter a group name.',
+      pinRequired: 'Please enter a valid group PIN.',
+      pinNumeric: 'The PIN must have a six-digit numeric value.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -1358,6 +1371,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noConfusionFeedbacksYet:
         'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
+      totalParticipantsInclAnon:
+        'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
@@ -1483,6 +1498,42 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
       openPreview: 'Open preview',
       openEvaluation: 'Open evaluation',
+      archiveOnlyPastCourses:
+        'Only courses with an end date in the past can be archived.',
+      archiveCourse: 'Archive course',
+      unarchiveCourse: 'Unarchive course',
+      confirmCourseArchive:
+        'Please confirm that you want to archive this course. Archived courses and their activities will remain accessible to students.',
+      confirmCourseUnarchive:
+        'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
+      showArchive: 'Show archive',
+      hideArchive: 'Hide archive',
+      deleteCourse: 'Delete course',
+      courseDeletionMessage:
+        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+      noParticipationsToDelete: 'This course contains no participations.',
+      deleteParticipations:
+        '{number} participants of this course will loose their collected points and access to all course materials and activities.',
+      noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
+      disconnectLiveQuizzes:
+        '{number} live quizzes will be disconnected from the course. They can still be accessed through the live quiz list.',
+      noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
+      deletePracticeQuizzes:
+        '{number} practice quizzes (including their results) will be irreversibly deleted.',
+      noMicroLearningsToDelete: 'This course contains no microlearnings.',
+      deleteMicroLearnings:
+        '{number} microlearnings (including their results) will be irreversibly deleted.',
+      noGroupActivitiesToDelete: 'This course contains no group activities.',
+      deleteGroupActivities:
+        '{number} group activities (including their submissions) will be irreversibly deleted.',
+      noParticipantGroupsToDelete:
+        'This course contains no participant groups.',
+      deleteParticipantGroups:
+        '{number} participant groups will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'This course contains no leaderboard entries.',
+      deleteLeaderboardEntries:
+        '{number} leaderboard entries will be irreversibly deleted.',
     },
     course: {
       modifyCourse: 'Modify course',
@@ -1524,6 +1575,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
+      extendMicroLearning: 'Extend microlearning',
+      extendMicroLearningDescription:
+        'Use this dialogue to modify the end date of the microlearning. Please note that only future dates can be set as end dates.',
+      newEndDate: 'New end date',
+      futureEndDateRequired:
+        'Please enter an end date that lies in the future.',
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
@@ -1561,6 +1618,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hintDeletionGroupActivity:
         'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
       unpublishGroupActivity: 'Unpublish group activity',
+      extendGroupActivity: 'Extend group activity',
+      extendGroupActivityDescription:
+        'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade group activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',

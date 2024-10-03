@@ -2,4 +2,30 @@
 title: XP and Levels
 ---
 
-> COMING SOON
+While participants collect points for correct answers on a course level, experience points (XP) are collected across courses and allow students to level up. This represents an important part of our gamification concept, making sure that students keep making progress across different courses and activities. However, students are not only awarded experience points for answering questions correctly (in live settings as well as learning elements and micro sessions), but also when obtaining achievements, solving group challenges and many more activities.
+
+As usual, levelling up will be faster in the beginning and then require a growing amount of additional points later on. KlickerUZH currently uses the following formula to compute the required amount of experience points for some level $i$ as $\text{XP}_{\text{req}}(i)$:
+
+$$
+\text{XP}_{\text{req}}(i) = \frac{y_1}{2p} \cdot i^2 + y_1 \cdot \left( 1 + \frac{1}{2p} \right) \cdot i - y_1 \cdot \left( 1 + \frac{1}{p} \right), \quad \forall i = 1, 2, 3, \ldots
+$$
+
+Inverting this formula, the current player level $i$ can be directly computed from the player's current experience point balance $\text{XP}_{\text{curr}}$:
+
+$$
+i(\text{XP}_{\text{curr}}) = \left\lfloor \frac{\sqrt{y_1 \cdot (2p + 3)^2 + 8 \cdot \text{XP}_{\text{curr}}}}{2 \sqrt{y_1}} - p - \frac{1}{2} \right\rfloor, \quad \forall y_1 \in \mathbb{R} \setminus \{0\}, \ \ p \in \mathbb{R} \setminus \{0\}
+$$
+
+![Level (i) computed from the student's current XP balance](upload://twKPur2cOdI3Rikvfr7XQFkx45N.png)
+
+These two formulas are modular and allow for easy tuning through constants, which are currently fixed to $y_1 = 3000$ (XP required for the first level-up) and $p = 1$. The following figure shows how a variation of those parameters translates to different XP-levels.
+
+<div align="center">
+  <img
+    style={{ width: 800 }}
+    alt="Levels (x) vs. Experience Points (y)"
+    src="/img_v3/23_xp_vs_level.jpg"
+  />
+</div>
+
+The current level and the required experience points to reach the next one are shown to the student on the corresponding page in the KlickerUZH app.
