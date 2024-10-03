@@ -1,10 +1,12 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import CountUp from 'react-countup';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useState, useEffect } from 'react';
 import Layout from '@theme/Layout'
 import { Button, H2, H3, Prose } from '@uzh-bf/design-system'
 
 import { USE_CASES } from '../constants'
+import { HtmlClassNameProvider } from '@docusaurus/theme-common';
 
 function TitleImage() {
   return (
@@ -179,44 +181,24 @@ function FeatureFocusSection({ title, description, features, imgSrc }) {
   )
 }
 
-function HoverImage({ features }) {
-  const [hoveredImage, setHoveredImage] = useState(features[0].hoverImage);
-  const handleMouseEnter = (hoverImage) => {
+
+function FeatureSection({ title, description, features }) {
+  const [hoveredImage, setHoveredImage] = useState(features[0]?.hoverImage || '');
+  const [hoveredFeatureIndex, setHoveredFeatureIndex] = useState(null);
+
+  useEffect(() => {
+    if (features.length > 0) {
+      setHoveredImage(features[0].hoverImage);
+    }
+  }, [features]);
+
+  const handleMouseEnter = (hoverImage, index) => {
     setHoveredImage(hoverImage);
-  };
-
-
-  return (
-    <>
-      {features.map((feature) => (
-        <div key={feature.title} className="relative pl-9"
-        onMouseEnter={() => handleMouseEnter(feature.hoverImage)}>
-          <dt className="inline font-semibold text-gray-900">
-            {feature.title}
-          </dt>{' '}
-          <dd className="inline">{feature.text}</dd>
-        </div>
-      ))}
-      <img
-        src={hoveredImage}
-        alt="Feature specific screenshot"
-        className="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
-      />
-    </>
-  );
-}
-
-function FeatureSection({ title, description, features, imgSrc }) {
-  // Initialize with the hover image of the first feature
-  const [hoveredImage, setHoveredImage] = useState(imgSrc);
-
-  const handleMouseEnter = (hoverImage) => {
-    setHoveredImage(hoverImage);
+    setHoveredFeatureIndex(index); // Set the hovered feature index
   };
 
   const handleMouseLeave = () => {
-    // On mouse leave, reset to the hover image of the first feature
-    setHoveredImage(features[0]?.hoverImage);
+    setHoveredFeatureIndex(null); // Reset on mouse leave
   };
 
   return (
@@ -232,12 +214,12 @@ function FeatureSection({ title, description, features, imgSrc }) {
                 {description}
               </p>
               <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
-                {features.map((feature) => (
+                {features.map((feature, index) => (
                   <div
                     key={feature.title}
-                    className="relative pl-9"
-                    onMouseEnter={() => handleMouseEnter(feature.hoverImage)}
-                    onMouseLeave={handleMouseLeave}
+                    className={`relative pl-9 p-6 ${hoveredFeatureIndex === index ? 'shadow-xl' : ''}`} // Add shadow if hovered
+                    onMouseEnter={() => handleMouseEnter(feature.hoverImage, index)}
+                    onMouseLeave={handleMouseLeave} // Reset on mouse leave
                   >
                     <dt className="inline font-semibold text-gray-900">
                       <FontAwesomeIcon
@@ -256,14 +238,13 @@ function FeatureSection({ title, description, features, imgSrc }) {
           <img
             src={hoveredImage}
             alt="Feature specific screenshot"
-            className="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
+            className="w-full w-52 max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
           />
         </div>
       </div>
     </div>
   );
 }
-
 
 
 
@@ -297,66 +278,50 @@ function UseCaseOverview() {
   )
 }
 
-const features = [
-  {
-    title: "Feature 1",
-    text: "This is the first feature description.",
-    hoverImage: "https://via.placeholder.com/600x400?text=Feature+1+Image"
-  },
-  {
-    title: "Feature 2",
-    text: "This is the second feature description.",
-    hoverImage: "https://via.placeholder.com/600x400?text=Feature+2+Image"
-  },
-  {
-    title: "Feature 3",
-    text: "This is the third feature description.",
-    hoverImage: "https://via.placeholder.com/600x400?text=Feature+3+Image"
-  }
-];
 function Home() {
   return (
     <Layout>
       <TitleImage />
       <FeatureSection
-        title="Synchronous Interaction all the time"
-        description="Interact your students during class and drive engagement with
-          your materials."
-        imgSrc="/img_v3/synchronous_interaction.png"
+        title="Gamified Learning"
+        description=""
         features={[
           {
-            title: 'Live Quizzes',
+            title: 'Progress Tracking',
             icon: faArrowRight,
-            text: 'You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.',
-            hoverImage: '/img_v3/live_quiz.png',
+            text: 'Students ',
+            hoverImage: "/img_v3/06_live_quiz.png"
           },
           {
-            title: 'Live Q&A',
+            title: 'Leaderboards',
             icon: faArrowRight,
-            text: 'You can enable Live Q&A as part of a Live Quiz and use it during class. Students can ask questions anonymously and upvote questions from other students.',
-            hoverImage: '/img_v3/live_quiz.png'
+            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or by the date of the last response, allowing for a simple way of spaced repetition.',
+            hoverImage: "/img_v3/quiz_evaluation.png"
+          },
+          {
+            title: 'Group Activities',
+            icon: faArrowRight,
+            text: 'You can create Group Activities to encourage collaboration on a task. Questions and clues that are distributed within each group and the group needs to communicate to find the solutions.',
           },
         ]}
       />
-      <HoverImage
-              features={features}
-      >
 
-      </HoverImage>
+
       <FeatureSection
         title="Asynchronous Interaction"
         description="Foster engagement and interaction with your contents outside of class."
-        imgSrc="/img_v3/microlearning.png"
         features={[
           {
             title: 'Microlearning',
             icon: faArrowRight,
             text: 'You can prepare short Microlearning units that students can work through at their own pace. The units are time-restricted and can be used to combat the forgetting curve.',
+            hoverImage: "/img_v3/06_live_quiz.png"
           },
           {
             title: 'Practice Quizzes',
             icon: faArrowRight,
             text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or by the date of the last response, allowing for a simple way of spaced repetition.',
+            hoverImage: "/img_v3/quiz_evaluation.png"
           },
           {
             title: 'Group Activities',
