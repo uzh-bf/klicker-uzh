@@ -1836,7 +1836,7 @@ export async function respondToQuestion(
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
@@ -1860,7 +1860,7 @@ export async function respondToQuestion(
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
