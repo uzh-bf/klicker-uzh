@@ -31,7 +31,7 @@ module.exports = {
       'gamification/overview',
       'gamification/grading_logic',
       'gamification/experience',
-      'gamification/achievements',
+      // 'gamification/achievements',
       // 'gamification/awards',
     ],
     // 'Advanced Topics': [
