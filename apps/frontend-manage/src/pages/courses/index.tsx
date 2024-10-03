@@ -9,7 +9,13 @@ import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Switch, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Switch,
+  Tooltip,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
@@ -83,21 +89,10 @@ function CourseSelectionPage() {
           {courses && courses.length > 0 ? (
             <div className="w-full">
               <div className="flex flex-col gap-2">
-                {courses.map((course) => (
-                  <div
-                    className="flex flex-row items-center gap-2"
-                    key={course.id}
-                  >
-                    <CourseListButton
-                      onClick={() => router.push(`/courses/${course.id}`)}
-                      icon={faPeopleGroup}
-                      label={course.name}
-                      color={course.color}
-                      isArchived={course.isArchived}
-                      startDate={course.startDate}
-                      endDate={course.endDate}
-                      data={{ cy: `course-list-button-${course.name}` }}
-                    />
+                {courses.map((course) => {
+                  const courseRunning = dayjs(course.endDate).isAfter(dayjs())
+
+                  const ArchiveButton = (
                     <Button
                       className={{
                         root: 'flex h-10 w-10 items-center justify-center',
@@ -107,27 +102,56 @@ function CourseSelectionPage() {
                         setSelectedCourseArchived(course.isArchived)
                         showArchiveModal(true)
                       }}
-                      disabled={dayjs(course.endDate).isAfter(dayjs())}
+                      disabled={courseRunning}
                       data={{ cy: `archive-course-${course.name}` }}
                     >
                       <FontAwesomeIcon
                         icon={course.isArchived ? faInbox : faArchive}
                       />
                     </Button>
-                    <Button
-                      className={{
-                        root: 'flex h-10 w-10 items-center justify-center border border-red-600',
-                      }}
-                      onClick={() => {
-                        setSelectedCourseId(course.id)
-                        showDeletionModal(true)
-                      }}
-                      data={{ cy: `delete-course-${course.name}` }}
+                  )
+
+                  return (
+                    <div
+                      className="flex flex-row items-center gap-2"
+                      key={course.id}
                     >
-                      <FontAwesomeIcon icon={faTrashCan} />
-                    </Button>
-                  </div>
-                ))}
+                      <CourseListButton
+                        onClick={() => router.push(`/courses/${course.id}`)}
+                        icon={faPeopleGroup}
+                        label={course.name}
+                        color={course.color}
+                        isArchived={course.isArchived}
+                        startDate={course.startDate}
+                        endDate={course.endDate}
+                        data={{ cy: `course-list-button-${course.name}` }}
+                      />
+                      {courseRunning ? (
+                        <Tooltip
+                          tooltip={t(
+                            'manage.courseList.archiveOnlyPastCourses'
+                          )}
+                        >
+                          {ArchiveButton}
+                        </Tooltip>
+                      ) : (
+                        ArchiveButton
+                      )}
+                      <Button
+                        className={{
+                          root: 'flex h-10 w-10 items-center justify-center border border-red-600',
+                        }}
+                        onClick={() => {
+                          setSelectedCourseId(course.id)
+                          showDeletionModal(true)
+                        }}
+                        data={{ cy: `delete-course-${course.name}` }}
+                      >
+                        <FontAwesomeIcon icon={faTrashCan} />
+                      </Button>
+                    </div>
+                  )
+                })}
                 <div className="mr-24">
                   <CourseListButton
                     onClick={() => showCreateCourseModal(true)}
