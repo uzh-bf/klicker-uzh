@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface CourseListButtonProps {
-  key?: string
   onClick: () => void
   icon: IconDefinition
   label: string
@@ -22,7 +21,6 @@ interface CourseListButtonProps {
 }
 
 function CourseListButton({
-  key,
   onClick,
   icon,
   label,
@@ -36,7 +34,6 @@ function CourseListButton({
 
   return (
     <Button
-      key={key}
       className={{
         root: twMerge(
           'border-uzh-grey-100 flex w-full flex-row justify-between rounded-md border border-solid p-2',

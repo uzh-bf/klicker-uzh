@@ -131,6 +131,29 @@ export const Course = builder.objectType(CourseRef, {
   }),
 })
 
+export interface ICourseSummary {
+  numOfParticipations: number
+  numOfLiveQuizzes: number
+  numOfPracticeQuizzes: number
+  numOfMicroLearnings: number
+  numOfGroupActivities: number
+  numOfLeaderboardEntries: number
+  numOfParticipantGroups: number
+}
+export const CourseSummaryRef =
+  builder.objectRef<ICourseSummary>('CourseSummary')
+export const CourseSummary = CourseSummaryRef.implement({
+  fields: (t) => ({
+    numOfParticipations: t.exposeInt('numOfParticipations'),
+    numOfLiveQuizzes: t.exposeInt('numOfLiveQuizzes'),
+    numOfPracticeQuizzes: t.exposeInt('numOfPracticeQuizzes'),
+    numOfMicroLearnings: t.exposeInt('numOfMicroLearnings'),
+    numOfGroupActivities: t.exposeInt('numOfGroupActivities'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups'),
+  }),
+})
+
 export interface IStudentCourse extends DB.Course {
   owner: IUser
 }

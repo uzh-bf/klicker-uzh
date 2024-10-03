@@ -10,7 +10,12 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
 import { ElementFeedback } from './analytics.js'
-import { Course, LeaderboardEntry, StudentCourse } from './course.js'
+import {
+  Course,
+  CourseSummary,
+  LeaderboardEntry,
+  StudentCourse,
+} from './course.js'
 import { ActivityEvaluation } from './evaluation.js'
 import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
@@ -188,6 +193,17 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return CourseService.getActiveUserCourses(ctx)
+        },
+      }),
+
+      getCourseSummary: asUser.field({
+        nullable: true,
+        type: CourseSummary,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseSummary(args, ctx)
         },
       }),
 

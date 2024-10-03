@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.36...v3.2.0-alpha.37) (2024-10-03)
+
+
+### Features
+
+* add possibility to archive past courses ([#4281](https://github.com/uzh-bf/klicker-uzh/issues/4281)) ([e71423a](https://github.com/uzh-bf/klicker-uzh/commit/e71423aea55f3a3027fa373d2c0b549191ea404f))
+* add possibility to delete courses ([#4282](https://github.com/uzh-bf/klicker-uzh/issues/4282)) ([8d6cfa0](https://github.com/uzh-bf/klicker-uzh/commit/8d6cfa03768b73f2bdf04a718b3976ece22371ee))
+* add possibility to extend microlearnings and group activities before end date ([#4283](https://github.com/uzh-bf/klicker-uzh/issues/4283)) ([7c84a59](https://github.com/uzh-bf/klicker-uzh/commit/7c84a597a3258e0bfdf9dcda6baee0f26408912b))
+
+
+### Bug Fixes
+
+* ensure that participant group names cannot be empty ([#4280](https://github.com/uzh-bf/klicker-uzh/issues/4280)) ([ba3fdda](https://github.com/uzh-bf/klicker-uzh/commit/ba3fdda3ec8724a6e04caaf09a62740645b839f2))
+
+
+### Enhancements
+
+* improve live quiz list and show participants on completed quizzes ([#4284](https://github.com/uzh-bf/klicker-uzh/issues/4284)) ([e356d43](https://github.com/uzh-bf/klicker-uzh/commit/e356d437c8fdc47cf0e96c1273e4bc9a75be521b))
+
 ## [3.2.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.35...v3.2.0-alpha.36) (2024-09-30)
 
 
