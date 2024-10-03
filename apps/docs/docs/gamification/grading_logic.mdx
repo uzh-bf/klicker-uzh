@@ -29,16 +29,14 @@ $$
 For multiple choice questions with $n$ answer options, all of them can be selected to be correct or incorrect. Each option is considered separately during grading, and every mismatch between the correct solution and the participant’s input is counted as one mistake. The awarded number of points then depends on the percentage of correctly answered questions:
 
 $$
-\text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 10 \cdot \left( 1 - 2 \cdot \frac{\text{\% of wrong answers}}{\text{available answers}} \right) & \text{partially correct} \\ 0 & \text{otherwise} \end{cases}
+\text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 10 \cdot \left( 1 - 2 \cdot \frac{\text{wrong answers}}{\text{available answers}} \right) & \text{partially correct} \\ 0 & \text{otherwise} \end{cases}
 $$
-
-<!-- TODO: potentially it would make sense to replace this graphic by one that only jumps for integer correctness values -->
 
 <div align="center">
   <img
     style={{ width: 600 }}
     alt="MC Grading Logic Illustration"
-    src="/img_v3/19_MC_awarded_points.png"
+    src="/img_v3/19_MC_awarded_points.svg"
   />
 </div>
 
@@ -52,13 +50,11 @@ $$
 \text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 5 & \text{single mistake} \\ 0 & \text{otherwise} \end{cases}
 $$
 
-<!-- TODO: potentially it would make sense to replace this graphic by one that only jumps for integer correctness values -->
-
 <div align="center">
   <img
     style={{ width: 600 }}
     alt="KPRIM Grading Logic Illustration"
-    src="/img_v3/20_KPRIM_awarded_points.png"
+    src="/img_v3/20_KPRIM_awarded_points.svg"
   />
 </div>
 
@@ -82,7 +78,7 @@ The corresponding resulting point curves for correct and wrong answers during li
   <img
     style={{ width: 600 }}
     alt="Illustration of Grading in Live Sessions"
-    src="/img_v3/21_live_quiz_awarded_points.png"
+    src="/img_v3/21_live_quiz_awarded_points.svg"
   />
 </div>
 
