@@ -1,16 +1,23 @@
-import { faCheck, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faExclamationCircle,
+  faInfoCircle,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 
 function CourseDeletionItem({
   label,
   confirmed,
+  notApplicable,
   onClick,
   data,
 }: {
   label: string
   confirmed: boolean
+  notApplicable: boolean
   onClick: () => void
   data?: { cy?: string; test?: string }
 }) {
@@ -19,8 +26,19 @@ function CourseDeletionItem({
   return (
     <div className="flex h-10 flex-row items-center justify-between border-b pb-2">
       <div className="flex flex-row items-center gap-4">
-        <FontAwesomeIcon icon={faExclamationCircle} className="text-red-600" />
-        <div className="mr-4">{label}</div>
+        <FontAwesomeIcon
+          icon={notApplicable ? faInfoCircle : faExclamationCircle}
+          className={twMerge(
+            notApplicable
+              ? 'text-primary-80'
+              : confirmed
+                ? 'text-gray-500'
+                : 'text-red-600'
+          )}
+        />
+        <div className={twMerge('mr-4', notApplicable && 'text-gray-500')}>
+          {label}
+        </div>
       </div>
       {confirmed ? (
         <FontAwesomeIcon icon={faCheck} className="text-green-700" />

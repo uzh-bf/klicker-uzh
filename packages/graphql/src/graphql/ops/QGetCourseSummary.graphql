@@ -1,5 +1,6 @@
 query GetCourseSummary($courseId: String!) {
   getCourseSummary(courseId: $courseId) {
+    numOfParticipations
     numOfLiveQuizzes
     numOfPracticeQuizzes
     numOfMicroLearnings

@@ -215,6 +215,7 @@ type CourseSummary {
   numOfLiveQuizzes: Int!
   numOfMicroLearnings: Int!
   numOfParticipantGroups: Int!
+  numOfParticipations: Int!
   numOfPracticeQuizzes: Int!
 }
 

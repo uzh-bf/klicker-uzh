@@ -1508,7 +1508,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionMessage:
-        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course.',
+        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+      noParticipationsToDelete: 'This course contains no participations.',
+      deleteParticipations:
+        '{number} participants of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizzes will be disconnected from the course. They can still be accessed through the live quiz list.',

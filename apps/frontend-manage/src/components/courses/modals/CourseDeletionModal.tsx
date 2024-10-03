@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
 
 export interface CourseDeletionConfirmationType {
+  deleteParticipations: boolean
   disconnectLiveQuizzes: boolean
   deletePracticeQuizzes: boolean
   deleteMicroLearnings: boolean
@@ -32,6 +33,7 @@ function CourseDeletionModal({
   setSelectedCourseId,
 }: CourseDeletionModalProps) {
   const initialConfirmations: CourseDeletionConfirmationType = {
+    deleteParticipations: false,
     disconnectLiveQuizzes: false,
     deletePracticeQuizzes: false,
     deleteMicroLearnings: false,
@@ -79,6 +81,7 @@ function CourseDeletionModal({
     }
 
     setConfirmations({
+      deleteParticipations: data.getCourseSummary.numOfParticipations === 0,
       disconnectLiveQuizzes: data.getCourseSummary.numOfLiveQuizzes === 0,
       deletePracticeQuizzes: data.getCourseSummary.numOfPracticeQuizzes === 0,
       deleteMicroLearnings: data.getCourseSummary.numOfMicroLearnings === 0,

@@ -1527,7 +1527,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
       courseDeletionMessage:
-        'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses.',
+        'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
+      noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
+      deleteParticipations:
+        '{number} Teilnehmende dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
         '{number} Live-Quizzes werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',

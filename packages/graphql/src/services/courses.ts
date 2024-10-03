@@ -635,6 +635,7 @@ export async function getCourseSummary(
           groupActivities: true,
           leaderboard: true,
           participantGroups: true,
+          participations: true,
         },
       },
     },
@@ -643,6 +644,7 @@ export async function getCourseSummary(
   if (!course) return null
 
   return {
+    numOfParticipations: course._count.participations,
     numOfLiveQuizzes: course._count.sessions,
     numOfPracticeQuizzes: course._count.practiceQuizzes,
     numOfMicroLearnings: course._count.microLearnings,

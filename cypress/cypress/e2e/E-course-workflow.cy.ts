@@ -618,6 +618,9 @@ describe('Test course creation and editing functionalities', () => {
     cy.get(`[data-cy="delete-course-${courseDelName}"]`).click()
     cy.get('[data-cy="course-deletion-modal-cancel"]').click()
     cy.get(`[data-cy="delete-course-${courseDelName}"]`).click()
+    cy.get('[data-cy="course-deletion-participations-confirm"]').should(
+      'not.exists'
+    )
     cy.get('[data-cy="course-deletion-live-quiz-confirm"]')
       .should('exist')
       .click()

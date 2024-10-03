@@ -1,3 +1,4 @@
+import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -5,14 +6,7 @@ import CourseDeletionItem from './CourseDeletionItem'
 import { CourseDeletionConfirmationType } from './CourseDeletionModal'
 
 interface CourseDeletionConfirmationsProps {
-  summary: {
-    numOfLiveQuizzes: number
-    numOfPracticeQuizzes: number
-    numOfMicroLearnings: number
-    numOfGroupActivities: number
-    numOfParticipantGroups: number
-    numOfLeaderboardEntries: number
-  }
+  summary: CourseSummary
   confirmations: CourseDeletionConfirmationType
   setConfirmations: Dispatch<SetStateAction<CourseDeletionConfirmationType>>
 }
@@ -33,6 +27,24 @@ function CourseDeletionConfirmations({
       />
       <CourseDeletionItem
         label={
+          summary.numOfParticipations === 0
+            ? t('manage.courseList.noParticipationsToDelete')
+            : t('manage.courseList.deleteParticipations', {
+                number: summary.numOfParticipations,
+              })
+        }
+        onClick={() => {
+          setConfirmations((prev) => ({
+            ...prev,
+            deleteParticipations: true,
+          }))
+        }}
+        confirmed={confirmations.deleteParticipations}
+        notApplicable={summary.numOfParticipations === 0}
+        data={{ cy: 'course-deletion-participations-confirm' }}
+      />
+      <CourseDeletionItem
+        label={
           summary.numOfLiveQuizzes === 0
             ? t('manage.courseList.noLiveQuizzesDisconnected')
             : t('manage.courseList.disconnectLiveQuizzes', {
@@ -46,6 +58,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.disconnectLiveQuizzes}
+        notApplicable={summary.numOfLiveQuizzes === 0}
         data={{ cy: 'course-deletion-live-quiz-confirm' }}
       />
       <CourseDeletionItem
@@ -63,6 +76,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.deletePracticeQuizzes}
+        notApplicable={summary.numOfPracticeQuizzes === 0}
         data={{ cy: 'course-deletion-practice-quiz-confirm' }}
       />
       <CourseDeletionItem
@@ -80,6 +94,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.deleteMicroLearnings}
+        notApplicable={summary.numOfMicroLearnings === 0}
         data={{ cy: 'course-deletion-micro-learning-confirm' }}
       />
       <CourseDeletionItem
@@ -97,6 +112,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.deleteGroupActivities}
+        notApplicable={summary.numOfGroupActivities === 0}
         data={{ cy: 'course-deletion-group-activity-confirm' }}
       />
       <CourseDeletionItem
@@ -114,6 +130,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.deleteParticipantGroups}
+        notApplicable={summary.numOfParticipantGroups === 0}
         data={{ cy: 'course-deletion-participant-group-confirm' }}
       />
       <CourseDeletionItem
@@ -131,6 +148,7 @@ function CourseDeletionConfirmations({
           }))
         }}
         confirmed={confirmations.deleteLeaderboardEntries}
+        notApplicable={summary.numOfLeaderboardEntries === 0}
         data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
       />
     </div>
