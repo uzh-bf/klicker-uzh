@@ -14,6 +14,7 @@ import { GraphQLError } from 'graphql'
 import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {
@@ -408,6 +409,13 @@ export async function publishScheduledMicroLearnings(ctx: Context) {
       })
     )
   )
+
+  if (updatedMicroLearnings.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledMicroLearnings',
+      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
+    )
+  }
 
   updatedMicroLearnings.forEach((micro) => {
     ctx.emitter.emit('invalidate', {

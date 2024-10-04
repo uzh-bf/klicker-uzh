@@ -34,7 +34,7 @@ import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks } from '../lib/util.js'
+import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 import {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
@@ -3016,6 +3016,13 @@ export async function publishScheduledPracticeQuizzes(ctx: Context) {
       })
     )
   )
+
+  if (updatedQuizzes.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledPracticeQuizzes',
+      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
+    )
+  }
 
   updatedQuizzes.forEach((quiz) => {
     ctx.emitter.emit('invalidate', {
