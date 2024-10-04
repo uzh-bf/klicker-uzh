@@ -73,6 +73,7 @@
    "93338cea7eef445f44b003f2a8ce9747e977bc5a0b5dbf8c4a9a9633d2e454a6": "mutation PublishGroupActivity($id: String!) {\n  publishGroupActivity(id: $id) {\n    id\n    name\n    displayName\n    status\n    __typename\n  }\n}",
    "65d10feac0f07d748c97dcaf5fcef53d7ebfb7f135fb9e50fc8eed66008cc55d": "mutation PublishMicroLearning($id: String!) {\n  publishMicroLearning(id: $id) {\n    id\n    name\n    displayName\n    status\n    __typename\n  }\n}",
    "33685d50bdf1f3ced515e84647eab6fd00770ca9474760a8459a57849f1a04e9": "mutation PublishPracticeQuiz($id: String!) {\n  publishPracticeQuiz(id: $id) {\n    id\n    name\n    displayName\n    status\n    __typename\n  }\n}",
+   "ccbed09035b8907dbe5bcb5ff6986215a3d5c45106895465e5e76566761ac22c": "mutation PublishScheduledMicroLearnings {\n  publishScheduledMicroLearnings\n}",
    "00c2398a3fc6f182c85f064913a7f43bddbd21762b827ade88b446bcef5e3c12": "mutation PublishScheduledPracticeQuizzes {\n  publishScheduledPracticeQuizzes\n}",
    "9fa091063d34571e1c5880e6f0c1ef1c2c6267b29fefe3ac8f23c0185a8c34b5": "mutation RateElement($elementInstanceId: Int!, $elementId: Int!, $rating: Int!) {\n  rateElement(elementInstanceId: $elementInstanceId, elementId: $elementId, rating: $rating) {\n    id\n    upvote\n    downvote\n    feedback\n    __typename\n  }\n}",
    "e909972c210ced0bff2f94496e2f71d87e9514f5b01e61eca0b66327d843af8a": "mutation RenameParticipantGroup($groupId: String!, $name: String!) {\n  renameParticipantGroup(groupId: $groupId, name: $name) {\n    id\n    name\n    __typename\n  }\n}",
