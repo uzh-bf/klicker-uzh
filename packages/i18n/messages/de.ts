@@ -1333,10 +1333,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationResults: 'Auswertung (Resultate)',
       abortSession: 'Quiz abbrechen',
       confirmAbortSession: 'Live Quiz {title} abbrechen?',
-      abortSessionHint:
-        'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
-      abortEnterName:
-        'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
+      cancelLiveQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
+      noResponsesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Antworten gespeichert.',
+      deleteResponses:
+        '{number} Antworten von Studierenden in diesem Live-Quiz werden gelöscht.',
+      noFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Feedbacks abgegeben.',
+      deleteFeedbacks:
+        '{number} Feedbacks im Live-Q&A-Kanal werden unwiderruflich gelöscht.',
+      noConfusionFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
+      deleteConfusionFeedbacks:
+        '{number} Confusion-Feedbacks werden unwiderruflich gelöscht.',
+      noLeaderboardEntriesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
+      deleteLeaderboardEntries:
+        'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',

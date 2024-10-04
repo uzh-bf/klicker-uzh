@@ -319,8 +319,8 @@ function SessionTimeline({
             </Button>
           </div>
           <CancelSessionModal
-            isCancellationModalOpen={cancelSessionModal}
-            setIsCancellationModalOpen={setCancelSessionModal}
+            open={cancelSessionModal}
+            setOpen={setCancelSessionModal}
             sessionId={sessionId}
             title={sessionName}
           />

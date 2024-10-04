@@ -1080,6 +1080,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
+  getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getParticipation(courseId: String!): Participation
@@ -1192,6 +1193,13 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
+}
+
+type RunningLiveQuizSummary {
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
 }
 
 type Session {

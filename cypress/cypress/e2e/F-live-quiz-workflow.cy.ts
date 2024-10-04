@@ -609,6 +609,7 @@ describe('Different live-quiz workflows', () => {
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {
+    const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
     const sessionName = uuid()
@@ -627,6 +628,12 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseName)
+    cy.get('[data-cy="set-liveqa-enabled"]').click()
+    cy.get('[data-cy="set-liveqa-moderation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     const dataTransfer = new DataTransfer()
@@ -648,8 +655,34 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-session"]').click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
+    cy.get('[data-cy="confirm-cancel-session"]').should('not.be.disabled')
+    cy.get('[data-cy="abort-cancel-session"]').click()
+
+    // students submit feedback
+    const feedback = uuid()
+    cy.loginStudent()
+    cy.clearAllLocalStorage()
+    cy.findByText(session).click()
+    cy.get('[data-cy="feedback-input"]').type(feedback)
+    cy.get('[data-cy="feedback-submit"]').click()
+    cy.findByText(feedback).should('exist')
+
+    // abort the session after confirming the feedback deletion
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.wait(1000)
+    cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
-    cy.get('[data-cy="abort-enter-name"]').type(sessionName)
+    cy.get('[data-cy="lq-deletion-responses-confirm"]').should('not.exist')
+    cy.get('[data-cy="lq-deletion-confusion-feedbacks-confirm"]').should(
+      'not.exist'
+    )
+    cy.get('[data-cy="lq-deletion-leaderboard-entries-confirm"]').should(
+      'not.exist'
+    )
+    cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
+    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').click()
     cy.get('[data-cy="confirm-cancel-session"]')
       .should('not.be.disabled')
       .click()

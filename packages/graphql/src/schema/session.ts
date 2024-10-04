@@ -126,6 +126,23 @@ export const SessionBlock = SessionBlockRef.implement({
   }),
 })
 
+export interface IRunningLiveQuizSummary {
+  numOfResponses: number
+  numOfFeedbacks: number
+  numOfConfusionFeedbacks: number
+  numOfLeaderboardEntries: number
+}
+export const RunningLiveQuizSummaryRef =
+  builder.objectRef<IRunningLiveQuizSummary>('RunningLiveQuizSummary')
+export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfFeedbacks: t.exposeInt('numOfFeedbacks'),
+    numOfConfusionFeedbacks: t.exposeInt('numOfConfusionFeedbacks'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+  }),
+})
+
 export interface IFeedback extends DB.Feedback {
   responses?: DB.FeedbackResponse[]
 }
