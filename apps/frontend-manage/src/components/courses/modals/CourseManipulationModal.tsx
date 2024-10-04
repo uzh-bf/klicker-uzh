@@ -139,7 +139,7 @@ function CourseManipulationModal({
       }
       open={modalOpen}
       onClose={onModalClose}
-      className={{ content: 'h-max !w-full' }}
+      className={{ content: '!w-full' }}
     >
       <Formik
         validateOnMount
@@ -358,7 +358,7 @@ function CourseManipulationModal({
               type="submit"
               className={{
                 root: twMerge(
-                  'bg-primary-80 float-right -mb-5 mt-3 w-full font-bold text-white md:w-max',
+                  'bg-primary-80 float-right mt-3 w-full font-bold text-white md:w-max',
                   (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}

@@ -91,7 +91,7 @@ function PublishConfirmationModal({
       open={open}
       hideCloseButton={true}
       className={{
-        content: 'h-max w-[40rem] self-center pt-0',
+        content: 'w-[40rem]',
         title: 'text-xl',
       }}
     >

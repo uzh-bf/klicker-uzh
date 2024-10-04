@@ -43,7 +43,7 @@ function LiveQuizNameChangeModal({
         onClose={(): void => setOpen(false)}
         title={t('manage.sessions.changeLiveQuizName')}
         className={{
-          content: 'h-max min-h-max w-[30rem] self-center pt-0',
+          content: 'w-[30rem]',
           title: 'text-xl',
         }}
       >
@@ -111,7 +111,7 @@ function LiveQuizNameChangeModal({
                 }}
                 data-cy="insert-live-quiz-display-name"
               />
-              <div className="-mb-4 mt-3 flex flex-row justify-between">
+              <div className="mt-3 flex flex-row justify-between">
                 <Button
                   type="button"
                   onClick={(): void => setOpen(false)}
