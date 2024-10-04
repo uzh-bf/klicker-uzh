@@ -344,6 +344,7 @@ export async function publishMicroLearning(
     where: {
       id,
       ownerId: ctx.user.sub,
+      status: PublicationStatus.DRAFT,
     },
   })
 
