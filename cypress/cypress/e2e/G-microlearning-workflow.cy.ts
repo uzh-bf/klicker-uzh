@@ -516,7 +516,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.completed
     )
 
     // sign in as student
