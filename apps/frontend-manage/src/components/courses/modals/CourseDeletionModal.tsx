@@ -107,7 +107,7 @@ function CourseDeletionModal({
         setSelectedCourseId(null)
         setConfirmations({ ...initialConfirmations })
       }}
-      className={{ content: 'h-max min-h-max !w-max' }}
+      className={{ content: '!w-full max-w-[60rem]' }}
       title={t('manage.courseList.deleteCourse')}
       onPrimaryAction={
         <Button

@@ -34,7 +34,7 @@ function LazyHMACLink({
   }`
 
   return (
-    <div className="flex flex-row items-center gap-3">
+    <div className="flex max-w-full flex-row items-center justify-between gap-3">
       <Link
         className="rounded bg-slate-100 px-2 py-1 hover:bg-slate-200"
         href={link}
@@ -42,7 +42,12 @@ function LazyHMACLink({
         legacyBehavior
         passHref
       >
-        <a data-cy={`open-embedding-link-session-${sessionId}`}>{link}</a>
+        <a
+          data-cy={`open-embedding-link-session-${sessionId}`}
+          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+        >
+          {link}
+        </a>
       </Link>
       <Button
         onClick={() => navigator?.clipboard?.writeText(link)}

@@ -43,7 +43,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: 'h-max max-h-full max-w-6xl overflow-y-auto',
+        content: 'h-max max-h-full !w-max max-w-6xl overflow-y-auto',
       }}
     >
       <div className="flex flex-col gap-8 md:flex-row">

@@ -357,7 +357,7 @@ function LiveQuizCreationBlock({
           blockIx: index + 1,
         })}
         className={{
-          content: '!h-max !min-h-max w-full !pb-0 sm:w-3/4 md:w-1/2',
+          content: 'sm:w-3/4 md:w-1/2',
         }}
       >
         <NumberField
