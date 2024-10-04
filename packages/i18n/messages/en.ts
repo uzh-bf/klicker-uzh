@@ -1320,10 +1320,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
       confirmAbortSession: 'Abort live quiz {title}?',
-      abortSessionHint:
-        'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
-      abortEnterName:
-        'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
+      cancelLiveQuizMessage:
+        'Please confirm the deletion of all elements associated with this live session and confirm the irreversible abortion of this live quiz.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} responses in this live quiz submitted by students will be deleted.',
+      noFeedbacksToDelete:
+        'For this live quiz no feedbacks have been submitted yet.',
+      deleteFeedbacks:
+        '{number} feedbacks in live Q&A channel will be irreversibly deleted.',
+      noConfusionFeedbacksToDelete:
+        'For this live quiz no confusion feedbacks have been submitted yet.',
+      deleteConfusionFeedbacks:
+        '{number} confusion feedbacks will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -1510,7 +1524,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionMessage:
-        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
         '{number} participants of this course will loose their collected points and access to all course materials and activities.',

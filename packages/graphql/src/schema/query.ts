@@ -28,7 +28,12 @@ import {
 } from './participant.js'
 import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
-import { Feedback, Session, SessionEvaluation } from './session.js'
+import {
+  Feedback,
+  RunningLiveQuizSummary,
+  Session,
+  SessionEvaluation,
+} from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -231,6 +236,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SessionService.getRunningSessions(args, ctx)
+        },
+      }),
+
+      getLiveQuizSummary: asUser.field({
+        nullable: true,
+        type: RunningLiveQuizSummary,
+        args: {
+          quizId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getLiveQuizSummary(args, ctx)
         },
       }),
 
