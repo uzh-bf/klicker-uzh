@@ -150,7 +150,7 @@ function PracticeQuizElement({
     ),
     [PublicationStatus.Scheduled]: (
       <StatusTag
-        color="bg-green-300"
+        color="bg-orange-200"
         status={t('shared.generic.scheduled')}
         icon={faClock}
       />

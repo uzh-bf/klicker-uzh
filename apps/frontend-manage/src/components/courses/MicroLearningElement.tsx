@@ -103,10 +103,16 @@ function MicroLearningElement({
       <StatusTag
         color="bg-green-300"
         status={t('shared.generic.published')}
-        icon={isFuture ? faClock : isPast ? faCheck : faPlay}
+        icon={isPast ? faCheck : faPlay}
       />
     ),
-    [PublicationStatus.Scheduled]: <div />,
+    [PublicationStatus.Scheduled]: (
+      <StatusTag
+        color="bg-orange-200"
+        status={t('shared.generic.scheduled')}
+        icon={faClock}
+      />
+    ),
   }
 
   return (
@@ -226,6 +232,64 @@ function MicroLearningElement({
             </>
           )}
 
+          {microLearning.status === PublicationStatus.Scheduled && (
+            <>
+              <MicroLearningAccessLink
+                microLearning={microLearning}
+                href={href}
+              />
+              <Dropdown
+                data={{ cy: `microlearning-actions-${microLearning.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[
+                  dataUser?.userProfile?.catalyst
+                    ? getLTIAccessLink({
+                        href,
+                        setCopyToast,
+                        t,
+                        name: microLearning.name,
+                      })
+                    : [],
+                  // {
+                  //   label: (
+                  //     <MicroLearningPreviewLink
+                  //       microLearning={microLearning}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
+                  getActivityDuplicationAction({
+                    id: microLearning.id,
+                    text: t('manage.course.duplicateMicroLearning'),
+                    wizardMode: WizardMode.Microlearning,
+                    router: router,
+                    data: {
+                      cy: `duplicate-microlearning-${microLearning.name}`,
+                    },
+                  }),
+                  {
+                    label: (
+                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+                        <FontAwesomeIcon icon={faLock} className="w-4" />
+                        <div>{t('manage.course.unpublishMicrolearning')}</div>
+                      </div>
+                    ),
+                    onClick: async () => await unpublishMicroLearning(),
+                    data: {
+                      cy: `unpublish-microlearning-${microLearning.name}`,
+                    },
+                  },
+                ].flat()}
+                triggerIcon={faHandPointer}
+              />
+            </>
+          )}
+
           {microLearning.status === PublicationStatus.Published && (
             <>
               <MicroLearningAccessLink
@@ -292,24 +356,6 @@ function MicroLearningElement({
                           onClick: () => setExtensionModal(true),
                           data: {
                             cy: `extend-microlearning-${microLearning.name}`,
-                          },
-                        },
-                      ]
-                    : []),
-                  ...(isFuture
-                    ? [
-                        {
-                          label: (
-                            <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                              <FontAwesomeIcon icon={faLock} className="w-4" />
-                              <div>
-                                {t('manage.course.unpublishMicrolearning')}
-                              </div>
-                            </div>
-                          ),
-                          onClick: async () => await unpublishMicroLearning(),
-                          data: {
-                            cy: `unpublish-microlearning-${microLearning.name}`,
                           },
                         },
                       ]
