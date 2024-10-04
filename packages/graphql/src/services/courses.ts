@@ -204,6 +204,7 @@ export async function getCourseOverviewData(
                     GroupActivityStatus.GRADED,
                   ],
                 },
+                isDeleted: false,
               },
               orderBy: {
                 scheduledStartAt: 'asc',
@@ -630,9 +631,21 @@ export async function getCourseSummary(
       _count: {
         select: {
           sessions: true,
-          practiceQuizzes: true,
-          microLearnings: true,
-          groupActivities: true,
+          practiceQuizzes: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          microLearnings: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          groupActivities: {
+            where: {
+              isDeleted: false,
+            },
+          },
           leaderboard: true,
           participantGroups: true,
           participations: true,
@@ -732,6 +745,9 @@ export async function getCourseData(
         },
       },
       practiceQuizzes: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },
@@ -742,6 +758,9 @@ export async function getCourseData(
         },
       },
       groupActivities: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           stacks: {
             include: {
@@ -754,6 +773,9 @@ export async function getCourseData(
         },
       },
       microLearnings: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },

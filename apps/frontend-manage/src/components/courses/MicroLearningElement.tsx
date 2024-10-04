@@ -117,6 +117,17 @@ function MicroLearningElement({
     ),
   }
 
+  const deletionElement = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-4" />
+        <div>{t('manage.course.deleteMicrolearning')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: { cy: `delete-microlearning-${microLearning.name}` },
+  }
+
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
@@ -218,16 +229,7 @@ function MicroLearningElement({
                       cy: `duplicate-microlearning-${microLearning.name}`,
                     },
                   }),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon icon={faTrashCan} className="w-4" />
-                        <div>{t('manage.course.deleteMicrolearning')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-microlearning-${microLearning.name}` },
-                  },
+                  deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -286,6 +288,7 @@ function MicroLearningElement({
                       cy: `unpublish-microlearning-${microLearning.name}`,
                     },
                   },
+                  deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -389,6 +392,7 @@ function MicroLearningElement({
                         },
                       ]
                     : []),
+                  deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />

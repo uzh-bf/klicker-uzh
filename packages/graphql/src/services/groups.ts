@@ -10,7 +10,6 @@ import {
   Participant,
   ParticipantGroup,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -952,6 +951,7 @@ export async function manipulateGroupActivity(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: true,
@@ -1175,7 +1175,7 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, isDeleted: false },
     include: {
       course: true,
       clues: {
@@ -1554,7 +1554,7 @@ export async function getGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, ownerId: ctx.user.sub, isDeleted: false },
     include: {
       course: true,
       clues: true,
@@ -1603,7 +1603,7 @@ export async function unpublishGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, ownerId: ctx.user.sub, isDeleted: false },
   })
 
   if (!groupActivity) return null
@@ -1622,27 +1622,46 @@ export async function deleteGroupActivity(
   { id }: GetGroupActivityArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      activityInstances: true,
+    },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // if the the group activity is not yet published / has not started or has no instances -> hard deletion
+  // as soon as an instance exists (independent of results) -> soft deletion
+  if (
+    groupActivity.status === GroupActivityStatus.DRAFT ||
+    groupActivity.activityInstances.length === 0
+  ) {
     const deletedItem = await ctx.prisma.groupActivity.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: GroupActivityStatus.DRAFT,
       },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
-
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
-      console.warn(
-        'The group activity is already published and cannot be deleted anymore.'
-      )
-      return null
-    }
+  } else {
+    // if the group activity already has active instance, only soft delete it
+    const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
 
-    throw e
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedGroupActivity
   }
 }
 

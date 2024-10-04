@@ -114,6 +114,7 @@ export async function getParticipations(
                     gt: new Date(),
                   },
                   status: PublicationStatus.PUBLISHED,
+                  isDeleted: false,
                 },
               },
               sessions: {
@@ -772,6 +773,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
           practiceQuizzes: {
             where: {
               status: PublicationStatus.PUBLISHED,
+              isDeleted: false,
             },
           },
         },
