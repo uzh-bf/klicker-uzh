@@ -1334,7 +1334,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       abortSession: 'Quiz abbrechen',
       confirmAbortSession: 'Live Quiz {title} abbrechen?',
       cancelLiveQuizMessage:
-        'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Session verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
+        'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:
         'Für dieses Live-Quiz wurden noch keine Antworten gespeichert.',
       deleteResponses:

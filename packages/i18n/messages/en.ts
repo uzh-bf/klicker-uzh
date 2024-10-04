@@ -1321,7 +1321,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       abortSession: 'Abort quiz',
       confirmAbortSession: 'Abort live quiz {title}?',
       cancelLiveQuizMessage:
-        'Please confirm the deletion of all elements associated with this live session and confirm the irreversible abortion of this live quiz.',
+        'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
         'For this live quiz no responses have been collected yet.',
       deleteResponses:
