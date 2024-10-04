@@ -263,7 +263,7 @@ function LiveSessionWizard({
             name={formData.name}
             editMode={editMode}
             onViewElement={() => {
-              router.push(`/sessions`)
+              router.push(`/quizzes`)
             }}
             onRestartForm={() => {
               setIsWizardCompleted(false)
@@ -282,7 +282,7 @@ function LiveSessionWizard({
                       id: data?.createSession?.id as string,
                     },
                   })
-                  router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+                  router.push(`/quizzes/${data?.createSession?.id}/cockpit`)
                 }}
                 className={{ root: 'space-x-1' }}
               >

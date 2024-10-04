@@ -195,7 +195,7 @@ function SessionTimeline({
           <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
-              href={`/sessions/${sessionId}/evaluation`}
+              href={`/quizzes/${sessionId}/evaluation`}
               className="flex-1"
               rel="noopener noreferrer"
               target="_blank"

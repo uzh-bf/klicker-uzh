@@ -16,7 +16,7 @@ describe('Create and solve a group activity', () => {
     cy.loginLecturer()
 
     // set up question with solution
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
     cy.get('[data-cy="insert-question-text"]').click().type(question)

@@ -45,7 +45,7 @@ function CancelSessionModal({
         <Button
           onClick={async () => {
             await cancelSession()
-            router.push('/sessions')
+            router.push('/quizzes')
           }}
           className={{
             root: twMerge(

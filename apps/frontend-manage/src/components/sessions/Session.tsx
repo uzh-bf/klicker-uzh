@@ -177,7 +177,7 @@ function Session({ session }: SessionProps) {
 
                 {SessionStatus.Running === session.status && (
                   <Link
-                    href={`/sessions/${session.id}/cockpit`}
+                    href={`/quizzes/${session.id}/cockpit`}
                     legacyBehavior
                     passHref
                   >
@@ -192,7 +192,7 @@ function Session({ session }: SessionProps) {
                 )}
                 {SessionStatus.Completed === session.status && (
                   <Link
-                    href={`/sessions/${session.id}/evaluation`}
+                    href={`/quizzes/${session.id}/evaluation`}
                     legacyBehavior
                     passHref
                   >

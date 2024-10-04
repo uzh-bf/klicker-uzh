@@ -30,15 +30,15 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const navigationItems = [
     {
       href: '/',
-      label: t('manage.general.questionPool'),
+      label: t('manage.general.library'),
       active: router.pathname == '/',
-      cy: 'questions',
+      cy: 'library',
     },
     {
-      href: '/sessions',
-      label: t('manage.general.sessions'),
-      active: router.pathname == '/sessions',
-      cy: 'sessions',
+      href: '/quizzes',
+      label: t('manage.general.quizzes'),
+      active: router.pathname == '/quizzes',
+      cy: 'quizzes',
     },
     {
       href: '/courses',
@@ -46,14 +46,24 @@ function Header({ user }: HeaderProps): React.ReactElement {
       active: router.pathname == '/courses',
       cy: 'courses',
     },
+    {
+      href: '/analytics',
+      label: t('manage.general.analytics'),
+      active: router.pathname == '/analytics',
+      cy: 'analytics',
+    },
   ]
 
   return (
     <div
-      className="flex h-full w-full flex-row items-center justify-between bg-slate-800 px-4 font-bold text-white print:!hidden"
+      className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
       data-cy="navigation"
     >
-      <Navigation className={{ root: 'bg-slate-800' }}>
+      <Navigation
+        className={{
+          root: 'rounded-none bg-slate-100',
+        }}
+      >
         {navigationItems.map((item) => (
           <Navigation.ButtonItem
             data={{ cy: item.cy }}
@@ -61,11 +71,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
             label={item.label}
             className={{
               label: twMerge(
-                'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
+                'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
                 item.active &&
-                  'text-red underline decoration-2 underline-offset-[0.3rem]'
+                  'underline decoration-2 underline-offset-[0.3rem]'
               ),
-              root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
+              root: 'group text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
             }}
             onClick={() => {
               router.push(item.href)
@@ -73,74 +83,64 @@ function Header({ user }: HeaderProps): React.ReactElement {
           />
         ))}
       </Navigation>
-      <Navigation className={{ root: 'bg-slate-800 !p-0' }}>
-        <Navigation.ButtonItem
-          onClick={() => router.push('/migration')}
-          label={t('manage.general.migration')}
+      <Navigation
+        className={{
+          root: 'rounded-none bg-slate-100',
+        }}
+      >
+        <Navigation.TriggerItem
+          icon={
+            <FontAwesomeIcon
+              icon={faPlayCircle}
+              className="h-5 group-hover:text-white"
+            />
+          }
+          dropdownWidth="w-36"
           className={{
-            label: twMerge(
-              'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
-              router.pathname === '/migration' &&
-                'text-red underline decoration-2 underline-offset-[0.3rem]'
+            root: 'group hidden h-9 w-9 md:block',
+            icon: twMerge(
+              data?.userRunningSessions?.length !== 0 && 'text-green-600'
             ),
-            root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
+            disabled: '!text-gray-400',
           }}
-        />
-        <div className="hidden md:block">
-          <Navigation.TriggerItem
-            icon={
-              <FontAwesomeIcon
-                icon={faPlayCircle}
-                className="h-7 group-hover:text-white"
-              />
-            }
-            dropdownWidth="w-[12rem]"
-            className={{
-              root: 'group h-10 w-2',
-              icon: twMerge(
-                'text-uzh-grey-80',
-                data?.userRunningSessions?.length !== 0 && 'text-green-600'
-              ),
-              disabled: '!text-gray-400',
-              dropdown: 'gap-0 p-1.5',
-            }}
-            disabled={data?.userRunningSessions?.length === 0}
-          >
-            {data?.userRunningSessions &&
-            data?.userRunningSessions.length > 0 ? (
-              data?.userRunningSessions.map((session) => {
-                return (
-                  <Navigation.DropdownItem
-                    key={session.id}
-                    title={session.name}
-                    onClick={() =>
-                      router.push(`/sessions/${session.id}/cockpit`)
-                    }
-                    className={{ title: 'text-base font-bold', root: 'p-2' }}
-                  />
-                )
-              })
-            ) : (
-              <div />
-            )}
-          </Navigation.TriggerItem>
-        </div>
+          disabled={data?.userRunningSessions?.length === 0}
+        >
+          {data?.userRunningSessions && data?.userRunningSessions.length > 0 ? (
+            data?.userRunningSessions.map((session) => {
+              return (
+                <Navigation.DropdownItem
+                  key={session.id}
+                  title={session.name}
+                  onClick={() => router.push(`/quizzes/${session.id}/cockpit`)}
+                  className={{ title: 'text-base font-bold', root: 'p-2' }}
+                />
+              )
+            })
+          ) : (
+            <div />
+          )}
+        </Navigation.TriggerItem>
         <Navigation.ButtonItem
           onClick={() => setShowSupportModal(true)}
           label=""
-          icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-7" />}
+          icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-5" />}
           className={{
-            root: 'hover:text-uzh-blue-40 -mt-1 hidden h-7 bg-transparent text-white hover:bg-transparent group-hover:text-white md:block',
+            root: 'hover:text-uzh-blue-100 hidden h-9 bg-transparent text-slate-700 hover:bg-transparent group-hover:text-white md:block',
           }}
         />
         <Navigation.TriggerItem
-          icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
+          icon={
+            <FontAwesomeIcon
+              icon={faUserCircle}
+              className="h-5 text-slate-700"
+            />
+          }
           label={user?.shortname}
           dropdownWidth="w-[16rem]"
           className={{
             label:
-              'my-auto bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
-            root: 'group flex flex-row items-center gap-1 text-white transition-all duration-300 ease-in-out hover:bg-inherit',
+              'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
+            root: 'group flex flex-row items-center gap-1 text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
             dropdown: 'gap-0 p-1.5',
           }}
           data={{ cy: 'user-menu' }}

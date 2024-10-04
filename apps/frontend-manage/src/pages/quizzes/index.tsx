@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 
-function SessionList() {
+function QuizList() {
   const t = useTranslations()
 
   const {
@@ -135,4 +135,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default SessionList
+export default QuizList

@@ -16,9 +16,10 @@ model ParticipantAnalytics {
   id   Int           @id @default(autoincrement())
   type AnalyticsType
 
-  timestamp DateTime @db.Date
+  timestamp  DateTime @db.Date
+  computedAt DateTime @db.Date @default(now())
 
-  // unsolvedQuestionsCount = responseCount - AggregatedAnalytics.totalElementsAvailable
+  // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
   responseCount Int // total number of unique questions attempted
 
@@ -27,16 +28,17 @@ model ParticipantAnalytics {
   totalPoints Int
   totalXp     Int
 
-  // meanTrialsCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
-  meanCorrectCount        Float @db.Real // aggregated over all questions
-  meanPartialCorrectCount Float @db.Real // aggregated over all questions
-  meanWrongCount          Float @db.Real // aggregated over all questions
+  // responseCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
+  meanCorrectCount        Float @db.Real // mean over responses to same question and sum over all questions
+  meanPartialCorrectCount Float @db.Real // mean over responses to same question and sum over all questions
+  meanWrongCount          Float @db.Real // mean over responses to same question and sum over all questions
 
-  // divide by responseCount to get the correctness rate
-  meanFirstCorrectCount Float @db.Real // aggregated over all questions
-  meanLastCorrectCount  Float @db.Real // aggregated over all questions
-
-  collectedAchievements String[]
+  // divide by responseCount to get the correctness rate (COURSE LEVEL ONLY)
+  // values can be computed based on firstCorrectness and lastCorrectness on QuestionResponse
+  firstCorrectCount Float? @db.Real // aggregated over all questions (sum)
+  lastCorrectCount  Float? @db.Real // aggregated over all questions (sum)
+  firstWrongCount   Float? @db.Real // aggregated over all questions (sum)
+  lastWrongCount    Float? @db.Real // aggregated over all questions (sum)
 
   competencyAnalytics CompetencyAnalytics[]
 
@@ -45,6 +47,9 @@ model ParticipantAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, participantId, timestamp])
 }
@@ -56,6 +61,7 @@ model AggregatedAnalytics {
 
   // all quantities are defined as the values at the end of the selected timeframe
   timestamp              DateTime @db.Date
+  computedAt             DateTime @db.Date @default(now())
   responseCount          Int
   participantCount       Int
   totalScore             Int
@@ -67,6 +73,9 @@ model AggregatedAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, timestamp])
 }
@@ -86,6 +95,9 @@ model CompetencyAnalytics {
   participantAnalytics   ParticipantAnalytics @relation(fields: [participantAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantAnalyticsId Int
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([competencyId, participantAnalyticsId])
 }
 
@@ -103,6 +115,9 @@ model AggregatedCompetencyAnalytics {
   // all metrics are only computed on weekly and course-wide basis
   aggregatedAnalytics   AggregatedAnalytics @relation(fields: [aggregatedAnalyticsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   aggregatedAnalyticsId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([competencyId, aggregatedAnalyticsId])
 }
@@ -122,6 +137,9 @@ model ParticipantCourseAnalytics {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([courseId, participantId])
 }
 
@@ -139,6 +157,9 @@ model AggregatedCourseAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CompetencyTree {

@@ -17,7 +17,7 @@ import {
   InstanceResult,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { EvaluationTabData } from '@pages/sessions/[id]/evaluation'
+import { EvaluationTabData } from '@pages/quizzes/[id]/evaluation'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'

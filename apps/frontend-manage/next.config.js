@@ -8,6 +8,35 @@ const nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
   }),
+  async redirects() {
+    return [
+      {
+        source: '/sessions',
+        destination: '/quizzes',
+        permanent: true,
+      },
+      {
+        source: '/sessions/:id',
+        destination: '/quizzes/:id',
+        permanent: true,
+      },
+      {
+        source: '/sessions/:id/cockpit',
+        destination: '/quizzes/:id/cockpit',
+        permanent: true,
+      },
+      {
+        source: '/sessions/:id/evaluation',
+        destination: '/quizzes/:id/evaluation',
+        permanent: true,
+      },
+      {
+        source: '/sessions/:id/lecturer',
+        destination: '/quizzes/:id/lecturer',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 if (process.env.NODE_ENV !== 'test') {
