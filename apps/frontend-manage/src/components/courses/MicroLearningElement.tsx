@@ -102,7 +102,9 @@ function MicroLearningElement({
     [PublicationStatus.Published]: (
       <StatusTag
         color="bg-green-300"
-        status={t('shared.generic.published')}
+        status={
+          isPast ? t('shared.generic.completed') : t('shared.generic.published')
+        }
         icon={isPast ? faCheck : faPlay}
       />
     ),

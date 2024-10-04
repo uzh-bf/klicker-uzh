@@ -405,7 +405,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // sign in as student
@@ -621,7 +621,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // sign in as student
@@ -1248,7 +1248,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // switch back to the lecturer and duplicate the microlearning
