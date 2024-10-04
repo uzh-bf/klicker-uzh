@@ -993,6 +993,7 @@ export async function getCoursePracticeQuiz(
     availableFrom: null,
     course,
     courseId,
+    isDeleted: false,
     ownerId: course.ownerId,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
