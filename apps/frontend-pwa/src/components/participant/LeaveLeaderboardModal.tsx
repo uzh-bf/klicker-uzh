@@ -36,7 +36,7 @@ function LeaveLeaderboardModal({
       onClose={(): void => setIsModalOpen(false)}
       open={isModalOpen}
       hideCloseButton={true}
-      className={{ content: 'h-max w-[40rem] self-center pt-0' }}
+      className={{ content: 'h-max min-h-max w-[40rem] self-center !pt-0' }}
     >
       <div>
         <H2>{t('pwa.courses.leaveCourseTitle')}</H2>

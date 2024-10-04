@@ -46,11 +46,11 @@ function AdvancedLiveQuizSettings({
         </Button>
       }
       title={t('manage.sessionForms.liveQuizAdvancedSettings')}
-      className={{ content: 'h-max min-h-max' }}
+      className={{ content: 'h-max min-h-max !w-full max-w-[60rem] !pb-0' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
     >
-      <div className="flex flex-row">
-        <div className="mr-8 w-1/2">
+      <div className="flex flex-col gap-6 md:flex-row md:gap-0">
+        <div className="w-full md:mr-8 md:w-1/2">
           <FormikNumberField
             required
             precision={0}
@@ -76,7 +76,7 @@ function AdvancedLiveQuizSettings({
             }}
           />
         </div>
-        <div className="w-1/2">
+        <div className="w-full md:w-1/2">
           <div className="mb-2 font-bold">
             {t('manage.sessionForms.liveQuizTotalPointsCorrect')}
           </div>
