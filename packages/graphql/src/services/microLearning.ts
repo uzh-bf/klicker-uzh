@@ -340,7 +340,36 @@ export async function publishMicroLearning(
   { id }: PublishMicroLearningArgs,
   ctx: ContextWithUser
 ) {
-  const microLearning = await ctx.prisma.microLearning.update({
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.DRAFT,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning only starts in the future, set its state to scheduled
+  if (microLearning.scheduledStartAt > new Date()) {
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
+  }
+
+  // if the start date is in the past, directly publish the microlearning
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -351,8 +380,40 @@ export async function publishMicroLearning(
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+  return updatedMicroLearning
+}
 
-  return microLearning
+export async function publishScheduledMicroLearnings(ctx: Context) {
+  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearnings = await Promise.all(
+    microlearningsToPublish.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  updatedMicroLearnings.forEach((micro) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
+  return true
 }
 
 interface UnpublishMicroLearningArgs {
@@ -367,6 +428,7 @@ export async function unpublishMicroLearning(
     where: {
       id,
       ownerId: ctx.user.sub,
+      status: PublicationStatus.SCHEDULED,
     },
     data: {
       status: PublicationStatus.DRAFT,
@@ -381,7 +443,6 @@ export async function unpublishMicroLearning(
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
-
   return microLearning
 }
 

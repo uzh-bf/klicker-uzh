@@ -258,6 +258,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      publishScheduledMicroLearnings: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return MicroLearningService.publishScheduledMicroLearnings(ctx)
+        },
+      }),
+
       createParticipantAccount: t.field({
         nullable: true,
         type: ParticipantTokenData,

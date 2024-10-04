@@ -29,27 +29,37 @@ function PublishConfirmationModal({
   setOpen,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
-  const [publishPracticeQuiz] = useMutation(PublishPracticeQuizDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
-  const [publishMicroLearning] = useMutation(PublishMicroLearningDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
-  const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
+  const [publishPracticeQuiz, { loading: pqPublishLoading }] = useMutation(
+    PublishPracticeQuizDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
+  const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
+    PublishMicroLearningDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
+  const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
+    PublishGroupActivityDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
 
   return (
     <Modal
       title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
+          loading={pqPublishLoading || mlPublishLoading || gaPublishLoading}
           onClick={async () => {
             if (elementType === ElementInstanceType.Microlearning) {
               await publishMicroLearning()
