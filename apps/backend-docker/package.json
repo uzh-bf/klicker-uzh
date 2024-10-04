@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.2.0-rc.0",
+  "version": "3.2.0-rc.1",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
