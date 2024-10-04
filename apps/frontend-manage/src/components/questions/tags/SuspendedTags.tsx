@@ -49,13 +49,13 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
       search.addDocuments(data.userTags)
 
       if (searchInput) {
-        return search.search(searchInput)
+        return search.search(searchInput) as Tag[]
       }
 
-      return data.userTags
+      return data.userTags as Tag[]
     }
 
-    return []
+    return [] as Tag[]
   }, [data?.userTags, searchInput])
 
   if (error) {
