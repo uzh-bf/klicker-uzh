@@ -58,7 +58,7 @@ function CourseQRModal({
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: twMerge('h-max w-max', className?.modal),
+        content: twMerge('!w-max', className?.modal),
       }}
       dataOverlay={dataModal}
       dataCloseButton={dataCloseButton}

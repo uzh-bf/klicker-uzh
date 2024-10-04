@@ -657,8 +657,7 @@ function QuestionEditModal({
             fullScreen
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
-              content:
-                'h-max max-h-[calc(100vh-2rem)] max-w-[1400px] text-sm md:text-base',
+              content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
               title: 'text-xl',
             }}
             open={isOpen}

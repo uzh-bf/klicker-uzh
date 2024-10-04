@@ -24,7 +24,7 @@ function CourseDeletionItem({
   const t = useTranslations()
 
   return (
-    <div className="flex h-10 flex-row items-center justify-between border-b pb-2 pl-2">
+    <div className="flex flex-row items-center justify-between border-b pb-2 pl-2">
       <div className="flex flex-row items-center gap-3.5">
         <FontAwesomeIcon
           icon={notApplicable ? faInfoCircle : faExclamationCircle}

@@ -38,7 +38,7 @@ function CourseArchiveModal({
         setOpen(false)
         setSelectedCourseId(null)
       }}
-      className={{ content: 'h-max min-h-max max-w-[30rem]' }}
+      className={{ content: 'max-w-[30rem]' }}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')

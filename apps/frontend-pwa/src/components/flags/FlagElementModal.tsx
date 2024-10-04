@@ -177,7 +177,7 @@ function FlagElementModal({
       <Modal
         title={t('pwa.practiceQuiz.flagElement')}
         className={{
-          content: 'z-20 h-max max-w-lg',
+          content: 'z-20 max-w-lg',
           overlay: 'z-10',
         }}
         open={open}

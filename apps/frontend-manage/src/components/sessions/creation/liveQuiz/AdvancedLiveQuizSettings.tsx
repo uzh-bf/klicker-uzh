@@ -46,7 +46,7 @@ function AdvancedLiveQuizSettings({
         </Button>
       }
       title={t('manage.sessionForms.liveQuizAdvancedSettings')}
-      className={{ content: 'h-max min-h-max !w-full max-w-[60rem] !pb-0' }}
+      className={{ content: '!w-full max-w-[60rem] !pb-2' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
     >
       <div className="flex flex-col gap-6 md:flex-row md:gap-0">
