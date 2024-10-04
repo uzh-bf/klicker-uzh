@@ -1594,7 +1594,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceSchedulingHint:
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
-        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future and/or no answers have been submitted. Changes to the content of an element cannot be made after publishing.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
       confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicrolearning:
