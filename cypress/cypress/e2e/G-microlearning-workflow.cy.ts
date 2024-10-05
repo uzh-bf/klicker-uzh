@@ -858,10 +858,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${newMicroLearningName}"]`).click()
     cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
+    cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).should(
       'not.exist'
     )
 
