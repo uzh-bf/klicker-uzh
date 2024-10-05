@@ -23,7 +23,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
@@ -164,6 +164,17 @@ function PracticeQuizElement({
     ),
   }
 
+  const deletionItem = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+        <div>{t('manage.course.deletePracticeQuiz')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
+  }
+
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
@@ -259,19 +270,7 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="w-[1.1rem]"
-                        />
-                        <div>{t('manage.course.deletePracticeQuiz')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
-                  },
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -319,6 +318,7 @@ function PracticeQuizElement({
                       cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
                     },
                   },
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -371,6 +371,7 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />

@@ -22,7 +22,6 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -84,6 +83,7 @@ export async function getPracticeQuizData(
       OR: [
         {
           status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
         },
         {
           status: PublicationStatus.SCHEDULED,
@@ -361,6 +361,7 @@ export async function getPracticeQuizEvaluation(
     where: {
       id,
       status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
     },
     include: {
       stacks: {
@@ -401,6 +402,7 @@ export async function getSinglePracticeQuiz(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      isDeleted: false,
     },
     include: {
       course: true,
@@ -2616,6 +2618,7 @@ export async function manipulatePracticeQuiz(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -2830,30 +2833,67 @@ export async function deletePracticeQuiz(
   { id }: DeletePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    practiceQuiz.status === PublicationStatus.DRAFT ||
+    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The practice quiz is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
+  } else {
+    // if the practice quiz is published and has responses -> soft deletion
+    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+      include: {
+        stacks: true,
+      },
+    })
 
-    throw e
+    // disconnect the stacks from the course they are linked to
+    const stackIds = updatedPracticeQuiz.stacks.map((stack) => stack.id)
+    await ctx.prisma.elementStack.updateMany({
+      where: {
+        id: {
+          in: stackIds,
+        },
+      },
+      data: {
+        courseId: null,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedPracticeQuiz
   }
 }
 
@@ -2869,6 +2909,7 @@ export async function publishPracticeQuiz(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
   })
 

@@ -152,6 +152,19 @@ function GroupActivityElement({
       ),
   }
 
+  const deletionItem = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+        <div>{t('manage.course.deleteGroupActivity')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: {
+      cy: `delete-groupActivity-${groupActivity.name}`,
+    },
+  }
+
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
@@ -221,21 +234,7 @@ function GroupActivityElement({
                       }),
                     data: { cy: `edit-groupActivity-${groupActivity.name}` },
                   },
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="w-[1.1rem]"
-                        />
-                        <div>{t('manage.course.deleteGroupActivity')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: {
-                      cy: `delete-groupActivity-${groupActivity.name}`,
-                    },
-                  },
+                  deletionItem,
                 ]}
                 triggerIcon={faHandPointer}
               />
@@ -287,6 +286,16 @@ function GroupActivityElement({
                   </div>
                 </Button>
               )}
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[deletionItem]}
+                triggerIcon={faHandPointer}
+              />
             </>
           )}
         </div>

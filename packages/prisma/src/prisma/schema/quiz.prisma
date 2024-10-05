@@ -23,6 +23,8 @@ model PracticeQuiz {
   status           PublicationStatus @default(DRAFT)
   availableFrom    DateTime?
 
+  isDeleted Boolean @default(false)
+
   stacks ElementStack[]
 
   responses       QuestionResponse[]
@@ -209,6 +211,7 @@ model MicroLearning {
   scheduledEndAt   DateTime
 
   arePushNotificationsSent Boolean @default(false)
+  isDeleted                Boolean @default(false)
 
   stacks ElementStack[]
 
@@ -303,6 +306,8 @@ model GroupActivity {
   description      String?
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
+
+  isDeleted Boolean @default(false)
 
   stacks ElementStack[]
 

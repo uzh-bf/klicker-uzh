@@ -306,6 +306,17 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="groupActivity-${newName}"]`)
       .findByText(messages.shared.generic.running)
       .should('exist')
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${newName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${newName}"]`).click()
+    cy.get(`[data-cy="confirm-delete-groupActivity"]`).click()
+    cy.get(`[data-cy="groupActivity-actions-${newName}"]`).should('not.exist')
   })
 
   it('can send a message to the group', function () {

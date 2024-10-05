@@ -4,7 +4,6 @@ import {
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -35,6 +34,7 @@ export async function getMicroLearningData(
             scheduledStartAt: { lte: new Date() },
             scheduledEndAt: { gte: new Date() },
             status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
           },
         },
         {
@@ -76,6 +76,7 @@ export async function getMicroLearningEvaluation(
     where: {
       id,
       status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
     },
     include: {
       stacks: {
@@ -117,6 +118,7 @@ export async function getSingleMicroLearning(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
     include: {
       course: true,
@@ -195,6 +197,7 @@ export async function manipulateMicroLearning(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -474,6 +477,7 @@ export async function extendMicroLearning(
       id,
       ownerId: ctx.user.sub,
       scheduledEndAt: { gt: new Date() },
+      isDeleted: false,
     },
     data: {
       scheduledEndAt: endDate,
@@ -489,26 +493,50 @@ export async function deleteMicroLearning(
   { id }: DeleteMicroLearningArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    microLearning.status === PublicationStatus.DRAFT ||
+    microLearning.status === PublicationStatus.SCHEDULED ||
+    microLearning.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.microLearning.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
-      console.warn(
-        'The microLearning is already published and cannot be deleted anymore.'
-      )
-      return null
-    }
+  } else {
+    // if the microlearning is published and has responses -> soft deletion
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
 
-    throw e
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
   }
 }

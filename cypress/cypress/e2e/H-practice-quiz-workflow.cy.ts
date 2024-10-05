@@ -63,7 +63,7 @@ describe('Different practice quiz workflows', () => {
 
     // step 2
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click({ force: true })
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
@@ -206,6 +206,34 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="mobile-menu-home"]').click()
     cy.viewport('macbook-16')
+
+    // navigate to the lecturer view and delete the practice quiz
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the practice quiz is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Test scheduling and publishing functionalities of a practice quiz', () => {
@@ -407,6 +435,34 @@ describe('Different practice quiz workflows', () => {
       .click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
+
+    // navigate to the lecturer view and delete the practice quiz
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName3}"]`).click()
+    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the practice quiz is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName3}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Test editing an existing practice quiz', () => {
@@ -600,6 +656,34 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
+
+    // navigate to the lecturer view and delete the practice quiz
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName2}"]`).click()
+    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the practice quiz is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName2}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Create a practice quiz and duplicate it', () => {
@@ -806,5 +890,33 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
+
+    // navigate to the lecturer view and delete the practice quiz
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${quizNameDupl}"]`).click()
+    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the practice quiz is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${quizDisplayNameDupl}"]`).should(
+      'not.exist'
+    )
   })
 })
