@@ -597,6 +597,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getMicroLearningSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningSummary(args, ctx)
+        },
+      }),
+
       userLogins: asUser.field({
         nullable: true,
         type: [UserLogin],
