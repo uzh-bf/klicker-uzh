@@ -1665,6 +1665,36 @@ export async function deleteGroupActivity(
   }
 }
 
+export async function getGroupActivitySummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      activityInstances: true,
+    },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  const numOfStartedInstances = groupActivity.activityInstances.filter(
+    (instance) => instance.decisionsSubmittedAt === null
+  ).length
+  const numOfSubmissions =
+    groupActivity.activityInstances.length - numOfStartedInstances
+
+  return {
+    numOfStartedInstances,
+    numOfSubmissions,
+  }
+}
+
 interface GetGradingGroupActivityArgs {
   id: string
 }

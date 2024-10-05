@@ -1631,10 +1631,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
       microPublishingHint:
         'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
-      confirmDeletionMicrolearning:
-        'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
-      hintDeletionMicrolearning:
-        'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
@@ -1655,10 +1651,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editGroupActivity: 'Gruppenaktivität bearbeiten',
       deleteGroupActivity: 'Gruppenaktivität löschen',
-      confirmDeletionGroupActivity:
-        'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
-      hintDeletionGroupActivity:
-        'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deleteGroupActivityMessage:
+        'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      noStartedInstancesToDelete:
+        'Aktuell haben keine Gruppen offene Instanzen dieser Gruppenaktivität.',
+      deleteStartedInstance:
+        '{number} Gruppe(n), welche diese Gruppenaktivität gestartet haben, verlieren den Zugriff darauf.',
+      noSubmissionsToDelete:
+        'Es gibt keine Abgaben für diese Gruppenaktivität.',
+      deleteSubmissions:
+        '{number} Abgabe(n) von separaten Gruppen für diese Aktivität werden gelöscht.',
       unpublishGroupActivity: 'Veröffentlichung aufheben',
       extendGroupActivity: 'Gruppenaktivität verlängern',
       extendGroupActivityDescription:

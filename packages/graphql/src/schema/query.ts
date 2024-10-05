@@ -17,7 +17,11 @@ import {
   StudentCourse,
 } from './course.js'
 import { ActivityEvaluation } from './evaluation.js'
-import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
+import {
+  GroupActivity,
+  GroupActivityDetails,
+  GroupActivitySummary,
+} from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -605,6 +609,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.getMicroLearningSummary(args, ctx)
+        },
+      }),
+
+      getGroupActivitySummary: asUser.field({
+        nullable: true,
+        type: GroupActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivitySummary(args, ctx)
         },
       }),
 

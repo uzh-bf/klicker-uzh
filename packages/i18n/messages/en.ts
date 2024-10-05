@@ -1611,10 +1611,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
         'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
-      confirmDeletionMicrolearning:
-        'Are you sure you want to delete the following microlearing?',
-      hintDeletionMicrolearning:
-        'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
       editPracticeQuiz: 'Edit practice quiz',
       duplicatePracticeQuiz: 'Duplicate practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
@@ -1635,10 +1631,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit group activity',
       deleteGroupActivity: 'Delete group activity',
-      confirmDeletionGroupActivity:
-        'Are you sure you want to delete the following group activity?',
-      hintDeletionGroupActivity:
-        'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
+      deleteGroupActivityMessage:
+        'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
+      noStartedInstancesToDelete:
+        'There are no groups that have outstanding submissions for this group activity.',
+      deleteStartedInstance:
+        '{number} group(s) that have started the group activity will loose access to it.',
+      noSubmissionsToDelete:
+        'There are no submissions for this group activity.',
+      deleteSubmissions:
+        '{number} submission(s) by separate groups for this activity will be deleted.',
       unpublishGroupActivity: 'Unpublish group activity',
       extendGroupActivity: 'Extend group activity',
       extendGroupActivityDescription:

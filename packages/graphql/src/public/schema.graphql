@@ -625,6 +625,11 @@ enum GroupActivityStatus {
   PUBLISHED
 }
 
+type GroupActivitySummary {
+  numOfStartedInstances: Int!
+  numOfSubmissions: Int!
+}
+
 type GroupAssignmentPoolEntry {
   courseId: ID!
   id: ID!
@@ -1085,6 +1090,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
+  getGroupActivitySummary(id: String!): GroupActivitySummary
   getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation

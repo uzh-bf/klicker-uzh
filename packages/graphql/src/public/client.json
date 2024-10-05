@@ -121,6 +121,7 @@
    "GetFeedbacks": "b33e84156822ff5ba3013fb1ddb31eae21ecfd40c1249b6e9db361ed774a83f8",
    "GetGradingGroupActivity": "79c2a520d7da8752514c6c34383596a36a40f9d9a67c4850e819a30e61b63bae",
    "GetGroupActivity": "bc04bd4d995633af0a94f2ca24b203d9c39ca557dd5f12589fa41419a505b11d",
+   "GetGroupActivitySummary": "7a3935db0e7cae8d5baf574a1c0506f568ffaaae1522a49363245946cff64d2d",
    "GetLiveQuizSummary": "fd17c092be3d096abd6d31e89d8249bd4b482a2a6310f6893e9e32c5a70666c0",
    "GetLoginToken": "491946fc1fcbd066ea481c564313f4e50b7cc98ea16ab16a7a2146d75ec8cf00",
    "GetMicroLearningEvaluation": "d3d5c8d25a6410b8c93c63414a5c0041a2a1d2a3d08c8e8f58ab4c43453e3162",
