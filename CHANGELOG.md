@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.1...v3.2.0-rc.2) (2024-10-05)
+
+
+### Features
+
+* allow deletion of all activities independent of status and distinguish between hard and soft deletion in backend ([#4294](https://github.com/uzh-bf/klicker-uzh/issues/4294)) ([6d47105](https://github.com/uzh-bf/klicker-uzh/commit/6d471052850537137138af3eafd7961827dd334e))
+
+
+### Other
+
+* replace select components through new and improve version ([#4295](https://github.com/uzh-bf/klicker-uzh/issues/4295)) ([57e1019](https://github.com/uzh-bf/klicker-uzh/commit/57e101934e00db44d8e7dbe0b6d96e8528fcb8f3))
+
 ## [3.2.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.0...v3.2.0-rc.1) (2024-10-04)
 
 
