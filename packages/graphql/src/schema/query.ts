@@ -26,7 +26,12 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant.js'
-import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
+import {
+  ActivitySummary,
+  ElementStack,
+  PracticeQuiz,
+  StackFeedback,
+} from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
 import {
   Feedback,
@@ -578,6 +583,17 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
+      getPracticeQuizSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPracticeQuizSummary(args, ctx)
         },
       }),
 

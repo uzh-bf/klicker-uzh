@@ -1617,10 +1617,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       duplicatePracticeQuiz: 'Duplicate practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
       deletePracticeQuiz: 'Delete practice quiz',
-      confirmDeletionPracticeQuiz:
-        'Are you sure you want to delete the following practice quiz?',
-      hintDeletionPracticeQuiz:
-        'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      deletePracticeQuizMessage:
+        'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
+      noResponsesToDelete:
+        'No logged in participants have submitted responses for this activity',
+      deleteResponses:
+        '{number} responses of logged in participants will be deleted.',
+      noAnonymousResponsesToDelete:
+        'No anonymous responses have been submitted for this activity',
+      deleteAnonymousResponses:
+        '{number} anonymous responses for this activity will be deleted.',
       unpublishPracticeQuiz: 'Unpublish practice quiz',
       publishGroupActivity: 'Publish group activity',
       groupActivityPublishingHint:

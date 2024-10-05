@@ -22,6 +22,11 @@ type ActivityEvaluation {
   results: [StackEvaluation!]!
 }
 
+type ActivitySummary {
+  numOfAnonymousResponses: Int!
+  numOfResponses: Int!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -1087,6 +1092,7 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz

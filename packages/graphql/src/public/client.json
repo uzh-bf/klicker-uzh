@@ -133,6 +133,7 @@
    "GetPracticeQuiz": "452bbeb1b6602a0e14134768aa779e220112ac550de81d30aa37074c53dd8761",
    "GetPracticeQuizEvaluation": "d824351df4722f90d7d3adc60f331b6a1cff055d1d204c352be95bc5912535f4",
    "GetPracticeQuizList": "7a5a039ecdd864a6e0cf0e18c5ad2a2c87ad610aa3cf286e746cac1ae444b85d",
+   "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "216d1fa495c9128c952f6dbba816438d0b0ea4d1bb260866a0d1b7246e5ba0fc",
    "GetPublicParticipantProfile": "5732c91f4344a09b5a1e531f9a61a1584ccc529c26199f732ae9a15c21ba1af3",
    "GetRunningSession": "7606be1ed9ad01c26535cc9d45e04a431930443a99aeda6440beb9422ad56e28",
