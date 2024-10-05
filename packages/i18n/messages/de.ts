@@ -1617,7 +1617,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
-      deleteMicrolearning: 'Microlearning löschen',
+      deleteMicroLearning: 'Microlearning löschen',
+      deleteMicroLearningMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',

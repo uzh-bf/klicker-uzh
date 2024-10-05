@@ -331,7 +331,17 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should(
+      'not.be.disabled'
+    )
+    cy.get(`[data-cy="activity-deletion-modal-cancel"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -464,7 +474,11 @@ describe('Different microlearning workflows', () => {
     // delete the microlearning
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -576,7 +590,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -860,7 +874,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${newMicroLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).should(
       'not.exist'
     )
@@ -1154,10 +1170,7 @@ describe('Different microlearning workflows', () => {
     const practiceQuizName = 'Practice Quiz Converted'
     const practiceQuizDisplayName = 'Practice Quiz Converted Displayname'
 
-    // login as lecturer and navigate to course overview
-    cy.clearAllCookies()
-    cy.clearAllSessionStorage()
-    cy.loginLecturer()
+    // navigate to course overview
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
 
@@ -1433,7 +1446,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningNameDupl}"]`).click()
-    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).should(
       'not.exist'
     )

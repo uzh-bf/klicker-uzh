@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
+  DeleteMicroLearningDocument,
   DeletePracticeQuizDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -36,8 +37,9 @@ function ActivityDeletionModal({
   const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
     DeletePracticeQuizDocument,
     {
-      variables: { id: activityId! },
+      variables: { id: activityId },
       optimisticResponse: {
+        __typename: 'Mutation',
         deletePracticeQuiz: {
           id: activityId,
           __typename: 'PracticeQuiz',
@@ -49,12 +51,27 @@ function ActivityDeletionModal({
     }
   )
 
+  const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
+    DeleteMicroLearningDocument,
+    {
+      variables: { id: activityId },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteMicroLearning: {
+          __typename: 'MicroLearning',
+          id: activityId,
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+      ],
+    }
+  )
+
   // TODO: set the following booleans once available
-  const deletingMicroLearning = false
   const deletingGroupActivity = false
 
   // TODO: set the following mutations once available
-  const deleteMicroLearning = async () => {}
   const deleteGroupActivity = async () => {}
 
   return (
@@ -90,7 +107,7 @@ function ActivityDeletionModal({
           className={{
             root: 'bg-red-700 text-white hover:bg-red-800 hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
           }}
-          data={{ cy: 'activity-deletion-modal--confirm' }}
+          data={{ cy: 'activity-deletion-modal-confirm' }}
         >
           {t('shared.generic.confirm')}
         </Button>

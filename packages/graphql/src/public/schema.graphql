@@ -1088,6 +1088,7 @@ type Query {
   getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
+  getMicroLearningSummary(id: String!): ActivitySummary
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation

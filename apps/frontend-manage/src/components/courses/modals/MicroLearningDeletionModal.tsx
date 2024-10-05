@@ -1,29 +1,29 @@
 import { useQuery } from '@apollo/client'
 import DeletionItem from '@components/common/DeletionItem'
-import { GetPracticeQuizSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetMicroLearningSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ActivityDeletionModal from './ActivityDeletionModal'
 
-interface PracticeQuizDeletionModalProps {
+interface MicroLearningDeletionModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   courseId: string
 }
 
-function PracticeQuizDeletionModal({
+function MicroLearningDeletionModal({
   open,
   setOpen,
   activityId,
   courseId,
-}: PracticeQuizDeletionModalProps) {
+}: MicroLearningDeletionModalProps) {
   const t = useTranslations()
   const {
     data: summaryData,
     loading: summaryLoading,
     refetch,
-  } = useQuery(GetPracticeQuizSummaryDocument, {
+  } = useQuery(GetMicroLearningSummaryDocument, {
     variables: { id: activityId },
     skip: !open,
   })
@@ -41,28 +41,28 @@ function PracticeQuizDeletionModal({
   }, [open])
 
   useEffect(() => {
-    if (summaryData?.getPracticeQuizSummary) {
+    if (summaryData?.getMicroLearningSummary) {
       setConfirmations({
         deleteResponses:
-          summaryData?.getPracticeQuizSummary.numOfResponses === 0,
+          summaryData?.getMicroLearningSummary.numOfResponses === 0,
         deleteAnonymousResponses:
-          summaryData.getPracticeQuizSummary.numOfAnonymousResponses === 0,
+          summaryData.getMicroLearningSummary.numOfAnonymousResponses === 0,
       })
     }
-  }, [summaryData?.getPracticeQuizSummary])
+  }, [summaryData?.getMicroLearningSummary])
 
-  if (!summaryData?.getPracticeQuizSummary) return null
+  if (!summaryData?.getMicroLearningSummary) return null
 
-  const summary = summaryData.getPracticeQuizSummary
+  const summary = summaryData.getMicroLearningSummary
 
   return (
     <ActivityDeletionModal
       open={open}
       setOpen={setOpen}
-      title={t('manage.course.deletePracticeQuiz')}
-      message={t('manage.course.deletePracticeQuizMessage')}
+      title={t('manage.course.deleteMicroLearning')}
+      message={t('manage.course.deleteMicroLearningMessage')}
       activityId={activityId}
-      activityType="PracticeQuiz"
+      activityType="MicroLearning"
       courseId={courseId}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
@@ -109,4 +109,4 @@ function PracticeQuizDeletionModal({
   )
 }
 
-export default PracticeQuizDeletionModal
+export default MicroLearningDeletionModal

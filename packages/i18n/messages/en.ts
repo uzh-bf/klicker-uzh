@@ -1598,7 +1598,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
-      deleteMicrolearning: 'Delete microlearning',
+      deleteMicroLearning: 'Delete microlearning',
+      deleteMicroLearningMessage:
+        'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       publishItemGROUP_ACTIVITY: 'Publish group activity',

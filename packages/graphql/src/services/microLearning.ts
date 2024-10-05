@@ -485,6 +485,52 @@ export async function extendMicroLearning(
   })
 }
 
+export async function getMicroLearningSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = microLearning.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
 interface DeleteMicroLearningArgs {
   id: string
 }

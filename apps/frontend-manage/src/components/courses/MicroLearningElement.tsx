@@ -16,8 +16,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteMicroLearningDocument,
-  GetSingleCourseDocument,
   MicroLearning,
   PublicationStatus,
   UnpublishMicroLearningDocument,
@@ -37,8 +35,8 @@ import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import DeletionModal from './modals/DeletionModal'
 import ExtensionModal from './modals/ExtensionModal'
+import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 
 interface MicroLearningElementProps {
   microLearning: Pick<
@@ -77,20 +75,6 @@ function MicroLearningElement({
     variables: { id: microLearning.id },
   })
 
-  const [deleteMicroLearning] = useMutation(DeleteMicroLearningDocument, {
-    variables: { id: microLearning.id },
-    optimisticResponse: {
-      __typename: 'Mutation',
-      deleteMicroLearning: {
-        __typename: 'MicroLearning',
-        id: microLearning.id,
-      },
-    },
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
-  })
-
   const statusMap: Record<PublicationStatus, React.ReactElement> = {
     [PublicationStatus.Draft]: (
       <StatusTag
@@ -121,7 +105,7 @@ function MicroLearningElement({
     label: (
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
         <FontAwesomeIcon icon={faTrashCan} className="w-4" />
-        <div>{t('manage.course.deleteMicrolearning')}</div>
+        <div>{t('manage.course.deleteMicroLearning')}</div>
       </div>
     ),
     onClick: () => setDeletionModal(true),
@@ -405,16 +389,11 @@ function MicroLearningElement({
       </div>
 
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <DeletionModal
-        title={t('manage.course.deleteMicrolearning')}
-        description={t('manage.course.confirmDeletionMicrolearning')}
-        elementName={microLearning.name}
-        message={t('manage.course.hintDeletionMicrolearning')}
-        deleteElement={deleteMicroLearning}
+      <MicroLearningDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-microlearning' }}
-        secondaryData={{ cy: 'cancel-delete-microlearning' }}
+        activityId={microLearning.id}
+        courseId={courseId}
       />
       <ExtensionModal
         type="microLearning"
