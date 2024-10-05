@@ -19,6 +19,7 @@ function Header({ title }: HeaderProps) {
       <div className="line-clamp-1 text-lg font-bold">{title}</div>
       <div className="flex flex-row gap-4">
         <Select
+          basic
           value={router.locale}
           items={[
             { value: 'de', label: 'DE', data: { cy: 'language-de' } },
@@ -30,17 +31,14 @@ function Header({ title }: HeaderProps) {
             })
           }
           className={{
-            trigger:
-              'rounded-none border-b border-solid p-0.5 pb-0 text-white hover:bg-transparent hover:text-white',
+            trigger: 'h-max w-max text-white',
           }}
           data={{ cy: 'language-select' }}
-          basic
         />
         <Button
           basic
           onClick={async () => {
             const userIdLogout = await logoutUser()
-            // TODO: proper error handling
             userIdLogout.data?.logoutUser
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')

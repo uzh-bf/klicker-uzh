@@ -248,7 +248,9 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       }))}
                       label={t('manage.settings.scope')}
                       labelType="large"
-                      className={{ root: 'md:w-1/2' }}
+                      className={{
+                        root: 'md:w-1/2',
+                      }}
                       data={{ cy: 'delegated-login-scope' }}
                       required
                     />

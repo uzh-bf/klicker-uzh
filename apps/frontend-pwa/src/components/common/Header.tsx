@@ -87,11 +87,11 @@ function Header({
               })
             }}
             className={{
-              trigger:
-                'rounded-none border-b border-solid p-0.5 pb-0 text-white hover:bg-transparent hover:text-white',
+              trigger: 'p-0 px-1 text-white focus:ring-0',
             }}
             data={{ cy: 'language-select' }}
             basic
+            contentPosition="popper"
           />
         </div>
         {/* {hasSeenSurvey === 'false' && (
