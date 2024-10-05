@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
+  DeleteGroupActivityDocument,
   DeleteMicroLearningDocument,
   DeletePracticeQuizDocument,
   GetSingleCourseDocument,
@@ -68,11 +69,24 @@ function ActivityDeletionModal({
     }
   )
 
-  // TODO: set the following booleans once available
-  const deletingGroupActivity = false
-
-  // TODO: set the following mutations once available
-  const deleteGroupActivity = async () => {}
+  const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
+    DeleteGroupActivityDocument,
+    {
+      variables: {
+        id: activityId,
+      },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteGroupActivity: {
+          __typename: 'GroupActivity',
+          id: activityId,
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+      ],
+    }
+  )
 
   return (
     <Modal
