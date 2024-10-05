@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.2...v3.2.0-rc.3) (2024-10-05)
+
+
+### Enhancements
+
+* implement more detailed deletion confirmation modal for group activities ([#4298](https://github.com/uzh-bf/klicker-uzh/issues/4298)) ([6475876](https://github.com/uzh-bf/klicker-uzh/commit/64758767a68523531c303270b7958cad666892ef))
+* implement more detailed deletion confirmation modal for microlearnings ([#4297](https://github.com/uzh-bf/klicker-uzh/issues/4297)) ([71743e5](https://github.com/uzh-bf/klicker-uzh/commit/71743e53ecd9ea8cb5d4e5a75f5369b84ccf6bef))
+* implement more detailed deletion confirmation modal for practice quizzes ([#4296](https://github.com/uzh-bf/klicker-uzh/issues/4296)) ([c5e7599](https://github.com/uzh-bf/klicker-uzh/commit/c5e7599d8b6d22a927173cd4197e40d6e386073a))
+
 ## [3.2.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.1...v3.2.0-rc.2) (2024-10-05)
 
 
