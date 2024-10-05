@@ -703,6 +703,7 @@ function QuestionEditModal({
                       placeholder={t('manage.questionForms.selectQuestionType')}
                       items={QUESTION_TYPE_OPTIONS}
                       data={{ cy: 'select-question-type' }}
+                      className={{ select: { trigger: 'h-8 w-max' } }}
                     />
 
                     <FormikSelectField
@@ -714,6 +715,7 @@ function QuestionEditModal({
                       )}
                       items={STATUS_OPTIONS}
                       data={{ cy: 'select-question-status' }}
+                      className={{ select: { trigger: 'h-8 w-32' } }}
                     />
                   </div>
 
@@ -893,6 +895,7 @@ function QuestionEditModal({
                     )}
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
+                        contentPosition="popper"
                         name="options.displayMode"
                         items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
@@ -906,6 +909,7 @@ function QuestionEditModal({
                           })
                         )}
                         data={{ cy: 'select-display-mode' }}
+                        className={{ select: { trigger: 'h-8 w-48' } }}
                       />
                     )}
                   </div>

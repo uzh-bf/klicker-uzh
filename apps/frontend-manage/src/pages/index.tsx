@@ -292,6 +292,7 @@ function Index() {
                       className={{
                         root: 'min-w-30',
                         trigger: 'h-10',
+                        item: 'text-sm',
                       }}
                       placeholder={t('manage.general.sortBy')}
                       items={[
@@ -316,6 +317,7 @@ function Index() {
                         handleSortByChange(newSortBy as SortyByType)
                       }}
                       data={{ cy: 'sort-by-question-pool' }}
+                      contentPosition="popper"
                     />
                   </div>
 

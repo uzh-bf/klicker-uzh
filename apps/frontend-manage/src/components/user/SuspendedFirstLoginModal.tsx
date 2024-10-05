@@ -145,7 +145,10 @@ function SuspendedFirstLoginModal() {
                     { label: t('shared.generic.english'), value: 'en' },
                     { label: t('shared.generic.german'), value: 'de' },
                   ]}
-                  className={{ root: 'w-full md:w-max' }}
+                  className={{
+                    root: 'w-full md:w-max',
+                    select: { trigger: 'w-40' },
+                  }}
                   required
                 />
                 <FormikSwitchField

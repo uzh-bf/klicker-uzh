@@ -138,7 +138,9 @@ function AvatarUpdateForm({
                           label: 'text-md',
                           select: {
                             root: 'md:w-38 w-full',
-                            trigger: 'w-full justify-between md:p-1 md:px-3',
+                            trigger:
+                              'h-max w-full justify-between text-sm md:p-1 md:px-3',
+                            item: 'text-sm',
                           },
                         }}
                         key={key}
