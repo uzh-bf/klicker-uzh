@@ -215,7 +215,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
       'not.exist'
     )
@@ -444,7 +446,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName3}"]`).click()
-    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).should(
       'not.exist'
     )
@@ -665,7 +669,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName2}"]`).click()
-    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).should(
       'not.exist'
     )
@@ -899,7 +905,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${quizNameDupl}"]`).click()
-    cy.get(`[data-cy="confirm-delete-practice-quiz"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal--confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).should(
       'not.exist'
     )
