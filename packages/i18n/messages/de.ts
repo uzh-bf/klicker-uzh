@@ -1338,15 +1338,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noResponsesToDelete:
         'Für dieses Live-Quiz wurden noch keine Antworten gespeichert.',
       deleteResponses:
-        '{number} Antworten von Studierenden in diesem Live-Quiz werden gelöscht.',
+        '{number} Antwort(en) von Studierenden in diesem Live-Quiz werden gelöscht.',
       noFeedbacksToDelete:
         'Für dieses Live-Quiz wurden noch keine Feedbacks abgegeben.',
       deleteFeedbacks:
-        '{number} Feedbacks im Live-Q&A-Kanal werden unwiderruflich gelöscht.',
+        '{number} Feedback(s) im Live-Q&A-Kanal werden unwiderruflich gelöscht.',
       noConfusionFeedbacksToDelete:
         'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
       deleteConfusionFeedbacks:
-        '{number} Confusion-Feedbacks werden unwiderruflich gelöscht.',
+        '{number} Confusion-Feedback(s) werden unwiderruflich gelöscht.',
       noLeaderboardEntriesToDelete:
         'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
       deleteLeaderboardEntries:
@@ -1546,24 +1546,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
       noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
       deleteParticipations:
-        '{number} Teilnehmende dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
+        '{number} Teilnehmende(r) dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
-        '{number} Live-Quizzes werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',
+        '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',
       noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
       deletePracticeQuizzes:
-        '{number} Übungs-Quizzes (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+        '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
       noMicroLearningsToDelete: 'Dieser Kurs enthält keine Microlearnings.',
       deleteMicroLearnings:
-        '{number} Microlearnings (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+        '{number} Microlearning(s) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
       noGroupActivitiesToDelete:
         'Dieser Kurs enthält keine Gruppenaktivitäten.',
       deleteGroupActivities:
-        '{number} Gruppenaktivitäten (inklusive der zugehörigen Abgaben) werden unwiderruflich gelöscht.',
+        '{number} Gruppenaktivität(en) (inklusive der zugehörigen Abgaben) werden unwiderruflich gelöscht.',
       noParticipantGroupsToDelete:
         'Dieser Kurs enthält keine Teilnehmergruppen.',
       deleteParticipantGroups:
-        '{number} Teilnehmergruppen werden unwiderruflich gelöscht.',
+        '{number} Teilnehmergruppe(n) werden unwiderruflich gelöscht.',
       noLeaderboardEntriesToDelete:
         'Dieser Kurs enthält keine Leaderboard-Einträge.',
       deleteLeaderboardEntries:
@@ -1640,11 +1640,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noResponsesToDelete:
         'Für diese Aktivität wurden noch keine Antworten von angemeldeten Teilnehmenden gespeichert.',
       deleteResponses:
-        '{number} Antworten von angemeldeten Teilnehmenden werden gelöscht.',
+        '{number} Antwort(en) von angemeldeten Teilnehmenden werden gelöscht.',
       noAnonymousResponsesToDelete:
         'Für diese Aktivität wurden noch keine anonymen Antworten gespeichert.',
       deleteAnonymousResponses:
-        '{number} anonyme Antworten für diese Aktivität werden gelöscht.',
+        '{number} anonyme Antwort(en) für diese Aktivität werden gelöscht.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
       publishGroupActivity: 'Gruppenaktivität veröffentlichen',
       groupActivityPublishingHint:
