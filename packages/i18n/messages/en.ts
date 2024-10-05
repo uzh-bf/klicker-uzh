@@ -1325,15 +1325,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noResponsesToDelete:
         'For this live quiz no responses have been collected yet.',
       deleteResponses:
-        '{number} responses in this live quiz submitted by students will be deleted.',
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
       noFeedbacksToDelete:
         'For this live quiz no feedbacks have been submitted yet.',
       deleteFeedbacks:
-        '{number} feedbacks in live Q&A channel will be irreversibly deleted.',
+        '{number} feedback(s) in the live Q&A channel will be irreversibly deleted.',
       noConfusionFeedbacksToDelete:
         'For this live quiz no confusion feedbacks have been submitted yet.',
       deleteConfusionFeedbacks:
-        '{number} confusion feedbacks will be irreversibly deleted.',
+        '{number} confusion feedback(s) will be irreversibly deleted.',
       noLeaderboardEntriesToDelete:
         'For this live quiz no quiz leaderboard entries have been created yet.',
       deleteLeaderboardEntries:
@@ -1527,27 +1527,27 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
-        '{number} participants of this course will loose their collected points and access to all course materials and activities.',
+        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizzes will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
-        '{number} practice quizzes (including their results) will be irreversibly deleted.',
+        '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
       noMicroLearningsToDelete: 'This course contains no microlearnings.',
       deleteMicroLearnings:
-        '{number} microlearnings (including their results) will be irreversibly deleted.',
+        '{number} microlearning(s) (including their results) will be irreversibly deleted.',
       noGroupActivitiesToDelete: 'This course contains no group activities.',
       deleteGroupActivities:
-        '{number} group activities (including their submissions) will be irreversibly deleted.',
+        '{number} group activitie(s) (including their submissions) will be irreversibly deleted.',
       noParticipantGroupsToDelete:
         'This course contains no participant groups.',
       deleteParticipantGroups:
-        '{number} participant groups will be irreversibly deleted.',
+        '{number} participant group(s) will be irreversibly deleted.',
       noLeaderboardEntriesToDelete:
         'This course contains no leaderboard entries.',
       deleteLeaderboardEntries:
-        '{number} leaderboard entries will be irreversibly deleted.',
+        '{number} leaderboard entrie(s) will be irreversibly deleted.',
     },
     course: {
       modifyCourse: 'Modify course',
@@ -1624,11 +1624,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noResponsesToDelete:
         'No logged in participants have submitted responses for this activity',
       deleteResponses:
-        '{number} responses of logged in participants will be deleted.',
+        '{number} response(s) of logged in participants will be deleted.',
       noAnonymousResponsesToDelete:
         'No anonymous responses have been submitted for this activity',
       deleteAnonymousResponses:
-        '{number} anonymous responses for this activity will be deleted.',
+        '{number} anonymous response(s) for this activity will be deleted.',
       unpublishPracticeQuiz: 'Unpublish practice quiz',
       publishGroupActivity: 'Publish group activity',
       groupActivityPublishingHint:
