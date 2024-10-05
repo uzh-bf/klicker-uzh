@@ -331,7 +331,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-microlearning-quiz"]`).click()
+    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -464,7 +464,7 @@ describe('Different microlearning workflows', () => {
     // delete the microlearning
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-microlearning-quiz"]`).click()
+    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -576,7 +576,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-microlearning-quiz"]`).click()
+    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -860,7 +860,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
-    cy.get(`[data-cy="confirm-microlearning-quiz"]`).click()
+    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
@@ -1433,7 +1433,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microLearningNameDupl}"]`).click()
-    cy.get(`[data-cy="confirm-microlearning-quiz"]`).click()
+    cy.get(`[data-cy="confirm-delete-microlearning"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).should(
       'not.exist'
     )
