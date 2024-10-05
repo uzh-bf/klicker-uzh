@@ -11,7 +11,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeletePracticeQuizDocument,
   GetSingleCourseDocument,
   PracticeQuiz,
   PublicationStatus,
@@ -31,7 +30,7 @@ import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import DeletionModal from './modals/DeletionModal'
+import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
 
 interface AccessLinkArgs {
   name: string
@@ -119,14 +118,6 @@ function PracticeQuizElement({
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
-  })
-
-  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
-    variables: { id: practiceQuiz.id! },
-    // TODO: add optimistic response and update cache
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
   })
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
@@ -383,16 +374,11 @@ function PracticeQuizElement({
         </div>
       </div>
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <DeletionModal
-        title={t('manage.course.deletePracticeQuiz')}
-        description={t('manage.course.confirmDeletionPracticeQuiz')}
-        elementName={practiceQuiz.name!}
-        message={t('manage.course.hintDeletionPracticeQuiz')}
-        deleteElement={deletePracticeQuiz}
+      <PracticeQuizDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-practice-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-practice-quiz' }}
+        activityId={practiceQuiz.id}
+        courseId={courseId}
       />
     </div>
   )

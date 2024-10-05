@@ -1637,10 +1637,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
-      confirmDeletionPracticeQuiz:
-        'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
-      hintDeletionPracticeQuiz:
-        'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deletePracticeQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      noResponsesToDelete:
+        'Für diese Aktivität wurden noch keine Antworten von angemeldeten Teilnehmenden gespeichert.',
+      deleteResponses:
+        '{number} Antworten von angemeldeten Teilnehmenden werden gelöscht.',
+      noAnonymousResponsesToDelete:
+        'Für diese Aktivität wurden noch keine anonymen Antworten gespeichert.',
+      deleteAnonymousResponses:
+        '{number} anonyme Antworten für diese Aktivität werden gelöscht.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
       publishGroupActivity: 'Gruppenaktivität veröffentlichen',
       groupActivityPublishingHint:
