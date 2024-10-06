@@ -1,0 +1,3 @@
+[submodule "apps/ai"]
+	path = apps/ai
+	url = https://github.com/uzh-bf/klicker-uzh-ai.git
