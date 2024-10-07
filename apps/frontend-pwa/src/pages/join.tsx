@@ -59,6 +59,7 @@ function JoinPage() {
                 <FormikPinField
                   name="pin"
                   label={t('pwa.joinCourse.coursePinFormat')}
+                  data={{ cy: 'join-course-pin-field' }}
                 />
 
                 <Button

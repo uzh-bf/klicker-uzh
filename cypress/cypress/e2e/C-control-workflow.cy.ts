@@ -27,7 +27,7 @@ describe('Test functionalities of frontend-control application', () => {
       displayName: session,
       blocks: [
         {
-          questions: [{ title: questionTitle }],
+          questions: [questionTitle],
         },
       ],
     })
