@@ -145,7 +145,7 @@ function LiveQuizCreationBlock({
             className={{
               root: 'px-1 hover:text-red-600',
             }}
-            data={{ cy: 'delete-block' }}
+            data={{ cy: `delete-block-${index}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />

@@ -2,66 +2,68 @@ import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-quiz workflows', () => {
-  beforeEach(() => {
+  // global variables to change live quiz settings
+  const questionTitle1 = 'Title ' + uuid()
+  const questionContent1 = 'Question Content 1'
+  const questionTitle2 = 'Title ' + uuid()
+  const questionContent2 = 'Question Content 2'
+
+  const sessionName1 = 'Session 1'
+  const sessionDisplayName1 = 'Session 1 (Display)'
+  const sessionName1New = sessionName1 + ' NEW'
+  const sessionDisplayName1New = sessionDisplayName1 + ' NEW'
+  const sessionName1Dupl = sessionName1New + ' (Copy)'
+  const sessionName2 = 'Session 2'
+  const sessionDisplayName2 = 'Session 2 (Display)'
+  const courseGamified = 'Testkurs'
+  const courseNonGamified = 'Non-Gamified Course'
+
+  const feedbackDesktop = 'Feedback Desktop'
+  const feedbackDesktop2 = 'Feedback Desktop 2'
+  const feedbackMobile = 'Feedback Mobile'
+  const feedbackResponse = 'Response to Feedback'
+  const maxBonusPoints = 200
+  const timeToZeroBonus = 100
+
+  it('Test adding and deleting blocks to a live quiz', () => {
     cy.loginLecturer()
-  })
-
-  it('adds and then deletes a second question block', () => {
-    const sessionName = uuid()
-    const session = uuid()
-
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="cancel-session-creation"]').click()
     cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="insert-live-quiz-name"]').type('TEMP')
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="insert-live-display-name"]').type('TEMP DISPLAY')
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
     cy.get('[data-cy="add-block"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 2)
-    cy.get('[data-cy="delete-block"]').eq(1).click()
+    cy.get('[data-cy="delete-block-1"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
   })
 
-  it('creates a session with two questions and edits it', () => {
-    const questionTitle1 = 'Title ' + uuid()
-    const question1 = 'Content ' + uuid()
-    const questionTitle2 = 'Title ' + uuid()
-    const question2 = 'Content ' + uuid()
-    const sessionName = uuid()
-    const session = uuid()
-
-    const courseGamified = 'Testkurs'
-    const courseNonGamified = 'Non-Gamified Course'
-
-    const maxBonusPoints = 200
-    const timeToZeroBonus = 100
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle1)
-    cy.get('[data-cy="insert-question-text"]').click().type(question1)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click()
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
-    cy.get('[data-cy="insert-question-text"]').click().type(question2)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click()
+  it('Create a live quiz with two questions and test all settings', () => {
+    cy.loginLecturer()
+    cy.createQuestionSC({
+      title: questionTitle1,
+      content: questionContent1,
+      answer1: '50%',
+      answer2: '100%',
+    })
+    cy.createQuestionSC({
+      title: questionTitle2,
+      content: questionContent2,
+      answer1: '50%',
+      answer2: '100%',
+    })
 
     cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName1)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="insert-live-display-name"]').type(sessionDisplayName1)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -255,24 +257,28 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
+  })
 
-    // EDITING - check if the same values as before has been stored and modify them
-    const newSessionName = uuid()
-    const newSessionDisplayName = uuid()
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName)
-    cy.get(`[data-cy="edit-session-${sessionName}"]`).click()
+  it('Edit the created session and check if all settings persist', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+
+    cy.contains('[data-cy="session-block"]', sessionName1)
+    cy.get(`[data-cy="edit-session-${sessionName1}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
-      sessionName
+      sessionName1
     )
-    cy.get('[data-cy="insert-live-quiz-name"]').clear().type(newSessionName)
+    cy.get('[data-cy="insert-live-quiz-name"]').clear().type(sessionName1New)
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="insert-live-display-name"]').should('have.value', session)
+    cy.get('[data-cy="insert-live-display-name"]').should(
+      'have.value',
+      sessionDisplayName1
+    )
     cy.get('[data-cy="insert-live-display-name"]')
       .clear()
-      .type(newSessionDisplayName)
+      .type(sessionDisplayName1New)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check settings and modify them
@@ -393,19 +399,19 @@ describe('Different live-quiz workflows', () => {
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: start editing again and check if correct values were saved
+    //  start editing again and check if correct values were saved
     cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', newSessionName)
-    cy.get(`[data-cy="edit-session-${newSessionName}"]`).click()
+    cy.contains('[data-cy="session-block"]', sessionName1New)
+    cy.get(`[data-cy="edit-session-${sessionName1New}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
-      newSessionName
+      sessionName1New
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="insert-live-display-name"]').should(
       'have.value',
-      newSessionDisplayName
+      sessionDisplayName1New
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -459,280 +465,100 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="close-block-settings"]').click()
   })
 
-  it('creates a session with one block while testing all settings and deletes it afterwards', () => {
-    const questionTitle = uuid()
-    const question = uuid()
-    const sessionName = uuid()
-    const session = uuid()
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
-      dataTransfer,
-    })
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName)
-
-    // rename the session
-    const newSessionName = uuid()
-    const newSessionDisplayName = uuid()
-    cy.findByText(sessionName).should('exist')
-    cy.get(`[data-cy="change-liveQuiz-name-${sessionName}"]`).click()
-    cy.get('[data-cy="live-quiz-name-change-confirm"]').should(
-      'not.be.disabled'
-    )
-    cy.get('[data-cy="live-quiz-name-change-cancel"]').click()
-    cy.get(`[data-cy="change-liveQuiz-name-${sessionName}"]`).click()
-    cy.get('[data-cy="insert-live-quiz-name"]').clear().type(newSessionName)
-    cy.get('[data-cy="insert-live-quiz-display-name"]')
-      .clear()
-      .type(newSessionDisplayName)
-    cy.get('[data-cy="live-quiz-name-change-confirm"]').click()
-
-    // delete this session again
-    cy.findByText(newSessionName).should('exist')
-    cy.get(`[data-cy="delete-session-${newSessionName}"]`).click()
-    cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
-    cy.get(`[data-cy="delete-session-${newSessionName}"]`).click()
-    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
-    cy.findByText(newSessionName).should('not.exist')
-  })
-
-  it('creates a session with two blocks and duplicates it', () => {
-    const questionTitle = uuid()
-    const questionTitle2 = uuid()
-    const question = uuid()
-    const question2 = uuid()
-    const sessionName = uuid()
-    const session = uuid()
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
-    cy.get('[data-cy="insert-question-text"]').click().type(question2)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
-      dataTransfer,
-    })
-
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-      .contains(questionTitle2)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get('[data-cy="add-block"]').trigger('drop', {
-      dataTransfer2,
-    })
-
-    cy.get('[data-cy="question-0-block-0"]')
-      .should('exist')
-      .should('contain', questionTitle.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
-      .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName)
+  it('Duplicate the live quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.contains('[data-cy="session-block"]', sessionName1New)
 
     // duplicate the session and verify that the content is the same as for the original session
-    cy.get(`[data-cy="duplicate-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="duplicate-session-${sessionName1New}"]`).click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
-      `${sessionName} (Copy)`
+      sessionName1Dupl
     )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="insert-live-display-name"]').should('have.value', session)
+    cy.get('[data-cy="insert-live-display-name"]').should(
+      'have.value',
+      sessionDisplayName1New
+    )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="question-0-block-0"]')
       .should('exist')
-      .should('contain', questionTitle.substring(0, 20))
+      .should('contain', questionTitle2.substring(0, 20))
     cy.get('[data-cy="question-0-block-1"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', `${sessionName} (Copy)`)
+    cy.contains('[data-cy="session-block"]', sessionName1Dupl)
   })
 
-  it('creates a session, starts it and aborts it and then restarts it', () => {
-    const courseName = 'Testkurs'
-    const questionTitle = uuid()
-    const question = uuid()
-    const sessionName = uuid()
-    const session = uuid()
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').contains(courseName)
-    cy.get('[data-cy="set-liveqa-enabled"]').click()
-    cy.get('[data-cy="set-liveqa-moderation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
-      dataTransfer,
-    })
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName)
-
-    // start session and then abort it
-    cy.get(`[data-cy="start-session-${sessionName}"]`).click()
-    cy.get('[data-cy="abort-session-cockpit"]').click()
-    cy.get('[data-cy="abort-cancel-session"]').click()
-    cy.get('[data-cy="abort-session-cockpit"]').click()
-    cy.get('[data-cy="confirm-cancel-session"]').should('not.be.disabled')
-    cy.get('[data-cy="abort-cancel-session"]').click()
-
-    // students submit feedback
-    const feedback = uuid()
-    cy.loginStudent()
-    cy.clearAllLocalStorage()
-    cy.findByText(session).click()
-    cy.get('[data-cy="feedback-input"]').type(feedback)
-    cy.get('[data-cy="feedback-submit"]').click()
-    cy.findByText(feedback).should('exist')
-
-    // abort the session after confirming the feedback deletion
+  it('Start the created live quizzes, abort it, and restart & completes it', () => {
     cy.loginLecturer()
     cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.wait(1000)
+    cy.contains('[data-cy="session-block"]', sessionName1New)
+
+    // start session and then abort it
+    cy.get(`[data-cy="start-session-${sessionName1New}"]`).click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
-    cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
+    cy.get('[data-cy="abort-cancel-session"]').click()
+    cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="lq-deletion-responses-confirm"]').should('not.exist')
+    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').should('not.exist')
     cy.get('[data-cy="lq-deletion-confusion-feedbacks-confirm"]').should(
       'not.exist'
     )
     cy.get('[data-cy="lq-deletion-leaderboard-entries-confirm"]').should(
       'not.exist'
     )
-    cy.get('[data-cy="confirm-cancel-session"]').should('be.disabled')
-    cy.get('[data-cy="lq-deletion-feedbacks-confirm"]').click()
     cy.get('[data-cy="confirm-cancel-session"]')
       .should('not.be.disabled')
       .click()
 
     // start session and then skip through the blocks
-    cy.get(`[data-cy="start-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="start-session-${sessionName1New}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
     cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
     cy.get('[data-cy="next-block-timeline"]').click()
   })
 
-  it('shows a possible workflow of running a session and answering questions', () => {
-    const session = uuid()
-    const sessionName = uuid()
-    const questionTitle = uuid()
-    const question = uuid()
-    const courseName = 'Testkurs'
-    const nonGamifiedCourseName = 'Non-Gamified Course'
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('25%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    // step 1
+  it('Create and start a live quiz to test the entire execution cycle', () => {
+    cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-live-display-name"]').type(session)
+
+    // Step 1: Name
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName2)
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // step 2
+    // Step 2: Display name and description
+    cy.get('[data-cy="insert-live-display-name"]').type(sessionDisplayName2)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 3: Settings
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').contains(courseName)
+    cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
     cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${nonGamifiedCourseName}"]`).click()
-    cy.get('[data-cy="select-course"]').contains(nonGamifiedCourseName)
+    cy.get(`[data-cy="select-course-${courseNonGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseNonGamified)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').contains(courseName)
+    cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseGamified)
     cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
@@ -744,13 +570,15 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
+    cy.get('[data-cy="set-liveqa-enabled"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // step 3
+    // TODO: replace this with cy.createStacks function after migration to element stacks
+    // Step 4: Questions
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
+      cy.get(`[data-cy="question-item-${questionTitle1}"]`)
+        .contains(questionTitle1)
         .trigger('dragstart', {
           dataTransfer,
         })
@@ -762,254 +590,168 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="add-block"]').click()
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle}"]`)
-        .contains(questionTitle)
+      cy.get(`[data-cy="question-item-${questionTitle2}"]`)
+        .contains(questionTitle2)
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here-0"]').eq(1).trigger('drop', {
+      cy.get('[data-cy="drop-questions-here-1"]').trigger('drop', {
         dataTransfer,
       })
     }
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="session"]').contains(sessionName)
+    cy.get('[data-cy="session"]').contains(sessionName2)
 
     // start session and first block
-    cy.get(`[data-cy="start-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="start-session-${sessionName2}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
+  })
 
+  it('Responds to the first block of the running session from the student view', () => {
     // login student and answer first question
     cy.loginStudent()
-    cy.findByText(session).click()
-    cy.findByText('25%').click()
+    cy.findByText(sessionDisplayName2).click()
+    cy.get('[data-cy="sc-answer-option-0"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    // provide feedback while moderation is enabled
+    cy.get('[data-cy="feedback-input"]').click().type(feedbackDesktop)
+    cy.get('[data-cy="feedback-submit"]').click()
+    cy.findByText(feedbackDesktop).should('not.exist')
     cy.wait(500)
 
     // login student again on mobile, test navigation and answer second question
     cy.viewport('iphone-x')
     cy.loginStudent()
-    cy.findByText(session).click()
-    cy.findByText(question).should('exist')
+    cy.findByText(sessionDisplayName2).click()
+    cy.findByText(questionContent1).should('exist')
 
-    // TODO: test feedback mechanism (including lecturer response, publishing, moderation, etc.)
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
     cy.get('[data-cy="mobile-menu-questions"]').click()
-    cy.findByText('25%').click()
+    cy.get('[data-cy="sc-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
-    cy.loginLecturer()
-
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.wait(1000)
-
-    // close first block
-    cy.get('[data-cy="next-block-timeline"]').click()
+    // provide feedback while moderation is enabled
+    cy.get('[data-cy="mobile-menu-feedbacks"]').click()
+    cy.get('[data-cy="feedback-input"]').click().type(feedbackMobile)
+    cy.get('[data-cy="feedback-submit"]').click()
+    cy.findByText(feedbackDesktop).should('not.exist')
+    cy.findByText(feedbackMobile).should('not.exist')
     cy.wait(500)
-    // start next block
-    cy.get('[data-cy="next-block-timeline"]').click()
-    cy.wait(500)
-
-    // login student and answer first question
-    cy.loginStudent()
-    cy.findByText(session).click()
-    cy.findByText('25%').click()
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-
-    // repeat student actions on mobile device and answer second question
-    cy.loginStudent()
-    cy.findByText(session).click()
-    cy.findByText('25%').click()
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-
-    cy.loginLecturer()
-
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.wait(1000)
-    cy.get('[data-cy="next-block-timeline"]').click()
-
-    cy.url().then((url) => {
-      const sessionIdEvaluation = url.split('/')[4]
-      cy.visit(
-        Cypress.env('URL_MANAGE') +
-          '/sessions/' +
-          sessionIdEvaluation +
-          '/evaluation'
-      )
-    })
-
-    // TODO: bugfix: evaluation is broken - does not fetch any answers. Once fixed, write better checks
-    //  cy.get('[data-cy="session-total-participants"]').should('have.text', 'Total Teilnehmende: 1');
-    //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
-    //   cy.get('[data-cy="evaluate-next-question"]').click();
-    //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
   })
 
-  it('creates a live quiz without questions and tests the feedback mechanisms and deletes the completed live session', () => {
-    const courseName = 'Testkurs'
-    const questionTitle = uuid()
-    const question = uuid()
-    const sessionName = uuid()
-
-    // create a question
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    // create a live quiz with a single question
-    // TODO - once this is possible, create an empty live quiz here
-    cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-live-display-name"]').type(sessionName)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(messages.manage.sessionForms.liveQuizNoCourse)
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').contains(courseName)
-    cy.get('[data-cy="set-liveqa-enabled"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
-      dataTransfer,
-    })
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="quick-start"]').click()
-
-    // test feedback submission with moderation enabled, does not show up until published
-    const feedback1 = 'Feedback during moderation enabled'
-    cy.loginStudent()
-    cy.clearAllLocalStorage()
-    cy.findByText(sessionName).click()
-
-    cy.get('[data-cy="feedback-input"]').type(feedback1)
-    cy.get('[data-cy="feedback-submit"]').click()
-    cy.findByText(feedback1).should('not.exist')
-
-    // check that feedback is visible to lecturer and switch its status to visible
+  it('Start the second block of the live quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
-    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
-    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
-    cy.get(`[data-cy="publish-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
 
-    // check if feedback is now visible
-    cy.loginStudent()
-    cy.reload()
-    cy.findByText(sessionName).click()
-    cy.findByText(feedback1).should('exist')
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
 
-    // login to lecturer and disable moderation
-    cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    // make both feedbacks visible and respond to one of them (moderation enabled)
+    cy.get(`[data-cy="publish-feedback-${feedbackDesktop}"]`).click()
+    cy.get(`[data-cy="publish-feedback-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedbackDesktop}"]`).click()
+    cy.get(`[data-cy="respond-to-feedback-${feedbackDesktop}"]`)
+      .click()
+      .type(feedbackResponse)
+    cy.get(`[data-cy="submit-feedback-response-${feedbackDesktop}"]`).click()
+
+    // pin and unpin feedback
+    cy.get(`[data-cy="open-feedback-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="pin-feedback-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="pin-feedback-${feedbackMobile}"]`).click()
+
+    // disable moderation
     cy.get('[data-cy="toggle-moderation"]').click()
+  })
 
-    // submit second feedback and check if it is immediately visible
-    const feedback2 = 'Feedback without moderation'
+  it('Student answers questions in second block', () => {
     cy.loginStudent()
-    cy.findByText(sessionName).click()
-    cy.get('[data-cy="feedback-input"]').type(feedback2)
+    cy.findByText(sessionDisplayName2).click()
+    cy.get('[data-cy="sc-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="sc-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    // check that feedbacks are now visible and upvote them
+    cy.findByText(feedbackDesktop).should('exist')
+    cy.findByText(feedbackMobile).should('exist')
+    cy.findByText(feedbackResponse).should('exist')
+    cy.get(`[data-cy="feedback-upvote-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="feedback-response-upvote-${feedbackResponse}"]`).click()
+
+    // add another feedback, which should be immediately visible (no moderation)
+    cy.get('[data-cy="feedback-input"]').click().type(feedbackDesktop2)
     cy.get('[data-cy="feedback-submit"]').click()
-    cy.findByText(feedback2).should('exist')
+    cy.findByText(feedbackDesktop2).should('exist')
+    cy.wait(500)
+  })
 
-    // upvote both first and second feedback
-    cy.get(`[data-cy="feedback-upvote-${feedback1}"]`).click()
-    cy.get(`[data-cy="feedback-upvote-${feedback2}"]`).click()
-
-    // login to lecturer and answer second feedback
-    const feedbackAnswer = 'Answer to feedback'
+  it('Close block and delete feedback / feedback response', () => {
     cy.loginLecturer()
+
     cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
-    cy.get(`[data-cy="respond-to-feedback-${feedback2}"]`).type(feedbackAnswer)
-    cy.get(`[data-cy="submit-feedback-response-${feedback2}"]`).click()
-
-    // check on student view that feedback answer is visible
-    cy.loginStudent()
-    cy.findByText(sessionName).click()
-    cy.findByText(feedbackAnswer).should('exist')
-    cy.get(`[data-cy="feedback-response-upvote-${feedbackAnswer}"]`).click()
-
-    // login to lecturer and pin feedback, check lecturer display
-    cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
-    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
-
-    // is now added in separate tab and therefore not visible in test
-    // cy.get(`[data-cy="open-lecturer-overview-session-${sessionName}"]`).click()
-    // cy.findByText(feedback1).should('exist')
-    // cy.findByText(feedback2).should('not.exist')
-
-    // delete feedback response
-    cy.visit(Cypress.env('URL_MANAGE'))
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
-    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
-    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
-
-    // check on student frontend that deleted feedback is no longer visible
-    cy.loginStudent()
-    cy.findByText(sessionName).click()
-    cy.findByText(feedbackAnswer).should('not.exist')
-
-    // delete feedback
-    cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
-    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
-
-    // check on student frontend that deleted feedback is no longer visible
-    cy.loginStudent()
-    cy.findByText(sessionName).click()
-    cy.findByText(feedback1).should('not.exist')
-
-    // click through blocks and end session
-    cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
-    cy.get('[data-cy="next-block-timeline"]').click() // open block
+    cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
-    cy.get('[data-cy="next-block-timeline"]').click() // close block
-    cy.wait(1000)
-    cy.get('[data-cy="next-block-timeline"]').click() // end session
+    cy.get('[data-cy="next-block-timeline"]').click()
 
-    // delete past session
-    cy.findByText(sessionName).should('exist')
-    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    // delete feedback mobile and response to desktop feedback
+    cy.get(`[data-cy="delete-feedback-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="delete-feedback-${feedbackMobile}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedbackDesktop}"]`).click()
+    cy.get(`[data-cy="delete-response-${feedbackResponse}"]`).click()
+    cy.get(`[data-cy="delete-response-${feedbackResponse}"]`).click()
+  })
+
+  it('Check that the deleted feedbacks are not visible anymore', () => {
+    cy.loginStudent()
+    cy.findByText(sessionDisplayName2).click()
+
+    cy.findByText(feedbackDesktop).should('exist')
+    cy.findByText(feedbackDesktop2).should('exist')
+    cy.findByText(feedbackMobile).should('not.exist')
+    cy.findByText(feedbackResponse).should('not.exist')
+  })
+
+  it('End session on lecturer cockpit', () => {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+  })
+
+  it('Cleanup: Delete all created live quizzes', () => {
+    cy.loginLecturer()
+    cy.get(`[data-cy="sessions"]`).click()
+
+    cy.findByText(sessionName1New).should('exist')
+    cy.get(`[data-cy="delete-past-session-${sessionName1New}"]`).click()
     cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
-    cy.get(`[data-cy="delete-past-session-${sessionName}"]`).click()
+    cy.get(`[data-cy="delete-past-session-${sessionName1New}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
-    cy.findByText(sessionName).should('not.exist')
+    cy.findByText(sessionName1New).should('not.exist')
+
+    cy.findByText(sessionName1Dupl).should('exist')
+    cy.get(`[data-cy="delete-session-${sessionName1Dupl}"]`).click()
+    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.findByText(sessionName1Dupl).should('not.exist')
+
+    cy.findByText(sessionName2).should('exist')
+    cy.get(`[data-cy="delete-past-session-${sessionName2}"]`).click()
+    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.findByText(sessionName2).should('not.exist')
   })
 })

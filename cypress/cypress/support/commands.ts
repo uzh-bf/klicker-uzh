@@ -239,7 +239,21 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
   })
 
   if (stacks.length > 1) {
-    // TODO: implement the creation of further stacks
+    stacks.slice(1).forEach((stack, ix) => {
+      cy.get('[data-cy="add-block"]').click()
+      stack.elements.forEach((element, jx) => {
+        const dataTransfer = new DataTransfer()
+        cy.get(`[data-cy="question-item-${element}"]`)
+          .contains(element)
+          .trigger('dragstart', {
+            dataTransfer,
+          })
+        cy.get(`[data-cy="drop-elements-stack-${ix + 1}"]`).trigger('drop', {
+          dataTransfer,
+        })
+        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(element)
+      })
+    })
   }
 }
 
@@ -403,6 +417,7 @@ declare global {
         courseName: string
         stacks: StackType[]
       }): Chainable<void>
+      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
