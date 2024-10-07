@@ -346,7 +346,7 @@ function LiveQuizCreationBlock({
           'w-full rounded border border-solid p-0.5 text-center',
           isOver && 'bg-primary-20'
         )}
-        data-cy="drop-questions-here"
+        data-cy={`drop-questions-here-${index}`}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>

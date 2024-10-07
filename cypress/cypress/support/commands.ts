@@ -22,7 +22,7 @@ const loginFactory = (tokenData) => () => {
 
   cy.viewport('macbook-16')
 
-  const token = sign(tokenData, 'abcdabcd')
+  const token = sign(tokenData, 'abcd') // sign token with app secret
 
   cy.setCookie('next-auth.session-token', token, {
     domain: '127.0.0.1',
@@ -96,6 +96,79 @@ Cypress.Commands.add('loginStudent', () => {
   cy.wait(1000)
 })
 
+Cypress.Commands.add('loginControlApp', () => {
+  cy.visit(Cypress.env('URL_CONTROL'))
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+  cy.viewport('macbook-16')
+  cy.get('[data-cy="login-logo"]').should('exist')
+  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_IDENTIFIER'))
+  cy.get('@token').then((token) => {
+    cy.get('[data-cy="token-field"]').type(String(token))
+  })
+  cy.get('[data-cy="submit-login"]').click()
+})
+
+Cypress.Commands.add(
+  'createQuestionSC',
+  ({
+    title,
+    content,
+    answer1,
+    answer2,
+  }: {
+    title: string
+    content: string
+    answer1: string
+    answer2: string
+  }) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(answer1)
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-1"]').click().type(answer2)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+Cypress.Commands.add(
+  'createLiveQuiz',
+  ({
+    name,
+    displayName,
+    blocks,
+  }: {
+    name: string
+    displayName: string
+    blocks: { questions: { title: string }[] }[]
+  }) => {
+    cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="insert-live-quiz-name"]').type(name)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]').type(displayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    if (blocks.length > 0) {
+      const dataTransfer = new DataTransfer()
+
+      for (const question of blocks[0].questions) {
+        cy.get(`[data-cy="question-item-${question.title}"]`)
+          .contains(question.title)
+          .trigger('dragstart', {
+            dataTransfer,
+          })
+        cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
+          dataTransfer,
+        })
+      }
+    }
+
+    cy.get('[data-cy="next-or-submit"]').click()
+  }
+)
+
 //
 // -- This is a child command --
 // Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
@@ -116,6 +189,27 @@ declare global {
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
       loginStudent(): Chainable<void>
+      loginControlApp(): Chainable<void>
+      createQuestionSC({
+        title,
+        content,
+        answer1,
+        answer2,
+      }: {
+        title: string
+        content: string
+        answer1: string
+        answer2: string
+      }): Chainable<void>
+      createLiveQuiz({
+        name,
+        displayName,
+        blocks,
+      }: {
+        name: string
+        displayName: string
+        blocks: { questions: { title: string }[] }[]
+      }): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>

@@ -525,7 +525,7 @@ describe('Test course creation and editing functionalities', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="question-0-block-0"]')

@@ -189,7 +189,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get(`[data-cy="question-item-${questionTitle2}"]`)
@@ -488,7 +488,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -560,7 +560,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
 
@@ -642,7 +642,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
@@ -754,7 +754,7 @@ describe('Different live-quiz workflows', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
         dataTransfer,
       })
     }
@@ -767,7 +767,7 @@ describe('Different live-quiz workflows', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here"]').eq(1).trigger('drop', {
+      cy.get('[data-cy="drop-questions-here-0"]').eq(1).trigger('drop', {
         dataTransfer,
       })
     }
@@ -892,7 +892,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="next-or-submit"]').click()
