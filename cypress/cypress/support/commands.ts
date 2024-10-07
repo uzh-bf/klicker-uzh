@@ -22,7 +22,7 @@ const loginFactory = (tokenData) => () => {
 
   cy.viewport('macbook-16')
 
-  const token = sign(tokenData, 'abcd')
+  const token = sign(tokenData, 'abcdabcd')
 
   cy.setCookie('next-auth.session-token', token, {
     domain: '127.0.0.1',

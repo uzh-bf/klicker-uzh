@@ -139,60 +139,61 @@ describe('Login / Logout workflows for lecturer and students', () => {
     )
   })
 
-  // it('signs in into student account and modifies the password', () => {
-  //   const newPassword = 'NEW PASSWORD'
+  it('signs in into student account and modifies the password', () => {
+    const newPassword = 'NEW PASSWORD'
 
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.viewport('macbook-16')
-  //   cy.get('[data-cy="login-logo"]').should('exist')
-  //   cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="homepage"]').should('exist')
-  //   cy.wait(1000)
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.viewport('macbook-16')
+    cy.get('[data-cy="login-logo"]').should('exist')
+    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="homepage"]').should('exist')
+    cy.wait(1000)
 
-  //   // modify password
-  //   cy.get('[data-cy="header-avatar"]').click()
-  //   cy.get('[data-cy="edit-profile"]').click()
-  //   cy.get('[data-cy="update-account-password"]').type(newPassword)
-  //   cy.get('[data-cy="update-account-password-repetition"]').type(newPassword)
-  //   cy.get('[data-cy="save-account-update"]')
+    // modify password
+    cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="edit-profile"]').click()
+    cy.get('[data-cy="update-account-password"]').type(newPassword)
+    cy.get('[data-cy="update-account-password-repetition"]').type(newPassword)
+    cy.get('[data-cy="save-account-update"]').click()
+    cy.wait(1000)
 
-  //   // logout, reload page and log in again with new password
-  //   cy.get('[data-cy="header-avatar"]').click()
-  //   cy.get('[data-cy="logout"]').click()
-  //   cy.get('[data-cy="login-logo"]').should('exist')
-  //   cy.reload()
-  //   cy.get('[data-cy="login-logo"]').should('exist')
-  //   cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]').type(newPassword)
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="homepage"]').should('exist')
+    // logout, reload page and log in again with new password
+    cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="logout"]').click()
+    cy.get('[data-cy="login-logo"]').should('exist')
+    cy.reload()
+    cy.get('[data-cy="login-logo"]').should('exist')
+    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]').type(newPassword)
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="homepage"]').should('exist')
 
-  //   // modify password back to original value
-  //   cy.get('[data-cy="header-avatar"]').click()
-  //   cy.get('[data-cy="edit-profile"]').click()
-  //   cy.get('[data-cy="update-account-password"]').type(
-  //     Cypress.env('STUDENT_PASSWORD')
-  //   )
-  //   cy.get('[data-cy="update-account-password-repetition"]').type(
-  //     Cypress.env('STUDENT_PASSWORD')
-  //   )
-  //   cy.get('[data-cy="save-account-update"]')
-  //   cy.wait(1000)
+    // modify password back to original value
+    cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="edit-profile"]').click()
+    cy.get('[data-cy="update-account-password"]').type(
+      Cypress.env('STUDENT_PASSWORD')
+    )
+    cy.get('[data-cy="update-account-password-repetition"]').type(
+      Cypress.env('STUDENT_PASSWORD')
+    )
+    cy.get('[data-cy="save-account-update"]').click()
+    cy.wait(1000)
 
-  //   // login again with original credentials
-  //   cy.get('[data-cy="header-avatar"]').click()
-  //   cy.get('[data-cy="logout"]').click()
-  //   cy.get('[data-cy="login-logo"]').should('exist')
-  //   cy.reload()
-  //   cy.get('[data-cy="login-logo"]').should('exist')
-  //   cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="homepage"]').should('exist')
-  // })
+    // login again with original credentials
+    cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="logout"]').click()
+    cy.get('[data-cy="login-logo"]').should('exist')
+    cy.reload()
+    cy.get('[data-cy="login-logo"]').should('exist')
+    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.get('[data-cy="homepage"]').should('exist')
+  })
 
   it('signs in into student account with the students email', () => {
     cy.clearAllCookies()

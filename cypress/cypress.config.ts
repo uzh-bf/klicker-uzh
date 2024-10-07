@@ -15,7 +15,7 @@ export default defineConfig({
     STUDENT_USERNAME11: 'testuser11',
     STUDENT_NOGROUP: 'testuser40',
     STUDENT_EMAIL: 'testuser1@test.uzh.ch',
-    STUDENT_PASSWORD: 'abcd',
+    STUDENT_PASSWORD: 'abcdabcd',
 
     // codeCoverage: {
     //   expectBackendCoverageOnly: true,
