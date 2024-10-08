@@ -1,60 +1,60 @@
 import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
+const currentYear = new Date().getFullYear()
+const testCourse = 'Testkurs'
+const SCQuestionTitle = 'SC ' + uuid()
+const SCQuestion = 'SC Question Micro'
+const SCQuestionTitleNoSol = 'SC ' + uuid()
+const SCQuestionNoSol = 'SC Question Micro No Solution'
+const MCQuestionTitle = 'MC ' + uuid()
+const MCQuestion = 'MC Question Micro'
+const KPRIMQuestionTitle = 'KPRIM ' + uuid()
+const KPRIMQuestion = 'KPRIM Question Micro'
+const NRQuestionTitle = 'NR ' + uuid()
+const NRQuestion = 'NR Question Micro'
+const FTQuestionTitle = 'FT ' + uuid()
+const FTQuestion = 'FT Question Micro'
+const FCQuestionTitle = 'FC ' + uuid()
+const FCQuestion = 'FC Question Micro'
+const FCAnswer = 'FC Answer Micro'
+const CTQuestionTitle = 'CT ' + uuid()
+const CTQuestion = 'CT Question Micro'
+
+const runningMLNameOLD = 'Running microlearning OLD'
+const runningMLDisplayNameOLD = runningMLNameOLD + ' (Display)'
+const runningMLDescriptionOLD = 'Running microlearning OLD description'
+const runningMLName = 'Running microlearning'
+const runningMLDisplayName = runningMLName + ' (Display)'
+const runningMLDescription = 'Running microlearning description'
+const runningStartOLD = `${currentYear - 1}-01-01T02:00`
+const runningEndOLD = `${currentYear}-12-31T18:00`
+const runningStart = `${currentYear - 2}-01-01T02:00`
+const runningEnd = `${currentYear + 1}-12-31T18:00`
+const runningEndExtended = `${currentYear + 5}-12-31T18:00`
+const runningExtendedText = `End: 31.12.${currentYear + 5}, 18:00`
+const stackTitle1OLD = 'Stack 1 Description Title OLD'
+const stackTitle2OLD = 'Stack 2 Description Title OLD'
+const stackTitle1 = 'Stack 1 Description Title'
+const stackTitle2 = 'Stack 2 Description Title'
+
+const futureMLName = 'Future microlearning'
+const futureMLDisplayName = futureMLName + ' (Display)'
+const futureMLDescription = 'Future microlearning description'
+
+const completeMLName = 'Complete microlearning'
+const completeMLDisplayName = completeMLName + ' (Display)'
+
+const seededPastMicrolearning = 'Test Microlearning Past No FT'
+const convertedPracticeQuizName = 'Practice Quiz Converted'
+const convertedPracticeQuizDisplayName = 'Practice Quiz Converted Displayname'
+
+const duplicatedMLName = runningMLName + ' (Copy)'
+const duplicatedMLDisplayName = runningMLDisplayName + ' (NEW!)'
+
 // ? All microlearning creation steps are bundled in the beginning of the test, since reloading the page
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
 describe('Different microlearning workflows', () => {
-  const currentYear = new Date().getFullYear()
-  const testCourse = 'Testkurs'
-  const SCQuestionTitle = 'SC ' + uuid()
-  const SCQuestion = 'SC Question Micro'
-  const SCQuestionTitleNoSol = 'SC ' + uuid()
-  const SCQuestionNoSol = 'SC Question Micro No Solution'
-  const MCQuestionTitle = 'MC ' + uuid()
-  const MCQuestion = 'MC Question Micro'
-  const KPRIMQuestionTitle = 'KPRIM ' + uuid()
-  const KPRIMQuestion = 'KPRIM Question Micro'
-  const NRQuestionTitle = 'NR ' + uuid()
-  const NRQuestion = 'NR Question Micro'
-  const FTQuestionTitle = 'FT ' + uuid()
-  const FTQuestion = 'FT Question Micro'
-  const FCQuestionTitle = 'FC ' + uuid()
-  const FCQuestion = 'FC Question Micro'
-  const FCAnswer = 'FC Answer Micro'
-  const CTQuestionTitle = 'CT ' + uuid()
-  const CTQuestion = 'CT Question Micro'
-
-  const runningMLNameOLD = 'Running microlearning OLD'
-  const runningMLDisplayNameOLD = runningMLNameOLD + ' (Display)'
-  const runningMLDescriptionOLD = 'Running microlearning OLD description'
-  const runningMLName = 'Running microlearning'
-  const runningMLDisplayName = runningMLName + ' (Display)'
-  const runningMLDescription = 'Running microlearning description'
-  const runningStartOLD = `${currentYear - 1}-01-01T02:00`
-  const runningEndOLD = `${currentYear}-12-31T18:00`
-  const runningStart = `${currentYear - 2}-01-01T02:00`
-  const runningEnd = `${currentYear + 1}-12-31T18:00`
-  const runningEndExtended = `${currentYear + 5}-12-31T18:00`
-  const runningExtendedText = `End: 31.12.${currentYear + 5}, 18:00`
-  const stackTitle1OLD = 'Stack 1 Description Title OLD'
-  const stackTitle2OLD = 'Stack 2 Description Title OLD'
-  const stackTitle1 = 'Stack 1 Description Title'
-  const stackTitle2 = 'Stack 2 Description Title'
-
-  const futureMLName = 'Future microlearning'
-  const futureMLDisplayName = futureMLName + ' (Display)'
-  const futureMLDescription = 'Future microlearning description'
-
-  const completeMLName = 'Complete microlearning'
-  const completeMLDisplayName = completeMLName + ' (Display)'
-
-  const seededPastMicrolearning = 'Test Microlearning Past No FT'
-  const convertedPracticeQuizName = 'Practice Quiz Converted'
-  const convertedPracticeQuizDisplayName = 'Practice Quiz Converted Displayname'
-
-  const duplicatedMLName = runningMLName + ' (Copy)'
-  const duplicatedMLDisplayName = runningMLDisplayName + ' (NEW!)'
-
   it('Create questions required for microlearning creation', () => {
     cy.loginLecturer()
 
