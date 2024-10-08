@@ -1,15 +1,16 @@
 fragment QuestionDataWithoutSolutions on QuestionInstance {
   questionData {
     id
+    questionId
     name
     type
-    displayMode
     content
     explanation
     pointsMultiplier
 
     ... on ChoicesQuestionData {
       options {
+        displayMode
         choices {
           ix
           value

@@ -1,11 +1,14 @@
+import { TextareaField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
 export interface FREETextAnswerOptionsProps {
+  value: string
+  onChange: (value: string) => void
   placeholder?: string
   maxLength?: number
-  onChange: (value: any) => any
-  value?: string
+  disabled: boolean
+  elementIx: number
 }
 
 export function FREETextAnswerOptions({
@@ -13,30 +16,32 @@ export function FREETextAnswerOptions({
   maxLength,
   onChange,
   value,
+  disabled,
+  elementIx,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-2">
-      <textarea
-        className="rounded focus:border focus:border-solid focus:border-primary-80"
+      <TextareaField
         id="responseInput"
         value={value}
-        onChange={(e): void => onChange(e.target.value)}
+        onChange={onChange}
+        disabled={disabled}
         rows={3}
         maxLength={
-          typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
+          typeof maxLength === 'number' && !Number.isNaN(maxLength)
+            ? maxLength
+            : 1500
         }
+        maxLengthUnit={t('shared.generic.characters')}
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data-cy="free-text-response-input"
+        data={{ cy: `free-text-input-${elementIx + 1}` }}
+        className={{
+          input:
+            'focus:border-primary-80 rounded focus:border focus:border-solid',
+        }}
       />
-
-      {typeof maxLength === 'number' && !isNaN(maxLength) && (
-        <div className="text-sm italic text-right">
-          ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
-          {t('shared.generic.characters')})
-        </div>
-      )}
     </div>
   )
 }

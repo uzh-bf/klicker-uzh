@@ -1,0 +1,12 @@
+#import "./FEvaluationResults.graphql"
+
+query GetMicroLearningEvaluation($id: String!) {
+  getMicroLearningEvaluation(id: $id) {
+    id
+    name
+    displayName
+    description
+
+    ...EvaluationResults
+  }
+}

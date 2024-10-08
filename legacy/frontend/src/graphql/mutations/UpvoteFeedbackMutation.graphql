@@ -1,3 +1,0 @@
-mutation UpvoteFeedback($sessionId: ID!, $feedbackId: ID!, $undo: Boolean) {
-  upvoteFeedback(sessionId: $sessionId, feedbackId: $feedbackId, undo: $undo)
-}

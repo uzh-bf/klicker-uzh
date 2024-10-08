@@ -1,0 +1,6 @@
+mutation RenameParticipantGroup($groupId: String!, $name: String!) {
+  renameParticipantGroup(groupId: $groupId, name: $name) {
+    id
+    name
+  }
+}

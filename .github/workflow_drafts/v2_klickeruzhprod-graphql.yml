@@ -2,7 +2,7 @@ name: Build and deploy backend-sls to Function App (Production)
 
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    tags: ['v*.*.*']
   workflow_dispatch:
 
 env:

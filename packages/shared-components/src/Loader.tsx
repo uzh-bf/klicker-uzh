@@ -4,7 +4,7 @@ import React from 'react'
 
 function Loader() {
   return (
-    <div className="my-auto mx-auto text-center">
+    <div className="mx-auto my-auto text-center">
       <FontAwesomeIcon icon={faSpinner} size="lg" className="animate-spin" />
     </div>
   )

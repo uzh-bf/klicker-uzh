@@ -15,13 +15,14 @@ import {
   ConfusionTimestep,
   Feedback,
   InstanceResult,
+  SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { EvaluationBlock } from '@pages/sessions/[id]/evaluation'
+import { EvaluationTabData } from '@pages/sessions/[id]/evaluation'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationTabs from '../../hooks/useEvaluationTabs'
+import useEvaluationTabs from '../../../lib/hooks/useEvaluationTabs'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
@@ -29,7 +30,11 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 }
 
 interface EvaluationControlBarProps {
-  blocks: EvaluationBlock[]
+  blocks: {
+    blockIx: number
+    blockStatus: SessionBlockStatus
+    tabData: EvaluationTabData[]
+  }[]
   selectedBlock: number
   setSelectedBlock: (block: number) => void
   setSelectedInstanceIndex: (index: number) => void
@@ -67,7 +72,11 @@ function EvaluationControlBar({
 }: EvaluationControlBarProps) {
   const t = useTranslations()
   const width = 1
-  const tabs = useEvaluationTabs({ blocks, selectedBlock, width })
+  const tabs = useEvaluationTabs({
+    blocks: blocks,
+    selectedBlock,
+    width,
+  })
 
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
@@ -78,16 +87,17 @@ function EvaluationControlBar({
             ? `${question?.name.substring(0, 120)}...`
             : question?.name,
         shortLabel:
-          question?.name.length > 20
-            ? `${question?.name.substring(0, 20)}...`
+          question?.name.length > 40
+            ? `${question?.name.substring(0, 40)}...`
             : undefined,
         value: String(question?.ix),
+        data: { cy: `evaluate-question-${question?.ix}` },
       }
     })
   }, [blocks, selectedBlock])
 
   return (
-    <div className="flex flex-row justify-between w-full px-3 bg-white border-b-2 border-solid print:hidden">
+    <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
       <div>
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-2">
@@ -103,6 +113,7 @@ function EvaluationControlBar({
                     'text-uzh-grey-80 cursor-not-allowed'
                 ),
               }}
+              data={{ cy: 'evaluate-previous-question' }}
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </Button>
@@ -133,10 +144,12 @@ function EvaluationControlBar({
                 setSelectedInstanceIndex(Number(newValue))
               }}
               className={{
-                root: 'h-[2.65rem] z-20',
-                trigger: 'shadow-none rounded-none m-0 border-none h-full',
+                root: 'z-20 h-[2.65rem]',
+                trigger:
+                  'm-0 h-full w-max rounded-none border-none shadow-none',
               }}
               value={String(selectedInstanceIndex)}
+              data={{ cy: 'evaluate-question-select' }}
             />
           </div>
         )}
@@ -154,12 +167,13 @@ function EvaluationControlBar({
           disabled={
             blocks.length <= 2 * width + 1 || selectedBlock - width <= 0
           }
+          data={{ cy: 'evaluate-previous-block' }}
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
               (blocks.length <= 2 * width + 1 || selectedBlock - width <= 0) &&
-                'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
             )}
           >
             <FontAwesomeIcon icon={faChevronLeft} size="lg" />
@@ -179,19 +193,20 @@ function EvaluationControlBar({
             }}
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent w-[7rem] text-center hover:bg-primary-20',
+                'hover:bg-primary-20 w-[7rem] border-b-2 border-transparent px-3 py-2 text-center',
                 !showLeaderboard &&
                   !showFeedbacks &&
                   !showConfusion &&
                   tab.value === selectedBlock &&
-                  `border-solid border-primary-80`
+                  `border-primary-80 border-solid`
               ),
             }}
+            data={{ cy: `evaluate-block-${tab.value}` }}
           >
-            <div className="flex flex-row items-center justify-center w-full gap-2">
+            <div className="flex w-full flex-row items-center justify-center gap-2">
               <FontAwesomeIcon
                 size="xs"
-                icon={INSTANCE_STATUS_ICON[blocks[tab.value].tabData[0].status]}
+                icon={INSTANCE_STATUS_ICON[blocks[tab.value].blockStatus]}
               />
               <div>{tab.label}</div>
             </div>
@@ -213,13 +228,14 @@ function EvaluationControlBar({
             blocks.length <= 2 * width + 1 ||
             selectedBlock + width >= blocks.length - 1
           }
+          data={{ cy: 'evaluate-next-block' }}
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
               (blocks.length <= 2 * width + 1 ||
                 selectedBlock + width >= blocks.length - 1) &&
-                'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
             )}
           >
             <FontAwesomeIcon icon={faChevronRight} size="lg" />
@@ -230,8 +246,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showLeaderboard && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showLeaderboard && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {
@@ -241,6 +257,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-leaderboard' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>
@@ -256,8 +273,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showFeedbacks && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showFeedbacks && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {
@@ -267,6 +284,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-feedbacks' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>
@@ -281,8 +299,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
-                showConfusion && `border-solid border-primary-80`
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                showConfusion && `border-primary-80 border-solid`
               ),
             }}
             onClick={() => {
@@ -292,6 +310,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-confusion' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>

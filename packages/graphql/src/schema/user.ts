@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
+import builder from '../builder.js'
 
 export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),
@@ -20,6 +20,8 @@ export const User = UserRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     email: t.exposeString('email'),
+    sendProjectUpdates: t.exposeBoolean('sendProjectUpdates'),
+
     shortname: t.exposeString('shortname'),
     locale: t.expose('locale', { type: LocaleType }),
 
@@ -44,14 +46,14 @@ export const User = UserRef.implement({
 })
 
 export interface IUserLogin extends DB.UserLogin {
-  user: IUser
+  user?: IUser
 }
 export const UserLoginRef = builder.objectRef<IUserLogin>('UserLogin')
 export const UserLogin = UserLoginRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
-    user: t.expose('user', { type: UserRef }),
+    user: t.expose('user', { type: UserRef, nullable: true }),
     scope: t.expose('scope', { type: UserLoginScope }),
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),

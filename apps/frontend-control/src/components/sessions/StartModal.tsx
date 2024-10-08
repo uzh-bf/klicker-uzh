@@ -41,7 +41,7 @@ function StartModal({
             }
           }}
           className={{
-            root: 'text-white bg-primary-80',
+            root: 'bg-primary-80 text-white',
           }}
           data={{
             cy: 'confirm-start-session',
@@ -51,15 +51,18 @@ function StartModal({
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={() => setStartModalOpen(false)}>
+        <Button
+          onClick={() => setStartModalOpen(false)}
+          data={{ cy: 'cancel-start-session-modal' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }
-      className={{ content: 'h-max w-max md:min-w-[30rem] my-auto mx-auto' }}
+      className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton
     >
       <H3>{t('control.course.startSession')}</H3>
-      <div className="p-2 border border-solid rounded border-uzh-grey-100 bg-uzh-grey-20">
+      <div className="border-uzh-grey-100 bg-uzh-grey-20 rounded border border-solid p-2">
         {t('control.course.confirmStartSession')}
         <div className="font-bold">{startName}</div>
       </div>

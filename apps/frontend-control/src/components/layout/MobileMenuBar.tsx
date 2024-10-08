@@ -20,8 +20,8 @@ function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
 
   return (
-    <div className="fixed bottom-0 w-full h-12 bg-slate-800">
-      <div className="flex flex-row justify-between h-full">
+    <div className="fixed bottom-0 h-12 w-full bg-slate-800">
+      <div className="flex h-full flex-row justify-between">
         <MenuButton
           icon={<FontAwesomeIcon icon={faArrowLeftLong} />}
           onClick={() => router.back()}

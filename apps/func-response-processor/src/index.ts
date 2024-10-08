@@ -9,10 +9,10 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import * as Sentry from '@sentry/node'
+import { strict as assert } from 'assert'
+import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
-import JWT from 'jsonwebtoken'
-import md5 from 'md5'
-import assert from 'node:assert/strict'
+import { verify } from 'jsonwebtoken'
 import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
@@ -63,9 +63,11 @@ const serviceBusTrigger = async function (
   }
 
   let redisMulti: ChainableCommander
-  redisMulti = redisExec.multi()
+  // redisMulti = redisExec.multi() -> transaction
+  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
+    const MD5 = createHash('md5')
     const sessionKey = `s:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
@@ -88,15 +90,17 @@ const serviceBusTrigger = async function (
             return acc
           }, {})
 
-        participantData = JWT.verify(
-          parsedCookies['participant_token'],
-          process.env.APP_SECRET
-        ) as any
+        if (parsedCookies['participant_token'] !== undefined) {
+          participantData = verify(
+            parsedCookies['participant_token'],
+            process.env.APP_SECRET
+          ) as { sub: string; role: string }
 
-        if (participantData.role !== 'PARTICIPANT') {
-          participantData = null
-        } else {
-          context.log("Participant's JWT verified", participantData)
+          if (participantData.role !== 'PARTICIPANT') {
+            participantData = null
+          } else {
+            context.log("Participant's JWT verified", participantData)
+          }
         }
       } catch (e) {
         context.error('JWT verification failed', e, queueItem.cookie)
@@ -179,8 +183,12 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsPercentage,
@@ -224,7 +232,8 @@ const serviceBusTrigger = async function (
       }
       // TODO: points based on distance to correct range?
       case 'NUMERICAL': {
-        const responseHash = md5(response.value)
+        MD5.update(response.value)
+        const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,
@@ -242,9 +251,10 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
-            getsMaxPoints: parsedSolutions && answerCorrect,
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            getsMaxPoints: parsedSolutions && answerCorrect === 1,
+            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
+            timeToZeroBonus:
+              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,
@@ -284,7 +294,8 @@ const serviceBusTrigger = async function (
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
         const cleanResponseValue = toLower(trim(response.value))
-        const responseHash = md5(cleanResponseValue)
+        MD5.update(cleanResponseValue)
+        const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
         redisMulti.hset(
           `${instanceKey}:responseHashes`,
@@ -301,9 +312,10 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
             getsMaxPoints: Boolean(answerCorrect),
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
+            timeToZeroBonus:
+              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,

@@ -31,7 +31,7 @@ function ImgWithModal({
       fullScreen
       open={isOpen}
       trigger={
-        <div className="flex flex-col items-start mb-1">
+        <div className="mb-1 flex flex-col items-start">
           <div className="relative">
             <img
               src={src}
@@ -39,7 +39,7 @@ function ImgWithModal({
               height="0"
               width="0"
               className={twMerge(
-                'object-contain w-auto min-h-36 max-h-64 rounded shadow',
+                'max-h-64 min-h-36 w-auto rounded object-contain shadow',
                 className?.img
               )}
               style={{ width, height }}
@@ -48,9 +48,10 @@ function ImgWithModal({
             {withModal && (
               <Button
                 className={{
-                  root: 'absolute top-2 right-2 text-sm',
+                  root: 'absolute right-2 top-2 text-sm',
                 }}
                 onClick={() => setIsOpen(true)}
+                data={{ cy: `close-image-modal` }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faExpand} />
@@ -65,7 +66,7 @@ function ImgWithModal({
       title={alt}
       className={{ content: className?.modal }}
     >
-      <div className="relative w-full h-full">
+      <div className="relative h-full w-full">
         <img src={src} alt="Image" className="object-contain" />
       </div>
     </Modal>

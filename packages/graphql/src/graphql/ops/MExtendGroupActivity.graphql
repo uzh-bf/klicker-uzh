@@ -1,0 +1,6 @@
+mutation ExtendGroupActivity($id: String!, $endDate: Date!) {
+  extendGroupActivity(id: $id, endDate: $endDate) {
+    id
+    scheduledEndAt
+  }
+}

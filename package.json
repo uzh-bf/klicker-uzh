@@ -2,16 +2,15 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.6",
+  "version": "3.2.0-rc.3",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
   "license": "AGPL-3.0",
   "main": "apps/func/dist/index.js",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
-    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -23,32 +22,45 @@
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
     "Jonas Gebel <jonas.gebel@bf.uzh.ch>",
     "Florina Vogel <florina.vogel@bf.uzh.ch>",
-    "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
+    "Valentin Meyer <valentin.meyer@bf.uzh.ch>",
+    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@prisma/nextjs-monorepo-workaround-plugin": "5.3.1",
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.18.0",
+    "cross-env": "7.0.3",
+    "eslint-config-prettier": "9.1.0",
     "husky": "8.0.3",
+    "prettier": "3.3.3",
+    "prettier-plugin-organize-imports": "4.0.0",
+    "prettier-plugin-tailwindcss": "0.6.6",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
-    "turbo": "1.10.14",
+    "turbo": "2.1.0",
+    "typescript": "5.4.5",
     "yaml": "2.3.2"
   },
   "scripts": {
     "release": "standard-version",
     "release:dry": "standard-version --dry-run",
     "build": "turbo run build",
+    "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
-    "dev": "doppler run --config dev -- turbo run dev",
-    "dev:docs": "doppler run --config dev -- turbo run dev:docs",
+    "dev": "doppler run --config dev -- turbo run dev --concurrency 30",
+    "dev:docs": "turbo run dev:docs",
+    "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
+    "dev:cleverreach": "doppler run --config dev_cleverreach -- turbo run dev --concurrency 30",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
-    "format": "turbo run format --parallel --continue",
-    "format:check": "turbo run format:check --parallel --continue",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline --concurrency 30",
+    "dev:test": "cross-env NODE_ENV=test turbo run dev:test",
+    "format": "prettier --write . --config .prettierrc.mjs",
+    "format:check": "prettier --check . --config .prettierrc.mjs",
     "lint": "turbo run lint --parallel --continue",
     "prepare": "husky install",
+    "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:setup:yes": "pnpm run --filter @klicker-uzh/prisma prisma:setup:yes",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
     "prune": "turbo prune",
     "publish": "turbo run publish",
@@ -59,7 +71,7 @@
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "start": "turbo run start",
-    "start:test": "turbo run start:test",
+    "start:test": "cross-env NODE_ENV=test turbo run start:test",
     "syncpack:format": "syncpack format",
     "syncpack:lint": "syncpack lint",
     "syncpack:mismatches": "syncpack list-mismatches",
@@ -69,11 +81,11 @@
     "test:run": "turbo run test:run"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
-    "node": "18.17.0",
-    "pnpm": "8.6.12"
+    "node": "20.17.0",
+    "pnpm": "9.9.0"
   },
-  "packageManager": "pnpm@8.6.12"
+  "packageManager": "pnpm@9.9.0"
 }

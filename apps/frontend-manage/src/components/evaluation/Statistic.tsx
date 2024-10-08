@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface StatisticProps {
   statisticName: string
-  value: string
+  value: number
   hasCheckbox: boolean
   checked: boolean
   onCheck: () => void
@@ -21,7 +21,7 @@ function Statistic({
   size,
 }: StatisticProps): React.ReactElement {
   return (
-    <div className="flex justify-between mb-2 border-b-2">
+    <div className="mb-2 flex justify-between border-b-2">
       <span
         className={twMerge(
           'flex flex-row items-center',
@@ -37,12 +37,12 @@ function Statistic({
                 ? size
                 : 'md'
             }
-            className={{ root: 'border-black rounded-sm mr-1' }}
+            className={{ root: 'mr-1 rounded-sm border-black' }}
           />
         )}
         {statisticName}
       </span>
-      <span>{Math.round(parseFloat(value) * 100) / 100}</span>
+      <span>{Math.round(parseFloat(String(value)) * 100) / 100}</span>
     </div>
   )
 }

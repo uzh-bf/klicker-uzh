@@ -36,7 +36,7 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-4 p-4 border rounded md:mx-auto md:w-max">
+      <div className="flex flex-col items-center gap-4 rounded border p-4 md:mx-auto md:w-max">
         <ProfileData
           isSelf={true}
           username={participant.username}
@@ -48,10 +48,11 @@ const Profile = () => {
           showProfileDetails={true}
         />
 
-        <div className="flex flex-row justify-between w-full px-4 space-x-2">
+        <div className="flex w-full flex-row justify-between space-x-2 px-4">
           <Button
             onClick={() => router.push('/editProfile')}
             className={{ root: 'mt-2' }}
+            data={{ cy: 'edit-profile' }}
           >
             {t('pwa.profile.editProfile')}
           </Button>
@@ -70,7 +71,7 @@ const Profile = () => {
           )}
         </div>
 
-        <div className="self-center mt-8">
+        <div className="mt-8 self-center">
           <Image
             src="/KlickerLogo.png"
             width={200}

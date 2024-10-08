@@ -4,15 +4,20 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
+import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
-import '../globals.css'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 config.autoAddCss = false
 
@@ -33,7 +38,8 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <ApolloProvider client={apolloClient}>
-        <NextIntlProvider
+        <NextIntlClientProvider
+          timeZone="Europe/Zurich"
           messages={pageProps.messages}
           locale={locale}
           onError={onError}
@@ -42,7 +48,7 @@ function App({ Component, pageProps }: AppProps) {
           <DndProvider backend={HTML5Backend}>
             <Component {...pageProps} />
           </DndProvider>
-        </NextIntlProvider>
+        </NextIntlClientProvider>
       </ApolloProvider>
 
       <style jsx global>{`
@@ -56,6 +62,7 @@ function App({ Component, pageProps }: AppProps) {
           height: 100%;
           display: flex;
           flex-direction: column;
+          background-color: white;
         }
       `}</style>
     </div>

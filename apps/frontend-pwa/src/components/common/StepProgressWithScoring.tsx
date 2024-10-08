@@ -4,91 +4,148 @@ import {
   faCheck,
   faCheckDouble,
   faInbox,
+  faRepeat,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { StepItem, StepProgress } from '@uzh-bf/design-system'
+import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
+import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 
-const ICON_MAP: Record<string, IconDefinition> = {
-  correct: faCheckDouble,
-  incorrect: faX,
-  partial: faCheck,
-  unanswered: faInbox,
+const ICON_MAP: Record<StackFeedbackStatus, IconDefinition> = {
+  [StackFeedbackStatus.ManuallyGraded]: faCheck,
+  [StackFeedbackStatus.Correct]: faCheckDouble,
+  [StackFeedbackStatus.Incorrect]: faX,
+  [StackFeedbackStatus.Partial]: faCheck,
+  [StackFeedbackStatus.Unanswered]: faInbox,
 }
 
 interface StepProgressWithScoringProps {
   items: StepItem[]
   currentIx: number
   setCurrentIx: (ix: number) => void
+  resetLocalStorage?: () => void
 }
 
 function StepProgressWithScoring({
   items,
   currentIx,
   setCurrentIx,
+  resetLocalStorage,
 }: StepProgressWithScoringProps) {
+  const t = useTranslations()
+
   return (
-    <StepProgress
-      displayOffset={(items.length ?? 0) > 15 ? 3 : undefined}
-      value={currentIx}
-      items={items}
-      onItemClick={(ix: number) => setCurrentIx(ix)}
-      data={{ cy: 'learning-element-progress' }}
-      formatter={({ element, ix }) => {
-        function render({
-          className,
-          element,
-        }: {
-          className: string
-          element: StepItem
-        }) {
-          return {
+    <div className="flex w-full flex-row gap-1 md:gap-2">
+      <StepProgress
+        displayOffsetLeft={(items.length ?? 0) > 5 ? 3 : undefined}
+        displayOffsetRight={(items.length ?? 0) > 5 ? 1 : undefined}
+        value={currentIx === -1 ? undefined : currentIx}
+        items={items}
+        onItemClick={(ix: number) => setCurrentIx(ix)}
+        data={{ cy: 'practice-quiz-progress' }}
+        className={{ root: 'w-full' }}
+        formatter={({ element, ix }) => {
+          function render({
             className,
-            element: (
-              <div className="flex w-full flex-row items-center justify-between px-2">
-                <div>{ix + 1}</div>
+            element,
+          }: {
+            className: string
+            element: StepItem
+          }) {
+            return {
+              className,
+              element: (
+                <div className="flex w-full flex-row justify-center px-0.5 md:px-2">
+                  <div className="flex flex-row items-center justify-between md:w-full">
+                    <div
+                      className={twMerge(
+                        typeof element.score !== 'undefined' &&
+                          element.score !== null &&
+                          'hidden md:block'
+                      )}
+                    >
+                      {ix + 1}
+                    </div>
 
-                {typeof element.score !== 'undefined' &&
-                element.score !== null ? (
-                  <div>{element.score}p</div>
-                ) : element.status !== 'unanswered' ? (
-                  <FontAwesomeIcon icon={faBarsStaggered} />
-                ) : null}
-
-                <FontAwesomeIcon icon={ICON_MAP[element.status]} />
-              </div>
-            ),
+                    {typeof element.score !== 'undefined' &&
+                      element.score !== null && (
+                        <ProgressPoints
+                          score={element.score}
+                          status={element.status}
+                        />
+                      )}
+                    <FontAwesomeIcon
+                      icon={ICON_MAP[element.status as StackFeedbackStatus]}
+                      className="hidden md:block"
+                    />
+                  </div>
+                </div>
+              ),
+            }
           }
-        }
 
-        if (element.status === 'correct') {
+          if (element.status === StackFeedbackStatus.Correct) {
+            return render({
+              element,
+              className: 'bg-green-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === StackFeedbackStatus.Incorrect) {
+            return render({
+              element,
+              className: 'bg-red-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === StackFeedbackStatus.Partial) {
+            return render({
+              element,
+              className: 'bg-uzh-red-100 bg-opacity-60 text-white',
+            })
+          }
+
           return render({
             element,
-            className: 'bg-green-600 bg-opacity-60 text-white',
+            className: '',
           })
-        }
-
-        if (element.status === 'incorrect') {
-          return render({
-            element,
-            className: 'bg-red-600 bg-opacity-60 text-white',
-          })
-        }
-
-        if (element.status === 'partial') {
-          return render({
-            element,
-            className: 'bg-uzh-red-100 bg-opacity-60 text-white',
-          })
-        }
-
-        return render({
-          element,
-          className: '',
-        })
-      }}
-    />
+        }}
+      />
+      {resetLocalStorage && (
+        <Button
+          className={{ root: 'flex h-7 flex-row text-sm' }}
+          onClick={() => {
+            resetLocalStorage()
+          }}
+          data={{ cy: 'practice-quiz-reset' }}
+        >
+          <FontAwesomeIcon icon={faRepeat} />
+          <div className="hidden w-max md:block">
+            {t('pwa.practiceQuiz.resetAnswers')}
+          </div>
+        </Button>
+      )}
+    </div>
   )
+}
+
+interface ProgressPointsProps {
+  score?: string | null
+  status?: string | null
+}
+
+const ProgressPoints = ({ score, status }: ProgressPointsProps) => {
+  if (typeof score !== 'undefined' && score !== null) {
+    return <div>{score}p</div>
+  }
+
+  if (status !== 'unanswered') {
+    return <FontAwesomeIcon icon={faBarsStaggered} />
+  }
+
+  return null
 }
 
 export default StepProgressWithScoring

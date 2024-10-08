@@ -7,20 +7,22 @@ import {
   NormalizedCacheObject,
   split,
 } from '@apollo/client'
+import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
-import { usePregeneratedHashes } from '@klicker-uzh/graphql/dist/util'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
+import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
+
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
   props?: Record<string, any>
@@ -43,6 +45,22 @@ function createIsomorphLink() {
             generateHash: usePregeneratedHashes(hashes),
           }),
         ]
+
+  const authLink = setContext((_, { headers }) => {
+    if (isBrowser) {
+      const token = sessionStorage.getItem('participant_token')
+
+      return {
+        headers: {
+          ...headers,
+          authorization: token ? `Bearer ${token}` : '',
+        },
+      }
+    }
+    return {
+      headers,
+    }
+  })
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
@@ -129,10 +147,10 @@ function createIsomorphLink() {
       link
     )
 
-    return from([retryLink, errorLink, ...persistedLink, link])
+    return from([retryLink, errorLink, authLink, ...persistedLink, link])
   }
 
-  return from([errorLink, ...persistedLink, link])
+  return from([errorLink, authLink, ...persistedLink, link])
 }
 
 // TODO: use the schema link when working on the server?
@@ -187,7 +205,7 @@ export function initializeApollo(
 
 export function addApolloState(
   client: ApolloClient<NormalizedCacheObject>,
-  pageProps: PageProps
+  pageProps: Omit<PageProps, '__APOLLO_STATE__'> & { revalidate?: number }
 ) {
   if (pageProps?.props) {
     pageProps.props[APOLLO_STATE_PROP_NAME] = client.cache.extract()

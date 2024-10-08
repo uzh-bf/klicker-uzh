@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?><box id="340880">
+  <title>BFI Modul 1 - Flashcards</title>
+  <description>Lernkarten zur Assessmentvorlesung Banking and Finance I (Einführung in Corporate Finance)</description>
+  <private>false</private>
+  <category>category.economy.finance</category>
+  <level>level.university</level>
+  <language>de</language>
+  <cards>
+    <card id="15493928">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welches sind die drei Aufgaben des Treasurers? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li><strong>Cash-Management / Liquiditätsmanagement: </strong>Umfasst die Planung und Sicherstellung der täglichen Zahlungsbereitschaft (Cash Forecasting), die optimale Bewirtschaftung von Kassenbeständen und der weiteren kurzfristigen Anlagen und Finanzschulden usw.</li><li><strong>Credit-Management:<strong> </strong></strong>Prüfung der Kreditwürdigkeit von Kunden, Festlegung von Zahlungs- und Kreditbedingungen und anschliessende Überwachung der Einhaltung (Mahnwesen).</li><li><strong>Wertpapier Ausgabe: </strong>Regelung aller mit Ausgabe (Emission) von Wertpapieren verbundenen Fragen.</li></ul><p><em>(Skript Kapitel 1.5 Organisation des Finanzwesens)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493929">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welches sind die fünf Aufgaben des Controllers? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li>Planung (Planning for Control)</li><li>Berichtswesen (Reporting and Interpreting), insbesondere Soll/Ist-Vergleich und Analyse von Abweichungen</li><li>Beratung und Entscheidungsvorbereitung (Evaluation and Consulting)</li><li>Schutz des Unternehmensvermögens (Protection of Assets), d.h. die interne Kontrolle und Revision (Internal Auditing)</li><li>Allgemeines Informationswesen (Economic Appraisal)</li></ul><p><em>(Skript Kapitel 1.5 Organisation des Finanzwesens)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493930">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welches sind die drei zentralen Aufgaben der Finanzabteilung? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li>Finanzplanung</li><li>Finanzdisposition (Realisierung der Finanzplanung)</li><li>Finanzcontrolling (Überwachung aller finanzieller Geschehnisse)</li></ul><p><em>(Skript Kapitel 1.5 Organisation des Finanzwesens)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493931">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Wie lässt sich der Shareholder Value herleiten? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Der Shareholder Value lässt sich aus den diskontierten, erwarteten Free Cash Flows herleiten oder aus der Börsenkapitalisierung (bei kotierten Unternehmen).</p><p><em>(Skript Kapitel 1.4 Wertmaximierung und Shareholder Value)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493932">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Was sind die Unterschiede bzw. Gemeinsamkeiten des Shareholer Value und des Stakeholder Value ? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Beide Konzepte haben langfristig eine Maximierung des Unternehmenswertes unter Berücksichtigung der Interessen der Shareholder und der Stakeholder zum Ziel. Langfristig stehen die Interessen der Shareholder und Stakeholder also nicht im Widerspruch zueinander.</p><p><em>(Skript Kapitel 1.4 Wertmaximierung und Shareholder Value)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493933">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Erläutere das Konzept des Shareholder Value und des Stakeholder Value? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Die Shareholder Value-Maximierung ist mit der Maximierung des Unternehmenswertes gleichzusetzen. Das Konzept orientiert sich hauptsächlich an den Aktionären (Shareholder), welche die Besitzer des Unternehmens sind und das finanzielle Unternehmensrisiko tragen. Im Gegenzug dafür erhalten sie Eigentümerrechte und das sog. Residuum (übrigbleibenden Reinerfolg nach Erfüllung aller festen Ansprüchen). Die Entscheidungsbefugnis bleibt dabei jedoch weitgehend beim Management, wodurch eine Unternehmensführung verlangt wird, welche den Aktionärsinteressen gerecht wird. Das Stakeholder Value Konzept berücksichtigt neben dem Management und den Aktionären weitere Interessengruppen (Stakeholder) wie zum Beispiel Lieferanten, Kunden und Mitarbeiter.</p><p><em>(Skript Kapitel 1.4 Wertmaximierung und Shareholder Value)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493934">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Beschreibe zwischen welchen Zielen im finanzwirtschaftlichen Dreieck eine Zielharmonie bzw. ein Zielkonflikt besteht. (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li><strong>Zielkonflikt: Liquidität und Rentabilität</strong><br />So lange das Kapital, um die Zahlungsbereitschaft bzw. Liquidität zu gewährleisten, in der Kasse liegt, kann damit auch keine Rendite erzielt werden.</li><li><strong>Zielkonflikt: Rentabilität und Sicherheit</strong><br />Je höher die angestrebte Sicherheit, desto weniger Risiko wird eingegangen, was wiederum die Rentabilität senkt.</li><li><strong>Zielharmonie: Liquidität und Sicherheit</strong><br />Ist genügend Liquidität vorhanden, ist eine Zahlungsunfähigkeit unwahrscheinlicher, somit wird die Sicherheit erhöht.</li></ul><p><em>(Skript Kapitel 1.3 Finanzwirtschaftliches Zieldreieck)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493935">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Erläutere den Begriff <strong>Sicherheit </strong>des Finanzwirtschaftlichen Zieldreiecks (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Das Unternehmen muss berücksichtigen, mit wie viel Sicherheit (bzw. Risiko) die Liquidität und die Rentabilität verbunden sind.</p><p><em>(Skript Kapitel 1.3 Finanzwirtschaftliches Zieldreieck)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493936">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Erläutere den Begriff <strong>Rentabilität </strong>des Finanzwirtschaftlichen Zieldreiecks (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Das Unternehmen sollte auf den eingesetzten Mitteln eine angemessene Rentabilität erwirtschaften, so kann Mehrwert erwirtschaftet werden.</p><p><em>(Skript Kapitel 1.3 Finanzwirtschaftliches Zieldreieck)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493937">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Erläutere den Begriff <strong>Liquidität </strong>des Finanzwirtschaftlichen Zieldreiecks (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Das Unternehmen muss stets so viel Kapital zur Verfügung haben, dass es die bereits bestehenden Zahlungsverpflichtungen jederzeit erfüllen und die geplanten Investitionen realisieren kann.</p><p><em>(Skript Kapitel 1.3 Finanzwirtschaftliches Zieldreieck)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493938">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welches sind die drei Ziele des finanzwirtschaftlichen Dreiecks? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li><strong>Liquidität</strong></li><li><strong>Rentabilität</strong></li><li><strong>Sicherheit</strong></li></ul><p><em>(Skript Kapitel 1.3 Finanzwirtschaftliches Zieldreieck)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493939">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Was ist das oberste Unternehmensziel einer Unternehmung? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<p>Das oberste Ziel der unternehmerischen Tätigkeit besteht in der langfristigen Maximierung des Unternehmenswertes. Neben diesem Hauptkriterium existiert noch eine Vielzahl weiterer Zielkriterien (siehe z.B. das finanzwirtschaftliche Dreieck).</p><p><em>(Skript Kapitel 1.2 Unternehmenszweck und Ziele des Unternehmens)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493940">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welche drei Entscheidungen umfasst die Corporate Finance im engeren Sinne? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li>Finanzierungsentscheidung: Wie werden Investitionen finanziert? Finanziert sich das Unternehmen mehr mit EK oder mehr mit FK?</li><li>Dividendenentscheidung: Welcher Anteil des Gewinns wird ausgeschüttet und wie viel wird reinvestiert?</li></ul><p><em>(Skript Kapitel 1.1 Was beinhaltet Corporate Finance?)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+    <card id="15493941">
+      <customId/>
+      <set/>
+      <answerType>text</answerType>
+      <hint/>
+      <question>
+        <text>
+          <![CDATA[<p>Welche vier Komponenten beinhaltet die Corporate Finance im weiteren Sinne? (Theorie)</p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </question>
+      <answer>
+        <text>
+          <![CDATA[<ul><li>Kapitalbeschaffung: Wie finanziert sich das Unternehmen (EK versus FK)?</li><li>Kapitaleinsatz: In welche Projekte soll das Unternehmen investieren?</li><li>Kapitalbewirtschaftung: Wie werden überschüssige flüssige Mittel angelegt?</li><li>Kapitalrückzahlung: Wie werden Kredite zurückgezahlt (FK) und welcher Anteil des Gewinns wird als Dividende ausgeschüttet (EK)?</li></ul><p><em>(Skript Kapitel 1.1 Was beinhaltet Corporate Finance?)</em></p>]]>
+        </text>
+        <additionalInfo/>
+        <phonetics/>
+        <example/>
+        <imageName/>
+        <audioName/>
+        <imageCopyright/>
+        <audioCopyright/>
+      </answer>
+    </card>
+  </cards>
+</box>

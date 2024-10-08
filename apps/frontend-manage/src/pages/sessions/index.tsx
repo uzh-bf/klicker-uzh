@@ -2,11 +2,13 @@ import { useQuery } from '@apollo/client'
 import {
   GetUserSessionsDocument,
   SessionStatus,
+  Session as SessionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -25,25 +27,25 @@ function SessionList() {
   const runningSessions = useMemo(() => {
     return dataSessions?.userSessions
       ?.filter((session) => session.status === SessionStatus.Running)
-      .sort((a, b) => b.startedAt - a.startedAt)
+      .sort((a, b) => (dayjs(a.startedAt) > dayjs(b.startedAt) ? 1 : -1))
   }, [dataSessions])
 
   const scheduledSessions = useMemo(() => {
     return dataSessions?.userSessions
       ?.filter((session) => session?.status === SessionStatus.Scheduled)
-      .sort((a, b) => b.createdAt - a.createdAt)
+      .sort((a, b) => (dayjs(b.createdAt) > dayjs(a.createdAt) ? 1 : -1))
   }, [dataSessions])
 
   const preparedSessions = useMemo(() => {
     return dataSessions?.userSessions
       ?.filter((session) => session?.status === SessionStatus.Prepared)
-      .sort((a, b) => b.createdAt - a.createdAt)
+      .sort((a, b) => (dayjs(b.createdAt) > dayjs(a.createdAt) ? 1 : -1))
   }, [dataSessions])
 
   const completedSessions = useMemo(() => {
     return dataSessions?.userSessions
       ?.filter((session) => session?.status === SessionStatus.Completed)
-      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
   }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {
@@ -62,7 +64,7 @@ function SessionList() {
             <H2>{t('manage.sessions.runningSessions')}</H2>
             <div className="flex flex-col gap-2">
               {runningSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -72,7 +74,7 @@ function SessionList() {
             <H2>{t('manage.sessions.plannedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -82,7 +84,7 @@ function SessionList() {
             <H2>{t('manage.sessions.preparedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {preparedSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -92,7 +94,7 @@ function SessionList() {
             <H2>{t('manage.sessions.completedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {completedSessions.map((session) => (
-                <Session key={session.id} session={session} />
+                <Session key={session.id} session={session as SessionType} />
               ))}
             </div>
           </div>
@@ -108,8 +110,13 @@ function SessionList() {
             >
               {t.rich('manage.sessions.creationExplanation', {
                 link: (text) => (
-                  <Link href="/" className="text-primary hover:underline">
-                    {text}
+                  <Link
+                    href="/"
+                    className="text-primary-100 hover:underline"
+                    legacyBehavior
+                    passHref
+                  >
+                    <a data-cy="create-first-session">{text}</a>
                   </Link>
                 ),
               })}

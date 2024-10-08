@@ -1,0 +1,6 @@
+query GetPracticeCourses {
+  getPracticeCourses {
+    id
+    displayName
+  }
+}

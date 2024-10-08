@@ -1,6 +1,6 @@
 repositories:
-- name: bitnami
-  url: https://charts.bitnami.com/bitnami
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
 
 releases:
   - name: klicker-v2-prod
@@ -12,9 +12,21 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
+      - dfDomain: '{{ requiredEnv "DF_DOMAIN" }}'
+
+        teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
 
         appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        email:
+          type: '{{ requiredEnv "EMAIL_TYPE" }}'
+          from: '{{ requiredEnv "EMAIL_FROM" }}'
+          host: '{{ requiredEnv "EMAIL_HOST" }}'
+          port: '{{ requiredEnv "EMAIL_PORT" }}'
+          username: '{{ requiredEnv "EMAIL_USER" }}'
+          password: '{{ requiredEnv "EMAIL_PASS" }}'
+          secure: '{{ requiredEnv "EMAIL_SECURE" }}'
+          requireTLS: '{{ requiredEnv "EMAIL_STARTTLS" }}'
 
         blobStorage:
           accountName: '{{ requiredEnv "BLOB_STORAGE_ACCOUNT_NAME" }}'
@@ -22,6 +34,8 @@ releases:
 
         migration:
           secret: '{{ requiredEnv "MIGRATION_SECRET" }}'
+          mongo:
+            connectionString: '{{ requiredEnv "MIGRATION_MONGO_CONNECTION_STRING" }}'
           serviceBus:
             connectionString: '{{ requiredEnv "MIGRATION_SERVICE_BUS_CONNECTION_STRING" }}'
             queueName: '{{ requiredEnv "MIGRATION_SERVICE_BUS_QUEUE_NAME" }}'
@@ -31,6 +45,7 @@ releases:
           username: '{{ requiredEnv "LISTMONK_USER" }}'
           password: '{{ requiredEnv "LISTMONK_PASS" }}'
           templates:
+            emailNotFound: '{{ requiredEnv "LISTMONK_TEMPLATE_EMAIL_NOT_FOUND" }}'
             migrationRequest: '{{ requiredEnv "LISTMONK_TEMPLATE_MIGRATION_REQUEST" }}'
 
         cron:
@@ -48,23 +63,13 @@ releases:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
-
         frontendManage:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
-
         frontendControl:
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
-
-          sentryEnv: production
-          sentryDSN: '{{ env "SENTRY_DSN_CONTROL" }}'
-
 
         backendGraphql:
           image:
@@ -73,6 +78,13 @@ releases:
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
+
+          appManageSubdomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}'
+          appManageDomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appStudentSubdomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}'
+          appStudentDomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appControlSubdomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}'
+          appControlDomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
 
           notifications:
             url: '{{ requiredEnv "NOTIFICATION_URL" }}'
@@ -97,3 +109,28 @@ releases:
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN" }}'
+
+        lti:
+          replicaCount: 4
+
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
+          clientId: '{{ requiredEnv "LTI_CLIENT_ID" }}'
+          redirectURL: '{{ requiredEnv "LTI_REDIRECT_URL" }}'
+          cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
+          encryptionKey: '{{ requiredEnv "APP_SECRET" }}'
+          name: '{{ requiredEnv "LTI_NAME" }}'
+          url: '{{ requiredEnv "LTI_URL" }}'
+          authEndpoint: '{{ requiredEnv "LTI_AUTH_ENDPOINT" }}'
+          tokenEndpoint: '{{ requiredEnv "LTI_TOKEN_ENDPOINT" }}'
+          keysEndpoint: '{{ requiredEnv "LTI_KEYS_ENDPOINT" }}'
+
+          db:
+            type: '{{ requiredEnv "LTI_DB_TYPE" }}'
+            host: '{{ requiredEnv "LTI_DB_HOST" }}'
+            port: '{{ requiredEnv "LTI_DB_PORT" }}'
+            name: '{{ requiredEnv "LTI_DB_NAME" }}'
+            username: '{{ requiredEnv "LTI_DB_USER" }}'
+            password: '{{ requiredEnv "LTI_DB_PASS" }}'

@@ -367,6 +367,7 @@ spec:
             httpGet:
               path: /healthz
               port: http
+            initialDelaySeconds: 600
           readinessProbe:
             httpGet:
               path: /healthz
@@ -382,6 +383,88 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.backendGraphql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-lti
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lti
+spec:
+  {{- with .Values.lti.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.lti.autoscaling.enabled }}
+  replicas: {{ .Values.lti.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: lti
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-lti.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-lti.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.lti.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: lti
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.lti.priorityClassName }}
+      {{- with .Values.lti.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.lti.podSecurityContext | nindent 8 }}
+      containers:
+        - name: lti
+          securityContext:
+            {{- toYaml .Values.lti.securityContext | nindent 12 }}
+          image: "{{ .Values.lti.image.repository }}:{{ .Values.lti.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.lti.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 4000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-lti
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-lti
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.lti.resources | nindent 12 }}
+      {{- with .Values.lti.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lti.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.lti.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

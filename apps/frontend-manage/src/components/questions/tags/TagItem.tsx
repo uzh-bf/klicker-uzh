@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface TagItemProps {
   text: string
-  icon: IconDefinition
+  icon: IconDefinition[]
   active: boolean
   onClick: () => void
 }
@@ -13,12 +13,12 @@ function TagItem({ text, icon, active, onClick }: TagItemProps) {
   return (
     <li
       className={twMerge(
-        'px-4 py-0.5 hover:cursor-pointer sm:hover:text-primary',
-        active && 'text-primary'
+        'hover:text-primary-100 px-2 py-0.5 hover:cursor-pointer',
+        active && 'text-primary-100'
       )}
       onClick={onClick}
     >
-      <FontAwesomeIcon icon={icon} className="mr-2" />
+      <FontAwesomeIcon icon={active ? icon[1] : icon[0]} className="mr-2 w-4" />
       {text}
     </li>
   )

@@ -14,6 +14,7 @@ interface Props {
   width: number
   className?: {
     title?: string
+    canvas?: string
   }
 }
 
@@ -44,14 +45,14 @@ export function QR({
   }, [canvasRef, path])
 
   return (
-    <div className="p-4">
+    <div className="space-y-2">
       <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
-        <div className={twMerge('text-primary text-6xl', className?.title)}>
+        <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
           {process.env.NEXT_PUBLIC_PWA_URL}
           {path}
         </div>
       </Link>
-      <div ref={canvasRef}>
+      <div ref={canvasRef} className={className?.canvas}>
         <QRCode
           logoHeight={width / 3.34}
           logoImage="/img/KlickerLogo.png"
@@ -60,7 +61,7 @@ export function QR({
           value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         />
       </div>
-      <Button onClick={onButtonClick}>
+      <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
         <Button.Icon>
           <FontAwesomeIcon icon={faDownload} />
         </Button.Icon>

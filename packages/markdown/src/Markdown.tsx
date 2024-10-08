@@ -12,7 +12,7 @@ import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
-import ImgWithModal from './ImgWithModal'
+import ImgWithModal from './ImgWithModal.js'
 
 export interface MarkdownProps {
   className?: {
@@ -37,6 +37,10 @@ export interface MarkdownProps {
   withModal?: boolean
   withLinkButtons?: boolean
   withProse?: boolean
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function Markdown({
@@ -46,12 +50,27 @@ function Markdown({
   withModal = true,
   withLinkButtons = true,
   withProse = false,
+  data,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
     if (content?.length <= 2) {
       return content
     }
     try {
+      const contentUnescaped = content
+        .replace(
+          /&amp;|&lt;|&gt;|&#39;|&quot;/g,
+          (tag) =>
+            ({
+              '&amp;': '&',
+              '&lt;': '<',
+              '&gt;': '>',
+              '&#39;': "'",
+              '&quot;': '"',
+            })[tag] || tag
+        )
+        .replace(/<br>/g, '&nbsp;')
+
       return (
         unified()
           .use(markdown)
@@ -125,7 +144,7 @@ function Markdown({
                     return (
                       <a
                         className={twMerge(
-                          'px-4 py-3 border rounded sm:hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
+                          'my-1 flex flex-row gap-3 rounded border px-4 py-3 text-sm hover:bg-slate-200'
                         )}
                         href={href}
                       >
@@ -141,7 +160,7 @@ function Markdown({
               ...(components as any),
             },
           })
-          .processSync(content).result
+          .processSync(contentUnescaped).result
       )
     } catch (e) {
       console.error(e)
@@ -153,8 +172,9 @@ function Markdown({
     return (
       <Prose
         className={{
-          root: twMerge('max-w-none prose-p:mt-0', className?.root),
+          root: twMerge('prose-p:mt-0 max-w-none', className?.root),
         }}
+        data={data}
       >
         {parsedContent}
       </Prose>
@@ -162,7 +182,11 @@ function Markdown({
   }
 
   return (
-    <div className={twMerge('max-w-none', className?.root)}>
+    <div
+      className={twMerge('max-w-none', className?.root)}
+      data-cy={data?.cy}
+      data-test={data?.test}
+    >
       {parsedContent}
     </div>
   )

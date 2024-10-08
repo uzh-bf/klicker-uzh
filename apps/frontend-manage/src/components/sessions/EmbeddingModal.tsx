@@ -24,7 +24,7 @@ function LazyHMACLink({
   })
 
   if (sessionHMAC.loading || !sessionHMAC.data?.sessionHMAC) {
-    return ''
+    return <></>
   }
 
   const link = `${
@@ -34,15 +34,25 @@ function LazyHMACLink({
   }`
 
   return (
-    <div className="flex flex-row items-center gap-3">
+    <div className="flex max-w-full flex-row items-center justify-between gap-3">
       <Link
-        className="px-2 py-1 bg-slate-100 rounded hover:bg-slate-200"
+        className="rounded bg-slate-100 px-2 py-1 hover:bg-slate-200"
         href={link}
         target="_blank"
+        legacyBehavior
+        passHref
       >
-        {link}
+        <a
+          data-cy={`open-embedding-link-session-${sessionId}`}
+          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+        >
+          {link}
+        </a>
       </Link>
-      <Button onClick={() => navigator?.clipboard?.writeText(link)}>
+      <Button
+        onClick={() => navigator?.clipboard?.writeText(link)}
+        data={{ cy: `copy-embed-link-session-${sessionId}` }}
+      >
         <Button.Icon>
           <FontAwesomeIcon icon={faClipboard} />
         </Button.Icon>
@@ -76,7 +86,9 @@ function EmbeddingModal({
       className={{ content: 'h-2/3' }}
       hideCloseButton
       onPrimaryAction={
-        <Button onClick={onClose}>{t('shared.generic.close')}</Button>
+        <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
+          {t('shared.generic.close')}
+        </Button>
       }
     >
       <div className="mb-4">
@@ -87,7 +99,7 @@ function EmbeddingModal({
         />
       </div>
       <div className="mb-4">
-        <div className="font-bold w-30">{t('shared.generic.evaluation')}</div>
+        <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
         <LazyHMACLink sessionId={sessionId} params={``} />
       </div>
       <div className="flex flex-col gap-2">
@@ -96,9 +108,9 @@ function EmbeddingModal({
             <div key={question.id}>
               <div className="font-bold">
                 {ix + 1}{' '}
-                {question.questionData.name.length > 25
-                  ? `${question.questionData.name.substring(0, 25)}...`
-                  : question.questionData.name}
+                {question.questionData!.name.length > 25
+                  ? `${question.questionData!.name.substring(0, 25)}...`
+                  : question.questionData!.name}
               </div>
               <LazyHMACLink
                 sessionId={sessionId}
@@ -108,7 +120,7 @@ function EmbeddingModal({
           )
         })}
         <div>
-          <div className="font-bold w-30">
+          <div className="w-30 font-bold">
             {t('shared.generic.leaderboard')}:
           </div>
           <LazyHMACLink

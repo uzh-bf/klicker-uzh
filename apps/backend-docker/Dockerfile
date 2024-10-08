@@ -1,4 +1,4 @@
-FROM docker.io/library/node:18-alpine AS base
+FROM docker.io/library/node:20.17.0-alpine AS base
 
 
 FROM base AS deps
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
+RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
+RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -38,7 +38,7 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
+RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -51,6 +51,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs

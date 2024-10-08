@@ -25,9 +25,9 @@ function Catalyst() {
 
   return (
     <Layout>
-      <div className="py-24 px-8">
-        <div className="md:mx-auto max-w-7xl lg:px-8 text-center items-center flex flex-col">
-          <h1 className="mt-2 md:text-5xl flex flex-row gap-4 w-max">
+      <div className="px-8 py-24">
+        <div className="flex max-w-7xl flex-col items-center text-center md:mx-auto lg:px-8">
+          <h1 className="mt-2 flex w-max flex-row gap-4 md:text-5xl">
             <div>KlickerUZH</div>
             <div className="flex justify-center">
               <TextTransition springConfig={presets.wobbly}>
@@ -64,13 +64,13 @@ function Catalyst() {
             </p>
           </Prose>
 
-          <div className="mt-12 mx-auto max-w-[45rem] flow-root">
-            <div className="grid grid-cols-1 gap-6 -mt-8 cards isolate sm:max-w-sm sm:mx-auto lg:-mx-8 lg:mt-0 md:max-w-none md:grid-cols-2 xl:-mx-4">
-              <div className="p-6 rounded-lg sm:rounded-xl sm:p-8 bg-slate-100 space-y-4">
+          <div className="mx-auto mt-12 flow-root max-w-[45rem]">
+            <div className="cards isolate -mt-8 grid grid-cols-1 gap-6 sm:mx-auto sm:max-w-sm md:max-w-none md:grid-cols-2 lg:-mx-8 lg:mt-0 xl:-mx-4">
+              <div className="space-y-4 rounded-lg bg-slate-100 p-6 sm:rounded-xl sm:p-8">
                 <div className="text-4xl font-semibold tracking-tight md:text-5xl">
                   Standard
                 </div>
-                <ul className="pl-0 mt-8 mb-2 space-y-2">
+                <ul className="mb-2 mt-8 space-y-2 pl-0">
                   <li className="flex gap-x-3">
                     <div>
                       <FontAwesomeIcon icon={faCheck} />
@@ -104,11 +104,11 @@ function Catalyst() {
                 </ul>
               </div>
 
-              <div className="p-6 rounded-lg sm:rounded-xl sm:p-8 bg-slate-100 space-y-4">
+              <div className="space-y-4 rounded-lg bg-slate-100 p-6 sm:rounded-xl sm:p-8">
                 <div className="text-4xl font-semibold tracking-tight md:text-5xl">
                   <FontAwesomeIcon icon={faCrown} /> Catalyst
                 </div>
-                <ul className="pl-0 mt-8 mb-2 space-y-2">
+                <ul className="mb-2 mt-8 space-y-2 pl-0">
                   <li className="flex gap-x-3">
                     <div>
                       <FontAwesomeIcon icon={faArrowLeft} />

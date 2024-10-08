@@ -27,8 +27,10 @@ query SelfWithAchievements {
         achievedCount
         achievement {
           id
-          name
-          description
+          nameDE
+          nameEN
+          descriptionDE
+          descriptionEN
           icon
           iconColor
         }
@@ -36,8 +38,10 @@ query SelfWithAchievements {
     }
     achievements {
       id
-      name
-      description
+      nameDE
+      nameEN
+      descriptionDE
+      descriptionEN
       icon
       iconColor
     }

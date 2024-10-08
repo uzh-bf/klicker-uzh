@@ -1,16 +1,22 @@
-import { useSentry } from '@envelop/sentry'
+// import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express, { Request } from 'express'
+import express, { type Request } from 'express'
 import { createYoga } from 'graphql-yoga'
+import { createRequire } from 'node:module'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
+
+const require = createRequire(import.meta.url)
+const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+declare namespace global {
+  let __coverage__: any
+}
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({
@@ -26,7 +32,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   if (global.__coverage__) {
     try {
       require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   app.use(
@@ -43,40 +51,30 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          if (req.headers?.['authorization']) {
-            return req.headers['authorization']?.replace('Bearer ', '')
-          }
+          let token = null
 
-          if (req.cookies) {
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-              ) ||
-              req.headers.origin?.includes(
-                process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-              )
-            ) {
-              return req.cookies['next-auth.session-token']
-            }
-
-            if (
-              req.headers.origin?.includes(
-                process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
-              )
-            ) {
-              return (
-                req.cookies['participant_token'] ||
-                req.cookies['next-auth.session-token']
-              )
-            }
-
-            return (
-              req.cookies['participant_token'] ||
-              req.cookies['next-auth.session-token']
+          if (
+            req.headers.origin?.includes(
+              process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+            ) ||
+            req.headers.origin?.includes(
+              process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
             )
+          ) {
+            token = req.cookies?.['next-auth.session-token']
+          } else if (
+            req.headers.origin?.includes(
+              process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+            )
+          ) {
+            token = req.cookies?.['participant_token']
           }
 
-          return null
+          return (
+            token ??
+            req.headers['authorization']?.replace('Bearer ', '') ??
+            null
+          )
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         secretOrKey: process.env.APP_SECRET,
@@ -94,7 +92,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
 
   app.use(cookieParser())
   app.use((req: any, res, next) =>
-    passport.authenticate('jwt', { session: false }, (err, user) => {
+    passport.authenticate('jwt', { session: false }, (_: any, user: any) => {
       req.locals = { user }
       next()
     })(req, res, next)
@@ -110,8 +108,8 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
       //   // ttlPerType: {
       //   //   Participant: 60000,
       //   //   Course: 60000,
-      //   //   LearningElement: 60000,
-      //   //   MicroSession: 60000,
+      //   //   PracticeQuiz: 60000,
+      //   //   MicroLearning: 60000,
       //   //   QuestionInstance: 60000,
       //   //   Participation: 0,
       //   //   LeaderboardEntry: 0,
@@ -126,26 +124,28 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         requestHeaders: ['x-graphql-yoga-csrf'], // default
       }),
       usePersistedOperations({
-        allowArbitraryOperations: process.env.NODE_ENV === 'development',
+        allowArbitraryOperations:
+          process.env.NODE_ENV === 'development' ||
+          process.env.NODE_ENV === 'test',
         getPersistedOperation(sha256Hash: string) {
           return persistedOperations[sha256Hash]
         },
       }),
-      process.env.SENTRY_DSN &&
-        useSentry({
-          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
-          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
-          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
-          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
-          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
-          // skip: (executionArgs) => {
-          //   console.log(executionArgs)
-          //   if (!executionArgs.operationName) {
-          //     return true
-          //   }
-          //   return false
-          // },
-        }),
+      // process.env.SENTRY_DSN &&
+      // useSentry({
+      //   includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+      //   includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+      //   includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+      //   // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+      //   // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+      //   // skip: (executionArgs) => {
+      //   //   console.log(executionArgs)
+      //   //   if (!executionArgs.operationName) {
+      //   //     return true
+      //   //   }
+      //   //   return false
+      //   // },
+      // }),
       // useGraphQlJit(),
       ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
@@ -160,7 +160,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     res.send('OK')
   })
 
-  app.use('/api/graphql', yogaApp)
+  app.use('/api/graphql', yogaApp as any)
 
   return { app, yogaApp }
 }

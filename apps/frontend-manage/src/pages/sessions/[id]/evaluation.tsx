@@ -2,7 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Block,
+  ElementType,
+  EvaluationBlock as EvaluationBlockType,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
@@ -28,7 +29,6 @@ import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
 import EvaluationControlBar from '../../../components/sessions/evaluation/EvaluationControlBar'
 import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
@@ -37,11 +37,9 @@ import {
   TextSizes,
   sizeReducer,
 } from '../../../components/sessions/evaluation/constants'
+import useEvaluationInitialization from '../../../lib/hooks/useEvaluationInitialization'
 
 export type EvaluationTabData = TabData & { ix: number }
-export type EvaluationBlock = Omit<Block, 'tabData'> & {
-  tabData: EvaluationTabData[]
-}
 
 function Evaluation() {
   const router = useRouter()
@@ -62,14 +60,14 @@ function Evaluation() {
     instanceIx: 0,
     participants: 0,
     questionData: {
-      id: 0,
+      id: '',
       name: '',
       content: '',
-      type: 'SC',
+      type: ElementType.Sc,
       options: { choices: [] },
     },
     results: {},
-    statistics: {},
+    statistics: undefined,
     status: SessionBlockStatus.Executed,
   })
 
@@ -117,26 +115,30 @@ function Evaluation() {
   const { blocks } = useMemo(() => {
     if (!blockData) return { blocks: [] }
 
-    return blockData.reduce(
-      (acc: { ix: number; blocks: EvaluationBlock[] }, block: Block) => {
+    return blockData.reduce<{
+      offset: number
+      blocks: {
+        blockIx: number
+        blockStatus: SessionBlockStatus
+        tabData: EvaluationTabData[]
+      }[]
+    }>(
+      (acc, block: EvaluationBlockType) => {
         const mappedBlock = {
           ...block,
           tabData: block.tabData?.map((instance, ix) => ({
+            ix: acc.offset + ix,
             ...instance,
-            ix: ix + acc.ix,
           })),
         }
 
         return {
-          ix: acc.ix + (block.tabData?.length || 0),
+          offset: acc.offset + block.tabData.length,
           blocks: [...acc.blocks, mappedBlock],
         }
       },
-      {
-        ix: 0,
-        blocks: [],
-      }
-    ) as { ix: number; blocks: EvaluationBlock[] }
+      { offset: 0, blocks: [] }
+    )
   }, [blockData])
 
   useEvaluationInitialization({
@@ -189,10 +191,10 @@ function Evaluation() {
 
   if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (
-      <div className="flex flex-col items-center justify-center w-full h-full">
+      <div className="flex h-full w-full flex-col items-center justify-center">
         <UserNotification
           className={{
-            root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
+            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
           }}
           message={t('manage.evaluation.evaluationNotYetAvailable')}
         />
@@ -212,9 +214,9 @@ function Evaluation() {
       </Head>
 
       {router.query.hideControls !== 'true' && (
-        <div className="z-20 flex-none h-11">
+        <div className="z-20 h-11 flex-none">
           <EvaluationControlBar
-            blocks={blocks || []}
+            blocks={blocks}
             selectedBlock={selectedBlockIndex}
             setSelectedBlock={setSelectedBlockIndex}
             setSelectedInstanceIndex={setSelectedInstanceIndex}
@@ -234,7 +236,7 @@ function Evaluation() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col">
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -251,8 +253,8 @@ function Evaluation() {
 
         {showLeaderboard && !showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
-            <div className="p-4 border-t">
-              <div className="max-w-2xl mx-auto text-xl">
+            <div className="border-t p-4">
+              <div className="mx-auto max-w-2xl text-xl">
                 {data.sessionLeaderboard &&
                 data.sessionLeaderboard.length > 0 ? (
                   <Leaderboard
@@ -281,7 +283,7 @@ function Evaluation() {
           data.sessionEvaluation && (
             <div className="overflow-y-auto print:overflow-y-visible">
               <div className="p-4">
-                <div className="max-w-5xl mx-auto text-xl">
+                <div className="mx-auto max-w-5xl text-xl">
                   {feedbacks && feedbacks.length > 0 ? (
                     <EvaluationFeedbacks
                       feedbacks={feedbacks}
@@ -301,8 +303,8 @@ function Evaluation() {
 
         {!showLeaderboard && showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
-            <div className="p-4 border-t">
-              <div className="max-w-5xl mx-auto text-xl">
+            <div className="border-t p-4">
+              <div className="mx-auto max-w-5xl text-xl">
                 {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
                   <EvaluationConfusion confusionTS={confusionFeedbacks} />
                 ) : (
@@ -320,7 +322,7 @@ function Evaluation() {
 
       <div
         className={twMerge(
-          'flex-none h-14 z-20',
+          'z-20 h-14 flex-none',
           (showFeedbacks || showConfusion || showLeaderboard) && 'h-18'
         )}
       >
@@ -329,22 +331,23 @@ function Evaluation() {
             !showFeedbacks &&
             !showConfusion &&
             !showLeaderboard && (
-              <div className="flex flex-row items-center justify-between py-2.5 m-0">
+              <div className="m-0 flex flex-row items-center justify-between py-2.5">
                 <div className="text-lg" data-cy="session-total-participants">
                   {t('manage.evaluation.totalParticipants', {
                     number: currentInstance.participants,
                   })}
                 </div>
                 <div className="flex flex-row items-center gap-7">
-                  <div className="flex flex-row items-center gap-2 ml-2">
+                  <div className="ml-2 flex flex-row items-center gap-2">
                     <Button
                       onClick={() => {
                         settextSize({ type: 'decrease' })
                       }}
                       disabled={textSize.size === 'sm'}
                       className={{
-                        root: 'w-8 h-8 flex items-center justify-center',
+                        root: 'flex h-8 w-8 items-center justify-center',
                       }}
+                      data={{ cy: 'decrease-font-size' }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faMinus} />
@@ -356,8 +359,9 @@ function Evaluation() {
                       }}
                       disabled={textSize.size === 'xl'}
                       className={{
-                        root: 'w-8 h-8 flex items-center justify-center',
+                        root: 'flex h-8 w-8 items-center justify-center',
                       }}
+                      data={{ cy: 'increase-font-size' }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faPlus} />
@@ -374,15 +378,20 @@ function Evaluation() {
                   <Select
                     contentPosition="popper"
                     className={{
-                      trigger: 'border-slate-400',
+                      trigger: 'w-36 border-slate-400',
                     }}
                     items={ACTIVE_CHART_TYPES[
                       currentInstance.questionData.type
                     ].map((item) => {
-                      return { label: t(item.label), value: item.value }
+                      return {
+                        label: t(item.label),
+                        value: item.value,
+                        data: { cy: `change-chart-type-${item.label}` },
+                      }
                     })}
                     value={chartType}
                     onChange={(newValue: string) => setChartType(newValue)}
+                    data={{ cy: 'change-chart-type' }}
                   />
                 </div>
               </div>

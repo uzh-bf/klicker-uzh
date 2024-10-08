@@ -22,8 +22,12 @@ const blobTrigger: StorageBlobHandler = async function (
 
     context.log(context.triggerMetadata?.blobTrigger)
 
-    const newUserId = context.triggerMetadata?.blobTrigger
-      ?.split('/')
+    const newUserId = (
+      context.triggerMetadata?.blobTrigger
+        ? (context.triggerMetadata?.blobTrigger as string)
+        : undefined
+    )
+      .split('/')
       [process.env.NODE_ENV === 'development' ? 1 : 2].split('_')[0]
 
     const parsedContent = JSON.parse(content)
@@ -108,7 +112,7 @@ const blobTrigger: StorageBlobHandler = async function (
 
     await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Successful migration for user '${user.email}'`,
+      `Successful import for user '${user.email}'`,
       context
     )
     await sendEmailMigrationNotification(user.email, true, context)
@@ -116,7 +120,7 @@ const blobTrigger: StorageBlobHandler = async function (
     context.error('Something went wrong while importing data: ', e)
     await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Migration of KlickerV2 data failed. Error: ${e.message}`,
+      `Import of KlickerV2 data failed. Error: ${e.message}`,
       context
     )
     await sendEmailMigrationNotification(email, false, context)

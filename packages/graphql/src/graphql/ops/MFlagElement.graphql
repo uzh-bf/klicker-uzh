@@ -1,0 +1,16 @@
+mutation FlagElement(
+  $elementInstanceId: Int!
+  $elementId: Int!
+  $content: String!
+) {
+  flagElement(
+    elementInstanceId: $elementInstanceId
+    elementId: $elementId
+    content: $content
+  ) {
+    id
+    upvote
+    downvote
+    feedback
+  }
+}

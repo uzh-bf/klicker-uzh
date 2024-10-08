@@ -1,0 +1,50 @@
+#import "./FElementData.graphql"
+
+mutation EditPracticeQuiz(
+  $id: String!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $stacks: [ElementStackInput!]!
+  $courseId: String!
+  $multiplier: Int!
+  $order: ElementOrderType!
+  $availableFrom: Date
+  $resetTimeDays: Int!
+) {
+  editPracticeQuiz(
+    id: $id
+    name: $name
+    displayName: $displayName
+    description: $description
+    stacks: $stacks
+    courseId: $courseId
+    multiplier: $multiplier
+    order: $order
+    availableFrom: $availableFrom
+    resetTimeDays: $resetTimeDays
+  ) {
+    id
+    name
+    displayName
+    description
+    pointsMultiplier
+    resetTimeDays
+    orderType
+
+    course {
+      id
+    }
+
+    stacks {
+      id
+      displayName
+      description
+      order
+      elements {
+        id
+        ...ElementData
+      }
+    }
+  }
+}

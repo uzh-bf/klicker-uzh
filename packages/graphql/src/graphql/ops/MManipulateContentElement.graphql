@@ -1,0 +1,29 @@
+mutation ManipulateContentElement(
+  $id: Int
+  $status: ElementStatus
+  $name: String
+  $content: String
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateContentElement(
+    id: $id
+    status: $status
+    name: $name
+    content: $content
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    id
+    name
+    status
+    type
+    content
+    pointsMultiplier
+
+    tags {
+      id
+      name
+    }
+  }
+}

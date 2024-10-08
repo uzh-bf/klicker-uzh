@@ -1,23 +1,21 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { processQuestionData } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context, ContextWithUser } from '../lib/context'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions'
-import { sendTeamsNotifications } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
+import { sendTeamsNotifications } from '../lib/util.js'
+import * as EmailService from '../services/email.js'
+import { DisplayMode } from '../types/app.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
   path: '/',
   httpOnly: true,
-  maxAge: 1000 * 60 * 60 * 24 * 13,
+  maxAge: 1000 * 60 * 60 * 24 * 30,
   secure:
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
@@ -25,26 +23,22 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 interface LoginUserTokenArgs {
-  email: string
+  shortname: string
   token: string
 }
 
 export async function loginUserToken(
-  { email, token }: LoginUserTokenArgs,
+  { shortname, token }: LoginUserTokenArgs,
   ctx: Context
 ) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
   const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
+    where: { shortname: shortname.trim() },
   })
 
   if (!user) {
     await sendTeamsNotifications(
       'graphql/loginUserToken',
-      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+      `LOGIN FAILED: User with shortname ${shortname} not found.`
     )
     return null
   }
@@ -76,7 +70,7 @@ export async function loginUserToken(
 
   ctx.res.cookie('next-auth.session-token', jwt, {
     ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 27,
+    maxAge: 1000 * 60 * 60 * 24 * 30,
   })
 
   ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
@@ -108,38 +102,229 @@ export function createParticipantToken(participantId: string) {
   )
 }
 
+async function doParticipantLogin(
+  {
+    participantId,
+    participantLocale,
+  }: { participantId: string; participantLocale: DB.Locale },
+  ctx: Context
+) {
+  await ctx.prisma.participant.update({
+    where: { id: participantId },
+    data: { lastLoginAt: new Date() },
+  })
+
+  const jwt = createParticipantToken(participantId)
+
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
+
+  return jwt
+}
+
 interface LoginParticipantArgs {
-  username: string
+  usernameOrEmail: string
   password: string
 }
 
 export async function loginParticipant(
-  { username, password }: LoginParticipantArgs,
+  { usernameOrEmail, password }: LoginParticipantArgs,
   ctx: Context
 ) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { username: username },
+  const participantWithUsername = await ctx.prisma.participant.findUnique({
+    where: { username: usernameOrEmail.trim() },
+  })
+  const participantWithEmail = await ctx.prisma.participant.findUnique({
+    where: { email: usernameOrEmail.trim().toLowerCase() },
   })
 
+  const participant = participantWithUsername || participantWithEmail
   if (!participant) return null
 
   const isLoginValid = await bcrypt.compare(password, participant.password)
 
   if (!isLoginValid) return null
 
-  ctx.prisma.participant.update({
-    where: { id: participant.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = createParticipantToken(participant.id)
-
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
-  ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+  await doParticipantLogin(
+    {
+      participantId: participant.id,
+      participantLocale: participant.locale,
+    },
+    ctx
+  )
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
+}
+
+const rateLimitStore: Record<string, { count: number; lastRequest: number }> =
+  {}
+const RATE_LIMIT = 5 // Maximum number of requests
+const TIME_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+
+interface SendMagicLinkArgs {
+  usernameOrEmail: string
+}
+
+export async function sendMagicLink(
+  { usernameOrEmail }: SendMagicLinkArgs,
+  ctx: Context
+) {
+  const trimmedUsernameOrEmail = usernameOrEmail.trim()
+
+  const currentTime = Date.now()
+
+  if (!rateLimitStore[trimmedUsernameOrEmail]) {
+    rateLimitStore[trimmedUsernameOrEmail] = {
+      count: 1,
+      lastRequest: currentTime,
+    }
+  } else {
+    const { count, lastRequest } = rateLimitStore[trimmedUsernameOrEmail]
+    if (currentTime - lastRequest < TIME_WINDOW) {
+      if (count >= RATE_LIMIT) {
+        throw new Error('Rate limit exceeded. Please try again later.')
+      }
+      rateLimitStore[trimmedUsernameOrEmail].count += 1
+    } else {
+      rateLimitStore[trimmedUsernameOrEmail] = {
+        count: 1,
+        lastRequest: currentTime,
+      }
+    }
+  }
+
+  // the returned count can never be more than one, as the username cannot be a valid email (and vice versa)
+  const participantWithUsername = await ctx.prisma.participant.findMany({
+    where: {
+      OR: [
+        { username: trimmedUsernameOrEmail },
+        { email: trimmedUsernameOrEmail.toLowerCase() },
+      ],
+    },
+  })
+
+  if (participantWithUsername.length === 0) return true
+
+  const participantData = participantWithUsername[0]
+
+  // TODO: should we disable magic link login until the email has been verified?
+  if (!participantData?.email) return false
+
+  const magicLinkJWT = JWT.sign(
+    {
+      sub: participantData.id,
+      role: UserRole.PARTICIPANT,
+      scope: UserLoginScope.OTP,
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '15 minutes',
+    }
+  )
+
+  const magicLink = `${
+    process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  }://${process.env.APP_STUDENT_DOMAIN}/magicLogin?token=${magicLinkJWT}`
+
+  const emailHtml = await EmailService.hydrateTemplate(
+    {
+      templateName: 'MagicLinkRequested',
+      variables: { LINK: magicLink },
+    },
+    ctx
+  )
+
+  if (!emailHtml) return null
+
+  await sendTeamsNotifications(
+    'graphql/sendMagicLink',
+    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
+  )
+
+  await EmailService.sendEmail({
+    to: participantData.email,
+    subject: 'KlickerUZH - Your One-Time Login Link',
+    text: `Please click on the following link to log in to KlickerUZH PWA: ${magicLink} (validity: 15 minutes)`,
+    html: emailHtml,
+  })
+
+  return true
+}
+
+export async function loginParticipantMagicLink(
+  { token }: { token: string },
+  ctx: Context
+) {
+  //
+  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+    sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+    return null
+  }
+
+  const participant = await ctx.prisma.participant.findUnique({
+    where: {
+      id: tokenData.sub,
+    },
+  })
+
+  if (participant) {
+    await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
+      },
+      ctx
+    )
+
+    return participant.id
+  }
+
+  return null
+}
+
+export async function activateParticipantAccount(
+  { token }: { token: string },
+  ctx: Context
+) {
+  //
+  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+    sub: string
+    scope: UserLoginScope
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.ACTIVATION) {
+    return null
+  }
+
+  const participant = await ctx.prisma.participant.update({
+    where: {
+      id: tokenData.sub,
+    },
+    data: {
+      isEmailValid: true,
+    },
+  })
+
+  if (participant) {
+    await doParticipantLogin(
+      {
+        participantId: participant.id,
+        participantLocale: participant.locale,
+      },
+      ctx
+    )
+
+    return participant.id
+  }
+
+  return null
 }
 
 export async function logoutParticipant(_: any, ctx: ContextWithUser) {
@@ -227,6 +412,13 @@ export async function changeParticipantLocale(
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
+    include: {
+      participantGroups: {
+        include: {
+          participants: true,
+        },
+      },
+    },
   })
 
   if (!participant) return false
@@ -236,10 +428,25 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
     maxAge: 0,
   })
 
-  await ctx.prisma.participant.delete({
-    where: { id: ctx.user.sub },
-  })
+  // if a participant group is empty after the participant leaves it, delete the group as well
+  let deletionPromises: any[] = []
+  for (const group of participant.participantGroups) {
+    if (group.participants.length === 1) {
+      deletionPromises.push(
+        ctx.prisma.participantGroup.delete({
+          where: { id: group.id },
+        })
+      )
+    }
+  }
 
+  deletionPromises.push(
+    ctx.prisma.participant.delete({
+      where: { id: ctx.user.sub },
+    })
+  )
+
+  await ctx.prisma.$transaction(deletionPromises)
   return true
 }
 
@@ -248,6 +455,7 @@ interface CreateParticipantAccountArgs {
   username: string
   password: string
   isProfilePublic: boolean
+  courseId?: string | null
   signedLtiData?: string | null
 }
 
@@ -257,38 +465,47 @@ export async function createParticipantAccount(
     isProfilePublic,
     username,
     password,
+    courseId,
     signedLtiData,
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
   if (signedLtiData) {
-    try {
+    const account = await ctx.prisma.$transaction(async (prisma) => {
       const ltiData = JWT.verify(
         signedLtiData,
         process.env.APP_SECRET as string
-      ) as { email: string; sub: string }
+      ) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
       // check if the username is already taken by another user
-      const existingUser = await ctx.prisma.participant.findUnique({
-        where: { username },
+      const existingUser = await prisma.participant.findMany({
+        where: {
+          OR: [{ username: username.trim() }, { email: ltiData.email }],
+        },
       })
 
-      if (existingUser) {
-        // another user already uses the requested username, returning old user
+      if (existingUser.length > 0) {
+        // another user already uses the requested username or email, returning old user
         return null
       }
 
-      const account = await ctx.prisma.participantAccount.create({
+      const account = await prisma.participantAccount.create({
         data: {
           ssoId: ltiData.sub,
+          ssoType: ltiData.scope,
           participant: {
-            create: {
-              email: ltiData.email,
-              username,
-              password: await bcrypt.hash(password, 10),
-              isEmailValid: true,
-              isProfilePublic,
-              isSSOAccount: true,
-              lastLoginAt: new Date(),
+            connectOrCreate: {
+              where: {
+                email: ltiData.email.toLowerCase(),
+              },
+              create: {
+                email: ltiData.email.toLowerCase(),
+                username: username.trim(),
+                password: await bcrypt.hash(password, 10),
+                isEmailValid: true,
+                isProfilePublic,
+                isSSOAccount: true,
+                lastLoginAt: new Date(),
+              },
             },
           },
         },
@@ -297,11 +514,44 @@ export async function createParticipantAccount(
         },
       })
 
-      const jwt = createParticipantToken(account.participant.id)
+      // if a courseId is specified, add a participation in the corresponding course
+      if (courseId) {
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: account.participant.id,
+            },
+          },
+          create: {
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: account.participant.id,
+              },
+            },
+          },
+          update: {},
+        })
+      }
 
-      ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+      return account
+    })
 
-      ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+    if (!account) return null
+
+    try {
+      const jwt = await doParticipantLogin(
+        {
+          participantId: account.participant.id,
+          participantLocale: account.participant.locale,
+        },
+        ctx
+      )
 
       return {
         participant: account.participant,
@@ -314,32 +564,88 @@ export async function createParticipantAccount(
   }
 
   try {
-    const participant = await ctx.prisma.participant.create({
-      data: {
-        email,
-        username,
-        password: await bcrypt.hash(password, 10),
-        isEmailValid: false,
-        isProfilePublic,
-        isSSOAccount: false,
-        lastLoginAt: new Date(),
-      },
+    const participant = await ctx.prisma.$transaction(async (prisma) => {
+      const participant = await prisma.participant.create({
+        data: {
+          email: email.trim().toLowerCase(),
+          username: username.trim(),
+          password: await bcrypt.hash(password, 10),
+          isEmailValid: false,
+          isProfilePublic,
+          isSSOAccount: false,
+          lastLoginAt: new Date(),
+        },
+      })
+
+      // if a courseId is specified, add a participation in the corresponding course
+      if (courseId) {
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: participant.id,
+            },
+          },
+          create: {
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: participant.id,
+              },
+            },
+          },
+          update: {},
+        })
+      }
+
+      return participant
     })
 
-    const jwt = createParticipantToken(participant.id)
+    const activationJWT = JWT.sign(
+      {
+        sub: participant.id,
+        role: UserRole.PARTICIPANT,
+        scope: UserLoginScope.ACTIVATION,
+      },
+      process.env.APP_SECRET as string,
+      {
+        algorithm: 'HS256',
+        expiresIn: '60 minutes',
+      }
+    )
 
-    ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+    const activationLink = `${
+      process.env.NODE_ENV === 'production' ? 'https' : 'http'
+    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
 
-    ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+    const emailHtml = await EmailService.hydrateTemplate(
+      {
+        templateName: 'ParticipantAccountActivation',
+        variables: { LINK: activationLink },
+      },
+      ctx
+    )
+
+    if (!emailHtml) return null
 
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email}`
+      `New participant account created: ${participant.email} with activation link ${activationLink}`
     )
+
+    await EmailService.sendEmail({
+      to: email,
+      subject: 'KlickerUZH - Account Activation',
+      text: `Please click on the following link to activate your KlickerUZH account: ${activationLink} (validity: 60 minutes)`,
+      html: emailHtml,
+    })
 
     return {
       participant,
-      participantToken: jwt,
     }
   } catch (e) {
     console.error(e)
@@ -349,34 +655,104 @@ export async function createParticipantAccount(
         e || 'missing'
       }`
     )
+
     return null
   }
 }
 
 interface LoginParticipantWithLtiArgs {
   signedLtiData: string
+  courseId?: string | null
 }
 
 export async function loginParticipantWithLti(
-  { signedLtiData }: LoginParticipantWithLtiArgs,
+  { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
-  const ltiData = JWT.verify(signedLtiData, process.env.APP_SECRET as string)
+  const ltiData = JWT.verify(
+    signedLtiData,
+    process.env.APP_SECRET as string
+  ) as {
+    sub: string
+    email?: string
+    scope: string
+  }
 
-  const account = await ctx.prisma.participantAccount.findUnique({
+  console.log('ltiData', ltiData)
+
+  let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
     include: {
       participant: true,
     },
   })
 
+  console.log('account', account)
+
+  // check if there is a participant account already given the email address
+  // if so, create a new participant account with the LTI data and new sub
+  if (!account && ltiData.email) {
+    const existingParticipant = await ctx.prisma.participant.findUnique({
+      where: { email: ltiData.email },
+    })
+
+    console.log('existingParticipant', existingParticipant)
+
+    if (!existingParticipant) {
+      return null
+    }
+
+    account = await ctx.prisma.participantAccount.create({
+      data: {
+        ssoId: ltiData.sub,
+        ssoType: ltiData.scope,
+        participant: {
+          connect: {
+            id: existingParticipant.id,
+          },
+        },
+      },
+      include: {
+        participant: true,
+      },
+    })
+  }
+
   if (!account?.participant) return null
 
-  const jwt = createParticipantToken(account.participant.id)
+  if (courseId) {
+    const participation = await ctx.prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: account.participant.id,
+        },
+      },
+      create: {
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participant: {
+          connect: {
+            id: account.participant.id,
+          },
+        },
+      },
+      update: {},
+    })
 
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+    console.log('participation', participation)
+  }
 
-  ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+  const jwt = await doParticipantLogin(
+    {
+      participantId: account.participant.id,
+      participantLocale: account.participant.locale,
+    },
+    ctx
+  )
 
   return {
     participant: account.participant,
@@ -402,15 +778,28 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
-export async function checkUsernameAvailability(
+export async function checkParticipantNameAvailable(
   { username }: { username: string },
   ctx: Context
 ) {
   const participant = await ctx.prisma.participant.findUnique({
-    where: { username },
+    where: { username: username.trim() },
   })
 
   if (!participant || participant.id === ctx.user?.sub) return true
+
+  return false
+}
+
+export async function checkShortnameAvailable(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { shortname: shortname.trim() },
+  })
+
+  if (!user || user.id === ctx.user?.sub) return true
 
   return false
 }
@@ -429,7 +818,7 @@ export async function createUserLogin(
   const login = await ctx.prisma.userLogin.create({
     data: {
       password: hashedPassword,
-      name,
+      name: name.trim(),
       // scope,
       // TODO: allow creation of other access levels once auth is handled granularly
       scope: UserLoginScope.FULL_ACCESS,
@@ -470,7 +859,7 @@ export async function changeShortname(
 ) {
   // check if the shortname is already taken
   const existingUser = await ctx.prisma.user.findUnique({
-    where: { shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -484,18 +873,34 @@ export async function changeShortname(
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
-    data: { shortname },
+    data: { shortname: shortname.trim() },
+  })
+
+  return user
+}
+
+export async function changeEmailSettings(
+  { projectUpdates }: { projectUpdates: boolean },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { sendProjectUpdates: projectUpdates },
   })
 
   return user
 }
 
 export async function changeInitialSettings(
-  { shortname, locale }: { shortname: string; locale: Locale },
+  {
+    shortname,
+    locale,
+    sendUpdates,
+  }: { shortname: string; locale: Locale; sendUpdates: boolean },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
-    where: { shortname },
+    where: { shortname: shortname.trim() },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -513,8 +918,9 @@ export async function changeInitialSettings(
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
     data: {
-      shortname,
+      shortname: shortname.trim(),
       locale,
+      sendProjectUpdates: sendUpdates,
       firstLogin: false,
     },
   })
@@ -524,14 +930,16 @@ export async function changeInitialSettings(
 
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
-  const questionSC = await ctx.prisma.question.create({
+  const questionSC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion SC',
-      type: DB.QuestionType.SC,
-      displayMode: DB.QuestionDisplayMode.GRID,
+      type: DB.ElementType.SC,
       content:
         'Which of the following statements is applicable to _KlickerUZH_?',
       options: {
+        displayMode: DisplayMode.GRID,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -562,8 +970,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'For Single Choice questions, you can specify a correct solution, answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 1,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -591,13 +997,16 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create multiple choice demo question
-  const questionMC = await ctx.prisma.question.create({
+  const questionMC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion MC',
-      type: DB.QuestionType.MC,
+      type: DB.ElementType.MC,
       content:
         'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
       options: {
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -632,8 +1041,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'Multiple Choice questions can have multiple correct answers. You can specify answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 2,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -651,13 +1058,16 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create KPRIM demo question
-  const questionKPRIM = await ctx.prisma.question.create({
+  const questionKPRIM = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion KPRIM',
-      type: DB.QuestionType.KPRIM,
+      type: DB.ElementType.KPRIM,
       content:
         'Which of the following statements is applicable to _KlickerUZH_? (multiple correct answers possible)',
       options: {
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -690,8 +1100,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'KPRIM questions differ from Multiple Choice questions in that they use a different grading approach and consist of exactly four answer possibilities, which have to be selected to be true or false. You can specify answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 3,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -709,13 +1117,15 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Numerical demo question
-  const questionNR = await ctx.prisma.question.create({
+  const questionNR = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion NR',
-      type: DB.QuestionType.NUMERICAL,
+      type: DB.ElementType.NUMERICAL,
       content:
         'Estimate the length of the **longest** river in the world (answer in kilometres).',
       options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
         unit: 'km',
         accuracy: 0,
         restrictions: { max: 10000, min: 0 },
@@ -724,7 +1134,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'Numerical questions can contain additional restrictions, like minimum and maximum values as well as display units. It is also possible to specify valid ranges, which are considered to be correct for graded and gamified settings, as well as a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 4,
-      hasSampleSolution: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -742,19 +1151,71 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Free Text demo question
-  const questionFT = await ctx.prisma.question.create({
+  const questionFT = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion FT',
-      type: DB.QuestionType.FREE_TEXT,
+      type: DB.ElementType.FREE_TEXT,
       content: 'Describe a main principle of a social market economy.',
       options: {
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
         solutions: ['fair competition', 'private companies', 'balance'],
         restrictions: { maxLength: 150 },
       },
       explanation:
         'Free Text questions can contain additional restrictions, like a maximum length, as well as sample solutions for graded and gamified settings. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 4,
-      hasSampleSolution: true,
+      owner: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      tags: {
+        connect: {
+          ownerId_name: {
+            ownerId: ctx.user.sub,
+            name: 'Demo Tag',
+          },
+        },
+      },
+    },
+  })
+
+  // create demo Flashcard
+  const flashcard = await ctx.prisma.element.create({
+    data: {
+      name: 'Demo Flashcard',
+      type: DB.ElementType.FLASHCARD,
+      content: 'What is the main use case for Flashcards?',
+      options: {},
+      explanation:
+        'Flashcards are a great way to learn educational content by heart. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images.',
+      pointsMultiplier: 1,
+      owner: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      tags: {
+        connect: {
+          ownerId_name: {
+            ownerId: ctx.user.sub,
+            name: 'Demo Tag',
+          },
+        },
+      },
+    },
+  })
+
+  // create demo Content Element
+  const contentElement = await ctx.prisma.element.create({
+    data: {
+      name: 'Demo Content Element',
+      type: DB.ElementType.CONTENT,
+      content:
+        'Content elements are a great way to provide additional information to your students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in asynchronous KlickerUZH elements before asking a series of questions.',
+      options: {},
       owner: {
         connect: {
           id: ctx.user.sub,

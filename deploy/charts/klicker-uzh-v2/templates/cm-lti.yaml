@@ -1,0 +1,25 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-lti
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  DF_DOMAIN: {{ .Values.dfDomain | quote }}
+  LTI_DB_TYPE: {{ .Values.lti.db.type | quote }}
+  LTI_DB_HOST: {{ .Values.lti.db.host | quote }}
+  LTI_DB_PORT: {{ .Values.lti.db.port | quote }}
+  LTI_DB_NAME: {{ .Values.lti.db.name | quote }}
+  LTI_DB_USER: {{ .Values.lti.db.username | quote }}
+  LTI_CLIENT_ID: {{ .Values.lti.clientId | quote }}
+  LTI_REDIRECT_URL: {{ .Values.lti.redirectURL | quote }}
+  LTI_PORT: {{ .Values.lti.port | quote }}
+  LTI_URL: {{ .Values.lti.url | quote }}
+  LTI_NAME: {{ .Values.lti.name | quote }}
+  LTI_AUTH_ENDPOINT: {{ .Values.lti.authEndpoint | quote }}
+  LTI_TOKEN_ENDPOINT: {{ .Values.lti.tokenEndpoint | quote }}
+  LTI_KEYS_ENDPOINT: {{ .Values.lti.keysEndpoint | quote }}
+  COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}
+  LTI_DEV_MODE: {{ .Values.lti.devMode | quote }}
+  LTI_AAS_MODE: {{ .Values.lti.ltiaas | quote }}

@@ -1,0 +1,89 @@
+---
+title: Grading Logic
+---
+
+In order to distribute points, XP and achievements based on the performance of the participants in various activities, an automated grading logic has been implemented in KlickerUZH. This chapter provides a detailed explanation of the approaches employed for different element and activity types, including practice quizzes, microlearnings and live quizzes.
+
+The presented grading approach assumes that all considered questions have a defined correct solution (or possibly multiple solutions), as this is required in asynchronous activities, except for free-text questions. During live sessions where questions without sample solutions were used, the participants are awarded a fixed amount of 10 points for taking part in each poll. Please also note that the [grading approach for live quizzes](#grading-in-live-quizzes) slightly extends the logic of asynchronous activities and that some element types are only available in select activities.
+
+## Grading by Question Type
+
+The grading logic will first be described on the example of practice quizzes and microlearnings. The additional bonus components for fast and correct answers during live quizzes will be explained in a [dedicated section](#grading-in-live-quizzes).
+
+### Multiplier
+
+The point multipliers, which can be specified both on a question and activity level, are combined during the creation of the activity and applied to the total awarded points (including basic points and potential bonuses). If no multipliers were specified, this factor defaults to 1.
+
+Multipliers can be used to weigh questions according to their difficulty and reward participation in certain quizzes with more points (e.g. quiz on exam level during the last lecture of the semester vs. an introductory quiz in the first lecture). The same multiplier concept also applies to live sessions.
+
+### Grading Single Choice Questions
+
+Single choice questions have a single correct answer, by definition, wherefore participants will receive 10 points, multiplied with any potential multipliers, if they answer correctly.
+
+$$
+\text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{answer correct} \\ 0 & \text{otherwise} \end{cases}
+$$
+
+### Grading Multiple Choice Questions
+
+For multiple choice questions with $n$ answer options, all of them can be selected to be correct or incorrect. Each option is considered separately during grading, and every mismatch between the correct solution and the participant’s input is counted as one mistake. The awarded number of points then depends on the percentage of correctly answered questions:
+
+$$
+\text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 10 \cdot \left( 1 - 2 \cdot \frac{\text{wrong answers}}{\text{available answers}} \right) & \text{partially correct} \\ 0 & \text{otherwise} \end{cases}
+$$
+
+<div align="center">
+  <img
+    style={{ width: 600 }}
+    alt="MC Grading Logic Illustration"
+    src="/img_v3/19_MC_awarded_points.svg"
+  />
+</div>
+
+The participant will therefore receive full points for a completely correct response and partial points until less than 50% of the answers are correct. In the shown example, there were 7 potentially correct answer options.
+
+### Grading KPRIM Questions
+
+The grading logic for KPRIM questions is very similar to the presented implementation for multiple choice questions as KPRIM questions can be seen as a special case of multiple choice questions with exactly four answer options and a unified grading scheme. Given the fixed number of answer options, participants will receive full points for a completely correct answer, half the maximum points for a single mistake and no points otherwise.
+
+$$
+\text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 5 & \text{single mistake} \\ 0 & \text{otherwise} \end{cases}
+$$
+
+<div align="center">
+  <img
+    style={{ width: 600 }}
+    alt="KPRIM Grading Logic Illustration"
+    src="/img_v3/20_KPRIM_awarded_points.svg"
+  />
+</div>
+
+### Grading Numerical Questions
+
+For numerical questions, you are able to specify a number of solution ranges. If the participant’s entered response is within one of these ranges, it is considered to be correct and will be awarded full points and no points otherwise (as for single choice questions).
+
+### Grading Free Text Questions
+
+For free text questions, you can currently specify a selection of correct responses. The implemented simple grading approach compares the participant’s input to this sample solution, ignoring capitalization of letters and leading / trailing whitespaces. Again, full points are awarded for correct answers and no points otherwise (as for single choice questions).
+
+## Grading in Live Quizzes
+
+During synchronous live quizzes, every participant will receive 10 points for each submitted answer, independent of its correctness. If the submitted answer is correct, 5 additional points will be awarded. For partially correct answers, these 5 points are multiplied with a factor described in the sections above. If no sample solution is defined, students will not receive any time-dependent bonus, but only the fixed amount of 10 points (no multiplication with multiplier).
+
+To incentivize fast and correct answers during live sessions, additional bonus points are awarded. Starting time with the first correct answer, players will receive up to 45 points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
+
+The corresponding resulting point curves for correct and wrong answers during live sessions, when starting time with the first correct response, are shown in the plot below (not considering multipliers).
+
+<div align="center">
+  <img
+    style={{ width: 600 }}
+    alt="Illustration of Grading in Live Sessions"
+    src="/img_v3/21_live_quiz_awarded_points.svg"
+  />
+</div>
+
+### Advanced: Customized Grading
+
+For advanced use cases, it is also possible to customized the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened after selecting a gamified course, you can now choose a custom number of maximum bonus points and a custom duration for these to fade over time. A side-by-side illustration indicates the points awarded for a correct answer over time.
+
+![Advanced settings modal for customized point distribution](/img_v3/22_live_quiz_customized_grading.png)

@@ -1,0 +1,53 @@
+model Course {
+  id String @id @default(uuid()) @db.Uuid
+
+  isArchived Boolean @default(false)
+
+  pinCode Int @unique
+
+  name                  String
+  displayName           String
+  description           String?
+  color                 String   @default("#eaa07d")
+  startDate             DateTime
+  endDate               DateTime
+  notificationEmail     String?
+  isGamificationEnabled Boolean  @default(true)
+  areAnalyticsValid     Boolean  @default(false)
+
+  isGroupCreationEnabled    Boolean  @default(true)
+  groupDeadlineDate         DateTime
+  preferredGroupSize        Int      @default(3)
+  maxGroupSize              Int      @default(5)
+  randomAssignmentFinalized Boolean  @default(false)
+
+  sessions                   LiveSession[]
+  elementStacks              ElementStack[]
+  practiceQuizzes            PracticeQuiz[]
+  groupActivities            GroupActivity[]
+  leaderboard                LeaderboardEntry[]
+  awards                     AwardEntry[]
+  classAchievements          ClassAchievementInstance[]
+  achievements               Achievement[]
+  titles                     Title[]
+  participations             Participation[]
+  subscriptions              PushSubscription[]
+  participantGroups          ParticipantGroup[]
+  microLearnings             MicroLearning[]
+  liveQuizzes                LiveQuiz[]
+  participantAnalytics       ParticipantAnalytics[]
+  aggregatedAnalytics        AggregatedAnalytics[]
+  aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
+  participantCourseAnalytics ParticipantCourseAnalytics[]
+  responses                  QuestionResponse[]
+  groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
+
+  competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  competencyTreeId Int?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

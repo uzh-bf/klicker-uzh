@@ -1,0 +1,27 @@
+query GetCourseGroups($courseId: String!) {
+  getCourseGroups(courseId: $courseId) {
+    participantGroups {
+      id
+      name
+      code
+      averageMemberScore
+      groupActivityScore
+      participants {
+        id
+        username
+        score
+        email
+        avatar
+      }
+    }
+    groupAssignmentPoolEntries {
+      id
+      participant {
+        id
+        username
+        email
+        avatar
+      }
+    }
+  }
+}

@@ -30,7 +30,7 @@ function LazyHMACLink({
   })
 
   if (sessionHMAC.loading || !sessionHMAC.data?.sessionHMAC) {
-    return ''
+    return <></>
   }
 
   const link = `${
@@ -40,14 +40,14 @@ function LazyHMACLink({
   }`
 
   return (
-    <div className="flex flex-row items-center gap-3 px-1.5 py-0.5 mr-2 border border-solid rounded bg-uzh-grey-40">
+    <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
       <FontAwesomeIcon
         icon={faClipboard}
         className="hover:cursor-pointer"
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
-      <Link href={link} target="_blank">
-        {link}
+      <Link href={link} target="_blank" legacyBehavior passHref>
+        <a data-cy={`open-embedding-link-session-${sessionId}`}>{link}</a>
       </Link>
     </div>
   )
@@ -84,7 +84,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
       }
       className={{
         content:
-          'h-max max-h-[calc(100%-5rem)] overflow-y-scroll w-full md:w-max md:min-w-[30rem] my-auto mx-auto',
+          'mx-auto my-auto h-max max-h-[calc(100%-5rem)] w-full overflow-y-scroll md:w-max md:min-w-[30rem]',
       }}
       hideCloseButton
     >
@@ -93,10 +93,10 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
         {questions?.map((question: any, ix: number) => {
           return (
             <div key={question.id}>
-              <div className="w-full font-bold line-clamp-1">{`${ix + 1}. ${
+              <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
                 question.questionData.name
               }`}</div>
-              <div className="flex flex-row items-center gap-3 px-1.5 py-0.5 mr-2 border border-solid rounded bg-uzh-grey-40">
+              <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
                 <LazyHMACLink
                   sessionId={sessionId}
                   params={`questionIx=${ix}`}
@@ -107,7 +107,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
         })}
       </div>
       <div className="mt-3">
-        <div className="font-bold w-30">{t('shared.generic.leaderboard')}:</div>
+        <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
         <LazyHMACLink sessionId={sessionId} params={`leaderboard=true`} />
       </div>
     </Modal>

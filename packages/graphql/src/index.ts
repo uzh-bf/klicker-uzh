@@ -1,12 +1,13 @@
-export { default as enhanceContext } from './lib/context'
+export { default as enhanceContext } from './lib/context.js'
 
-import builder from './builder'
+import builder from './builder.js'
 
 import './schema/achievement'
 import './schema/course'
+import './schema/elementData'
+import './schema/evaluation'
 import './schema/groupActivity'
-import './schema/learningElements'
-import './schema/microSession'
+import './schema/microLearning'
 import './schema/participant'
 import './schema/question'
 import './schema/questionData'

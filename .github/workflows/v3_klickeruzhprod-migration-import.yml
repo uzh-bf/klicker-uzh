@@ -3,17 +3,15 @@ name: Build and deploy func-migration-v3-import to Azure Function App (Productio
 on:
   push:
     branches:
-      # - 'v3'
-      - 'v3.1-dev'
-      # - 'CI'
-    # paths:
-    #   - 'apps/func-migration-v3/**'
-    #   - '.github/workflows/v3_klickeruzhprod-migration-import**'
+      - 'v3'
+    paths:
+      - 'apps/func-migration-v3-import/**'
+      - '.github/workflows/v3_klickeruzhprod-migration-import**'
   workflow_dispatch:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-migration-v3-import'
-  NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  NODE_VERSION: '20.17.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build-and-deploy:
@@ -29,12 +27,12 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.6.12
+          version: 9.9.0
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm dlx turbo prune --scope @klicker-uzh/func-migration-v3-import
+          pnpm dlx turbo@2.1.0 prune --scope @klicker-uzh/func-migration-v3-import
           pushd out
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies

@@ -1,16 +1,24 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import builder from '../builder'
-import { GroupActivity } from './groupActivity'
-import type { ILearningElement } from './learningElements'
-import { LearningElementRef } from './learningElements'
-import type { IMicroSession } from './microSession'
-import { MicroSessionRef } from './microSession'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { Participant, ParticipantGroup, Participation } from './participant'
-import type { ISession } from './session'
-import { SessionRef } from './session'
-import { UserRef } from './user'
+import builder from '../builder.js'
+import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
+import { IMicroLearning, MicroLearningRef } from './microLearning.js'
+import type {
+  IGroupAssignmentPoolEntryRef,
+  IParticipant,
+  IParticipantGroup,
+  IParticipation,
+} from './participant.js'
+import {
+  GroupAssignmentPoolEntryRef,
+  ParticipantGroupRef,
+  ParticipantRef,
+  ParticipationRef,
+} from './participant.js'
+import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
+import type { ISession } from './session.js'
+import { SessionRef } from './session.js'
+import { IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -18,14 +26,15 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-
   sessions?: ISession[]
-  learningElements?: ILearningElement[]
-  microSessions?: IMicroSession[]
-  groupActivities?: DB.GroupActivity[]
+  practiceQuizzes?: IPracticeQuiz[]
+  microLearnings?: IMicroLearning[]
+  participantGroups?: IParticipantGroup[]
+  groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
+  groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
-  awards?: DB.AwardEntry[]
-  owner?: DB.User
+  awards?: IAwardEntry[]
+  owner?: IUser
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
@@ -36,7 +45,7 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    color: t.exposeString('color', { nullable: true }),
+    color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
@@ -59,10 +68,14 @@ export const Course = builder.objectType(CourseRef, {
     startDate: t.expose('startDate', { type: 'Date' }),
     endDate: t.expose('endDate', { type: 'Date' }),
 
+    isGroupCreationEnabled: t.exposeBoolean('isGroupCreationEnabled'),
     groupDeadlineDate: t.expose('groupDeadlineDate', {
       type: 'Date',
       nullable: true,
     }),
+    maxGroupSize: t.exposeInt('maxGroupSize'),
+    preferredGroupSize: t.exposeInt('preferredGroupSize'),
+    randomAssignmentFinalized: t.exposeBoolean('randomAssignmentFinalized'),
 
     notificationEmail: t.exposeString('notificationEmail', {
       nullable: true,
@@ -76,23 +89,31 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
     sessions: t.expose('sessions', {
       type: [SessionRef],
       nullable: true,
     }),
-    learningElements: t.expose('learningElements', {
-      type: [LearningElementRef],
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [PracticeQuizRef],
       nullable: true,
     }),
-    microSessions: t.expose('microSessions', {
-      type: [MicroSessionRef],
+    microLearnings: t.expose('microLearnings', {
+      type: [MicroLearningRef],
+      nullable: true,
+    }),
+    participantGroups: t.expose('participantGroups', {
+      type: [ParticipantGroupRef],
+      nullable: true,
+    }),
+    groupAssignmentPoolEntries: t.expose('groupAssignmentPoolEntries', {
+      type: [GroupAssignmentPoolEntryRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
-      type: [GroupActivity],
+      type: [GroupActivityRef],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
@@ -110,14 +131,58 @@ export const Course = builder.objectType(CourseRef, {
   }),
 })
 
+export interface ICourseSummary {
+  numOfParticipations: number
+  numOfLiveQuizzes: number
+  numOfPracticeQuizzes: number
+  numOfMicroLearnings: number
+  numOfGroupActivities: number
+  numOfLeaderboardEntries: number
+  numOfParticipantGroups: number
+}
+export const CourseSummaryRef =
+  builder.objectRef<ICourseSummary>('CourseSummary')
+export const CourseSummary = CourseSummaryRef.implement({
+  fields: (t) => ({
+    numOfParticipations: t.exposeInt('numOfParticipations'),
+    numOfLiveQuizzes: t.exposeInt('numOfLiveQuizzes'),
+    numOfPracticeQuizzes: t.exposeInt('numOfPracticeQuizzes'),
+    numOfMicroLearnings: t.exposeInt('numOfMicroLearnings'),
+    numOfGroupActivities: t.exposeInt('numOfGroupActivities'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups'),
+  }),
+})
+
+export interface IStudentCourse extends DB.Course {
+  owner: IUser
+}
+export const StudentCourseRef =
+  builder.objectRef<IStudentCourse>('StudentCourse')
+export const StudentCourse = builder.objectType(StudentCourseRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    displayName: t.exposeString('displayName'),
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    color: t.exposeString('color'),
+    description: t.exposeString('description', { nullable: true }),
+
+    owner: t.expose('owner', {
+      type: UserRef,
+    }),
+  }),
+})
+
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
+  email: string
   avatar?: string | null
   rank: number
-  lastBlockOrder: number
+  lastBlockOrder?: number
   isSelf?: boolean
+  level: number
   participant: IParticipant
-  participation: DB.Participation
+  participation: IParticipation
 }
 export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
@@ -127,21 +192,23 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
 
     score: t.exposeFloat('score'),
     username: t.exposeString('username'),
+    email: t.exposeString('email', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     rank: t.exposeInt('rank'),
-    lastBlockOrder: t.exposeInt('lastBlockOrder'),
+    lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
+    level: t.exposeInt('level'),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
     participantId: t.exposeString('participantId'),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
     }),
   }),
 })
@@ -179,8 +246,8 @@ export const GroupLeaderboardEntry = builder
   })
 
 export interface IAwardEntry extends DB.AwardEntry {
-  participant?: IParticipant
-  participantGroup?: IParticipantGroup
+  participant?: IParticipant | null
+  participantGroup?: IParticipantGroup | null
 }
 export const AwardEntryRef = builder.objectRef<IAwardEntry>('AwardEntry')
 export const AwardEntry = AwardEntryRef.implement({
@@ -194,12 +261,12 @@ export const AwardEntry = AwardEntryRef.implement({
     description: t.exposeString('description'),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
 
     participantGroup: t.expose('participantGroup', {
-      type: ParticipantGroup,
+      type: ParticipantGroupRef,
       nullable: true,
     }),
   }),

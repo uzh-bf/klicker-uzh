@@ -17,7 +17,7 @@ export const importQuestionInstances = async (
 ) => {
   try {
     let mappedQuestionInstancesIds: Record<string, number> = {}
-    const questions = await prisma.question.findMany({
+    const questions = await prisma.element.findMany({
       where: {
         id: {
           in: Object.values(mappedQuestionIds),
@@ -62,7 +62,7 @@ export const importQuestionInstances = async (
               return null
             }
 
-            let questionData = {}
+            let questionData: any = {}
             let questionId = null
             const question = questions.find(
               (question) =>
@@ -70,10 +70,12 @@ export const importQuestionInstances = async (
             )
 
             if (question) {
+              questionId = question.id
               questionData = {
                 ...question,
+                id: `${questionId}-v1`,
+                questionId,
               }
-              questionId = question?.id
             }
 
             if (
@@ -91,7 +93,7 @@ export const importQuestionInstances = async (
 
             let results = {}
 
-            if (questionInstance.results) {
+            if (question && questionInstance.results) {
               if (questionData.type === 'SC' || questionData.type === 'MC') {
                 if (questionInstance.results.CHOICES) {
                   results = questionInstance.results.CHOICES.reduce(
@@ -161,7 +163,7 @@ export const importQuestionInstances = async (
         return []
       })
 
-      await Promise.allSettled(
+      await Promise.all(
         preparedQuestionInstances.map((questionInstance) =>
           prisma.$transaction(async (prisma) => {
             const newQuestionInstance = await prisma.questionInstance.create({
@@ -172,9 +174,9 @@ export const importQuestionInstances = async (
               newQuestionInstance.id
 
             if (questionInstance.questionData.id) {
-              await prisma.question.update({
+              await prisma.element.update({
                 where: {
-                  id: questionInstance.questionData.id,
+                  id: questionInstance.questionData.questionId,
                 },
                 data: {
                   instances: {

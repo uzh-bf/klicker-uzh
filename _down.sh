@@ -1,3 +1,3 @@
 #!/bin/sh
 
-podman-compose down postgres redis_exec redis_cache reverse_proxy
+docker compose down postgres redis_exec redis_cache reverse_proxy_docker

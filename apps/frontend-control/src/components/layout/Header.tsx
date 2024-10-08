@@ -15,14 +15,15 @@ function Header({ title }: HeaderProps) {
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   return (
-    <div className="fixed top-0 flex flex-row items-center justify-between w-full px-2 text-white h-11 md:px-4 bg-slate-800">
-      <div className="text-lg font-bold line-clamp-1">{title}</div>
+    <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
+      <div className="line-clamp-1 text-lg font-bold">{title}</div>
       <div className="flex flex-row gap-4">
         <Select
+          basic
           value={router.locale}
           items={[
-            { value: 'de', label: 'DE' },
-            { value: 'en', label: 'EN' },
+            { value: 'de', label: 'DE', data: { cy: 'language-de' } },
+            { value: 'en', label: 'EN', data: { cy: 'language-en' } },
           ]}
           onChange={(newValue: string) =>
             router.push({ pathname, query }, asPath, {
@@ -30,20 +31,19 @@ function Header({ title }: HeaderProps) {
             })
           }
           className={{
-            trigger:
-              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+            trigger: 'h-max w-max text-white',
           }}
-          basic
+          data={{ cy: 'language-select' }}
         />
         <Button
           basic
           onClick={async () => {
             const userIdLogout = await logoutUser()
-            // TODO: proper error handling
             userIdLogout.data?.logoutUser
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
           }}
+          data={{ cy: 'logout-control-button' }}
         >
           <FontAwesomeIcon icon={faRightFromBracket} />
         </Button>

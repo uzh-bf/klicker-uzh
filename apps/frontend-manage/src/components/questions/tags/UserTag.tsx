@@ -11,11 +11,19 @@ interface Props {
   tag: Tag
   handleTagClick: (tag: string) => void
   active: boolean
+  isStatic?: boolean
   onMoveUp?: () => void
   onMoveDown?: () => void
 }
 
-function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
+function UserTag({
+  tag,
+  handleTagClick,
+  active,
+  isStatic = false,
+  onMoveDown,
+  onMoveUp,
+}: Props) {
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
 
@@ -23,8 +31,8 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
     <>
       <li
         className={twMerge(
-          'px-4 hover:cursor-pointer flex flex-row justify-between group',
-          active && 'text-primary'
+          'group flex flex-row justify-between px-4 hover:cursor-pointer',
+          active && 'text-primary-100'
         )}
       >
         {editMode ? (
@@ -35,8 +43,9 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
               basic
               onClick={(): void => handleTagClick(tag.name)}
               className={{
-                root: 'flex-1 sm:hover:text-primary whitespace-nowrap overflow-hidden',
+                root: 'hover:text-primary-100 flex-1 overflow-hidden whitespace-nowrap',
               }}
+              data={{ cy: `user-tag-${tag.name}` }}
             >
               <Tooltip
                 tooltip={tag.name}
@@ -53,9 +62,11 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
             <TagActions
               tag={tag}
               active={active}
-              setEditMode={setEditMode}
-              isDeletionModalOpen={isDeletionModalOpen}
-              setIsDeletionModalOpen={setIsDeletionModalOpen}
+              setEditMode={isStatic ? undefined : setEditMode}
+              isDeletionModalOpen={isStatic ? undefined : isDeletionModalOpen}
+              setIsDeletionModalOpen={
+                isStatic ? undefined : setIsDeletionModalOpen
+              }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
             />

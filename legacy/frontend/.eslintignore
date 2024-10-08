@@ -1,5 +1,0 @@
-.next/
-dist/
-src/lib/semantic
-*.stories.js
-next-env.d.ts

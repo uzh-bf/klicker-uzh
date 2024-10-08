@@ -1,27 +1,18 @@
-import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import isEmail from 'validator/lib/isEmail'
-import { Context, ContextWithUser } from '../lib/context'
+import isEmail from 'validator/lib/isEmail.js'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
-  username?: string | null
-  email?: string | null
+  username: string | null
+  email: string | null
   isProfilePublic?: boolean | null
-  avatar?: string | null
-  avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
-  {
-    password,
-    username,
-    avatar,
-    avatarSettings,
-    email,
-    isProfilePublic,
-  }: UpdateParticipantProfileArgs,
+  { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
@@ -39,7 +30,7 @@ export async function updateParticipantProfile(
   // check that username corresponds to no other participant
   if (username) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: { username },
+      where: { username: username.trim() },
     })
 
     if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
@@ -55,10 +46,9 @@ export async function updateParticipantProfile(
         data: {
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+          email: email?.toLowerCase(),
           password: hashedPassword,
-          username: username ?? undefined,
-          avatar: avatar ?? undefined,
-          avatarSettings: avatarSettings ?? undefined,
+          username: username?.trim() ?? undefined,
         },
       })
     } else {
@@ -71,8 +61,26 @@ export async function updateParticipantProfile(
     data: {
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
-      email: email ?? undefined,
-      username: username ?? undefined,
+      email: email?.toLowerCase(),
+      username: username?.trim(),
+    },
+  })
+
+  return participant
+}
+
+interface UpdateParticipantAvatarArgs {
+  avatar: string | null
+  avatarSettings: any
+}
+
+export async function updateParticipantAvatar(
+  { avatar, avatarSettings }: UpdateParticipantAvatarArgs,
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: {
       avatar: avatar ?? undefined,
       avatarSettings: avatarSettings ?? undefined,
     },
@@ -97,7 +105,7 @@ export async function getParticipations(
             : undefined,
           course: {
             include: {
-              microSessions: {
+              microLearnings: {
                 where: {
                   scheduledStartAt: {
                     lt: new Date(),
@@ -105,7 +113,8 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                  status: MicroSessionStatus.PUBLISHED,
+                  status: PublicationStatus.PUBLISHED,
+                  isDeleted: false,
                 },
               },
               sessions: {
@@ -121,7 +130,7 @@ export async function getParticipations(
   if (!participant) return []
 
   return R.sort(
-    R.ascend(R.prop<string>('course.displayName')),
+    R.ascend(R.prop('course.displayName')),
     participant.participations
   )
 }
@@ -389,14 +398,14 @@ export async function getParticipation(
 //   }
 // }
 
-interface BookmarkQuestionArgs {
+interface BookmarkElementStackArgs {
   stackId: number
   courseId: string
   bookmarked: boolean
 }
 
-export async function bookmarkQuestion(
-  { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
+export async function bookmarkElementStack(
+  { stackId, courseId, bookmarked }: BookmarkElementStackArgs,
   ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.update({
@@ -407,26 +416,26 @@ export async function bookmarkQuestion(
       },
     },
     data: {
-      bookmarkedStacks: {
+      bookmarkedElementStacks: {
         [bookmarked ? 'connect' : 'disconnect']: {
           id: stackId,
         },
       },
     },
     include: {
-      bookmarkedStacks: true,
+      bookmarkedElementStacks: true,
     },
   })
 
-  return participation.bookmarkedStacks
+  return participation.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-interface GetBookmarkedQuestionsArgs {
+interface GetBookmarkedElementStacksArgs {
   courseId: string
 }
 
-export async function getBookmarkedQuestions(
-  { courseId }: GetBookmarkedQuestionsArgs,
+export async function getBookmarkedElementStacks(
+  { courseId }: GetBookmarkedElementStacksArgs,
   ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.findUnique({
@@ -437,11 +446,21 @@ export async function getBookmarkedQuestions(
       },
     },
     include: {
-      bookmarkedStacks: {
+      bookmarkedElementStacks: {
         include: {
           elements: {
-            include: {
-              questionInstance: true,
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
+            orderBy: {
+              order: 'asc',
             },
           },
         },
@@ -449,45 +468,75 @@ export async function getBookmarkedQuestions(
     },
   })
 
-  return participation?.bookmarkedStacks ?? []
+  return participation?.bookmarkedElementStacks ?? []
 }
 
-export async function flagQuestion(
-  args: { questionInstanceId: number; content: string },
+export async function flagElement(
+  args: { elementInstanceId: number; elementId: number; content: string },
   ctx: ContextWithUser
 ) {
-  const questionInstance = await ctx.prisma.questionInstance.findUnique({
+  const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
-      id: args.questionInstanceId,
+      id: args.elementInstanceId,
     },
     include: {
-      stackElement: {
+      elementStack: {
         include: {
-          stack: {
+          practiceQuiz: {
             include: {
-              learningElement: {
-                include: {
-                  course: true,
-                },
-              },
+              course: true,
+            },
+          },
+          microLearning: {
+            include: {
+              course: true,
             },
           },
         },
       },
-      microSession: {
-        include: {
-          course: true,
+    },
+  })
+
+  const elementFeedback = await ctx.prisma.elementFeedback.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: args.elementInstanceId,
+      },
+    },
+    create: {
+      feedback: args.content,
+      element: {
+        connect: {
+          id: args.elementId,
         },
       },
+      elementInstance: {
+        connect: {
+          id: args.elementInstanceId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {
+      feedback: args.content,
     },
   })
 
   if (
-    !questionInstance?.stackElement?.stack?.learningElement?.course
-      ?.notificationEmail &&
-    !questionInstance?.microSession?.course?.notificationEmail
-  )
-    return null
+    !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
+    !elementInstance?.elementStack.microLearning?.course?.notificationEmail
+  ) {
+    // return early if no notification email has been specified -> only set database entry
+    return elementFeedback
+  }
+
+  const practiceQuiz = elementInstance.elementStack.practiceQuiz
+  const microLearning = elementInstance.elementStack.microLearning
 
   await fetch(process.env.NOTIFICATION_URL as string, {
     method: 'POST',
@@ -496,28 +545,131 @@ export async function flagQuestion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      elementType: questionInstance?.stackElement?.stack.learningElement
-        ? 'Learning Element'
-        : 'Micro-Session',
-      elementId:
-        questionInstance?.stackElement?.stack?.learningElement?.id ||
-        questionInstance?.microSession?.id,
-      elementName:
-        questionInstance?.stackElement?.stack?.learningElement?.name ||
-        questionInstance?.microSession?.name,
-      questionId: questionInstance.questionId,
-      questionName: questionInstance.questionData.name,
+      elementType: practiceQuiz !== null ? 'Practice Quiz' : 'Micro-Learning',
+      elementId: practiceQuiz?.id || microLearning?.id,
+      elementName: practiceQuiz?.name || microLearning?.name,
+      questionId: elementInstance.elementId,
+      questionName: elementInstance.elementData.name,
       content: args.content,
       participantId: ctx.user?.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
-        questionInstance.stackElement?.stack?.learningElement?.course
-          ?.notificationEmail ||
-        questionInstance.microSession?.course?.notificationEmail,
+        practiceQuiz?.course?.notificationEmail ||
+        microLearning?.course?.notificationEmail,
     }),
   })
 
-  return 'OK'
+  return elementFeedback
+}
+
+export async function rateElement(
+  args: { elementInstanceId: number; elementId: number; rating: number },
+  ctx: ContextWithUser
+) {
+  if (args.rating !== 1 && args.rating !== -1) {
+    return null
+  }
+
+  let elementFeedback = null
+  await ctx.prisma.$transaction(async (prisma) => {
+    // fetch previous element feedback
+    const prevFeedback = await ctx.prisma.elementFeedback.findUnique({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: args.elementInstanceId,
+        },
+      },
+    })
+
+    if (prevFeedback) {
+      // update existing element feedback
+      elementFeedback = await prisma.elementFeedback.update({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: ctx.user.sub,
+            elementInstanceId: args.elementInstanceId,
+          },
+        },
+        data: {
+          upvote: args.rating === 1,
+          downvote: args.rating === -1,
+        },
+      })
+
+      // update instance statistics (decrement by previous feedback first to only count last feedback)
+      await prisma.instanceStatistics.update({
+        where: {
+          elementInstanceId: args.elementInstanceId,
+        },
+        data: {
+          upvoteCount: {
+            increment: Number(args.rating === 1) - Number(prevFeedback.upvote),
+          },
+          downvoteCount: {
+            increment:
+              Number(args.rating === -1) - Number(prevFeedback.downvote),
+          },
+        },
+      })
+    } else {
+      // create new element feedback
+      elementFeedback = await prisma.elementFeedback.create({
+        data: {
+          upvote: args.rating === 1,
+          downvote: args.rating === -1,
+          elementInstance: {
+            connect: {
+              id: args.elementInstanceId,
+            },
+          },
+          element: {
+            connect: {
+              id: args.elementId,
+            },
+          },
+          participant: {
+            connect: {
+              id: ctx.user.sub,
+            },
+          },
+        },
+      })
+
+      // update instance statistics
+      await prisma.instanceStatistics.update({
+        where: {
+          elementInstanceId: args.elementInstanceId,
+        },
+        data: {
+          upvoteCount: {
+            increment: Number(args.rating === 1),
+          },
+          downvoteCount: {
+            increment: Number(args.rating === -1),
+          },
+        },
+      })
+    }
+  })
+
+  return elementFeedback
+}
+
+export async function getStackElementFeedbacks(
+  args: { elementInstanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  const elementFeedbacks = await ctx.prisma.elementFeedback.findMany({
+    where: {
+      elementInstanceId: {
+        in: args.elementInstanceIds,
+      },
+      participantId: ctx.user.sub,
+    },
+  })
+
+  return elementFeedbacks
 }
 
 export async function getPublicParticipantProfile(
@@ -582,4 +734,59 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
     participant: { ...participant, isSelf: true },
     achievements,
   }
+}
+
+export async function getPracticeCourses(ctx: ContextWithUser) {
+  // fetch participations including courses
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          elementStacks: true,
+        },
+      },
+    },
+  })
+
+  if (participations.length === 0) return []
+
+  // sort courses by end date descending
+  const courses = participations
+    .map((p) => p.course)
+    .filter((c) => c.elementStacks.length > 0)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+
+  return courses
+}
+
+export async function getPracticeQuizList(ctx: ContextWithUser) {
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          practiceQuizzes: {
+            where: {
+              status: PublicationStatus.PUBLISHED,
+              isDeleted: false,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participations || participations.length === 0) return []
+
+  const courses = participations
+    .map((p) => p.course)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+    .filter((course) => course.practiceQuizzes.length !== 0)
+
+  return courses
 }

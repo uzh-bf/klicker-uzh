@@ -1,0 +1,60 @@
+fragment ElementData on ElementInstance {
+  elementData {
+    id
+    elementId
+    name
+    type
+    content
+    explanation
+
+    ... on ChoicesElementData {
+      options {
+        hasSampleSolution
+        displayMode
+        choices {
+          ix
+          correct
+          feedback
+          value
+        }
+      }
+    }
+
+    ... on NumericalElementData {
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
+        }
+      }
+    }
+
+    ... on FreeTextElementData {
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
+        }
+        solutions
+      }
+    }
+
+    # ... on FlashcardElementData {
+    #   options {
+    #   }
+    # }
+
+    # ... on ContentElementData {
+    #   options {
+    #   }
+    # }
+  }
+}

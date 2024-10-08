@@ -6,6 +6,8 @@ import {
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
   SelfDocument,
+  Session,
+  SessionBlock,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
@@ -21,14 +23,26 @@ import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
-function Subscriber({ id, subscribeToMore }) {
+interface SubscriberProps {
+  id: string
+  subscribeToMore: any
+}
+
+function Subscriber({ id, subscribeToMore }: SubscriberProps) {
   useEffect(() => {
     subscribeToMore({
       document: RunningSessionUpdatedDocument,
       variables: {
         sessionId: id,
       },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { session: Session },
+        {
+          subscriptionData,
+        }: {
+          subscriptionData: { data: { runningSessionUpdated: SessionBlock } }
+        }
+      ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
           session: {
@@ -163,10 +177,10 @@ function Index({ id }: Props) {
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
-      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:mx-auto">
+      <div className="gap-4 md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
         <div
           className={twMerge(
-            'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
+            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
             isLiveQAEnabled && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||
@@ -176,7 +190,7 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div className={twMerge('bg-white min-h-full flex-1')}>
+              <div className={twMerge('min-h-full flex-1 bg-white')}>
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (
@@ -184,9 +198,9 @@ function Index({ id }: Props) {
             )
           ) : (
             <QuestionArea
-              expiresAt={activeBlock?.expiresAt}
+              expiresAt={activeBlock.expiresAt}
               questions={
-                activeBlock?.instances?.map((question: any) => {
+                activeBlock.instances?.map((question) => {
                   return {
                     ...question.questionData,
                     instanceId: question.id,
@@ -196,7 +210,7 @@ function Index({ id }: Props) {
               handleNewResponse={handleNewResponse}
               sessionId={id}
               timeLimit={activeBlock?.timeLimit as number}
-              execution={activeBlock?.execution || 0}
+              execution={activeBlock?.execution ?? 0}
             />
           )}
         </div>
@@ -204,7 +218,7 @@ function Index({ id }: Props) {
         {selfData?.self && isGamificationEnabled && (
           <div
             className={twMerge(
-              'bg-white hidden min-h-full flex-1 md:p-8',
+              'hidden min-h-full flex-1 bg-white md:p-8',
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
@@ -214,7 +228,7 @@ function Index({ id }: Props) {
 
         <div
           className={twMerge(
-            'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:rounded-lg',
+            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
             (isLiveQAEnabled || isConfusionFeedbackEnabled) && 'md:block',
             activeMobilePage === 'feedbacks' &&
               (isLiveQAEnabled || isConfusionFeedbackEnabled) &&

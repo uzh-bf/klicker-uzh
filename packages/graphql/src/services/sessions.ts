@@ -1,15 +1,17 @@
+// @ts-nocheck
+
 import {
   AccessMode,
   ConfusionTimestep,
-  LiveSession,
-  Question,
+  Element,
+  ElementType,
   QuestionInstance,
   QuestionInstanceType,
-  QuestionType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
+import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -17,30 +19,32 @@ import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { ISession } from 'src/schema/session'
+import { ISession } from 'src/schema/session.js'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 import {
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
-} from 'src/types/app'
-import { Context, ContextWithUser } from '../lib/context'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions'
-import { sendTeamsNotifications } from '../lib/util'
+} from '../types/app.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
+// FIXME: move to config file or environment variable?
+const FIRST_ACHIEVEMENT_ID = 5
+const SECOND_ACHIEVEMENT_ID = 6
+const THIRD_ACHIEVEMENT_ID = 7
+
 async function getQuestionMap(
   blocks: BlockArgs[],
   ctx: ContextWithUser
-): Promise<Record<number, Question>> {
+): Promise<Record<number, Element>> {
   const allQuestionsIds = new Set(
     blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
 
-  const questions = await ctx.prisma.question.findMany({
+  const questions = await ctx.prisma.element.findMany({
     where: {
       id: { in: Array.from(allQuestionsIds) },
       ownerId: ctx.user.sub,
@@ -51,7 +55,7 @@ async function getQuestionMap(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return questions.reduce<Record<number, Question>>(
+  return questions.reduce<Record<number, Element>>(
     (acc, question) => ({ ...acc, [question.id]: question }),
     {}
   )
@@ -70,6 +74,8 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -84,6 +90,8 @@ export async function createSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -95,10 +103,12 @@ export async function createSession(
 
   const session = await ctx.prisma.liveSession.create({
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -107,13 +117,15 @@ export async function createSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -163,6 +175,8 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -178,6 +192,8 @@ export async function editSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -237,10 +253,12 @@ export async function editSession(
   const session = await ctx.prisma.liveSession.update({
     where: { id },
     data: {
-      name,
-      displayName: displayName ?? name,
+      name: name.trim(),
+      displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled: isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -249,13 +267,15 @@ export async function editSession(
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
-              const question = questionMap[questionId]
+              const question = questionMap[questionId]!
               const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -309,7 +329,7 @@ export async function getLiveSessionData(
     return null
   }
 
-  // TODO: only return data that is required for the live session update
+  // TODO: only return data that is required for the live quiz update
   const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
@@ -424,6 +444,13 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     },
     include: {
       blocks: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
         orderBy: {
           id: 'asc',
         },
@@ -456,23 +483,21 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
 
     Object.entries(sessionXP).forEach(([id, xp]) => {
       participants[id] = {
-        xp,
+        xp: parseInt(xp),
       }
     })
 
     Object.entries(sessionLB).forEach(([id, score]) => {
       participants[id] = {
         ...(participants[id] ?? {}),
-        score,
+        score: parseInt(score),
       }
     })
-
-    console.log(participants)
 
     // sessionXP should always be around as soon as there are logged-in participants (check first)
     // sessionLB only for sessions that are compatible with points collection (check second)
     if (sessionXP) {
-      const existingParticipants = (
+      let existingParticipants = (
         await Promise.allSettled(
           Object.entries(participants).map(async ([id, { score, xp }]) => {
             const participant = await ctx.prisma.participant.findUnique({
@@ -505,7 +530,76 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
         return [result.value]
       })
 
-      console.log(existingParticipants)
+      // track the achievement ids, which should be awarded to the participants
+      let newAchievements: Record<string, number> = {}
+
+      // only award achievements, if the session did contain questions with sample solutions and at least three participants collected points
+      const awardAchievements = session.blocks.some(
+        (block) =>
+          block.instances.some(
+            (instance) =>
+              instance.questionData.options.hasSampleSolution ?? false
+          ) &&
+          existingParticipants.filter(
+            ({ score }) => typeof score !== 'undefined'
+          ).length >= 3
+      )
+
+      // award achievements to the top 3 participants (and all others with equal scores)
+      if (awardAchievements) {
+        const topScores = existingParticipants
+          .filter(({ score }) => typeof score !== 'undefined')
+          .sort((a, b) => Number(b.score) - Number(a.score))
+          .slice(0, 3)
+
+        const firstRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: FIRST_ACHIEVEMENT_ID },
+        })
+        const secondRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: SECOND_ACHIEVEMENT_ID },
+        })
+        const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: THIRD_ACHIEVEMENT_ID },
+        })
+
+        const goldScore = topScores[0].score
+        const silverScore = topScores[1].score
+        const bronzeScore = topScores[2].score
+
+        // awarding logic (including point and xp updates):
+        // award gold to every participant with gold score
+        // award silver to every participant with silver score, if silver score != gold score
+        // award bronze to every participant with bronze score, if bronze score != silver score
+        existingParticipants = existingParticipants.map((participant) => {
+          if (
+            typeof participant.score === 'undefined' ||
+            typeof participant.xp === 'undefined'
+          ) {
+            return participant
+          }
+
+          if (participant.score === goldScore) {
+            participant.xp += firstRankAchievement!.rewardedXP ?? 0
+            participant.score += firstRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = firstRankAchievement!.id
+          }
+          if (participant.score === silverScore && silverScore !== goldScore) {
+            participant.xp += secondRankAchievement!.rewardedXP ?? 0
+            participant.score += secondRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = secondRankAchievement!.id
+          }
+          if (
+            participant.score === bronzeScore &&
+            bronzeScore !== silverScore
+          ) {
+            participant.xp += thirdRankAchievement!.rewardedXP ?? 0
+            participant.score += thirdRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = thirdRankAchievement!.id
+          }
+
+          return participant
+        })
+      }
 
       // update xp of existing participants
       promises = promises.concat(
@@ -523,7 +617,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           )
       )
 
-      // if the session is part of a course, update the course leaderboard with the accumulated points
+      // if the session is part of a course, update the course leaderboard with the accumulated points and award achievements
       if (sessionLB && session.courseId) {
         promises = promises.concat(
           existingParticipants
@@ -578,11 +672,48 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                       },
                     },
                   },
-                  score: parseInt(score),
+                  score: score,
                 },
                 update: {
                   score: {
-                    increment: parseInt(score),
+                    increment: score,
+                  },
+                },
+              })
+            )
+        )
+
+        // award new achievements
+        promises = promises.concat(
+          existingParticipants
+            .filter(({ id }) => typeof newAchievements[id] !== 'undefined')
+            .map(({ id }) =>
+              ctx.prisma.participant.update({
+                where: { id },
+                data: {
+                  achievements: {
+                    upsert: {
+                      where: {
+                        participantId_achievementId: {
+                          participantId: id,
+                          achievementId: newAchievements[id]!,
+                        },
+                      },
+                      create: {
+                        achievedAt: new Date(),
+                        achievedCount: 1,
+                        achievement: {
+                          connect: {
+                            id: newAchievements[id]!,
+                          },
+                        },
+                      },
+                      update: {
+                        achievedCount: {
+                          increment: 1,
+                        },
+                      },
+                    },
                   },
                 },
               })
@@ -595,9 +726,12 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     // the session update later on should never fail, but we need the return value (keep separate)
     await ctx.prisma.$transaction(promises)
 
-    ctx.redisExec.unlink(`s:${id}:meta`)
-    ctx.redisExec.unlink(`s:${id}:lb`)
-    ctx.redisExec.unlink(`s:${id}:xp`)
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
 
     const stoppedSession = await ctx.prisma.liveSession.update({
       where: {
@@ -679,7 +813,13 @@ export async function activateSessionBlock(
     },
     include: {
       activeBlock: {
-        include: { instances: true },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
       },
       blocks: {
         orderBy: {
@@ -726,12 +866,14 @@ export async function activateSessionBlock(
       sessionBlockId,
       type: questionData.type,
       pointsMultiplier: instance.pointsMultiplier,
+      maxBonusPoints: instance.maxBonusPoints,
+      timeToZeroBonus: instance.timeToZeroBonus,
     }
 
     switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM: {
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: questionData.options.choices.length,
@@ -749,7 +891,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.NUMERICAL: {
+      case ElementType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutionRanges),
@@ -760,7 +902,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.FREE_TEXT: {
+      case ElementType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutions),
@@ -857,13 +999,17 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed((count, responseHash) => {
-          return {
-            count: +count,
-            value:
-              acc[instance.id]['responseHashes'][responseHash] ?? responseHash,
-          }
-        }, dissoc('participants', cacheObj))
+        const results = mapObjIndexed(
+          (count: number, responseHash: string) => {
+            return {
+              count: +count,
+              value:
+                acc[instance.id]['responseHashes'][responseHash] ??
+                responseHash,
+            }
+          },
+          dissoc('participants', cacheObj)
+        )
 
         return {
           ...acc,
@@ -1163,8 +1309,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
             return instance
 
           switch (questionData.type) {
-            case QuestionType.SC:
-            case QuestionType.MC:
+            case ElementType.SC:
+            case ElementType.MC:
               return {
                 ...instance,
                 questionData: {
@@ -1178,8 +1324,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
                 },
               }
 
-            case QuestionType.NUMERICAL:
-            case QuestionType.FREE_TEXT:
+            case ElementType.NUMERICAL:
+            case ElementType.FREE_TEXT:
               return {
                 ...instance,
                 questionData,
@@ -1270,8 +1416,8 @@ export async function getLeaderboard(
   })
 
   const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop<number>('score')),
-    R.ascend(R.prop<string>('username')),
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
   ])
 
   const sortedEntries: typeof preparedEntries =
@@ -1328,7 +1474,7 @@ export async function getRunningSessions(
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
-      shortname,
+      shortname: shortname.trim(),
     },
     include: {
       sessions: {
@@ -1346,6 +1492,36 @@ export async function getRunningSessions(
   if (!userWithSessions?.sessions) return []
 
   return userWithSessions.sessions
+}
+
+export async function getRunningSessionsCourse(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: SessionStatus.RUNNING,
+        },
+      },
+    },
+  })
+
+  const sessionList =
+    course?.sessions.map((session) => {
+      session.course = { id: course.id, displayName: course.displayName }
+      return session
+    }) ?? []
+
+  return sessionList
 }
 
 export async function getUserRunningSessions(ctx: ContextWithUser) {
@@ -1377,6 +1553,9 @@ export async function getUserSessions(ctx: ContextWithUser) {
     },
     include: {
       sessions: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -1407,7 +1586,10 @@ export async function getUserSessions(ctx: ContextWithUser) {
 
   return user?.sessions.map((session) => ({
     ...session,
-    blocks: session.blocks,
+    blocks: session.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: block.instances[0]?.participants,
+    })),
     course: session.course ? session.course : undefined,
     numOfBlocks: session._count?.blocks,
     numOfQuestions: session.blocks.reduce(
@@ -1444,6 +1626,8 @@ export async function getUnassignedSessions(ctx: ContextWithUser) {
 
 // compute the average of all feedbacks that were given within the last 10 minutes
 const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+  // TODO: for improved efficiency, try to use descending feedback ordering
+  // and break early once first is not within the filtering requirements anymore
   const recentFeedbacks = feedbacks.filter(
     (feedback) =>
       dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
@@ -1478,7 +1662,11 @@ export async function getCockpitSession(
   const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
-      activeBlock: true,
+      activeBlock: {
+        include: {
+          instances: true,
+        },
+      },
       blocks: {
         orderBy: {
           order: 'asc',
@@ -1505,6 +1693,35 @@ export async function getCockpitSession(
     return null
   }
 
+  // number of participants per block
+  const blockParticipants = session.blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.instances.reduce(
+        (instanceAcc, instance) => min(instanceAcc, instance.participants),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  if (session.activeBlock && session.activeBlock.id) {
+    // TODO: improve typing
+    const activeInstanceIds = session.activeBlock?.instances.map(
+      (instance) => instance.id as number
+    )
+    const redisMulti = ctx.redisExec.pipeline()
+    activeInstanceIds?.forEach((instanceId) => {
+      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
+    })
+    const cacheContent = await redisMulti.exec()
+    const activeBlockParticipants = cacheContent
+      ?.map(([_, result]) => parseInt(result?.participants as string))
+      .reduce((acc, val) => min(acc, val), 100000)
+    blockParticipants[session.activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id]
+  }
+
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
@@ -1512,6 +1729,7 @@ export async function getCockpitSession(
     blocks: session.blocks.map((block) => {
       return {
         ...block,
+        numOfParticipants: blockParticipants[block.id],
         instances: block.instances.map((instance) => {
           const questionData = instance.questionData
           if (
@@ -1722,109 +1940,70 @@ export async function getSessionEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
 ) {
-  let session: LiveSession | null = null
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+    return null
+  }
 
-  if (ctx.user?.sub) {
-    session = await ctx.prisma.liveSession.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
+  let session = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user?.sub || undefined,
+    },
+    include: {
+      activeBlock: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
       },
-      include: {
-        activeBlock: {
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        where: {
+          status: {
+            equals: 'EXECUTED',
+          },
+        },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
             },
           },
         },
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
-          where: {
-            status: {
-              equals: 'EXECUTED',
-            },
-          },
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        feedbacks: {
-          include: {
-            responses: true,
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        },
-        confusionFeedbacks: true,
       },
-    })
-  } else if (typeof hmac === 'string') {
-    session = await ctx.prisma.liveSession.findUnique({
-      where: {
-        id,
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
       },
-      include: {
-        activeBlock: {
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
+      confusionFeedbacks: {
+        orderBy: {
+          createdAt: 'asc',
         },
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
-          where: {
-            status: {
-              equals: 'EXECUTED',
-            },
-          },
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        feedbacks: {
-          include: {
-            responses: true,
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        },
-        confusionFeedbacks: true,
       },
-    })
+    },
+  })
 
-    if (!session) return null
+  if (!session) return null
 
+  if (typeof hmac === 'string') {
     const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
     hmacEncoder.update(session.namespace + session.id)
     const sessionHmac = hmacEncoder.digest('hex')
 
     // evaluate whether the hashed session.namespace and session.id equals the hmac
     if (sessionHmac !== hmac) {
-      session = null
+      return null
     }
   }
-
-  if (!session) return null
 
   // if the session is running and a block is active
   // fetch the current results from the execution cache
@@ -1841,6 +2020,7 @@ export async function getSessionEvaluation(
       activeInstanceIds,
     })
 
+    // FIXME: rework processCachedData with a clean return type
     const { instanceResults } = await processCachedData({
       cachedResults,
       activeBlock: session.activeBlock,
@@ -1848,16 +2028,16 @@ export async function getSessionEvaluation(
 
     activeInstanceResults = Object.entries(instanceResults).map(
       ([id, results]) => {
-        const instance = session.activeBlock!.instances.find(
+        const instance = session!.activeBlock!.instances.find(
           (instance) => instance.id === Number(id)
         )
 
         return {
           id: `${instance?.id}-eval`,
-          displayName: session.displayName,
-          blockIx: session.activeBlock!.order,
+          displayName: session!.displayName,
+          blockIx: session!.activeBlock!.order,
           instanceIx: instance?.order,
-          status: session.activeBlock!.status,
+          status: session!.activeBlock!.status,
           questionData: instance?.questionData,
           participants: results.participants,
           results: results.results,
@@ -1874,6 +2054,7 @@ export async function getSessionEvaluation(
   let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
+      displayName: session!.displayName,
       blockIx: block.order,
       instanceIx: instance.order,
       status: block.status,
@@ -1903,7 +2084,7 @@ export async function getSessionEvaluation(
         id: `${instance.id}-eval`,
         questionIx: instance.order,
         name: instance.questionData?.name,
-        status: session.activeBlock?.status,
+        status: session!.activeBlock?.status,
       })),
     }
   }
@@ -1937,98 +2118,102 @@ export async function cancelSession(
       blocks: {
         include: {
           instances: true,
-          leaderboard: true,
           activeInSession: true,
         },
       },
+      leaderboard: true,
     },
   })
 
   if (!session) return null
 
-  if (session.status !== SessionStatus.RUNNING) {
-    throw new Error('Session is not running')
-  }
+  try {
+    if (session.status !== SessionStatus.RUNNING) {
+      throw new Error('Session is not running')
+    }
 
-  const leaderboardEntries = session.blocks.flatMap(
-    (block) => block.leaderboard
-  )
-  const instances = session.blocks.flatMap((block) => block.instances)
+    const instances = session.blocks.flatMap((block) => block.instances)
 
-  const [updatedSession] = await ctx.prisma.$transaction([
-    ctx.prisma.liveSession.update({
-      where: { id },
-      data: {
-        status: SessionStatus.PREPARED,
-        startedAt: null,
-        pinCode: null,
-        activeBlock: {
-          disconnect: true,
-        },
-        leaderboard: {
-          deleteMany: {},
-        },
-        feedbacks: {
-          deleteMany: {},
-        },
-        confusionFeedbacks: {
-          deleteMany: {},
-        },
-        blocks: {
-          updateMany: {
-            where: {
-              status: {
-                in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
-              },
-            },
-            data: {
-              status: SessionBlockStatus.SCHEDULED,
-              expiresAt: null,
-              execution: {
-                increment: 1,
-              },
-            },
-          },
-        },
-      },
-      include: {
-        activeBlock: true,
-        blocks: {
-          include: {
-            instances: true,
-            leaderboard: true,
-            activeInSession: true,
-          },
-        },
-      },
-    }),
-
-    ctx.prisma.leaderboardEntry.deleteMany({
-      where: {
-        id: {
-          in: leaderboardEntries.map((entry) => entry.id),
-        },
-      },
-    }),
-
-    ...instances.map((instance) =>
-      ctx.prisma.questionInstance.update({
-        where: {
-          id: instance.id,
-        },
+    const [updatedSession] = await ctx.prisma.$transaction([
+      ctx.prisma.liveSession.update({
+        where: { id },
         data: {
-          participants: 0,
-          results: prepareInitialInstanceResults(instance.questionData),
+          status: SessionStatus.PREPARED,
+          startedAt: null,
+          pinCode: null,
+          activeBlock: {
+            disconnect: true,
+          },
+          leaderboard: {
+            deleteMany: {},
+          },
+          feedbacks: {
+            deleteMany: {},
+          },
+          confusionFeedbacks: {
+            deleteMany: {},
+          },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+                },
+              },
+              data: {
+                status: SessionBlockStatus.SCHEDULED,
+                expiresAt: null,
+                execution: {
+                  increment: 1,
+                },
+              },
+            },
+          },
         },
-      })
-    ),
-  ])
+        include: {
+          activeBlock: true,
+          blocks: {
+            include: {
+              instances: true,
+              activeInSession: true,
+            },
+          },
+        },
+      }),
 
-  ctx.redisExec.unlink(`s:${id}:meta`)
-  ctx.redisExec.unlink(`s:${id}:lb`)
-  ctx.redisExec.unlink(`s:${id}:xp`)
+      ...instances.map((instance) =>
+        ctx.prisma.questionInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            participants: 0,
+            results: prepareInitialInstanceResults(instance.questionData),
+          },
+        })
+      ),
+    ])
 
-  return updatedSession as ISession
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
+
+    await sendTeamsNotifications(
+      'graphql/cancelSession',
+      `CANCEL Session ${session.name} with id ${session.id}.`
+    )
+
+    return updatedSession as ISession
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/cancelSession',
+      `ERROR - failed to cancel session ${session.name} with id ${session.id}: ${error}`
+    )
+    throw error
+  }
 }
 
 export async function deleteSession(
@@ -2055,11 +2240,100 @@ export async function deleteSession(
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
-        'The learning element is not in draft status and cannot be deleted.'
+        'The practice quiz is not in draft status and cannot be deleted.'
       )
       return null
     }
 
     throw e
   }
+}
+
+export async function getLiveQuizSummary(
+  { quizId }: { quizId: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+        },
+      },
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+    acc_b += block.instances.reduce((acc_i, instance) => {
+      acc_i += instance.participants
+      return acc_i
+    }, 0)
+    return acc_b
+  }, 0)
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+  }
+}
+
+export async function softDeleteLiveSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedLiveSession = await ctx.prisma.liveSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: SessionStatus.COMPLETED,
+    },
+    data: {
+      isDeleted: true,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id,
+  })
+
+  return deletedLiveSession
+}
+
+export async function changeLiveQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  const updatedSession = await ctx.prisma.liveSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      name,
+      displayName,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id,
+  })
+
+  return updatedSession
 }

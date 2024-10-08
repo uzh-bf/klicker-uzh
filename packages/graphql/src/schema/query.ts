@@ -1,28 +1,49 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import * as AccountService from '../services/accounts'
-import * as CourseService from '../services/courses'
-import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
-import * as MicroSessionService from '../services/microLearning'
-import * as ParticipantService from '../services/participants'
-import * as QuestionService from '../services/questions'
-import * as SessionService from '../services/sessions'
-import { Course, LeaderboardEntry } from './course'
-import { GroupActivityDetails } from './groupActivity'
-import { LearningElement, QuestionStack } from './learningElements'
-import { MicroSession } from './microSession'
+import builder from '../builder.js'
+import * as AccountService from '../services/accounts.js'
+import * as CourseService from '../services/courses.js'
+import * as FeedbackService from '../services/feedbacks.js'
+import * as GroupService from '../services/groups.js'
+import * as MicroLearningService from '../services/microLearning.js'
+import * as ParticipantService from '../services/participants.js'
+import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as QuestionService from '../services/questions.js'
+import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
+import {
+  Course,
+  CourseSummary,
+  LeaderboardEntry,
+  StudentCourse,
+} from './course.js'
+import { ActivityEvaluation } from './evaluation.js'
+import {
+  GroupActivity,
+  GroupActivityDetails,
+  GroupActivitySummary,
+} from './groupActivity.js'
+import { MicroLearning } from './microLearning.js'
 import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
   Participation,
-} from './participant'
-import { Question, Tag } from './question'
-import { Feedback, Session, SessionEvaluation } from './session'
-import { MediaFile, User, UserLogin } from './user'
+} from './participant.js'
+import {
+  ActivitySummary,
+  ElementStack,
+  PracticeQuiz,
+  StackFeedback,
+} from './practiceQuizzes.js'
+import { Element, Tag } from './question.js'
+import {
+  Feedback,
+  RunningLiveQuizSummary,
+  Session,
+  SessionEvaluation,
+} from './session.js'
+import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -85,7 +106,7 @@ export const Query = builder.queryType({
 
       basicCourseInformation: t.field({
         nullable: true,
-        type: Course,
+        type: StudentCourse,
         args: {
           courseId: t.arg.string({ required: true }),
         },
@@ -102,10 +123,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userTags: asUser.prismaField({
+      userTags: asUser.field({
         nullable: true,
         type: [Tag],
-        async resolve(_, __, ___, ctx) {
+        async resolve(_, __, ctx) {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { tags: { orderBy: { order: 'asc' } } },
@@ -132,13 +153,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      feedbacks: t.prismaField({
+      feedbacks: t.field({
         nullable: true,
         type: [Feedback],
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
         },
       }),
@@ -157,10 +178,18 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: asUser.prismaField({
+      userScope: asUser.field({
         nullable: true,
-        type: [Question],
-        resolve(_, __, ___, ctx) {
+        type: UserLoginScope,
+        resolve(_, __, ctx) {
+          return ctx.user.scope
+        },
+      }),
+
+      userQuestions: asUser.field({
+        nullable: true,
+        type: [Element],
+        resolve(_, __, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
       }),
@@ -170,6 +199,25 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return CourseService.getUserCourses(ctx)
+        },
+      }),
+
+      getActiveUserCourses: asUser.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return CourseService.getActiveUserCourses(ctx)
+        },
+      }),
+
+      getCourseSummary: asUser.field({
+        nullable: true,
+        type: CourseSummary,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseSummary(args, ctx)
         },
       }),
 
@@ -197,6 +245,28 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SessionService.getRunningSessions(args, ctx)
+        },
+      }),
+
+      getLiveQuizSummary: asUser.field({
+        nullable: true,
+        type: RunningLiveQuizSummary,
+        args: {
+          quizId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getLiveQuizSummary(args, ctx)
+        },
+      }),
+
+      runningSessionsCourse: t.field({
+        nullable: true,
+        type: [Session],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getRunningSessionsCourse(args, ctx)
         },
       }),
 
@@ -231,7 +301,8 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx)
+          // FIXME: subsetting
+          return SessionService.getCockpitSession(args, ctx) as any
         },
       }),
 
@@ -246,34 +317,80 @@ export const Query = builder.queryType({
         },
       }),
 
-      learningElement: t.field({
+      practiceQuiz: t.field({
         nullable: true,
-        type: LearningElement,
+        type: PracticeQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
-          return LearningElementService.getLearningElementData(args, ctx) as any
+          return PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
 
-      learningElements: asParticipant.field({
+      getPreviousStackEvaluation: t.field({
         nullable: true,
-        type: [LearningElement],
-        resolve(_, __, ctx) {
-          return CourseService.getUserLearningElements(ctx)
+        type: StackFeedback,
+        args: {
+          stackId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 
-      microSession: t.field({
+      getPracticeQuizEvaluation: asUser.field({
         nullable: true,
-        type: MicroSession,
+        type: ActivityEvaluation,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return MicroSessionService.getSingleMicroSession(args, ctx)
+          return PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+        },
+      }),
+
+      microLearning: t.field({
+        nullable: true,
+        type: MicroLearning,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningData(args, ctx)
+        },
+      }),
+
+      getMicroLearningEvaluation: asUser.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningEvaluation(args, ctx)
+        },
+      }),
+
+      getSinglePracticeQuiz: asUser.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getSinglePracticeQuiz(args, ctx)
+        },
+      }),
+
+      getSingleMicroLearning: asUser.field({
+        nullable: true,
+        type: MicroLearning,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getSingleMicroLearning(args, ctx)
         },
       }),
 
@@ -285,6 +402,7 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
+          // FIXME: subsetting
           return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
@@ -307,7 +425,18 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getParticipantGroups(args, ctx)
+          return GroupService.getParticipantGroups(args, ctx)
+        },
+      }),
+
+      getCourseGroups: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getCourseGroups(args, ctx)
         },
       }),
 
@@ -355,25 +484,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      question: asUser.prismaField({
+      question: asUser.field({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx) as any
-        },
-      }),
-
-      singleMicroSession: asUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
         resolve(_, args, ctx) {
-          return MicroSessionService.getSingleMicroSession(args, ctx)
+          return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
 
@@ -384,6 +502,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // FIXME: seems to not respect nullable property correctly here?
           return SessionService.getLeaderboard(args, ctx) as any
         },
       }),
@@ -396,6 +515,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getParticipations(args, ctx)
+        },
+      }),
+
+      getPracticeCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeCourses(ctx)
         },
       }),
 
@@ -417,7 +544,6 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in CourseService
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),
@@ -430,41 +556,70 @@ export const Query = builder.queryType({
           groupId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+          return GroupService.getGroupActivityDetails(args, ctx)
         },
       }),
 
-      getBookmarkedQuestions: asParticipant.field({
+      getBookmarkedElementStacks: asParticipant.field({
         nullable: true,
-        type: [QuestionStack],
+        type: [ElementStack],
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ParticipantService.getBookmarkedQuestions(args, ctx)
+          return ParticipantService.getBookmarkedElementStacks(args, ctx)
         },
       }),
 
-      getBookmarksLearningElement: t.field({
+      getStackElementFeedbacks: asParticipant.field({
         nullable: true,
-        type: [QuestionStack],
+        type: [ElementFeedback],
         args: {
-          elementId: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
+          elementInstanceIds: t.arg.intList({ required: true }),
         },
         resolve(_, args, ctx) {
-          return LearningElementService.getBookmarksLearningElement(args, ctx)
+          return ParticipantService.getStackElementFeedbacks(args, ctx)
         },
       }),
 
-      questionStack: asParticipant.field({
+      getPracticeQuizList: asParticipant.field({
         nullable: true,
-        type: QuestionStack,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
+      getPracticeQuizSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
         args: {
-          id: t.arg.int({ required: true }),
+          id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return LearningElementService.getQuestionStack(args, ctx)
+          return PracticeQuizService.getPracticeQuizSummary(args, ctx)
+        },
+      }),
+
+      getMicroLearningSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningSummary(args, ctx)
+        },
+      }),
+
+      getGroupActivitySummary: asUser.field({
+        nullable: true,
+        type: GroupActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivitySummary(args, ctx)
         },
       }),
 
@@ -476,14 +631,47 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkUsernameAvailability: t.field({
+      groupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivity(args, ctx)
+        },
+      }),
+
+      getGradingGroupActivity: asUser.field({
+        nullable: true,
+        type: GroupActivity,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGradingGroupActivity(args, ctx)
+        },
+      }),
+
+      checkParticipantNameAvailable: t.field({
         nullable: false,
         type: 'Boolean',
         args: {
           username: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.checkUsernameAvailability(args, ctx)
+          return AccountService.checkParticipantNameAvailable(args, ctx)
+        },
+      }),
+
+      checkShortnameAvailable: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.checkShortnameAvailable(args, ctx)
         },
       }),
 
@@ -495,6 +683,29 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.checkValidCoursePin(args, ctx)
+        },
+      }),
+
+      coursePracticeQuiz: asParticipant.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCoursePracticeQuiz(args, ctx)
+        },
+      }),
+
+      getBookmarksPracticeQuiz: asParticipant.field({
+        nullable: true,
+        type: ['Int'],
+        args: {
+          quizId: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getBookmarksPracticeQuiz(args, ctx)
         },
       }),
     }

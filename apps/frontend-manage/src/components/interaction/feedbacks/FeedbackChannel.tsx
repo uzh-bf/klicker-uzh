@@ -16,6 +16,7 @@ import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
+  sessionName: string
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: (feedbackId: number) => void
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function FeedbackChannel({
+  sessionName,
   feedbacks = [],
   isActive = false,
   isPublic = false,
@@ -63,7 +65,10 @@ function FeedbackChannel({
 
   return (
     <>
-      <FeedbacksPrintView feedbacks={sortedFeedbacks} sessionName={'TODO'} />
+      <FeedbacksPrintView
+        feedbacks={sortedFeedbacks}
+        sessionName={sessionName}
+      />
       <FeedbackSearchAndFilters
         disabled={{
           sorting: sortedFeedbacks?.length === 0,
@@ -71,7 +76,7 @@ function FeedbackChannel({
         }}
         {...filterProps}
       />
-      <div className="flex flex-col gap-2 mt-4 overflow-y-auto print:hidden">
+      <div className="mt-4 flex flex-col gap-2 overflow-y-auto print:hidden">
         {/* // TODO: styling */}
         {!feedbacks ||
           (feedbacks.length === 0 && (
@@ -102,10 +107,11 @@ function FeedbackChannel({
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    className={{ root: 'justify-center mr-2 w-9 h-9' }}
+                    className={{ root: 'mr-2 h-9 w-9 justify-center' }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}
+                    data={{ cy: `publish-feedback-${content}` }}
                   >
                     {isPublished ? (
                       <Button.Icon>

@@ -42,6 +42,9 @@ export const importSessions = async (
     let mappedSessionIds: Record<string, string> = {}
     const sessionsInDb = await prisma.liveSession.findMany({
       where: {
+        originalId: {
+          not: null,
+        },
         owner: {
           id: user.id,
         },
@@ -66,13 +69,9 @@ export const importSessions = async (
           return []
         }
 
-        if (sessionExists) {
-          mappedSessionIds[session._id] = sessionExists.id
-          return []
-        }
-
         return [
           {
+            sessionExists,
             originalData: session,
             prismaData: {
               data: {
@@ -188,47 +187,72 @@ export const importSessions = async (
       })
 
       await Promise.allSettled(
-        preparedSessions.map(async ({ originalData, prismaData }) => {
-          return prisma.$transaction(async (prisma) => {
-            const createdSession = await prisma.liveSession.create(prismaData)
-            mappedSessionIds[createdSession.originalId] = createdSession.id
+        preparedSessions.map(
+          async ({ sessionExists, originalData, prismaData }) => {
+            return prisma.$transaction(async (prisma) => {
+              const createdSession = sessionExists
+                ? await prisma.liveSession.update({
+                    where: {
+                      id: sessionExists.id,
+                    },
+                    data: prismaData.data,
+                    include: {
+                      blocks: {
+                        include: {
+                          instances: true,
+                        },
+                      },
+                    },
+                  })
+                : await prisma.liveSession.create({
+                    data: prismaData.data,
+                    include: {
+                      blocks: {
+                        include: {
+                          instances: true,
+                        },
+                      },
+                    },
+                  })
+              mappedSessionIds[createdSession.originalId] = createdSession.id
 
-            // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
-            for (const block of createdSession.blocks) {
-              if (!block || !block.instances) {
-                continue // skip to the next iteration if there are no instances
-              }
+              // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
+              for (const block of createdSession.blocks) {
+                if (!block || !block.instances) {
+                  continue // skip to the next iteration if there are no instances
+                }
 
-              const reducedOldBlocks = originalData.blocks.reduce(
-                (acc, block) => {
-                  acc[block._id] = block
-                  return acc
-                },
-                {}
-              )
-
-              for (const instance of block.instances) {
-                const oldBlock = reducedOldBlocks[block.originalId]
-                const i = oldBlock?.instances?.findIndex(
-                  (id) => id === instance.originalId
+                const reducedOldBlocks = originalData.blocks.reduce(
+                  (acc, block) => {
+                    acc[block._id] = block
+                    return acc
+                  },
+                  {}
                 )
 
-                let updateData = {
-                  sessionBlockId: block.id,
-                }
+                for (const instance of block.instances) {
+                  const oldBlock = reducedOldBlocks[block.originalId]
+                  const i = oldBlock?.instances?.findIndex(
+                    (id) => id === instance.originalId
+                  )
 
-                if (i || i === 0) {
-                  updateData['order'] = i
-                }
+                  let updateData = {
+                    sessionBlockId: block.id,
+                  }
 
-                await prisma.questionInstance.update({
-                  where: { id: instance.id },
-                  data: updateData,
-                })
+                  if (i || i === 0) {
+                    updateData['order'] = i
+                  }
+
+                  await prisma.questionInstance.update({
+                    where: { id: instance.id },
+                    data: updateData,
+                  })
+                }
               }
-            }
-          })
-        })
+            })
+          }
+        )
       )
     }
 

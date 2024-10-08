@@ -1,0 +1,1 @@
+{"version":3,"file":"taskpane.js","mappings":"AAEAA,OAAOC,SAASC,QAAQ","sources":["webpack://@klicker-uzh/office-addin/./src/taskpane/index.tsx"],"sourcesContent":["/* global window */\n\nwindow.location.replace(\"https://control.klicker.uzh.ch\");\n"],"names":["window","location","replace"],"sourceRoot":""}

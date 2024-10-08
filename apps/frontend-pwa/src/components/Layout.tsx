@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { Course, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  SelfDocument,
+  StudentCourse,
+} from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -10,7 +14,9 @@ import MobileMenuBar from './common/MobileMenuBar'
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
-  course?: Partial<Omit<Course, 'awards' | 'owner'>>
+  course?:
+    | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
+    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -31,11 +37,7 @@ function Layout({
   setActiveMobilePage,
   className,
 }: LayoutProps) {
-  const {
-    loading: loadingParticipant,
-    error: errorParticipant,
-    data: dataParticipant,
-  } = useQuery(SelfDocument)
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const pageInFrame =
     global?.window &&
@@ -70,7 +72,7 @@ function Layout({
 
       <div
         className={twMerge(
-          'flex-1 flex flex-col p-4 min-h-0 overflow-y-auto',
+          'flex min-h-0 flex-1 flex-col overflow-y-auto p-4',
           pageInFrame && 'px-0'
         )}
       >

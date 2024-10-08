@@ -8,10 +8,25 @@ interface LinkButtonProps {
   href: string
   icon?: IconDefinition
   children: string | React.ReactNode
+  onClick?: () => void
+  data?: { cy?: string; test?: string }
+  disabled?: boolean
+  className?: {
+    root?: string
+  }
   [key: string]: any
 }
 
-function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
+function LinkButton({
+  href,
+  children,
+  icon,
+  onClick,
+  disabled,
+  data,
+  className,
+  ...props
+}: LinkButtonProps) {
   return (
     <Link href={href} className="w-full">
       <Button
@@ -19,10 +34,14 @@ function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
         fluid
         className={{
           root: twMerge(
-            'gap-6 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
-            props.className?.root
+            'gap-5 border-slate-300 bg-slate-200 px-4 py-2 text-lg shadow hover:bg-slate-300',
+            disabled && 'cursor-not-allowed hover:bg-slate-200',
+            className?.root
           ),
         }}
+        onClick={onClick}
+        data={data}
+        disabled={disabled}
       >
         {icon && (
           <Button.Icon>

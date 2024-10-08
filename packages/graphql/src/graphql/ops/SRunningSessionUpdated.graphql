@@ -10,7 +10,6 @@ subscription RunningSessionUpdated($sessionId: String!) {
     execution
     instances {
       id
-
       ...QuestionDataWithoutSolutions
     }
   }

@@ -80,22 +80,31 @@ function AudienceInteraction({
     <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
       <div
         className={twMerge(
-          'flex flex-col md:items-start w-full gap-2 md:gap-8 md:flex-row'
+          'flex w-full flex-col gap-2 md:flex-row md:items-start md:gap-8'
         )}
       >
-        <div className="flex flex-col flex-grow gap-4 md:w-2/3">
+        <div className="flex flex-grow flex-col gap-4 md:w-2/3">
           <div className="flex flex-row flex-wrap items-end justify-between print:hidden">
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
                 href={`/sessions/${sessionId}/lecturer`}
                 target="_blank"
-                className="inline-flex items-center gap-1"
+                passHref
+                legacyBehavior
               >
-                <FontAwesomeIcon icon={faUpRightFromSquare} />
-                {t('manage.cockpit.lecturerView')}
+                <a
+                  className="inline-flex items-center gap-1"
+                  data-cy={`open-lecturer-overview-session-${sessionName}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  {t('manage.cockpit.lecturerView')}
+                </a>
               </Link>
               <Switch
+                data={{ cy: 'toggle-qa' }}
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
                   changeSessionSettings({
@@ -115,6 +124,7 @@ function AudienceInteraction({
                 label={t('manage.cockpit.activateQA')}
               />
               <Switch
+                data={{ cy: 'toggle-moderation' }}
                 checked={isModerationEnabled}
                 disabled={!isLiveQAEnabled}
                 onCheckedChange={(): void => {
@@ -141,15 +151,16 @@ function AudienceInteraction({
           </div>
 
           {!isLiveQAEnabled && (
-            <div className="flex items-center justify-center flex-1 font-bold border rounded print:hidden">
+            <div className="flex flex-1 items-center justify-center rounded border font-bold print:hidden">
               {t('manage.cockpit.QaNotActive')}
             </div>
           )}
 
           {isLiveQAEnabled && (
-            <div className="flex flex-col flex-1 p-4 border print:border-0 rounded md:flex-row md:flex-wrap">
+            <div className="flex flex-1 flex-col rounded border p-4 md:flex-row md:flex-wrap print:border-0">
               <div className="flex-1">
                 <FeedbackChannel
+                  sessionName={sessionName}
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
                     deleteFeedback({ variables: { id: feedbackId } })
@@ -231,10 +242,11 @@ function AudienceInteraction({
             </div>
           )}
         </div>
-        <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap print:hidden">
-          <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
+        <div className="flex flex-auto flex-col gap-4 md:w-[250px] md:flex-row md:flex-wrap print:hidden">
+          <div className="flex w-full flex-none flex-row flex-wrap items-end justify-between gap-2">
             <H2>{t('shared.generic.feedback')}</H2>
             <Switch
+              data={{ cy: 'toggle-gamification' }}
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
                 changeSessionSettings({
@@ -256,13 +268,13 @@ function AudienceInteraction({
               }}
             />
           </div>
-          <div className="flex-1 flex-shrink p-4 rounded print:hidden border md:max-h-[31rem]">
+          <div className="flex-1 flex-shrink rounded border p-4 md:max-h-[31rem] print:hidden">
             {isConfusionFeedbackEnabled ? (
               // <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
               <ConfusionCharts confusionValues={confusionValues} />
             ) : (
               // </div>
-              <div className="flex min-h-[355px] justify-center items-center font-bold">
+              <div className="flex min-h-[355px] items-center justify-center font-bold">
                 {t('manage.cockpit.feedbackNotActive')}
               </div>
             )}

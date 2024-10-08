@@ -1,66 +1,47 @@
-import { Question, QuestionType } from '@klicker-uzh/prisma'
-import * as R from 'ramda'
+import { ElementType } from '@klicker-uzh/prisma'
 import {
-  AllQuestionTypeData,
-  BaseQuestionDataKeys,
-  ChoicesQuestionData,
-  FreeTextQuestionData,
-  NumericalQuestionData,
+  AllElementTypeData,
   QuestionResults,
   QuestionResultsChoices,
-} from 'src/types/app'
-
-const RELEVANT_KEYS: BaseQuestionDataKeys = [
-  'id',
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'displayMode',
-  'hasSampleSolution',
-  'hasAnswerFeedbacks',
-  'type',
-  'options',
-]
-
-export function processQuestionData(question: Question) {
-  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
-
-  switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM:
-      return { ...extractRelevantKeys(question) } as ChoicesQuestionData
-
-    case QuestionType.NUMERICAL:
-      return { ...extractRelevantKeys(question) } as NumericalQuestionData
-
-    case QuestionType.FREE_TEXT:
-      return { ...extractRelevantKeys(question) } as FreeTextQuestionData
-
-    default:
-      throw new Error('Unknown question type')
-  }
-}
+} from '../types/app.js'
 
 export function prepareInitialInstanceResults(
-  questionData: AllQuestionTypeData
+  questionData: AllElementTypeData
 ): QuestionResults {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
       )
-      return { choices } as QuestionResultsChoices
+      return { choices, total: 0 } as QuestionResultsChoices
     }
 
-    case QuestionType.NUMERICAL:
-    case QuestionType.FREE_TEXT: {
-      return {}
+    case ElementType.NUMERICAL:
+    case ElementType.FREE_TEXT: {
+      return { responses: {}, total: 0 }
     }
+
+    // case ElementType.FLASHCARD:
+    // case ElementType.CONTENT: {
+    //   return { responses: {}, total: 0 }
+    // }
+
+    // ! QuestionInstances do not support Flashcards / Content elements at this point
+    // case ElementType.FLASHCARD: {
+    //   return {
+    //     [FlashcardCorrectness.CORRECT]: 0,
+    //     [FlashcardCorrectness.PARTIAL]: 0,
+    //     [FlashcardCorrectness.INCORRECT]: 0,
+    //     total: 0,
+    //   }
+    // }
+
+    // case ElementType.CONTENT: {
+    //   return { total: 0 }
+    // }
 
     default:
       throw new Error('Unknown question type')

@@ -1,0 +1,7 @@
+#import "./FPracticeQuizDataWithoutSolutions.graphql"
+
+query GetPracticeQuiz($id: String!) {
+  practiceQuiz(id: $id) {
+    ...PracticeQuizDataWithoutSolutions
+  }
+}

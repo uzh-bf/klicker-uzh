@@ -1,0 +1,28 @@
+{
+  "name": "@klicker-uzh/transactional",
+  "license": "AGPL-3.0",
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "files": [
+    "out"
+  ],
+  "scripts": {
+    "dev:email": "email dev -d src/emails",
+    "build": "email export -d src/emails",
+    "update-templates": "doppler run --config dev -- tsx src/scripts/deploy.ts",
+    "update-templates:qa": "doppler run --config stg -- tsx src/scripts/deploy.ts",
+    "update-templates:prod": "doppler run --config prd -- tsx src/scripts/deploy.ts"
+  },
+  "devDependencies": {
+    "@react-email/components": "0.0.22",
+    "@types/node": "^20.16.1",
+    "@types/react": "^18.3.4",
+    "@uzh-bf/design-system": "3.0.0-alpha.31",
+    "react": "18.3.1",
+    "react-email": "2.1.6",
+    "tsx": "4.9.1",
+    "typescript": "5.4.5"
+  },
+  "type": "module"
+}

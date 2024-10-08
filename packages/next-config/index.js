@@ -1,12 +1,18 @@
 /** @type {import('next').NextConfig} */
-
-function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
+function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
   return {
+    experimental: {
+      esmExternals: 'loose',
+    },
     compress: true,
-    output: 'standalone',
+    output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,
     swcMinify: true,
-    transpilePackages: ['@klicker-uzh/shared-components', '@klicker-uzh/i18n'],
+    transpilePackages: [
+      '@klicker-uzh/shared-components',
+      '@klicker-uzh/i18n',
+      '@klicker-uzh/util',
+    ],
     eslint: {
       ignoreDuringBuilds: true,
     },
@@ -31,8 +37,8 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
         'tc-klicker-prod.s3.amazonaws.com',
         'klickeruzhdevimages.blob.core.windows.net',
         'klickeruzhprodimages.blob.core.windows.net',
-        S3_HOSTNAME,
-      ],
+        BLOB_STORAGE_ACCOUNT_URL ?? null,
+      ].filter(Boolean),
       remotePatterns: [
         {
           protocol: 'https',
@@ -52,13 +58,15 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
           port: '443',
           pathname: '/**',
         },
-        {
-          protocol: 'https',
-          hostname: S3_HOSTNAME,
-          port: '443',
-          pathname: S3_PATHNAME,
-        },
-      ],
+        BLOB_STORAGE_ACCOUNT_URL
+          ? {
+              protocol: 'https',
+              hostname: BLOB_STORAGE_ACCOUNT_URL,
+              port: '443',
+              pathname: '/**',
+            }
+          : null,
+      ].filter(Boolean),
     },
   }
 }

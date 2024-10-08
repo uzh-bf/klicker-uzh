@@ -1,5 +1,6 @@
 import {
   faClock,
+  faCode,
   faPlay,
   faStop,
   faUpRightFromSquare,
@@ -17,6 +18,7 @@ import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
 import SessionBlock from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
@@ -68,6 +70,7 @@ function SessionTimeline({
   const { locale } = useRouter()
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
+  const [inCooldown, setInCooldown] = useState<boolean>(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
@@ -76,6 +79,7 @@ function SessionTimeline({
   >('firstBlock')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
+  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
 
   const startingTime = runtime.includes('d')
     ? dayjs(startedAt).format('DD.MM HH:mm:ss')
@@ -116,15 +120,18 @@ function SessionTimeline({
         lastActiveBlockId === blocks[blocks.length - 1].id &&
         activeBlockId === -1
       ) {
+        setInCooldown(false)
         setButtonState('endSession')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
         activeBlockId === -1
       ) {
+        setInCooldown(false)
         setButtonState('firstBlock')
       } else {
         // no block is active and the last block of the session has not yet been executed
+        setInCooldown(false)
         setButtonState('nextBlock')
       }
     }
@@ -132,9 +139,9 @@ function SessionTimeline({
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
-      <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
+      <div className="flex flex-1 flex-row flex-wrap items-end justify-between md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end gap-8">
-          <H1 className={{ root: 'text-xl m-0' }}>Quiz: {sessionName}</H1>
+          <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {sessionName}</H1>
           <div>
             <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
           </div>
@@ -143,8 +150,29 @@ function SessionTimeline({
           </div>
         </div>
 
-        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
-          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
+        <div className="mt-1.5 flex flex-row flex-wrap items-end gap-2 sm:mt-0">
+          <div className="flex w-full flex-row flex-wrap gap-2 sm:w-max">
+            <Button
+              onClick={() => setEmbedModalOpen(true)}
+              className={{ root: 'h-10' }}
+              data={{ cy: 'embed-evaluation-cockpit' }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faCode} size="sm" />
+              </Button.Icon>
+              <Button.Label>
+                {t('manage.sessions.embeddingEvaluation')}
+              </Button.Label>
+            </Button>
+            {!isFeedbackSession && (
+              <EmbeddingModal
+                key={sessionId}
+                open={embedModalOpen}
+                onClose={() => setEmbedModalOpen(false)}
+                sessionId={sessionId}
+                questions={blocks.flatMap((block) => block.instances ?? [])}
+              />
+            )}
             <SessionQRModal sessionId={sessionId} shortname={shortname} />
             <a
               className="flex-1"
@@ -152,7 +180,11 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className={{ root: 'h-10' }}>
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                data={{ cy: 'audience-view-cockpit' }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -160,7 +192,7 @@ function SessionTimeline({
               </Button>
             </a>
           </div>
-          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+          <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
               href={`/sessions/${sessionId}/evaluation`}
@@ -172,6 +204,7 @@ function SessionTimeline({
                 fluid
                 className={{ root: 'h-10' }}
                 disabled={isFeedbackSession}
+                data={{ cy: 'evaluation-results-cockpit' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
@@ -183,12 +216,13 @@ function SessionTimeline({
             </Link>
           </div>
           {isFeedbackSession && (
-            <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+            <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 className={{
-                  root: twMerge('bg-uzh-red-100 text-white h-10'),
+                  root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
                 onClick={handleEndSession}
+                data={{ cy: 'end-session-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endSession')}</Button.Label>
               </Button>
@@ -198,20 +232,22 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full gap-2 p-4 overflow-auto border border-solid rounded-lg border-uzh-grey-80 mt-2 md:mt-0">
+          <div className="border-uzh-grey-80 mt-2 flex w-full flex-row gap-2 overflow-auto rounded-lg border border-solid p-4 md:mt-0">
             <FontAwesomeIcon
               icon={faPlay}
               size="xl"
               className={twMerge(
-                'my-auto p-2 rounded-md',
+                'my-auto rounded-md p-2',
                 buttonState === 'firstBlock' && 'text-green-500'
               )}
             />
             {blocks.map((block, idx) => (
               <>
                 <SessionBlock
-                  key={block.id}
+                  key={`${block.id}-${block.status}`}
                   block={block}
+                  inCooldown={inCooldown && activeBlockId === block.id}
+                  setInCooldown={setInCooldown}
                   active={activeBlockId === block.id}
                   className="my-auto"
                 />
@@ -232,15 +268,16 @@ function SessionTimeline({
               icon={faStop}
               size="xl"
               className={twMerge(
-                'my-auto p-2 rounded-md',
+                'my-auto rounded-md p-2',
                 buttonState === 'endSession' && 'text-uzh-red-100'
               )}
             />
           </div>
-          <div className="flex flex-row justify-end w-full gap-2 mt-2">
+          <div className="mt-2 flex w-full flex-row justify-between gap-2">
             <Button
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
+              data={{ cy: 'abort-session-cockpit' }}
             >
               {t('manage.cockpit.abortSession')}
             </Button>
@@ -249,8 +286,11 @@ function SessionTimeline({
                 root: twMerge(
                   (buttonState === 'firstBlock' ||
                     buttonState === 'nextBlock') &&
-                    `text-white bg-primary-80`,
-                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white'
+                    `bg-primary-80 text-white`,
+                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white',
+                  buttonState === 'blockActive' &&
+                    inCooldown &&
+                    'text-uzh-red-100 border-uzh-red-100'
                 ),
               }}
               onClick={() => {
@@ -264,18 +304,23 @@ function SessionTimeline({
                   handleOpenBlock(blocks[openBlockIndex].id)
                 } else if (buttonState === 'blockActive') {
                   handleCloseBlock(activeBlockId)
+                  setInCooldown(false)
                 } else {
                   handleEndSession()
                 }
               }}
-              data={{ cy: 'interaction-first-block' }}
+              data={{ cy: 'next-block-timeline' }}
             >
-              <Button.Label>{t(`manage.cockpit.${buttonState}`)}</Button.Label>
+              <Button.Label>
+                {buttonState === 'blockActive' && inCooldown
+                  ? t('manage.cockpit.skipCooldown')
+                  : t(`manage.cockpit.${buttonState}`)}
+              </Button.Label>
             </Button>
           </div>
           <CancelSessionModal
-            isDeletionModalOpen={cancelSessionModal}
-            setIsDeletionModalOpen={setCancelSessionModal}
+            open={cancelSessionModal}
+            setOpen={setCancelSessionModal}
             sessionId={sessionId}
             title={sessionName}
           />

@@ -1,6 +1,9 @@
 import {
-  QuestionDisplayMode,
-  QuestionType,
+  ChoiceQuestionOptions,
+  ChoicesQuestionData,
+  ElementType,
+  FreeTextQuestionData,
+  NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
@@ -16,15 +19,11 @@ import React, { useEffect, useState } from 'react'
 
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: {
-    displayMode?: QuestionDisplayMode
-    content: string
-    id: string
-    name: string
-    type: QuestionType
-    options: any
-    instanceId: number
-  }[]
+  questions: ((
+    | ChoicesQuestionData
+    | NumericalQuestionData
+    | FreeTextQuestionData
+  ) & { instanceId: number })[]
   handleNewResponse: (type: string, instanceId: number, answer: any) => void
   sessionId: string
   execution: number
@@ -54,7 +53,11 @@ function QuestionArea({
     inputValue: QUESTION_GROUPS.CHOICES.includes(
       questions[remainingQuestions[0]]?.type
     )
-      ? new Array(questions[remainingQuestions[0]]?.options.length, false)
+      ? new Array(
+          (
+            questions[remainingQuestions[0]].options as ChoiceQuestionOptions
+          ).choices.length
+        ).fill(false)
       : '',
   })
 
@@ -99,7 +102,7 @@ function QuestionArea({
     if (typeof inputValue !== 'undefined') {
       answerQuestion(inputValue, type, instanceId)
     } else {
-      push(['trackEvent', 'Live Session', 'Question Skipped'])
+      push(['trackEvent', 'Live Quiz', 'Question Skipped'])
     }
 
     // update the stored responses
@@ -121,7 +124,11 @@ function QuestionArea({
     const { instanceId, type } = questions[activeQuestion]
 
     // save the response, if one was given before the time expired
-    if (typeof inputValue !== 'undefined' && inputValid) {
+    if (
+      typeof inputValue !== 'undefined' &&
+      inputValue.length !== 0 &&
+      inputValid
+    ) {
       answerQuestion(inputValue, type, instanceId)
     }
 
@@ -134,10 +141,10 @@ function QuestionArea({
     setInputState({
       inputEmpty: true,
       inputValid: false,
-      inputValue: undefined,
+      inputValue: '',
     })
     setRemainingQuestions([])
-    push(['trackEvent', 'Live Session', 'Time expired'])
+    push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
   // use the handleNewResponse function to add a response to the question instance
@@ -146,7 +153,7 @@ function QuestionArea({
     type: string,
     instanceId: number
   ): void => {
-    if (type === QuestionType.Kprim) {
+    if (type === ElementType.Kprim) {
       handleNewResponse(
         type,
         instanceId,
@@ -156,9 +163,9 @@ function QuestionArea({
       )
     } else if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse(type, instanceId, value)
-    } else if (QuestionType.FreeText === type) {
+    } else if (ElementType.FreeText === type) {
       handleNewResponse(type, instanceId, value)
-    } else if (QuestionType.Numerical === type) {
+    } else if (ElementType.Numerical === type) {
       handleNewResponse(type, instanceId, String(parseFloat(value)))
     }
   }
@@ -205,15 +212,15 @@ function QuestionArea({
   }
 
   return (
-    <div className="w-full h-full min-h-content">
-      <H2 className={{ root: 'hidden mb-2 md:block' }}>
+    <div className="min-h-content h-full w-full">
+      <H2 className={{ root: 'mb-2 hidden md:block' }}>
         {t('shared.generic.question')}
       </H2>
 
       {remainingQuestions.length === 0 ? (
         t('pwa.session.allQuestionsAnswered')
       ) : (
-        <div className="flex flex-col w-full gap-2">
+        <div className="flex w-full flex-col gap-2">
           <StudentQuestion
             key={currentQuestion.instanceId}
             activeIndex={questions.length - remainingQuestions.length}
@@ -237,14 +244,6 @@ function QuestionArea({
       )}
     </div>
   )
-}
-
-export async function getStaticProps({ locale }: any) {
-  return {
-    props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
-    },
-  }
 }
 
 export default QuestionArea

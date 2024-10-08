@@ -24,7 +24,6 @@ query GetRunningSession($id: String!) {
       execution
       instances {
         id
-
         ...QuestionDataWithoutSolutions
       }
     }

@@ -5,7 +5,7 @@ import {
   InvocationContext,
 } from '@azure/functions'
 import * as Sentry from '@sentry/node'
-import JWT from 'jsonwebtoken'
+import { verify } from 'jsonwebtoken'
 
 import getServiceBus from './sbus'
 
@@ -65,13 +65,19 @@ const httpTrigger = async function (
             return acc
           }, {})
 
-        const participantData = JWT.verify(
-          parsedCookies['participant_token'],
-          process.env.APP_SECRET
-        )
+        if (parsedCookies['participant_token'] !== undefined) {
+          const participantData = verify(
+            parsedCookies['participant_token'],
+            process.env.APP_SECRET
+          )
 
-        if (participantData.sub && participantData.role === 'PARTICIPANT') {
-          messageId = `${participantData.sub}-${body.sessionId}`
+          if (
+            typeof participantData !== 'string' &&
+            participantData.sub &&
+            participantData.role === 'PARTICIPANT'
+          ) {
+            messageId = `${participantData.sub}-${body.sessionId}`
+          }
         }
       } catch (e) {
         context.error('JWT verification failed', e, cookie)

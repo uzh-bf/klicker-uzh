@@ -16,10 +16,11 @@ function TagHeader({ text, state, setState }: TagHeaderProps) {
       onClick={() => setState(!state)}
       className={{
         root: twMerge(
-          'flex flex-row items-center justify-between w-full px-4 py-0.5 mb-1 mt-3',
-          'font-bold border-b border-solid border-gray-300 text-[1.05rem] text-neutral-500'
+          'mb-1 mt-3 flex w-full flex-row items-center justify-between px-2 py-0.5 first:mt-0',
+          'border-b border-solid border-gray-300 text-neutral-500'
         ),
       }}
+      data={{ cy: `collapse-tag-header-${text}` }}
     >
       <div>{text}</div>
       <FontAwesomeIcon icon={state ? faChevronUp : faChevronDown} />

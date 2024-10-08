@@ -1,6 +1,6 @@
-import * as pulumi from '@pulumi/pulumi'
 import * as azure from '@pulumi/azure-native'
 import * as k8s from '@pulumi/kubernetes'
+import * as pulumi from '@pulumi/pulumi'
 
 const cfg = new pulumi.Config()
 

@@ -1,6 +1,11 @@
-import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
+
+export const LQ_MAX_BONUS_POINTS = 45 // live quiz: maximum 45 bonus points for fastest answer
+export const LQ_TIME_TO_ZERO_BONUS = 20 // live quiz: seconds until the bonus points are zero
+export const LQ_DEFAULT_POINTS = 10 // live quiz: points a participant gets for participating in a poll
+export const LQ_DEFAULT_CORRECT_POINTS = 5 // live quiz: points a participant gets for answering correctly (independent of time)
 
 export const CHART_TYPES: Record<string, string> = {
   BAR_CHART: 'BAR_CHART',
@@ -31,27 +36,81 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_GROUPS: Record<string, string[]> = {
-  CHOICES: [QuestionType.Sc, QuestionType.Mc, QuestionType.Kprim],
-  FREE_TEXT: [QuestionType.FreeText],
-  NUMERICAL: [QuestionType.Numerical],
-  FREE: [QuestionType.FreeText, QuestionType.Numerical],
+export const QUESTION_GROUPS: Record<string, ElementType[]> = {
+  CHOICES: [ElementType.Sc, ElementType.Mc, ElementType.Kprim],
+  FREE_TEXT: [ElementType.FreeText],
+  NUMERICAL: [ElementType.Numerical],
+  FREE: [ElementType.FreeText, ElementType.Numerical],
+  ALL: [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.FreeText,
+    ElementType.Numerical,
+  ],
   WITH_PERCENTAGES: [
-    QuestionType.Sc,
-    QuestionType.Mc,
-    QuestionType.Kprim,
-    QuestionType.FreeText,
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.FreeText,
   ],
   WITH_POSSIBILITIES: [
-    QuestionType.Sc,
-    QuestionType.Mc,
-    QuestionType.Kprim,
-    QuestionType.Numerical,
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
   ],
-  WITH_STATISTICS: [QuestionType.Numerical],
+  WITH_STATISTICS: [ElementType.Numerical],
 }
 
-export const AVATAR_OPTIONS: Record<string, string[]> = {
+export type AVATAR_OPTIONS_KEY =
+  | 'hair'
+  | 'hairColor'
+  | 'eyes'
+  | 'accessory'
+  | 'mouth'
+  | 'facialHair'
+  | 'clothing'
+  | 'clothingColor'
+  | 'skinTone'
+
+export type AVATAR_OPTIONS_VALUE =
+  | 'long'
+  | 'bun'
+  | 'short'
+  | 'buzz'
+  | 'afro'
+  | 'blonde'
+  | 'black'
+  | 'brown'
+  | 'normal'
+  | 'happy'
+  | 'content'
+  | 'squint'
+  | 'heart'
+  | 'wink'
+  | 'none'
+  | 'roundGlasses'
+  | 'tinyGlasses'
+  | 'shades'
+  | 'grin'
+  | 'openSmile'
+  | 'serious'
+  | 'stubble'
+  | 'mediumBeard'
+  | 'shirt'
+  | 'dress'
+  | 'dressShirt'
+  | 'blue'
+  | 'green'
+  | 'red'
+  | 'light'
+  | 'dark'
+
+export const AVATAR_OPTIONS: Record<
+  AVATAR_OPTIONS_KEY,
+  AVATAR_OPTIONS_VALUE[]
+> = {
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   hairColor: ['blonde', 'black', 'brown'],
   eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],
@@ -67,31 +126,51 @@ export const AVATAR_OPTIONS: Record<string, string[]> = {
   // body: ['breasts', 'chest'],
 }
 
+export enum ChartType {
+  UNSET = 'unset',
+  BAR_CHART = 'barChart',
+  HISTOGRAM = 'histogram',
+  WORD_CLOUD = 'wordCloud',
+  TABLE = 'table',
+}
+
+export type ChartLabels =
+  | 'manage.evaluation.unset'
+  | 'manage.evaluation.table'
+  | 'manage.evaluation.wordCloud'
+  | 'manage.evaluation.histogram'
+  | 'manage.evaluation.barChart'
+
 export const ACTIVE_CHART_TYPES: Record<
-  QuestionType,
-  { label: string; value: string }[]
+  ElementType,
+  { label: ChartLabels; value: ChartType }[]
 > = {
-  [QuestionType.FreeText]: [
-    { label: 'manage.evaluation.table', value: 'table' },
-    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
+  [ElementType.FreeText]: [
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
   ],
-  [QuestionType.Numerical]: [
-    { label: 'manage.evaluation.histogram', value: 'histogram' },
-    { label: 'manage.evaluation.table', value: 'table' },
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
+  [ElementType.Numerical]: [
+    { label: 'manage.evaluation.histogram', value: ChartType.HISTOGRAM },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
   ],
-  [QuestionType.Sc]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+  [ElementType.Sc]: [
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
-  [QuestionType.Mc]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+  [ElementType.Mc]: [
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
-  [QuestionType.Kprim]: [
-    { label: 'manage.evaluation.barChart', value: 'barChart' },
-    { label: 'manage.evaluation.table', value: 'table' },
+  [ElementType.Kprim]: [
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+  ],
+  [ElementType.Flashcard]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
+  [ElementType.Content]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
   ],
 }
 

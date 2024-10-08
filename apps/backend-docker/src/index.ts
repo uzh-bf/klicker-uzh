@@ -1,30 +1,44 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
-import * as Sentry from '@sentry/node'
-import '@sentry/tracing'
+import { withOptimize } from '@prisma/extension-optimize'
+// import * as Sentry from '@sentry/node'
+// import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
-import Redis from 'ioredis'
-import prepareApp from './app'
+import { Redis } from 'ioredis'
+import prepareApp from './app.js'
 
-import { Cache, createInMemoryCache } from '@envelop/response-cache'
+import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
+import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['warn', 'error'],
+})
 
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    debug: !!process.env.DEBUG,
-    tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
-      ? Number(process.env.SENTRY_SAMPLE_RATE)
-      : 1,
-  })
+if (
+  process.env.NODE_ENV === 'development' &&
+  process.env.PRISMA_OPTIMIZE === 'true'
+) {
+  prisma = prisma.$extends(withOptimize()) as PrismaClient
 }
+
+// if (process.env.SENTRY_DSN) {
+//   Sentry.init({
+//     debug: !!process.env.DEBUG,
+//     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
+//       ? Number(process.env.SENTRY_SAMPLE_RATE)
+//       : 1,
+//   })
+// }
 
 const redisExec = new Redis({
   family: 4,
@@ -86,55 +100,63 @@ emitter.on('invalidate', (resource) => {
 
 const pubSub = createPubSub({ eventTarget })
 
-const { app, yogaApp } = prepareApp({
-  prisma,
-  redisCache,
-  redisExec,
-  pubSub,
-  cache,
-  emitter,
-})
-
-const server = app.listen(3000, () => {
-  console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
-
-  const wsServer = new WebSocketServer({
-    server,
-    path: yogaApp.graphqlEndpoint,
+migrate(prisma).then(() => {
+  const { app, yogaApp } = prepareApp({
+    prisma,
+    redisCache,
+    redisExec,
+    pubSub,
+    cache,
+    emitter,
   })
 
-  useServer(
-    {
-      schema,
-      context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
-      execute: (args: any) => args.rootValue.execute(args),
-      subscribe: (args: any) => args.rootValue.subscribe(args),
-      onSubscribe: async (ctx, msg) => {
-        const { schema, execute, subscribe, contextFactory, parse, validate } =
-          yogaApp.getEnveloped({
+  const server = app.listen(3000, () => {
+    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+
+    const wsServer = new WebSocketServer({
+      server,
+      path: yogaApp.graphqlEndpoint,
+    })
+
+    useServer(
+      {
+        schema,
+        context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
+        execute: (args: any) => args.rootValue.execute(args),
+        subscribe: (args: any) => args.rootValue.subscribe(args),
+        onSubscribe: async (ctx, msg) => {
+          const {
+            schema,
+            execute,
+            subscribe,
+            contextFactory,
+            parse,
+            validate,
+          } = yogaApp.getEnveloped({
             ...ctx,
             req: ctx.extra.request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })
 
-        const args = {
-          schema,
-          operationName: msg.payload.operationName,
-          document: parse(msg.payload.query),
-          variableValues: msg.payload.variables,
-          contextValue: await contextFactory(),
-          rootValue: {
-            execute,
-            subscribe,
-          },
-        }
+          const args = {
+            schema,
+            operationName: msg.payload.operationName,
+            document: parse(msg.payload.query),
+            variableValues: msg.payload.variables,
+            contextValue: await contextFactory(),
+            rootValue: {
+              execute,
+              subscribe,
+            },
+          }
 
-        const errors = validate(args.schema, args.document)
-        if (errors.length) return errors
-        return args
+          const errors = validate(args.schema, args.document)
+          if (errors.length) return errors
+          return args
+        },
       },
-    },
-    wsServer
-  )
+      wsServer
+    )
+  })
 })

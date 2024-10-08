@@ -1,0 +1,290 @@
+// ----- ELEMENTS -----
+// #region
+enum ElementStatus {
+  DRAFT
+  REVIEW
+  READY
+}
+
+enum ElementType {
+  // TODO: remove old types, to be migrated to new ones
+  SC
+  MC
+  KPRIM
+  FREE_TEXT
+  NUMERICAL
+
+  // new types
+  CONTENT
+  FLASHCARD
+
+  // TODO: add new types to be migrated to (careful to migrate questionData.type as well with a script)
+  // QUESTION_SC
+  // QUESTION_MC
+  // QUESTION_KPRIM
+  // QUESTION_FREE_TEXT
+  // QUESTION_NUMERICAL
+}
+
+model Element {
+  id Int @id @default(autoincrement())
+
+  version Int @default(1) // used to track question versions, incremented on each update
+
+  originalId String?
+
+  isArchived Boolean @default(false)
+  isDeleted  Boolean @default(false)
+
+  name        String
+  content     String // markdown content
+  explanation String? // markdown content
+
+  pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
+
+  /// [PrismaElementOptions]
+  options Json
+
+  status ElementStatus @default(READY)
+  type   ElementType
+
+  tags Tag[]
+
+  // TODO: as we renamed Question to Element, it will need to have instances and elementInstances in parallel for a while. once we migrated all question instances and activities to elements, we can remove instances with a migration.
+  instances        QuestionInstance[]
+  elementInstances ElementInstance[]
+  feedbacks        ElementFeedback[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
+}
+
+enum ElementInstanceType {
+  LIVE_QUIZ
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+}
+
+model ElementInstance {
+  id Int @id @default(autoincrement())
+
+  originalId String?
+
+  // TODO: remove after migration to new data structure
+  migrationId String
+
+  type        ElementInstanceType
+  elementType ElementType
+  order       Int
+
+  /// [PrismaElementInstanceOptions]
+  options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
+
+  /// [PrismaElementData]
+  elementData Json // contains a copy of relevant element data
+
+  /// [PrismaElementResults]
+  results Json // contains the collection of gathered results by logged in participants
+
+  /// [PrismaElementResults]
+  anonymousResults Json // contains the collection of gathered results by anonymous participants
+
+  responses          QuestionResponse[]
+  detailResponses    QuestionResponseDetail[]
+  feedbacks          ElementFeedback[]
+  instanceStatistics InstanceStatistics?
+
+  element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId      Int
+  elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementStackId Int
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId        String       @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, migrationId])
+  @@unique([type, elementStackId, order])
+  @@unique([ownerId, originalId])
+}
+
+model InstanceStatistics {
+  anonymousCorrectCount        Int?
+  anonymousPartialCorrectCount Int?
+  anonymousWrongCount          Int?
+
+  // aggregated element feedbacks of all students (only last feedback)
+  upvoteCount   Int?
+  downvoteCount Int?
+
+  // only logged in participants impact the following counts (consistent with results)
+  correctCount             Int  @default(0)
+  partialCorrectCount      Int  @default(0)
+  wrongCount               Int  @default(0)
+  firstCorrectCount        Int?
+  firstPartialCorrectCount Int?
+  firstWrongCount          Int?
+  lastCorrectCount         Int?
+  lastPartialCorrectCount  Int?
+  lastWrongCount           Int?
+
+  // only logged in participants impact the following counts (consistent with results and counts above)
+  uniqueParticipantCount Int  @default(0)
+  averageTimeSpent       Int? // computed based on averageTimeSpent per participant
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int             @id
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ElementStackType {
+  LIVE_QUIZ
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+}
+
+model ElementStack {
+  id Int @id @default(autoincrement())
+
+  // element stacks need to have an originalId to enable migration from v2 session blocks
+  originalId String? @unique
+
+  type  ElementStackType
+  order Int
+
+  displayName String?
+  description String?
+
+  /// [PrismaElementStackOptions]
+  options Json
+
+  elements     ElementInstance[]
+  bookmarkedBy Participation[]
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  liveQuiz         LiveQuiz?  @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId       String?    @db.Uuid
+  activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementStack")
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @unique @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
+  @@unique([type, practiceQuizId, order])
+  @@unique([type, microLearningId, order])
+  @@unique([type, liveQuizId, order])
+  @@unique([type, groupActivityId, order])
+}
+
+// #endregion
+
+// ----- QUESTION POOL (LEGACY) -----
+// #region
+enum QuestionInstanceType {
+  UNSET
+  SESSION
+  MICRO_SESSION
+  LEARNING_ELEMENT
+  GROUP_ACTIVITY
+}
+
+model QuestionInstance {
+  id Int @id @default(autoincrement())
+
+  originalId String?
+
+  type  QuestionInstanceType?
+  order Int?
+
+  participants     Int  @default(0)
+  pointsMultiplier Int  @default(1)
+  resetTimeDays    Int?
+  maxBonusPoints   Int?
+  timeToZeroBonus  Int?
+
+  /// [PrismaElementData]
+  questionData Json
+
+  /// [PrismaQuestionResults]
+  results Json
+
+  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionBlockId Int?
+
+  question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  questionId Int?
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    String   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, sessionBlockId, order])
+  @@unique([ownerId, originalId])
+}
+
+// #endregion
+
+// ----- TAGS AND SKILLS -----
+// #region
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  order Int @default(0)
+
+  originalId String?
+
+  questions Element[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@unique([ownerId, originalId])
+}
+
+// #endregion
+
+// ----- MEDIA LIBRARY -----
+// #region
+model MediaFile {
+  id String @id @default(uuid()) @db.Uuid
+
+  href        String  @unique
+  name        String
+  type        String
+  description String?
+
+  originalId String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
+}
+
+// #endregion

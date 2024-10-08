@@ -1,0 +1,3 @@
+query GetBookmarksPracticeQuiz($quizId: String, $courseId: String!) {
+  getBookmarksPracticeQuiz(quizId: $quizId, courseId: $courseId)
+}

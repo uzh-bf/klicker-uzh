@@ -1,0 +1,3 @@
+mutation ActivateParticipantAccount($token: String!) {
+  activateParticipantAccount(token: $token)
+}

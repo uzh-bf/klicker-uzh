@@ -17,7 +17,7 @@ export const importQuestions = async (
 ) => {
   try {
     let mappedQuestionIds: Record<string, number> = {}
-    const questionsInDb = await prisma.question.findMany({
+    const questionsInDb = await prisma.element.findMany({
       where: {
         originalId: {
           not: null,
@@ -64,8 +64,18 @@ export const importQuestions = async (
                     .join('\n\n') +
                   '\n'
                 : ''),
-            options: {},
-            hasSampleSolution: false,
+            options: {
+              displayMode:
+                question.type == 'SC' || question.type == 'MC'
+                  ? 'LIST'
+                  : undefined,
+              hasSampleSolution: false,
+              hasAnswerFeedbacks: false,
+              choices: undefined,
+              restrictions: undefined,
+              solutions: undefined,
+              solutionRanges: undefined,
+            },
             isDeleted: question.isDeleted,
             isArchived: question.isArchived,
             tags: {
@@ -97,9 +107,12 @@ export const importQuestions = async (
 
         if (['SC', 'MC'].includes(question.type)) {
           result.data.options = {
+            ...result.data.options,
+            hasSampleSolution: question.versions.options[
+              question.type
+            ].choices.some((choice) => choice.correct),
             choices: question.versions.options[question.type].choices.map(
               (choice, ix) => {
-                if (choice.correct) result.data.hasSampleSolution = true
                 return {
                   ix,
                   value: choice.name,
@@ -115,12 +128,14 @@ export const importQuestions = async (
             question.versions.options.FREE_RANGE?.restrictions
           if (!restrictions) {
             result.data.options = {
+              ...result.data.options,
               restrictions: undefined,
               solutions: [],
               solutionRanges: [],
             }
           } else {
             result.data.options = {
+              ...result.data.options,
               restrictions: {
                 min: restrictions.min !== null ? restrictions.min : undefined,
                 max: restrictions.max !== null ? restrictions.max : undefined,
@@ -131,6 +146,7 @@ export const importQuestions = async (
           }
         } else if (question.type === 'FREE') {
           result.data.options = {
+            ...result.data.options,
             restrictions: {},
             solutions: [],
           }
@@ -142,7 +158,7 @@ export const importQuestions = async (
       })
 
       const createdQuestions = await prisma.$transaction(
-        preparedQuestions.map((data) => prisma.question.create(data))
+        preparedQuestions.map((data) => prisma.element.create(data))
       )
 
       createdQuestions.forEach((question) => {

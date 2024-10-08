@@ -60,7 +60,7 @@ function SessionLeaderboard({
           selfEntry
         )
 
-        if (selfEntry.lastBlockOrder > 0) {
+        if (selfEntry.lastBlockOrder && selfEntry.lastBlockOrder > 0) {
           try {
             const prevStoredEntry: BlockResult = await localforage.getItem(
               `${selfEntry.participantId}-score-block${
@@ -101,6 +101,7 @@ function SessionLeaderboard({
               rank2: Rank2Img,
               rank3: Rank3Img,
             }}
+            topKOnly={10}
           />
         ) : (
           <UserNotification

@@ -1,3 +1,6 @@
+import '@testing-library/cypress/add-commands'
+import { sign } from 'jsonwebtoken'
+
 /// <reference types="cypress" />
 // ***********************************************
 // This example commands.ts shows you how to
@@ -12,27 +15,85 @@
 //
 // -- This is a parent command --
 // Cypress.Commands.add('login', (email, password) => { ... })
-Cypress.Commands.add('loginLecturer', () => {
-  cy.viewport('macbook-16')
 
-  cy.visit(Cypress.env('URL_MANAGE'))
+const loginFactory = (tokenData) => () => {
   cy.clearAllCookies()
   cy.clearAllLocalStorage()
 
-  cy.get('[data-cy="delegated-login-button"').then((btn) => {
-    if (btn.is(':disabled')) {
-      cy.get('button[data-cy="tos-checkbox"]').click()
-    }
+  cy.viewport('macbook-16')
+
+  const token = sign(tokenData, 'abcd')
+
+  cy.setCookie('next-auth.session-token', token, {
+    domain: '127.0.0.1',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
   })
 
-  cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
+  cy.visit(Cypress.env('URL_MANAGE'))
+}
 
-  cy.get('[data-cy="identifier-field"]').type(
-    Cypress.env('LECTURER_IDENTIFIER')
-  )
-  cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
+Cypress.Commands.add(
+  'loginLecturer',
+  loginFactory({
+    email: 'lecturer@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8821',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: true,
+  })
+)
 
-  cy.get(':nth-child(2) > form > button').click()
+Cypress.Commands.add(
+  'loginFreeUser',
+  loginFactory({
+    email: 'free@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8822',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: false,
+    catalystIndividual: false,
+  })
+)
+
+Cypress.Commands.add(
+  'loginIndividualCatalyst',
+  loginFactory({
+    email: 'pro1@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8823',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: false,
+    catalystIndividual: true,
+  })
+)
+
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst',
+  loginFactory({
+    email: 'pro2@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8824',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
+Cypress.Commands.add('loginStudent', () => {
+  cy.clearAllCookies()
+  cy.visit(Cypress.env('URL_STUDENT'))
+  cy.get('[data-cy="username-field"]')
+    .click()
+    .type(Cypress.env('STUDENT_USERNAME'))
+  cy.get('[data-cy="password-field"]')
+    .click()
+    .type(Cypress.env('STUDENT_PASSWORD'))
+  cy.get('[data-cy="submit-login"]').click()
+  cy.wait(1000)
 })
 
 //
@@ -51,10 +112,13 @@ declare global {
   namespace Cypress {
     interface Chainable {
       loginLecturer(): Chainable<void>
+      loginFreeUser(): Chainable<void>
+      loginIndividualCatalyst(): Chainable<void>
+      loginInstitutionalCatalyst(): Chainable<void>
+      loginStudent(): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
     }
   }
 }
-import '@testing-library/cypress/add-commands'

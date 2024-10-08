@@ -7,7 +7,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
-} from '../src/index'
+} from '../src/index.js'
 
 describe('@klicker-uzh/grading', () => {
   it('should grade MC questions correctly', () => {
@@ -185,7 +185,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points4).toEqual(0)
   })
 
-  it('should compute the awarded points correctly for live sessions', () => {
+  it('should compute the awarded points correctly for live quizzes', () => {
     const points = computeAwardedPoints({
       firstResponseReceivedAt: null,
       responseTimestamp: 2000,
@@ -424,7 +424,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points10Multiplier).toEqual(15)
   })
 
-  it('should compute the awarded points correctly for learning elements and micro sessions', () => {
+  it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {
     const points = computeSimpleAwardedPoints({
       points: 10,
       pointsPercentage: 1,

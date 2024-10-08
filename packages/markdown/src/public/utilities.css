@@ -64,6 +64,10 @@
   max-height: 16rem
 }
 
+.min-h-36 {
+  min-height: 9rem
+}
+
 .w-auto {
   width: auto
 }
@@ -161,18 +165,18 @@
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
 }
 
-@media (min-width: 640px) {
-  .sm\:hover\:bg-slate-200:hover {
+@media (hover: hover) and (pointer: fine) {
+  .hover\:bg-slate-200:hover {
     --tw-bg-opacity: 1;
     background-color: rgb(226 232 240 / var(--tw-bg-opacity))
   }
 
-  .sm\:hover\:text-black:hover {
+  .hover\:text-black:hover {
     --tw-text-opacity: 1;
     color: rgb(0 0 0 / var(--tw-text-opacity))
   }
 
-  .sm\:hover\:text-white:hover {
+  .hover\:text-white:hover {
     --tw-text-opacity: 1;
     color: rgb(255 255 255 / var(--tw-text-opacity))
   }

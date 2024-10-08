@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 interface QuestionTagsProps {
   tags: Tag[]
   tagfilter?: string[]
-  handleTagClick: (value: string, selected?: boolean) => void
+  handleTagClick: (tagName: string) => void
 }
 
 function QuestionTags({
@@ -19,7 +19,7 @@ function QuestionTags({
   }
 
   return (
-    <div className="flex flex-row max-w-2xl overflow-auto">
+    <div className="flex max-w-2xl flex-row overflow-auto">
       {tags.map((tag): React.ReactElement => {
         const selected = tagfilter?.includes(tag.name)
 
@@ -27,7 +27,7 @@ function QuestionTags({
           <Button
             className={{
               root: twMerge(
-                'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max shadow-none',
+                'border-blue-40 m-1 mt-0 w-max rounded-md border border-solid bg-slate-100 px-3 py-1 shadow-none',
                 selected && 'bg-primary-20'
               ),
             }}
@@ -36,6 +36,7 @@ function QuestionTags({
               handleTagClick(tag.name)
             }}
             key={tag.id}
+            data={{ cy: `tag-list-item-${tag.name}` }}
           >
             {tag.name}
           </Button>

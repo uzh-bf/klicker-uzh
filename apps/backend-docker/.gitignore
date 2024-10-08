@@ -2,7 +2,9 @@
 .DS_Store
 node_modules
 src/client
-dist
+dist/
+instrumented/
+public/
 
 src/prisma/ERD.svg
 src/graphql

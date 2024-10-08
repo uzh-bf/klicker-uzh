@@ -1,0 +1,131 @@
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
+}
+
+model QuestionResponse {
+  id Int @id @default(autoincrement())
+
+  trialsCount Int @default(0)
+
+  totalScore         Float     @default(0)
+  totalPointsAwarded Float?    @default(0)
+  totalXpAwarded     Float     @default(0)
+  averageTimeSpent   Int       @default(0) // TODO: remove default value after applying migration
+  lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
+  lastAnsweredAt     DateTime?
+
+  correctCount       Int       @default(0)
+  correctCountStreak Int       @default(0)
+  lastCorrectAt      DateTime?
+
+  partialCorrectCount  Int       @default(0)
+  lastPartialCorrectAt DateTime?
+
+  wrongCount  Int       @default(0)
+  lastWrongAt DateTime?
+
+  // spaced repetition parameters
+  eFactor   Float     @default(2.5)
+  interval  Int       @default(1)
+  nextDueAt DateTime?
+
+  /// [PrismaQuestionResponse]
+  firstResponse            Json
+  firstResponseCorrectness ResponseCorrectness
+
+  /// [PrismaQuestionResponse]
+  lastResponse            Json
+  lastResponseCorrectness ResponseCorrectness
+
+  /// [PrismaElementResults]
+  aggregatedResponses Json?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isMigrated Boolean @default(false)
+
+  @@unique([participantId, elementInstanceId])
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
+}
+
+model QuestionResponseDetail {
+  id Int @id @default(autoincrement())
+
+  score         Float  @default(0)
+  pointsAwarded Float? @default(0)
+  xpAwarded     Float  @default(0)
+  timeSpent     Int    @default(0) // TODO: remove default value after applying migration
+
+  /// [PrismaQuestionResponse]
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
+}
+
+model ElementFeedback {
+  id Int @id @default(autoincrement())
+
+  upvote   Boolean @default(false)
+  downvote Boolean @default(false)
+  feedback String?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, elementInstanceId])
+}

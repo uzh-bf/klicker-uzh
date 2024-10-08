@@ -1,23 +1,23 @@
-import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
-const DynamicMarkdown = dynamic(
-  async () => {
-    const { Markdown } = await import('@klicker-uzh/markdown')
-    return Markdown
-  },
-  {
-    ssr: false,
-  }
-)
+interface Props {
+  participantToken?: string
+  cookiesAvailable?: boolean
+}
 
-function Landing() {
+function Landing({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
 
   return (
     <DocsLayout>
@@ -46,30 +46,20 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
+    courseId: ctx.params.courseId,
     ctx,
   })
 
-  const result = await apolloClient.query({
-    query: GetBasicCourseInformationDocument,
-    variables: {
-      courseId: ctx.params.courseId as string,
-    },
-    context: participantToken
-      ? {
-          headers: {
-            authorization: `Bearer ${participantToken}`,
-          },
-        }
-      : undefined,
-  })
-
-  if (!result.data.basicCourseInformation) {
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/404',
-        statusCode: 302,
+      props: {
+        cookiesAvailable,
+        participantToken,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

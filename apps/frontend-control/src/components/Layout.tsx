@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -17,7 +16,6 @@ interface LayoutProps {
 
 function Layout({ title, children, sessionId, className }: LayoutProps) {
   const router = useRouter()
-  const t = useTranslations()
   const {
     loading: loadingUser,
     error: errorUser,
@@ -32,7 +30,7 @@ function Layout({ title, children, sessionId, className }: LayoutProps) {
   }
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex h-full w-full flex-col">
       <Head>
         <title>KlickerUZH Controller {title}</title>
         <meta
@@ -42,16 +40,16 @@ function Layout({ title, children, sessionId, className }: LayoutProps) {
         ></meta>
       </Head>
 
-      <div className={twMerge('h-full overflow-y-none', className)}>
+      <div className={twMerge('overflow-y-none h-full', className)}>
         <div className="fixed top-0 z-10 w-full">
           <Header title={title} />
         </div>
 
-        <div className="flex flex-col p-4 mt-11 mb-12 md:mb-0 overflow-y-auto [height:_calc(100%-5.75rem)] md:[height:_calc(100%-2.75rem)]">
+        <div className="mb-12 mt-11 flex flex-col overflow-y-auto p-4 [height:_calc(100%-5.75rem)] md:mb-0 md:[height:_calc(100%-2.75rem)]">
           {children}
         </div>
 
-        <div className="fixed bottom-0 w-full h-12 md:hidden">
+        <div className="fixed bottom-0 h-12 w-full md:hidden">
           <MobileMenuBar sessionId={sessionId} />
         </div>
       </div>

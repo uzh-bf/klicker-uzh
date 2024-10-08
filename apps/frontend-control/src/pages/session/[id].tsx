@@ -8,6 +8,7 @@ import {
   GetControlSessionDocument,
   GetUserRunningSessionsDocument,
   SessionBlockStatus,
+  SessionBlock as SessionBlockType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -111,23 +112,29 @@ function RunningSession() {
             <H3>{t('control.session.activeBlock')}</H3>
 
             <SessionBlock
-              block={blocks.find((block) => block.order === currentBlockOrder)}
+              block={
+                blocks.find(
+                  (block) => block.order === currentBlockOrder
+                ) as SessionBlockType
+              }
               active
             />
             {typeof currentBlockOrder !== 'undefined' &&
               nextBlockOrder !== -1 &&
               nextBlockOrder < blocks.length && (
-                <div className="flex flex-col gap-2 mt-2">
+                <div className="mt-2 flex flex-col gap-2">
                   <FontAwesomeIcon
                     icon={faArrowDown}
-                    className="w-full mx-auto"
+                    className="mx-auto w-full"
                     size="2xl"
                   />
 
                   <SessionBlock
-                    block={blocks.find(
-                      (block) => block.order === nextBlockOrder
-                    )}
+                    block={
+                      blocks.find(
+                        (block) => block.order === nextBlockOrder
+                      ) as SessionBlockType
+                    }
                   />
                 </div>
               )}
@@ -158,17 +165,21 @@ function RunningSession() {
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
-                className="w-full mx-auto"
+                className="mx-auto w-full"
               />
             )}
             <SessionBlock
-              block={blocks.find((block) => block.order === nextBlockOrder)}
+              block={
+                blocks.find(
+                  (block) => block.order === nextBlockOrder
+                ) as SessionBlockType
+              }
             />
             {nextBlockOrder < blocks.length - 1 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
-                className="w-full mx-auto"
+                className="mx-auto w-full"
               />
             )}
             <Button
@@ -187,7 +198,7 @@ function RunningSession() {
                 }
               }}
               className={{
-                root: 'float-right text-white bg-primary-80',
+                root: 'bg-primary-80 float-right text-white',
               }}
               data={{ cy: 'activate-next-block' }}
             >
@@ -211,7 +222,7 @@ function RunningSession() {
                 )
               }}
               className={{
-                root: 'float-right text-white bg-uzh-red-100',
+                root: 'bg-uzh-red-100 float-right text-white',
               }}
               data={{ cy: 'end-session' }}
             >

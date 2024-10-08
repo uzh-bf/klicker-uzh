@@ -1,7 +1,8 @@
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import React, { PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ParticipantProps {
@@ -12,6 +13,7 @@ interface ParticipantProps {
   rank?: number | string
   isHighlighted?: boolean
   onClick?: () => void
+  level?: number
   className?: string
 }
 
@@ -25,24 +27,24 @@ function Participant({
   className,
   points,
   rank,
+  level,
 }: PropsWithChildren<ParticipantProps>) {
   const t = useTranslations()
 
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-1 border border-slate-200 rounded',
+        'flex flex-row items-center gap-1 rounded border border-slate-200',
         isHighlighted && 'bg-uzh-grey-20',
         onClick && 'hover:cursor-pointer hover:border-orange-200',
         className
       )}
       onClick={onClick}
     >
-      <div className="flex flex-row items-center flex-1 gap-2">
-        {rank && <div className="w-3 ml-1 text-lg font-bold">{rank}</div>}
-
+      <div className="flex flex-1 flex-row items-center gap-2">
+        {rank && <div className="ml-1 w-3 text-lg font-bold">{rank}</div>}
         {withAvatar && (
-          <div className="w-[30px] h-full flex flex-col items-center">
+          <div className="relative flex w-[30px] justify-center">
             <Image
               src={
                 typeof avatar !== 'undefined' && avatar !== null
@@ -53,16 +55,20 @@ function Participant({
               height={avatar ? 25 : 20}
               width={avatar ? 30 : 20}
             />
+            {level && (
+              <div className="border-uzh-grey-80 absolute bottom-0 right-0 -mb-1 flex h-3 w-3 items-center justify-center rounded-full border border-solid bg-white text-xs font-bold text-slate-600">
+                {level}
+              </div>
+            )}
           </div>
         )}
-
-        <div className="first:ml-2 text-slate-700">
+        <div className="text-slate-700 first:ml-2">
           {pseudonym ?? t('shared.generic.free')}
         </div>
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
-        <div className="flex flex-col items-end self-stretch justify-center flex-initial px-3 py-1 font-bold text-white rounded-r bg-slate-700">
+        <div className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r bg-slate-700 px-3 py-1 font-bold text-white">
           {points}
         </div>
       )}
@@ -92,6 +98,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props?.onLeaveCourse?.()
           }}
+          data={{ cy: 'leave-leaderboard' }}
         >
           {t('shared.generic.leave')}
         </Button>
@@ -103,6 +110,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props.onJoinCourse!()
           }}
+          data={{ cy: 'join-leaderboard' }}
         >
           {t('shared.generic.join')}
         </Button>

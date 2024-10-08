@@ -1,29 +1,43 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowDown,
+  faArrowUp,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementDisplayMode,
+  ElementInstance,
+  ElementInstanceType,
+  ElementStatus,
+  ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
   GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
+  ManipulateContentElementDocument,
+  ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  QuestionDisplayMode,
-  QuestionType,
+  UpdateQuestionInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import StudentElement, {
+  StudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
+  FormLabel,
   FormikNumberField,
   FormikSelectField,
+  FormikSwitchField,
   FormikTextField,
   H3,
-  Label,
+  H4,
   Modal,
-  Select,
+  Prose,
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -41,6 +55,7 @@ import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
+import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
@@ -56,271 +71,363 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function QuestionEditModal({
-  isOpen,
-  handleSetIsOpen,
-  questionId,
-  mode,
-}: QuestionEditModalProps): React.ReactElement {
-  const isDuplication = mode === QuestionEditMode.DUPLICATE
-  const t = useTranslations()
-
-  // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
-  const questionManipulationSchema = Yup.object().shape({
+function createValidationSchema(t: ReturnType<typeof useTranslations>) {
+  return Yup.object().shape({
+    status: Yup.string().oneOf(Object.values(ElementStatus)),
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
-    type: Yup.string().oneOf(Object.values(QuestionType)).required(),
-    displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
+    type: Yup.string().oneOf(Object.values(ElementType)).required(),
+
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
       .test({
         message: t('manage.formErrors.questionContent'),
         test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
       }),
-    explanation: Yup.string().nullable(),
-    hasSampleSolution: Yup.boolean(),
-    hasAnswerFeedbacks: Yup.boolean(),
 
-    options: Yup.object().when(
-      ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
-      ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
-        const baseChoicesSchema = Yup.array().of(
-          Yup.object().shape({
-            ix: Yup.number(),
-            value: Yup.string().test({
+    explanation: Yup.string().when(['type'], ([type], schema) => {
+      if (type === ElementType.Flashcard)
+        return schema.required(t('manage.formErrors.explanationRequired'))
+      return schema.nullable()
+    }),
+
+    options: Yup.object().when(['type'], ([type], schema) => {
+      const baseChoicesSchema = Yup.array().of(
+        Yup.object().shape({
+          ix: Yup.number(),
+          value: Yup.string()
+            .required(t('manage.formErrors.answerContent'))
+            .test({
               message: t('manage.formErrors.answerContent'),
               test: (content) =>
                 !content?.match(/^(<br>(\n)*)$/g) && content !== '',
             }),
-            correct: Yup.boolean().nullable(),
-            feedback: hasAnswerFeedbacks
-              ? Yup.string().test({
-                  message: t('manage.formErrors.feedbackContent'),
-                  test: (content) =>
-                    !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                })
-              : Yup.string().nullable(),
-          })
-        )
+          correct: Yup.boolean().nullable(),
+          feedback: Yup.string().when('hasAnswerFeedbacks', {
+            is: true,
+            then: (schema) =>
+              schema.test({
+                message: t('manage.formErrors.feedbackContent'),
+                test: (content) =>
+                  !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+              }),
+            otherwise: (schema) => schema.nullable(),
+          }),
+        })
+      )
 
-        switch (type) {
-          case 'SC':
-          case 'MC': {
-            let choicesSchema = baseChoicesSchema.min(
-              1,
-              t('manage.formErrors.NumberQuestionsRequired')
-            )
+      switch (type) {
+        case ElementType.Sc:
+        case ElementType.Mc: {
+          let choicesSchema = baseChoicesSchema.min(
+            1,
+            t('manage.formErrors.NumberQuestionsRequired')
+          )
 
-            if (type === 'SC')
-              return schema.shape({
-                choices: choicesSchema.test({
-                  message: t('manage.formErrors.SCAnswersCorrect'),
+          if (type === 'SC')
+            return schema.shape({
+              displayMode: Yup.string().oneOf(
+                Object.values(ElementDisplayMode)
+              ),
+              hasAnswerFeedbacks: Yup.boolean(),
+              hasSampleSolution: Yup.boolean(),
+              choices: choicesSchema.when('hasSampleSolution', {
+                is: true,
+                then: (schema) =>
+                  schema.test({
+                    message: t('manage.formErrors.SCAnswersCorrect'),
+                    test: (choices) => {
+                      return (
+                        choices.filter((choice) => choice.correct).length === 1
+                      )
+                    },
+                  }),
+              }),
+            })
+
+          return schema.shape({
+            displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
+            hasAnswerFeedbacks: Yup.boolean(),
+            hasSampleSolution: Yup.boolean(),
+            choices: choicesSchema.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema.test({
+                  message: t('manage.formErrors.MCAnswersCorrect'),
                   test: (choices) => {
                     return (
-                      !hasSampleSolution ||
-                      choices.filter((choice) => choice.correct).length === 1
+                      choices.filter((choice) => choice.correct).length >= 1
                     )
                   },
                 }),
-              })
+            }),
+          })
+        }
 
-            return schema.shape({
-              choices: choicesSchema.test({
-                message: t('manage.formErrors.MCAnswersCorrect'),
-                test: (choices) => {
-                  return (
-                    !hasSampleSolution ||
-                    choices.filter((choice) => choice.correct).length >= 1
-                  )
-                },
-              }),
-            })
-          }
+        case ElementType.Kprim: {
+          const choicesSchema = baseChoicesSchema.length(
+            4,
+            t('manage.formErrors.NumberQuestionsRequiredKPRIM')
+          )
 
-          case 'KPRIM': {
-            const choicesSchema = baseChoicesSchema.length(
-              4,
-              t('manage.formErrors.NumberQuestionsRequiredKPRIM')
-            )
+          return schema.shape({
+            hasAnswerFeedbacks: Yup.boolean(),
+            hasSampleSolution: Yup.boolean(),
+            choices: choicesSchema,
+          })
+        }
 
-            return schema.shape({
-              choices: choicesSchema,
-            })
-          }
-
-          case 'NUMERICAL': {
-            const baseSolutionRanges = Yup.array()
-              .of(
-                Yup.object().shape({
-                  min: Yup.number().nullable(),
-                  // TODO: min less than max if defined
-                  // .when('max', {
-                  //   is: (max) => typeof max !== 'undefined',
-                  //   then: (schema) => schema.lessThan(Yup.ref('max')),
-                  // }),
-                  max: Yup.number().nullable(),
-                  // TODO: max more than min if defined
-                  // .when('min', {
-                  //   is: (min) => typeof min !== 'undefined',
-                  //   then: (schema) => schema.moreThan(Yup.ref('min')),
-                  // }),
-                })
-              )
-              .nullable()
-
-            return schema.shape({
-              accuracy: Yup.number()
-                .nullable()
-                .min(0, t('manage.formErrors.NRPrecision')),
-              unit: Yup.string().nullable(),
-
-              restrictions: Yup.object().shape({
-                min: Yup.number().nullable(),
-                // TODO: less than if max defined
-                // .lessThan(Yup.ref('max')),
+        case ElementType.Numerical: {
+          const baseSolutionRanges = Yup.array()
+            .of(
+              Yup.object().shape({
+                min: Yup.number()
+                  .nullable()
+                  // we can only handle one case to avoid cyclic dependencies
+                  .when('max', {
+                    is: (max?: number | null) => typeof max !== 'undefined',
+                    then: (schema) =>
+                      schema.lessThan(
+                        Yup.ref('max'),
+                        t('manage.formErrors.NRMinLessThanMaxSol')
+                      ),
+                  }),
                 max: Yup.number().nullable(),
-                // TODO: more than if min defined
-                // .moreThan(Yup.ref('min')),
-              }),
-
-              solutionRanges: hasSampleSolution
-                ? baseSolutionRanges.min(
-                    1,
-                    t('manage.formErrors.solutionRangeRequired')
-                  )
-                : baseSolutionRanges,
-            })
-          }
-
-          case 'FREE_TEXT': {
-            const baseSolutions = Yup.array().of(
-              Yup.string()
-                .required(t('manage.formErrors.enterSolution'))
-                .min(1, t('manage.formErrors.enterSolution'))
+              })
             )
+            .nullable()
 
-            return schema.shape({
-              restrictions: Yup.object().shape({
-                // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-                maxLength: Yup.number()
-                  .min(1, t('manage.formErrors.FTMaxLength'))
-                  .nullable(),
-              }),
+          return schema.shape({
+            hasSampleSolution: Yup.boolean(),
 
-              // TODO: ensure that this check does not fail if the user enters a feedback and then deactivates the sample solution option again
-              solutions:
-                hasSampleSolution &&
-                baseSolutions.min(1, t('manage.formErrors.solutionRequired')),
-            })
-          }
+            accuracy: Yup.number()
+              .nullable()
+              .min(0, t('manage.formErrors.NRPrecision')),
+            unit: Yup.string().nullable(),
+
+            restrictions: Yup.object().shape({
+              min: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable()
+                .when('max', {
+                  is: (max?: number) => typeof max !== 'undefined',
+                  then: (schema) =>
+                    schema.lessThan(
+                      Yup.ref('max'),
+                      t('manage.formErrors.NRMinLessThanMax')
+                    ),
+                }),
+              max: Yup.number()
+                .min(-1e30, t('manage.formErrors.NRUnderflow'))
+                .max(1e30, t('manage.formErrors.NROverflow'))
+                .nullable(),
+            }),
+
+            solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRangeRequired')),
+            }),
+          })
+        }
+
+        case ElementType.FreeText: {
+          const baseSolutions = Yup.array().of(
+            Yup.string()
+              .required(t('manage.formErrors.enterSolution'))
+              .min(1, t('manage.formErrors.enterSolution'))
+          )
+
+          return schema.shape({
+            hasSampleSolution: Yup.boolean(),
+            restrictions: Yup.object().shape({
+              maxLength: Yup.number()
+                .min(1, t('manage.formErrors.FTMaxLength'))
+                .nullable(),
+            }),
+            solutions: baseSolutions.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema
+                  .required(t('manage.formErrors.solutionRequired'))
+                  .min(1, t('manage.formErrors.solutionRequired')),
+            }),
+          })
         }
       }
-    ),
+    }),
   })
+}
 
-  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
-    inputValue: '',
-    inputValid: false,
-    inputEmpty: true,
-  })
+function QuestionEditModal({
+  isOpen,
+  handleSetIsOpen,
+  questionId,
+  mode,
+}: QuestionEditModalProps): React.ReactElement {
+  // TODO: styling of tooltips - some are too wide
+  const t = useTranslations()
 
-  const {
-    loading: loadingQuestion,
-    error: errorQuestion,
-    data: dataQuestion,
-  } = useQuery(GetSingleQuestionDocument, {
-    variables: { id: questionId! },
-    skip: typeof questionId === 'undefined',
-  })
+  const isDuplication = mode === QuestionEditMode.DUPLICATE
+  const [updateInstances, setUpdateInstances] = useState(false)
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
 
+  const questionManipulationSchema = useMemo(
+    () => createValidationSchema(t),
+    [t]
+  )
+
+  const { loading: loadingQuestion, data: dataQuestion } = useQuery(
+    GetSingleQuestionDocument,
+    {
+      variables: { id: questionId! },
+      skip: typeof questionId === 'undefined',
+    }
+  )
+
+  const [manipulateContentElement] = useMutation(
+    ManipulateContentElementDocument
+  )
+  const [manipulateFlashcardElement] = useMutation(
+    ManipulateFlashcardElementDocument
+  )
   const [manipulateChoicesQuestion] = useMutation(
     ManipulateChoicesQuestionDocument
   )
-  const [manipulateNUMERICALQuestion] = useMutation(
+  const [manipulateNumericalQuestion] = useMutation(
     ManipulateNumericalQuestionDocument
   )
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
-  const DROPDOWN_OPTIONS = [
+  const STATUS_OPTIONS = [
     {
-      value: QuestionType.Sc,
-      label: t(`shared.${QuestionType.Sc}.typeLabel`),
+      value: ElementStatus.Draft,
+      label: t(`shared.${ElementStatus.Draft}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(
+          `shared.${ElementStatus.Draft}.statusLabel`
+        )}`,
+      },
     },
     {
-      value: QuestionType.Mc,
-      label: t(`shared.${QuestionType.Mc}.typeLabel`),
+      value: ElementStatus.Review,
+      label: t(`shared.${ElementStatus.Review}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(
+          `shared.${ElementStatus.Review}.statusLabel`
+        )}`,
+      },
     },
     {
-      value: QuestionType.Kprim,
-      label: t(`shared.${QuestionType.Kprim}.typeLabel`),
+      value: ElementStatus.Ready,
+      label: t(`shared.${ElementStatus.Ready}.statusLabel`),
+      data: {
+        cy: `select-question-status-${t(
+          `shared.${ElementStatus.Ready}.statusLabel`
+        )}`,
+      },
+    },
+  ]
+
+  const QUESTION_TYPE_OPTIONS = [
+    {
+      value: ElementType.Content,
+      label: t(`shared.${ElementType.Content}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Content}.typeLabel`
+        )}`,
+      },
     },
     {
-      value: QuestionType.Numerical,
-      label: t(`shared.${QuestionType.Numerical}.typeLabel`),
+      value: ElementType.Flashcard,
+      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Flashcard}.typeLabel`
+        )}`,
+      },
     },
     {
-      value: QuestionType.FreeText,
-      label: t(`shared.${QuestionType.FreeText}.typeLabel`),
+      value: ElementType.Sc,
+      label: t(`shared.${ElementType.Sc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Sc}.typeLabel`)}`,
+      },
+    },
+    {
+      value: ElementType.Mc,
+      label: t(`shared.${ElementType.Mc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Mc}.typeLabel`)}`,
+      },
+    },
+    {
+      value: ElementType.Kprim,
+      label: t(`shared.${ElementType.Kprim}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Kprim}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Numerical,
+      label: t(`shared.${ElementType.Numerical}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Numerical}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.FreeText,
+      label: t(`shared.${ElementType.FreeText}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.FreeText}.typeLabel`
+        )}`,
+      },
     },
   ]
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
-      const common = {
-        type:
-          mode === QuestionEditMode.CREATE
-            ? QuestionType.Sc
-            : dataQuestion?.question?.type,
-        displayMode: QuestionDisplayMode.List,
+      return {
+        status: ElementStatus.Ready,
+        type: ElementType.Sc,
         name: '',
         content: '',
         explanation: '',
         tags: [],
-        hasSampleSolution: false,
-        hasAnswerFeedbacks: false,
         pointsMultiplier: '1',
-      }
-
-      switch (common.type) {
-        case QuestionType.Sc:
-        case QuestionType.Mc:
-        case QuestionType.Kprim:
-          return {
-            ...common,
-            options: {
-              choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
-            },
-          }
-
-        case QuestionType.Numerical:
-          return {
-            ...common,
-            options: {
-              accuracy: undefined,
-              unit: '',
-              restrictions: { min: undefined, max: undefined },
-              solutionRanges: [{ min: undefined, max: undefined }],
-            },
-          }
-
-        case QuestionType.FreeText:
-          return {
-            ...common,
-            options: {
-              placeholder: '',
-              restrictions: { maxLength: undefined },
-              solutions: [],
-            },
-          }
-
-        default: {
-          console.error('question type not implemented', common.type)
-          return {}
-        }
+        options: {
+          hasSampleSolution: false,
+          hasAnswerFeedbacks: false,
+          displayMode: ElementDisplayMode.List,
+          choices: [
+            { ix: 0, value: undefined, correct: false, feedback: undefined },
+          ],
+        },
       }
     }
+
+    // const temp = dataQuestion?.question?.questionData?.options
+    const options =
+      dataQuestion?.question?.questionData?.__typename !==
+        'ContentElementQData' &&
+      dataQuestion?.question?.questionData?.__typename !==
+        'FlashcardElementQData'
+        ? dataQuestion?.question?.questionData?.options!
+        : null
 
     return dataQuestion?.question?.questionData
       ? {
@@ -330,56 +437,114 @@ function QuestionEditModal({
             : dataQuestion.question.name,
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
-          displayMode:
-            dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
-          options: dataQuestion.question.questionData.options,
+          // TODO: improve this structure in new component - should not be manually defined! - figure out alternative way to convert all null values to undefined for form validation to work properly
+          options: options
+            ? {
+                hasSampleSolution: options.hasSampleSolution,
+                hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? undefined,
+                displayMode: options.displayMode ?? undefined,
+                unit: options.unit ?? undefined,
+                accuracy: options.accuracy ?? undefined,
+                placeholder: options.placeholder ?? undefined,
+                restrictions: options.restrictions
+                  ? {
+                      min: options.restrictions.min ?? undefined,
+                      max: options.restrictions.max ?? undefined,
+                      maxLength: options.restrictions.maxLength ?? undefined,
+                    }
+                  : undefined,
+                choices: options.choices
+                  ? options.choices.map((choice: any) => ({
+                      ix: choice.ix,
+                      value: choice.value,
+                      correct: choice.correct ?? undefined,
+                      feedback: choice.feedback ?? undefined,
+                    }))
+                  : undefined,
+                solutionRanges: options.solutionRanges
+                  ? options.solutionRanges.map((range: any) => ({
+                      min: range.min ?? undefined,
+                      max: range.max ?? undefined,
+                    }))
+                  : undefined,
+                solutions: options.solutions ?? undefined,
+              }
+            : undefined,
         }
       : {}
   }, [dataQuestion?.question, mode])
 
-  // TODO: styling of tooltips - some are too wide
-  // TODO: show errors of form validation below fields as for the login form
-
-  if (!question) {
-    return <div></div>
+  if (!question || Object.keys(question).length === 0) {
+    return <div />
   }
 
   return (
     <Formik
-      isInitialValid={[
-        QuestionEditMode.EDIT,
-        QuestionEditMode.DUPLICATE,
-      ].includes(mode)}
-      enableReinitialize={true}
+      validateOnMount
+      enableReinitialize
       initialValues={question}
       validationSchema={questionManipulationSchema}
+      // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values) => {
         const common = {
           id: questionId,
-          type: values.type,
           name: values.name,
+          status: values.status,
           content: values.content,
           explanation:
             !values.explanation?.match(/^(<br>(\n)*)$/g) &&
             values.explanation !== ''
               ? values.explanation
               : null,
-          hasSampleSolution: values.hasSampleSolution,
-          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           tags: values.tags,
-          displayMode: values.displayMode,
-          pointsMultiplier: parseInt(values.pointsMultiplier),
+          pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
         }
-        switch (common.type) {
-          case QuestionType.Sc:
-          case QuestionType.Mc:
-          case QuestionType.Kprim:
-            await manipulateChoicesQuestion({
+
+        switch (values.type) {
+          case ElementType.Content: {
+            const result = await manipulateContentElement({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
+              },
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+            if (!result.data?.manipulateContentElement?.id) return
+            break
+          }
+
+          case ElementType.Flashcard: {
+            const result = await manipulateFlashcardElement({
+              variables: {
+                ...common,
+                id: isDuplication ? undefined : questionId,
+              },
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+            if (!result.data?.manipulateFlashcardElement?.id) return
+            break
+          }
+
+          case ElementType.Sc:
+          case ElementType.Mc:
+          case ElementType.Kprim: {
+            const result = await manipulateChoicesQuestion({
+              variables: {
+                ...common,
+                id: isDuplication ? undefined : questionId,
+                type: values.type,
                 options: {
+                  hasSampleSolution: values.options?.hasSampleSolution,
+                  hasAnswerFeedbacks: values.options?.hasAnswerFeedbacks,
+                  displayMode:
+                    values.options?.displayMode || ElementDisplayMode.List,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,
@@ -395,26 +560,29 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case QuestionType.Numerical:
-            await manipulateNUMERICALQuestion({
+          }
+          case ElementType.Numerical: {
+            const result = await manipulateNumericalQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
-                  unit: values.options?.unit,
+                  hasSampleSolution: values.options?.hasSampleSolution,
                   accuracy: parseInt(values.options?.accuracy),
+                  unit: values.options?.unit,
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.min === ''
                         ? undefined
-                        : parseFloat(values.options.restrictions?.min),
+                        : parseFloat(values.options?.restrictions?.min),
                     max:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.max === ''
                         ? undefined
-                        : parseFloat(values.options.restrictions?.max),
+                        : parseFloat(values.options?.restrictions?.max),
                   },
                   solutionRanges: values.options?.solutionRanges?.map(
                     (range: any) => {
@@ -433,18 +601,23 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateNumericalQuestion?.id) return
             break
-          case QuestionType.FreeText:
-            await manipulateFreeTextQuestion({
+          }
+          case ElementType.FreeText: {
+            const result = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  hasSampleSolution: values.options?.hasSampleSolution,
                   placeholder: values.options?.placeholder,
                   restrictions: {
-                    maxLength: parseInt(
-                      values.options?.restrictions?.maxLength
-                    ),
+                    maxLength:
+                      !values.options?.restrictions?.maxLength ||
+                      values.options?.restrictions?.maxLength === ''
+                        ? undefined
+                        : parseInt(values.options?.restrictions?.maxLength),
                   },
                   solutions: values.options?.solutions,
                 },
@@ -454,24 +627,26 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateFreeTextQuestion?.id) return
             break
+          }
+
           default:
             break
         }
+
+        if (mode === QuestionEditMode.EDIT && updateInstances) {
+          if (questionId !== null && typeof questionId !== 'undefined') {
+            const { data: instanceResult } = await updateQuestionInstances({
+              variables: { questionId: questionId },
+            })
+          }
+        }
+
         handleSetIsOpen(false)
       }}
     >
-      {({
-        errors,
-        touched,
-        isSubmitting,
-        values,
-        isValid,
-        resetForm,
-        setFieldValue,
-        setFieldTouched,
-        validateForm,
-      }) => {
+      {({ errors, isSubmitting, values, isValid, setFieldValue }) => {
         if (loadingQuestion) {
           return null
         }
@@ -482,7 +657,7 @@ function QuestionEditModal({
             fullScreen
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
-              content: 'max-w-[1400px] md:text-base text-sm',
+              content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
               title: 'text-xl',
             }}
             open={isOpen}
@@ -493,9 +668,9 @@ function QuestionEditModal({
                 disabled={isSubmitting || !isValid}
                 className={{
                   root: twMerge(
-                    'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                    'border-uzh-grey-80 bg-primary-80 mt-2 font-bold text-white',
                     (isSubmitting || !isValid) &&
-                      'opacity-50 cursor-not-allowed'
+                      'cursor-not-allowed opacity-50'
                   ),
                 }}
                 type="submit"
@@ -507,53 +682,49 @@ function QuestionEditModal({
             }
             onSecondaryAction={
               <Button
-                className={{ root: 'mt-2 border-uzh-grey-80' }}
+                className={{ root: 'border-uzh-grey-80 mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
+                data={{ cy: 'close-question-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
             }
           >
             <div className="flex flex-row gap-12">
-              <div className="flex-1 max-w-5xl">
+              <div className="max-w-5xl flex-1">
                 <Form className="w-full" id="question-manipulation-form">
-                  <div className="z-0 flex flex-row">
-                    <Label
-                      label={t('manage.questionForms.questionType')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-max',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      // tooltip="// TODO: tooltip content"
-                      // showTooltipSymbol={mode === 'CREATE'}
-                      required={mode === 'CREATE'}
-                    />
+                  <div className="z-0 flex flex-row justify-between">
                     <FormikSelectField
+                      name="type"
+                      required={mode === 'CREATE'}
                       contentPosition="popper"
                       disabled={mode === 'EDIT'}
-                      name="type"
+                      label={t('manage.questionForms.questionType')}
                       placeholder={t('manage.questionForms.selectQuestionType')}
-                      items={DROPDOWN_OPTIONS}
+                      items={QUESTION_TYPE_OPTIONS}
                       data={{ cy: 'select-question-type' }}
+                      className={{ select: { trigger: 'h-8 w-max' } }}
+                    />
+
+                    <FormikSelectField
+                      name="status"
+                      contentPosition="popper"
+                      label={t('manage.questionForms.questionStatus')}
+                      placeholder={t(
+                        'manage.questionForms.selectQuestionStatus'
+                      )}
+                      items={STATUS_OPTIONS}
+                      data={{ cy: 'select-question-status' }}
+                      className={{ select: { trigger: 'h-8 w-32' } }}
                     />
                   </div>
 
-                  <div className="flex flex-row mt-2">
-                    <Label
-                      label={t('manage.questionForms.questionTitle')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-56',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.titleTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
+                  <div className="mt-2 flex flex-row">
                     <FormikTextField
-                      onBlur={() => null}
                       name="name"
+                      required
+                      label={t('manage.questionForms.questionTitle')}
+                      tooltip={t('manage.questionForms.titleTooltip')}
                       className={{
                         root: 'w-full',
                       }}
@@ -561,76 +732,30 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  <div className="flex flex-row mt-2">
-                    <Label
-                      label={t('manage.questionPool.tags')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold w-36',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.tagsTooltip')}
-                      showTooltipSymbol={true}
-                    />
-                    <Suspense fallback={<Loader />}>
-                      <SuspendedTagInput />
-                    </Suspense>
-                  </div>
-
-                  <div className="z-0 flex flex-row mt-2">
-                    <Label
-                      label={t('shared.generic.multiplier')}
-                      className={{
-                        root: 'mr-2 text-lg font-bold w-32',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.multiplierTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
-
-                    {typeof values.pointsMultiplier !== 'undefined' && (
-                      <FastField
-                        name="pointsMultiplier"
-                        shouldUpdate={(next, prev) =>
-                          next?.formik.values.pointsMultiplier !==
-                            prev?.formik.values.pointsMultiplier ||
-                          next?.pointsMultiplier !== prev?.pointsMultiplier
-                        }
-                      >
-                        {({ field, meta }: FastFieldProps) => (
-                          <Select
-                            items={[
-                              { label: 'x1', value: '1' },
-                              { label: 'x2', value: '2' },
-                              { label: 'x3', value: '3' },
-                              { label: 'x4', value: '4' },
-                            ]}
-                            onChange={(newValue: string) =>
-                              setFieldValue('pointsMultiplier', newValue)
-                            }
-                            value={field.value}
-                            data={{ cy: 'select-multiplier' }}
+                  <div className="mt-2 flex flex-row gap-2">
+                    {values.type !== ElementType.Content &&
+                      values.type !== ElementType.Flashcard && (
+                        <div>
+                          <MultiplierSelector
+                            name="pointsMultiplier"
+                            disabled={isSubmitting}
                           />
-                        )}
-                      </FastField>
-                    )}
+                        </div>
+                      )}
+                    <div className="flex w-full flex-col">
+                      <FormLabel
+                        required={false}
+                        label={t('manage.questionPool.tags')}
+                        labelType="small"
+                        tooltip={t('manage.questionForms.tagsTooltip')}
+                      />
+                      <Suspense fallback={<Loader />}>
+                        <SuspendedTagInput />
+                      </Suspense>
+                    </div>
                   </div>
 
                   <div className="mt-4">
-                    <Label
-                      label={t('shared.generic.question')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.questionTooltip')}
-                      showTooltipSymbol
-                      required
-                    />
-
                     {typeof values.content !== 'undefined' && (
                       <FastField
                         name="content"
@@ -642,143 +767,158 @@ function QuestionEditModal({
                         }
                       >
                         {({ field, meta }: FastFieldProps) => (
-                          <ContentInput
-                            autoFocus
-                            error={meta.error}
-                            touched={meta.touched}
-                            content={field.value || '<br>'}
-                            onChange={(newValue: string) =>
-                              setFieldValue('content', newValue)
-                            }
-                            showToolbarOnFocus={false}
-                            placeholder={t(
-                              'manage.questionForms.questionPlaceholder'
-                            )}
-                            key={`${values.type}-content`}
-                            data_cy="insert-question-text"
-                            className={{ content: 'max-w-none' }}
-                          />
+                          <>
+                            <FormLabel
+                              required
+                              label={t('shared.generic.question')}
+                              labelType="small"
+                              tooltip={t(
+                                'manage.questionForms.questionTooltip'
+                              )}
+                            />
+                            <ContentInput
+                              autoFocus
+                              error={meta.error}
+                              touched={meta.touched}
+                              content={field.value || '<br>'}
+                              onChange={(newValue: string) =>
+                                setFieldValue('content', newValue)
+                              }
+                              showToolbarOnFocus={false}
+                              placeholder={t(
+                                'manage.questionForms.questionPlaceholder'
+                              )}
+                              key={`${values.type}-content`}
+                              data={{ cy: 'insert-question-text' }}
+                              className={{ content: 'max-w-none' }}
+                            />
+                          </>
                         )}
                       </FastField>
                     )}
                   </div>
 
-                  <div className="mt-4">
-                    <Label
-                      label={t('shared.generic.explanation')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.explanationTooltip')}
-                      showTooltipSymbol={true}
-                    />
+                  {values.type !== ElementType.Content && (
+                    <div className="mt-4">
+                      {typeof values.explanation !== 'undefined' && (
+                        <FastField
+                          name="explanation"
+                          questionType={values.type}
+                          shouldUpdate={(next, prev) =>
+                            next?.formik.values.explanation !==
+                              prev?.formik.values.explanation ||
+                            next?.formik.values.type !==
+                              prev?.formik.values.type
+                          }
+                        >
+                          {({ field, meta }: FastFieldProps) => (
+                            <>
+                              <FormLabel
+                                required={values.type === ElementType.Flashcard}
+                                label={t('shared.generic.explanation')}
+                                labelType="small"
+                                tooltip={t(
+                                  'manage.questionForms.explanationTooltip'
+                                )}
+                              />
+                              <ContentInput
+                                error={meta.error}
+                                touched={meta.touched}
+                                content={field.value || '<br>'}
+                                onChange={(newValue: string) =>
+                                  setFieldValue('explanation', newValue)
+                                }
+                                placeholder={t(
+                                  'manage.questionForms.explanationPlaceholder'
+                                )}
+                                key={`${values.type}-explanation`}
+                                data={{ cy: 'insert-question-explanation' }}
+                              />
+                            </>
+                          )}
+                        </FastField>
+                      )}
+                    </div>
+                  )}
 
-                    {typeof values.explanation !== 'undefined' && (
-                      <FastField
-                        name="explanation"
-                        questionType={values.type}
-                        shouldUpdate={(next, prev) =>
-                          next?.formik.values.explanation !==
-                            prev?.formik.values.explanation ||
-                          next?.formik.values.type !== prev?.formik.values.type
-                        }
-                      >
-                        {({ field, meta }: FastFieldProps) => (
-                          <ContentInput
-                            error={meta.error}
-                            touched={meta.touched}
-                            content={field.value || '<br>'}
-                            onChange={(newValue: string) =>
-                              setFieldValue('explanation', newValue)
-                            }
-                            placeholder={t(
-                              'manage.questionForms.explanationPlaceholder'
-                            )}
-                            key={`${values.type}-explanation`}
-                            data_cy="insert-question-explanation"
-                          />
-                        )}
-                      </FastField>
-                    )}
-                  </div>
-
-                  <div className="flex flex-row gap-4 mt-4">
+                  <div className="mt-4 flex flex-row gap-4">
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <div className="flex-1">
-                        <Label
+                        <FormLabel
+                          required
                           label={t('manage.questionForms.answerOptions')}
-                          className={{
-                            root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-base font-normal',
-                          }}
+                          labelType="small"
                           tooltip={t(
                             'manage.questionForms.answerOptionsTooltip'
                           )}
-                          showTooltipSymbol
-                          required
+                          className={{ label: 'text-black' }}
                         />
                       </div>
                     )}
                     {QUESTION_GROUPS.FREE.includes(values.type) && (
                       <div className="flex-1">
-                        <Label
+                        <FormLabel
+                          required
                           label={t('shared.generic.options')}
-                          className={{
-                            root: 'my-auto mr-2 text-lg font-bold',
-                            tooltip: 'text-base font-normal',
-                          }}
-                          tooltip={t('manage.questionForms.FTOptionsTooltip')}
-                          showTooltipSymbol={true}
+                          labelType="small"
+                          tooltip={
+                            values.type === ElementType.Numerical
+                              ? t(
+                                  'manage.questionForms.NUMERICALOptionsTooltip'
+                                )
+                              : t('manage.questionForms.FTOptionsTooltip')
+                          }
+                          className={{ label: 'mb-1 text-black' }}
                         />
                       </div>
                     )}
-                    <Switch
-                      checked={values.hasSampleSolution || false}
-                      onCheckedChange={(newValue: boolean) => {
-                        setFieldValue('hasSampleSolution', newValue)
-                        validateForm()
-                      }}
-                      label={t('shared.generic.sampleSolution')}
-                      data={{ cy: 'configure-sample-solution' }}
-                    />
+                    {QUESTION_GROUPS.ALL.includes(values.type) && (
+                      <FormikSwitchField
+                        name="options.hasSampleSolution"
+                        label={t('shared.generic.sampleSolution')}
+                        data={{ cy: 'configure-sample-solution' }}
+                        className={{ label: 'text-gray-600' }}
+                      />
+                    )}
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
-                      <Switch
-                        checked={values.hasAnswerFeedbacks || false}
-                        onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('hasAnswerFeedbacks', newValue)
-                          validateForm()
-                        }}
+                      <FormikSwitchField
+                        name="options.hasAnswerFeedbacks"
                         label={t('manage.questionPool.answerFeedbacks')}
-                        disabled={!values.hasSampleSolution}
+                        disabled={!values.options?.hasSampleSolution}
                         className={{
                           root: twMerge(
-                            !values.hasSampleSolution && 'opacity-50'
+                            !values.options?.hasSampleSolution && 'opacity-50'
                           ),
+                          label: 'text-gray-600',
                         }}
                       />
                     )}
-                    {[QuestionType.Sc, QuestionType.Mc].includes(
-                      values.type
-                    ) && (
+                    {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
-                        name="displayMode"
-                        items={Object.values(QuestionDisplayMode).map(
+                        contentPosition="popper"
+                        name="options.displayMode"
+                        items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),
+                            data: {
+                              cy: `select-display-mode-${t(
+                                `manage.questionForms.${mode}Display`
+                              )}`,
+                            },
                           })
                         )}
+                        data={{ cy: 'select-display-mode' }}
+                        className={{ select: { trigger: 'h-8 w-48' } }}
                       />
                     )}
                   </div>
 
                   {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                     <FieldArray name="options.choices">
-                      {({ push, remove }: FieldArrayRenderProps) => {
+                      {({ push, remove, move }: FieldArrayRenderProps) => {
                         return (
-                          <div className="flex flex-col w-full gap-2 pt-2">
+                          <div className="flex w-full flex-col gap-2 pt-2">
                             {values.options?.choices?.map(
                               (
                                 choice: {
@@ -792,39 +932,35 @@ function QuestionEditModal({
                                 <div
                                   key={index}
                                   className={twMerge(
-                                    'w-full rounded border-uzh-grey-80',
-                                    values.hasSampleSolution && 'p-2',
+                                    'border-uzh-grey-80 w-full rounded',
+                                    values.options?.hasSampleSolution && 'p-2',
                                     choice.correct &&
-                                      values.hasSampleSolution &&
-                                      ' bg-green-100 border-green-300',
+                                      values.options?.hasSampleSolution &&
+                                      'border-green-300 bg-green-100',
                                     !choice.correct &&
-                                      values.hasSampleSolution &&
-                                      ' bg-red-100 border-red-300'
+                                      values.options?.hasSampleSolution &&
+                                      'border-red-300 bg-red-100'
                                   )}
                                 >
-                                  <div className="flex flex-row w-full focus:border-primary-40">
+                                  <div className="focus:border-primary-40 flex w-full flex-row items-center">
                                     {/* // TODO: define maximum height of editor if possible */}
                                     <FastField
                                       name={`options.choices.${index}.value`}
                                       questionType={values.type}
                                       shouldUpdate={(next, prev) =>
-                                        next?.formik.values[
-                                          `options.choices.${index}.value`
-                                        ] !==
-                                          prev?.formik.values[
-                                            `options.choices.${index}.value`
-                                          ] ||
+                                        next?.formik.values.options.choices[
+                                          index
+                                        ].value !==
+                                          prev?.formik.values.options.choices[
+                                            index
+                                          ].value ||
                                         next.formik.values.type !==
-                                          prev.formik.values.type ||
-                                        next.formik.values.options.choices
-                                          .length !==
-                                          prev.formik.values.options.choices
-                                            .length
+                                          prev.formik.values.type
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
-                                          key={`${values.type}-choice-${index}-${values.options.choices.length}`}
+                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}-${values.options.choices[index].ix}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -841,12 +977,14 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          data_cy="insert-answer-field"
+                                          data={{
+                                            cy: `insert-answer-field-${index}`,
+                                          }}
                                         />
                                       )}
                                     </FastField>
-                                    {values.hasSampleSolution && (
-                                      <div className="flex flex-row items-center ml-2">
+                                    {values.options?.hasSampleSolution && (
+                                      <div className="ml-2 flex flex-row items-center">
                                         <div className="mr-2">
                                           {t('shared.generic.correct')}?
                                         </div>
@@ -858,7 +996,7 @@ function QuestionEditModal({
                                               checked={field.value || false}
                                               label=""
                                               className={{
-                                                root: 'gap-0 mr-0.5',
+                                                root: 'mr-0.5 gap-0',
                                               }}
                                               onCheckedChange={(
                                                 newValue: boolean
@@ -874,10 +1012,41 @@ function QuestionEditModal({
                                         </FastField>
                                       </div>
                                     )}
+                                    <div className="ml-2 flex flex-col">
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={index === 0}
+                                        onClick={() => move(index, index - 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-up`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowUp}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                      <Button
+                                        className={{ root: 'px-auto py-0.5' }}
+                                        disabled={
+                                          index ===
+                                          values.options?.choices.length - 1
+                                        }
+                                        onClick={() => move(index, index + 1)}
+                                        data={{
+                                          cy: `move-answer-option-ix-${index}-down`,
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          icon={faArrowDown}
+                                          className="h-3.5"
+                                        />
+                                      </Button>
+                                    </div>
                                     <Button
                                       onClick={() => {
                                         // decrement the choice.ix value of all answers after this one
-                                        values.options.choices
+                                        values.options?.choices
                                           .slice(index + 1)
                                           .forEach((choice) => {
                                             setFieldValue(
@@ -888,7 +1057,10 @@ function QuestionEditModal({
                                         remove(index)
                                       }}
                                       className={{
-                                        root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                        root: 'h-10 w-10 items-center justify-center rounded-md bg-red-600 text-white',
+                                      }}
+                                      data={{
+                                        cy: `delete-answer-option-ix-${index}`,
                                       }}
                                     >
                                       <Button.Icon>
@@ -900,8 +1072,8 @@ function QuestionEditModal({
                                     </Button>
                                   </div>
 
-                                  {values.hasAnswerFeedbacks &&
-                                    values.hasSampleSolution && (
+                                  {values.options?.hasAnswerFeedbacks &&
+                                    values.options?.hasSampleSolution && (
                                       <div className="">
                                         <div className="mt-2 text-sm font-bold">
                                           {t('shared.generic.feedback')}
@@ -910,12 +1082,11 @@ function QuestionEditModal({
                                           name={`options.choices.${index}.feedback`}
                                           questionType={values.type}
                                           shouldUpdate={(next, prev) =>
-                                            next?.formik.values[
-                                              `options.choices.${index}.feedback`
-                                            ] !==
-                                              prev?.formik.values[
-                                                `options.choices.${index}.feedback`
-                                              ] ||
+                                            next?.formik.values.options.choices[
+                                              index
+                                            ].feedback !==
+                                              prev?.formik.values.options
+                                                .choices[index].feedback ||
                                             next?.formik.values.type !==
                                               prev?.formik.values.type
                                           }
@@ -925,6 +1096,7 @@ function QuestionEditModal({
                                             meta,
                                           }: FastFieldProps) => (
                                             <ContentInput
+                                              key={`${values.type}-feedback-${index}-${values.options.choices[index].ix}`}
                                               error={meta.error}
                                               touched={meta.touched}
                                               content={field.value || '<br>'}
@@ -939,13 +1111,12 @@ function QuestionEditModal({
                                               className={{
                                                 root: 'bg-white',
                                                 content:
-                                                  'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
+                                                  'border-uzh-grey-100 focus:border-primary-40 w-full rounded border',
                                               }}
                                               showToolbarOnFocus={true}
                                               placeholder={t(
                                                 'manage.questionForms.feedbackPlaceholder'
                                               )}
-                                              key={`${values.type}-feedback-${index}`}
                                             />
                                           )}
                                         </FastField>
@@ -959,28 +1130,28 @@ function QuestionEditModal({
                               fluid
                               className={{
                                 root: twMerge(
-                                  'font-bold border border-solid border-uzh-grey-100',
-                                  values.type === QuestionType.Kprim &&
-                                    values.options.choices.length >= 4 &&
-                                    'opacity-50 cursor-not-allowed'
+                                  'border-uzh-grey-100 border border-solid font-bold',
+                                  values.type === ElementType.Kprim &&
+                                    values.options?.choices.length >= 4 &&
+                                    'cursor-not-allowed opacity-50'
                                 ),
                               }}
                               disabled={
-                                values.type === QuestionType.Kprim &&
-                                values.options.choices.length >= 4
+                                values.type === ElementType.Kprim &&
+                                values.options?.choices.length >= 4
                               }
                               onClick={() =>
                                 push({
-                                  ix: values.options.choices[
-                                    values.options.choices.length - 1
+                                  ix: values.options?.choices[
+                                    values.options?.choices.length - 1
                                   ]
-                                    ? values.options.choices[
-                                        values.options.choices.length - 1
+                                    ? values.options?.choices[
+                                        values.options?.choices.length - 1
                                       ].ix + 1
                                     : 0,
                                   value: '<br>',
                                   correct: false,
-                                  explanation: '<br>',
+                                  feedback: '',
                                 })
                               }
                               data={{ cy: 'add-new-answer' }}
@@ -993,115 +1164,87 @@ function QuestionEditModal({
                     </FieldArray>
                   )}
 
-                  {values.type === QuestionType.Numerical && (
+                  {values.type === ElementType.Numerical && (
                     <div>
                       <div className="w-full">
-                        <div className="flex flex-row items-center gap-2 mb-2">
-                          <div className="font-bold">
-                            {t('shared.generic.min')}:{' '}
-                          </div>
+                        <div className="mb-2 flex flex-row items-center gap-2">
                           <FormikNumberField
                             name="options.restrictions.min"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
-                            }}
+                            label={t('shared.generic.min')}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
                             hideError
                           />
-                          <div className="font-bold">
-                            {t('shared.generic.max')}:{' '}
-                          </div>
                           <FormikNumberField
                             name="options.restrictions.max"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
-                            }}
+                            label={t('shared.generic.max')}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
                             hideError
                           />
-                        </div>
-                        <div className="flex flex-row items-center gap-2">
-                          <div className="font-bold">
-                            {t('shared.generic.unit')}:{' '}
-                          </div>
-                          <FastField
+                          <FormikTextField
                             name="options.unit"
-                            type="text"
-                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                            label={t('shared.generic.unit')}
                             placeholder="CHF"
-                            data-cy="set-numerical-unit"
+                            data={{ cy: 'set-numerical-unit' }}
                           />
-                          <div className="font-bold">
-                            {t('shared.generic.precision')}:{' '}
-                          </div>
                           <FormikNumberField
                             name="options.accuracy"
-                            className={{
-                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              numberField: { input: 'bg-white text-gray-500' },
-                            }}
+                            label={t('shared.generic.precision')}
                             precision={0}
                             data={{ cy: 'set-numerical-accuracy' }}
                             hideError
                           />
                         </div>
                       </div>
-                      {values.hasSampleSolution && (
+                      {values.options?.hasSampleSolution && (
                         <div className="mt-3">
-                          <Label
+                          <FormLabel
+                            required
                             label={t('manage.questionForms.solutionRanges')}
-                            className={{
-                              root: 'my-auto mr-2 text-lg font-bold',
-                              tooltip: 'text-base font-normal',
-                            }}
+                            labelType="small"
                             tooltip={t(
                               'manage.questionForms.solutionRangesTooltip'
                             )}
-                            showTooltipSymbol={true}
                           />
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
-                              <div className="flex flex-col gap-1 w-max">
-                                {values.options.solutionRanges?.map(
+                              <div className="flex w-max flex-col gap-1">
+                                {values.options?.solutionRanges?.map(
                                   (_range: any, index: number) => (
                                     <div
-                                      className="flex flex-row items-center gap-2"
-                                      key={`${index}-${values.options.solutionRanges.length}`}
+                                      className="flex flex-row items-end gap-2"
+                                      key={`${index}-${values.options?.solutionRanges.length}`}
                                     >
-                                      <div className="font-bold">
-                                        {t('shared.generic.min')}:{' '}
-                                      </div>
                                       <FormikNumberField
+                                        required={index === 0}
                                         name={`options.solutionRanges.${index}.min`}
-                                        className={{
-                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                                          input: 'bg-white text-gray-500',
-                                        }}
+                                        label={t('shared.generic.min')}
                                         placeholder={t(
                                           'shared.generic.minLong'
                                         )}
-                                      />
-                                      <div className="font-bold">
-                                        {t('shared.generic.max')}:{' '}
-                                      </div>
-                                      <FormikNumberField
-                                        name={`options.solutionRanges.${index}.max`}
-                                        className={{
-                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                                          input: 'bg-white text-gray-500',
+                                        data={{
+                                          cy: `set-solution-range-min-${index}`,
                                         }}
+                                      />
+                                      <FormikNumberField
+                                        required={index === 0}
+                                        name={`options.solutionRanges.${index}.max`}
+                                        label={t('shared.generic.max')}
                                         placeholder={t(
                                           'shared.generic.maxLong'
                                         )}
+                                        data={{
+                                          cy: `set-solution-range-max-${index}`,
+                                        }}
                                       />
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                          root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
+                                        }}
+                                        data={{
+                                          cy: `delete-solution-range-ix-${index}`,
                                         }}
                                       >
                                         {t('shared.generic.delete')}
@@ -1112,7 +1255,7 @@ function QuestionEditModal({
                                 <Button
                                   fluid
                                   className={{
-                                    root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                    root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
                                   }}
                                   onClick={() =>
                                     push({
@@ -1120,6 +1263,7 @@ function QuestionEditModal({
                                       max: undefined,
                                     })
                                   }
+                                  data={{ cy: 'add-solution-range' }}
                                 >
                                   {t('manage.questionForms.addSolutionRange')}
                                 </Button>
@@ -1131,17 +1275,14 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  {values.type === QuestionType.FreeText && (
+                  {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
-                      <div className="flex flex-row items-center mb-4">
-                        <div className="mr-2 font-bold">
-                          {t('manage.questionForms.maximumLength')}:
-                        </div>
+                      <div className="mb-4 flex flex-row items-center">
                         <FormikNumberField
                           name="options.restrictions.maxLength"
+                          label={t('manage.questionForms.maximumLength')}
                           className={{
-                            field:
-                              'mr-2 bg-opacity-50 border rounded w-44  h-9 focus:border-primary-40',
+                            field: 'w-44',
                           }}
                           placeholder={t('manage.questionForms.answerLength')}
                           precision={0}
@@ -1149,33 +1290,33 @@ function QuestionEditModal({
                           hideError
                         />
                       </div>
-                      {values.hasSampleSolution && (
+                      {values.options?.hasSampleSolution && (
                         <FieldArray name="options.solutions">
                           {({ push, remove }: FieldArrayRenderProps) => (
-                            <div className="flex flex-col gap-1 w-max">
-                              {values.options.solutions?.map(
+                            <div className="flex w-max flex-col gap-1">
+                              {values.options?.solutions?.map(
                                 (_solution, index) => (
                                   <div
-                                    className="flex flex-row items-center gap-2"
-                                    key={`${index}-${values.options.solutions.length}`}
+                                    className="flex flex-row items-end gap-2"
+                                    key={`${index}-${values.options?.solutions.length}`}
                                   >
-                                    <div className="w-40 font-bold">
-                                      {t(
+                                    <FormikTextField
+                                      required
+                                      name={`options.solutions.${index}`}
+                                      label={t(
                                         'manage.questionForms.possibleSolutionN',
                                         { number: String(index + 1) }
                                       )}
-                                      :{' '}
-                                    </div>
-                                    <FastField
-                                      name={`options.solutions.${index}`}
                                       type="text"
-                                      className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                       placeholder={t('shared.generic.solution')}
                                     />
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                        root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
+                                      }}
+                                      data={{
+                                        cy: `delete-solution-ix-${index}`,
                                       }}
                                     >
                                       {t('shared.generic.delete')}
@@ -1186,9 +1327,10 @@ function QuestionEditModal({
                               <Button
                                 fluid
                                 className={{
-                                  root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                  root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
                                 }}
                                 onClick={() => push('')}
+                                data={{ cy: 'add-solution-value' }}
                               >
                                 {t('manage.questionForms.addSolution')}
                               </Button>
@@ -1203,7 +1345,7 @@ function QuestionEditModal({
                 {JSON.stringify(errors) !== '{}' && (
                   <UserNotification
                     className={{
-                      root: 'mt-8 text-base p-4',
+                      root: 'mt-8 p-4 text-base',
                       icon: 'text-red-700',
                       message: 'text-red-700',
                     }}
@@ -1267,6 +1409,11 @@ function QuestionEditModal({
                           errors.options.accuracy
                         }`}</li>
                       )}
+                      {errors.options && errors.options.unit && (
+                        <li>{`${t('shared.generic.unit')}: ${
+                          errors.options.unit
+                        }`}</li>
+                      )}
                       {errors.options &&
                         errors.options.solutionRanges &&
                         typeof errors.options.solutionRanges === 'string' && (
@@ -1276,11 +1423,25 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to FT questions */}
-                      {errors.options && errors.options.restrictions && (
-                        <li>{`${t('manage.questionForms.answerLength')}: ${
-                          errors.options.restrictions.maxLength
+                      {errors.options &&
+                        errors.options.restrictions?.maxLength && (
+                          <li>{`${t('manage.questionForms.answerLength')}: ${
+                            errors.options.restrictions.maxLength
+                          }`}</li>
+                        )}
+
+                      {/* error messages specific to NR questions */}
+                      {errors.options && errors.options.restrictions?.min && (
+                        <li>{`${t('manage.questionForms.restrictions')}: ${
+                          errors.options.restrictions.min
                         }`}</li>
                       )}
+                      {errors.options && errors.options.restrictions?.max && (
+                        <li>{`${t('manage.questionForms.restrictions')}: ${
+                          errors.options.restrictions.max
+                        }`}</li>
+                      )}
+
                       {errors.options &&
                         errors.options.solutions &&
                         typeof errors.options.solutions === 'object' &&
@@ -1304,58 +1465,77 @@ function QuestionEditModal({
                   </UserNotification>
                 )}
               </div>
-              <div className="flex-1 max-w-sm">
+              <div className="max-w-sm flex-1">
                 <H3>{t('shared.generic.preview')}</H3>
-                <div className="p-4 border rounded">
-                  <StudentQuestion
-                    activeIndex={0}
-                    numItems={1}
-                    isSubmitDisabled
-                    onSubmit={() => null}
-                    onExpire={() => null}
-                    currentQuestion={{
-                      instanceId: 0,
-                      // ...dataQuestion?.question,
-                      content: values.content,
-                      type: values.type,
-                      displayMode: values.displayMode,
-                      // options: dataQuestion?.question?.questionData.options,
-                      options: {
-                        choices: values.options?.choices,
-                        accuracy: parseInt(values.options?.accuracy),
-                        unit: values.options?.unit,
-                        restrictions: {
-                          min: parseFloat(values.options?.restrictions?.min),
-                          max: parseFloat(values.options?.restrictions?.max),
-                          maxLength: parseInt(
-                            values.options?.restrictions?.maxLength
+                <div className="rounded border p-4">
+                  <StudentElement
+                    element={
+                      {
+                        id: 0,
+                        type: ElementInstanceType.LiveQuiz,
+                        elementType: values.type,
+                        elementData: {
+                          id: '0',
+                          questionId: 0,
+                          content: values.content,
+                          explanation: values.explanation,
+                          name: values.name,
+                          pointsMultiplier: parseInt(
+                            values.pointsMultiplier || '1'
                           ),
+                          type: values.type,
+                          options: {
+                            displayMode: values.options?.displayMode,
+                            choices: values.options?.choices,
+                            accuracy: parseInt(values.options?.accuracy),
+                            unit: values.options?.unit,
+                            restrictions: {
+                              min: parseFloat(
+                                values.options?.restrictions?.min
+                              ),
+                              max: parseFloat(
+                                values.options?.restrictions?.max
+                              ),
+                              maxLength: parseInt(
+                                values.options?.restrictions?.maxLength
+                              ),
+                            },
+                          },
                         },
-                      },
-                    }}
-                    inputValue={inputValue}
-                    inputValid={inputValid}
-                    inputEmpty={inputEmpty}
-                    setInputState={setInputState}
+                      } as ElementInstance
+                    }
+                    elementIx={0}
+                    studentResponse={studentResponse}
+                    setStudentResponse={setStudentResponse}
                   />
                 </div>
                 {values.explanation && (
                   <div className="mt-4">
                     <H3>{t('shared.generic.explanation')}</H3>
-                    <Markdown content={values.explanation} />
+                    <Markdown
+                      className={{
+                        root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                      }}
+                      content={values.explanation}
+                    />
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(values.type) &&
-                  values.hasAnswerFeedbacks && (
+                  values.options?.hasAnswerFeedbacks && (
                     <div className="mt-4">
                       <H3>{t('shared.generic.feedbacks')}</H3>
                       {values.options?.choices?.map((choice, index) => (
                         <div
                           key={index}
-                          className="pt-1 pb-1 border-b last:border-b-0"
+                          className="border-b pb-1 pt-1 last:border-b-0"
                         >
                           {choice.feedback ? (
-                            <Markdown content={choice.feedback} />
+                            <Markdown
+                              className={{
+                                root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                              }}
+                              content={choice.feedback}
+                            />
                           ) : (
                             t('manage.questionForms.noFeedbackDefined')
                           )}
@@ -1365,6 +1545,28 @@ function QuestionEditModal({
                   )}
               </div>
             </div>
+
+            {mode === QuestionEditMode.EDIT && (
+              <div
+                className={twMerge(
+                  'mt-3 flex flex-row items-center gap-6 rounded border border-solid p-2',
+                  updateInstances && 'border-orange-200 bg-orange-100'
+                )}
+              >
+                <Switch
+                  checked={updateInstances}
+                  onCheckedChange={() => setUpdateInstances(!updateInstances)}
+                />
+                <div>
+                  <H4 className={{ root: 'm-0' }}>
+                    {t('manage.questionForms.updateInstances')}
+                  </H4>
+                  <Prose className={{ root: 'prose-xs max-w-none' }}>
+                    {t('manage.questionForms.updateInstancesExplanation')}
+                  </Prose>
+                </div>
+              </div>
+            )}
           </Modal>
         )
       }}

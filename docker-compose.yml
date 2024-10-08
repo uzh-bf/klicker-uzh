@@ -1,20 +1,4 @@
 services:
-  reverse_proxy:
-    image: docker.io/library/traefik:v2.10
-    command:
-      - --api.insecure=true
-      - --providers.file=true
-      - --providers.file.filename=/etc/traefik/rules.yaml
-      - --providers.file.watch=true
-      - --entrypoints.web.address=:80
-    ports:
-      - 8088:80
-      - 8080:8080
-    volumes:
-      - './util/traefik/rules.yaml:/etc/traefik/rules.yaml'
-    networks:
-      - klicker
-
   reverse_proxy_docker:
     image: docker.io/library/traefik:v2.10
     command:
@@ -24,10 +8,103 @@ services:
       - --providers.file.watch=true
       - --entrypoints.web.address=:80
     ports:
-      - 8088:80
+      - 80:80
       - 8080:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
+  reverse_proxy_wsl:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
+  auth:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/auth:v3
+    environment:
+      APP_SECRET: abcd
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      # EDUID_CLIENT_SECRET: ''
+      # TEAMS_WEBHOOK_URL: ''
+    ports:
+      - 3010:3000
+    networks:
+      - klicker
+
+  frontend_pwa:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa:v3
+    environment:
+      APP_SECRET: abcd
+    ports:
+      - 3001:3000
+    networks:
+      - klicker
+
+  frontend_manage:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-manage:v3
+    ports:
+      - 3002:3000
+    networks:
+      - klicker
+
+  frontend_control:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-control:v3
+    ports:
+      - 3003:3000
+    networks:
+      - klicker
+
+  backend:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/backend-docker:v3
+    environment:
+      APP_SECRET: 'abcd'
+      COOKIE_DOMAIN: .klicker.com
+      CRON_TOKEN: 'abcd'
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/klicker'
+      NOTIFICATION_SUPPORT_MAIL: 'noone@klicker.com'
+      NOTIFICATION_URL: 'noone@klicker.com'
+      REDIS_CACHE_HOST: 'redis_cache'
+      REDIS_CACHE_PASS: ''
+      REDIS_CACHE_PORT: 6379
+      REDIS_HOST: 'redis_exec'
+      REDIS_PASS: ''
+      REDIS_PORT: 6379
+      # BLOB_STORAGE_ACCESS_KEY: ''
+      # BLOB_STORAGE_ACCOUNT_NAME: ''
+      # LISTMONK_TEMPLATE_MIGRATION_REQUEST: ''
+      # LISTMONK_URL: ''
+      # LISTMONK_USER: ''
+      # MIGRATION_SERVICE_BUS_QUEUE_NAME: ''
+      # NOTIFICATION_SECRET: ''
+      # REDIS_CACHE_TLS: 'true'
+      # REDIS_TLS: 'true'
+      # TEAMS_WEBHOOK_URL: ''
+      # VAPID_PRIVATE_KEY: ''
+      # VAPID_PUBLIC_KEY: ''
+    ports:
+      - 3000:3000
     networks:
       - klicker
 
@@ -37,13 +114,14 @@ services:
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: klicker
+      POSTGRES_DB: klicker-prod
     ports:
       - 5432:5432
     networks:
       - klicker
     volumes:
       - klicker_data:/var/lib/postgresql/data
+      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     # redis instance to support session execution
   redis_exec:
@@ -83,8 +161,6 @@ services:
     depends_on:
       listmonk_db:
         condition: service_healthy
-      mailhog:
-        condition: service_healthy
     volumes:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:
@@ -119,79 +195,6 @@ services:
     volumes:
       - /data/db
 
-  # frontend_pwa:
-  #   profiles:
-  #     - full
-  #   build:
-  #     context: .
-  #     dockerfile: apps/frontend-pwa/Dockerfile
-  #     args:
-  #       NODE_ENV: development
-  #       COOKIE_DOMAIN: 127.0.0.1
-  #       NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
-  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-  #   environment:
-  #     APP_SECRET: abcd
-  #   ports:
-  #     - 3001:3000
-  #   networks:
-  #     - klicker
-
-  # frontend_manage:
-  #   profiles:
-  #     - full
-  #   build:
-  #     context: .
-  #     dockerfile: apps/frontend-manage/Dockerfile
-  #     args:
-  #       NODE_ENV: development
-  #       COOKIE_DOMAIN: 127.0.0.1
-  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-  #   ports:
-  #     - 3002:3000
-  #   networks:
-  #     - klicker
-
-  # frontend_control:
-  #   profiles:
-  #     - full
-  #   build:
-  #     context: .
-  #     dockerfile: apps/frontend-control/Dockerfile
-  #     args:
-  #       NODE_ENV: development
-  #       COOKIE_DOMAIN: 127.0.0.1
-  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-  #   ports:
-  #     - 3003:3000
-  #   networks:
-  #     - klicker
-
-  # backend:
-  #   profiles:
-  #     - full
-  #   build:
-  #     context: .
-  #     dockerfile: apps/backend-docker/Dockerfile
-  #     args:
-  #       NODE_ENV: 'development'
-  #   environment:
-  #     DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
-  #     APP_SECRET: 'abcd'
-  #     REDIS_HOST: 'redis_exec'
-  #     REDIS_PORT: 6379
-  #     REDIS_CACHE_HOST: 'redis_cache'
-  #     REDIS_CACHE_PORT: 6379
-  #     API_DOMAIN: '127.0.0.1'
-  #     COOKIE_DOMAIN: '127.0.0.1'
-  #   ports:
-  #     - 3000:3000
-  #   networks:
-  #     - klicker
-
 networks:
   klicker:
     driver: bridge
@@ -199,4 +202,6 @@ networks:
 volumes:
   listmonk_data:
   klicker_data:
+  klicker_lti_data:
   redis_data:
+  lti_data:

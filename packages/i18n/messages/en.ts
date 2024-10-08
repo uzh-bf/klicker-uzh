@@ -1,10 +1,25 @@
 export default {
   shared: {
+    table: {
+      download: 'Download as CSV',
+      noResults: 'No results.',
+      previous: 'Previous',
+      next: 'Next',
+    },
     questions: {
       roundedTo: 'Round to {accuracy} decimal places.',
       numInvalidValue:
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
+    },
+    DRAFT: {
+      statusLabel: 'Draft',
+    },
+    REVIEW: {
+      statusLabel: 'Review',
+    },
+    READY: {
+      statusLabel: 'Ready',
     },
     SC: {
       short: 'SC',
@@ -36,21 +51,39 @@ export default {
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
+    CONTENT: {
+      short: 'CT',
+      typeLabel: 'Content (CT)',
+    },
+    FLASHCARD: {
+      short: 'FC',
+      typeLabel: 'Flashcard (FC)',
+    },
     login: {
       installButton: 'Install Now',
     },
     generic: {
+      groupMessages: 'Group Messages',
+      preferred: 'preferred',
+      groupSize: 'Group Size',
+      courseDuration: 'Course Duration',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
       download: 'Download',
-      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
+      scheduled: 'Scheduled',
       published: 'Published',
+      grading: 'Grading',
+      completed: 'Completed',
+      running: 'Running',
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      submit: 'Submit',
       save: 'Save',
       start: 'Start',
       continue: 'Continue',
@@ -63,32 +96,37 @@ export default {
       logout: 'Logout',
       login: 'Login',
       username: 'Username',
+      usernameOrEmail: 'Username / E-mail',
       email: 'E-mail address',
       password: 'Password',
       token: 'Token',
       passwordRepetition: 'Password (repetition)',
       signin: 'Login',
-      usernameError: 'Please enter your username.',
+      usernameError: 'Please enter your username or email.',
       passwordError: 'Please enter your password.',
-      loginError: 'The username or password are incorrect.',
+      studentLoginError:
+        'The username or password are incorrect. If you have forgotten your password, please use the "E-Mail Login" function.',
       systemError: 'An unexpected error occurred. Please try again later.',
       error: 'Error',
       back: 'Back',
       home: 'Home',
       questions: 'Questions',
       question: 'Question',
+      element: 'Element',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Evaluation',
-      liveSession: 'Live Quiz',
-      learningElement: 'Practice Quiz',
-      learningElements: 'Practice Quizzes',
-      microSessions: 'Microlearning',
+      liveQuiz: 'Live Quiz',
+      practiceQuiz: 'Practice Quiz',
+      practiceQuizzes: 'Practice Quizzes',
+      microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
+      groupActivity: 'Group Activity',
+      groupActivities: 'Group Activities',
       characters: 'characters',
       precision: 'Precision',
       unit: 'Unit',
@@ -99,6 +137,7 @@ export default {
       free: 'Free',
       congrats: 'Congratulations!',
       thanks: 'Thank you!',
+      bookmark: 'Bookmark',
       bookmarks: 'Bookmarks',
       group: 'Group',
       create: 'Create',
@@ -106,7 +145,6 @@ export default {
       leave: 'Leave',
       documentation: 'Documentation',
       features: 'Features',
-      groupActivities: 'Group activities',
       experiencePoints: 'Experience points',
       level: 'Level',
       levelX: 'Level: {number}',
@@ -127,9 +165,12 @@ export default {
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
       finishedAt: 'Finished at {time}',
+      introduction: 'Introduction',
+      information: 'Information',
       description: 'Description',
       settings: 'Settings',
       course: 'Course',
+      availableFrom: 'Available from',
       startDate: 'Start date',
       endDate: 'End date',
       repetitionInterval: 'Repetition interval',
@@ -141,6 +182,35 @@ export default {
       language: 'Language',
       english: 'English',
       german: 'German',
+      practicePool: 'Practice',
+      practiceTitle: 'Practice Pool',
+      practice: 'Practice Activities',
+      clues: 'Clues',
+      value: 'Value',
+      passed: 'Passed',
+      failed: 'Failed',
+      survey: 'Survey',
+      avatar: 'Avatar',
+      gamified: 'Gamified',
+      nonGamified: 'Non-Gamified',
+      blockN: 'Block {number}',
+      elementN: 'Element {number}',
+      Nelements: '{number} element(s)',
+      stackN: 'Stack {number}',
+      questionN: 'Question {number}',
+      clueN: 'Clue {number}',
+      availability: 'Availability',
+      taskDescription: 'Task description',
+      color: 'Color',
+      groups: 'Groups',
+      pleaseReview:
+        'Please review the following instructions. This action cannot be undone.',
+      comingSoon: 'Coming soon...',
+      pinCode: 'PIN Code',
+      withGroups: 'With groups',
+      withoutGroups: 'Without groups',
+      forgotPassword: 'Forgot password?',
+      archived: 'Archived',
     },
     contentInput: {
       boldStyle:
@@ -173,9 +243,12 @@ export default {
       averagePoints: 'Average points: {number}',
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
+      rank: 'Rank',
+      username: 'Username',
+      email: 'Email',
     },
     error: {
-      404: '404 Page not found',
+      '404': '404 Page not found',
       pwaWithoutUser:
         'Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.',
       pwaWithUser:
@@ -187,9 +260,11 @@ export default {
   auth: {
     authentication: 'Authentication',
     delegatedAccess: 'Delegated Access',
-    signedInAs: 'Signed in as {username}',
+    signedInAs: 'You are already logged in as {username}',
     tosAgreement:
-      'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
+      'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
+    tosAgreementRequired:
+      'Please accept the terms of service and privacy policy before logging in.',
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
@@ -199,6 +274,22 @@ export default {
   },
   pwa: {
     general: {
+      magicLinkLogin: 'Login with E-Mail',
+      passwordLogin: 'Login with Password',
+      magicLinkSent:
+        'If an account exists, a one-time login link has been sent to the e-mail address.',
+      activationMailSent:
+        'An activation link has been sent to your e-mail address. Please check your inbox.',
+      processingLogin:
+        'Your e-mail login is being processed. Please wait a moment.',
+      processingActivation:
+        'Your account activation is being processed. Please wait a moment.',
+      magicLinkLoginFailed:
+        'The e-mail login failed. You will be redirected to the login page.',
+      accountActivationFailed:
+        'The account activation failed. You will be redirected to the login page.',
+      waitingForActivation:
+        'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
@@ -212,8 +303,10 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
-      noSessionsActive: 'No quizzes active.',
-      activeSessionsBy: 'Active quizzes by <i>{name}</i>',
+      noLiveQuizzesActive: 'No live quizzes active.',
+      activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
+      activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
+      activeLiveQuizzes: 'Active live quizzes',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -332,7 +425,7 @@ Practice quizzes and microlearning are available via direct links that you can r
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
@@ -349,8 +442,8 @@ After installation, you should find the app on your home screen and can log in a
 Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
 
 1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
-3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
+2. Use the share dialogue and click on the button “Add to Homescreen” / “Zum Startbildschirm zufügen”.
+3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen.
       `,
     },
     login: {
@@ -366,12 +459,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
+
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
       createGroup: 'Create Group',
       joinGroup: 'Join Group',
       groupName: 'Group Name',
+      randomGroup: 'Random Group',
+      createJoinRandomGroup:
+        'Click here to be automatically assigned to a random group with other students.',
+      joinGroupError:
+        'An error occurred while joining the group. Please try again.',
+      joinGroupFull:
+        'This group has already reached the maximum number of participants. Please choose a different group.',
+      inRandomGroupPool:
+        'You selected to be assigned automatically to a group of participants in your course. We are currently waiting for more people to join the pool and will assign you to a group as soon as possible. Should you want to join another group manually instead, or create your own group, you can leave the pool with the button below.',
+      leaveRandomGroupPool: 'Leave Pool',
       code: 'Code',
       individualLeaderboard: 'Individual Leaderboard',
       groupLeaderboard: 'Group Leaderboard',
@@ -388,7 +492,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       bookmarkedQuestionsTitle: 'Bookmarks for {courseName}',
       bookmarkedQuestionsDesc:
         'This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular practice quiz.',
-      noBooksmarksSet:
+      noBookmarksSet:
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
@@ -397,6 +501,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to leave the course leaderboard?',
       leaveCourseInformation:
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+      noGamificationOrDescription:
+        'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
+      coursePracticeArea:
+        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -410,7 +518,25 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
     },
-    learningElement: {
+    practiceQuiz: {
+      flashcardClick: 'Click to turn card',
+      studentFlashcardResponse: 'Did you know the answer?',
+      flashcardNoResponse: 'No',
+      flashcardPartialResponse: 'Partially',
+      flashcardYesResponse: 'Yes',
+      resetAnswers: 'Reset answers',
+      markAllAsRead: 'Mark all as read',
+      read: 'Read',
+      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
+      feedbackRequired: 'Please add a text to your feedback.',
+      flagElement: 'Report element',
+      flagElementText:
+        'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
+      addFeedback: 'Add feedback',
+      submitFeedback: 'Submit feedback',
+      updateFeedback: 'Update feedback',
+      errorRatingElement:
+        'Your rating of the element was unfortunately not successful. Please try again later.',
       notFound:
         'The corresponding practice quiz is either not available or not yet published.',
       repetitionTitle: 'Repetition practice quizzes',
@@ -420,12 +546,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       orderLAST_RESPONSE: 'Order: last answered questions at the end',
       orderSHUFFLED: 'Order: random order',
       orderSEQUENTIAL: 'Order: ordered in sequence',
+      orderSPACED_REPETITION: 'Order: Spaced repetition',
       repetitionDaily: 'Repetition: daily',
       repetitionXDays: 'Repetition: every {days} days',
       answeredMinOnce: 'Min. answered once: {answered}/{total}',
       multiplicatorPoints: 'Multiplicator: {mult}x points',
       multiplicatorEval: '<b>Multiplicator</b> {mult}x',
-      solvedLearningElement:
+      solvedPracticeQuiz:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
       pointsComputedAvailable: 'Points (computed/available)',
@@ -436,20 +563,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This question type is currently not available for practice quizzes',
       newPointsFrom: 'New points/XP from:',
       othersAnswered: 'Others answered as follows',
-      flagQuestion: 'Report question',
-      flagQuestionText:
-        'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
-      addFeedback: 'Add feedback',
-      feedbackRequired: 'Please add a text to your feedback.',
-      submitFeedback: 'Submit feedback',
-      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       infoStack: 'Information element',
+      scheduledAvailableFrom:
+        'The practice quiz {name} will be available from {date}.',
       inactiveParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
-    microSession: {
+    microLearning: {
+      numOfQuestionSets: 'Number of question sets: {number}',
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
@@ -460,6 +583,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       availableFrom: 'Available from {date}',
       availableUntil: 'Available until {date}',
+      questionSetN: 'Question set {number}',
     },
     session: {
       noActiveQuestion: 'No question active.',
@@ -482,6 +606,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editProfile: 'Edit profile',
       editProfileFailed:
         'Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.',
+      editProfileSuccess: 'Your profile has been updated successfully.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -507,6 +632,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       privacyDataSharing: '',
       privacyDataUsage: '',
       privacyDataStorage: '',
+      emailMissing:
+        'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
+      forgotPasswordInfo:
+        'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
     },
     avatar: {
       hair: 'Hair',
@@ -559,8 +688,29 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       notAchievedYet: 'Not achieved yet',
       noAchievements: 'No achievements yet.',
     },
+    groups: {
+      messageRequired: 'Please enter a message before submitting.',
+      nameRequired: 'Please enter a group name.',
+      pinRequired: 'Please enter a valid group PIN.',
+      pinNumeric: 'The PIN must have a six-digit numeric value.',
+    },
     groupActivity: {
+      startAt: 'Start: {time}',
+      endAt: 'End: {time}',
+      available: 'Available',
+      started: 'Started',
+      submitted: 'Submitted',
+      past: 'Past',
+      groupActivityPassed:
+        'Congratulations! Your group has passed the group activity.',
+      groupActivityFailed:
+        'Oh no! Your group has unfortunately not passed the group activity.',
+      groupActivityFeedback: 'Feedback: {feedback}',
+      answerCORRECT: 'Your answer is correct.',
+      answerPARTIAL: 'Your answer is partially correct.',
+      answerINCORRECT: 'Your answer is incorrect.',
       openGroupActivity: 'Open Group Activity',
+      openActivityFeedback: 'Open Feedback',
       activityNotYetActive:
         'The group activity is not active or not yet unlocked.',
       initialSituation: 'Situation',
@@ -581,6 +731,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
         'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
+      singleParticipantAutomaticAssignment:
+        'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
+      maxNumberOfGroupMembers:
+        'Your group has reached the maximum number of participants as specified by your lecturer. No further students will be able to join this group.',
+      nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
     },
   },
   manage: {
@@ -588,18 +743,53 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
-      sessions: 'Quizzes',
+      sessions: 'Live Quizzes',
       courses: 'Courses',
       migration: 'Migration',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
       date: 'Date',
+      dateCreated: 'Date Created',
+      dateModified: 'Date Modified',
       title: 'Title',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
+    },
+    support: {
+      modalTitle: 'Support KlickerUZH',
+      yourFeedback: 'Your Feedback',
+      feedbackText:
+        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+      featureRequest: 'Feature Request',
+      featureRequestDesc: 'I would like to request a new feature.',
+      bugReport: 'Bug Report',
+      bugReportDesc: 'I would like to report a bug or issue.',
+      selfHosting: 'Self-Hosting',
+      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      furtherResources: 'Further Resources',
+      documentationDesc: 'Tutorials, feature documentation, and release notes',
+      faq: 'FAQ',
+      faqDesc: 'Frequently asked questions',
+      connect: 'Connect with Us',
+      community: 'Community',
+      communityDesc:
+        'A place for discussions and questions regarding the KlickerUZH',
+      email: 'E-Mail',
+      emailDesc: 'Contact us at klicker@df.uzh.ch',
+      aboutProject: 'About the Project',
+      projectUpdates: 'Project Updates',
+      projectUpdatesDesc:
+        'Regular updates regarding the progress of our project',
+      roadmap: 'Roadmap',
+      roadmapDesc: 'Our current priorities and plans for the future',
+      releaseNotes: 'Release Notes',
+      releaseNotesDesc: 'Overview of changes in our latest releases',
+      openSource: 'Open-Source',
+      githubRepository: 'GitHub Repository',
+      githubRepositoryDesc: 'Source code of the open-source project',
     },
     login: {
       lecturerLogin: 'Login Lecturers',
@@ -622,6 +812,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       languageSettings: 'Language Settings',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      confirmDelegatedAcces: 'Confirm delegated login creation',
+      confirmDelegatedAccesTooltip:
+        'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
@@ -643,13 +836,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other learning elements in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
       shortnameMax: 'The shortname must be at most 8 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
+      emailUpdates: 'Project Updates via E-Mail',
+      emailUpdatesTooltip:
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',
@@ -666,30 +862,32 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
     },
     questionPool: {
-      createLiveSession: 'Create live quiz',
-      createMicroSession: 'Create microlearning',
-      createLearningElement: 'Create practice quiz',
+      createLiveQuiz: 'Create live quiz',
+      createMicrolearning: 'Create microlearning',
+      createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
       createQuestionCaps: 'CREATE QUESTION',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      questionTypes: 'Question types',
+      elementTypes: 'Element Types',
+      elementStatus: 'Status',
       tags: 'Tags',
+      untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
@@ -715,7 +913,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
       questionType: 'Question type',
+      questionStatus: 'Status',
       selectQuestionType: 'Select question type',
+      selectQuestionStatus: 'Select status',
       questionTitle: 'Question title',
       titleTooltip:
         'Enter a short, summary title for the question. This is only used for better overview.',
@@ -737,11 +937,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter the possible answers that students can select for the question here.',
       answerOptionPlaceholder: 'Enter your answer option here...',
       FTOptionsTooltip:
-        'Enter optional settings for the free text question here.',
+        'Enter optional settings for the open question here. Note that the answer to open questions is graded without checking for upper and lower case.',
+      NUMERICALOptionsTooltip:
+        'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
+
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
       addAnswer: 'Add new answer',
+      restrictions: 'Restrictions',
       solutionRanges: 'Solution ranges',
       solutionRangesTooltip:
         'Enter the intervals that should be considered correct here.',
@@ -760,6 +964,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
+      updateInstances: 'Update question instances in KlickerUZH elements',
+      updateInstancesExplanation:
+        'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
     sessionForms: {
       sessionName: 'Please enter a name for your quiz.',
@@ -771,6 +978,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       validMultiplicator: 'Please enter a valid multiplicator.',
       checkValues:
         'Please check your entries in the previous step before proceeding.',
+      closeWizard: 'Close wizard',
       name: 'Name',
       displayName: 'Display Name',
       multiplierDefault: 'Default: 1x',
@@ -785,110 +993,255 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
+      blockSettingsTitle: 'Settings Block {blockIx}',
       timeLimit: 'Time limit',
       optionalTimeLimit: 'Optional time limit',
-      timeLimitTooltip: 'Time limit for block ${blockIx} in seconds',
+      timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
+      newStack: 'New stack',
       newBlockSelected: 'Add 1 block with {count} questions',
+      newStackSelected: 'Add 1 stack with {count} elements',
       pasteSelection: 'Add {count} questions',
+      pasteSelectionElements: 'Add {count} elements',
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
-      displayNameTooltip:
-        'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
-      microSessionTypes:
-        'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
-      microSessionCreated:
+      pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      displayNameTooltip: 'The display name is shown to participants.',
+      stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
+      stackDisplayName: 'Stack title',
+      stackDisplayNameTooltip:
+        'The title of the stack is displayed above the description at the top of the stack.',
+      stackDescription: 'Description',
+      stackDescriptionTooltip:
+        'The description of the stack is displayed above the questions in the stack.',
+      stackDescriptionPlaceholder: 'Enter description here...',
+      stackFTQuestionsNoSL:
+        'You included a free text question in without a sample solution in this stack. While this is possible for free text questions, please note that the participants will receive a default number of points for answering and no grading logic is applied.',
+      microlearningTypes:
+        'A microlearning can contain all available element types.',
+      microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
-      microSessionEdited:
+      microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
-      microSessionDescription:
+      microLearningIntroductionName:
+        'Please enter a name for your microlearning. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      microLearningInformation:
+        'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
+      microLearningNoCourse:
+        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      microLearningLecturerDocs:
+        'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
+      microLearningStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
-      microSessionSettings:
+      microlearningSettings:
         'In this step, select the start and end date and make further settings.',
-      microSessionQuestions:
+      microLearningMissingCourse:
+        'Microlearnings must be assigned to a course.',
+      microLearningCourseNotGamified:
+        'With the current course selection the microlearning will not be gamified.',
+      microlearningQuestions:
         'In this step, select the questions for the microlearning.',
-      microSessionEditingFailed: 'Editing the Microlearning failed...',
-      microSessionCreationFailed: 'Creating the Microlearning failed...',
-      microSessionName:
+      microlearningEditingFailed: 'Editing the Microlearning failed...',
+      microlearningCreationFailed: 'Creating the Microlearning failed...',
+      microlearningName:
         'This name should allow you to distinguish this microlearning from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      microSessionDescField:
+      microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
-      microSessionCourse:
-        'For the creation of a microlearning, the selection of the corresponding course is required.',
-      microSessionStartDate:
-        'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
-      microSessionEndDate:
-        'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
-      microSessionMultiplier:
+      microlearningCourse:
+        'For the creation of a microlearning, the selection of the corresponding course is required. The microlearning will automatially assume the gamification settings of the course.',
+      microlearningStartDate:
+        'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
+      microlearningEndDate:
+        'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
+      microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
-      liveSessionGamified:
+      microlearningUseCase:
+        '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
+      minOneElementPerStack: 'Every stack must contain at least one element.',
+      minOneQuestionGroupActivity:
+        'A group activity must contain at least one question.',
+      liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionTypes:
-        'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
-      liveSessionTimeRestriction: 'Please enter a valid time restriction.',
-      liveSessionMinQuestions: 'Block must contain at least one question.',
-      liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
-      liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
-      liveSessionDescription:
+      liveQuizTypes:
+        'Live quizzes can only contain single choice, multiple choice, kprim, numerical and free text questions.',
+      liveQuizTimeRestriction: 'Please enter a valid time restriction.',
+      liveQuizMinQuestions: 'Block must contain at least one question.',
+      liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
+      liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizInformation:
+        'In this step, enter the name and description of the live quiz and find helpful information for creating the element.',
+      liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
-      liveSessionSettings:
+      liveQuizSettings:
         'In this step, you can make settings for the live quiz.',
-      liveSessionBlocks: 'Questions & Blocks',
-      liveSessionDragDrop:
+      liveQuizBlocks: 'Questions & Blocks',
+      liveQuizDragDrop:
         'Use drag&drop on the plus icon to add questions to your blocks. New blocks can be created either by drag&drop on the corresponding field or by clicking on the button.',
-      liveSessionCreationFailed: 'Creating the live quiz failed...',
-      liveSessionEditingFailed: 'Editing the live quiz failed...',
-      liveSessionName:
+      liveQuizCreationFailed: 'Creating the live quiz failed...',
+      liveQuizEditingFailed: 'Editing the live quiz failed...',
+      liveQuizName:
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      liveSessionDescField:
+      liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveSessionCourse: 'You can assign your live quiz to a course.',
-      liveSessionSelectCourse: 'Select course',
-      liveSessionNoCourse: 'No course',
-      liveSessionMultiplier:
+      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizSelectCourse: 'Select course',
+      liveQuizNoCourse: 'No course',
+      liveQuizEnableGamification:
+        'Select a gamified course to activate gamification.',
+      liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
-      liveSessionGamification:
-        'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionLiveQA:
+      liveQuizGamification:
+        'The quiz automatically adopts the gamification setting of the course. If the quiz is not assigned to a course, gamification cannot be activated.',
+      liveQuizLiveQA:
         'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionModeration:
+      liveQuizModeration:
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionFeedbackChannel:
+      liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      learningElementResetDays:
+      liveQuizIntroductionName:
+        'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      liveQuizUseCase:
+        '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
+      liveQuizLecturerDocs:
+        'For more information on the creation and execution of live quizzes, visit the <link>Lecturer Documentation</link>.',
+      liveQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      liveQuizStartNow: 'Start now',
+      liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizMaxBonusPoints: 'Maximum bonus points',
+      liveQuizMaxBonusPointsTooltip:
+        'This is the maximum number of points a participant will receive during a gamified live quiz for a correct answer to a question with sample solution. The default value is {defaultValue}.',
+      liveQuizTimeToZeroBonus: 'Time to zero bonus points',
+      liveQuizTimeToZeroBonusTooltip:
+        'This is the time in seconds after the first correct answer at which a participant will receive zero bonus points for a correct answer. The default value is {defaultValue}.',
+      liveQuizTotalPointsCorrect: 'Total points for correct answer over time',
+      liveQuizAnswerTime: 'Answer time: {answerTime}',
+      liveQuizTotalAwardedPoints: 'Total points: {totalPoints}',
+      liveQuizMaxBonusPointsReq:
+        'Please enter a valid number of maximum bonus points.',
+      liveQuizMaxBonusPointsMin: 'The maximum bonus points must be at least 0.',
+      liveQuizTimeToZeroBonusReq:
+        'Please enter a valid time to zero bonus points.',
+      liveQuizTimeToZeroBonusMin:
+        'The time to zero bonus points must be at least 1.',
+      liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
+      practiceQuizNoCourse:
+        'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+      practiceQuizIntroductionName:
+        'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      practiceQuizInformation:
+        'In this step, enter the name and description of the practice quiz and find helpful information for creating the element.',
+      practiceQuizLecturerDocs:
+        'For more information on the creation and execution of practice quizzes, visit the <link>Lecturer Documentation</link>.',
+      practiceQuizStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      learningElementValidResetDays:
+      practiceQuizAvailableFrom:
+        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
+      practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
-      learningElementTypes:
-        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
-      learningElementSolutionReq: 'Please only add questions with solution.',
-      learningElementCreated:
-        'Learning element <b>{name}</b> successfully created.',
-      learningElementUpdated:
-        'Learning element <b>{name}</b> successfully modified.',
-      learningElementDescription:
+      practiceQuizElementTypes:
+        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
+      elementSolutionReq:
+        'For all element types except from free text questions, a sample solution must be defined.',
+      practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
+      practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
+      practiceQuizDescription:
         'In this step, enter the name and description of the practice quiz.',
-      learningElementSettings:
+      practiceQuizSettings:
         'In this step, make settings for your practice quiz.',
-      learningElementContent:
+      practiceQuizMissingCourse:
+        'Practice quizzes must be assigned to a course.',
+      practiceQuizCourseNotGamified:
+        'With the current course selection the practice quiz will not be gamified.',
+      practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      learningElementCreationFailed: 'Creating the practice quiz failed...',
-      learningElementEditingFailed: 'Editing the practice quiz failed...',
-      learningElementName:
+      practiceQuizAvailabilityOptional: 'Availability (optional)',
+      selectCourse: 'Select course...',
+      practiceQuizCreationFailed: 'Creating the practice quiz failed...',
+      practiceQuizEditingFailed: 'Editing the practice quiz failed...',
+      practiceQuizName:
         'The name should allow you to distinguish this practice quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      learningElementDescField:
+      practiceQuizDescField:
         'Add a description to your practice quiz that will be displayed to participants at the beginning.',
-      learningElementSelectCourse:
+      practiceQuizSelectCourse:
         'For the creation of a practice quiz, the selection of the corresponding course is required.',
-      learningElementMultiplier:
+      practiceQuizMultiplier:
         'Select a multiplier. All points that students collect in this practice quiz will be multiplied by the multiplier.',
-      learningElementRepetition:
+      practiceQuizRepetition:
         'Select a period after which students can repeat the practice quiz.',
-      learningElementOrder:
+      practiceQuizOrder:
         'Select an order in which the questions are to be solved by the students.',
-      learningElemenSelectOrder: 'Select order',
-      learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffled',
-      learningElementLAST_RESPONSE: 'Last response first',
+      practiceQuizSelectOrder: 'Select order',
+      practiceQuizSEQUENTIAL: 'Sequential',
+      practiceQuizSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizTypes:
+        'Practice quizzes can contain all available element types.',
+      practiceQuizUseCase:
+        '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      selectGamifiedCourse:
+        'Please select a gamified course for the creation of this element.',
+      groupActivityInformation:
+        'In this step, enter the name and description of the group activity and find helpful information for creating the element.',
+      groupActivityMissingCourse:
+        'Group activities must be assigned to a course.',
+      groupActivityTypes:
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, and free-text questions.',
+      groupActivityCreated:
+        'Your group activity <b>{name}</b> has been created successfully.',
+      groupActivityEdited:
+        'Your group activity <b>{name}</b> has been edited successfully.',
+      groupActivityNoCourse:
+        'Group activities must always be assigned to a course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
+      groupActivityIntroductionName:
+        'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      groupActivityLecturerDocs:
+        'For more information on the creation and execution of group activities, visit the <link>Lecturer Documentation</link>.',
+      groupActivityStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      groupActivityDescription:
+        'In this step, enter the name and description of the group activity.',
+      groupActivitySettings:
+        'In this step, select the start and end date and define clues that are distributed to the group members.',
+      groupActivityQuestions:
+        'In this step, select the questions for the group activity.',
+      groupActivityEditingFailed: 'Editing the group activity failed...',
+      groupActivityCreationFailed: 'Creating the group activity failed...',
+      groupActivityName:
+        'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
+      groupActivityDescField:
+        'Add a task description to your group activity that contains all information necessary to solve all questions with the provided clues.',
+      groupActivityCourse:
+        'For the creation of a group activity, the selection of the corresponding course is required.',
+      groupActivityStartDate:
+        'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
+      groupActivityEndDate:
+        'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityMultiplier:
+        'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
+      groupActivityUseCase:
+        '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
+      groupActivityCluesDescription:
+        'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
+      groupActivityAddClue: 'Add new clue',
+      groupActivityCluesUniqueNames: 'All clues must have unique names.',
+      groupActivityClueType: 'Clue type',
+      textClue: 'Text clue',
+      numericalClue: 'Numerical clue',
+      groupActivityNameError: 'Please enter a name for your group activity.',
+      groupActivityDisplayNameError:
+        'Please enter a valid display name for your group activity.',
+      groupActivityDescriptionError:
+        'Please enter a task description for your group activity.',
+      groupActivityMin2Clues:
+        'Please add at least two clues to your group activity.',
+      clueNameMissing: 'Please enter a name for your clue.',
+      clueDisplayNameMissing:
+        'Please enter a valid display name for your clue.',
+      clueContentMissing: 'Please enter a content for your clue.',
+      clueValueMissing: 'Please enter a value for your numerical clue.',
     },
     formErrors: {
       resolveErrors:
@@ -906,11 +1259,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The maximum length of a free text question response has to be at least 1.',
       solutionRequired:
         'Please enter at least one solution of deactivate the sample solution.',
+      NRMinLessThanMaxSol:
+        'The minimum value of a solution interval must be less than its maximum value.',
+      NRMinLessThanMax:
+        'The minimum value must be less than the maximum value.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
       NumberQuestionsRequired: 'At least one answer option must be given',
       NumberQuestionsRequiredKPRIM:
         'There must be exactly four answer options for Kprim questions',
+      explanationRequired:
+        'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
+      NRUnderflow:
+        'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
+      NROverflow:
+        'Numerical quantities cannot be larger than 1e30 for technical reasons.',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
@@ -926,15 +1289,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveSession: 'Delete Quiz',
-      confirmLiveSessionDeletion:
+      deleteLiveQuiz: 'Delete Quiz',
+      confirmLiveQuizDeletion:
         'Are you sure you want to delete the following live quiz?',
-      liveSessionDeletionHint:
+      liveQuizDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
+      pastLiveQuizDeletionHint:
+        'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
+      changeLiveQuizName: 'Change live quiz name',
+      liveQuizNameChangeSuccess: 'The name of the live quiz has been changed.',
+      liveQuizNameChangeError:
+        'The name of the live quiz could not be changed.',
     },
     cockpit: {
       qrCodeAccountLinkTitle: 'Account Link',
@@ -950,11 +1319,25 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
-      confirmAbortSession:
-        'Are you sure you want to abort the following live quiz?',
-      abortSessionHint:
-        'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
-      blockN: 'Block {number}',
+      confirmAbortSession: 'Abort live quiz {title}?',
+      cancelLiveQuizMessage:
+        'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
+      noFeedbacksToDelete:
+        'For this live quiz no feedbacks have been submitted yet.',
+      deleteFeedbacks:
+        '{number} feedback(s) in the live Q&A channel will be irreversibly deleted.',
+      noConfusionFeedbacksToDelete:
+        'For this live quiz no confusion feedbacks have been submitted yet.',
+      deleteConfusionFeedbacks:
+        '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -991,6 +1374,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived speed of the lecture.',
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
+      skipCooldown: 'Skip cooldown',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -1001,6 +1385,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noConfusionFeedbacksYet:
         'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
+      totalParticipantsInclAnon:
+        'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
@@ -1040,6 +1426,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      unset: 'Unset',
+      noStatistics:
+        'Because of missing answers, no statistics are available yet.',
+      practiceQuizEvaluation: 'Practice Quiz Evaluation',
+      microLearningEvaluation: 'Microlearning Evaluation',
+      chartTypeNotSupported:
+        'At the moment, the selected chart type is not supported for this element type.',
+      noFlashcardEvaluation:
+        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
+      noContentEvaluation:
+        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -1048,6 +1445,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noFeedbacks: 'No feedbacks received or pinned yet...',
     },
     courseList: {
+      showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
       noCoursesFound: 'No courses found.',
@@ -1078,8 +1476,81 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
       courseColor: 'Course color',
       courseCreationFailed: 'Failed to create course...',
+      groupDeadlineFuture: 'The group creation deadline must be in the future.',
+      groupDeadlineBeforeEnd:
+        'The group creation deadline must be before the course end date.',
+      groupDeadlineAfterStart:
+        'The group creation deadline must be after the course start date.',
+      groupDeadlineReq: 'Please specify a valid group creation deadline.',
+      maxGroupSizeMin: 'The maximum group size must be at least 2.',
+      maxGroupSizeLargerThanPreferred:
+        'The maximum group size must be strictly larger than the preferred group size to ensure that automatically generated groups never exceed the maximum group size.',
+      maxGroupSizeReq: 'Please specify a valid maximum group size.',
+      preferredGroupSizeMin: 'The preferred group size must be at least 2.',
+      preferredGroupSizeReq: 'Please specify a valid preferred group size.',
+      gamificationTooltip:
+        'Gamification can only be activated (not deactivated) after the course has been created.',
+      groupCreationEnabled: 'Group Creation',
+      groupCreationDisabledTooltip:
+        'To enable group creation for your students, please first activate gamification for this course.',
+      groupCreationEnabledTooltip:
+        'If you deactivate this setting, students cannot create groups in this course and you will not be able to create group activities. If deactivated initially, this option can be activated later on the course overview.',
+      groupCreationDeadline: 'Group Creation Deadline',
+      groupCreationDeadlineTooltip:
+        'Students can create new groups or join an existing one until the deadline.',
+      maxGroupSize: 'Maximum Group Size',
+      maxGroupSizeTooltip:
+        'The maximum number of students in a group. After the creation of the course, this setting cannot be modified anymore. The minimum group size is fixed to two participants to enable randomized group creation',
+      preferredGroupSize: 'Preferred Group Size',
+      preferredGroupSizeTooltip:
+        'The preferred number of students in a group. After the creation of the course, this setting cannot be modified anymore. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
+      groupDeadlineChangedToPast:
+        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
+      gamificationGroupsFixed:
+        'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
+      gamificationFixed:
+        'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+      openPreview: 'Open preview',
+      openEvaluation: 'Open evaluation',
+      archiveOnlyPastCourses:
+        'Only courses with an end date in the past can be archived.',
+      archiveCourse: 'Archive course',
+      unarchiveCourse: 'Unarchive course',
+      confirmCourseArchive:
+        'Please confirm that you want to archive this course. Archived courses and their activities will remain accessible to students.',
+      confirmCourseUnarchive:
+        'Please confirm that you want to reactivate this course. Unarchived courses are displayed differently to students.',
+      showArchive: 'Show archive',
+      hideArchive: 'Hide archive',
+      deleteCourse: 'Delete course',
+      courseDeletionMessage:
+        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+      noParticipationsToDelete: 'This course contains no participations.',
+      deleteParticipations:
+        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
+      noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
+      disconnectLiveQuizzes:
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
+      noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
+      deletePracticeQuizzes:
+        '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
+      noMicroLearningsToDelete: 'This course contains no microlearnings.',
+      deleteMicroLearnings:
+        '{number} microlearning(s) (including their results) will be irreversibly deleted.',
+      noGroupActivitiesToDelete: 'This course contains no group activities.',
+      deleteGroupActivities:
+        '{number} group activitie(s) (including their submissions) will be irreversibly deleted.',
+      noParticipantGroupsToDelete:
+        'This course contains no participant groups.',
+      deleteParticipantGroups:
+        '{number} participant group(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'This course contains no leaderboard entries.',
+      deleteLeaderboardEntries:
+        '{number} leaderboard entrie(s) will be irreversibly deleted.',
     },
     course: {
+      modifyCourse: 'Modify course',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
@@ -1089,9 +1560,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
       noSessions: 'No live quizzes available',
-      noLearningElements: 'No practice quizzes available',
-      noMicroSessions: 'No microlearning available',
+      noPracticeQuizzes: 'No practice quizzes available',
+      noMicrolearnings: 'No microlearning available',
+      noGroupActivities: 'No group activities available',
       courseLeaderboard: 'Course Leaderboard',
+      groupLeaderboard: 'Group Leaderboard',
+      groups: 'Groups',
+      assignRandomGroups: 'Assign random groups',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       runningSession: 'Running live quiz',
@@ -1100,42 +1575,144 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       startAt: 'Start: {time}',
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
+      courseQRDescription:
+        'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
-      linkMicroSessionCopied:
-        'The link to the microlearning has been successfully copied to the clipboard.',
-      linkLearningElementCopied:
-        'The link to the practice quiz has been successfully copied to the clipboard.',
-      editMicroSession: 'Edit microlearning',
-      publishMicroSession: 'Publish microlearning',
-      unpublishMicroSession: 'Unpublish microlearning',
-      deleteMicroSession: 'Delete microlearning',
-      publishItem: 'Publish {name}',
+      copyLTIAccessLink: 'Copy LTI link',
+      linkAccessCopied:
+        'The link for accessing the item has been copied to the clipboard.',
+      linkLTICopied:
+        'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
+      linkLTILeaderboardLabel: 'Leaderboard',
+      linkLTIDocsLabel: 'Documentation',
+      linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIAccountManagement: 'Account Management',
+      editMicrolearning: 'Edit microlearning',
+      duplicateMicroLearning: 'Duplicate microlearning',
+      extendMicroLearning: 'Extend microlearning',
+      extendMicroLearningDescription:
+        'Use this dialogue to modify the end date of the microlearning. Please note that only future dates can be set as end dates.',
+      newEndDate: 'New end date',
+      futureEndDateRequired:
+        'Please enter an end date that lies in the future.',
+      publishMicrolearning: 'Publish microlearning',
+      unpublishMicrolearning: 'Unpublish microlearning',
+      convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
+      deleteMicroLearning: 'Delete microlearning',
+      deleteMicroLearningMessage:
+        'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
+      publishItemPRACTICE_QUIZ: 'Publish practice quiz',
+      publishItemMICROLEARNING: 'Publish microlearning',
+      publishItemGROUP_ACTIVITY: 'Publish group activity',
       confirmPublishing: 'Are you sure you want to publish the following item?',
-      publishingHint:
-        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
+      practicePublishingHint:
+        'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
+      practiceSchedulingHint:
+        'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
-        'Microlearnings are additionally only visible within the specified date range.',
-      confirmDeletionMicroSession:
-        'Are you sure you want to delete the following microlearing?',
-      hintDeletionMicroSession:
-        'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
-      editLearningElement: 'Edit practice quiz',
-      publishLearningElement: 'Publish practice quiz',
-      deleteLearningElement: 'Delete practice quiz',
-      confirmDeletionLearningElement:
-        'Are you sure you want to delete the following practice quiz?',
-      hintDeletionLearningElement:
-        'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
+      editPracticeQuiz: 'Edit practice quiz',
+      duplicatePracticeQuiz: 'Duplicate practice quiz',
+      publishPracticeQuiz: 'Publish practice quiz',
+      deletePracticeQuiz: 'Delete practice quiz',
+      deletePracticeQuizMessage:
+        'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
+      noResponsesToDelete:
+        'No logged in participants have submitted responses for this activity',
+      deleteResponses:
+        '{number} response(s) of logged in participants will be deleted.',
+      noAnonymousResponsesToDelete:
+        'No anonymous responses have been submitted for this activity',
+      deleteAnonymousResponses:
+        '{number} anonymous response(s) for this activity will be deleted.',
+      unpublishPracticeQuiz: 'Unpublish practice quiz',
+      publishGroupActivity: 'Publish group activity',
+      groupActivityPublishingHint:
+        'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
+      editGroupActivity: 'Edit group activity',
+      deleteGroupActivity: 'Delete group activity',
+      deleteGroupActivityMessage:
+        'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
+      noStartedInstancesToDelete:
+        'There are no groups that have outstanding submissions for this group activity.',
+      deleteStartedInstance:
+        '{number} group(s) that have started the group activity will loose access to it.',
+      noSubmissionsToDelete:
+        'There are no submissions for this group activity.',
+      deleteSubmissions:
+        '{number} submission(s) by separate groups for this activity will be deleted.',
+      unpublishGroupActivity: 'Unpublish group activity',
+      extendGroupActivity: 'Extend group activity',
+      extendGroupActivityDescription:
+        'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
+      gradeGroupActivity: 'Grade group activity',
+      courseElements: 'Course Elements',
+      otherActions: 'Other actions',
+      enableGamification: 'Enable gamification',
+      enableGamificationWarning:
+        'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
+      poolForRandomAssignment: 'Pool for Random Assignment',
+      randomGroupsNotPossible:
+        'No random groups can be formed with a single student in the assignment pool or in a group with one participant. Please consider extending the group formation deadline in the course settings at the top.',
+      groupAssignmentFinalizedMessage:
+        'The group assignment has been finalized either manually by you or automatically by the system, since the group deadline passed. To re-enable the creation of groups, simply move the group deadline date in the course settings to the future.',
+      finalizeRandomGroupAssignment: 'Finalize Random Group Assignment',
+      confirmRandomGroupAssignment: `Once you confirm the finalization of the random group assignment, the following actions will be performed automatically by KlickerUZH:
+        <ul><li>All students remaining in the random assignment pool will be assigned to randomized groups.</li>
+        <li>Groups with a single participant will be deleted and the corresponding students will be assigned to randomized groups.</li>
+        <li>The assignment to random groups cannot be undone!</li>
+        <li>The possibility for students to create / leave groups manually through the student app will be automatically deactivated. Should you wish to re-enable this possibility, simply move the group deadline date in the course settings to the future.</li></ul>`,
+      groupAssignmentFailed:
+        'An error occurred during the group assignment. Please check that sufficiently many students are in the assignment pool and try again.',
+      groupAssignmentSuccessful:
+        'The group assignment was successful. All students from the pool were assigned to random groups.',
     },
-    toasts: {
-      learningElementEdit: 'Practice quiz successfully edited!',
-      learningElementCreate: 'Practice quiz successfully created!',
-      toCourseOverview: 'To <link>course overview</link>',
-      liveSessionEdit: 'Live quiz successfully edited!',
-      liveSessionCreate: 'Live quiz successfully created!',
-      toSessionList: 'To <link>quiz overview</link>',
-      microSessionEdit: 'Microlearning successfully edited!',
-      microSessionCreate: 'Microlearning successfully created!',
+    groupActivity: {
+      activityMissingOrNotCompleted:
+        'The group activity you are looking for does not exist or has not yet been completed. Please note that group activities can only be evaluated after their official end date.',
+      gradingTitle: 'Grading Group Activity: {name}',
+      submissions: 'Submissions',
+      noSubmissions: 'No submissions are available for this group activity.',
+      submittedAt: 'Submitted at {datetime}',
+      toGrade: 'To Grade',
+      graded: 'Graded',
+      notSubmitted: 'Not submitted',
+      grading: 'Grading',
+      noSubmissionSelected:
+        'Please select a submission from the list on the left side for grading. Before the grading is finalized, you can adjust the grading at any time.',
+      nPoints: '{number} Points',
+      achievedScore: 'Achieved score',
+      maxScoreTooltip:
+        'The maximum score for a question is calculated as the product of the question multiplier and the group activity multiplier.',
+      passedMissingError:
+        'Please specify, if the group passed or failed the group challenge.',
+      scoreMissingError:
+        'Plase make sure that all quesitons are graded with a valid value.',
+      didGroupPass: 'Is the group activitied passed?',
+      optionalFeedback:
+        'Enter an optional general feedback for the group challenge here',
+      saveGrading: 'Save Grading',
+      optionalQuestionFeedback:
+        'Enter optional feedback for the answered question here.',
+      generalFeedback: 'General Feedback',
+      switchSubmission: 'Switch Submission',
+      confirmSubmissionSwitch:
+        'Are you sure you want to switch to another submission of the group activity? You currently have unsaved changes that will be lost when switching.',
+      totalAchievedPoints: 'Total: {achieved}/{total} Points',
+      finalizeGrading: 'Finalize Grading',
+      confirmFinalizeGrading:
+        'Are you sure you want to finalize the grading of the group activity? After finalizing the grading, the results will be visible to the participants and no further changes are possible.',
+      stackGradingSuccess: 'Grading was saved successfully.',
+      stackGradingError:
+        'An error occurred while saving the grading. Please check if all required decisions have been entered.',
+      finalizeGradingSuccess: 'Grading was finalized successfully.',
+      finalizeGradingError:
+        'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
+      alreadyGraded:
+        'The grading for this group activity has already been finalized and can no longer be changed.',
+      nOfTotalPoints: '{number}/{total} Points',
+      gradingAlreadyFinalized:
+        'Grading has already been finalized and cannot be changed anymore. Select a submission to view the entered grading.',
     },
   },
   control: {
@@ -1144,8 +1721,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       installAndroid:
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
-        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
-      emailRequired: 'Please enter a valid email address',
+        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live quizzes directly.",
+      shortnameRequired: 'Please enter your shortname.',
       tokenRequired:
         'Enter a valid token. Please note the validity displayed during token generation.',
       checkToken:
@@ -1195,7 +1772,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endSession: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
-      blockN: 'Block {number}',
     },
   },
 }

@@ -1,62 +1,35 @@
 mutation ManipulateFreeTextQuestion(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $explanation: String
   $options: OptionsFreeTextInput
-  $hasSampleSolution: Boolean
-  $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
   manipulateFreeTextQuestion(
     id: $id
-    type: FREE_TEXT
+    status: $status
     name: $name
     content: $content
     explanation: $explanation
     options: $options
-    hasSampleSolution: $hasSampleSolution
-    hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
     id
     name
+    status
     type
     content
     explanation
-    hasSampleSolution
-    hasAnswerFeedbacks
     pointsMultiplier
 
     questionData {
-      ... on ChoicesQuestionData {
-        options {
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
-        }
-      }
-
-      ... on NumericalQuestionData {
-        options {
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
-        }
-      }
-
       ... on FreeTextQuestionData {
         options {
+          hasSampleSolution
           restrictions {
             maxLength
           }

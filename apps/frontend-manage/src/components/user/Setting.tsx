@@ -23,10 +23,11 @@ function SettingHeader({
         onClick={() => setSettingVisible(!settingVisible)}
         className={{
           root: twMerge(
-            'flex flex-row items-center justify-between w-full py-0.5 mb-1 mt-1',
-            'font-bold  text-lg text-neutral-500'
+            'mb-1 mt-1 flex w-full flex-row items-center justify-between py-0.5',
+            'text-lg font-bold text-neutral-500'
           ),
         }}
+        data={{ cy: `collapse-setting-header-${title}` }}
       >
         <div>{title}</div>
         <FontAwesomeIcon icon={settingVisible ? faChevronUp : faChevronDown} />

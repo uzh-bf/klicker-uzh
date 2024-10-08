@@ -5,11 +5,10 @@ import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import ErrorBoundary from '../components/layout/ErrorBoundary'
 
 import '../globals.css'
 
@@ -31,18 +30,17 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
-      <ErrorBoundary>
-        <NextIntlProvider
-          messages={pageProps.messages}
-          locale={locale}
-          getMessageFallback={getMessageFallback}
-          onError={onError}
-        >
-          <ApolloProvider client={apolloClient}>
-            <Component {...pageProps} />
-          </ApolloProvider>
-        </NextIntlProvider>
-      </ErrorBoundary>
+      <NextIntlClientProvider
+        timeZone="Europe/Zurich"
+        messages={pageProps.messages}
+        locale={locale}
+        getMessageFallback={getMessageFallback}
+        onError={onError}
+      >
+        <ApolloProvider client={apolloClient}>
+          <Component {...pageProps} />
+        </ApolloProvider>
+      </NextIntlClientProvider>
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
@@ -54,6 +52,7 @@ function App({ Component, pageProps }: AppProps) {
           height: 100%;
           display: flex;
           flex-direction: column;
+          background-color: white;
         }
       `}</style>
     </div>

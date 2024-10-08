@@ -38,6 +38,13 @@ import {
 } from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
 import MediaLibrary from './MediaLibrary'
 
+export interface ContentInputClassName {
+  root?: string
+  toolbar?: string
+  content?: string
+  editor?: string
+}
+
 interface Props {
   error?: any
   onChange: any
@@ -47,13 +54,11 @@ interface Props {
   placeholder: string
   autoFocus?: boolean
   content: string
-  className?: {
-    root?: string
-    toolbar?: string
-    content?: string
-    editor?: string
+  className?: ContentInputClassName
+  data?: {
+    test?: string
+    cy?: string
   }
-  data_cy?: string
 }
 
 const HOTKEYS: Record<string, string> = {
@@ -73,7 +78,7 @@ function ContentInput({
   error = '',
   touched,
   className,
-  data_cy,
+  data,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -91,8 +96,9 @@ function ContentInput({
     <div
       className={twMerge(
         disabled && 'pointer-events-none opacity-70',
-        'border border-solid rounded flex-1',
+        'relative flex-1 rounded border border-solid',
         showToolbarOnFocus && 'group',
+        error && touched && 'border-red-500',
         className?.root
       )}
     >
@@ -105,7 +111,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
+              'prose prose-sm prose-blockquote:text-gray-500 max-w-none leading-6 focus:!outline-none',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -123,25 +129,26 @@ function ContentInput({
                 }
               }
             }}
-            data-cy={data_cy}
+            data-test={data?.test}
+            data-cy={data?.cy}
           />
         </div>
         <div
           className={twMerge(
-            'toolbar flex flex-row w-full px-1 mr-10 h-8 bg-uzh-grey-20 text-sm',
-            showToolbarOnFocus && 'group-focus-within:flex hidden'
+            'toolbar bg-uzh-grey-20 mr-10 flex h-8 w-full flex-row px-1 text-sm',
+            showToolbarOnFocus && 'hidden group-focus-within:flex'
           )}
         >
           <div
             className={twMerge(
-              'flex flex-row flex-1 gap-1',
+              'flex flex-1 flex-row gap-1',
               className?.toolbar
             )}
           >
             <Tooltip
               tooltip={t('shared.contentInput.boldStyle')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -151,7 +158,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.italicStyle')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -161,7 +168,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.codeStyle')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
+                tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
               }}
               withIndicator={false}
             >
@@ -171,7 +178,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.citationStyle')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[70%]',
+                tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -181,7 +188,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.numberedList')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
+                tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -191,7 +198,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.unnumberedList')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
+                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -202,7 +209,7 @@ function ContentInput({
               delay={2000}
               tooltip={t('shared.contentInput.image')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -223,7 +230,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.latex')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -245,7 +252,7 @@ function ContentInput({
             <Tooltip
               tooltip={t('shared.contentInput.latexCentered')}
               className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
               withIndicator={false}
             >
@@ -305,8 +312,8 @@ function ContentInput({
       {isImageDropzoneOpen && (
         <div
           className={twMerge(
-            'flex flex-col md:flex-row',
-            showToolbarOnFocus && 'group-focus-within:flex hidden'
+            'absolute z-10 flex w-full flex-col rounded-b-md border-2 !border-t-0 border-solid bg-white md:flex-row',
+            showToolbarOnFocus && 'hidden group-focus-within:flex'
           )}
         >
           <MediaLibrary
@@ -492,7 +499,7 @@ export const SlateButton = React.forwardRef(
       {...props}
       className={twMerge(
         className,
-        'cursor-pointer h-7 flex justify-center items-center w-7 rounded my-auto',
+        'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
         active && !reversed && 'bg-uzh-grey-40',
         !active && reversed && 'bg-uzh-grey-40'
       )}

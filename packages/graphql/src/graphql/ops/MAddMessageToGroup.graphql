@@ -1,0 +1,12 @@
+mutation AddMessageToGroup($groupId: String!, $content: String!) {
+  addMessageToGroup(groupId: $groupId, content: $content) {
+    id
+    content
+    createdAt
+    participant {
+      id
+      username
+      avatar
+    }
+  }
+}

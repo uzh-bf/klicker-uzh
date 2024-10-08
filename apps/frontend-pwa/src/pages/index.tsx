@@ -7,9 +7,10 @@ import {
   faCirclePlus,
   faGraduationCap,
   faLink,
+  faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  MicroSession,
+  MicroLearning,
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
@@ -21,13 +22,35 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 
+type LocalCourseType = {
+  id: string
+  displayName: string
+  description?: string
+  isSubscribed: boolean
+  startDate: string
+  endDate: string
+  isGamificationEnabled: boolean
+}
+
+type LocalLiveSessionType = Partial<Session> & { courseName: string }
+
+type LocalMicroLearningType = Partial<MicroLearning> & {
+  courseName: string
+  isCompleted: boolean
+}
+
 const Index = function () {
+  const router = useRouter()
   const t = useTranslations()
+
+  // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
+  //   useStickyState('hasSeenSurvey', 'false')
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
@@ -38,7 +61,14 @@ const Index = function () {
   ) {
     await subscribeToPush({
       variables: {
-        subscriptionObject,
+        subscriptionObject: {
+          endpoint: subscriptionObject.endpoint,
+          expirationTime: subscriptionObject.expirationTime,
+          keys: {
+            auth: subscriptionObject.toJSON().keys!.auth,
+            p256dh: subscriptionObject.toJSON().keys!.p256dh,
+          },
+        },
         courseId,
       },
       refetchQueries: [
@@ -90,35 +120,22 @@ const Index = function () {
     activeSessions,
     activeMicrolearning,
   }: {
-    courses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-      isGamificationEnabled: boolean
-    }[]
-    oldCourses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-    }[]
-    activeSessions: (Session & { courseName: string })[]
-    activeMicrolearning: (MicroSession & {
-      courseName: string
-      isCompleted: boolean
-    })[]
+    courses: LocalCourseType[]
+    oldCourses: LocalCourseType[]
+    activeSessions: LocalLiveSessionType[]
+    activeMicrolearning: LocalMicroLearningType[]
   } = useMemo(() => {
     const obj = {
-      courses: [],
-      oldCourses: [],
-      activeSessions: [],
-      activeMicrolearning: [],
+      courses: [] as LocalCourseType[],
+      oldCourses: [] as LocalCourseType[],
+      activeSessions: [] as LocalLiveSessionType[],
+      activeMicrolearning: [] as LocalMicroLearningType[],
     }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
+      if (!participation.course) return acc
+      const course = participation.course
+
       return {
         courses:
           // check if endDate of course is before today or today
@@ -134,8 +151,9 @@ const Index = function () {
                   isGamificationEnabled:
                     participation.course?.isGamificationEnabled,
                   isSubscribed:
-                    participation.subscriptions &&
-                    participation.subscriptions.length > 0,
+                    (participation.subscriptions &&
+                      participation.subscriptions.length > 0) ??
+                    false,
                 },
               ]
             : acc.courses,
@@ -147,28 +165,31 @@ const Index = function () {
                 displayName: participation.course?.displayName,
                 startDate: participation.course?.startDate,
                 endDate: participation.course?.endDate,
+                isGamificationEnabled:
+                  participation.course?.isGamificationEnabled,
                 isSubscribed:
-                  participation.subscriptions &&
-                  participation.subscriptions.length > 0,
+                  (participation.subscriptions &&
+                    participation.subscriptions.length > 0) ??
+                  false,
               },
             ]
           : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
-          ...participation.course.sessions?.map((session) => ({
+          ...(course.sessions?.map((session) => ({
             ...session,
-            courseName: participation.course.displayName,
-          })),
+            courseName: course.displayName,
+          })) ?? []),
         ],
         activeMicrolearning: [
           ...acc.activeMicrolearning,
-          ...participation.course?.microSessions?.map((session) => ({
-            ...session,
-            courseName: participation.course.displayName,
-            isCompleted: participation.completedMicroSessions?.includes(
-              session.id
+          ...(course.microLearnings?.map((micro) => ({
+            ...micro,
+            courseName: course.displayName,
+            isCompleted: participation.completedMicroLearnings?.includes(
+              micro.id
             ),
-          })),
+          })) ?? []),
         ],
       }
     }, obj)
@@ -176,7 +197,7 @@ const Index = function () {
 
   if (loading || !data) {
     return (
-      <Layout displayName={t('shared.generic.title')}>
+      <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
       </Layout>
     )
@@ -200,14 +221,35 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName={t('shared.generic.title')}>
+    <Layout key="pwa-home-layout" displayName={t('shared.generic.title')}>
       <div
-        className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
+        className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
       >
+        {/* {hasSeenSurvey === 'false' && (
+          <Link
+            href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
+            target="_blank"
+          >
+            <Button
+              className={{
+                root: 'text-sm flex flex-row gap-4 items-center bg-orange-100 border border-orange-200 rounded-lg p-2 text-left',
+              }}
+              onClick={() => {
+                setHasSeenSurvey(true)
+              }}
+            >
+              <div>
+                <FontAwesomeIcon icon={faBullhorn} />
+              </div>
+              <div>{t('pwa.general.surveyInvitation')}</div>
+            </Button>
+          </Link>
+        )} */}
+
         {activeSessions.length !== 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>
+            <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.activeSessions')}
             </H1>
             <div className="flex flex-col gap-2">
@@ -216,6 +258,7 @@ const Index = function () {
                   href={session.linkTo || `/session/${session.id}`}
                   key={session.id}
                   icon={session.linkTo ? faLink : faChalkboard}
+                  data={{ cy: `live-quiz-${session.displayName}` }}
                 >
                   <div className="flex flex-row items-end justify-between md:flex-row">
                     <div>{session.displayName}</div>
@@ -227,42 +270,59 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>
-            {t('shared.generic.learningElements')}
+          <H1 className={{ root: 'mb-2 text-xl' }}>
+            {t('shared.generic.practice')}
           </H1>
           <div className="flex flex-col gap-2">
-            <LinkButton href="/repetition" icon={faGraduationCap}>
-              {t('shared.generic.repetition')}
+            <LinkButton
+              data={{ cy: 'practice-pool' }}
+              href="/practice"
+              icon={faRepeat}
+            >
+              {t('shared.generic.practicePool')}
             </LinkButton>
-            <LinkButton href="/bookmarks" icon={faBookmark}>
+            <LinkButton
+              data={{ cy: 'quizzes' }}
+              href="/repetition"
+              icon={faGraduationCap}
+            >
+              {t('shared.generic.practiceQuizzes')}
+            </LinkButton>
+            <LinkButton
+              data={{ cy: 'bookmarks' }}
+              href="/bookmarks"
+              icon={faBookmark}
+            >
               {t('pwa.general.myBookmarks')}
             </LinkButton>
           </div>
         </div>
         {activeMicrolearning.length > 0 && (
-          <div data-cy="micro-learnings">
-            <H1 className={{ root: 'text-xl mb-2' }}>
+          <div data-cy="microlearnings">
+            <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.microlearning')}
             </H1>
             <div className="flex flex-col gap-2">
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
+                  href={micro.isCompleted ? '' : `/microlearning/${micro.id}/`}
                   key={micro.id}
                   disabled={micro.isCompleted}
                   className={{
-                    root:
-                      micro.isCompleted && 'hover:bg-unset cursor-not-allowed',
+                    root: micro.isCompleted
+                      ? 'hover:bg-unset cursor-not-allowed'
+                      : '',
                   }}
+                  data={{ cy: `microlearning-${micro.displayName}` }}
                 >
                   <div>{micro.displayName}</div>
-                  <div className="flex flex-row items-end justify-between">
-                    <div className="text-xs">
+                  <div className="flex flex-row items-end justify-between text-xs">
+                    <div>
                       {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
                       - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
                     </div>
-                    <div className="text-xs">{micro.courseName}</div>
+                    <div>{micro.courseName}</div>
                   </div>
                 </LinkButton>
               ))}
@@ -270,15 +330,12 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>
+          <H1 className={{ root: 'mb-2 text-xl' }}>
             {t('pwa.general.myCourses')}
           </H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
-                disabled={
-                  !course?.isGamificationEnabled && !course?.description
-                }
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}
@@ -287,7 +344,11 @@ const Index = function () {
             {oldCourses.map((course) => (
               <CourseElement key={course.id} course={course} />
             ))}
-            <LinkButton icon={faCirclePlus} href="/join">
+            <LinkButton
+              icon={faCirclePlus}
+              href="/join"
+              data={{ cy: 'join-new-course' }}
+            >
               {t('pwa.general.joinCourse')}
             </LinkButton>
           </div>

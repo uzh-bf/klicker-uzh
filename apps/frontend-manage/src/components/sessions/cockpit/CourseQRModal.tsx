@@ -1,7 +1,7 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useState } from 'react'
@@ -15,25 +15,28 @@ interface QRPopupProps {
     button?: string
     modal?: string
   }
-  children?: React.ReactNode
-}
-
-interface QRPopupPropsWithLink extends QRPopupProps {
-  link: string
-  children?: never
-}
-interface QRPopupPropsWithChildren extends QRPopupProps {
-  link?: never
-  children: React.ReactNode
+  dataTrigger?: {
+    cy?: string
+    test?: string
+  }
+  dataModal?: {
+    cy?: string
+    test?: string
+  }
+  dataCloseButton?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function CourseQRModal({
-  link,
   relativeLink,
   triggerText,
   className,
-  children,
-}: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
+  dataTrigger,
+  dataModal,
+  dataCloseButton,
+}: QRPopupProps): React.ReactElement {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -42,8 +45,9 @@ function CourseQRModal({
       title="QR Code"
       trigger={
         <Button
-          className={{ root: 'w-[41%] sm:w-max !mr-0' }}
+          className={{ root: '!mr-0 w-full gap-2' }}
           onClick={() => setModalOpen(true)}
+          data={dataTrigger}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
@@ -54,12 +58,19 @@ function CourseQRModal({
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: className?.modal,
+        content: twMerge('!w-max', className?.modal),
       }}
+      dataOverlay={dataModal}
+      dataCloseButton={dataCloseButton}
     >
-      <div>
+      <UserNotification message={t('manage.course.courseQRDescription')} />
+
+      <div className="mt-4">
         <QR
-          className={{ title: 'text-base' }}
+          className={{
+            title: 'text-base',
+            canvas: 'flex justify-center',
+          }}
           path={relativeLink}
           width={100}
         />
@@ -70,10 +81,11 @@ function CourseQRModal({
           fluid
           className={{
             root: twMerge(
-              'text-lg font-bold text-white h-11 bg-primary-80',
+              'bg-primary-80 mt-3 h-11 text-lg font-bold text-white',
               className?.button
             ),
           }}
+          data={{ cy: 'present-qr-code-button' }}
         >
           <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
         </Button>

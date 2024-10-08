@@ -2,19 +2,24 @@ query GetUserQuestions {
   userQuestions {
     id
     name
+    status
     type
     content
 
+    pointsMultiplier
+    version
+
     isArchived
     isDeleted
-    hasSampleSolution
-    hasAnswerFeedbacks
     createdAt
     updatedAt
+
+    options
 
     tags {
       id
       name
+      order
     }
   }
 }

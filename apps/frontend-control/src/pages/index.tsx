@@ -39,12 +39,12 @@ function Index() {
 
   return (
     <Layout title={t('control.home.courseSelection')}>
-      <div className="flex flex-col w-full gap-4">
+      <div className="flex w-full flex-col gap-4">
         {dataCourses?.controlCourses && (
           <div>
             <H4>{t('control.home.selectCourse')}</H4>
             <div className="flex flex-col gap-2">
-              {dataCourses.controlCourses
+              {[...dataCourses?.controlCourses]
                 .sort((a, b) => (a.isArchived ? 1 : -1))
                 .map((course) => (
                   <ListButton
@@ -60,6 +60,7 @@ function Index() {
                             })
                             .toString()
                     }
+                    data={{ cy: `course-${course.name}` }}
                   />
                 ))}
             </div>

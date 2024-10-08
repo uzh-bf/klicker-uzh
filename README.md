@@ -4,7 +4,7 @@
 >
 > Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which will be available until the end of 2023. To migrate to KlickerUZH v3.0, start the [migration process](https://manage.klicker.uzh.ch/migration).
 
-`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
+`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Finance at the University of Zurich, Switzerland.
 
 ![Klicker Screenshot Timeline](apps/docs/static/img/question_pool_mac.png)
 
@@ -28,13 +28,13 @@ To share code more easily between different services, we added new packages to t
 
 - [Prisma](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/prisma): The prisma package contains the SQL database schema as well as migration scripts between different minor versions of KlickerUZH.
 - [GraphQL](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/graphql): The GraphQL package contains the complete GraphQL schema and all resolvers for the KlickerUZH backend, as well as all business logic for provided services. For consistent typing, Pothos GraphQL and an auto-generated schema are used.
-- [Grading](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/grading): The grading package provides the grading logic that is used to assign scores and experience points to participants and groups in gamified live sessions, learning elements, micro-sessions and other KlickerUZH elements.
+- [Grading](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/grading): The grading package provides the grading logic that is used to assign scores and experience points to participants and groups in gamified live quizzes, practice quizzes, microlearnings and other KlickerUZH elements.
 - [LTI](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/lti): The LTI package contains logic to offer automatic sign ins for students through the Learning Tools Interoperability "LTI" standard (for OpenOLAT and Moodle integration).
 - [Internationalization](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/i18n): The i18n package provides internationalized messages for all KlickerUZH services.
 - [Shared Components](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/shared-components): The `shared-components` package is configured as an internal turborepo package, mainly providing the possibility to share React components between the frontends and reduce code duplication.
 - [Markdown](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/markdown): The markdown package exports a React component to render markdown strings into formatted elements.
 
-For more code commonality between different projects at the Teaching Center and the Department of Banking and Finance more generally, we also use a [Design System Package](https://github.com/uzh-bf/design-system) with commonly used, pre-styled and theme-based components.
+For more code commonality between different projects at the Teaching Center and the Department of Finance more generally, we also use a [Design System Package](https://github.com/uzh-bf/design-system) with commonly used, pre-styled and theme-based components.
 
 ## Roadmap / Issues
 
@@ -62,3 +62,4 @@ We welcome any contributions to the KlickerUZH project. Before considering any c
 The KlickerUZH and all of its subprojects are licensed under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.de.html).
 
 [![klicker-uzh](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/y436dx/v3&style=for-the-badge&logo=cypress)](https://cloud.cypress.io/projects/y436dx/runs)
+[![Coverage Status](https://coveralls.io/repos/github/uzh-bf/klicker-uzh/badge.svg?branch=v3)](https://coveralls.io/github/uzh-bf/klicker-uzh?branch=v3)

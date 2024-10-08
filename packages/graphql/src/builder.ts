@@ -1,5 +1,5 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos.ts'
+import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos.js'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
@@ -9,7 +9,7 @@ import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import './types/app'
 
-import { Context, ContextWithUser } from './lib/context'
+import { Context, ContextWithUser } from './lib/context.js'
 
 const prisma = new PrismaClient({})
 
@@ -33,6 +33,7 @@ const builder = new SchemaBuilder<{
     scope?: UserLoginScope
     catalyst?: boolean
   }
+  // @ts-expect-error
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
@@ -46,7 +47,7 @@ const builder = new SchemaBuilder<{
   }
 }>({
   authScopes: async (ctx) => ({
-    authenticated: !!ctx.user?.sub,
+    authenticated: !!ctx.user?.sub && ctx.user.scope !== UserLoginScope.OTP,
     role: (role) => ctx.user?.role === role,
     scope: (requiredScope) => {
       switch (requiredScope) {

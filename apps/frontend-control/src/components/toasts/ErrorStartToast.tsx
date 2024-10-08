@@ -10,7 +10,13 @@ function ErrorStartToast({ open, setOpen }: ErrorStartToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast openExternal={open} setOpenExternal={setOpen} type="error">
+    <Toast
+      dismissible
+      openExternal={open}
+      setOpenExternal={setOpen}
+      type="error"
+      duration={5000}
+    >
       {t('control.course.sessionStartFailed')}
     </Toast>
   )

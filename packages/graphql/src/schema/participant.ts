@@ -1,24 +1,27 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { levelFromXp } from '../lib/util'
-import { Achievement, ParticipantAchievementInstance } from './achievement'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
+import builder from '../builder.js'
+import {
+  AchievementRef,
+  IAchievement,
+  IParticipantAchievementInstance,
+  ParticipantAchievementInstanceRef,
+} from './achievement.js'
 import type {
   ICourse,
   IGroupLeaderboardEntry,
   ILeaderboardEntry,
   ILeaderboardStatistics,
-} from './course'
+} from './course.js'
 import {
   CourseRef,
   GroupLeaderboardEntry,
-  LeaderboardEntry,
+  LeaderboardEntryRef,
   LeaderboardStatistics,
-} from './course'
-import type { IGroupActivityInstance } from './groupActivity'
-import { GroupActivityInstanceRef } from './groupActivity'
-import type { IQuestionStack } from './learningElements'
-import { QuestionStackRef } from './learningElements'
-import { LocaleType } from './user'
+} from './course.js'
+import type { IGroupActivityInstance } from './groupActivity.js'
+import { GroupActivityInstanceRef } from './groupActivity.js'
+import { LocaleType } from './user.js'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -80,7 +83,7 @@ export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
   isSelf?: boolean
-  achievements?: DB.ParticipantAchievementInstance[]
+  achievements?: IParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
   level?: number
   levelData?: ILevel
@@ -127,7 +130,7 @@ export const Participant = ParticipantRef.implement({
       nullable: true,
     }),
     achievements: t.expose('achievements', {
-      type: [ParticipantAchievementInstance],
+      type: [ParticipantAchievementInstanceRef],
       nullable: true,
     }),
 
@@ -141,7 +144,8 @@ export const Participant = ParticipantRef.implement({
 
 export interface IParticipantGroup extends DB.ParticipantGroup {
   score?: number
-  participants: IParticipant[]
+  participants?: IParticipant[]
+  messages?: IGroupMessage[] | null
 }
 export const ParticipantGroupRef =
   builder.objectRef<IParticipantGroup>('ParticipantGroup')
@@ -151,14 +155,61 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
 
     participants: t.expose('participants', {
       type: [ParticipantRef],
+      nullable: true,
+    }),
+
+    messages: t.expose('messages', {
+      type: [GroupMessageRef],
+      nullable: true,
     }),
 
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
 
-    averageMemberScore: t.exposeFloat('averageMemberScore'),
-    groupActivityScore: t.exposeFloat('groupActivityScore'),
+    averageMemberScore: t.exposeInt('averageMemberScore'),
+    groupActivityScore: t.exposeInt('groupActivityScore'),
     score: t.exposeFloat('score', { nullable: true }),
+  }),
+})
+
+export interface IGroupMessage extends DB.GroupMessage {
+  group?: IParticipantGroup
+  participant?: IParticipant
+}
+export const GroupMessageRef = builder.objectRef<IGroupMessage>('GroupMessage')
+export const GroupMessage = GroupMessageRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    content: t.exposeString('content'),
+    group: t.expose('group', {
+      type: ParticipantGroupRef,
+      nullable: true,
+    }),
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
+
+export interface IGroupAssignmentPoolEntryRef
+  extends DB.GroupAssignmentPoolEntry {
+  participant?: IParticipant
+}
+export const GroupAssignmentPoolEntryRef =
+  builder.objectRef<IGroupAssignmentPoolEntryRef>('GroupAssignmentPoolEntry')
+export const GroupAssignmentPoolEntry = GroupAssignmentPoolEntryRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    participantId: t.exposeID('participantId'),
+    courseId: t.exposeID('courseId'),
+
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
   }),
 })
 
@@ -166,7 +217,6 @@ export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
   participant?: IParticipant
-  bookmarkedStacks?: IQuestionStack[]
 }
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
@@ -177,11 +227,11 @@ export const Participation = ParticipationRef.implement({
     isActive: t.exposeBoolean('isActive'),
 
     subscriptions: t.expose('subscriptions', {
-      type: [PushSubscription],
+      type: [PushSubscriptionRef],
       nullable: true,
     }),
 
-    completedMicroSessions: t.exposeStringList('completedMicroSessions'),
+    completedMicroLearnings: t.exposeStringList('completedMicroLearnings'),
 
     course: t.expose('course', {
       type: CourseRef,
@@ -192,15 +242,12 @@ export const Participation = ParticipationRef.implement({
       type: ParticipantRef,
       nullable: true,
     }),
-
-    bookmarkedStacks: t.expose('bookmarkedStacks', {
-      type: [QuestionStackRef],
-      nullable: true,
-    }),
   }),
 })
 
-export const PushSubscription = builder.prismaObject('PushSubscription', {
+export const PushSubscriptionRef =
+  builder.objectRef<DB.PushSubscription>('PushSubscription')
+export const PushSubscription = PushSubscriptionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -219,6 +266,7 @@ export interface IParticipantLearningData {
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
   groupActivityInstances?: IGroupActivityInstance[]
+  inRandomGroupPool?: boolean
 }
 export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
@@ -229,12 +277,12 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     participantToken: t.exposeString('participantToken', { nullable: true }),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
       nullable: true,
     }),
 
@@ -244,7 +292,7 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     }),
 
     leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntry],
+      type: [LeaderboardEntryRef],
       nullable: true,
     }),
 
@@ -267,6 +315,8 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
+
+    inRandomGroupPool: t.exposeBoolean('inRandomGroupPool', { nullable: true }),
   }),
 })
 
@@ -281,14 +331,14 @@ export const LeaveCourseParticipation = LeaveCourseParticipationRef.implement({
     id: t.exposeString('id'),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
     }),
   }),
 })
 
 export interface IParticipantWithAchievements {
   participant: IParticipant
-  achievements: DB.Achievement[]
+  achievements: IAchievement[]
 }
 export const ParticipantWithAchievementsRef =
   builder.objectRef<IParticipantWithAchievements>('ParticipantWithAchievements')
@@ -299,7 +349,7 @@ export const ParticipantWithAchievements =
         type: ParticipantRef,
       }),
       achievements: t.expose('achievements', {
-        type: [Achievement],
+        type: [AchievementRef],
       }),
     }),
   })

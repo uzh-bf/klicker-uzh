@@ -28,8 +28,10 @@ query GetPublicParticipantProfile($id: String!) {
       achievedCount
       achievement {
         id
-        name
-        description
+        nameDE
+        nameEN
+        descriptionDE
+        descriptionEN
         icon
         iconColor
       }

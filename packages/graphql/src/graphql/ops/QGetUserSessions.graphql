@@ -3,19 +3,29 @@ query GetUserSessions {
     id
     name
     displayName
+    namespace
+    pointsMultiplier
     accessMode
     status
     createdAt
     updatedAt
     startedAt
+    finishedAt
     numOfBlocks
     numOfQuestions
+    isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
     blocks {
       id
+      numOfParticipants
       instances {
         id
         questionData {
           id
+          questionId
+          elementId
           name
           type
           content

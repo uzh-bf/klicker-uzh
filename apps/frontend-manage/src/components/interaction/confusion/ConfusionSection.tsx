@@ -18,7 +18,7 @@ const GREEN_COLOR = 'rgba(22, 171, 57, 0.7)'
 function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
   return (
     <div className="w-full">
-      <div className="w-[97%] min-h-[180px]">
+      <div className="min-h-[180px] w-[97%]">
         <ReactSpeedometer
           fluidWidth
           currentValueText=" "

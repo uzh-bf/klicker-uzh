@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AddConfusionTimestepDocument,
   CreateFeedbackDocument,
+  Feedback,
   FeedbackAddedDocument,
   FeedbackRemovedDocument,
   FeedbackUpdatedDocument,
@@ -27,14 +28,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import PublicFeedback from './PublicFeedback'
 
-function Subscriber({ subscribeToMore, sessionId }) {
+interface SubscriberProps {
+  sessionId: string
+  subscribeToMore: any
+}
+
+function Subscriber({ subscribeToMore, sessionId }: SubscriberProps) {
   useEffect(() => {
     if (!sessionId) return
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackAddedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackAdded: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackAdded
         if (prev.feedbacks?.map((item) => item.id).includes(newItem.id))
@@ -46,12 +57,19 @@ function Subscriber({ subscribeToMore, sessionId }) {
     const feedbackRemoved = subscribeToMore({
       document: FeedbackRemovedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackRemoved: string } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const removedItem = subscriptionData.data.feedbackRemoved
         return {
           ...prev,
-          feedbacks: prev.feedbacks?.filter((item) => item.id !== removedItem),
+          feedbacks: prev.feedbacks?.filter(
+            (item) => item.id !== parseInt(removedItem)
+          ),
         }
       },
     })
@@ -59,7 +77,12 @@ function Subscriber({ subscribeToMore, sessionId }) {
     const feedbackUpdated = subscribeToMore({
       document: FeedbackUpdatedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { feedbacks: Feedback[] },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackUpdated: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const updatedItem = subscriptionData.data.feedbackUpdated
         return {
@@ -220,7 +243,7 @@ function FeedbackArea({
           'Confusion Interacted',
           `speed=${speed}, difficulty=${difficulty}`,
         ])
-      } catch ({ message }) {
+      } catch ({ message }: any) {
         console.error(message)
       } finally {
         // disable confusion voting for 1 minute
@@ -289,7 +312,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
@@ -318,18 +341,18 @@ function FeedbackArea({
                   placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
                     input:
-                      'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
+                      'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
                     root: 'mb-1',
                   }}
                   component="textarea"
                   rows="3"
                   maxLength={500}
-                  maxLengthLabel={t('shared.generic.characters')}
+                  maxLengthUnit={t('shared.generic.characters')}
                   data={{ cy: 'feedback-input' }}
                 />
                 <Button
                   className={{
-                    root: 'float-right h-10 text-center items-center !w-30',
+                    root: '!w-30 float-right h-10 items-center text-center',
                   }}
                   type="submit"
                   disabled={isSubmitting}
@@ -353,7 +376,7 @@ function FeedbackArea({
         <div className="mb-8 space-y-6 text-sm">
           <div className="">
             <H3 className={{ root: 'mb-0' }}>{t('pwa.feedbacks.speed')}</H3>
-            <div className="w-full -mt-8">
+            <div className="-mt-8 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>
@@ -373,7 +396,7 @@ function FeedbackArea({
             <H3 className={{ root: 'mb-0' }}>
               {t('pwa.feedbacks.difficulty')}
             </H3>
-            <div className="w-full -mt-5">
+            <div className="-mt-5 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>

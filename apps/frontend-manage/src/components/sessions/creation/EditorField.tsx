@@ -1,56 +1,98 @@
-import { Label } from '@uzh-bf/design-system'
+import { faCircleExclamation } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import ContentInput from '../../common/ContentInput'
+import ContentInput, { ContentInputClassName } from '../../common/ContentInput'
 
 interface EditorFieldProps {
   label: string
+  labelType?: 'small' | 'large'
+  required?: boolean
   fieldName: string
   tooltip?: string
+  placeholder?: string
   showToolbarOnFocus?: boolean
-  className?: string
-  data_cy?: string
+  className?: {
+    root?: string
+    label?: string
+    tooltip?: string
+    input?: ContentInputClassName
+  }
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function EditorField({
   label,
+  labelType = 'small',
+  required = false,
   fieldName,
   tooltip,
+  placeholder,
   showToolbarOnFocus = true,
   className,
-  data_cy,
+  data,
 }: EditorFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
 
   return (
-    <div className={twMerge('flex flex-row w-full', className)}>
-      <Label
-        label={label}
-        className={{
-          root: 'my-auto mr-2 font-bold min-w-max',
-          tooltip: 'text-sm font-normal !w-1/2',
-        }}
-        tooltip={tooltip}
-        showTooltipSymbol={typeof tooltip !== 'undefined'}
-      />
-      <ContentInput
-        error={meta.error}
-        touched={meta.touched}
-        content={field.value}
-        onChange={(newValue: string) => {
-          helpers.setValue(newValue)
-          helpers.setTouched(true)
-        }}
-        showToolbarOnFocus={showToolbarOnFocus}
-        placeholder={t('manage.sessionForms.enterContentHere')}
-        className={{
-          editor: '!leading-3 h-14 overflow-x-auto',
-          root: 'w-full',
-        }}
-        data_cy={data_cy}
-      />
+    <div
+      className={twMerge(
+        'flex w-full flex-row',
+        labelType === 'small' && 'flex-col',
+        className?.root
+      )}
+    >
+      {label && (
+        <FormLabel
+          label={label}
+          labelType={labelType}
+          required={required}
+          tooltip={tooltip}
+          className={className}
+        />
+      )}
+
+      <div className="flex w-full flex-row items-center gap-2">
+        <ContentInput
+          error={meta.error}
+          touched={meta.touched}
+          content={field.value}
+          onChange={(newValue: string) => {
+            helpers.setValue(newValue)
+            helpers.setTouched(true)
+          }}
+          showToolbarOnFocus={showToolbarOnFocus}
+          placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
+          className={{
+            ...className?.input,
+            root: twMerge('w-full', className?.input?.root),
+            editor: twMerge(
+              'h-16 overflow-y-auto !leading-5',
+              className?.input?.editor
+            ),
+            content: twMerge('pb-1', className?.input?.content),
+          }}
+          data={data}
+        />
+        {meta.error && meta.touched && (
+          <Tooltip
+            tooltip={meta.error}
+            delay={0}
+            className={{ tooltip: 'text-sm' }}
+          >
+            <FontAwesomeIcon
+              icon={faCircleExclamation}
+              className="mr-1 text-red-600"
+            />
+          </Tooltip>
+        )}
+      </div>
     </div>
   )
 }

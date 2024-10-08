@@ -1,49 +1,35 @@
 mutation ManipulateNumericalQuestion(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $explanation: String
   $options: OptionsNumericalInput
-  $hasSampleSolution: Boolean
-  $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
   manipulateNumericalQuestion(
     id: $id
-    type: NUMERICAL
+    status: $status
     name: $name
     content: $content
     explanation: $explanation
     options: $options
-    hasSampleSolution: $hasSampleSolution
-    hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
     id
     name
+    status
     type
     content
     explanation
-    hasSampleSolution
-    hasAnswerFeedbacks
     pointsMultiplier
 
     questionData {
-      ... on ChoicesQuestionData {
-        options {
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
-        }
-      }
-
       ... on NumericalQuestionData {
         options {
+          hasSampleSolution
           accuracy
           placeholder
           unit
@@ -55,15 +41,6 @@ mutation ManipulateNumericalQuestion(
             min
             max
           }
-        }
-      }
-
-      ... on FreeTextQuestionData {
-        options {
-          restrictions {
-            maxLength
-          }
-          solutions
         }
       }
     }

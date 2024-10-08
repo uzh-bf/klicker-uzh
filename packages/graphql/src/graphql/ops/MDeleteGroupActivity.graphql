@@ -1,0 +1,5 @@
+mutation DeleteGroupActivity($id: String!) {
+  deleteGroupActivity(id: $id) {
+    id
+  }
+}

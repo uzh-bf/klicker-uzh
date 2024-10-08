@@ -30,8 +30,9 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
       title="QR Code"
       trigger={
         <Button
-          className={{ root: 'w-[41%] sm:w-max !mr-0' }}
+          className={{ root: '!mr-0 w-[41%] sm:w-max' }}
           onClick={() => setModalOpen(true)}
+          data={{ cy: `qr-modal-trigger-${shortname}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
@@ -42,26 +43,28 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       className={{
-        content: 'max-w-6xl',
+        content: 'h-max max-h-full !w-max max-w-6xl overflow-y-auto',
       }}
     >
-      <div className="flex flex-row gap-8">
+      <div className="flex flex-col gap-8 md:flex-row">
         <div className="flex-1">
           <H3>Account Link</H3>
           <Prose>{t('manage.cockpit.qrCodeAccountLinkDescription')}</Prose>
           <QR
-            className={{ title: 'text-base' }}
+            className={{ title: 'text-base', canvas: 'flex justify-center' }}
             path={accountRelativeLink}
             width={100}
           />
 
-          <Link passHref href={`/qr/${accountRelativeLink}`} target="_blank">
+          <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
             <Button
+              fluid
               className={{
                 root: twMerge(
-                  'text-lg font-bold text-white h-11 bg-primary-80'
+                  'bg-primary-80 mt-2 h-9 text-lg font-bold text-white'
                 ),
               }}
+              data={{ cy: `qr-link-${shortname}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
             </Button>
@@ -71,18 +74,20 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
           <H3>{t('manage.cockpit.qrCodeDirectLinkTitle')}</H3>
           <Prose>{t('manage.cockpit.qrCodeDirectLinkDescription')}</Prose>
           <QR
-            className={{ title: 'text-base' }}
+            className={{ title: 'text-base', canvas: 'flex justify-center' }}
             path={sessionRelativeLink}
             width={100}
           />
 
-          <Link passHref href={`/qr/${sessionRelativeLink}`} target="_blank">
+          <Link passHref href={`/qr${sessionRelativeLink}`} target="_blank">
             <Button
+              fluid
               className={{
                 root: twMerge(
-                  'text-lg font-bold text-white h-11 bg-primary-80'
+                  'bg-primary-80 mt-2 h-9 text-lg font-bold text-white'
                 ),
               }}
+              data={{ cy: `qr-direct-link-${sessionId}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
             </Button>

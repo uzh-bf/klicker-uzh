@@ -1,4 +1,4 @@
-teamsWebhookUrl: ''
+teamsWebhookUrl: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -15,6 +15,16 @@ notifications:
   secret: ''
   supportEmail: ''
 
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: 'false'
+  requireTLS: 'true'
+
 eduId:
   clientSecret: ''
 
@@ -24,6 +34,8 @@ blobStorage:
 
 migration:
   secret: ''
+  mongo:
+    connectionString: ''
   serviceBus:
     connectionString: ''
     queueName: ''
@@ -34,14 +46,19 @@ listmonk:
   password: ''
   templates:
     migrationRequest: -1
+    emailNotFound: -1
 
 vapid:
   publicKey: ''
   privateKey: ''
 
 cron:
-  dailyGroupScores: "* * * * *"
-  pushNotifications: "*/5 * * * *"
+  dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
+  pushNotifications: "*/5 * * * *" # runs every 5 minutes
+  practiceQuizPublications: "*/5 * * * *" # runs every 5 minutes
+  microLearningPublications: "*/5 * * * *" # runs every 5 minutes
+  runningRandomGroups: "5 0 * * *" # running at midnight
+  finalRandomGroups: "5 0 * * *" # running at midnight
   token: ""
 
 auth:
@@ -233,6 +250,71 @@ backendGraphql:
 
   autoscaling:
     enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+lti:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  appSecret: ''
+
+  clientId:
+  redirectURL:
+  cookieDomain:
+  encryptionKey:
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
+  port: 4000
+
+  devMode: 'true'
+  ltiaas: 'false'
+
+  db:
+    type: postgres
+    host: ''
+    port: 5432
+    name: ''
+    username: ''
+    password: ''
+    connectionString: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/lti
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
+  autoscaling:
+    enabled: true
     minReplicas: 1
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70

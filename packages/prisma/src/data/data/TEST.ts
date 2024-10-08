@@ -1,18 +1,18 @@
-import Prisma from '../../../dist'
-import { LearningElementStatus } from '../../client'
-const { QuestionType, SessionStatus, OrderType } = Prisma
+import Prisma from '../../../dist/index.js'
+import { AchievementType } from '../../prisma/client/index.js'
+const { ElementType, SessionStatus } = Prisma
 
 export const QUESTIONS = [
   {
-    id: 0,
+    originalId: '0',
     name: 'Testfrage FREE_TEXT',
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
     explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.FREE_TEXT,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: false,
+    type: ElementType.FREE_TEXT,
     options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: false,
       restrictions: {
         maxLength: 100,
       },
@@ -20,13 +20,16 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 1,
+    originalId: '1',
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
     explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.MC,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    type: ElementType.MC,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
+    },
     choices: [
       {
         feedback:
@@ -62,16 +65,18 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 2,
+    originalId: '2',
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
     explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.NUMERICAL,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: false,
+    type: ElementType.NUMERICAL,
     options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: false,
+      accuracy: 2,
+      unit: '%',
       restrictions: {
-        min: 0,
+        min: -10,
         max: 100,
       },
       solutionRanges: [
@@ -91,12 +96,15 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 3,
+    originalId: '3',
     name: 'Multi-Faktor-Modell',
-    content: '<br>',
-    type: QuestionType.KPRIM,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    content: 'Welche Aussagen zum Multi-Faktor-Modell sind korrekt?',
+    type: ElementType.KPRIM,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
+    },
     explanation: 'KPRIM generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {
@@ -126,14 +134,17 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 4,
+    originalId: '4',
     name: 'Modul 4 Business Cycle I',
     content:
       'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
-    type: QuestionType.SC,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    type: ElementType.SC,
     pointsMultiplier: 2,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
+    },
     explanation: 'SC generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {
@@ -162,61 +173,6 @@ export const QUESTIONS = [
   },
 ]
 
-export const LEARNING_ELEMENTS = [
-  {
-    id: '4968ad33-c15c-4b24-9e1f-c31f2d5578f1',
-    name: 'Test Lernelement',
-    displayName: 'Test Lernelement',
-    description: 'Welcome to this **learning element**.',
-    orderType: OrderType.SHUFFLED,
-    status: LearningElementStatus.PUBLISHED,
-    stacks: [
-      {
-        displayName: 'Stack 1',
-        description: 'Description for stack 1',
-        elements: [0, 1],
-      },
-      { elements: [2, 'Text in between elements', 3] },
-      {
-        displayName: 'Name for stack with only one md element',
-        description: 'Description for stack with only one md element',
-        elements: ['Pure Text block - could also be Intro'],
-      },
-      {
-        displayName: 'Name for stack with only one question element',
-        description: 'Description for stack with only one question element',
-        elements: [4],
-      },
-      { elements: ['Text block 1', 'Text block 2, following text block 1'] },
-    ],
-  },
-  {
-    id: '011b1f9e-1b45-4447-8b88-b76fce089389',
-    name: 'Test Lernelement x2',
-    displayName: 'Test Lernelement x2',
-    description: `
-  Welcome to this **learning element**.
-  This learning element yields 2x the points.
-  And it can be done everyday!
-  `,
-    pointsMultiplier: 2,
-    resetTimeDays: 1,
-    orderType: OrderType.LAST_RESPONSE,
-    status: LearningElementStatus.PUBLISHED,
-    stacks: [
-      {
-        displayName: 'Stack 1',
-        description: 'Description for stack 1',
-        elements: [0],
-      },
-      { elements: [1] },
-      { elements: [2] },
-      { elements: [3] },
-      { elements: [4] },
-    ],
-  },
-]
-
 export const SESSIONS = [
   {
     id: '1ec093e0-b6b6-421f-98ac-98ab146505f7',
@@ -227,9 +183,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [2, 4],
+        timeLimit: undefined,
       },
       {
         questions: [4, 2],
+        timeLimit: undefined,
       },
     ],
   },
@@ -245,9 +203,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
     ],
   },
@@ -263,9 +223,11 @@ export const SESSIONS = [
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: undefined,
       },
       {
         questions: [0, 1, 2, 3, 4],
+        timeLimit: 30,
       },
     ],
   },
@@ -317,5 +279,216 @@ Diese Woche lernen wir...
 Mehr bla bla...
 `,
     questions: [0, 1, 2, 3, 4],
+  },
+]
+
+export enum AchievementIds {
+  Explorer = 2,
+  'Busy Bee' = 3,
+  Champion = 5,
+  'Vice-Champion' = 6,
+  'Vice-Vice-Champion' = 7,
+  'Dream Team' = 8,
+  'Team Spirit' = 9,
+  'Fearless' = 10,
+  'Creative Mastermind' = 11,
+  Entertainer = 12,
+  'Future Proof' = 13,
+  Happiness = 14,
+  'Presentation Wizard' = 15,
+  'Shooting Star' = 16,
+  Speedy = 17,
+}
+
+// import the questions from below and add them to the array
+export const Achievements: {
+  id: number
+  nameDE: string
+  nameEN: string
+  descriptionDE: string
+  descriptionEN: string
+  icon: string
+  type: AchievementType
+  rewardedPoints?: number
+  rewardedXP?: number
+}[] = [
+  // pilot achievement
+  {
+    id: AchievementIds.Explorer,
+    nameDE: 'Explorer',
+    nameEN: 'Explorer',
+    descriptionDE:
+      'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
+    descriptionEN:
+      'You were part of KlickerUZH in the first semester. Thank you!',
+    icon: '/achievements/Erkunden.svg',
+    type: 'PARTICIPANT',
+  },
+  // solved everything achievement
+  {
+    id: AchievementIds['Busy Bee'],
+    nameDE: 'Busy Bee',
+    nameEN: 'Busy Bee',
+    descriptionDE:
+      'Du hast alle verfügbaren Microlearnings und Übungs-Quizzes gelöst.',
+    descriptionEN:
+      'You have solved all available microlearnings and practice quizzes.',
+    icon: '/achievements/Fleisspreis.svg',
+    type: 'PARTICIPANT',
+  },
+  // gold medal achievement
+  {
+    id: AchievementIds.Champion,
+    nameDE: 'Champion',
+    nameEN: 'Champion',
+    descriptionDE: 'Du hast einen ersten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached first place in a live quiz.',
+    icon: '/achievements/Champ.svg',
+    rewardedPoints: 100,
+    rewardedXP: 200,
+    type: 'PARTICIPANT',
+  },
+  // silver medal achievement
+  {
+    id: AchievementIds['Vice-Champion'],
+    nameDE: 'Vize-Champion',
+    nameEN: 'Vice-Champion',
+    descriptionDE: 'Du hast einen zweiten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached second place in a live quiz.',
+    icon: '/achievements/VizeChamp.svg',
+    rewardedPoints: 50,
+    rewardedXP: 100,
+    type: 'PARTICIPANT',
+  },
+  // bronze medal achievement
+  {
+    id: AchievementIds['Vice-Vice-Champion'],
+    nameDE: 'Vize-Vize-Champion',
+    nameEN: 'Vice-Vice-Champion',
+    descriptionDE: 'Du hast einen dritten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached third place in a live quiz.',
+    icon: '/achievements/VizevizeChamp.svg',
+    rewardedPoints: 25,
+    rewardedXP: 50,
+    type: 'PARTICIPANT',
+  },
+  // TODO: re-introduce this price
+  // last place achievement
+  // {
+  //   id: 4,
+  //   nameDE: 'Trostpreis',
+  //   nameEN: 'Consolation Prize',
+  //   descriptionDE: 'Dabei sein ist alles (letzer Platz in einer Live Quiz).',
+  //   descriptionEN: 'Being there is everything (last place in a live quiz).',
+  //   icon: '/achievements/Trostpreis.svg',
+  //   type: 'PARTICIPANT',
+  // },
+  // group task passed achievement
+  {
+    id: AchievementIds['Dream Team'],
+    nameDE: 'Dream Team',
+    nameEN: 'Dream Team',
+    descriptionDE:
+      'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
+    descriptionEN:
+      'You have reached more than half of the points in the group task.',
+    icon: '/achievements/Dreamteam.svg',
+    rewardedPoints: 500,
+    rewardedXP: 500,
+    type: 'PARTICIPANT',
+  },
+  // group task done achievement
+  {
+    id: AchievementIds['Team Spirit'],
+    nameDE: 'Teamgeist',
+    nameEN: 'Team Spirit',
+    descriptionDE: 'Du hast einen Gruppentask absolviert.',
+    descriptionEN: 'You have completed a group task.',
+    icon: '/achievements/Teamgeist.svg',
+    rewardedPoints: 0,
+    rewardedXP: 100,
+    type: 'PARTICIPANT',
+  },
+  // few questions achievement
+  {
+    id: AchievementIds.Fearless,
+    nameDE: 'Unerschrocken',
+    nameEN: 'Fearless',
+    descriptionDE:
+      'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
+    descriptionEN:
+      'You have not answered 6 questions yet one week before the end of the lecture.',
+    icon: '/achievements/Unerschrocken.svg',
+    type: 'PARTICIPANT',
+  },
+  // creative achievement
+  {
+    id: AchievementIds['Creative Mastermind'],
+    nameDE: 'Creative Mastermind',
+    nameEN: 'Creative Mastermind',
+    descriptionDE: 'Du hast ein eigenes Übungs-Quizzes erstellt.',
+    descriptionEN: 'You have created your own practice quiz.',
+    icon: '/achievements/CreativeMastermind.svg',
+    type: 'PARTICIPANT',
+  },
+  // entertainer achievement
+  {
+    id: AchievementIds.Entertainer,
+    nameDE: 'Entertainer',
+    nameEN: 'Entertainer',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Entertainer.svg',
+    type: 'PARTICIPANT',
+  },
+  // future proof achievement
+  {
+    id: AchievementIds['Future Proof'],
+    nameDE: 'Future Proof',
+    nameEN: 'Future Proof',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/FutureProof.svg',
+    type: 'PARTICIPANT',
+  },
+  // happiness achievement
+  {
+    id: AchievementIds.Happiness,
+    nameDE: 'Happiness',
+    nameEN: 'Happiness',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Happiness.svg',
+    type: 'PARTICIPANT',
+  },
+  // presentation achievement
+  {
+    id: AchievementIds['Presentation Wizard'],
+    nameDE: 'Presentation Wizard',
+    nameEN: 'Presentation Wizard',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/PresentationWizard.svg',
+    type: 'PARTICIPANT',
+  },
+  // shooting star achievement
+  {
+    id: AchievementIds['Shooting Star'],
+    nameDE: 'Shooting Star',
+    nameEN: 'Shooting Star',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Shootingstar.svg',
+    type: 'PARTICIPANT',
+  },
+  // speedy achievement
+  {
+    id: AchievementIds.Speedy,
+    nameDE: 'Speedy',
+    nameEN: 'Speedy',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Speedy.svg',
+    type: 'PARTICIPANT',
   },
 ]

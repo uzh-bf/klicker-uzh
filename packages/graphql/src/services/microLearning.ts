@@ -1,109 +1,31 @@
 import {
-  MicroSessionStatus,
-  Question,
-  QuestionInstanceType,
-  QuestionType,
+  Element,
+  ElementInstanceType,
+  ElementStackType,
+  PublicationStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
-import { GraphQLError } from 'graphql'
-import { pick } from 'ramda'
-import { AllQuestionTypeData } from 'src/types/app'
-import { Context, ContextWithUser } from '../lib/context'
 import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions'
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
+import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
+import { StackInput } from 'src/types/app.js'
+import { v4 as uuidv4 } from 'uuid'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { sendTeamsNotifications } from '../lib/util.js'
+import { computeStackEvaluation } from './practiceQuizzes.js'
 
-export async function getQuestionMap(
-  questions: number[],
-  ctx: ContextWithUser
-) {
-  const dbQuestions = await ctx.prisma.question.findMany({
-    where: {
-      id: { in: questions },
-      ownerId: ctx.user.sub,
-    },
-  })
-
-  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
-  if (dbQuestions.length !== uniqueQuestions.size) {
-    throw new GraphQLError('Not all questions could be found')
-  }
-
-  return dbQuestions.reduce<Record<number, Question>>(
-    (acc, question) => ({ ...acc, [question.id]: question }),
-    {}
-  )
-}
-
-interface GetMicroSessionDataArgs {
+interface GetMicroLearningArgs {
   id: string
 }
 
-export async function getMicroSessionData(
-  { id }: GetMicroSessionDataArgs,
-  ctx: ContextWithUser
-) {
-  const microSession = await ctx.prisma.microSession.findUnique({
-    where: { id },
-    include: {
-      course: true,
-      instances: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  })
-
-  if (!microSession) return null
-
-  const instancesWithoutSolution = microSession.instances.map((instance) => {
-    const questionData = instance.questionData
-    if (
-      !questionData ||
-      typeof questionData !== 'object' ||
-      Array.isArray(questionData)
-    )
-      return instance
-
-    switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM:
-        return {
-          ...instance,
-          questionData: {
-            ...questionData,
-            options: {
-              ...questionData.options,
-              choices: questionData.options.choices.map(pick(['ix', 'value'])),
-            },
-          },
-        }
-
-      case QuestionType.FREE_TEXT:
-        return instance
-
-      case QuestionType.NUMERICAL:
-        return instance
-
-      default:
-        return instance
-    }
-  })
-
-  return {
-    ...microSession,
-    instances: instancesWithoutSolution,
-  }
-}
-
-export async function getSingleMicroSession(
-  { id }: GetMicroSessionDataArgs,
+export async function getMicroLearningData(
+  { id }: GetMicroLearningArgs,
   ctx: Context
 ) {
-  const microSession = await ctx.prisma.microSession.findUnique({
+  const microLearning = await ctx.prisma.microLearning.findUnique({
     where: {
       id,
       OR: [
@@ -111,7 +33,8 @@ export async function getSingleMicroSession(
           AND: {
             scheduledStartAt: { lte: new Date() },
             scheduledEndAt: { gte: new Date() },
-            status: MicroSessionStatus.PUBLISHED,
+            status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
           },
         },
         {
@@ -121,7 +44,14 @@ export async function getSingleMicroSession(
     },
     include: {
       course: true,
-      instances: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
         orderBy: {
           order: 'asc',
         },
@@ -131,18 +61,92 @@ export async function getSingleMicroSession(
 
   // TODO: handle here if already responded to the element? goal with micro = one try
 
-  if (!microSession) return null
-
-  return microSession
+  return microLearning
 }
 
-interface MarkMicroSessionCompletedArgs {
+export async function getMicroLearningEvaluation(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // compute evaluation
+  const stackEvaluation = computeStackEvaluation(microLearning.stacks)
+
+  return {
+    id: microLearning.id,
+    name: microLearning.name,
+    displayName: microLearning.displayName,
+    description: microLearning.description,
+    results: stackEvaluation,
+  }
+}
+
+export async function getSingleMicroLearning(
+  { id }: GetMicroLearningArgs,
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      isDeleted: false,
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  return microLearning
+}
+
+interface MarkMicroLearningCompletedArgs {
   courseId: string
   id: string
 }
 
-export async function markMicroSessionCompleted(
-  { courseId, id }: MarkMicroSessionCompletedArgs,
+export async function markMicroLearningCompleted(
+  { courseId, id }: MarkMicroLearningCompletedArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
@@ -153,280 +157,432 @@ export async function markMicroSessionCompleted(
       },
     },
     data: {
-      completedMicroSessions: {
+      completedMicroLearnings: {
         push: id,
       },
     },
   })
 }
 
-interface CreateMicroSessionArgs {
+interface ManipulateMicroLearningArgs {
+  id?: string
   name: string
   displayName: string
   description?: string | null
-  questions: number[]
+  stacks: StackInput[]
   courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
 }
 
-export async function createMicroSession(
-  {
-    name,
-    displayName,
-    description,
-    questions,
-    courseId,
-    multiplier,
-    startDate,
-    endDate,
-  }: CreateMicroSessionArgs,
-  ctx: ContextWithUser
-) {
-  const questionMap = await getQuestionMap(questions, ctx)
-
-  const session = await ctx.prisma.microSession.create({
-    data: {
-      name,
-      displayName: displayName ?? name,
-      description,
-      pointsMultiplier: multiplier,
-      scheduledStartAt: new Date(startDate),
-      scheduledEndAt: new Date(endDate),
-      instances: {
-        create: questions.map((questionId, ix) => {
-          const question = questionMap[questionId]
-
-          return {
-            order: ix,
-            type: QuestionInstanceType.MICRO_SESSION,
-            pointsMultiplier: multiplier * question.pointsMultiplier,
-            questionData: question,
-            results: prepareInitialInstanceResults(
-              question as AllQuestionTypeData
-            ),
-            question: {
-              connect: { id: questionId },
-            },
-            owner: {
-              connect: { id: ctx.user.sub },
-            },
-          }
-        }),
-      },
-      owner: {
-        connect: { id: ctx.user.sub },
-      },
-      course: courseId
-        ? {
-            connect: { id: courseId },
-          }
-        : undefined,
-    },
-    include: {
-      instances: true,
-    },
-  })
-
-  ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
-
-  return session
-}
-
-interface EditMicroSessionArgs {
-  id: string
-  name: string
-  displayName: string
-  description?: string | null
-  questions: number[]
-  courseId?: string | null
-  multiplier: number
-  startDate: Date
-  endDate: Date
-}
-
-export async function editMicroSession(
+// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into helper functions)
+export async function manipulateMicroLearning(
   {
     id,
     name,
     displayName,
     description,
-    questions,
+    stacks,
     courseId,
     multiplier,
     startDate,
     endDate,
-  }: EditMicroSessionArgs,
+  }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
-  // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
-  const oldSession = await ctx.prisma.microSession.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      instances: true,
-    },
-  })
-
-  if (!oldSession) {
-    throw new GraphQLError('Micro-Session not found')
-  }
-  if (oldSession.status === MicroSessionStatus.PUBLISHED) {
-    throw new GraphQLError('Micro-Session is already published')
-  }
-
-  await ctx.prisma.questionInstance.deleteMany({
-    where: {
-      id: { in: oldSession.instances.map(({ id }) => id) },
-    },
-  })
-  await ctx.prisma.microSession.update({
-    where: { id },
-    data: {
-      instances: {
-        deleteMany: {},
-      },
-      course: {
-        disconnect: true,
-      },
-    },
-  })
-
-  const questionMap = await getQuestionMap(questions, ctx)
-
-  const session = await ctx.prisma.microSession.update({
-    where: { id },
-    data: {
-      name,
-      displayName: displayName ?? name,
-      description,
-      pointsMultiplier: multiplier,
-      scheduledStartAt: new Date(startDate),
-      scheduledEndAt: new Date(endDate),
-      instances: {
-        create: questions.map((questionId, ix) => {
-          const question = questionMap[questionId]
-          const processedQuestionData = processQuestionData(question)
-
-          return {
-            order: ix,
-            type: QuestionInstanceType.MICRO_SESSION,
-            pointsMultiplier: multiplier * question.pointsMultiplier,
-            questionData: processedQuestionData,
-            results: prepareInitialInstanceResults(processedQuestionData),
-            question: {
-              connect: { id: questionId },
-            },
-            owner: {
-              connect: { id: ctx.user.sub },
-            },
-          }
-        }),
-      },
-      owner: {
-        connect: { id: ctx.user.sub },
-      },
-      course: courseId
-        ? {
-            connect: { id: courseId },
-          }
-        : undefined,
-    },
-    include: {
-      instances: true,
-    },
-  })
-
-  ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
-
-  return session
-}
-
-interface PublishMicroSessionArgs {
-  id: string
-}
-
-export async function publishMicroSession(
-  { id }: PublishMicroSessionArgs,
-  ctx: ContextWithUser
-) {
-  const microSession = await ctx.prisma.microSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      status: MicroSessionStatus.PUBLISHED,
-    },
-    include: {
-      instances: true,
-    },
-  })
-
-  return {
-    ...microSession,
-    numOfInstances: microSession.instances.length,
-  }
-}
-
-interface UnpublishMicroSessionArgs {
-  id: string
-}
-
-export async function unpublishMicroSession(
-  { id }: UnpublishMicroSessionArgs,
-  ctx: ContextWithUser
-) {
-  const microSession = await ctx.prisma.microSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      status: MicroSessionStatus.DRAFT,
-    },
-    include: {
-      instances: true,
-    },
-  })
-
-  return {
-    ...microSession,
-    numOfInstances: microSession.instances.length,
-  }
-}
-
-interface DeleteMicroSessionArgs {
-  id: string
-}
-
-export async function deleteMicroSession(
-  { id }: DeleteMicroSessionArgs,
-  ctx: ContextWithUser
-) {
-  try {
-    const deletedItem = await ctx.prisma.microSession.delete({
+  if (id) {
+    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    const oldElement = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: MicroSessionStatus.DRAFT,
+        isDeleted: false,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
-    ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })
-
-    return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
-      console.log(
-        'The micro-session is already published and cannot be deleted anymore.'
-      )
-      return null
+    if (!oldElement) {
+      throw new GraphQLError('MicroLearning not found')
+    }
+    if (oldElement.status === PublicationStatus.PUBLISHED) {
+      throw new GraphQLError('Cannot edit a published microLearning')
     }
 
-    throw e
+    await ctx.prisma.microLearning.update({
+      where: { id },
+      data: {
+        stacks: {
+          deleteMany: {},
+        },
+      },
+    })
+  }
+
+  const elements = stacks
+    .flatMap((stack) => stack.elements)
+    .map((stackElem) => stackElem.elementId)
+    .filter(
+      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
+    )
+
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: elements },
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+
+  const elementMap = dbElements.reduce<Record<number, Element>>(
+    (acc, elem) => ({ ...acc, [elem.id]: elem }),
+    {}
+  )
+
+  const createOrUpdateJSON = {
+    name: name.trim(),
+    displayName: displayName.trim(),
+    description,
+    pointsMultiplier: multiplier,
+    scheduledStartAt: dayjs(startDate).toDate(),
+    scheduledEndAt: dayjs(endDate).toDate(),
+    stacks: {
+      create: stacks.map((stack) => {
+        return {
+          type: ElementStackType.MICROLEARNING,
+          order: stack.order,
+          displayName: stack.displayName?.trim() ?? '',
+          description: stack.description ?? '',
+          options: {},
+          elements: {
+            create: stack.elements.map((elem) => {
+              const element = elementMap[elem.elementId]!
+              const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
+
+              return {
+                elementType: element.type,
+                migrationId: uuidv4(),
+                order: elem.order,
+                type: ElementInstanceType.MICROLEARNING,
+                elementData: processedElementData,
+                options: {
+                  pointsMultiplier: multiplier * element.pointsMultiplier,
+                },
+                results: initialResults,
+                anonymousResults: initialResults,
+                instanceStatistics: {
+                  create: getInitialInstanceStatistics(
+                    ElementInstanceType.MICROLEARNING
+                  ),
+                },
+                element: {
+                  connect: { id: element.id },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+              }
+            }),
+          },
+        }
+      }),
+    },
+    owner: {
+      connect: { id: ctx.user.sub },
+    },
+    course: {
+      connect: { id: courseId },
+    },
+  }
+
+  const element = await ctx.prisma.microLearning.upsert({
+    where: { id: id ?? uuidv4() },
+    create: createOrUpdateJSON,
+    update: createOrUpdateJSON,
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'MicroLearning',
+    id,
+  })
+
+  return element
+}
+
+interface PublishMicroLearningArgs {
+  id: string
+}
+
+export async function publishMicroLearning(
+  { id }: PublishMicroLearningArgs,
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.DRAFT,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning only starts in the future, set its state to scheduled
+  if (microLearning.scheduledStartAt > new Date()) {
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
+  }
+
+  // if the start date is in the past, directly publish the microlearning
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+  return updatedMicroLearning
+}
+
+export async function publishScheduledMicroLearnings(ctx: Context) {
+  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearnings = await Promise.all(
+    microlearningsToPublish.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedMicroLearnings.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledMicroLearnings',
+      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
+    )
+  }
+
+  updatedMicroLearnings.forEach((micro) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
+  return true
+}
+
+interface UnpublishMicroLearningArgs {
+  id: string
+}
+
+export async function unpublishMicroLearning(
+  { id }: UnpublishMicroLearningArgs,
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.SCHEDULED,
+    },
+    data: {
+      status: PublicationStatus.DRAFT,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+  return microLearning
+}
+
+export async function extendMicroLearning(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  return await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      scheduledEndAt: { gt: new Date() },
+      isDeleted: false,
+    },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+}
+
+export async function getMicroLearningSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = microLearning.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
+interface DeleteMicroLearningArgs {
+  id: string
+}
+
+export async function deleteMicroLearning(
+  { id }: DeleteMicroLearningArgs,
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    microLearning.status === PublicationStatus.DRAFT ||
+    microLearning.status === PublicationStatus.SCHEDULED ||
+    microLearning.responses.length === 0
+  ) {
+    const deletedItem = await ctx.prisma.microLearning.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+
+    return deletedItem
+  } else {
+    // if the microlearning is published and has responses -> soft deletion
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
   }
 }

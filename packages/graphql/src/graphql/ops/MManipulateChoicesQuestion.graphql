@@ -1,70 +1,45 @@
 mutation ManipulateChoicesQuestion(
   $id: Int
-  $type: QuestionType!
+  $status: ElementStatus
+  $type: ElementType!
   $name: String
   $content: String
   $explanation: String
   $options: OptionsChoicesInput
-  $displayMode: QuestionDisplayMode
-  $hasSampleSolution: Boolean
-  $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
   manipulateChoicesQuestion(
     id: $id
+    status: $status
     type: $type
     name: $name
     content: $content
     explanation: $explanation
     options: $options
-    displayMode: $displayMode
-    hasSampleSolution: $hasSampleSolution
-    hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
     id
     name
+    status
     type
     content
     explanation
-    displayMode
-    hasSampleSolution
-    hasAnswerFeedbacks
     pointsMultiplier
 
     questionData {
       ... on ChoicesQuestionData {
         options {
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
           choices {
             ix
             correct
             feedback
             value
           }
-        }
-      }
-
-      ... on NumericalQuestionData {
-        options {
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
-        }
-      }
-
-      ... on FreeTextQuestionData {
-        options {
-          restrictions {
-            maxLength
-          }
-          solutions
         }
       }
     }

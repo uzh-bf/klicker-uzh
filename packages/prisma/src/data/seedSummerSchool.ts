@@ -1,4 +1,4 @@
-import Prisma from '../../dist'
+import Prisma from '../../dist/index.js'
 
 async function seedAchievements(prisma: Prisma.PrismaClient) {
   // // PERFORMANCE

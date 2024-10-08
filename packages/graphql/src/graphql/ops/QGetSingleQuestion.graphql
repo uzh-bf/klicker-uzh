@@ -2,18 +2,21 @@ query GetSingleQuestion($id: Int!) {
   question(id: $id) {
     id
     name
+    status
     type
     content
     explanation
-    displayMode
     pointsMultiplier
 
-    hasSampleSolution
-    hasAnswerFeedbacks
-
     questionData {
+      id
+      questionId
+
       ... on ChoicesQuestionData {
         options {
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
           choices {
             ix
             correct
@@ -25,6 +28,7 @@ query GetSingleQuestion($id: Int!) {
 
       ... on NumericalQuestionData {
         options {
+          hasSampleSolution
           unit
           accuracy
           placeholder
@@ -41,6 +45,7 @@ query GetSingleQuestion($id: Int!) {
 
       ... on FreeTextQuestionData {
         options {
+          hasSampleSolution
           restrictions {
             maxLength
           }

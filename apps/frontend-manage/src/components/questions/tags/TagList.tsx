@@ -1,102 +1,169 @@
 import {
-  faCheckCircle,
+  faCheckCircle as faCheckCircleRegular,
   faCircleXmark,
+  faCommentDots as faCommentDotsRegular,
+  faComment as faCommentRegular,
+  faEye as faEyeRegular,
   faRectangleList as faListRegular,
+  faPenToSquare as faPenRegular,
+  faCircleQuestion as faQuestionRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
-  faArchive,
-  faCommentDots,
+  IconDefinition,
+  faCheckCircle as faCheckCircleSolid,
+  faCommentDots as faCommentDotsSolid,
+  faComment as faCommentSolid,
+  faEye as faEyeSolid,
   faRectangleList as faListSolid,
+  faPenToSquare as faPenSolid,
+  faCircleQuestion as faQuestionSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import React, { Suspense, useMemo, useState } from 'react'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
 
+const elementTypeFilters: Record<ElementType, IconDefinition[]> = {
+  CONTENT: [faCommentRegular, faCommentSolid],
+  FLASHCARD: [faListRegular, faListSolid],
+  SC: [faQuestionRegular, faQuestionSolid],
+  MC: [faQuestionRegular, faQuestionSolid],
+  KPRIM: [faQuestionRegular, faQuestionSolid],
+  FREE_TEXT: [faQuestionRegular, faQuestionSolid],
+  NUMERICAL: [faQuestionRegular, faQuestionSolid],
+}
+
+const elementStatusFilters: Record<ElementStatus, IconDefinition[]> = {
+  DRAFT: [faPenRegular, faPenSolid],
+  REVIEW: [faEyeRegular, faEyeSolid],
+  READY: [faCheckCircleRegular, faCheckCircleSolid],
+}
+
 interface Props {
   compact: boolean
   isArchiveActive: boolean
+  showUntagged: boolean
   activeTags: string[]
-  activeType: string
+  activeStatus?: ElementStatus
+  activeType?: ElementType
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
-  handleTagClick: (value: string, selected?: boolean) => void
-  handleSampleSolutionClick: (selected?: boolean) => void
-  handleAnswerFeedbacksClick: (selected?: boolean) => void
+  handleTagClick: ({
+    tagName,
+    isTypeTag,
+    isStatusTag,
+    isUntagged,
+  }: {
+    tagName: string
+    isTypeTag: boolean
+    isStatusTag: boolean
+    isUntagged: boolean
+  }) => void
+  toggleSampleSolutionFilter: () => void
+  toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
 }
 
 function TagList({
   compact,
   isArchiveActive,
+  showUntagged,
   activeTags,
   activeType,
+  activeStatus,
   sampleSolution,
   answerFeedbacks,
   handleTagClick,
   handleReset,
-  handleSampleSolutionClick,
-  handleAnswerFeedbacksClick,
+  toggleSampleSolutionFilter,
+  toggleAnswerFeedbackFilter,
   handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
+  const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
-  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
-    !compact
+  const [gamificationTagsVisible, setGamificationTagsVisible] =
+    useState(!compact)
+
+  const resetDisabled = useMemo(
+    () =>
+      !(
+        activeTags.length > 0 ||
+        activeType ||
+        activeStatus ||
+        sampleSolution ||
+        answerFeedbacks ||
+        showUntagged
+      ),
+    [
+      activeTags,
+      activeType,
+      activeStatus,
+      sampleSolution,
+      answerFeedbacks,
+      showUntagged,
+    ]
   )
 
   return (
-    <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem] overflow-y-auto">
-      <Button
-        className={{
-          root: twMerge(
-            'w-full text-base bg-white sm:hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
-            (activeTags.length > 0 ||
-              activeType ||
-              sampleSolution ||
-              answerFeedbacks) &&
-              'text-primary'
-          ),
-        }}
-        disabled={
-          !(
-            activeTags.length > 0 ||
-            activeType ||
-            sampleSolution ||
-            answerFeedbacks
-          )
-        }
-        onClick={(): void => handleReset()}
-      >
-        <Button.Icon className={{ root: 'mr-1' }}>
-          <FontAwesomeIcon icon={faCircleXmark} />
-        </Button.Icon>
-        <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
-      </Button>
+    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-[14rem]">
+      <TagHeader
+        text={t('manage.questionPool.elementStatus')}
+        state={questionStatusVisible}
+        setState={setQuestionStatusVisible}
+      />
+
+      {questionStatusVisible && (
+        <ul className="list-none">
+          {Object.entries(elementStatusFilters).map(([status, icons]) => (
+            <TagItem
+              key={status}
+              text={t(`shared.${status as ElementStatus}.statusLabel`)}
+              icon={icons}
+              active={activeStatus === status}
+              onClick={(): void =>
+                handleTagClick({
+                  tagName: status,
+                  isTypeTag: false,
+                  isStatusTag: true,
+                  isUntagged: false,
+                })
+              }
+            />
+          ))}
+        </ul>
+      )}
 
       <TagHeader
-        text={t('manage.questionPool.questionTypes')}
+        text={t('manage.questionPool.elementTypes')}
         state={questionTypesVisible}
         setState={setQuestionTypesVisible}
       />
+
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.values(QuestionType).map((type) => (
+          {Object.entries(elementTypeFilters).map(([type, icons]) => (
             <TagItem
               key={type}
-              text={t(`shared.${type}.typeLabel`)}
-              icon={activeType === type ? faListSolid : faListRegular}
+              text={t(`shared.${type as ElementType}.typeLabel`)}
+              icon={icons}
               active={activeType === type}
-              onClick={(): void => handleTagClick(type, true)}
+              onClick={(): void =>
+                handleTagClick({
+                  tagName: type,
+                  isTypeTag: true,
+                  isStatusTag: false,
+                  isUntagged: false,
+                })
+              }
             />
           ))}
         </ul>
@@ -107,10 +174,10 @@ function TagList({
         state={userTagsVisible}
         setState={setUserTagsVisible}
       />
-
       {userTagsVisible && (
         <Suspense fallback={<Loader />}>
           <SuspendedTags
+            showUntagged={showUntagged}
             activeTags={activeTags}
             handleTagClick={handleTagClick}
           />
@@ -126,39 +193,39 @@ function TagList({
         <ul className="list-none">
           <TagItem
             text={t('shared.generic.sampleSolution')}
-            icon={faCheckCircle}
+            icon={[faCheckCircleRegular, faCheckCircleSolid]}
             active={sampleSolution}
-            onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
+            onClick={toggleSampleSolutionFilter}
           />
           <TagItem
             text={t('manage.questionPool.answerFeedbacks')}
-            icon={faCommentDots}
+            icon={[faCommentDotsRegular, faCommentDotsSolid]}
             active={answerFeedbacks}
-            onClick={(): void => {
-              handleAnswerFeedbacksClick(!answerFeedbacks)
-            }}
+            onClick={toggleAnswerFeedbackFilter}
           />
         </ul>
       )}
 
-      <div className="mt-4">
-        <Button
-          fluid
-          className={{
-            root: twMerge(isArchiveActive && 'text-red-600'),
-          }}
-          onClick={(): void => handleToggleArchive()}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faArchive} />
-          </Button.Icon>
-          <Button.Label>
-            {isArchiveActive
-              ? t('manage.questionPool.hideArchived')
-              : t('manage.questionPool.showArchived')}
-          </Button.Label>
-        </Button>
+      <div className="mt-4 px-2">
+        <Switch
+          size="sm"
+          label={t('manage.questionPool.showArchived')}
+          checked={isArchiveActive}
+          onCheckedChange={(): void => handleToggleArchive()}
+        />
       </div>
+
+      <Button
+        className={{ root: 'mx-2 mb-2 mt-4' }}
+        disabled={resetDisabled}
+        onClick={(): void => handleReset()}
+        data={{ cy: 'reset-question-pool-filters' }}
+      >
+        <Button.Icon className={{ root: 'mr-1' }}>
+          <FontAwesomeIcon icon={faCircleXmark} />
+        </Button.Icon>
+        <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
+      </Button>
     </div>
   )
 }

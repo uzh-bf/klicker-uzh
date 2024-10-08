@@ -58,11 +58,13 @@ const usePushNotifications = ({
     if (subscription) {
       subscribeToPush(subscription, courseId)
     } else {
-      // There is no valid subscription to the push service
       try {
-        const newSubscription = await subscribeParticipantToPushService(
-          registration
-        )
+        if (!registration) {
+          throw new Error('Service worker registration is not available.')
+        }
+
+        const newSubscription =
+          await subscribeParticipantToPushService(registration)
         setSubscription(newSubscription)
 
         // Store new subscription object on the server

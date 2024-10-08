@@ -1,0 +1,17 @@
+query GetActiveUserCourses {
+  getActiveUserCourses {
+    id
+    name
+    displayName
+    color
+    pinCode
+    isArchived
+    isGamificationEnabled
+    isGroupCreationEnabled
+    description
+    startDate
+    endDate
+    createdAt
+    updatedAt
+  }
+}

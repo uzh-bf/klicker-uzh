@@ -16,20 +16,20 @@ function Login() {
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
 
   const loginSchema = Yup.object().shape({
-    email: Yup.string().required(t('control.login.emailRequired')),
+    shortname: Yup.string().required(t('control.login.shortnameRequired')),
     token: Yup.string().required(t('control.login.tokenRequired')),
   })
 
   return (
-    <div className="flex flex-col items-center h-full md:justify-center">
+    <div className="flex h-full flex-col items-center md:justify-center">
       <Formik
         isInitialValid={false}
-        initialValues={{ email: '', token: '' }}
+        initialValues={{ shortname: '', token: '' }}
         validationSchema={loginSchema}
         onSubmit={async (values) => {
           const id = await loginUserToken({
             variables: {
-              email: values.email,
+              shortname: values.shortname.trim(),
               token: values.token.replace(/\s/g, ''),
             },
           })
@@ -45,14 +45,13 @@ function Login() {
           return (
             <LoginForm
               header={t('control.login.header')}
-              labelIdentifier={t('shared.generic.email')}
-              fieldIdentifier="email"
-              dataIdentifier={{ cy: 'email-field' }}
+              labelIdentifier={t('shared.generic.shortname')}
+              fieldIdentifier="shortname"
+              dataIdentifier={{ cy: 'shortname-field' }}
               labelSecret={t('shared.generic.token')}
               fieldSecret="token"
               dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
-              usePinField={true}
               installAndroid={t('control.login.installAndroid')}
               installIOS={t('control.login.installIOS')}
             />
@@ -60,6 +59,7 @@ function Login() {
         }}
       </Formik>
       <Toast
+        dismissible
         type="error"
         duration={6000}
         openExternal={showError}

@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
+import {
+  faPlayCircle,
+  faQuestionCircle,
+  faUserCircle,
+} from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetUserRunningSessionsDocument,
@@ -8,7 +12,9 @@ import {
 import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SupportModal from './SupportModal'
 
 interface HeaderProps {
   user?: User | null
@@ -17,6 +23,7 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
+  const [showSupportModal, setShowSupportModal] = useState(false)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
 
@@ -43,7 +50,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
 
   return (
     <div
-      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:!hidden"
+      className="flex h-full w-full flex-row items-center justify-between bg-slate-800 px-4 font-bold text-white print:!hidden"
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
@@ -54,11 +61,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
             label={item.label}
             className={{
               label: twMerge(
-                'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+                'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
                 item.active &&
-                  'text-red underline underline-offset-[0.3rem] decoration-2'
+                  'text-red underline decoration-2 underline-offset-[0.3rem]'
               ),
-              root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+              root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
             }}
             onClick={() => {
               router.push(item.href)
@@ -66,17 +73,17 @@ function Header({ user }: HeaderProps): React.ReactElement {
           />
         ))}
       </Navigation>
-      <Navigation className={{ root: '!p-0 bg-slate-800' }}>
+      <Navigation className={{ root: 'bg-slate-800 !p-0' }}>
         <Navigation.ButtonItem
           onClick={() => router.push('/migration')}
           label={t('manage.general.migration')}
           className={{
             label: twMerge(
-              'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+              'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
               router.pathname === '/migration' &&
-                'text-red underline underline-offset-[0.3rem] decoration-2'
+                'text-red underline decoration-2 underline-offset-[0.3rem]'
             ),
-            root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
           }}
         />
         <div className="hidden md:block">
@@ -84,18 +91,18 @@ function Header({ user }: HeaderProps): React.ReactElement {
             icon={
               <FontAwesomeIcon
                 icon={faPlayCircle}
-                className="h-7 sm:group-hover:text-white"
+                className="h-7 group-hover:text-white"
               />
             }
             dropdownWidth="w-[12rem]"
             className={{
-              root: 'h-10 w-10 group',
+              root: 'group h-10 w-2',
               icon: twMerge(
                 'text-uzh-grey-80',
                 data?.userRunningSessions?.length !== 0 && 'text-green-600'
               ),
               disabled: '!text-gray-400',
-              dropdown: 'p-1.5 gap-0',
+              dropdown: 'gap-0 p-1.5',
             }}
             disabled={data?.userRunningSessions?.length === 0}
           >
@@ -118,23 +125,26 @@ function Header({ user }: HeaderProps): React.ReactElement {
             )}
           </Navigation.TriggerItem>
         </div>
+        <Navigation.ButtonItem
+          onClick={() => setShowSupportModal(true)}
+          label=""
+          icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-7" />}
+          className={{
+            root: 'hover:text-uzh-blue-40 -mt-1 hidden h-7 bg-transparent text-white hover:bg-transparent group-hover:text-white md:block',
+          }}
+        />
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
           label={user?.shortname}
           dropdownWidth="w-[16rem]"
           className={{
             label:
-              'my-auto font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
-            root: 'group flex flex-row items-center gap-1 text-white hover:bg-inherit transition-all duration-300 ease-in-out',
-            dropdown: 'p-1.5 gap-0',
+              'my-auto bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
+            root: 'group flex flex-row items-center gap-1 text-white transition-all duration-300 ease-in-out hover:bg-inherit',
+            dropdown: 'gap-0 p-1.5',
           }}
           data={{ cy: 'user-menu' }}
         >
-          {/* <Navigation.DropdownItem
-            title="Support"
-            onClick={() => router.push("/support")}
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-          /> */}
           <Navigation.DropdownItem
             title={t('shared.generic.settings')}
             onClick={() => router.push('/user/settings')}
@@ -157,6 +167,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
           />
         </Navigation.TriggerItem>
       </Navigation>
+      <SupportModal
+        open={showSupportModal}
+        setOpen={setShowSupportModal}
+        user={user}
+      />
     </div>
   )
 }

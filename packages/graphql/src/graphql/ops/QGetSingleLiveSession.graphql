@@ -10,16 +10,15 @@ query GetSingleLiveSession($sessionId: String!) {
       timeLimit
       instances {
         id
-        questionData {
-          id
-          name
-        }
+        ...QuestionData
       }
     }
     course {
       id
     }
     pointsMultiplier
+    maxBonusPoints
+    timeToZeroBonus
     isGamificationEnabled
     isLiveQAEnabled
     isConfusionFeedbackEnabled

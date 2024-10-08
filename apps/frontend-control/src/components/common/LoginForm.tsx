@@ -1,13 +1,12 @@
-import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
+  FormikPinField,
   FormikTextField,
   H1,
-  PinField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -30,7 +29,6 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  usePinField?: boolean
   installAndroid?: string
   installIOS?: string
 }
@@ -44,11 +42,9 @@ export function LoginForm({
   fieldSecret,
   dataSecret,
   isSubmitting,
-  usePinField = false,
   installAndroid,
   installIOS,
 }: LoginFormProps) {
-  const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
   const [oniOS, setOniOS] = useState(false)
   const [onChrome, setOnChrome] = useState(false)
@@ -61,9 +57,9 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex flex-col flex-grow max-w-xl md:!flex-grow-0 md:border md:rounded-lg md:shadow">
-      <div className="flex flex-col items-center justify-center flex-1 md:p-12">
-        <div className="w-full mb-8 text-center sm:mb-12">
+    <div className="flex max-w-xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+      <div className="flex flex-1 flex-col items-center justify-center md:p-12">
+        <div className="mb-8 w-full text-center sm:mb-12">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -82,34 +78,20 @@ export function LoginForm({
               labelType="small"
               name={fieldIdentifier}
               data={dataIdentifier}
+              className={{ label: 'text-sm' }}
             />
-
-            {usePinField ? (
-              <PinField
-                required
-                label={labelSecret}
-                labelType="small"
-                name={fieldSecret}
-                className={{ root: 'mt-1' }}
-                data={dataSecret}
-              />
-            ) : (
-              <FormikTextField
-                required
-                label={labelSecret}
-                labelType="small"
-                name={fieldSecret}
-                data={dataSecret}
-                icon={passwordHidden ? faEye : faEyeSlash}
-                onIconClick={() => setPasswordHidden(!passwordHidden)}
-                className={{ root: 'mt-1' }}
-                type={passwordHidden ? 'password' : 'text'}
-              />
-            )}
+            <FormikPinField
+              required
+              label={labelSecret}
+              labelType="small"
+              name={fieldSecret}
+              className={{ root: 'mt-1', label: 'text-sm' }}
+              data={dataSecret}
+            />
 
             <div className="flex flex-row justify-between">
               <Button
-                className={{ root: 'mt-2 border-uzh-grey-80' }}
+                className={{ root: 'border-uzh-grey-80 mt-2' }}
                 type="submit"
                 disabled={isSubmitting}
                 data={{ cy: 'submit-login' }}
@@ -119,13 +101,14 @@ export function LoginForm({
             </div>
 
             {installAndroid && onChrome && (
-              <div className="flex flex-col justify-center mt-4 md:hidden">
+              <div className="mt-4 flex flex-col justify-center md:hidden">
                 <UserNotification type="info" message={installAndroid}>
                   <Button
                     className={{
-                      root: 'mt-2 w-fit border-uzh-grey-80',
+                      root: 'border-uzh-grey-80 mt-2 w-fit',
                     }}
                     onClick={onInstallClick}
+                    data={{ cy: 'install-control-pwa' }}
                   >
                     <Button.Label>
                       {t('shared.login.installButton')}
@@ -144,7 +127,7 @@ export function LoginForm({
           </Form>
         </div>
       </div>
-      <div className="flex-none w-full">
+      <div className="w-full flex-none">
         <Footer />
       </div>
     </div>

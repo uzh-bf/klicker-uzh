@@ -1,110 +1,132 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
-import { Button, Checkbox, H1 } from '@uzh-bf/design-system'
+import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
+import {
+  Button,
+  Checkbox,
+  H1,
+  Tooltip,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-
-import useStickyState from 'src/hooks/useStickyState'
-
-function PrivacyLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="underline text-blue-500 hover:text-red-500"
-      href={t('auth.privacyUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.privacyPolicy')}
-    </a>
-  )
-}
-
-function ToSLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="underline text-blue-500 hover:text-red-500"
-      href={t('auth.tosUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.termsOfService')}
-    </a>
-  )
-}
+import { useMemo } from 'react'
 
 function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data: session } = useSession()
-
-  const { value: tosChecked, setValue: setTosChecked } = useStickyState(
-    'tos-agreement',
+  const { value, setValue: setTosChecked } = useStickyState(
+    'tos-agreement-2024-v2',
     'false'
   )
+
+  const tosChecked = useMemo(() => JSON.parse(value), [value])
+
+  const { data: session, status } = useSession()
+
+  if (status === 'loading') return null
 
   if (session) {
     return (
       <>
-        {t('auth.signedInAs', { username: session?.user?.email })}
-        <br />{' '}
-        <Button onClick={() => signOut()}>{t('shared.generic.logout')}</Button>
+        <UserNotification
+          message={t('auth.signedInAs', { username: session?.user?.email })}
+          type="info"
+          className={{ root: '-mt-4' }}
+        />
+        <br />
+        <a href={process.env.NEXT_PUBLIC_MANAGE_URL}>
+          <Button>MANAGE</Button>
+        </a>
+        <br />
+        <Button onClick={() => signOut()} data={{ cy: 'auth-logout-button' }}>
+          {t('shared.generic.logout')}
+        </Button>
       </>
     )
   }
 
+  const eduIdLoginButton = (
+    <Button
+      fluid
+      disabled={!tosChecked}
+      data={{ cy: 'eduid-login-button' }}
+      className={{ root: 'p-4 disabled:opacity-50' }}
+      onClick={() =>
+        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+          callbackUrl:
+            (router.query?.redirectTo as string) ??
+            process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+        })
+      }
+    >
+      <Image
+        src="/edu-id-logo.svg"
+        width={300}
+        height={90}
+        alt="Logo"
+        className="mx-auto"
+        data-cy="login-logo"
+      />
+    </Button>
+  )
+
   return (
     <div className="flex flex-col gap-4">
-      <p className="bg-slate-100 px-3 py-2 rounded border-slate-300 shadow">
+      <p className="rounded border-slate-300 bg-slate-100 px-3 py-2 shadow">
         {t('auth.loginInfo')}
       </p>
       <Checkbox
+        className={{
+          root: !tosChecked ? 'border border-red-500 bg-red-100' : undefined,
+        }}
         data={{ cy: 'tos-checkbox' }}
         label={
           <div className="text-sm">
             {t.rich('auth.tosAgreement', {
-              privacy: PrivacyLink,
-              tos: ToSLink,
+              privacy: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.privacyPolicy')}
+                </a>
+              ),
+              tos: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.tosUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.termsOfService')}
+                </a>
+              ),
             })}
           </div>
         }
-        onCheck={() => setTosChecked(!Boolean(tosChecked))}
-        checked={Boolean(tosChecked)}
+        onCheck={() => setTosChecked(!tosChecked)}
+        checked={tosChecked}
       />
 
-      <Button
-        disabled={!Boolean(tosChecked)}
-        data={{ cy: 'eduid-login-button' }}
-        className={{ root: 'p-4 disabled:opacity-50' }}
-        onClick={() =>
-          signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-            callbackUrl:
-              (router.query?.redirectTo as string) ??
-              process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
-          })
-        }
-      >
-        <Image
-          src="/edu-id-logo.svg"
-          width={300}
-          height={90}
-          alt="Logo"
-          className="mx-auto"
-          data-cy="login-logo"
-        />
-      </Button>
+      {!tosChecked ? (
+        <Tooltip tooltip={t('auth.tosAgreementRequired')}>
+          {eduIdLoginButton}
+        </Tooltip>
+      ) : (
+        eduIdLoginButton
+      )}
       <Button
         className={{
-          root: 'disabled:opacity-50 justify-center italic',
+          root: 'justify-center italic disabled:opacity-50',
         }}
-        disabled={!Boolean(tosChecked)}
+        disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
@@ -125,9 +147,9 @@ export function Index() {
   const t = useTranslations()
 
   return (
-    <div className="m-auto flex w-full md:max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="m-auto flex w-full flex-grow flex-col md:max-w-2xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
-        <div className="w-full px-5 sm:px-8 border-b pb-4 text-center">
+        <div className="w-full border-b px-5 pb-4 text-center sm:px-8">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -137,7 +159,7 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div className="w-full px-6 sm:px-10 md:mx-0 flex flex-row justify-between">
+        <div className="flex w-full flex-row justify-between px-6 sm:px-10 md:mx-0">
           <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger

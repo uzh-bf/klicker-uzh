@@ -20,7 +20,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
   })
 
   return (
-    <div className="flex flex-row justify-between w-full">
+    <div className="flex w-full flex-row justify-between">
       <Formik
         initialValues={{ tag: tag.name }}
         validationSchema={TagModifierSchema}
@@ -38,12 +38,12 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
         {({ errors, touched, isSubmitting, isValid }) => {
           return (
             <Form>
-              <div className="flex flex-row justify-between w-full gap-2">
+              <div className="flex w-full flex-row justify-between gap-2">
                 <Field
                   name="tag"
                   type="tag"
                   className={twMerge(
-                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 py-1 px-1 focus:border-primary-40',
+                    'bg-uzh-grey-20 border-uzh-grey-60 focus:border-primary-40 w-full rounded border bg-opacity-50 px-1 py-1',
                     errors.tag && touched.tag && 'border-red-400 bg-red-50'
                   )}
                   data-cy="tag-modifier-field"
@@ -55,11 +55,12 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                   disabled={isSubmitting || !isValid}
                   className={{
                     root: twMerge(
-                      'px-2 rounded border border-solid',
-                      isValid && 'sm:hover:text-primary hover:bg-primary-20',
+                      'rounded border border-solid px-2',
+                      isValid && 'hover:text-primary-100 hover:bg-primary-20',
                       !isValid && 'text-uzh-grey-60 cursor-not-allowed'
                     ),
                   }}
+                  data={{ cy: 'tag-editing-save' }}
                 >
                   {t('shared.generic.ok')}
                 </Button>

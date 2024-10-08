@@ -7,7 +7,7 @@ module.exports = {
   ],
   bumpFiles: [
     '',
-    'apps/auth',
+    'apps/auth/',
     'apps/docs/',
     'apps/backend-docker/',
     'apps/func-incoming-responses/',
@@ -26,6 +26,7 @@ module.exports = {
     'packages/shared-components',
     'packages/next-config',
     'packages/i18n',
+    'packages/util',
   ].reduce(
     (acc, path) => {
       return acc.concat({
@@ -34,10 +35,6 @@ module.exports = {
       })
     },
     [
-      {
-        filename: `package-lock.json`,
-        type: 'json',
-      },
       {
         filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
         updater: 'util/yaml-updater.js',
