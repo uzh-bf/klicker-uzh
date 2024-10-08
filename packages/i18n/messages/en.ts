@@ -976,6 +976,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       startDate: 'Please enter a start date for your quiz.',
       endDate: 'Please enter an end date for your quiz.',
       endAfterStart: 'The end date has to be later than the start date.',
+      endInFuture: 'The end date has to be in the future.',
       validMultiplicator: 'Please enter a valid multiplicator.',
       checkValues:
         'Please check your entries in the previous step before proceeding.',

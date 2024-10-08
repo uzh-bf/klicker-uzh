@@ -103,7 +103,12 @@ function MicroLearningWizard({
     startDate: yup.date().required(t('manage.sessionForms.startDate')),
     endDate: yup
       .date()
-      .min(yup.ref('startDate'), t('manage.sessionForms.endAfterStart'))
+      .test('checkDateInPast', t('manage.sessionForms.endInFuture'), (d) => {
+        return !!(d && d > new Date())
+      })
+      .when('startDate', (startDate, schema) =>
+        schema.min(startDate, t('manage.sessionForms.endAfterStart'))
+      )
       .required(t('manage.sessionForms.endDate')),
     multiplier: yup
       .string()

@@ -976,6 +976,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startDate: 'Bitte geben Sie ein Startdatum für Ihre Session ein.',
       endDate: 'Bitte geben Sie ein Enddatum für Ihre Session ein.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
+      endInFuture: 'Das Enddatum muss in der Zukunft liegen.',
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
       checkValues:
         'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
