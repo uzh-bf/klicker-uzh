@@ -514,9 +514,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.createQuestionSC({
       title: questionTitle,
       content: questionContent,
-      answer1: '50%',
-      answer2: '100%',
-      correct1: true,
+      choices: [{ content: '50%', correct: true }, { content: '100%' }],
     })
 
     // create a live quiz in the course

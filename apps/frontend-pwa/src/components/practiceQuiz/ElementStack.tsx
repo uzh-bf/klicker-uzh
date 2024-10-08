@@ -428,7 +428,7 @@ function ElementStack({
               }
             }
           }}
-          data={{ cy: 'practice-quiz-stack-submit' }}
+          data={{ cy: 'student-stack-submit' }}
         >
           {t('shared.generic.submit')}
         </Button>

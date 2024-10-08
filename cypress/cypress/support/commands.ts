@@ -85,16 +85,7 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('loginStudent', () => {
-  cy.clearAllCookies()
-  cy.visit(Cypress.env('URL_STUDENT'))
-  cy.get('[data-cy="username-field"]')
-    .click()
-    .type(Cypress.env('STUDENT_USERNAME'))
-  cy.get('[data-cy="password-field"]')
-    .click()
-    .type(Cypress.env('STUDENT_PASSWORD'))
-  cy.get('[data-cy="submit-login"]').click()
-  cy.wait(1000)
+  cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
 })
 
 Cypress.Commands.add(
@@ -124,39 +115,40 @@ Cypress.Commands.add('loginControlApp', () => {
   cy.get('[data-cy="submit-login"]').click()
 })
 
+interface CreateChoicesQuestionArgs {
+  title: string
+  content: string
+  choices: { content: string; correct?: boolean }[]
+}
+
 Cypress.Commands.add(
   'createQuestionSC',
-  ({
-    title,
-    content,
-    answer1,
-    answer2,
-    correct1,
-    correct2,
-  }: {
-    title: string
-    content: string
-    answer1: string
-    answer2: string
-    correct1?: boolean
-    correct2?: boolean
-  }) => {
+  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+    // throw an error if no choices were provided
+    if (choices.length < 2) {
+      throw new Error('SC questions require at least 2 choices')
+    }
+
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(title)
     cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(answer1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(answer2)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
 
-    if (typeof correct1 !== 'undefined' || typeof correct2 !== 'undefined') {
+    choices.slice(1).forEach((choice, ix) => {
+      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
+        .click()
+        .type(choice.content)
+    })
+
+    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
-      if (correct1) {
-        cy.get('[data-cy="set-correctness-0"]').click()
-      }
-      if (correct2) {
-        cy.get('[data-cy="set-correctness-1"]').click()
-      }
+      choices.forEach((choice, ix) => {
+        if (choice.correct) {
+          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
+        }
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -164,18 +156,249 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
-  'createLiveQuiz',
+  'createQuestionMC',
+  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+    // throw an error if no choices were provided
+    if (choices.length < 2) {
+      throw new Error('MC questions require at least 2 choices')
+    }
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.MC.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.MC.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+
+    choices.slice(1).forEach((choice, ix) => {
+      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
+        .click()
+        .type(choice.content)
+    })
+
+    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+
+      choices.forEach((choice, ix) => {
+        if (choice.correct) {
+          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
+        }
+      })
+    }
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+Cypress.Commands.add(
+  'createQuestionKPRIM',
+  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+    // throw an error if there are not 4 choices
+    if (choices.length !== 4) {
+      throw new Error('KPRIM questions require exactly 4 choices')
+    }
+
+    const choice1 = choices[0]
+    const choice2 = choices[1]
+    const choice3 = choices[2]
+    const choice4 = choices[3]
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.KPRIM.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.KPRIM.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1.content)
+    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2.content)
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2.content)
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3.content)
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3.content)
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4.content)
+    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4.content)
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+
+    // set correctness values for KPRIM question
+    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
+      cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
+    }
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+interface CreateQuestionNRArgs {
+  title: string
+  content: string
+  min?: string
+  max?: string
+  unit?: string
+  accuracy?: string
+  solutionRanges?: { min: string; max: string }[]
+}
+
+Cypress.Commands.add(
+  'createQuestionNR',
   ({
-    name,
-    displayName,
-    courseName,
-    blocks,
-  }: {
-    name: string
-    displayName: string
-    courseName?: string
-    blocks: { questions: string[] }[]
-  }) => {
+    title,
+    content,
+    min,
+    max,
+    unit,
+    accuracy,
+    solutionRanges,
+  }: CreateQuestionNRArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.NUMERICAL.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+
+    if (typeof min !== 'undefined') {
+      cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
+    }
+    if (typeof max !== 'undefined') {
+      cy.get('[data-cy="set-numerical-maximum"]').click().type(max)
+    }
+    if (typeof unit !== 'undefined') {
+      cy.get('[data-cy="set-numerical-unit"]').click().type(unit)
+    }
+    if (typeof accuracy !== 'undefined') {
+      cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
+    }
+
+    if (solutionRanges.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      solutionRanges.forEach((range, ix) => {
+        cy.get('[data-cy="add-solution-range"]').click()
+        cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
+          .click()
+          .type(range.min)
+        cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
+          .click()
+          .type(range.max)
+      })
+    }
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+interface CreateQuestionFTArgs {
+  title: string
+  content: string
+  maxLength?: string
+}
+
+Cypress.Commands.add(
+  'createQuestionFT',
+  ({ title, content, maxLength }: CreateQuestionFTArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.FREE_TEXT.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+
+    if (typeof maxLength !== 'undefined') {
+      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+interface CreateFlashcardArgs {
+  title: string
+  content: string
+  explanation: string
+}
+
+Cypress.Commands.add(
+  'createFlashcard',
+  ({ title, content, explanation }: CreateFlashcardArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.FLASHCARD.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-explanation"]').click().type(explanation)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+interface CreateContentArgs {
+  title: string
+  content: string
+}
+
+Cypress.Commands.add(
+  'createContent',
+  ({ title, content }: CreateContentArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CONTENT.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').type(title)
+    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+  }
+)
+
+interface CreateLiveQuizArgs {
+  name: string
+  displayName: string
+  courseName?: string
+  blocks: { questions: string[] }[]
+}
+
+Cypress.Commands.add(
+  'createLiveQuiz',
+  ({ name, displayName, courseName, blocks }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
 
     // Step 1: Name
@@ -235,12 +458,14 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
     cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(element)
+    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
+      element.substring(0, 20)
+    )
   })
 
   if (stacks.length > 1) {
     stacks.slice(1).forEach((stack, ix) => {
-      cy.get('[data-cy="add-block"]').click()
+      cy.get('[data-cy="drop-elements-add-stack"]').click()
       stack.elements.forEach((element, jx) => {
         const dataTransfer = new DataTransfer()
         cy.get(`[data-cy="question-item-${element}"]`)
@@ -251,10 +476,21 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
         cy.get(`[data-cy="drop-elements-stack-${ix + 1}"]`).trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(element)
+        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
+          element.substring(0, 20)
+        )
       })
     })
   }
+}
+Cypress.Commands.add('createStacks', createStacks)
+
+interface CreatePracticeQuizArgs {
+  name: string
+  displayName: string
+  description?: string
+  courseName: string
+  stacks: StackType[]
 }
 
 Cypress.Commands.add(
@@ -265,13 +501,7 @@ Cypress.Commands.add(
     description,
     courseName,
     stacks,
-  }: {
-    name: string
-    displayName: string
-    description?: string
-    courseName: string
-    stacks: StackType[]
-  }) => {
+  }: CreatePracticeQuizArgs) => {
     cy.get('[data-cy="create-practice-quiz"]').click()
 
     // Step 1: Name
@@ -293,12 +523,24 @@ Cypress.Commands.add(
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="next-or-submit"]').click()
 
+    // TODO: update this to create blocks instead of stacks
     // Step 4: Stacks
     createStacks({ stacks })
 
     cy.get('[data-cy="next-or-submit"]').click()
   }
 )
+
+interface CreateMicrolearningArgs {
+  name: string
+  displayName: string
+  description?: string
+  courseName: string
+  multiplier?: string
+  startDate: string
+  endDate: string
+  stacks: StackType[]
+}
 
 Cypress.Commands.add(
   'createMicroLearning',
@@ -307,14 +549,11 @@ Cypress.Commands.add(
     displayName,
     description,
     courseName,
+    multiplier,
+    startDate,
+    endDate,
     stacks,
-  }: {
-    name: string
-    displayName: string
-    description?: string
-    courseName: string
-    stacks: StackType[]
-  }) => {
+  }: CreateMicrolearningArgs) => {
     cy.get('[data-cy="create-microlearning"]').click()
 
     // Step 1: Name
@@ -325,15 +564,25 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
       .type(displayName)
-    cy.get('[data-cy="insert-microlearning-description"]')
-      .click()
-      .type(description)
+    if (description) {
+      cy.get('[data-cy="insert-microlearning-description"]')
+        .click()
+        .type(description)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-start-date"]').click().type(startDate)
+    cy.get('[data-cy="select-end-date"]').click().type(endDate)
+
+    if (multiplier) {
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Stacks
@@ -368,55 +617,61 @@ declare global {
       createQuestionSC({
         title,
         content,
-        answer1,
-        answer2,
-        correct1,
-        correct2,
-      }: {
-        title: string
-        content: string
-        answer1: string
-        answer2: string
-        correct1?: boolean
-        correct2?: boolean
-      }): Chainable<void>
+        choices,
+      }: CreateChoicesQuestionArgs): Chainable<void>
+      createQuestionMC({
+        title,
+        content,
+        choices,
+      }: CreateChoicesQuestionArgs): Chainable<void>
+      createQuestionKPRIM({
+        title,
+        content,
+        choices,
+      }: CreateChoicesQuestionArgs): Chainable<void>
+      createQuestionNR({
+        title,
+        content,
+        min,
+        max,
+        unit,
+        accuracy,
+        solutionRanges,
+      }: CreateQuestionNRArgs): Chainable<void>
+      createQuestionFT({
+        title,
+        content,
+        maxLength,
+      }: CreateQuestionFTArgs): Chainable<void>
+      createFlashcard({
+        title,
+        content,
+        explanation,
+      }: CreateFlashcardArgs): Chainable<void>
+      createContent({ title, content }: CreateContentArgs): Chainable<void>
       createLiveQuiz({
         name,
         displayName,
         courseName,
         blocks,
-      }: {
-        name: string
-        displayName: string
-        courseName?: string
-        blocks: { questions: string[] }[]
-      }): Chainable<void>
+      }: CreateLiveQuizArgs): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,
         description,
         courseName,
         stacks,
-      }: {
-        name: string
-        displayName: string
-        description?: string
-        courseName: string
-        stacks: StackType[]
-      }): Chainable<void>
+      }: CreatePracticeQuizArgs): Chainable<void>
       createMicroLearning({
         name,
         displayName,
         description,
         courseName,
+        multiplier,
+        startDate,
+        endDate,
         stacks,
-      }: {
-        name: string
-        displayName: string
-        description?: string
-        courseName: string
-        stacks: StackType[]
-      }): Chainable<void>
+      }: CreateMicrolearningArgs): Chainable<void>
       createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>

@@ -13,8 +13,7 @@ describe('Test functionalities of frontend-control application', () => {
     cy.createQuestionSC({
       title: questionTitle,
       content: question,
-      answer1: '50%',
-      answer2: '100%',
+      choices: [{ content: '50%' }, { content: '100%' }],
     })
   })
 

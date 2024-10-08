@@ -48,14 +48,12 @@ describe('Different live-quiz workflows', () => {
     cy.createQuestionSC({
       title: questionTitle1,
       content: questionContent1,
-      answer1: '50%',
-      answer2: '100%',
+      choices: [{ content: '50%' }, { content: '100%' }],
     })
     cy.createQuestionSC({
       title: questionTitle2,
       content: questionContent2,
-      answer1: '50%',
-      answer2: '100%',
+      choices: [{ content: '50%' }, { content: '100%' }],
     })
 
     cy.get('[data-cy="create-live-quiz"]').click()
