@@ -10,9 +10,18 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
 import { ElementFeedback } from './analytics.js'
-import { Course, LeaderboardEntry, StudentCourse } from './course.js'
+import {
+  Course,
+  CourseSummary,
+  LeaderboardEntry,
+  StudentCourse,
+} from './course.js'
 import { ActivityEvaluation } from './evaluation.js'
-import { GroupActivity, GroupActivityDetails } from './groupActivity.js'
+import {
+  GroupActivity,
+  GroupActivityDetails,
+  GroupActivitySummary,
+} from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -21,9 +30,19 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant.js'
-import { ElementStack, PracticeQuiz, StackFeedback } from './practiceQuizzes.js'
+import {
+  ActivitySummary,
+  ElementStack,
+  PracticeQuiz,
+  StackFeedback,
+} from './practiceQuizzes.js'
 import { Element, Tag } from './question.js'
-import { Feedback, Session, SessionEvaluation } from './session.js'
+import {
+  Feedback,
+  RunningLiveQuizSummary,
+  Session,
+  SessionEvaluation,
+} from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -191,6 +210,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCourseSummary: asUser.field({
+        nullable: true,
+        type: CourseSummary,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseSummary(args, ctx)
+        },
+      }),
+
       participantCourses: asParticipant.field({
         nullable: true,
         type: [Course],
@@ -215,6 +245,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SessionService.getRunningSessions(args, ctx)
+        },
+      }),
+
+      getLiveQuizSummary: asUser.field({
+        nullable: true,
+        type: RunningLiveQuizSummary,
+        args: {
+          quizId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getLiveQuizSummary(args, ctx)
         },
       }),
 
@@ -546,6 +587,39 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
+      getPracticeQuizSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getPracticeQuizSummary(args, ctx)
+        },
+      }),
+
+      getMicroLearningSummary: asUser.field({
+        nullable: true,
+        type: ActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getMicroLearningSummary(args, ctx)
+        },
+      }),
+
+      getGroupActivitySummary: asUser.field({
+        nullable: true,
+        type: GroupActivitySummary,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivitySummary(args, ctx)
         },
       }),
 

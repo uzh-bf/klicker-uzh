@@ -10,6 +10,7 @@ interface CourseArchiveModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   courseId: string | null
+  setSelectedCourseId: (courseId: string | null) => void
   isArchived: boolean
 }
 
@@ -17,6 +18,7 @@ function CourseArchiveModal({
   open,
   setOpen,
   courseId,
+  setSelectedCourseId,
   isArchived,
 }: CourseArchiveModalProps) {
   const t = useTranslations()
@@ -32,8 +34,11 @@ function CourseArchiveModal({
   return (
     <Modal
       open={open}
-      onClose={() => setOpen(false)}
-      className={{ content: 'h-max min-h-max max-w-[30rem]' }}
+      onClose={() => {
+        setOpen(false)
+        setSelectedCourseId(null)
+      }}
+      className={{ content: 'max-w-[30rem]' }}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
@@ -55,6 +60,7 @@ function CourseArchiveModal({
               },
             })
             setOpen(false)
+            setSelectedCourseId(null)
           }}
           className={{ root: 'bg-primary-100 text-white' }}
           data={{ cy: 'course-archive-modal-confirm' }}
@@ -64,7 +70,10 @@ function CourseArchiveModal({
       }
       onSecondaryAction={
         <Button
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false)
+            setSelectedCourseId(null)
+          }}
           data={{ cy: 'course-archive-modal-cancel' }}
         >
           {t('shared.generic.close')}

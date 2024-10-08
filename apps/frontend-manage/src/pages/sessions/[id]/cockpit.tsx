@@ -37,28 +37,6 @@ function Cockpit() {
     ],
   })
 
-  // useEffect((): void => {
-  //   router.prefetch('/sessions/evaluation')
-  //   router.prefetch('/sessions/feedbacks')
-  //   router.prefetch('/join')
-  //   router.prefetch('/qr')
-  // }, [router])
-
-  // TODO: implement missing queries and corresponding frontend components
-  // const accountSummary = useQuery(AccountSummaryQuery)
-  // const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, {
-  //   pollInterval: 10000,
-  // })
-  // const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
-  // const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
-  // const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
-  // const [resetQuestionBlock, { loading: isResetQuestionBlockLoading }] = useMutation(ResetQuestionBlockMutation)
-  // const [cancelSession, { loading: isCancelSessionLoading }] = useMutation(CancelSessionMutation)
-  // const [activateNextBlock, { loading: isActivateNextBlockLoading }] = useMutation(ActivateNextBlockMutation)
-  // const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
-
-  // const shortname = _get(accountSummary, 'data.user.shortname')
-
   const {
     loading: cockpitLoading,
     error: cockpitError,

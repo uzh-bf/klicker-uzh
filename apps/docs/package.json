@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.2.0-alpha.36",
+  "version": "3.2.0-rc.3",
   "license": "AGPL-3.0",
   "dependencies": {
     "@docusaurus/core": "3.5.2",
@@ -20,8 +20,9 @@
     "@fortawesome/react-fontawesome": "0.2.2",
     "@gabrielcsapo/docusaurus-plugin-matomo": "0.1.2",
     "@mdx-js/react": "3.0.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.29",
+    "@tailwindcss/typography": "0.5.9",
     "@tsconfig/docusaurus": "1.0.5",
+    "@uzh-bf/design-system": "3.0.0-alpha.31",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "nodemon": "3.0.1",
@@ -36,7 +37,8 @@
     "react-medium-image-zoom": "4.4.3",
     "react-text-transition": "^3.1.0",
     "recharts": "2.7.2",
-    "@tailwindcss/typography": "0.5.9",
+    "rehype-katex": "7.0.1",
+    "remark-math": "6.0.0",
     "tailwind-merge": "2.4.0",
     "tailwindcss": "3.4.9",
     "typescript": "5.4.5"

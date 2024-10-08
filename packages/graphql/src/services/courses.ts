@@ -204,6 +204,7 @@ export async function getCourseOverviewData(
                     GroupActivityStatus.GRADED,
                   ],
                 },
+                isDeleted: false,
               },
               orderBy: {
                 scheduledStartAt: 'asc',
@@ -617,6 +618,74 @@ export async function getActiveUserCourses(ctx: ContextWithUser) {
   return userCourses?.courses ?? []
 }
 
+export async function getCourseSummary(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          sessions: true,
+          practiceQuizzes: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          microLearnings: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          groupActivities: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          leaderboard: true,
+          participantGroups: true,
+          participations: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  return {
+    numOfParticipations: course._count.participations,
+    numOfLiveQuizzes: course._count.sessions,
+    numOfPracticeQuizzes: course._count.practiceQuizzes,
+    numOfMicroLearnings: course._count.microLearnings,
+    numOfGroupActivities: course._count.groupActivities,
+    numOfLeaderboardEntries: course._count.leaderboard,
+    numOfParticipantGroups: course._count.participantGroups,
+  }
+}
+
+export async function deleteCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedCourse = await ctx.prisma.course.delete({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id,
+  })
+
+  return deletedCourse
+}
+
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
     where: {
@@ -676,6 +745,9 @@ export async function getCourseData(
         },
       },
       practiceQuizzes: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },
@@ -686,6 +758,9 @@ export async function getCourseData(
         },
       },
       groupActivities: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           stacks: {
             include: {
@@ -698,6 +773,9 @@ export async function getCourseData(
         },
       },
       microLearnings: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },
@@ -915,6 +993,7 @@ export async function getCoursePracticeQuiz(
     availableFrom: null,
     course,
     courseId,
+    isDeleted: false,
     ownerId: course.ownerId,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,

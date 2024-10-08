@@ -2,6 +2,76 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.2...v3.2.0-rc.3) (2024-10-05)
+
+
+### Enhancements
+
+* implement more detailed deletion confirmation modal for group activities ([#4298](https://github.com/uzh-bf/klicker-uzh/issues/4298)) ([6475876](https://github.com/uzh-bf/klicker-uzh/commit/64758767a68523531c303270b7958cad666892ef))
+* implement more detailed deletion confirmation modal for microlearnings ([#4297](https://github.com/uzh-bf/klicker-uzh/issues/4297)) ([71743e5](https://github.com/uzh-bf/klicker-uzh/commit/71743e53ecd9ea8cb5d4e5a75f5369b84ccf6bef))
+* implement more detailed deletion confirmation modal for practice quizzes ([#4296](https://github.com/uzh-bf/klicker-uzh/issues/4296)) ([c5e7599](https://github.com/uzh-bf/klicker-uzh/commit/c5e7599d8b6d22a927173cd4197e40d6e386073a))
+
+## [3.2.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.1...v3.2.0-rc.2) (2024-10-05)
+
+
+### Features
+
+* allow deletion of all activities independent of status and distinguish between hard and soft deletion in backend ([#4294](https://github.com/uzh-bf/klicker-uzh/issues/4294)) ([6d47105](https://github.com/uzh-bf/klicker-uzh/commit/6d471052850537137138af3eafd7961827dd334e))
+
+
+### Other
+
+* replace select components through new and improve version ([#4295](https://github.com/uzh-bf/klicker-uzh/issues/4295)) ([57e1019](https://github.com/uzh-bf/klicker-uzh/commit/57e101934e00db44d8e7dbe0b6d96e8528fcb8f3))
+
+## [3.2.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.0...v3.2.0-rc.1) (2024-10-04)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove stopwords filter to ensure that search works as expected ([b7c0831](https://github.com/uzh-bf/klicker-uzh/commit/b7c08313e9542c12ac1aed44e137bc1c0f7eed8c))
+* **apps/frontend-pwa:** ensure that LTI workflows are only triggered inside LMS environment ([#4292](https://github.com/uzh-bf/klicker-uzh/issues/4292)) ([8ca6946](https://github.com/uzh-bf/klicker-uzh/commit/8ca6946ae0ef5af97cf522352e47f7a4e76cb49f))
+* ensure that lost modal styles are applied throughout application ([#4291](https://github.com/uzh-bf/klicker-uzh/issues/4291)) ([0774ff8](https://github.com/uzh-bf/klicker-uzh/commit/0774ff8cf39e621766137d6d3dfe75d4204c5fce))
+
+
+### Enhancements
+
+* add deletion confirmation steps to live quiz abortion process ([#4293](https://github.com/uzh-bf/klicker-uzh/issues/4293)) ([26af2c8](https://github.com/uzh-bf/klicker-uzh/commit/26af2c85f1742109f714306cb03549d2617bb9de))
+* separate scheduling and publishing logic for microlearnings with cronjob ([#4289](https://github.com/uzh-bf/klicker-uzh/issues/4289)) ([c368dc9](https://github.com/uzh-bf/klicker-uzh/commit/c368dc99bcbd035b2a34b4ceb5c4ce1ec24567d9))
+
+## [3.2.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.37...v3.2.0-rc.0) (2024-10-03)
+
+
+### Bug Fixes
+
+* add missing instructions for answer selection on SC and MC questions in asynchronous activities ([c6ecc9c](https://github.com/uzh-bf/klicker-uzh/commit/c6ecc9cc070b3ab6b51d687fe96206ae20264cb9))
+* aggregated results on element instance for numerical questions need to be computed based on hashed value ([#4286](https://github.com/uzh-bf/klicker-uzh/issues/4286)) ([2e09c5b](https://github.com/uzh-bf/klicker-uzh/commit/2e09c5beed82dd9406d5a49bb35730993402a86a))
+* ensure that aggregated responses for open questions are consistent with response details ([#4288](https://github.com/uzh-bf/klicker-uzh/issues/4288)) ([538caf2](https://github.com/uzh-bf/klicker-uzh/commit/538caf20b14bdc8a94a618755972d88bb55ab645))
+* ensure that element instances in microlearning have correct type ([#4285](https://github.com/uzh-bf/klicker-uzh/issues/4285)) ([2d3a9d0](https://github.com/uzh-bf/klicker-uzh/commit/2d3a9d0ddebc29a3bf9a6ca4ea38c865d8062cfb))
+
+
+### Enhancements
+
+* **apps/docs:** extend documentation with group activity videos and additional sections on gamification ([#4269](https://github.com/uzh-bf/klicker-uzh/issues/4269)) ([f8c1f54](https://github.com/uzh-bf/klicker-uzh/commit/f8c1f547e647c402fdc218671c3705c7717f2ba7))
+
+## [3.2.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.36...v3.2.0-alpha.37) (2024-10-03)
+
+
+### Features
+
+* add possibility to archive past courses ([#4281](https://github.com/uzh-bf/klicker-uzh/issues/4281)) ([e71423a](https://github.com/uzh-bf/klicker-uzh/commit/e71423aea55f3a3027fa373d2c0b549191ea404f))
+* add possibility to delete courses ([#4282](https://github.com/uzh-bf/klicker-uzh/issues/4282)) ([8d6cfa0](https://github.com/uzh-bf/klicker-uzh/commit/8d6cfa03768b73f2bdf04a718b3976ece22371ee))
+* add possibility to extend microlearnings and group activities before end date ([#4283](https://github.com/uzh-bf/klicker-uzh/issues/4283)) ([7c84a59](https://github.com/uzh-bf/klicker-uzh/commit/7c84a597a3258e0bfdf9dcda6baee0f26408912b))
+
+
+### Bug Fixes
+
+* ensure that participant group names cannot be empty ([#4280](https://github.com/uzh-bf/klicker-uzh/issues/4280)) ([ba3fdda](https://github.com/uzh-bf/klicker-uzh/commit/ba3fdda3ec8724a6e04caaf09a62740645b839f2))
+
+
+### Enhancements
+
+* improve live quiz list and show participants on completed quizzes ([#4284](https://github.com/uzh-bf/klicker-uzh/issues/4284)) ([e356d43](https://github.com/uzh-bf/klicker-uzh/commit/e356d437c8fdc47cf0e96c1273e4bc9a75be521b))
+
 ## [3.2.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.35...v3.2.0-alpha.36) (2024-09-30)
 
 

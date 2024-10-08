@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "chart.fullname" . }}-cron-micro-pubs
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron.microLearningPublications | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.85.0
+            imagePullPolicy: IfNotPresent
+            args:
+            - -X
+            - POST
+            - -H
+            - "Content-Type: application/json"
+            - -H
+            - "x-token: {{ .Values.cron.token }}"
+            - -H
+            - "x-graphql-yoga-csrf: PublishScheduledMicroLearnings"
+            - -d
+            - >
+                {
+                    "operationName": "PublishScheduledMicroLearnings",
+                    "variables": {},
+                    "extensions": {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "ccbed09035b8907dbe5bcb5ff6986215a3d5c45106895465e5e76566761ac22c"
+                        }
+                    }
+                }
+            - 'http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql'
+          restartPolicy: OnFailure

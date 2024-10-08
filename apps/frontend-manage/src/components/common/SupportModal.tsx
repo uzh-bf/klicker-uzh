@@ -36,6 +36,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
       className={{
         overlay: 'my-auto text-black',
         title: 'text-xl md:text-2xl',
+        content: 'h-max max-h-full',
       }}
       fullScreen
     >

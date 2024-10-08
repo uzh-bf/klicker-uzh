@@ -4,7 +4,6 @@ import {
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -15,6 +14,7 @@ import { GraphQLError } from 'graphql'
 import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {
@@ -34,6 +34,7 @@ export async function getMicroLearningData(
             scheduledStartAt: { lte: new Date() },
             scheduledEndAt: { gte: new Date() },
             status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
           },
         },
         {
@@ -75,6 +76,7 @@ export async function getMicroLearningEvaluation(
     where: {
       id,
       status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
     },
     include: {
       stacks: {
@@ -116,6 +118,7 @@ export async function getSingleMicroLearning(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
     include: {
       course: true,
@@ -194,6 +197,7 @@ export async function manipulateMicroLearning(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -271,7 +275,7 @@ export async function manipulateMicroLearning(
                 elementType: element.type,
                 migrationId: uuidv4(),
                 order: elem.order,
-                type: ElementInstanceType.PRACTICE_QUIZ,
+                type: ElementInstanceType.MICROLEARNING,
                 elementData: processedElementData,
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
@@ -340,7 +344,36 @@ export async function publishMicroLearning(
   { id }: PublishMicroLearningArgs,
   ctx: ContextWithUser
 ) {
-  const microLearning = await ctx.prisma.microLearning.update({
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.DRAFT,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning only starts in the future, set its state to scheduled
+  if (microLearning.scheduledStartAt > new Date()) {
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        status: PublicationStatus.SCHEDULED,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
+  }
+
+  // if the start date is in the past, directly publish the microlearning
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -351,8 +384,47 @@ export async function publishMicroLearning(
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+  return updatedMicroLearning
+}
 
-  return microLearning
+export async function publishScheduledMicroLearnings(ctx: Context) {
+  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearnings = await Promise.all(
+    microlearningsToPublish.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedMicroLearnings.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledMicroLearnings',
+      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
+    )
+  }
+
+  updatedMicroLearnings.forEach((micro) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
+  return true
 }
 
 interface UnpublishMicroLearningArgs {
@@ -367,6 +439,7 @@ export async function unpublishMicroLearning(
     where: {
       id,
       ownerId: ctx.user.sub,
+      status: PublicationStatus.SCHEDULED,
     },
     data: {
       status: PublicationStatus.DRAFT,
@@ -381,8 +454,81 @@ export async function unpublishMicroLearning(
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
-
   return microLearning
+}
+
+export async function extendMicroLearning(
+  {
+    id,
+    endDate,
+  }: {
+    id: string
+    endDate: Date
+  },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  return await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      scheduledEndAt: { gt: new Date() },
+      isDeleted: false,
+    },
+    data: {
+      scheduledEndAt: endDate,
+    },
+  })
+}
+
+export async function getMicroLearningSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = microLearning.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
 }
 
 interface DeleteMicroLearningArgs {
@@ -393,26 +539,50 @@ export async function deleteMicroLearning(
   { id }: DeleteMicroLearningArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // if the microlearning is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    microLearning.status === PublicationStatus.DRAFT ||
+    microLearning.status === PublicationStatus.SCHEDULED ||
+    microLearning.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.microLearning.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
-      console.warn(
-        'The microLearning is already published and cannot be deleted anymore.'
-      )
-      return null
-    }
+  } else {
+    // if the microlearning is published and has responses -> soft deletion
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
 
-    throw e
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
   }
 }

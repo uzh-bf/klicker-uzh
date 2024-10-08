@@ -1,7 +1,8 @@
 import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
-import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
@@ -28,6 +29,8 @@ export function MCAnswerOptions({
   disabled,
   hideFeedbacks = false,
 }: MCAnswerOptionsProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -37,6 +40,11 @@ export function MCAnswerOptions({
           : 'flex flex-col'
       )}
     >
+      <div>
+        {t.rich(`shared.${ElementType.Mc}.richtext`, {
+          b: (text) => <span className="font-bold">{text}</span>,
+        })}
+      </div>
       {choices.map((choice, index) => {
         return (
           <div key={`mc-choice-${index}-${choice.value}`}>

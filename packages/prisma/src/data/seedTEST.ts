@@ -257,7 +257,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Single Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -353,7 +353,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -498,7 +498,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: true,
           }),
         },
       },
@@ -544,7 +543,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: false,
           }),
         },
       },
@@ -590,7 +588,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             questions: questionsTest,
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: true,
           }),
         },
       },
@@ -919,7 +916,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
-            connectToCourse: false,
           }),
         ],
       },
@@ -960,7 +956,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
-            connectToCourse: false,
           }),
         ],
       },
@@ -1138,6 +1133,49 @@ Mehr bla bla...
             questions: questionsTest.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT
             ),
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const microlearningId5 = 'ec13a44b-22ce-4edc-b419-e2d7c07024fe'
+  const microlearningDraft = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId5,
+    },
+    create: {
+      id: microlearningId5,
+      name: 'Test Microlearning Draft',
+      displayName: 'Test Microlearning Draft',
+      description: `
+Once this microlearning is published, it will be immediately accessible
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.PublicationStatus.DRAFT,
+      scheduledEndAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 1000,
+            flashcards: flashcards,
+            questions: questionsTest,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,

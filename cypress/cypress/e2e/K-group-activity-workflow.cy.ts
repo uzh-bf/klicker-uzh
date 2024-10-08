@@ -306,6 +306,12 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="groupActivity-${newName}"]`)
       .findByText(messages.shared.generic.running)
       .should('exist')
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.get(`[data-cy="groupActivity-actions-${newName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${newName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="groupActivity-actions-${newName}"]`).should('not.exist')
   })
 
   it('can send a message to the group', function () {
@@ -488,11 +494,14 @@ describe('Create and solve a group activity', () => {
 
   it('grade the seeded group acivity', function () {
     cy.loginLecturer()
+    const groupActivityName = 'Gruppenquest Completed'
+    const activityDisplayName = 'Gruppenquest Completed'
+    const courseName = 'Testkurs'
 
     cy.get('[data-cy="courses"]').click()
-    cy.get('[data-cy="course-list-button-Testkurs"]').click()
+    cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get('[data-cy="grade-groupActivity-Gruppenquest Completed"]').click()
+    cy.get(`[data-cy="grade-groupActivity-${groupActivityName}"]`).click()
 
     const scores1 = ['10', '20', '50', '10', '20']
     const comment1_1 = 'Test Comment'
@@ -565,8 +574,6 @@ describe('Create and solve a group activity', () => {
     cy.clearAllCookies()
     cy.clearLocalStorage()
     cy.loginStudent()
-    const activityDisplayName = 'Gruppenquest Completed'
-
     cy.get('[data-cy="course-button-Testkurs"]').click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(`[data-cy="group-activity-${activityDisplayName}"]`).should(
@@ -657,5 +664,93 @@ describe('Create and solve a group activity', () => {
       'contain',
       `${scores2[4]}/25 Points`
     )
+
+    // delete the completed group activity
+    cy.clearAllCookies()
+    cy.clearLocalStorage()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get('[data-cy="confirm-deletion-started-instances"]').click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get('[data-cy="confirm-deletion-submissions"]').click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="activity-deletion-modal-cancel"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get('[data-cy="confirm-deletion-started-instances"]').click()
+    cy.get('[data-cy="confirm-deletion-submissions"]').click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+  })
+
+  it('extends a seeded and running microlearning', () => {
+    const courseName = 'Testkurs'
+    const groupActivityName = 'Gruppenquest Published'
+    const currentYear = new Date().getFullYear()
+
+    // navigate to course overview
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+
+    // open extension modal
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+
+    // change the end date and check if the changes are saved
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 10}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // check that changing the date to the past does not work
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-cancel"]').click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `01.01.${currentYear + 10}, 12:00`
+    )
+
+    // change the end date once again to something in the future
+    cy.get(`[data-cy="extend-groupActivity-${groupActivityName}"]`).click()
+    cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
+    cy.get('[data-cy="extend-activity-date"]')
+      .click()
+      .type(`${currentYear + 15}-10-12T23:00`)
+    cy.get('[data-cy="extend-activity-confirm"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get(`[data-cy="groupActivity-${groupActivityName}"]`).contains(
+      `12.10.${currentYear + 15}, 23:00`
+    )
+
+    // delete the group activity
+    cy.get(`[data-cy="groupActivity-actions-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${groupActivityName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get('[data-cy="confirm-deletion-started-instances"]').should('not.exist')
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get('[data-cy="confirm-deletion-submissions"]').click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
   })
 })

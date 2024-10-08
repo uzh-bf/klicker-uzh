@@ -240,6 +240,7 @@ function Question({
             <Button.Label>{t('shared.generic.delete')}</Button.Label>
           </Button>
           <Modal
+            hideCloseButton
             onPrimaryAction={
               <Button
                 onClick={async () => {
@@ -283,9 +284,8 @@ function Question({
             }
             onClose={(): void => setIsDeletionModalOpen(false)}
             open={isDeletionModalOpen}
-            hideCloseButton={true}
             className={{
-              content: 'h-max min-h-max w-[40rem] self-center pt-0',
+              content: 'h-max min-h-max w-[40rem] self-center !pt-0',
             }}
           >
             <div>
