@@ -541,6 +541,8 @@ describe('Test course creation and editing functionalities', () => {
       name: microLearningName,
       displayName: microLearningName,
       description,
+      startDate: `${currentYear - 1}-01-01T02:00`,
+      endDate: `${currentYear + 1}-01-01T02:00`,
       courseName: courseDelName,
       stacks: [{ elements: [questionTitle] }],
     })
