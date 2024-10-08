@@ -27,6 +27,9 @@ const runningName = 'Running Practice Quiz'
 const runningDisplayName = 'Running Practice Quiz'
 const runningNameDupl = runningName + ' (Copy)'
 
+const scheduledName = 'Scheduled Practice Quiz'
+const scheduledDisplayName = 'Scheduled Practice Quiz'
+
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', () => {
   it('Create questions required for practice quiz creation', () => {
@@ -369,9 +372,82 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
-  // TODO: create a practice quiz with start date in the future
+  it('Create a practice quiz with a start date in the future', () => {
+    cy.loginLecturer()
+    cy.createPracticeQuiz({
+      name: scheduledName,
+      displayName: scheduledDisplayName,
+      courseName: testCourse,
+      scheduledStartDate: `${currentYear + 5}-01-01T02:00`,
+      stacks: [
+        { elements: [SCQuestionTitle] },
+        { elements: [MCQuestionTitle] },
+      ],
+    })
+  })
 
-  // TODO: test duplication logic for running practice quiz
+  it('Duplicate a practice quiz and validate its content', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
+    cy.get(`[data-cy="duplicate-practice-quiz-${runningName}"]`).click()
+    cy.findByText('Create ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+
+    // Step 1: Name
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      runningNameDupl
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 2: Display name and description
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      runningDisplayName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 3: Settings
+    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier4
+    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 4: Check content of stacks and add another question
+    cy.get('[data-cy="question-0-stack-0"]').contains(
+      SCQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-1"]').contains(
+      MCQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-2"]').contains(
+      KPRIMQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-3"]').contains(
+      NRQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-4"]').contains(
+      FTQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-5"]').contains(
+      FCQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-6"]').contains(
+      CTQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="question-0-stack-7"]').contains(
+      SCQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+  })
 
   it('Publish the practice quiz around the current time', () => {
     cy.loginLecturer()
@@ -491,7 +567,83 @@ describe('Different practice quiz workflows', () => {
       .click()
   })
 
-  // TODO: cover potential other test elements that have not been considered so far
+  it('Publish the future practice quiz and verify scheduled state', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.scheduled
+    )
+  })
+
+  it('Verify that scheduled practice quizzes are not visible to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Unpublish the practice quiz again on the lecturer view', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="unpublish-practiceQuiz-${scheduledName}"]`).click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.draft
+    )
+
+    // change the availability start date of the practice quiz to the past
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="edit-practice-quiz-${scheduledName}"]`).click()
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      scheduledName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      scheduledDisplayName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="select-available-from"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
+
+  it('Check that immediate publication works for practice quizzes with past start dates', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.published
+    )
+  })
+
+  it('Verify that the modified and published practice quiz is available to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should('exist')
+  })
 
   it('Cleanup: Delete all created practice quizzes', () => {
     cy.loginLecturer()
@@ -509,440 +661,30 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).should(
       'not.exist'
     )
+
+    // delete the scheduled practice quiz
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${scheduledName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).should(
+      'not.exist'
+    )
+
+    // delete the duplicated practice quiz
+    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${runningNameDupl}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Check that none of the deleted practice quizzes are visible to students', () => {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningName}"]`).should('not.exist')
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
+      'not.exist'
+    )
   })
-
-  // it('Test scheduling and publishing functionalities of a practice quiz', () => {
-  //   // create a practice quiz with availability starting in the future
-  //   // switch to question pool view
-  //   cy.get('[data-cy="questions"]').click()
-  //   // set up question with solution
-  //   cy.get('[data-cy="create-question"]').click()
-  //   cy.get('[data-cy="insert-question-title"]').click().type(questionTitle3)
-  //   cy.get('[data-cy="insert-question-text"]').click().type(question)
-  //   cy.get('[data-cy="configure-sample-solution"]').click()
-  //   cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-  //   cy.get('[data-cy="set-correctness-0"]').click({ force: true })
-  //   cy.get('[data-cy="add-new-answer"]').click({ force: true })
-  //   cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-  //   cy.get('[data-cy="save-new-question"]').click({ force: true })
-  //   // create practice quiz
-  //   cy.get('[data-cy="create-practice-quiz"]').click()
-  //   // step 1
-  //   cy.get('[data-cy="insert-practice-quiz-name"]')
-  //     .click()
-  //     .type(practiceQuizName3)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]')
-  //     .click()
-  //     .type(practiceQuizDisplayName3)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // step 2
-  //   cy.get('[data-cy="select-course"]').click()
-  //   cy.get(`[data-cy="select-course-${courseName}"]`).click()
-  //   cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-  //   cy.get('[data-cy="select-multiplier"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.multiplier1)
-  //   cy.get('[data-cy="select-multiplier"]').click()
-  //   cy.get(
-  //     `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
-  //   ).click()
-  //   cy.get('[data-cy="select-multiplier"]').contains(
-  //     messages.manage.sessionForms.multiplier2
-  //   )
-  //   // set future availability date
-  //   cy.get('[data-cy="select-available-from"]')
-  //     .click()
-  //     .type(`${currentYear + 5}-01-01T02:00`)
-  //   cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
-  //   cy.get('[data-cy="select-order"]').click()
-  //   cy.get(
-  //     `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
-  //   ).click()
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
-  //   cy.get('[data-cy="select-order"]').click()
-  //   cy.get(
-  //     `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
-  //   ).click()
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // step 3
-  //   const dataTransfer = new DataTransfer()
-  //   cy.get(`[data-cy="question-item-${questionTitle3}"]`)
-  //     .contains(questionTitle3)
-  //     .trigger('dragstart', {
-  //       dataTransfer,
-  //     })
-  //   cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-  //     dataTransfer,
-  //   })
-  //   const dataTransfer2 = new DataTransfer()
-  //   cy.get(`[data-cy="question-item-${questionTitle3}"]`)
-  //     .contains(questionTitle3)
-  //     .trigger('dragstart', {
-  //       dataTransfer2,
-  //     })
-  //   cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
-  //     dataTransfer2,
-  //   })
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="load-session-list"]').click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   // publish practice quiz - should become "scheduled"
-  //   cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName3}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
-  //     messages.shared.generic.scheduled
-  //   )
-  //   // sign in as student
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   // check if practice quiz is visible to the students
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName3}"]`).should(
-  //     'not.exist'
-  //   )
-  //   // switch back to the lecturer and unpublish the micro learning
-  //   cy.clearAllCookies()
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.findByText(courseName).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
-  //   cy.get(`[data-cy="unpublish-practiceQuiz-${practiceQuizName3}"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   // edit the practice quiz and change the availability date to the past
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
-  //   cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName3}"]`).click()
-  //   cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
-  //     'exist'
-  //   )
-  //   cy.get('[data-cy="insert-practice-quiz-name"]').should(
-  //     'have.value',
-  //     practiceQuizName3
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
-  //     'have.value',
-  //     practiceQuizDisplayName3
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="select-available-from"]')
-  //     .click()
-  //     .type(`${currentYear - 1}-01-01T02:00`)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="load-session-list"]').click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   // publish the practice quiz again
-  //   cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName3}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizName3}"]`).contains(
-  //     messages.shared.generic.published
-  //   )
-  //   // check if practice quiz is visible to the students
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName3}"]`)
-  //     .should('exist')
-  //     .click()
-  //   cy.get('[data-cy="start-practice-quiz"]').click()
-  //   cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-  //   cy.findByText('50%').click()
-  //   cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled').click()
-  //   cy.wait(1000)
-  //   cy.get('[data-cy="practice-quiz-continue"]').click()
-  //   // navigate to the lecturer view and delete the practice quiz
-  //   cy.clearAllCookies()
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.findByText(courseName).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).click()
-  //   cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName3}"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
-  //   cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName3}"]`).should(
-  //     'not.exist'
-  //   )
-  //   // make sure that the practice quiz is no longer accessible to students
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName3}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
-
-  // it('Create a practice quiz and duplicate it', () => {
-  //   const questionTitleLocal = uuid()
-  //   const questionTitleLocal2 = uuid()
-  //   const questionLocal = uuid()
-  //   const quizName = uuid()
-  //   const quizNameDupl = `${quizName} (Copy)`
-  //   const quizDisplayNameDupl = `${quizNameDupl} (NEW!)`
-  //   const quizDisplayName = uuid()
-  //   const quizDescription = uuid()
-  //   // switch back to question pool view
-  //   cy.get('[data-cy="questions"]').click()
-  //   // set up question with solution
-  //   cy.get('[data-cy="create-question"]').click()
-  //   cy.get('[data-cy="insert-question-title"]').click().type(questionTitleLocal)
-  //   cy.get('[data-cy="insert-question-text"]').click().type(questionLocal)
-  //   cy.get('[data-cy="configure-sample-solution"]').click()
-  //   cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-  //   cy.get('[data-cy="set-correctness-0"]').click({ force: true })
-  //   cy.get('[data-cy="add-new-answer"]').click({ force: true })
-  //   cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-  //   cy.get('[data-cy="save-new-question"]').click({ force: true })
-  //   cy.get('[data-cy="create-question"]').click()
-  //   cy.get('[data-cy="insert-question-title"]')
-  //     .click()
-  //     .type(questionTitleLocal2)
-  //   cy.get('[data-cy="insert-question-text"]').click().type(questionLocal)
-  //   cy.get('[data-cy="configure-sample-solution"]').click()
-  //   cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-  //   cy.get('[data-cy="set-correctness-0"]').click({ force: true })
-  //   cy.get('[data-cy="add-new-answer"]').click({ force: true })
-  //   cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-  //   cy.get('[data-cy="save-new-question"]').click({ force: true })
-  //   // create practice quiz
-  //   cy.get('[data-cy="create-practice-quiz"]').click()
-  //   cy.get('[data-cy="cancel-session-creation"]').click()
-  //   cy.get('[data-cy="create-practice-quiz"]').click()
-  //   // step 1
-  //   cy.get('[data-cy="insert-practice-quiz-name"]').click().type(quizName)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]')
-  //     .click()
-  //     .type(quizDisplayName)
-  //   cy.get('[data-cy="insert-practice-quiz-description"]')
-  //     .focus()
-  //     .type(quizDescription)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // step 2
-  //   cy.get('[data-cy="select-course"]').click()
-  //   cy.get(`[data-cy="select-course-${courseName}"]`).click()
-  //   cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-  //   cy.get('[data-cy="select-multiplier"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.multiplier1)
-  //   cy.get('[data-cy="select-multiplier"]').click()
-  //   cy.get(
-  //     `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
-  //   ).click()
-  //   cy.get('[data-cy="select-multiplier"]').contains(
-  //     messages.manage.sessionForms.multiplier2
-  //   )
-  //   cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
-  //   cy.get('[data-cy="select-order"]').click()
-  //   cy.get(
-  //     `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
-  //   ).click()
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // step 3
-  //   const dataTransfer = new DataTransfer()
-  //   cy.get(`[data-cy="question-item-${questionTitleLocal}"]`)
-  //     .contains(questionTitleLocal)
-  //     .trigger('dragstart', {
-  //       dataTransfer,
-  //     })
-  //   cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-  //     dataTransfer,
-  //   })
-  //   const dataTransfer2 = new DataTransfer()
-  //   cy.get(`[data-cy="question-item-${questionTitleLocal2}"]`)
-  //     .contains(questionTitleLocal2)
-  //     .trigger('dragstart', {
-  //       dataTransfer2,
-  //     })
-  //   cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
-  //     dataTransfer2,
-  //   })
-  //   cy.get('[data-cy="question-0-stack-0"]').contains(
-  //     questionTitleLocal.substring(0, 20)
-  //   )
-  //   cy.get('[data-cy="question-0-stack-1"]').contains(
-  //     questionTitleLocal2.substring(0, 20)
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="load-session-list"]').click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   // go to course overview and look for practice quiz with corresponding title
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.findByText(courseName).click()
-  //   // publish practice quiz (should not impact the duplication process)
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   cy.get(`[data-cy="publish-practice-quiz-${quizName}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
-  //     messages.shared.generic.published
-  //   )
-  //   // start duplicating the practice quiz and check content of editor
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${quizName}"]`).click()
-  //   cy.get(`[data-cy="duplicate-practice-quiz-${quizName}"]`).click()
-  //   cy.findByText('Create ' + messages.shared.generic.practiceQuiz).should(
-  //     'exist'
-  //   )
-  //   cy.get('[data-cy="insert-practice-quiz-name"]').should(
-  //     'have.value',
-  //     quizNameDupl
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
-  //     'have.value',
-  //     quizDisplayName
-  //   )
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]')
-  //     .click()
-  //     .clear()
-  //     .type(quizDisplayNameDupl)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // check if the settings are correct
-  //   cy.get('[data-cy="select-multiplier"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.multiplier2)
-  //   cy.get('[data-cy="insert-reset-time-days"]').should('have.value', '4')
-  //   cy.get('[data-cy="select-order"]')
-  //     .should('exist')
-  //     .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   // check the content of the stack creation step
-  //   cy.get('[data-cy="question-0-stack-0"]').contains(
-  //     questionTitleLocal.substring(0, 20)
-  //   )
-  //   cy.get('[data-cy="question-0-stack-1"]').contains(
-  //     questionTitleLocal2.substring(0, 20)
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="load-session-list"]').click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizNameDupl}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  //   // publish practice quiz
-  //   cy.get(`[data-cy="publish-practice-quiz-${quizNameDupl}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizNameDupl}"]`).contains(
-  //     messages.shared.generic.published
-  //   )
-  //   // sign in as student and answer practice quiz
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizDisplayNameDupl}"]`)
-  //     .contains(quizDisplayNameDupl)
-  //     .click()
-  //   cy.get('[data-cy="start-practice-quiz"]').click()
-  //   cy.findByText('50%').click()
-  //   cy.get('[data-cy="student-stack-submit"]').click()
-  //   cy.wait(1000)
-  //   cy.get('[data-cy="practice-quiz-continue"]').click()
-  //   cy.findByText('50%').click()
-  //   cy.get('[data-cy="student-stack-submit"]').click()
-  //   cy.wait(1000)
-  //   cy.get('[data-cy="practice-quiz-continue"]').click()
-  //   // navigate to the lecturer view and delete the practice quiz
-  //   cy.clearAllCookies()
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.findByText(courseName).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).click()
-  //   cy.get(`[data-cy="delete-practice-quiz-${quizNameDupl}"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
-  //   cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${quizNameDupl}"]`).should(
-  //     'not.exist'
-  //   )
-  //   // make sure that the practice quiz is no longer accessible to students
-  //   cy.clearAllCookies()
-  //   cy.visit(Cypress.env('URL_STUDENT'))
-  //   cy.get('[data-cy="username-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_USERNAME'))
-  //   cy.get('[data-cy="password-field"]')
-  //     .click()
-  //     .type(Cypress.env('STUDENT_PASSWORD'))
-  //   cy.get('[data-cy="submit-login"]').click()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${quizDisplayNameDupl}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
 })

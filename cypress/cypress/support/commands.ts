@@ -490,6 +490,7 @@ interface CreatePracticeQuizArgs {
   displayName: string
   description?: string
   courseName: string
+  scheduledStartDate?: string
   stacks: StackType[]
 }
 
@@ -500,6 +501,7 @@ Cypress.Commands.add(
     displayName,
     description,
     courseName,
+    scheduledStartDate,
     stacks,
   }: CreatePracticeQuizArgs) => {
     cy.get('[data-cy="create-practice-quiz"]').click()
@@ -512,15 +514,24 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .type(displayName)
-    cy.get('[data-cy="insert-practice-quiz-description"]')
-      .click()
-      .type(description)
+
+    if (typeof description !== 'undefined') {
+      cy.get('[data-cy="insert-practice-quiz-description"]')
+        .click()
+        .type(description)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+
+    if (typeof scheduledStartDate !== 'undefined') {
+      cy.get('[data-cy="select-available-from"]')
+        .click()
+        .type(scheduledStartDate)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // TODO: update this to create blocks instead of stacks
