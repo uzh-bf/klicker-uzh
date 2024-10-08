@@ -31,6 +31,22 @@ services:
     networks:
       - klicker
 
+  reverse_proxy_wsl_jannis:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules_wsl_jannis.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
   auth:
     profiles:
       - full
@@ -122,7 +138,6 @@ services:
     volumes:
       - klicker_data:/var/lib/postgresql/data
       - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
-
     # redis instance to support session execution
   redis_exec:
     image: docker.io/library/redis:7
