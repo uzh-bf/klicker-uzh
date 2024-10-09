@@ -533,10 +533,16 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       // only award achievements, if the session did contain questions with sample solutions and at least three participants collected points
       const awardAchievements = session.blocks.some(
         (block) =>
-          block.instances.some(
-            (instance) =>
-              instance.questionData.options.hasSampleSolution ?? false
-          ) &&
+          block.instances.some((instance) => {
+            if (
+              instance.questionData.type === ElementType.CONTENT ||
+              instance.questionData.type === ElementType.FLASHCARD
+            ) {
+              return false
+            }
+
+            return instance.questionData.options.hasSampleSolution ?? false
+          }) &&
           existingParticipants.filter(
             ({ score }) => typeof score !== 'undefined'
           ).length >= 3
@@ -559,9 +565,9 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           where: { id: THIRD_ACHIEVEMENT_ID },
         })
 
-        const goldScore = topScores[0].score
-        const silverScore = topScores[1].score
-        const bronzeScore = topScores[2].score
+        const goldScore = topScores[0]?.score
+        const silverScore = topScores[1]?.score
+        const bronzeScore = topScores[2]?.score
 
         // awarding logic (including point and xp updates):
         // award gold to every participant with gold score
@@ -1113,7 +1119,7 @@ export async function deactivateSessionBlock(
 
           if (!participant) return null
 
-          return [id, score]
+          return [id, score] as [string, string]
         })
       )
     ).flatMap((result) => {
@@ -1183,47 +1189,49 @@ export async function deactivateSessionBlock(
         },
         leaderboard: session.isGamificationEnabled
           ? {
-              upsert: existingParticipantsLB.map(([id, score]) => ({
-                where: {
-                  type_participantId_sessionId: {
+              upsert: existingParticipantsLB.map(
+                ([id, score]: [string, string]) => ({
+                  where: {
+                    type_participantId_sessionId: {
+                      type: 'SESSION',
+                      participantId: id,
+                      sessionId,
+                    },
+                  },
+                  create: {
                     type: 'SESSION',
-                    participantId: id,
-                    sessionId,
-                  },
-                },
-                create: {
-                  type: 'SESSION',
-                  participant: {
-                    connect: { id },
-                  },
-                  score: parseInt(score),
-                  sessionParticipation: {
-                    connectOrCreate: {
-                      where: {
-                        courseId_participantId: {
-                          courseId: session.courseId as string,
-                          participantId: id,
-                        },
-                      },
-                      create: {
-                        course: {
-                          connect: {
-                            id: session.courseId!,
+                    participant: {
+                      connect: { id },
+                    },
+                    score: parseInt(score),
+                    sessionParticipation: {
+                      connectOrCreate: {
+                        where: {
+                          courseId_participantId: {
+                            courseId: session.courseId as string,
+                            participantId: id,
                           },
                         },
-                        participant: {
-                          connect: {
-                            id,
+                        create: {
+                          course: {
+                            connect: {
+                              id: session.courseId!,
+                            },
+                          },
+                          participant: {
+                            connect: {
+                              id,
+                            },
                           },
                         },
                       },
                     },
                   },
-                },
-                update: {
-                  score: parseInt(score),
-                },
-              })),
+                  update: {
+                    score: parseInt(score),
+                  },
+                })
+              ),
             }
           : undefined,
       },
@@ -1506,17 +1514,14 @@ export async function getRunningSessionsCourse(
         where: {
           status: SessionStatus.RUNNING,
         },
+        include: {
+          course: true,
+        },
       },
     },
   })
 
-  const sessionList =
-    course?.sessions.map((session) => {
-      session.course = { id: course.id, displayName: course.displayName }
-      return session
-    }) ?? []
-
-  return sessionList
+  return course?.sessions ?? []
 }
 
 export async function getUserRunningSessions(ctx: ContextWithUser) {
@@ -1701,20 +1706,26 @@ export async function getCockpitSession(
   )
 
   if (session.activeBlock && session.activeBlock.id) {
-    // TODO: improve typing
     const activeInstanceIds = session.activeBlock?.instances.map(
-      (instance) => instance.id as number
+      (instance) => instance.id
     )
     const redisMulti = ctx.redisExec.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
     })
-    const cacheContent = await redisMulti.exec()
+    const cacheContent = (await redisMulti.exec()) as
+      | [
+          Error | null,
+          {
+            // TODO: types for the result
+          },
+        ][]
+      | null
     const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants as string))
+      ?.map(([_, result]) => parseInt(result?.participants))
       .reduce((acc, val) => min(acc, val), 100000)
     blockParticipants[session.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[session.activeBlock.id]
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id] ?? 0
   }
 
   // recude session to only contain what is required for the lecturer cockpit

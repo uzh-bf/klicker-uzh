@@ -1624,9 +1624,18 @@ export async function respondToQuestion(
 
     // evaluate the correctness of the response
     const elementData = instance?.elementData
-    const correctness = elementData.options.hasSampleSolution
-      ? evaluateAnswerCorrectness({ elementData, response })
-      : 1
+
+    let correctness: number | null
+    if (
+      elementData.type === ElementType.CONTENT ||
+      elementData.type === ElementType.FLASHCARD
+    ) {
+      correctness = 1
+    } else {
+      correctness = elementData.options.hasSampleSolution
+        ? evaluateAnswerCorrectness({ elementData, response })
+        : 1
+    }
 
     const updatedResults = updateQuestionResults({
       previousResults:
@@ -1720,7 +1729,16 @@ export async function respondToQuestion(
     updatedInstance.options.pointsMultiplier
   )
   const score = evaluation?.score || 0
-  const xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
+
+  let xp: number | null
+  if (
+    elementData.type === ElementType.CONTENT ||
+    elementData.type === ElementType.FLASHCARD
+  ) {
+    xp = 0
+  } else {
+    xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
+  }
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
