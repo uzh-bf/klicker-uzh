@@ -1,4 +1,5 @@
 import '@testing-library/cypress/add-commands'
+import 'cypress-real-events'
 import { sign } from 'jsonwebtoken'
 import messages from '../../../packages/i18n/messages/en'
 

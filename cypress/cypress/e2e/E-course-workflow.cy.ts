@@ -26,7 +26,7 @@ describe('Test course creation and editing functionalities', () => {
     // fill in the form
     cy.get('[data-cy="course-name"]').type(courseName)
     cy.get('[data-cy="course-display-name"]').type(courseDisplayName)
-    cy.get('[data-cy="course-description"]').focus().type(description)
+    cy.get('[data-cy="course-description"]').realClick().type(description)
 
     // change the start date
     cy.get('[data-cy="course-start-date-button"]').click()
