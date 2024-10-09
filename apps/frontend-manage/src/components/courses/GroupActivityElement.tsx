@@ -69,38 +69,38 @@ function GroupActivityElement({
         icon={faPencil}
       />
     ),
-    [GroupActivityStatus.Published]: (isFuture && (
+    [GroupActivityStatus.Scheduled]: (
       <StatusTag
-        color="bg-green-300"
+        color="bg-orange-200"
         status={t('shared.generic.scheduled')}
         icon={faClock}
       />
-    )) ||
-      (isPast && (
-        <StatusTag
-          color={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? 'bg-green-300'
-              : 'bg-orange-300'
-          }
-          status={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? t('shared.generic.completed')
-              : t('shared.generic.grading')
-          }
-          icon={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? faCheck
-              : faArrowsRotate
-          }
-        />
-      )) || (
-        <StatusTag
-          color="bg-green-300"
-          status={t('shared.generic.running')}
-          icon={faPlay}
-        />
-      ),
+    ),
+    [GroupActivityStatus.Published]: isPast ? (
+      <StatusTag
+        color={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? 'bg-green-300'
+            : 'bg-orange-300'
+        }
+        status={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? t('shared.generic.completed')
+            : t('shared.generic.grading')
+        }
+        icon={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? faCheck
+            : faArrowsRotate
+        }
+      />
+    ) : (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.running')}
+        icon={faPlay}
+      />
+    ),
     [GroupActivityStatus.Graded]: (isFuture && (
       <StatusTag
         color="bg-green-300"
@@ -135,7 +135,7 @@ function GroupActivityElement({
       ),
   }
 
-  const deletionItem = {
+  const DeletionItem = {
     label: (
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
         <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
@@ -147,6 +147,61 @@ function GroupActivityElement({
       cy: `delete-groupActivity-${groupActivity.name}`,
     },
   }
+
+  const GradingLink = (
+    <Link
+      href={`/courses/grading/groupActivity/${groupActivity.id}`}
+      data-cy={`grade-groupActivity-${groupActivity.name}`}
+    >
+      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+        <FontAwesomeIcon icon={faUpRightFromSquare} className="w-[1.1rem]" />
+        <div>{t('manage.course.gradeGroupActivity')}</div>
+      </div>
+    </Link>
+  )
+
+  const UnpublishButton = (
+    <Button
+      onClick={async () => await unpublishGroupActivity()}
+      data={{
+        cy: `unpublish-groupActivity-${groupActivity.name}`,
+      }}
+      basic
+    >
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+        <div>{t('manage.course.unpublishGroupActivity')}</div>
+      </div>
+    </Button>
+  )
+
+  const DeletionDropdown = (
+    <Dropdown
+      data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+      className={{
+        item: 'p-1 hover:bg-gray-200',
+        viewport: 'bg-white',
+      }}
+      trigger={t('manage.course.otherActions')}
+      items={[DeletionItem]}
+      triggerIcon={faHandPointer}
+    />
+  )
+
+  const ExtensionButton = (
+    <Button
+      onClick={() => setExtensionModal(true)}
+      data={{
+        cy: `extend-groupActivity-${groupActivity.name}`,
+      }}
+      basic
+    >
+      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+        <FontAwesomeIcon icon={faCalendar} className="w-[1.1rem]" />
+        <div>{t('manage.course.extendGroupActivity')}</div>
+      </div>
+    </Button>
+  )
 
   return (
     <div
@@ -217,68 +272,31 @@ function GroupActivityElement({
                       }),
                     data: { cy: `edit-groupActivity-${groupActivity.name}` },
                   },
-                  deletionItem,
+                  DeletionItem,
                 ]}
                 triggerIcon={faHandPointer}
               />
             </>
           )}
 
-          {(groupActivity.status === GroupActivityStatus.Published ||
-            groupActivity.status === GroupActivityStatus.Graded) && (
+          {groupActivity.status === GroupActivityStatus.Scheduled && (
             <>
-              {isPast && (
-                <Link
-                  href={`/courses/grading/groupActivity/${groupActivity.id}`}
-                  data-cy={`grade-groupActivity-${groupActivity.name}`}
-                >
-                  <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                    <FontAwesomeIcon
-                      icon={faUpRightFromSquare}
-                      className="w-[1.1rem]"
-                    />
-                    <div>{t('manage.course.gradeGroupActivity')}</div>
-                  </div>
-                </Link>
-              )}
-              {isFuture && (
-                <Button
-                  onClick={async () => await unpublishGroupActivity()}
-                  data={{
-                    cy: `unpublish-groupActivity-${groupActivity.name}`,
-                  }}
-                  basic
-                >
-                  <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                    <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
-                    <div>{t('manage.course.unpublishGroupActivity')}</div>
-                  </div>
-                </Button>
-              )}
-              {!isPast && !isFuture && (
-                <Button
-                  onClick={() => setExtensionModal(true)}
-                  data={{
-                    cy: `extend-groupActivity-${groupActivity.name}`,
-                  }}
-                  basic
-                >
-                  <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                    <FontAwesomeIcon icon={faCalendar} className="w-[1.1rem]" />
-                    <div>{t('manage.course.extendGroupActivity')}</div>
-                  </div>
-                </Button>
-              )}
-              <Dropdown
-                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
-                items={[deletionItem]}
-                triggerIcon={faHandPointer}
-              />
+              {UnpublishButton}
+              {DeletionDropdown}
+            </>
+          )}
+
+          {groupActivity.status === GroupActivityStatus.Published && (
+            <>
+              {isPast ? GradingLink : ExtensionButton}
+              {DeletionDropdown}
+            </>
+          )}
+
+          {groupActivity.status === GroupActivityStatus.Graded && (
+            <>
+              {GradingLink}
+              {DeletionDropdown}
             </>
           )}
         </div>

@@ -1006,7 +1006,9 @@ function QuestionEditModal({
                                                   newValue
                                                 )
                                               }}
-                                              data={{ cy: 'set-correctness' }}
+                                              data={{
+                                                cy: `set-correctness-${index}`,
+                                              }}
                                             />
                                           )}
                                         </FastField>

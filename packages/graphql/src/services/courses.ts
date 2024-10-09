@@ -10,7 +10,7 @@ import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import { prop, sortBy } from 'remeda'
 import { ILeaderboardEntry } from 'src/schema/course.js'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks } from '../lib/util.js'
+import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -1017,4 +1017,137 @@ export async function enableGamification(
   })
 
   return course
+}
+
+export async function publishScheduledActivities(ctx: Context) {
+  // ! Publish scheduled practice quizzes
+  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      availableFrom: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedQuizzes = await Promise.all(
+    quizzesToPublish.map((quiz) =>
+      ctx.prisma.practiceQuiz.update({
+        where: {
+          id: quiz.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          stacks: true,
+        },
+      })
+    )
+  )
+
+  await Promise.all(
+    updatedQuizzes.map((quiz) =>
+      ctx.prisma.course.update({
+        where: {
+          id: quiz.courseId,
+        },
+        data: {
+          elementStacks: {
+            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
+          },
+        },
+      })
+    )
+  )
+
+  if (updatedQuizzes.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledPracticeQuizzes',
+      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
+    )
+  }
+
+  updatedQuizzes.forEach((quiz) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: quiz.id,
+    })
+  })
+
+  // ! Publish scheduled microlearnings
+  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearnings = await Promise.all(
+    microlearningsToPublish.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedMicroLearnings.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledMicroLearnings',
+      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
+    )
+  }
+
+  updatedMicroLearnings.forEach((micro) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
+  // ! Publish scheduled group activities
+  const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedGroupActivities = await Promise.all(
+    groupActivitiesToPublish.map((group) =>
+      ctx.prisma.groupActivity.update({
+        where: {
+          id: group.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedGroupActivities.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledGroupActivities',
+      `Successfully published ${updatedGroupActivities.length} scheduled group activities`
+    )
+  }
+
+  updatedGroupActivities.forEach((group) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: group.id,
+    })
+  })
+
+  return true
 }

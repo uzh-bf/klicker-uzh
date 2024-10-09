@@ -92,17 +92,20 @@ function FeedbackChannel({
           )}
 
         {sortedFeedbacks?.map(
-          ({
-            id,
-            content,
-            createdAt,
-            votes,
-            isResolved,
-            isPinned,
-            isPublished,
-            responses,
-            resolvedAt,
-          }: FeedbackType) => (
+          (
+            {
+              id,
+              content,
+              createdAt,
+              votes,
+              isResolved,
+              isPinned,
+              isPublished,
+              responses,
+              resolvedAt,
+            }: FeedbackType,
+            index
+          ) => (
             <div className="flex flex-row print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">

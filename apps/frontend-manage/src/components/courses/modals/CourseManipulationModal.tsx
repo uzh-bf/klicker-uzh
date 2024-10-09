@@ -76,8 +76,16 @@ function CourseManipulationModal({
           ? yup.date()
           : yup
               .date()
-              .min(new Date(), t('manage.courseList.endDateFuture'))
-              .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
+              .test(
+                'checkDateInPast',
+                t('manage.courseList.endDateFuture'),
+                (d) => {
+                  return !!(d && d > new Date())
+                }
+              )
+              .when('startDate', (startDate, schema) =>
+                schema.min(startDate, t('manage.courseList.endAfterStart'))
+              )
               .required(t('manage.courseList.courseEndReq')),
         isGamificationEnabled: yup.boolean(),
         isGroupCreationEnabled: yup.boolean(),

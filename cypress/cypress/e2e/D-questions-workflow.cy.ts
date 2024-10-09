@@ -29,6 +29,7 @@ describe('Create questions', () => {
     ).click()
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -62,6 +63,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="insert-question-explanation"]').click().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -107,6 +109,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -164,6 +167,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -249,6 +253,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice1)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -286,6 +291,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="set-numerical-unit"]').click().type('%')
     cy.get('[data-cy="set-numerical-accuracy"]').click().type('0')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -323,6 +329,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-question-text"]').click().type(question)
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
@@ -349,14 +356,14 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(1000)
+    cy.wait(500)
 
     // duplicate question and save
     cy.get(`[data-cy="duplicate-question-${questionTitle}"]`).click()
     cy.wait(500)
     cy.findByText(messages.manage.questionForms.DUPLICATETitle).should('exist')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(1000)
+    cy.wait(500)
 
     // check if duplicated question exists alongside original question
     cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
