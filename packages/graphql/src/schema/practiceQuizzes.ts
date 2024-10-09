@@ -138,3 +138,16 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
   }),
 })
+
+export interface IActivitySummary {
+  numOfResponses: number
+  numOfAnonymousResponses: number
+}
+export const ActivitySummaryRef =
+  builder.objectRef<IActivitySummary>('ActivitySummary')
+export const ActivitySummary = ActivitySummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfAnonymousResponses: t.exposeInt('numOfAnonymousResponses'),
+  }),
+})

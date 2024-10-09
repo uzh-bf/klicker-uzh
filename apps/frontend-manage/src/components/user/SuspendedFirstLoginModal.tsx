@@ -53,7 +53,7 @@ function SuspendedFirstLoginModal() {
       open={firstLogin}
       onClose={() => null}
       hideCloseButton
-      className={{ content: 'w-full px-8 py-4 md:px-16 md:py-8' }}
+      className={{ content: 'h-max max-h-full' }}
     >
       <H1 className={{ root: 'mb-4 text-4xl' }}>
         {t('manage.firstLogin.welcome')}
@@ -145,7 +145,10 @@ function SuspendedFirstLoginModal() {
                     { label: t('shared.generic.english'), value: 'en' },
                     { label: t('shared.generic.german'), value: 'de' },
                   ]}
-                  className={{ root: 'w-full md:w-max' }}
+                  className={{
+                    root: 'w-full md:w-max',
+                    select: { trigger: 'w-40' },
+                  }}
                   required
                 />
                 <FormikSwitchField

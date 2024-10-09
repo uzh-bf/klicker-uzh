@@ -1,6 +1,6 @@
-import {
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type {
   ChoicesQuestionData,
-  ElementType,
   FreeTextQuestionData,
   FreeTextQuestionOptions,
   NumericalQuestionData,
@@ -10,10 +10,7 @@ import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-
-// eslint-disable-next-line prettier/prettier
 import { useEffect } from 'react'
-
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptionsOLD } from './questions/FREETextAnswerOptionsOLD'

@@ -412,7 +412,7 @@ export function prepareGroupActivityStack({
   questions,
   contentElements,
   courseId,
-  connectStackToCourse,
+  connectStackToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -491,7 +491,7 @@ export function prepareStackVariety({
   stackType,
   elementInstanceType,
   courseId,
-  connectToCourse = true,
+  connectToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]

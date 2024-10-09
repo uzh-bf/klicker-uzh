@@ -321,8 +321,44 @@ describe('Different microlearning workflows', () => {
     )
     cy.get('[data-cy="read-content-element-2"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-
     cy.viewport('macbook-16')
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should(
+      'not.be.disabled'
+    )
+    cy.get(`[data-cy="activity-deletion-modal-cancel"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the microlearning is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
+      'not.exist'
+    )
   })
 
   it('creates and publishes a future micro learning that should not be visible to students and tests unpublishing it', () => {
@@ -405,7 +441,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // sign in as student
@@ -433,6 +469,18 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="unpublish-microlearning-${microLearningName}"]`).click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
       messages.shared.generic.draft
+    )
+
+    // delete the microlearning
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
+      'not.exist'
     )
   })
 
@@ -516,7 +564,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.completed
     )
 
     // sign in as student
@@ -531,6 +579,19 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="submit-login"]').click()
 
     cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
+      'not.exist'
+    )
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningName}"]`).should(
       'not.exist'
     )
   })
@@ -621,7 +682,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // sign in as student
@@ -804,6 +865,35 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(500)
     cy.get('[data-cy="finish-microlearning"]').click()
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${newMicroLearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${newMicroLearningName}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the microlearning is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.contains('[data-cy="microlearnings"]', microLearningDisplayName).should(
+      'not.exist'
+    )
   })
 
   it('respond to a microlearning with all element types', () => {
@@ -1080,10 +1170,7 @@ describe('Different microlearning workflows', () => {
     const practiceQuizName = 'Practice Quiz Converted'
     const practiceQuizDisplayName = 'Practice Quiz Converted Displayname'
 
-    // login as lecturer and navigate to course overview
-    cy.clearAllCookies()
-    cy.clearAllSessionStorage()
-    cy.loginLecturer()
+    // navigate to course overview
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
 
@@ -1248,7 +1335,7 @@ describe('Different microlearning workflows', () => {
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microLearningName}"]`).contains(
-      messages.shared.generic.published
+      messages.shared.generic.scheduled
     )
 
     // switch back to the lecturer and duplicate the microlearning
@@ -1350,6 +1437,36 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(500)
     cy.get('[data-cy="finish-microlearning"]').click()
+
+    // navigate to the lecturer view and delete the microlearning
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(courseName).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microLearningNameDupl}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microLearningNameDupl}"]`).should(
+      'not.exist'
+    )
+
+    // make sure that the microlearning is no longer accessible to students
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.contains(
+      '[data-cy="microlearnings"]',
+      microLearningDisplayNameDupl
+    ).should('not.exist')
   })
 
   it('extends a seeded and running microlearning', () => {

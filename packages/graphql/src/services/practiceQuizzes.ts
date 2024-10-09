@@ -22,7 +22,6 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -35,7 +34,7 @@ import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks } from '../lib/util.js'
+import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 import {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
@@ -84,6 +83,7 @@ export async function getPracticeQuizData(
       OR: [
         {
           status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
         },
         {
           status: PublicationStatus.SCHEDULED,
@@ -361,6 +361,7 @@ export async function getPracticeQuizEvaluation(
     where: {
       id,
       status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
     },
     include: {
       stacks: {
@@ -401,6 +402,7 @@ export async function getSinglePracticeQuiz(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      isDeleted: false,
     },
     include: {
       course: true,
@@ -2616,6 +2618,7 @@ export async function manipulatePracticeQuiz(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -2822,6 +2825,52 @@ export async function unpublishPracticeQuiz(
   return practiceQuiz
 }
 
+export async function getPracticeQuizSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = practiceQuiz.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
 interface DeletePracticeQuizArgs {
   id: string
 }
@@ -2830,30 +2879,67 @@ export async function deletePracticeQuiz(
   { id }: DeletePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    practiceQuiz.status === PublicationStatus.DRAFT ||
+    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The practice quiz is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
+  } else {
+    // if the practice quiz is published and has responses -> soft deletion
+    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+      include: {
+        stacks: true,
+      },
+    })
 
-    throw e
+    // disconnect the stacks from the course they are linked to
+    const stackIds = updatedPracticeQuiz.stacks.map((stack) => stack.id)
+    await ctx.prisma.elementStack.updateMany({
+      where: {
+        id: {
+          in: stackIds,
+        },
+      },
+      data: {
+        courseId: null,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedPracticeQuiz
   }
 }
 
@@ -2869,6 +2955,7 @@ export async function publishPracticeQuiz(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
   })
 
@@ -2975,6 +3062,13 @@ export async function publishScheduledPracticeQuizzes(ctx: Context) {
       })
     )
   )
+
+  if (updatedQuizzes.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledPracticeQuizzes',
+      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
+    )
+  }
 
   updatedQuizzes.forEach((quiz) => {
     ctx.emitter.emit('invalidate', {

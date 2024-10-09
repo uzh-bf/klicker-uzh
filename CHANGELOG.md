@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.2...v3.2.0-rc.3) (2024-10-05)
+
+
+### Enhancements
+
+* implement more detailed deletion confirmation modal for group activities ([#4298](https://github.com/uzh-bf/klicker-uzh/issues/4298)) ([6475876](https://github.com/uzh-bf/klicker-uzh/commit/64758767a68523531c303270b7958cad666892ef))
+* implement more detailed deletion confirmation modal for microlearnings ([#4297](https://github.com/uzh-bf/klicker-uzh/issues/4297)) ([71743e5](https://github.com/uzh-bf/klicker-uzh/commit/71743e53ecd9ea8cb5d4e5a75f5369b84ccf6bef))
+* implement more detailed deletion confirmation modal for practice quizzes ([#4296](https://github.com/uzh-bf/klicker-uzh/issues/4296)) ([c5e7599](https://github.com/uzh-bf/klicker-uzh/commit/c5e7599d8b6d22a927173cd4197e40d6e386073a))
+
+## [3.2.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.1...v3.2.0-rc.2) (2024-10-05)
+
+
+### Features
+
+* allow deletion of all activities independent of status and distinguish between hard and soft deletion in backend ([#4294](https://github.com/uzh-bf/klicker-uzh/issues/4294)) ([6d47105](https://github.com/uzh-bf/klicker-uzh/commit/6d471052850537137138af3eafd7961827dd334e))
+
+
+### Other
+
+* replace select components through new and improve version ([#4295](https://github.com/uzh-bf/klicker-uzh/issues/4295)) ([57e1019](https://github.com/uzh-bf/klicker-uzh/commit/57e101934e00db44d8e7dbe0b6d96e8528fcb8f3))
+
+## [3.2.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.0...v3.2.0-rc.1) (2024-10-04)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove stopwords filter to ensure that search works as expected ([b7c0831](https://github.com/uzh-bf/klicker-uzh/commit/b7c08313e9542c12ac1aed44e137bc1c0f7eed8c))
+* **apps/frontend-pwa:** ensure that LTI workflows are only triggered inside LMS environment ([#4292](https://github.com/uzh-bf/klicker-uzh/issues/4292)) ([8ca6946](https://github.com/uzh-bf/klicker-uzh/commit/8ca6946ae0ef5af97cf522352e47f7a4e76cb49f))
+* ensure that lost modal styles are applied throughout application ([#4291](https://github.com/uzh-bf/klicker-uzh/issues/4291)) ([0774ff8](https://github.com/uzh-bf/klicker-uzh/commit/0774ff8cf39e621766137d6d3dfe75d4204c5fce))
+
+
+### Enhancements
+
+* add deletion confirmation steps to live quiz abortion process ([#4293](https://github.com/uzh-bf/klicker-uzh/issues/4293)) ([26af2c8](https://github.com/uzh-bf/klicker-uzh/commit/26af2c85f1742109f714306cb03549d2617bb9de))
+* separate scheduling and publishing logic for microlearnings with cronjob ([#4289](https://github.com/uzh-bf/klicker-uzh/issues/4289)) ([c368dc9](https://github.com/uzh-bf/klicker-uzh/commit/c368dc99bcbd035b2a34b4ceb5c4ce1ec24567d9))
+
 ## [3.2.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.37...v3.2.0-rc.0) (2024-10-03)
 
 

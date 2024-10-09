@@ -49,7 +49,7 @@ function AccountDeletionForm() {
           open={deleteModalOpen}
           onClose={(): void => setDeleteModalOpen(false)}
           hideCloseButton={true}
-          className={{ content: 'h-max max-w-md' }}
+          className={{ content: 'max-w-md' }}
           onPrimaryAction={
             <Button
               className={{

@@ -211,6 +211,7 @@ export default {
       withoutGroups: 'Without groups',
       forgotPassword: 'Forgot password?',
       archived: 'Archived',
+      ended: 'Ended',
     },
     contentInput: {
       boldStyle:
@@ -1027,7 +1028,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningInformation:
         'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
       microLearningNoCourse:
-        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+        'Microlearnings must always be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       microLearningLecturerDocs:
         'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
       microLearningStudentDocs:
@@ -1127,7 +1128,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The time to zero bonus points must be at least 1.',
       liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
       practiceQuizNoCourse:
-        'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+        'Practice quizzes must be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       practiceQuizIntroductionName:
         'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       practiceQuizInformation:
@@ -1194,7 +1195,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEdited:
         'Your group activity <b>{name}</b> has been edited successfully.',
       groupActivityNoCourse:
-        'Group activities must always be assigned to a course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
+        'Group activities must always be assigned to a running course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
       groupActivityIntroductionName:
         'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       groupActivityLecturerDocs:
@@ -1320,10 +1321,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
       confirmAbortSession: 'Abort live quiz {title}?',
-      abortSessionHint:
-        'When aborting a live quiz, all answers, feedbacks, etc. will be lost. The quiz itself is reverted to the prepared state and can be started again at a later date.',
-      abortEnterName:
-        'If you are sure you want to abort the live quiz, please enter the name of the quiz to confirm.',
+      cancelLiveQuizMessage:
+        'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
+      noFeedbacksToDelete:
+        'For this live quiz no feedbacks have been submitted yet.',
+      deleteFeedbacks:
+        '{number} feedback(s) in the live Q&A channel will be irreversibly deleted.',
+      noConfusionFeedbacksToDelete:
+        'For this live quiz no confusion feedbacks have been submitted yet.',
+      deleteConfusionFeedbacks:
+        '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -1510,30 +1525,30 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionMessage:
-        'Please confirm all the deletion of all elements associated with this course and confirm the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
-        '{number} participants of this course will loose their collected points and access to all course materials and activities.',
+        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizzes will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
-        '{number} practice quizzes (including their results) will be irreversibly deleted.',
+        '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
       noMicroLearningsToDelete: 'This course contains no microlearnings.',
       deleteMicroLearnings:
-        '{number} microlearnings (including their results) will be irreversibly deleted.',
+        '{number} microlearning(s) (including their results) will be irreversibly deleted.',
       noGroupActivitiesToDelete: 'This course contains no group activities.',
       deleteGroupActivities:
-        '{number} group activities (including their submissions) will be irreversibly deleted.',
+        '{number} group activitie(s) (including their submissions) will be irreversibly deleted.',
       noParticipantGroupsToDelete:
         'This course contains no participant groups.',
       deleteParticipantGroups:
-        '{number} participant groups will be irreversibly deleted.',
+        '{number} participant group(s) will be irreversibly deleted.',
       noLeaderboardEntriesToDelete:
         'This course contains no leaderboard entries.',
       deleteLeaderboardEntries:
-        '{number} leaderboard entries will be irreversibly deleted.',
+        '{number} leaderboard entrie(s) will be irreversibly deleted.',
     },
     course: {
       modifyCourse: 'Modify course',
@@ -1584,7 +1599,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishMicrolearning: 'Publish microlearning',
       unpublishMicrolearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
-      deleteMicrolearning: 'Delete microlearning',
+      deleteMicroLearning: 'Delete microlearning',
+      deleteMicroLearningMessage:
+        'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       publishItemGROUP_ACTIVITY: 'Publish group activity',
@@ -1594,29 +1611,37 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceSchedulingHint:
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
-        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future and/or no answers have been submitted. Changes to the content of an element cannot be made after publishing.',
-      confirmDeletionMicrolearning:
-        'Are you sure you want to delete the following microlearing?',
-      hintDeletionMicrolearning:
-        'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
+        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
       editPracticeQuiz: 'Edit practice quiz',
       duplicatePracticeQuiz: 'Duplicate practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
       deletePracticeQuiz: 'Delete practice quiz',
-      confirmDeletionPracticeQuiz:
-        'Are you sure you want to delete the following practice quiz?',
-      hintDeletionPracticeQuiz:
-        'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
+      deletePracticeQuizMessage:
+        'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
+      noResponsesToDelete:
+        'No logged in participants have submitted responses for this activity',
+      deleteResponses:
+        '{number} response(s) of logged in participants will be deleted.',
+      noAnonymousResponsesToDelete:
+        'No anonymous responses have been submitted for this activity',
+      deleteAnonymousResponses:
+        '{number} anonymous response(s) for this activity will be deleted.',
       unpublishPracticeQuiz: 'Unpublish practice quiz',
       publishGroupActivity: 'Publish group activity',
       groupActivityPublishingHint:
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit group activity',
       deleteGroupActivity: 'Delete group activity',
-      confirmDeletionGroupActivity:
-        'Are you sure you want to delete the following group activity?',
-      hintDeletionGroupActivity:
-        'Deleting a group activity is only possible as long as it is not running and accessible to the participants. A deleted group activity cannot be restored at a later date.',
+      deleteGroupActivityMessage:
+        'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
+      noStartedInstancesToDelete:
+        'There are no groups that have outstanding submissions for this group activity.',
+      deleteStartedInstance:
+        '{number} group(s) that have started the group activity will loose access to it.',
+      noSubmissionsToDelete:
+        'There are no submissions for this group activity.',
+      deleteSubmissions:
+        '{number} submission(s) by separate groups for this activity will be deleted.',
       unpublishGroupActivity: 'Unpublish group activity',
       extendGroupActivity: 'Extend group activity',
       extendGroupActivityDescription:

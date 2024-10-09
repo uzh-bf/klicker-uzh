@@ -22,6 +22,11 @@ type ActivityEvaluation {
   results: [StackEvaluation!]!
 }
 
+type ActivitySummary {
+  numOfAnonymousResponses: Int!
+  numOfResponses: Int!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -620,6 +625,11 @@ enum GroupActivityStatus {
   PUBLISHED
 }
 
+type GroupActivitySummary {
+  numOfStartedInstances: Int!
+  numOfSubmissions: Int!
+}
+
 type GroupAssignmentPoolEntry {
   courseId: ID!
   id: ID!
@@ -817,6 +827,7 @@ type Mutation {
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
+  publishScheduledMicroLearnings: Boolean!
   publishScheduledPracticeQuizzes: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
@@ -1079,12 +1090,16 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
+  getGroupActivitySummary(id: String!): GroupActivitySummary
+  getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
+  getMicroLearningSummary(id: String!): ActivitySummary
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
@@ -1191,6 +1206,13 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
+}
+
+type RunningLiveQuizSummary {
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
 }
 
 type Session {

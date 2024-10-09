@@ -1,9 +1,9 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.2.0-rc.0",
+  "version": "3.2.0-rc.3",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@uzh-bf/design-system": "3.0.0-alpha.29",
+    "@uzh-bf/design-system": "3.0.0-alpha.31",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.6",
@@ -61,8 +61,8 @@
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "dev-server": "webpack serve --mode development",
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
-    "lint": "office-addin-lint check",
-    "lint:fix": "office-addin-lint fix",
+    "//lint": "office-addin-lint check",
+    "//lint:fix": "office-addin-lint fix",
     "package": "webpack --mode production",
     "prettier": "office-addin-lint prettier",
     "run-dev": "run-s clear dev-server",

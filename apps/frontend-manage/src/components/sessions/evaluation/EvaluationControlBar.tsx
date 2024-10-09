@@ -87,8 +87,8 @@ function EvaluationControlBar({
             ? `${question?.name.substring(0, 120)}...`
             : question?.name,
         shortLabel:
-          question?.name.length > 20
-            ? `${question?.name.substring(0, 20)}...`
+          question?.name.length > 40
+            ? `${question?.name.substring(0, 40)}...`
             : undefined,
         value: String(question?.ix),
         data: { cy: `evaluate-question-${question?.ix}` },
@@ -145,7 +145,8 @@ function EvaluationControlBar({
               }}
               className={{
                 root: 'z-20 h-[2.65rem]',
-                trigger: 'm-0 h-full rounded-none border-none shadow-none',
+                trigger:
+                  'm-0 h-full w-max rounded-none border-none shadow-none',
               }}
               value={String(selectedInstanceIndex)}
               data={{ cy: 'evaluate-question-select' }}

@@ -17,7 +17,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteGroupActivityDocument,
   GetSingleCourseDocument,
   GroupActivity,
   GroupActivityStatus,
@@ -33,8 +32,8 @@ import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
-import DeletionModal from './modals/DeletionModal'
 import ExtensionModal from './modals/ExtensionModal'
+import GroupActivityDeletionModal from './modals/GroupActivityDeletionModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
@@ -56,22 +55,6 @@ function GroupActivityElement({
   const [unpublishGroupActivity] = useMutation(UnpublishGroupActivityDocument, {
     variables: {
       id: groupActivity.id,
-    },
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
-  })
-
-  const [deleteGroupActivity] = useMutation(DeleteGroupActivityDocument, {
-    variables: {
-      id: groupActivity.id,
-    },
-    optimisticResponse: {
-      __typename: 'Mutation',
-      deleteGroupActivity: {
-        __typename: 'GroupActivity',
-        id: groupActivity.id,
-      },
     },
     refetchQueries: [
       { query: GetSingleCourseDocument, variables: { courseId: courseId } },
@@ -152,6 +135,19 @@ function GroupActivityElement({
       ),
   }
 
+  const deletionItem = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+        <div>{t('manage.course.deleteGroupActivity')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: {
+      cy: `delete-groupActivity-${groupActivity.name}`,
+    },
+  }
+
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
@@ -221,21 +217,7 @@ function GroupActivityElement({
                       }),
                     data: { cy: `edit-groupActivity-${groupActivity.name}` },
                   },
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="w-[1.1rem]"
-                        />
-                        <div>{t('manage.course.deleteGroupActivity')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: {
-                      cy: `delete-groupActivity-${groupActivity.name}`,
-                    },
-                  },
+                  deletionItem,
                 ]}
                 triggerIcon={faHandPointer}
               />
@@ -287,6 +269,16 @@ function GroupActivityElement({
                   </div>
                 </Button>
               )}
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[deletionItem]}
+                triggerIcon={faHandPointer}
+              />
             </>
           )}
         </div>
@@ -295,16 +287,11 @@ function GroupActivityElement({
           {statusMap[groupActivity.status ?? GroupActivityStatus.Draft]}
         </div>
       </div>
-      <DeletionModal
-        title={t('manage.course.deleteGroupActivity')}
-        description={t('manage.course.confirmDeletionGroupActivity')}
-        elementName={groupActivity.name}
-        message={t('manage.course.hintDeletionGroupActivity')}
-        deleteElement={deleteGroupActivity}
+      <GroupActivityDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-groupActivity' }}
-        secondaryData={{ cy: 'cancel-delete-groupActivity' }}
+        activityId={groupActivity.id}
+        courseId={courseId}
       />
       <ExtensionModal
         type="groupActivity"

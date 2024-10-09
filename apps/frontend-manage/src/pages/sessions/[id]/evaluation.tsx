@@ -378,7 +378,7 @@ function Evaluation() {
                   <Select
                     contentPosition="popper"
                     className={{
-                      trigger: 'border-slate-400',
+                      trigger: 'w-36 border-slate-400',
                     }}
                     items={ACTIVE_CHART_TYPES[
                       currentInstance.questionData.type

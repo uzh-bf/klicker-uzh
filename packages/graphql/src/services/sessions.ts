@@ -2245,6 +2245,49 @@ export async function deleteSession(
   }
 }
 
+export async function getLiveQuizSummary(
+  { quizId }: { quizId: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+        },
+      },
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+    acc_b += block.instances.reduce((acc_i, instance) => {
+      acc_i += instance.participants
+      return acc_i
+    }, 0)
+    return acc_b
+  }, 0)
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+  }
+}
+
 export async function softDeleteLiveSession(
   { id }: { id: string },
   ctx: ContextWithUser

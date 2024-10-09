@@ -62,7 +62,7 @@ function GroupActivityClueModal({
         open={open}
         onClose={() => setOpen(false)}
         title={t('manage.sessionForms.groupActivityAddClue')}
-        className={{ content: 'h-max w-[40rem] self-center pt-0' }}
+        className={{ content: 'w-[40rem]' }}
       >
         <Formik
           enableReinitialize
@@ -170,7 +170,7 @@ function GroupActivityClueModal({
               )}
 
               <Button
-                className={{ root: '-mb-3 mt-3 gap-3 self-end' }}
+                className={{ root: 'mt-3 gap-3 self-end' }}
                 type="button"
                 onClick={async () => {
                   await submitForm()

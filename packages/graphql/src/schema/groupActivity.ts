@@ -282,6 +282,20 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
   }),
 })
 
+export interface IGroupActivitySummary {
+  numOfStartedInstances: number
+  numOfSubmissions: number
+}
+export const GroupActivitySummaryRef = builder.objectRef<IGroupActivitySummary>(
+  'GroupActivitySummary'
+)
+export const GroupActivitySummary = GroupActivitySummaryRef.implement({
+  fields: (t) => ({
+    numOfStartedInstances: t.exposeInt('numOfStartedInstances'),
+    numOfSubmissions: t.exposeInt('numOfSubmissions'),
+  }),
+})
+
 export const GroupActivityClueInput = builder.inputType(
   'GroupActivityClueInput',
   {
