@@ -688,7 +688,8 @@ export type GroupActivityResults = {
 export enum GroupActivityStatus {
   Draft = 'DRAFT',
   Graded = 'GRADED',
-  Published = 'PUBLISHED'
+  Published = 'PUBLISHED',
+  Scheduled = 'SCHEDULED'
 }
 
 export type GroupActivitySummary = {

@@ -963,10 +963,11 @@ export async function manipulateGroupActivity(
       throw new GraphQLError('Group Activity not found')
     }
     if (
+      oldElement.status === GroupActivityStatus.SCHEDULED ||
       oldElement.status === GroupActivityStatus.PUBLISHED ||
       oldElement.status === GroupActivityStatus.GRADED
     ) {
-      throw new GraphQLError('Cannot edit a published or graded group activity')
+      throw new GraphQLError('Can only edit draft group activities')
     }
 
     await ctx.prisma.groupActivity.update({
@@ -1175,7 +1176,11 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId, isDeleted: false },
+    where: {
+      id: activityId,
+      status: GroupActivityStatus.SCHEDULED,
+      isDeleted: false,
+    },
     include: {
       course: true,
       clues: {
@@ -1210,7 +1215,7 @@ export async function getGroupActivityDetails(
     !group.participants.some(
       (participant) => participant.id === ctx.user.sub
     ) ||
-    dayjs().isBefore(groupActivity.scheduledStartAt)
+    dayjs().isAfter(groupActivity.scheduledEndAt)
   ) {
     return null
   }
@@ -1289,7 +1294,7 @@ export async function startGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, status: GroupActivityStatus.PUBLISHED },
     include: {
       course: true,
       clues: {
@@ -1591,7 +1596,9 @@ export async function publishGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: GroupActivityStatus.PUBLISHED,
+      status: dayjs().isBefore(groupActivity.scheduledStartAt)
+        ? GroupActivityStatus.SCHEDULED
+        : GroupActivityStatus.PUBLISHED,
     },
   })
 
@@ -1603,7 +1610,12 @@ export async function unpublishGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub, isDeleted: false },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: GroupActivityStatus.SCHEDULED,
+      isDeleted: false,
+    },
   })
 
   if (!groupActivity) return null
@@ -1637,6 +1649,7 @@ export async function deleteGroupActivity(
   // as soon as an instance exists (independent of results) -> soft deletion
   if (
     groupActivity.status === GroupActivityStatus.DRAFT ||
+    groupActivity.status === GroupActivityStatus.SCHEDULED ||
     groupActivity.activityInstances.length === 0
   ) {
     const deletedItem = await ctx.prisma.groupActivity.delete({
@@ -1752,7 +1765,14 @@ export async function extendGroupActivity(
   }
 
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id, ownerId: ctx.user.sub, scheduledEndAt: { gt: new Date() } },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: {
+        in: [GroupActivityStatus.SCHEDULED, GroupActivityStatus.PUBLISHED],
+      },
+      scheduledEndAt: { gt: new Date() },
+    },
     data: {
       scheduledEndAt: endDate,
     },
