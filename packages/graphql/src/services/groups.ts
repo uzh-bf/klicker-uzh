@@ -1178,7 +1178,9 @@ export async function getGroupActivityDetails(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: {
       id: activityId,
-      status: GroupActivityStatus.PUBLISHED,
+      status: {
+        in: [GroupActivityStatus.PUBLISHED, GroupActivityStatus.GRADED],
+      },
       isDeleted: false,
     },
     include: {
@@ -1212,10 +1214,7 @@ export async function getGroupActivityDetails(
 
   // ensure that the requesting participant is part of the group and that the group activity is active
   if (
-    !group.participants.some(
-      (participant) => participant.id === ctx.user.sub
-    ) ||
-    dayjs().isAfter(groupActivity.scheduledEndAt)
+    !group.participants.some((participant) => participant.id === ctx.user.sub)
   ) {
     return null
   }
@@ -1593,12 +1592,14 @@ export async function publishGroupActivity(
 
   if (!groupActivity) return null
 
+  const now = new Date()
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: dayjs().isBefore(groupActivity.scheduledStartAt)
-        ? GroupActivityStatus.SCHEDULED
-        : GroupActivityStatus.PUBLISHED,
+      status:
+        now < groupActivity.scheduledStartAt
+          ? GroupActivityStatus.SCHEDULED
+          : GroupActivityStatus.PUBLISHED,
     },
   })
 
