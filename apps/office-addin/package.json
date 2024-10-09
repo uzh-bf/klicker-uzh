@@ -55,14 +55,14 @@
     "webpack-dev-server": "4.15.0"
   },
   "scripts": {
+    "//lint": "office-addin-lint check",
+    "//lint:fix": "office-addin-lint fix",
     "build:dev": "webpack --mode development",
     "check": "tsc --noEmit",
     "clear": ".\\scripts\\clear.bat",
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "dev-server": "webpack serve --mode development",
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
-    "//lint": "office-addin-lint check",
-    "//lint:fix": "office-addin-lint fix",
     "package": "webpack --mode production",
     "prettier": "office-addin-lint prettier",
     "run-dev": "run-s clear dev-server",

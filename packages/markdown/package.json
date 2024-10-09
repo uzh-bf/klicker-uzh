@@ -2,7 +2,6 @@
   "name": "@klicker-uzh/markdown",
   "version": "3.2.0-rc.3",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -75,5 +74,6 @@
       "path": "dist/index.js",
       "limit": "10 KB"
     }
-  ]
+  ],
+  "type": "module"
 }

@@ -1,4 +1,3 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type {
   ChoicesQuestionData,
   FreeTextQuestionData,
@@ -6,12 +5,12 @@ import type {
   NumericalQuestionData,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import React from 'react'
+import { useTranslations } from 'next-intl'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import { useEffect } from 'react'
-import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptionsOLD } from './questions/FREETextAnswerOptionsOLD'
 import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
