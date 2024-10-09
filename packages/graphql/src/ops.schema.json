@@ -6803,6 +6803,12 @@
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "SCHEDULED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "possibleTypes": null
@@ -12599,23 +12605,7 @@
             "deprecationReason": null
           },
           {
-            "name": "publishScheduledMicroLearnings",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "publishScheduledPracticeQuizzes",
+            "name": "publishScheduledActivities",
             "description": null,
             "args": [],
             "type": {

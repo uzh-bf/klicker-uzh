@@ -153,6 +153,7 @@ Cypress.Commands.add(
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -195,6 +196,7 @@ Cypress.Commands.add(
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -247,6 +249,7 @@ Cypress.Commands.add(
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -310,6 +313,7 @@ Cypress.Commands.add(
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -339,6 +343,7 @@ Cypress.Commands.add(
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -364,6 +369,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-question-text"]').click().type(content)
     cy.get('[data-cy="insert-question-explanation"]').click().type(explanation)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 
@@ -387,6 +393,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-question-title"]').type(title)
     cy.get('[data-cy="insert-question-text"]').click().type(content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(500)
   }
 )
 

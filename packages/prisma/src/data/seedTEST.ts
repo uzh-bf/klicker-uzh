@@ -515,21 +515,21 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const groupActivityId2 = '07e9847d-32bb-44a1-af49-de11a2151a92'
-  const groupActivityDraft = await prisma.groupActivity.upsert({
+  const groupActivityId2 = 'c3e2e776-87fe-4b59-95dd-ac1977a411ba'
+  const groupActivityScheduled = await prisma.groupActivity.upsert({
     where: {
       id: groupActivityId2,
     },
     create: {
       id: groupActivityId2,
-      name: 'Gruppenquest Draft',
-      displayName: 'Gruppenquest Draft',
-      description: `Description of the draft group activity.`,
-      status: Prisma.GroupActivityStatus.DRAFT,
-      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
-      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
-      pointsMultiplier: 2,
+      name: 'Gruppenquest Published',
+      displayName: 'Gruppenquest Published',
+      description: `Description of the published group activity.`,
+      status: Prisma.GroupActivityStatus.SCHEDULED,
+      scheduledStartAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2050-01-01T11:00:00.000Z'),
       parameters: {},
+      pointsMultiplier: 2,
       clues: {
         connectOrCreate: [
           ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
@@ -560,13 +560,58 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const groupActivityId3 = '8918501d-5e44-49d6-916e-43ba11794b96'
-  const groupActivityCompleted = await prisma.groupActivity.upsert({
+  const groupActivityId3 = '07e9847d-32bb-44a1-af49-de11a2151a92'
+  const groupActivityDraft = await prisma.groupActivity.upsert({
     where: {
       id: groupActivityId3,
     },
     create: {
       id: groupActivityId3,
+      name: 'Gruppenquest Draft',
+      displayName: 'Gruppenquest Draft',
+      description: `Description of the draft group activity.`,
+      status: Prisma.GroupActivityStatus.DRAFT,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      pointsMultiplier: 2,
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId3 }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            migrationIdOffset: 200,
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityId4 = '8918501d-5e44-49d6-916e-43ba11794b96'
+  const groupActivityCompleted = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId4,
+    },
+    create: {
+      id: groupActivityId4,
       name: 'Gruppenquest Completed',
       displayName: 'Gruppenquest Completed',
       description: `Description of the completed group activity.`,
@@ -577,13 +622,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pointsMultiplier: 2,
       clues: {
         connectOrCreate: [
-          ...prepareGroupActivityClues({ activityId: groupActivityId3 }),
+          ...prepareGroupActivityClues({ activityId: groupActivityId4 }),
         ],
       },
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 200,
+            migrationIdOffset: 300,
             flashcards: [flashcards[0]!],
             questions: questionsTest,
             contentElements: [contentElements[0]!],
@@ -704,7 +749,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-01T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId4,
         },
       },
       group: {
@@ -726,7 +771,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-10T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId4,
         },
       },
       group: {
@@ -748,7 +793,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-20T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId4,
         },
       },
       group: {
@@ -769,7 +814,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     create: {
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId4,
         },
       },
       group: {
@@ -838,7 +883,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       resultsComputedAt: new Date(),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId4,
         },
       },
       group: {
@@ -869,7 +914,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 400,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -909,7 +954,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -949,7 +994,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 500,
+            migrationIdOffset: 600,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -1001,7 +1046,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 600,
+            migrationIdOffset: 700,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1046,7 +1091,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 700,
+            migrationIdOffset: 800,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1087,7 +1132,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 800,
+            migrationIdOffset: 900,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1128,7 +1173,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 900,
+            migrationIdOffset: 1000,
             flashcards: flashcards,
             questions: questionsTest.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT
@@ -1173,7 +1218,7 @@ Once this microlearning is published, it will be immediately accessible
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 1000,
+            migrationIdOffset: 1100,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
