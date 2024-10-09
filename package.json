@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.2.0-rc.5",
+  "version": "3.2.0",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
