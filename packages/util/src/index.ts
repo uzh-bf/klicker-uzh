@@ -78,7 +78,9 @@ export function processElementData(element: Element) {
   }
 }
 
-export function getInitialElementResults(element: Element) {
+export function getInitialElementResults(
+  element: Omit<Element, 'id'> & { id: string }
+) {
   if (element.type === ElementType.FLASHCARD) {
     return {
       INCORRECT: 0,
