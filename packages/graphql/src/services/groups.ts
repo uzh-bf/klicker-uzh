@@ -1178,7 +1178,7 @@ export async function getGroupActivityDetails(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: {
       id: activityId,
-      status: GroupActivityStatus.SCHEDULED,
+      status: GroupActivityStatus.PUBLISHED,
       isDeleted: false,
     },
     include: {
