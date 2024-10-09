@@ -1,30 +1,30 @@
 import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
+// global variables to change live quiz settings
+const questionTitle1 = 'Title ' + uuid()
+const questionContent1 = 'Question Content 1'
+const questionTitle2 = 'Title ' + uuid()
+const questionContent2 = 'Question Content 2'
+
+const sessionName1 = 'Session 1'
+const sessionDisplayName1 = 'Session 1 (Display)'
+const sessionName1New = sessionName1 + ' NEW'
+const sessionDisplayName1New = sessionDisplayName1 + ' NEW'
+const sessionName1Dupl = sessionName1New + ' (Copy)'
+const sessionName2 = 'Session 2'
+const sessionDisplayName2 = 'Session 2 (Display)'
+const courseGamified = 'Testkurs'
+const courseNonGamified = 'Non-Gamified Course'
+
+const feedbackDesktop = 'Feedback Desktop'
+const feedbackDesktop2 = 'Feedback Desktop 2'
+const feedbackMobile = 'Feedback Mobile'
+const feedbackResponse = 'Response to Feedback'
+const maxBonusPoints = 200
+const timeToZeroBonus = 100
+
 describe('Different live-quiz workflows', () => {
-  // global variables to change live quiz settings
-  const questionTitle1 = 'Title ' + uuid()
-  const questionContent1 = 'Question Content 1'
-  const questionTitle2 = 'Title ' + uuid()
-  const questionContent2 = 'Question Content 2'
-
-  const sessionName1 = 'Session 1'
-  const sessionDisplayName1 = 'Session 1 (Display)'
-  const sessionName1New = sessionName1 + ' NEW'
-  const sessionDisplayName1New = sessionDisplayName1 + ' NEW'
-  const sessionName1Dupl = sessionName1New + ' (Copy)'
-  const sessionName2 = 'Session 2'
-  const sessionDisplayName2 = 'Session 2 (Display)'
-  const courseGamified = 'Testkurs'
-  const courseNonGamified = 'Non-Gamified Course'
-
-  const feedbackDesktop = 'Feedback Desktop'
-  const feedbackDesktop2 = 'Feedback Desktop 2'
-  const feedbackMobile = 'Feedback Mobile'
-  const feedbackResponse = 'Response to Feedback'
-  const maxBonusPoints = 200
-  const timeToZeroBonus = 100
-
   it('Test adding and deleting blocks to a live quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()

@@ -1,18 +1,19 @@
 import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
-describe('Test course creation and editing functionalities', () => {
-  const courseName = 'Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6'
-  const courseNameNew = 'Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW'
-  const courseName2 = 'Course 33a79abc-debc-4374-9405-38e99f92fba8'
-  const courseDisplayName = courseName + ' (Display)'
-  const courseDisplayNameNew = courseNameNew + ' (Display)'
-  const courseDisplayName2 = courseName2 + ' (Display)'
-  const description = uuid()
-  const runningTestCourse = 'Testkurs'
-  const pastTestcourse = 'Testkurs 2'
-  const currentYear = new Date().getFullYear()
+// global variable definitions for use across tests
+const courseName = 'Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6'
+const courseNameNew = 'Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW'
+const courseName2 = 'Course 33a79abc-debc-4374-9405-38e99f92fba8'
+const courseDisplayName = courseName + ' (Display)'
+const courseDisplayNameNew = courseNameNew + ' (Display)'
+const courseDisplayName2 = courseName2 + ' (Display)'
+const description = uuid()
+const runningTestCourse = 'Testkurs'
+const pastTestcourse = 'Testkurs 2'
+const currentYear = new Date().getFullYear()
 
+describe('Test course creation and editing functionalities', () => {
   it('Test the creation of a new course without gamification', () => {
     // log into frontend-manage
     cy.loginLecturer()

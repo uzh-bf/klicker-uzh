@@ -1,11 +1,11 @@
 import { v4 as uuid } from 'uuid'
 
-describe('Test functionalities of frontend-control application', () => {
-  const questionTitle = uuid()
-  const question = uuid()
-  const sessionTitle = uuid()
-  const session = uuid()
+const questionTitle = uuid()
+const question = uuid()
+const sessionTitle = uuid()
+const session = uuid()
 
+describe('Test functionalities of frontend-control application', () => {
   it('Create a new SC question to use it in a live quiz', () => {
     cy.loginLecturer()
 
