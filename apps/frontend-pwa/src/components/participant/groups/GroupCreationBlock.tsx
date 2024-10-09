@@ -58,6 +58,7 @@ function GroupCreationBlock({
       loading={loading}
       placeholder={t('pwa.courses.groupName')}
       textSubmit={t('shared.generic.create')}
+      inputData={{ cy: 'group-creation-name-input' }}
       data={{ cy: 'create-new-participant-group' }}
     />
   )

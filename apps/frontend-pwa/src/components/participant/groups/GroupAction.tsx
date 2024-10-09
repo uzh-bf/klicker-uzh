@@ -14,6 +14,7 @@ interface GroupActionProps {
   explanation?: string
   placeholder?: string
   textSubmit?: string
+  inputData?: { text?: string; cy?: string }
   data?: { text?: string; cy?: string }
 }
 
@@ -45,6 +46,7 @@ function GroupAction({
   placeholder,
   textSubmit,
   validationSchema,
+  inputData,
   data,
   buttonMode,
 }: GroupActionButtonProps | GroupActionFormProps) {
@@ -77,6 +79,7 @@ function GroupAction({
                   name="value"
                   placeholder={placeholder}
                   className={{ root: 'w-full' }}
+                  data={inputData}
                 />
                 <Button
                   type="submit"

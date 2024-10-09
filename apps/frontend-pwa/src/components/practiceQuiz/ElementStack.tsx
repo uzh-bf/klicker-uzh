@@ -270,7 +270,7 @@ function ElementStack({
               handleNextElement()
             }
           }}
-          data={{ cy: 'practice-quiz-continue' }}
+          data={{ cy: 'student-stack-continue' }}
         >
           {currentStep === totalSteps
             ? t('shared.generic.finish')
@@ -428,7 +428,7 @@ function ElementStack({
               }
             }
           }}
-          data={{ cy: 'practice-quiz-stack-submit' }}
+          data={{ cy: 'student-stack-submit' }}
         >
           {t('shared.generic.submit')}
         </Button>
