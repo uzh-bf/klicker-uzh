@@ -63,7 +63,7 @@ function CourseSelectionPage() {
       return showArchive ? true : !course.isArchived
     })
     .sort((a, b) => {
-      return dayjs(b.startDate).diff(dayjs(a.startDate))
+      return dayjs(b.endDate).diff(dayjs(a.endDate))
     })
 
   return (
