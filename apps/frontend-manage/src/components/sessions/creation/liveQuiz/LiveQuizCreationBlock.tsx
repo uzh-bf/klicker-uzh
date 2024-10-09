@@ -145,7 +145,7 @@ function LiveQuizCreationBlock({
             className={{
               root: 'px-1 hover:text-red-600',
             }}
-            data={{ cy: 'delete-block' }}
+            data={{ cy: `delete-block-${index}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
@@ -346,7 +346,7 @@ function LiveQuizCreationBlock({
           'w-full rounded border border-solid p-0.5 text-center',
           isOver && 'bg-primary-20'
         )}
-        data-cy="drop-questions-here"
+        data-cy={`drop-questions-here-${index}`}
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
