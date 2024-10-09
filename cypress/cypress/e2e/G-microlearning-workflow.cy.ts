@@ -152,7 +152,7 @@ describe('Different microlearning workflows', () => {
       .click()
       .type(runningMLDisplayNameOLD)
     cy.get('[data-cy="insert-microlearning-description"]')
-      .click()
+      .realClick()
       .type(runningMLDescriptionOLD)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
@@ -303,8 +303,11 @@ describe('Different microlearning workflows', () => {
       .click()
       .clear()
       .type(runningMLDisplayName)
+    cy.get('[data-cy="insert-microlearning-description"]').contains(
+      runningMLDescriptionOLD
+    )
     cy.get('[data-cy="insert-microlearning-description"]')
-      .click()
+      .realClick()
       .clear()
       .type(runningMLDescription)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -387,6 +390,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
       .should('have.value', runningMLDisplayName)
+    cy.get('[data-cy="insert-microlearning-description"]').contains(
+      runningMLDescription
+    )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-start-date"]')
       .click()
@@ -485,6 +491,9 @@ describe('Different microlearning workflows', () => {
       .click()
       .clear()
       .type(duplicatedMLDisplayName)
+    cy.get('[data-cy="insert-microlearning-description"]').contains(
+      runningMLDescription
+    )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly

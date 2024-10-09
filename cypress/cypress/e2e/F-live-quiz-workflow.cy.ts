@@ -9,8 +9,10 @@ const questionContent2 = 'Question Content 2'
 
 const sessionName1 = 'Session 1'
 const sessionDisplayName1 = 'Session 1 (Display)'
+const sessionDescription1 = 'Session 1 Description'
 const sessionName1New = sessionName1 + ' NEW'
 const sessionDisplayName1New = sessionDisplayName1 + ' NEW'
+const sessionDescription1New = sessionDescription1 + ' NEW'
 const sessionName1Dupl = sessionName1New + ' (Copy)'
 const sessionName2 = 'Session 2'
 const sessionDisplayName2 = 'Session 2 (Display)'
@@ -62,6 +64,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(sessionDisplayName1)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .type(sessionDescription1)
+    cy.get('[data-cy="insert-live-description"]').contains(sessionDescription1)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -277,6 +283,16 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="insert-live-display-name"]')
       .clear()
       .type(sessionDisplayName1New)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .contains(sessionDescription1)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .clear()
+      .type(sessionDescription1New)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .contains(sessionDescription1New)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check settings and modify them
@@ -411,6 +427,9 @@ describe('Different live-quiz workflows', () => {
       'have.value',
       sessionDisplayName1New
     )
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .contains(sessionDescription1New)
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="select-course"]').contains(courseGamified)
@@ -481,6 +500,9 @@ describe('Different live-quiz workflows', () => {
       'have.value',
       sessionDisplayName1New
     )
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .contains(sessionDescription1New)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="question-0-block-0"]')
