@@ -55,8 +55,7 @@ vapid:
 cron:
   dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
   pushNotifications: "*/5 * * * *" # runs every 5 minutes
-  practiceQuizPublications: "*/5 * * * *" # runs every 5 minutes
-  microLearningPublications: "*/5 * * * *" # runs every 5 minutes
+  activityPublications: "*/5 * * * *" # runs every 5 minutes
   runningRandomGroups: "5 0 * * *" # running at midnight
   finalRandomGroups: "5 0 * * *" # running at midnight
   token: ""

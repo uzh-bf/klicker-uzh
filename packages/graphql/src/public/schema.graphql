@@ -828,8 +828,7 @@ type Mutation {
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
-  publishScheduledMicroLearnings: Boolean!
-  publishScheduledPracticeQuizzes: Boolean!
+  publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestMigrationToken(email: String!): Boolean

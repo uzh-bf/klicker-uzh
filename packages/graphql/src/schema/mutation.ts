@@ -251,17 +251,10 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishScheduledPracticeQuizzes: t.boolean({
+      publishScheduledActivities: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
-        },
-      }),
-
-      publishScheduledMicroLearnings: t.boolean({
-        resolve(_, __, ctx) {
-          checkCronToken(ctx)
-          return MicroLearningService.publishScheduledMicroLearnings(ctx)
+          return CourseService.publishScheduledActivities(ctx)
         },
       }),
 
