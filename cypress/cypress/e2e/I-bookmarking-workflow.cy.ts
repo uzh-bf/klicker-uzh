@@ -2,224 +2,225 @@ import { v4 as uuid } from 'uuid'
 
 import messages from '../../../packages/i18n/messages/en'
 
-describe('Question bookmarking and flagging workflow', () => {
-  beforeEach(() => {
+const testCourse = 'Testkurs'
+const currentYear = new Date().getFullYear()
+
+const questionTitle1 = uuid()
+const questionTitle2 = uuid()
+const questionContent1 = 'Question Content 1'
+const questionContent2 = 'Question Content 2'
+
+const practiceQuizName = 'Bookmarking practice quiz'
+const practiceQuizDisplayName = practiceQuizName + ' (Display)'
+const flagPQ1 = `Test flagging question on practice quiz ${practiceQuizName}`
+const flagPQ2 = `Test flagging question on practice quiz ${practiceQuizName} new`
+
+const microlearningName = 'Bookmarking microlearning'
+const microlearningDisplayName = microlearningName + ' (Display)'
+const microStartDate = `${currentYear}-01-01T02:00`
+const microEndDate = `${currentYear}-12-31T18:00`
+const microMutliplier = messages.manage.sessionForms.multiplier2
+const flagML1 = `Test flagging question on microlearning ${microlearningName}`
+const flagML2 = `Test flagging question on microlearning ${microlearningName} new`
+
+describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', () => {
+  it('Creates the questions that should be bookmarked and/or flagged', () => {
     cy.loginLecturer()
+    cy.createQuestionSC({
+      title: questionTitle1,
+      content: questionContent1,
+      choices: [
+        { content: '50%', correct: true },
+        { content: '100%' },
+        { content: '75%' },
+      ],
+    })
+
+    cy.createQuestionMC({
+      title: questionTitle2,
+      content: questionContent2,
+      choices: [
+        { content: '30%', correct: true },
+        { content: '60%' },
+        { content: '90%', correct: true },
+      ],
+    })
   })
 
-  it('creates two new questions, adds them to a practice quiz and microlearning and bookmarks them', () => {
-    const questionTitle = uuid()
-    const questionTitle2 = uuid()
-    const question = uuid()
-    const question2 = uuid()
-    const courseName = 'Testkurs'
-    const quizName = uuid()
-    const microlearningName = uuid()
-
-    // create first question in question pool
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="set-correctness-0"]').click({ force: true })
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    // create second question in question pool
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
-    cy.get('[data-cy="insert-question-text"]').click().type(question2)
-    cy.get('[data-cy="configure-sample-solution"]').click()
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('30%')
-    cy.get('[data-cy="set-correctness-0"]').click({ force: true })
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('60%')
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-
-    // create practice quiz with first question
-    // step 1
-    cy.get('[data-cy="create-practice-quiz"]').click()
-    cy.get('[data-cy="insert-practice-quiz-name"]').type(quizName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-practice-quiz-display-name"]').type(quizName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // step 2
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    cy.get('[data-cy="next-or-submit"]').click({ force: true })
-    cy.get('[data-cy="back-session-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // step 3
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .contains(questionTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer,
+  it('Create a practice quiz with the created questions', () => {
+    cy.loginLecturer()
+    cy.createPracticeQuiz({
+      name: practiceQuizName,
+      displayName: practiceQuizDisplayName,
+      courseName: testCourse,
+      stacks: [{ elements: [questionTitle1] }, { elements: [questionTitle2] }],
     })
-    cy.get('[data-cy="back-session-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="create-new-element"]').click()
+  })
 
-    // create microlearning with second question
-    const currentYear = new Date().getFullYear()
-    cy.get('[data-cy="create-microlearning"]').click()
-
-    // step 1
-    cy.get('[data-cy="insert-microlearning-name"]')
-      .click()
-      .type(microlearningName)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-microlearning-display-name"]')
-      .click()
-      .type(microlearningName)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // step 2
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    cy.get('[data-cy="select-start-date"]')
-      .click({ force: true })
-      .type(`${currentYear}-01-01T02:00`)
-    cy.get('[data-cy="select-end-date"]')
-      .click()
-      .type(`${currentYear}-12-31T18:00`)
-    cy.get('[data-cy="select-multiplier"]')
-      .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
-    cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
-    ).click()
-    cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
-    )
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // step 3
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-      .contains(questionTitle2)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer2,
+  it('Create a microlearning with the created questions', () => {
+    cy.loginLecturer()
+    cy.createMicroLearning({
+      name: microlearningName,
+      displayName: microlearningDisplayName,
+      courseName: testCourse,
+      startDate: microStartDate,
+      endDate: microEndDate,
+      multiplier: microMutliplier,
+      stacks: [{ elements: [questionTitle1, questionTitle2] }],
     })
-    cy.get('[data-cy="next-or-submit"]').click()
+  })
 
-    // publish both practice quiz and microlearning
-    cy.get('[data-cy="load-session-list"]').click()
+  it('Publish the practice quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.draft
     )
-
-    // publish both practice quiz and microlearning
-    cy.get(`[data-cy="publish-practice-quiz-${quizName}"]`).click()
+    cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.published
     )
+  })
 
+  it('Publish the microlearning', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
       messages.shared.generic.draft
     )
-    cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
       messages.shared.generic.published
     )
+  })
 
-    // sign in as student on a laptop and bookmark the questions
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="username-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+  it('Test flagging and student feedback functionalities on practice quiz', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="flag-element-0-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').type(flagPQ1)
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
+    cy.get('[data-cy="flag-element-0-button"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="flag-element-textarea"]').should('have.value', flagPQ1)
+    cy.get('[data-cy="flag-element-textarea"]').clear().type(flagPQ2)
+    cy.get('[data-cy="submit-flag-element"]').click()
+    cy.get('[data-cy="upvote-element-0-button"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="downvote-element-0-button"]').click()
+    cy.wait(500)
+  })
 
-    // test flagging for microlearnings
-    const flagFeedback = `Test flagging question on microlearning ${microlearningName}`
-    const flagFeedbackNew = `Test flagging question on microlearning ${microlearningName} new`
-    cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
+  it('Bookmark the second element stack in the practice quiz', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="bookmark-element-stack"]').click()
+  })
+
+  it('Verify that the bookmarking progress was successful', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="bookmarks"]').click()
+    cy.wait(500)
+    cy.get(`[data-cy="bookmarks-course-${testCourse}"]`).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.findByText(questionContent2).should('exist')
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+  })
+
+  it('Verify that removing the bookmarking works as expected', () => {
+    cy.loginStudent()
+
+    // remove the bookmark
+    cy.get('[data-cy="bookmarks"]').click()
+    cy.get(`[data-cy="bookmarks-course-${testCourse}"]`).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="bookmark-element-stack"]').click()
+
+    // go back to the home screen and check if the bookmark was removed
+    cy.get('[data-cy="header-home"]').click()
+    cy.reload()
+    cy.get('[data-cy="bookmarks"]').click()
+    cy.get(`[data-cy="bookmarks-course-${testCourse}"]`).click()
+    cy.findByText(messages.pwa.courses.noBookmarksSet).should('exist')
+  })
+
+  it('Test flagging and student feedback functionalities on microlearning', () => {
+    cy.loginStudent()
+    cy.get(`[data-cy="microlearning-${microlearningDisplayName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').type(flagFeedback)
+    cy.get('[data-cy="flag-element-textarea"]').type(flagML1)
     cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').type(flagFeedback)
+    cy.get('[data-cy="flag-element-textarea"]').type(flagML1)
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
     cy.get('[data-cy="upvote-element-0-button"]').click()
-    cy.wait(1000)
+    cy.wait(500)
     cy.get('[data-cy="downvote-element-0-button"]').click()
-    cy.wait(1000)
+    cy.wait(500)
     cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').should(
-      'have.value',
-      flagFeedback
-    )
-    cy.get('[data-cy="flag-element-textarea"]').clear().type(flagFeedbackNew)
+    cy.get('[data-cy="flag-element-textarea"]').should('have.value', flagML1)
+    cy.get('[data-cy="flag-element-textarea"]').clear().type(flagML2)
     cy.get('[data-cy="submit-flag-element"]').click()
-    cy.wait(1000)
+    cy.wait(500)
     cy.get('[data-cy="flag-element-0-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').should(
-      'have.value',
-      flagFeedbackNew
-    )
+    cy.get('[data-cy="flag-element-textarea"]').should('have.value', flagML2)
     cy.get('[data-cy="cancel-flag-element"]').click()
 
+    // solve the microlearning
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.wait(1000)
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="finish-microlearning"]').click()
+  })
 
-    // test bookmarking and flagging for practice quizzes
-    const quizNameTestSeed = 'Practice Quiz Demo Student Title'
-    cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${quizNameTestSeed}"]`).click()
-    cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.get('[data-cy="bookmark-element-stack"]').click()
-    cy.get('[data-cy="flag-element-0-button"]').click()
-    cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').type(
-      `Test flagging question on practice quiz ${quizNameTestSeed}`
+  it('Cleanup: Delete the created practice quiz and microlearning', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+
+    // delete the microlearning
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${microlearningName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).should(
+      'not.exist'
     )
-    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
-    cy.get('[data-cy="upvote-element-0-button"]').click()
-    cy.wait(1000)
-    cy.get('[data-cy="downvote-element-0-button"]').click()
-    cy.wait(1000)
 
-    // open the bookmarks of the test course and check if the marked questions appear
-    cy.get('[data-cy="header-home"]').click()
-    cy.get('[data-cy="bookmarks"]').click()
-    cy.wait(1000)
-    cy.get(`[data-cy="bookmarks-course-${courseName}"]`).click()
-    cy.get('[data-cy="start-practice-quiz"]').click()
+    // delete the practice quiz
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
+      'not.exist'
+    )
   })
 })

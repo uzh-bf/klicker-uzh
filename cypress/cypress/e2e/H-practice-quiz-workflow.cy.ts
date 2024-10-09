@@ -474,7 +474,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -485,7 +485,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -498,7 +498,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -511,7 +511,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="input-numerical-1"]').type('100')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -521,22 +521,22 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-1"]').type('correct')
     cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // skip back and forth
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="practice-quiz-progress-3"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').should('not.be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-1"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').should('not.be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-2"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').should('not.be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-0"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard
     cy.get('[data-cy="flashcard-front-1"]').click()
@@ -562,7 +562,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-submit"]').click()
 
     // finish the practice quiz
-    cy.get('[data-cy="practice-quiz-continue"]')
+    cy.get('[data-cy="student-stack-continue"]')
       .contains(messages.shared.generic.finish)
       .click()
   })

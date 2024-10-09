@@ -601,7 +601,7 @@ describe('Different microlearning workflows', () => {
       'have.value',
       'Free text answer'
     )
-    cy.get('[data-cy="practice-quiz-continue"]').click() // skip first already answered question (fetch from backend)
+    cy.get('[data-cy="student-stack-continue"]').click() // skip first already answered question (fetch from backend)
 
     // answer the second element stack
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
@@ -677,7 +677,7 @@ describe('Different microlearning workflows', () => {
     // submit responses
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
-    cy.get('[data-cy="practice-quiz-continue"]')
+    cy.get('[data-cy="student-stack-continue"]')
       .contains(messages.shared.generic.finish)
       .click() // finish quiz
   })
