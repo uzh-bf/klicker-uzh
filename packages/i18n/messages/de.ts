@@ -211,6 +211,7 @@ export default {
       withoutGroups: 'Ohne Gruppen',
       forgotPassword: 'Passwort vergessen?',
       archived: 'Archiviert',
+      ended: 'Beendet',
     },
     contentInput: {
       boldStyle:
@@ -1027,7 +1028,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningInformation:
         'Geben Sie in diesem Schritt den Namen für das Microlearning ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       microLearningNoCourse:
-        'Microlearnings müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Microlearnings müssen immer einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       microLearningLecturerDocs:
         'Für weitere Informationen zur Erstellung und Durchführung von Microlearnings, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
       microLearningStudentDocs:
@@ -1133,7 +1134,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
       liveQuizTSinceFirstCorrect: 'Zeit seit erster korrekter Antwort [s]',
       practiceQuizNoCourse:
-        'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Übungs-Quizzes müssen einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:
         'Bitte geben Sie einen Namen für Ihr Übungs-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       practiceQuizInformation:
@@ -1202,7 +1203,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
       groupActivityNoCourse:
-        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
+        'Gruppenaktivitäten müssen immer einem laufenden Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
       groupActivityIntroductionName:
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       groupActivityLecturerDocs:

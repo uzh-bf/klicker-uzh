@@ -211,6 +211,7 @@ export default {
       withoutGroups: 'Without groups',
       forgotPassword: 'Forgot password?',
       archived: 'Archived',
+      ended: 'Ended',
     },
     contentInput: {
       boldStyle:
@@ -1027,7 +1028,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningInformation:
         'In this step, enter the name and description of the microlearning and find helpful information for creating the element.',
       microLearningNoCourse:
-        'Microlearnings must always be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+        'Microlearnings must always be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       microLearningLecturerDocs:
         'For more information on the creation and execution of microlearnings, visit the <link>Lecturer Documentation</link>.',
       microLearningStudentDocs:
@@ -1127,7 +1128,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The time to zero bonus points must be at least 1.',
       liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
       practiceQuizNoCourse:
-        'Practice quizzes must be assigned to a course. Please create a course first via the corresponding menu before continuing with the creation.',
+        'Practice quizzes must be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       practiceQuizIntroductionName:
         'Please enter a name for your practice quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       practiceQuizInformation:
@@ -1194,7 +1195,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEdited:
         'Your group activity <b>{name}</b> has been edited successfully.',
       groupActivityNoCourse:
-        'Group activities must always be assigned to a course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
+        'Group activities must always be assigned to a running course, where gamification and group creation are enabled. Please make sure that there exists at least one course with both options enabled.',
       groupActivityIntroductionName:
         'Please enter a name for your group activity. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       groupActivityLecturerDocs:

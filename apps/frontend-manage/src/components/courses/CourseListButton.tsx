@@ -1,4 +1,5 @@
 import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
@@ -31,6 +32,7 @@ function CourseListButton({
   data,
 }: CourseListButtonProps) {
   const t = useTranslations()
+  const isPast = endDate ? dayjs(endDate).isBefore(dayjs()) : false
 
   return (
     <Button
@@ -59,7 +61,15 @@ function CourseListButton({
           </div>
         )}
       </div>
-      {isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
+      <div className="flex flex-row gap-2">
+        {isPast && (
+          <Badge className="gap-2 bg-green-700 hover:bg-green-800">
+            <FontAwesomeIcon icon={faCheck} />
+            {t('shared.generic.ended')}
+          </Badge>
+        )}
+        {isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
+      </div>
     </Button>
   )
 }
