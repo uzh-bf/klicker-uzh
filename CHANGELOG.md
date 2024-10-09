@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.3...v3.2.0-rc.4) (2024-10-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** properly enforce that end dates are after start dates and in the future ([#4301](https://github.com/uzh-bf/klicker-uzh/issues/4301)) ([048d296](https://github.com/uzh-bf/klicker-uzh/commit/048d296f297d8e2d1c6ad1e8e9e433b60fe9a5ed))
+
+
+### Other
+
+* **apps/frontend-manage:** update messages shown on creation editors and mark past courses ([#4300](https://github.com/uzh-bf/klicker-uzh/issues/4300)) ([9f8be29](https://github.com/uzh-bf/klicker-uzh/commit/9f8be29c87d0cfaf527683a2386496e8aed02462))
+
+
+### Enhancements
+
+* **cypress:** extend coverage of test suite, extract functions and simplify structure ([#4299](https://github.com/uzh-bf/klicker-uzh/issues/4299)) ([393e53e](https://github.com/uzh-bf/klicker-uzh/commit/393e53e59ed20d3143f23e5e36c63d829a278485))
+
 ## [3.2.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.2...v3.2.0-rc.3) (2024-10-05)
 
 
