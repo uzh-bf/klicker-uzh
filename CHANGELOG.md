@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.2.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.4...v3.2.0-rc.5) (2024-10-09)
+
+
+### Enhancements
+
+* switch group activity publication to cronjob-based approach ([#4302](https://github.com/uzh-bf/klicker-uzh/issues/4302)) ([c13fcd9](https://github.com/uzh-bf/klicker-uzh/commit/c13fcd9d40e77c902d5952aa6cecac18145957be))
+
 ## [3.2.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.3...v3.2.0-rc.4) (2024-10-09)
 
 
