@@ -204,9 +204,11 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microlearningName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).should(
       'not.exist'
     )
@@ -215,9 +217,11 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
       'not.exist'
     )

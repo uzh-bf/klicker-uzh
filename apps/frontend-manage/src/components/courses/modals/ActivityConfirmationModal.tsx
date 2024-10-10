@@ -55,7 +55,7 @@ function ActivityConfirmationModal({
               disabled && confirmationType !== 'delete' && 'bg-primary-40'
             ),
           }}
-          data={{ cy: 'activity-deletion-modal-confirm' }}
+          data={{ cy: 'activity-confirmation-modal-confirm' }}
         >
           {t('shared.generic.confirm')}
         </Button>
@@ -65,7 +65,7 @@ function ActivityConfirmationModal({
           onClick={() => {
             setOpen(false)
           }}
-          data={{ cy: 'activity-deletion-modal-cancel' }}
+          data={{ cy: 'activity-confirmation-modal-cancel' }}
         >
           {t('shared.generic.cancel')}
         </Button>

@@ -42,6 +42,7 @@ function GroupActivityEndingModal({
         endGroupActivity: {
           id: activityId,
           status: GroupActivityStatus.Ended,
+          scheduledEndAt: new Date(),
           __typename: 'GroupActivity',
         },
       },
@@ -107,7 +108,7 @@ function GroupActivityEndingModal({
           confirmed={confirmations.startedInstances}
           notApplicable={summary.numOfStartedInstances === 0}
           confirmationType="confirm"
-          data={{ cy: 'confirm-deletion-started-instances' }}
+          data={{ cy: 'confirm-instances-loosing-access' }}
         />
         <ConfirmationItem
           label={
@@ -121,7 +122,7 @@ function GroupActivityEndingModal({
           confirmed={confirmations.submissions}
           notApplicable={true}
           confirmationType="confirm"
-          data={{ cy: 'confirm-deletion-submissions' }}
+          data={{ cy: 'confirm-successful-submissions' }}
         />
       </div>
     </ActivityConfirmationModal>

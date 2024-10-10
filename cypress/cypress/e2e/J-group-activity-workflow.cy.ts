@@ -790,20 +790,26 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(`[data-cy="groupActivity-actions-${groupActivityName}"]`).click()
     cy.get(`[data-cy="delete-groupActivity-${groupActivityName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get('[data-cy="confirm-deletion-started-instances"]').click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get('[data-cy="confirm-deletion-submissions"]').click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should(
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
       'not.be.disabled'
     )
-    cy.get('[data-cy="activity-deletion-modal-cancel"]').click()
+    cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
     cy.get(`[data-cy="groupActivity-actions-${groupActivityName}"]`).click()
     cy.get(`[data-cy="delete-groupActivity-${groupActivityName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get('[data-cy="confirm-deletion-started-instances"]').click()
     cy.get('[data-cy="confirm-deletion-submissions"]').click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
   })
 
   it('Cleanup: Delete all the created group activities', () => {
@@ -817,7 +823,7 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="delete-groupActivity-${runningActivityName}"]`).click()
     cy.get(`[data-cy="confirm-deletion-started-instances]`).should('not.exist')
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).should(
       'not.exist'
     )
