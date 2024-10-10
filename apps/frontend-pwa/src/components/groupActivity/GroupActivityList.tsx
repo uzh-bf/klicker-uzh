@@ -13,6 +13,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   GroupActivity,
   GroupActivityInstance,
+  GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -20,7 +21,7 @@ import ActivityInstanceLink from './ActivityInstanceLink'
 
 interface GroupActivityListProps {
   groupId: string
-  groupActivities?: Omit<GroupActivity, 'name' | 'status'>[] | null
+  groupActivities?: Omit<GroupActivity, 'name'>[] | null
   groupActivityInstances: Record<string, GroupActivityInstance>
 }
 
@@ -67,8 +68,7 @@ function GroupActivityList({
               </div>
             </div>
 
-            {dayjs().isAfter(activity.scheduledStartAt) &&
-              dayjs().isBefore(activity.scheduledEndAt) &&
+            {activity.status === GroupActivityStatus.Published &&
               !groupActivityInstances[activity.id]?.id && (
                 <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
@@ -83,8 +83,7 @@ function GroupActivityList({
                 </div>
               )}
 
-            {dayjs().isAfter(activity.scheduledStartAt) &&
-              dayjs().isBefore(activity.scheduledEndAt) &&
+            {activity.status === GroupActivityStatus.Published &&
               groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
@@ -100,8 +99,7 @@ function GroupActivityList({
                 </div>
               )}
 
-            {dayjs().isAfter(activity.scheduledStartAt) &&
-              dayjs().isBefore(activity.scheduledEndAt) &&
+            {activity.status === GroupActivityStatus.Published &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
@@ -117,7 +115,7 @@ function GroupActivityList({
                 </div>
               )}
 
-            {dayjs().isAfter(activity.scheduledEndAt) &&
+            {activity.status === GroupActivityStatus.Ended &&
               groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
@@ -128,19 +126,23 @@ function GroupActivityList({
                 </div>
               )}
 
-            {dayjs().isAfter(activity.scheduledEndAt) &&
+            {activity.status === GroupActivityStatus.Ended &&
               groupActivityInstances[activity.id]?.id &&
-              groupActivityInstances[activity.id]?.decisionsSubmittedAt &&
-              (!groupActivityInstances[activity.id]?.results ||
-                !groupActivityInstances[activity.id]?.resultsComputedAt) && (
-                <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
-                  <FontAwesomeIcon icon={faClock} />
-                  <div>{t('pwa.groupActivity.submitted')}</div>
+              groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
+                <div className="flex h-max flex-row items-center gap-1.5">
+                  <ActivityInstanceLink
+                    groupId={groupId}
+                    activity={activity}
+                    label={t('pwa.groupActivity.openGroupActivitySubmission')}
+                  />
+                  <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
+                    <FontAwesomeIcon icon={faClock} />
+                    <div>{t('pwa.groupActivity.submitted')}</div>
+                  </div>
                 </div>
               )}
 
-            {dayjs().isAfter(activity.scheduledEndAt) &&
-              groupActivityInstances[activity.id]?.resultsComputedAt &&
+            {activity.status === GroupActivityStatus.Graded &&
               groupActivityInstances[activity.id]?.id &&
               groupActivityInstances[activity.id]?.results && (
                 <div className="flex h-max flex-row items-center gap-1.5">

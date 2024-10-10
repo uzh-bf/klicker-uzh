@@ -621,6 +621,7 @@ type GroupActivityResults {
 
 enum GroupActivityStatus {
   DRAFT
+  ENDED
   GRADED
   PUBLISHED
   SCHEDULED

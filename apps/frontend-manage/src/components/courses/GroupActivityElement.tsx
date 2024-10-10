@@ -3,6 +3,7 @@ import {
   faArrowsRotate,
   faCheck,
   faClock,
+  faClockRotateLeft,
   faHourglassEnd,
   faHourglassStart,
   faPencil,
@@ -22,10 +23,10 @@ import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
-import GroupActivityExtensionButton from './groupActivity/GroupActivityExtensionButton'
 import GroupActivityGradingLink from './groupActivity/GroupActivityGradingLink'
 import GroupActivityUnpublishButton from './groupActivity/GroupActivityUnpublishButton'
 import GroupActivityDeletionModal from './modals/GroupActivityDeletionModal'
+import GroupActivityEndingModal from './modals/GroupActivityEndingModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
@@ -40,7 +41,7 @@ function GroupActivityElement({
   const router = useRouter()
 
   const [deletionModal, setDeletionModal] = useState(false)
-  const [extensionModal, setExtensionModal] = useState(false)
+  const [endingModal, setEndingModal] = useState(false)
   const isFuture = dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(groupActivity.scheduledEndAt).isBefore(dayjs())
 
@@ -59,7 +60,14 @@ function GroupActivityElement({
         icon={faClock}
       />
     ),
-    [GroupActivityStatus.Published]: isPast ? (
+    [GroupActivityStatus.Published]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.running')}
+        icon={faPlay}
+      />
+    ),
+    [GroupActivityStatus.Ended]: (
       <StatusTag
         color={
           groupActivity.status === GroupActivityStatus.Graded
@@ -77,13 +85,8 @@ function GroupActivityElement({
             : faArrowsRotate
         }
       />
-    ) : (
-      <StatusTag
-        color="bg-green-300"
-        status={t('shared.generic.running')}
-        icon={faPlay}
-      />
     ),
+
     [GroupActivityStatus.Graded]: (isFuture && (
       <StatusTag
         color="bg-green-300"
@@ -233,19 +236,41 @@ function GroupActivityElement({
 
           {groupActivity.status === GroupActivityStatus.Published && (
             <>
-              {isPast ? (
-                <GroupActivityGradingLink
-                  activityId={groupActivity.id}
-                  activityName={groupActivity.name}
-                />
-              ) : (
-                <GroupActivityExtensionButton
-                  activityId={groupActivity.id}
-                  activityName={groupActivity.name}
-                  scheduledEndAt={groupActivity.scheduledEndAt}
-                  courseId={courseId}
-                />
-              )}
+              <GroupActivityGradingLink
+                activityId={groupActivity.id}
+                activityName={groupActivity.name}
+              />
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[
+                  {
+                    label: (
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
+                        <FontAwesomeIcon icon={faClockRotateLeft} />
+                        <div>{t('manage.course.endGroupActivity')}</div>
+                      </div>
+                    ),
+                    onClick: () => setEndingModal(true),
+                    data: { cy: `end-groupActivity-${groupActivity.name}` },
+                  },
+                  DeletionItem,
+                ]}
+                triggerIcon={faHandPointer}
+              />
+            </>
+          )}
+
+          {groupActivity.status === GroupActivityStatus.Ended && (
+            <>
+              <GroupActivityGradingLink
+                activityId={groupActivity.id}
+                activityName={groupActivity.name}
+              />
               {DeletionDropdown}
             </>
           )}
@@ -268,6 +293,12 @@ function GroupActivityElement({
       <GroupActivityDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
+        activityId={groupActivity.id}
+        courseId={courseId}
+      />
+      <GroupActivityEndingModal
+        open={endingModal}
+        setOpen={setEndingModal}
         activityId={groupActivity.id}
         courseId={courseId}
       />

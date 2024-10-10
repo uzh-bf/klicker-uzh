@@ -1,9 +1,13 @@
-import { useQuery } from '@apollo/client'
-import DeletionItem from '@components/common/DeletionItem'
-import { GetMicroLearningSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  DeleteMicroLearningDocument,
+  GetMicroLearningSummaryDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import ActivityDeletionModal from './ActivityDeletionModal'
+import ConfirmationItem from '../../common/ConfirmationItem'
+import ActivityConfirmationModal from './ActivityConfirmationModal'
 
 interface MicroLearningDeletionModalProps {
   open: boolean
@@ -27,6 +31,23 @@ function MicroLearningDeletionModal({
     variables: { id: activityId },
     skip: !open,
   })
+
+  const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
+    DeleteMicroLearningDocument,
+    {
+      variables: { id: activityId },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteMicroLearning: {
+          __typename: 'MicroLearning',
+          id: activityId,
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId } },
+      ],
+    }
+  )
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -56,19 +77,19 @@ function MicroLearningDeletionModal({
   const summary = summaryData.getMicroLearningSummary
 
   return (
-    <ActivityDeletionModal
+    <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
-      activityId={activityId}
-      activityType="MicroLearning"
-      courseId={courseId}
+      onSubmit={async () => await deleteMicroLearning()}
+      submitting={deletingMicroLearning}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
+      confirmationType="delete"
     >
       <div className="flex flex-col gap-2">
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfResponses === 0
               ? t('manage.course.noResponsesToDelete')
@@ -84,9 +105,10 @@ function MicroLearningDeletionModal({
           }}
           confirmed={confirmations.deleteResponses}
           notApplicable={summary.numOfResponses === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-responses' }}
         />
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfAnonymousResponses === 0
               ? t('manage.course.noAnonymousResponsesToDelete')
@@ -102,10 +124,11 @@ function MicroLearningDeletionModal({
           }}
           confirmed={confirmations.deleteAnonymousResponses}
           notApplicable={summary.numOfAnonymousResponses === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-anonymous-responses' }}
         />
       </div>
-    </ActivityDeletionModal>
+    </ActivityConfirmationModal>
   )
 }
 

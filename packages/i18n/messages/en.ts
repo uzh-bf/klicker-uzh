@@ -711,6 +711,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerPARTIAL: 'Your answer is partially correct.',
       answerINCORRECT: 'Your answer is incorrect.',
       openGroupActivity: 'Open Group Activity',
+      openGroupActivitySubmission: 'Open Submission',
       openActivityFeedback: 'Open Feedback',
       activityNotYetActive:
         'The group activity is not active or not yet unlocked.',
@@ -1632,6 +1633,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityPublishingHint:
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit group activity',
+      endGroupActivity: 'End group activity',
       deleteGroupActivity: 'Delete group activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',

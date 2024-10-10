@@ -1,9 +1,13 @@
-import { useQuery } from '@apollo/client'
-import DeletionItem from '@components/common/DeletionItem'
-import { GetPracticeQuizSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  DeletePracticeQuizDocument,
+  GetPracticeQuizSummaryDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import ActivityDeletionModal from './ActivityDeletionModal'
+import ConfirmationItem from '../../common/ConfirmationItem'
+import ActivityConfirmationModal from './ActivityConfirmationModal'
 
 interface PracticeQuizDeletionModalProps {
   open: boolean
@@ -27,6 +31,23 @@ function PracticeQuizDeletionModal({
     variables: { id: activityId },
     skip: !open,
   })
+
+  const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
+    DeletePracticeQuizDocument,
+    {
+      variables: { id: activityId },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deletePracticeQuiz: {
+          id: activityId,
+          __typename: 'PracticeQuiz',
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId } },
+      ],
+    }
+  )
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -56,19 +77,19 @@ function PracticeQuizDeletionModal({
   const summary = summaryData.getPracticeQuizSummary
 
   return (
-    <ActivityDeletionModal
+    <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
-      activityId={activityId}
-      activityType="PracticeQuiz"
-      courseId={courseId}
+      onSubmit={async () => await deletePracticeQuiz()}
+      submitting={deletingPracticeQuiz}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
+      confirmationType="delete"
     >
       <div className="flex flex-col gap-2">
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfResponses === 0
               ? t('manage.course.noResponsesToDelete')
@@ -84,9 +105,10 @@ function PracticeQuizDeletionModal({
           }}
           confirmed={confirmations.deleteResponses}
           notApplicable={summary.numOfResponses === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-responses' }}
         />
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfAnonymousResponses === 0
               ? t('manage.course.noAnonymousResponsesToDelete')
@@ -102,10 +124,11 @@ function PracticeQuizDeletionModal({
           }}
           confirmed={confirmations.deleteAnonymousResponses}
           notApplicable={summary.numOfAnonymousResponses === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-anonymous-responses' }}
         />
       </div>
-    </ActivityDeletionModal>
+    </ActivityConfirmationModal>
   )
 }
 

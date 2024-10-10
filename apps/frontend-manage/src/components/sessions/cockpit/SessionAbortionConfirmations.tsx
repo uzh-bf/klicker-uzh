@@ -1,8 +1,8 @@
-import DeletionItem from '@components/common/DeletionItem'
 import { RunningLiveQuizSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import ConfirmationItem from '../../common/ConfirmationItem'
 import { SessionAbortionConfirmationType } from './CancelSessionModal'
 
 interface SessionAbortionConfirmationsProps {
@@ -25,7 +25,7 @@ function SessionAbortionConfirmations({
         message={t('manage.cockpit.cancelLiveQuizMessage')}
         className={{ root: 'mb-1 text-base' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfResponses === 0
             ? t('manage.cockpit.noResponsesToDelete')
@@ -41,9 +41,10 @@ function SessionAbortionConfirmations({
         }}
         confirmed={confirmations.deleteResponses}
         notApplicable={summary.numOfResponses === 0}
+        confirmationType="delete"
         data={{ cy: 'lq-deletion-responses-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfFeedbacks === 0
             ? t('manage.cockpit.noFeedbacksToDelete')
@@ -59,9 +60,10 @@ function SessionAbortionConfirmations({
         }}
         confirmed={confirmations.deleteFeedbacks}
         notApplicable={summary.numOfFeedbacks === 0}
+        confirmationType="delete"
         data={{ cy: 'lq-deletion-feedbacks-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfConfusionFeedbacks === 0
             ? t('manage.cockpit.noConfusionFeedbacksToDelete')
@@ -77,9 +79,10 @@ function SessionAbortionConfirmations({
         }}
         confirmed={confirmations.deleteConfusionFeedbacks}
         notApplicable={summary.numOfConfusionFeedbacks === 0}
+        confirmationType="delete"
         data={{ cy: 'lq-deletion-confusion-feedbacks-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfLeaderboardEntries === 0
             ? t('manage.cockpit.noLeaderboardEntriesToDelete')
@@ -95,6 +98,7 @@ function SessionAbortionConfirmations({
         }}
         confirmed={confirmations.deleteLeaderboardEntries}
         notApplicable={summary.numOfLeaderboardEntries === 0}
+        confirmationType="delete"
         data={{ cy: 'lq-deletion-leaderboard-entries-confirm' }}
       />
     </div>

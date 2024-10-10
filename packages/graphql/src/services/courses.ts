@@ -201,6 +201,7 @@ export async function getCourseOverviewData(
                 status: {
                   in: [
                     GroupActivityStatus.PUBLISHED,
+                    GroupActivityStatus.ENDED,
                     GroupActivityStatus.GRADED,
                   ],
                 },
@@ -1141,6 +1142,43 @@ export async function publishScheduledActivities(ctx: Context) {
   }
 
   updatedGroupActivities.forEach((group) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: group.id,
+    })
+  })
+
+  // ! Set group activity status to ended for all published group activities that have ended
+  const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
+    where: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledEndAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedGroupActivitiesToEnd = await Promise.all(
+    groupActivitiesToEnd.map((group) =>
+      ctx.prisma.groupActivity.update({
+        where: {
+          id: group.id,
+        },
+        data: {
+          status: GroupActivityStatus.ENDED,
+        },
+      })
+    )
+  )
+
+  if (updatedGroupActivitiesToEnd.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/endGroupActivities',
+      `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
+    )
+  }
+
+  updatedGroupActivitiesToEnd.forEach((group) => {
     ctx.emitter.emit('invalidate', {
       typename: 'GroupActivity',
       id: group.id,

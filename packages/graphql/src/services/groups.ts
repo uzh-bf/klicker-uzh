@@ -1179,7 +1179,11 @@ export async function getGroupActivityDetails(
     where: {
       id: activityId,
       status: {
-        in: [GroupActivityStatus.PUBLISHED, GroupActivityStatus.GRADED],
+        in: [
+          GroupActivityStatus.PUBLISHED,
+          GroupActivityStatus.ENDED,
+          GroupActivityStatus.GRADED,
+        ],
       },
       isDeleted: false,
     },
@@ -1241,15 +1245,6 @@ export async function getGroupActivityDetails(
       },
     },
   })
-
-  // if the group activity has ended and no decisions / results have been provided, return null
-  if (
-    dayjs().isAfter(groupActivity.scheduledEndAt) &&
-    (!activityInstance?.decisionsSubmittedAt ||
-      !activityInstance?.resultsComputedAt)
-  ) {
-    return null
-  }
 
   return {
     ...groupActivity,
@@ -1473,12 +1468,16 @@ export async function submitGroupActivityDecisions(
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
     !!groupActivityInstance.decisionsSubmittedAt ||
-    groupActivityInstance.groupActivity.status === GroupActivityStatus.DRAFT
+    groupActivityInstance.groupActivity.status === GroupActivityStatus.DRAFT ||
+    groupActivityInstance.groupActivity.status ===
+      GroupActivityStatus.SCHEDULED ||
+    groupActivityInstance.groupActivity.status === GroupActivityStatus.ENDED
   ) {
     return null
   }
 
-  // before the active date, return null
+  // before the active date or after the end date, return null
+  // scheduled and ended states should already catch these cases in general, simply to avoid edge cases
   if (
     dayjs().isBefore(groupActivityInstance.groupActivity.scheduledStartAt) ||
     dayjs().isAfter(groupActivityInstance.groupActivity.scheduledEndAt)
@@ -1599,7 +1598,9 @@ export async function publishGroupActivity(
       status:
         now < groupActivity.scheduledStartAt
           ? GroupActivityStatus.SCHEDULED
-          : GroupActivityStatus.PUBLISHED,
+          : now > groupActivity.scheduledEndAt
+            ? GroupActivityStatus.ENDED
+            : GroupActivityStatus.PUBLISHED,
     },
   })
 
