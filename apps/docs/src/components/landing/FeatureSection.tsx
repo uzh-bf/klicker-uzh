@@ -48,11 +48,11 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               <p className="mt-6 text-lg leading-8 text-gray-600">
                 {description}
               </p>
-              <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
+              <dl className=" mt-10 max-w-xl space-y-8 text-base leading-7  text-gray-600 lg:max-w-none">
                 {features.map((feature) => (
                   <div
                     key={feature.title}
-                    className={`relative pl-9 p-6 ${hoveredFeature === feature ? 'shadow-xl' : ''}`} // Add shadow if hovered
+                    className={`relative pl-9 p-6 ${hoveredFeature === feature ? 'shadow-xl rounded-xl' : ''}`} // Add shadow if hovered
                     onMouseEnter={() => handleMouseEnter(feature)}
                     onMouseLeave={handleMouseLeave}
                   >
@@ -76,7 +76,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                 src={hoveredImage}
                 alt="Feature specific screenshot"
                 className={`object-contain max-h-[400px] p-4 w-full h-auto 
-                  ${hoveredFeature?.shadow ? 'shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
+                  ${hoveredFeature?.shadow ? 'rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
               />
             </div>
           </div>

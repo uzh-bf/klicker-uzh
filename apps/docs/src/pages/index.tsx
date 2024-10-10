@@ -20,7 +20,7 @@ function Home() {
             icon: faArrowRight,
             text: 'Students ',
             hoverImage: '/img_v3/06_live_quiz.png',
-            shadow: true,
+            shadow: false,
           },
           {
             title: 'Leaderboards',
