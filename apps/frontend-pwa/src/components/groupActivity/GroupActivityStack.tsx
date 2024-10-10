@@ -14,7 +14,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -182,7 +182,7 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
-                  disabledInput={!!decisions}
+                  disabledInput={!!decisions || activityEnded}
                 />
                 {grading && correctness && (
                   <div
@@ -225,14 +225,7 @@ function GroupActivityStack({
             )
           })}
       </div>
-      {activityEnded && !decisions && (
-        <UserNotification
-          type="warning"
-          message={t('pwa.groupActivity.groupActivityEndedNoSubmissions')}
-          className={{ root: 'text-base' }}
-        />
-      )}
-      {!decisions ? (
+      {!decisions && !activityEnded ? (
         <Button
           className={{
             root: 'float-right mt-4 text-lg font-bold',
@@ -309,14 +302,15 @@ function GroupActivityStack({
         >
           {t('pwa.groupActivity.sendAnswers')}
         </Button>
-      ) : (
+      ) : null}
+      {!!decisions ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,
             date: submittedAt,
           })}
         </div>
-      )}
+      ) : null}
     </>
   )
 }

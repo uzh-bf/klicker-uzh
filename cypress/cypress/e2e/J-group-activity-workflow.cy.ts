@@ -507,6 +507,19 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="submit-group-activity"]').click()
   }
 
+  function checkInputsDisabled() {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-5"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
+  }
+
   function checkPersistentAnswers() {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
@@ -655,6 +668,7 @@ describe('Create and solve a group activity', () => {
     cy.get(`[data-cy="open-submission-${runningActivityDisplayName}"]`).click()
 
     // check that the same answers are visible to the student
+    checkInputsDisabled()
     checkPersistentAnswers()
     cy.get('[data-cy="submit-group-activity"]').should('not.exist')
   })
@@ -671,10 +685,10 @@ describe('Create and solve a group activity', () => {
     cy.get(
       `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
     ).click()
-    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.findByText(
-      messages.pwa.groupActivity.groupActivityEndedNoSubmissions
-    ).should('exist')
+
+    // submission should not be possible and inputs should be disabled
+    checkInputsDisabled()
+    cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
   it("Verify that a group activity can't be started after it's ended", () => {

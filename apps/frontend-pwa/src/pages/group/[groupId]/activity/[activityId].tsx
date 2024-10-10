@@ -115,7 +115,7 @@ function GroupActivityDetails() {
               <UserNotification
                 type="warning"
                 message={t('pwa.groupActivity.groupActivityEnded')}
-                className={{ root: 'mb-4' }}
+                className={{ root: 'mb-4 text-base' }}
               />
             )}
             <H1>{t('pwa.groupActivity.initialSituation')}</H1>
