@@ -1,27 +1,28 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  DeleteGroupActivityDocument,
+  EndGroupActivityDocument,
   GetGroupActivitySummaryDocument,
   GetSingleCourseDocument,
+  GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface GroupActivityConfirmationModalProps {
+interface GroupActivityEndingModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   courseId: string
 }
 
-function GroupActivityConfirmationModal({
+function GroupActivityEndingModal({
   open,
   setOpen,
   activityId,
   courseId,
-}: GroupActivityConfirmationModalProps) {
+}: GroupActivityEndingModalProps) {
   const t = useTranslations()
   const {
     data: summaryData,
@@ -32,17 +33,17 @@ function GroupActivityConfirmationModal({
     skip: !open,
   })
 
-  const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
-    DeleteGroupActivityDocument,
+  const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
+    EndGroupActivityDocument,
     {
-      variables: {
-        id: activityId,
-      },
+      variables: { id: activityId },
       optimisticResponse: {
         __typename: 'Mutation',
-        deleteGroupActivity: {
-          __typename: 'GroupActivity',
+        endGroupActivity: {
           id: activityId,
+          status: GroupActivityStatus.Ended,
+          scheduledEndAt: new Date(),
+          __typename: 'GroupActivity',
         },
       },
       refetchQueries: [
@@ -52,8 +53,8 @@ function GroupActivityConfirmationModal({
   )
 
   const [confirmations, setConfirmations] = useState({
-    deleteStartedInstances: false,
-    deleteSubmissions: false,
+    startedInstances: false,
+    submissions: true,
   })
 
   // manually re-trigger the query when the modal is opened
@@ -66,10 +67,9 @@ function GroupActivityConfirmationModal({
   useEffect(() => {
     if (summaryData?.getGroupActivitySummary) {
       setConfirmations({
-        deleteStartedInstances:
+        startedInstances:
           summaryData?.getGroupActivitySummary.numOfStartedInstances === 0,
-        deleteSubmissions:
-          summaryData.getGroupActivitySummary.numOfSubmissions === 0,
+        submissions: true,
       })
     }
   }, [summaryData?.getGroupActivitySummary])
@@ -82,56 +82,51 @@ function GroupActivityConfirmationModal({
     <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
-      title={t('manage.course.deleteGroupActivity')}
-      message={t('manage.course.deleteGroupActivityMessage')}
-      onSubmit={async () => await deleteGroupActivity()}
-      submitting={deletingGroupActivity}
+      title={t('manage.course.endGroupActivity')}
+      message={t('manage.course.endGroupActivityMessage')}
+      onSubmit={async () => await endGroupActivity()}
+      submitting={endingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
-      confirmationType="delete"
+      confirmationType="confirm"
     >
       <div className="flex flex-col gap-2">
         <ConfirmationItem
           label={
             summary.numOfStartedInstances === 0
-              ? t('manage.course.noStartedInstancesToDelete')
-              : t('manage.course.deleteStartedInstance', {
+              ? t('manage.course.noStartedInstancesLoosingAccess')
+              : t('manage.course.startedInstancesLoosingAccess', {
                   number: summary.numOfStartedInstances,
                 })
           }
           onClick={() => {
             setConfirmations((prev) => ({
               ...prev,
-              deleteStartedInstances: true,
+              startedInstances: true,
             }))
           }}
-          confirmed={confirmations.deleteStartedInstances}
+          confirmed={confirmations.startedInstances}
           notApplicable={summary.numOfStartedInstances === 0}
-          confirmationType="delete"
-          data={{ cy: 'confirm-deletion-started-instances' }}
+          confirmationType="confirm"
+          data={{ cy: 'confirm-instances-loosing-access' }}
         />
         <ConfirmationItem
           label={
             summary.numOfSubmissions === 0
-              ? t('manage.course.noSubmissionsToDelete')
-              : t('manage.course.deleteSubmissions', {
+              ? t('manage.course.noSubmissionsToActivity')
+              : t('manage.course.unaffectedSubmissions', {
                   number: summary.numOfSubmissions,
                 })
           }
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              deleteSubmissions: true,
-            }))
-          }}
-          confirmed={confirmations.deleteSubmissions}
-          notApplicable={summary.numOfSubmissions === 0}
-          confirmationType="delete"
-          data={{ cy: 'confirm-deletion-submissions' }}
+          onClick={() => null}
+          confirmed={confirmations.submissions}
+          notApplicable={true}
+          confirmationType="confirm"
+          data={{ cy: 'confirm-successful-submissions' }}
         />
       </div>
     </ActivityConfirmationModal>
   )
 }
 
-export default GroupActivityConfirmationModal
+export default GroupActivityEndingModal

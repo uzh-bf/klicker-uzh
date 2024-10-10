@@ -86,7 +86,7 @@ function FinalizeGradingModal({
       <Toast
         dismissible
         openExternal={successToast}
-        setOpenExternal={setSuccessToast}
+        onCloseExternal={() => setSuccessToast(false)}
         type="success"
         duration={4000}
       >
@@ -95,7 +95,7 @@ function FinalizeGradingModal({
       <Toast
         dismissible
         openExternal={errorToast}
-        setOpenExternal={setErrorToast}
+        onCloseExternal={() => setErrorToast(false)}
         type="error"
         duration={6000}
       >

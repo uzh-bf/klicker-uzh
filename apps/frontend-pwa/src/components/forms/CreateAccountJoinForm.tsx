@@ -81,7 +81,7 @@ function CreateAccountJoinForm() {
       <Toast
         dismissible
         openExternal={errorToast}
-        setOpenExternal={setErrorToast}
+        onCloseExternal={() => setErrorToast(false)}
         type="error"
         duration={6000}
       >

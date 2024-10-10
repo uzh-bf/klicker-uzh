@@ -1,6 +1,7 @@
 import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder.js'
+import { GroupActivityRef } from './groupActivity.js'
 import { FeedbackRef, SessionBlockRef } from './session.js'
 
 export const Subscription = builder.subscriptionType({
@@ -33,6 +34,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload.block,
       }),
+
       feedbackCreated: t.field({
         type: FeedbackRef,
         args: {
@@ -45,6 +47,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload,
       }),
+
       feedbackAdded: t.field({
         type: FeedbackRef,
         args: {
@@ -57,6 +60,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload,
       }),
+
       feedbackRemoved: t.string({
         args: {
           sessionId: t.arg.string({ required: true }),
@@ -68,6 +72,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload.id,
       }),
+
       feedbackUpdated: t.field({
         type: FeedbackRef,
         args: {
@@ -77,6 +82,32 @@ export const Subscription = builder.subscriptionType({
           pipe(
             ctx.pubSub.subscribe('feedbackUpdated'),
             filter((data) => data.sessionId === args.sessionId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
+      groupActivityEnded: t.field({
+        type: GroupActivityRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('groupActivityEnded'),
+            filter((data) => data.courseId === args.courseId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
+      singleGroupActivityEnded: t.field({
+        type: GroupActivityRef,
+        args: {
+          activityId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('singleGroupActivityEnded'),
+            filter((data) => data.id === args.activityId)
           ),
         resolve: (payload) => payload,
       }),

@@ -144,7 +144,7 @@ function Login() {
         type="error"
         duration={6000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
       >
         {error}
       </Toast>
@@ -153,7 +153,7 @@ function Login() {
         type="success"
         duration={8000}
         openExternal={showSuccess}
-        setOpenExternal={setShowSuccess}
+        onCloseExternal={() => setShowSuccess(false)}
       >
         {success}
       </Toast>

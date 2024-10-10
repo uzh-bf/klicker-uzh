@@ -15,7 +15,13 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Tabs,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -25,6 +31,7 @@ import Rank3Img from 'public/rank3.svg'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
+import GroupActivityListSubscriber from '../../../components/groupActivity/GroupActivityListSubscriber'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
@@ -46,15 +53,21 @@ function CourseOverview({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
+  const [endedGroupActivity, setEndedGroupActivity] = useState<
+    string | undefined
+  >(undefined)
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId },
-  })
+  const { data, loading, error, subscribeToMore } = useQuery(
+    GetCourseOverviewDataDocument,
+    {
+      variables: { courseId },
+    }
+  )
 
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
@@ -149,6 +162,11 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
+          <GroupActivityListSubscriber
+            courseId={courseId}
+            subscribeToMore={subscribeToMore}
+            setEndedGroupActivity={setEndedGroupActivity}
+          />
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
@@ -426,6 +444,7 @@ function CourseOverview({
                       course.isGroupDeadlinePassed ?? false
                     }
                     setSelectedTab={setSelectedTab}
+                    subscribeToMore={subscribeToMore}
                   />
                 ))}
 
@@ -465,6 +484,20 @@ function CourseOverview({
           })}
         />
       )}
+      <Toast
+        type="warning"
+        openExternal={typeof endedGroupActivity !== 'undefined'}
+        onCloseExternal={() => setEndedGroupActivity(undefined)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityEnded', {
+          activityName: course.groupActivities?.find(
+            (activity) => activity.id === endedGroupActivity
+          )?.displayName,
+        })}
+      </Toast>
     </Layout>
   )
 }
