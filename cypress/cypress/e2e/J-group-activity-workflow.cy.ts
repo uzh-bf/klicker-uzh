@@ -700,7 +700,7 @@ describe('Create and solve a group activity', () => {
     cy.get(
       `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
     ).click()
-    cy.get('[data-cy="start-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="start-group-activity"]').should('not.exist')
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 

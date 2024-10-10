@@ -107,7 +107,7 @@ function GroupActivityDetails() {
         subscribeToMore={subscribeToMore}
         setEndedGroupActivity={setActivityEnded}
       />
-      <div className="mx-auto flex max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
             {(groupActivity.status === GroupActivityStatus.Ended ||
@@ -183,21 +183,22 @@ function GroupActivityDetails() {
                 ))}
               </div>
 
-              <p className="prose mt-4 max-w-none">
-                {t('pwa.groupActivity.groupCompleteQuestion')}
-              </p>
-              <Button
-                disabled={
-                  groupActivity.group.participants?.length === 1 ||
-                  groupActivity.status !== GroupActivityStatus.Published
-                }
-                loading={startLoading}
-                className={{ root: 'mt-4 self-end text-lg font-bold' }}
-                onClick={() => startGroupActivity()}
-                data={{ cy: 'start-group-activity' }}
-              >
-                {t('pwa.groupActivity.startCaps')}
-              </Button>
+              {groupActivity.status === GroupActivityStatus.Published ? (
+                <>
+                  <p className="prose mt-4 max-w-none">
+                    {t('pwa.groupActivity.groupCompleteQuestion')}
+                  </p>
+                  <Button
+                    disabled={groupActivity.group.participants?.length === 1}
+                    loading={startLoading}
+                    className={{ root: 'mt-4 self-end text-lg font-bold' }}
+                    onClick={() => startGroupActivity()}
+                    data={{ cy: 'start-group-activity' }}
+                  >
+                    {t('pwa.groupActivity.startCaps')}
+                  </Button>
+                </>
+              ) : null}
 
               {groupActivity.group.participants?.length === 1 && (
                 <div className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-500">
