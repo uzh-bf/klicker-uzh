@@ -3,16 +3,18 @@ import {
   GroupActivityEndedDocument,
   ParticipantLearningData,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect } from 'react'
 
 interface GroupActivityListSubscriberProps {
   courseId: string
   subscribeToMore: any
+  setEndedGroupActivity: Dispatch<SetStateAction<string | undefined>>
 }
 
 function GroupActivityListSubscriber({
   courseId,
   subscribeToMore,
+  setEndedGroupActivity,
 }: GroupActivityListSubscriberProps) {
   useEffect(() => {
     subscribeToMore({
@@ -27,6 +29,11 @@ function GroupActivityListSubscriber({
         }
       ) => {
         if (!subscriptionData.data) return prev
+
+        // trigger toast for ended group activity
+        setEndedGroupActivity(subscriptionData.data.groupActivityEnded.id)
+
+        // update the values returned by the course overview data query
         return {
           ...prev,
           course: {
@@ -44,7 +51,7 @@ function GroupActivityListSubscriber({
     })
   }, [courseId, subscribeToMore])
 
-  return <div></div>
+  return null
 }
 
 export default GroupActivityListSubscriber

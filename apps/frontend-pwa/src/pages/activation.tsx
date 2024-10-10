@@ -75,7 +75,7 @@ function Activation() {
         type="error"
         duration={8000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
       >
         {t('pwa.general.accountActivationFailed')}
       </Toast>

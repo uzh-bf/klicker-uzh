@@ -15,7 +15,13 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Tabs,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -47,6 +53,9 @@ function CourseOverview({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
+  const [endedGroupActivity, setEndedGroupActivity] = useState<
+    string | undefined
+  >(undefined)
 
   useParticipantToken({
     participantToken,
@@ -156,6 +165,7 @@ function CourseOverview({
           <GroupActivityListSubscriber
             courseId={courseId}
             subscribeToMore={subscribeToMore}
+            setEndedGroupActivity={setEndedGroupActivity}
           />
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
@@ -474,6 +484,19 @@ function CourseOverview({
           })}
         />
       )}
+      <Toast
+        type="warning"
+        openExternal={typeof endedGroupActivity !== 'undefined'}
+        onCloseExternal={() => setEndedGroupActivity(undefined)}
+        duration={10000}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityEnded', {
+          activityName: course.groupActivities?.find(
+            (activity) => activity.id === endedGroupActivity
+          )?.displayName,
+        })}
+      </Toast>
     </Layout>
   )
 }

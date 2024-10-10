@@ -108,7 +108,7 @@ function AssignmentConfirmationModal({
           dismissible
           type="error"
           openExternal={showError}
-          setOpenExternal={setShowError}
+          onCloseExternal={() => setShowError(false)}
           duration={5000}
           className={{ root: 'max-w-[30rem]' }}
         >
@@ -120,7 +120,7 @@ function AssignmentConfirmationModal({
           dismissible
           type="success"
           openExternal={showSuccess}
-          setOpenExternal={setShowSuccess}
+          onCloseExternal={() => setShowSuccess(false)}
           duration={5000}
           className={{ root: 'max-w-[30rem]' }}
         >

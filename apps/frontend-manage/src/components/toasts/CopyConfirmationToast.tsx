@@ -14,7 +14,7 @@ function CopyConfirmationToast({
     <Toast
       dismissible
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
       type="success"
       duration={4000}
       className={{ root: 'w-[24rem]' }}

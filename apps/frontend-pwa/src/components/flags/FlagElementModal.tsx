@@ -37,7 +37,7 @@ function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
       duration={5000}
       type="error"
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
     >
       <H4>{t('shared.generic.error')}</H4>
       <div>{content}</div>
@@ -59,7 +59,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
       duration={5000}
       type="success"
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
     >
       <H4>{t('shared.generic.thanks')}</H4>
       <div>{t('pwa.practiceQuiz.feedbackTransmitted')}</div>

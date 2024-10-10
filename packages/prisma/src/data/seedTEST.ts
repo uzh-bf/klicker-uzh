@@ -657,8 +657,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: groupActivityId5,
-      name: 'Gruppenquest Completed',
-      displayName: 'Gruppenquest Completed',
+      name: 'Gruppenquest Ended',
+      displayName: 'Gruppenquest Ended',
       description: `Description of the completed group activity.`,
       status: Prisma.GroupActivityStatus.ENDED,
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
@@ -709,9 +709,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: groupActivityId6,
-      name: 'Gruppenquest Completed',
-      displayName: 'Gruppenquest Completed',
-      description: `Description of the completed group activity.`,
+      name: 'Gruppenquest Graded',
+      displayName: 'Gruppenquest Graded',
+      description: `Description of the graded group activity.`,
       status: Prisma.GroupActivityStatus.GRADED,
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       scheduledEndAt: new Date('2021-01-01T11:00:00.000Z'),

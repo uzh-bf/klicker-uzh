@@ -142,7 +142,7 @@ function LiveQuizNameChangeModal({
       <Toast
         dismissible
         openExternal={successToast}
-        setOpenExternal={setSuccessToast}
+        onCloseExternal={() => setSuccessToast(false)}
         type="success"
         duration={6000}
       >
@@ -151,7 +151,7 @@ function LiveQuizNameChangeModal({
       <Toast
         dismissible
         openExternal={errorToast}
-        setOpenExternal={setErrorToast}
+        onCloseExternal={() => setErrorToast(false)}
         type="error"
         duration={6000}
       >
