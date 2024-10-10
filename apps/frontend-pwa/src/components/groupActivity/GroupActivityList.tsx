@@ -118,6 +118,11 @@ function GroupActivityList({
             {activity.status === GroupActivityStatus.Ended &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
+                  <ActivityInstanceLink
+                    groupId={groupId}
+                    activity={activity}
+                    label={t('pwa.groupActivity.openGroupActivity')}
+                  />
                   <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-slate-300 px-2 py-0.5 text-sm">
                     <FontAwesomeIcon icon={faXmark} />
                     <div>{t('pwa.groupActivity.past')}</div>

@@ -98,6 +98,19 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload,
       }),
+
+      singleGroupActivityEnded: t.field({
+        type: GroupActivityRef,
+        args: {
+          activityId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('singleGroupActivityEnded'),
+            filter((data) => data.id === args.activityId)
+          ),
+        resolve: (payload) => payload,
+      }),
     }
   },
 })

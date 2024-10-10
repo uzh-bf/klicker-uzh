@@ -740,6 +740,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       maxNumberOfGroupMembers:
         'Your group has reached the maximum number of participants as specified by your lecturer. No further students will be able to join this group.',
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
+      groupActivityEndedNoSubmissions:
+        'The submission period for this group activity has ended and no submissions are possible anymore.',
     },
   },
   manage: {

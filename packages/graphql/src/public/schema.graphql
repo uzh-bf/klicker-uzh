@@ -576,6 +576,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
+  status: GroupActivityStatus!
 }
 
 type GroupActivityGrading {
@@ -1359,6 +1360,7 @@ type Subscription {
   feedbackUpdated(sessionId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   runningSessionUpdated(sessionId: String!): SessionBlock
+  singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 
 input SubscriptionKeysInput {

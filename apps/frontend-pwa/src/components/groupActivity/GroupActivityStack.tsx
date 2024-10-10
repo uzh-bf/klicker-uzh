@@ -14,7 +14,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -24,6 +24,7 @@ import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
   activityId: number
+  activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[]
   results: GroupActivityResults
@@ -32,6 +33,7 @@ interface GroupActivityStackProps {
 
 function GroupActivityStack({
   activityId,
+  activityEnded,
   stack,
   decisions,
   results,
@@ -223,14 +225,23 @@ function GroupActivityStack({
             )
           })}
       </div>
+      {activityEnded && !decisions && (
+        <UserNotification
+          type="warning"
+          message={t('pwa.groupActivity.groupActivityEndedNoSubmissions')}
+          className={{ root: 'text-base' }}
+        />
+      )}
       {!decisions ? (
         <Button
           className={{
             root: 'float-right mt-4 text-lg font-bold',
           }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
+          disabled={
+            Object.values(studentResponse).some(
+              (response) => !response.valid
+            ) || activityEnded
+          }
           onClick={async () => {
             const result = await submitGroupActivityDecisions({
               variables: {

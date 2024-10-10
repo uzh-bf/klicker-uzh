@@ -158,7 +158,7 @@
    "GetUserRunningSessions": "ead3fc3a2dea6e39187b31df5fc85beeb2a51a824c4a305b061112a1730cdcc3",
    "GetUserSessions": "788d8449fde1472539eddc707274a6400fb5085267e41677cb5350eea0fd758f",
    "GetUserTags": "cfc63cede68a95d79f5fe5a79c7f6275abae9c47b25fcfc665cc8d3e00bac3db",
-   "GroupActivityDetails": "12eef1f0023e24aa29fe3a088aa89000984c03a73c58a71380e783a73a9262a5",
+   "GroupActivityDetails": "fdb71c4b6b49e50e9b8e0d6be1f4138918946d4befb588250086fab00afe1daa",
    "Participations": "76ac5a5c539e57e395109b5836a055573e43fb4b2e4ba6ab3b1374da8580d5c6",
    "Self": "05603b4fdfd68bbe0990c57cb9e59a5f71ef9705d23d928fd63589dd5364f945",
    "SelfWithAchievements": "f161d562f384a81dbecd1baa222201522702925a82f859a1238038fbd35413fb",
@@ -169,5 +169,6 @@
    "FeedbackUpdated": "8df9b3d8231f9e1e79dc90873dd080f34b67c7ecb14642babb6c6e482926e912",
    "GroupActivityEnded": "0ad24543da1344f7c15139865c767cfdd51952a6a1630f3e080a14e577852b2f",
    "RunningSessionUpdated": "c33f4cf2085920e7b73eac860c5011a6bc3c0fb8fc65db08af50853e9cee9f94",
+   "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
    "UpdateParticipantAvatar": "ea07d0ab75a016dd988627fcd6de74bdba36de21c8c2c6b59e4a8a7488758519"
 }

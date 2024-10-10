@@ -5,19 +5,22 @@ import {
   ElementStack,
   GroupActivityDetailsDocument,
   GroupActivityGrading,
+  GroupActivityStatus,
   StartGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import GroupActivitySubscriber from '~/components/groupActivity/GroupActivitySubscriber'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
@@ -25,13 +28,27 @@ import GroupActivityStack from '../../../../components/groupActivity/GroupActivi
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
+  const [activityEnded, setActivityEnded] = useState(false)
+  const [submissionDisabled, setSubmissionDisabled] = useState(false)
 
-  const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
-    variables: {
-      groupId: router.query.groupId as string,
-      activityId: router.query.activityId as string,
-    },
-  })
+  const { data, loading, error, subscribeToMore } = useQuery(
+    GroupActivityDetailsDocument,
+    {
+      variables: {
+        groupId: router.query.groupId as string,
+        activityId: router.query.activityId as string,
+      },
+    }
+  )
+
+  useEffect(() => {
+    if (
+      data?.groupActivityDetails?.status === GroupActivityStatus.Ended ||
+      activityEnded
+    ) {
+      setSubmissionDisabled(true)
+    }
+  }, [data?.groupActivityDetails, activityEnded])
 
   const [startGroupActivity, { loading: startLoading }] = useMutation(
     StartGroupActivityDocument,
@@ -68,7 +85,8 @@ function GroupActivityDetails() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
-  const instance = data.groupActivityDetails.activityInstance
+  const groupActivity = data.groupActivityDetails
+  const instance = groupActivity.activityInstance
   const maxTotalPoints = instance?.results?.grading.reduce(
     (acc: number, grading: GroupActivityGrading) => {
       return acc + grading.maxPoints
@@ -78,13 +96,17 @@ function GroupActivityDetails() {
 
   return (
     <Layout
-      course={data.groupActivityDetails.course}
-      displayName={data.groupActivityDetails.displayName}
+      course={groupActivity.course}
+      displayName={groupActivity.displayName}
     >
       <Head>
         <base target="_blank" />
       </Head>
-
+      <GroupActivitySubscriber
+        activityId={groupActivity.id}
+        subscribeToMore={subscribeToMore}
+        setEndedGroupActivity={setActivityEnded}
+      />
       <div className="mx-auto flex max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
@@ -95,7 +117,7 @@ function GroupActivityDetails() {
               className={{
                 root: 'prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
               }}
-              content={data.groupActivityDetails.description ?? undefined}
+              content={groupActivity.description ?? undefined}
             />
           </div>
 
@@ -104,7 +126,7 @@ function GroupActivityDetails() {
 
             <div className="mt-2 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
               {!instance &&
-                data.groupActivityDetails.clues.map((clue) => {
+                groupActivity.clues.map((clue) => {
                   return (
                     <div
                       key={clue.id}
@@ -128,40 +150,36 @@ function GroupActivityDetails() {
         </div>
 
         <div className="lg:flex-1">
-          {!data.groupActivityDetails?.activityInstance && (
+          {!groupActivity?.activityInstance && (
             <div className="flex flex-col pt-4 lg:pt-0">
               <H1>{t('pwa.groupActivity.yourGroup')}</H1>
 
               <div className="flex flex-row gap-2">
-                {data.groupActivityDetails.group.participants?.map(
-                  (participant) => (
-                    <div
-                      key={participant.id}
-                      className="flex h-full w-[100px] flex-col items-center rounded border p-2 shadow"
-                    >
-                      <Image
-                        src={
-                          participant.avatar
-                            ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
-                            : '/user-solid.svg'
-                        }
-                        alt=""
-                        height={40}
-                        width={50}
-                      />
-                      <div>{participant.username}</div>
-                    </div>
-                  )
-                )}
+                {groupActivity.group.participants?.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="flex h-full w-[100px] flex-col items-center rounded border p-2 shadow"
+                  >
+                    <Image
+                      src={
+                        participant.avatar
+                          ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
+                          : '/user-solid.svg'
+                      }
+                      alt=""
+                      height={40}
+                      width={50}
+                    />
+                    <div>{participant.username}</div>
+                  </div>
+                ))}
               </div>
 
               <p className="prose mt-4 max-w-none">
                 {t('pwa.groupActivity.groupCompleteQuestion')}
               </p>
               <Button
-                disabled={
-                  data.groupActivityDetails.group.participants?.length === 1
-                }
+                disabled={groupActivity.group.participants?.length === 1}
                 loading={startLoading}
                 className={{ root: 'mt-4 self-end text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
@@ -170,7 +188,7 @@ function GroupActivityDetails() {
                 {t('pwa.groupActivity.startCaps')}
               </Button>
 
-              {data.groupActivityDetails.group.participants?.length === 1 && (
+              {groupActivity.group.participants?.length === 1 && (
                 <div className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-500">
                   {t.rich('pwa.groupActivity.minTwoPersons', {
                     br: () => <br />,
@@ -223,8 +241,10 @@ function GroupActivityDetails() {
                 </div>
               )}
               <GroupActivityStack
+                key={`group-activity-stack-ended-${activityEnded}`}
                 activityId={instance.id}
-                stack={data.groupActivityDetails.stacks[0] as ElementStack}
+                activityEnded={submissionDisabled}
+                stack={groupActivity.stacks[0] as ElementStack}
                 decisions={instance.decisions}
                 results={instance.results}
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
@@ -235,6 +255,18 @@ function GroupActivityDetails() {
           )}
         </div>
       </div>
+      <Toast
+        type="warning"
+        openExternal={activityEnded}
+        onCloseExternal={() => setActivityEnded(false)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityEnded', {
+          activityName: groupActivity.displayName,
+        })}
+      </Toast>
     </Layout>
   )
 }

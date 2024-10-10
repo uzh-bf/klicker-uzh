@@ -230,6 +230,7 @@ export interface IGroupActivityDetails {
   id: string
   name: string
   displayName: string
+  status: DB.GroupActivityStatus
   description?: string | null
   scheduledStartAt?: Date
   scheduledEndAt?: Date
@@ -249,6 +250,7 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     name: t.exposeString('name', { nullable: false }),
     displayName: t.exposeString('displayName', { nullable: false }),
     description: t.exposeString('description', { nullable: true }),
+    status: t.expose('status', { type: GroupActivityStatus }),
 
     scheduledStartAt: t.expose('scheduledStartAt', {
       type: 'Date',

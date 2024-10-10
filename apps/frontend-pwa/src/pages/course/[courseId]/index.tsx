@@ -489,6 +489,7 @@ function CourseOverview({
         openExternal={typeof endedGroupActivity !== 'undefined'}
         onCloseExternal={() => setEndedGroupActivity(undefined)}
         duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
         dismissible
       >
         {t('pwa.courses.groupActivityEnded', {

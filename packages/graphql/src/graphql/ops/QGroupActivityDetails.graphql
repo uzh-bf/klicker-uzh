@@ -4,6 +4,7 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id
     displayName
+    status
     description
     scheduledStartAt
     scheduledEndAt
