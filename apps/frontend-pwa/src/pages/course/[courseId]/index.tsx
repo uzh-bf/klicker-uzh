@@ -25,6 +25,7 @@ import Rank3Img from 'public/rank3.svg'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
+import GroupActivityListSubscriber from '../../../components/groupActivity/GroupActivityListSubscriber'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
@@ -52,9 +53,12 @@ function CourseOverview({
     cookiesAvailable,
   })
 
-  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId },
-  })
+  const { data, loading, error, subscribeToMore } = useQuery(
+    GetCourseOverviewDataDocument,
+    {
+      variables: { courseId },
+    }
+  )
 
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
@@ -149,6 +153,10 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
+          <GroupActivityListSubscriber
+            courseId={courseId}
+            subscribeToMore={subscribeToMore}
+          />
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
@@ -426,6 +434,7 @@ function CourseOverview({
                       course.isGroupDeadlinePassed ?? false
                     }
                     setSelectedTab={setSelectedTab}
+                    subscribeToMore={subscribeToMore}
                   />
                 ))}
 

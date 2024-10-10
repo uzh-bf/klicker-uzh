@@ -1655,6 +1655,9 @@ export async function endGroupActivity(
     },
   })
 
+  // trigger subscription to immediately update student frontend
+  ctx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
+
   return updatedGroupActivity
 }
 

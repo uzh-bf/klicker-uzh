@@ -1357,6 +1357,7 @@ type Subscription {
   feedbackCreated(sessionId: String!): Feedback!
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
+  groupActivityEnded(courseId: String!): GroupActivity!
   runningSessionUpdated(sessionId: String!): SessionBlock
 }
 
