@@ -208,38 +208,40 @@ function FeatureSection({ title, description, features }) {
           <div className="lg:pr-8 lg:pt-4">
             <div className="lg:max-w-lg">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                {title}
+          {title}
               </h2>
               <p className="mt-6 text-lg leading-8 text-gray-600">
-                {description}
+          {description}
               </p>
               <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
-                {features.map((feature, index) => (
-                  <div
-                    key={feature.title}
-                    className={`relative pl-9 p-6 ${hoveredFeatureIndex === index ? 'shadow-xl' : ''}`} // Add shadow if hovered
-                    onMouseEnter={() => handleMouseEnter(feature.hoverImage, index)}
-                    onMouseLeave={handleMouseLeave} // Reset on mouse leave
-                  >
-                    <dt className="inline font-semibold text-gray-900">
-                      <FontAwesomeIcon
-                        aria-hidden="true"
-                        icon={feature.icon}
-                        className="text-uzh-red-100 absolute left-1 top-1 h-5 w-5"
-                      />
-                      {feature.title}
-                    </dt>{' '}
-                    <dd className="inline">{feature.text}</dd>
-                  </div>
-                ))}
+          {features.map((feature, index) => (
+            <div
+              key={feature.title}
+              className={`relative pl-9 p-6 ${hoveredFeatureIndex === index ? 'shadow-xl' : ''}`} // Add shadow if hovered
+              onMouseEnter={() => handleMouseEnter(feature.hoverImage, index)}
+              onMouseLeave={handleMouseLeave} 
+            >
+              <dt className="inline font-semibold text-gray-900">
+                <FontAwesomeIcon
+            aria-hidden="true"
+            icon={feature.icon}
+            className="text-uzh-red-100 absolute left-1 top-7 h-5 w-5"
+                />
+                {feature.title}
+              </dt>{' '}
+              <dd className="inline">{feature.text}</dd>
+            </div>
+          ))}
               </dl>
             </div>
           </div>
-          <img
-            src={hoveredImage}
-            alt="Feature specific screenshot"
-            className="w-full w-52 max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
-          />
+            <div className="flex justify-center items-center">
+              <img
+              src={hoveredImage}
+              alt="Feature specific screenshot"
+        className="object-contain  max-h-[400px] w-full h-auto rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0"
+              />
+            </div>
         </div>
       </div>
     </div>
@@ -302,6 +304,7 @@ function Home() {
             title: 'Group Activities',
             icon: faArrowRight,
             text: 'You can create Group Activities to encourage collaboration on a task. Questions and clues that are distributed within each group and the group needs to communicate to find the solutions.',
+            hoverImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Filmaspectratios.svg/290px-Filmaspectratios.svg.png"
           },
         ]}
       />
