@@ -28,6 +28,9 @@ function ActivityConfirmationModal({
   children,
 }: ActivityConfirmationModalProps) {
   const t = useTranslations()
+  const disabled =
+    confirmationsInitializing ||
+    Object.values(confirmations).some((confirmation) => !confirmation)
 
   return (
     <Modal
@@ -40,18 +43,16 @@ function ActivityConfirmationModal({
       onPrimaryAction={
         <Button
           loading={submitting}
-          disabled={
-            confirmationsInitializing ||
-            Object.values(confirmations).some((confirmation) => !confirmation)
-          }
+          disabled={disabled}
           onClick={async () => {
             await onSubmit()
             setOpen(false)
           }}
           className={{
             root: twMerge(
-              'bg-primary-100 text-white hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
-              confirmationType === 'delete' && 'bg-red-700 hover:bg-red-800'
+              'bg-primary-100 text-white hover:text-white disabled:!bg-opacity-50 disabled:hover:cursor-not-allowed',
+              confirmationType === 'delete' && 'bg-red-700 hover:bg-red-800',
+              disabled && confirmationType !== 'delete' && 'bg-primary-40'
             ),
           }}
           data={{ cy: 'activity-deletion-modal-confirm' }}

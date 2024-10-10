@@ -1418,6 +1418,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      endGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.endGroupActivity(args, ctx)
+          },
+        }),
+
       deleteGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

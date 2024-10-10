@@ -1634,6 +1634,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit group activity',
       endGroupActivity: 'End group activity',
+      endGroupActivityMessage:
+        'Please confirm that you want to end this group activity. Note that no further submissions will be accepted after triggering this action.',
+      noStartedInstancesLoosingAccess:
+        'There are no groups that have started the group activity but not submitted their decisions yet.',
+      startedInstancesLoosingAccess:
+        '{number} group(s) have started the group activity but have not submitted any results yet. They will loose access to the group activity.',
+      noSubmissionsToActivity:
+        'There are no submissions for this group activity yet.',
+      unaffectedSubmissions:
+        '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
       deleteGroupActivity: 'Delete group activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',

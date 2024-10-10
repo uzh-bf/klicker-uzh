@@ -116,7 +116,6 @@ function GroupActivityList({
               )}
 
             {activity.status === GroupActivityStatus.Ended &&
-              groupActivityInstances[activity.id]?.id &&
               !groupActivityInstances[activity.id]?.decisionsSubmittedAt && (
                 <div className="flex h-max flex-row items-center gap-1.5">
                   <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-slate-300 px-2 py-0.5 text-sm">

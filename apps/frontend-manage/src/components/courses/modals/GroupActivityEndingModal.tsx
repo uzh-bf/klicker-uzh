@@ -1,5 +1,10 @@
-import { useQuery } from '@apollo/client'
-import { GetGroupActivitySummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  EndGroupActivityDocument,
+  GetGroupActivitySummaryDocument,
+  GetSingleCourseDocument,
+  GroupActivityStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
@@ -27,6 +32,24 @@ function GroupActivityEndingModal({
     variables: { id: activityId },
     skip: !open,
   })
+
+  const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
+    EndGroupActivityDocument,
+    {
+      variables: { id: activityId },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        endGroupActivity: {
+          id: activityId,
+          status: GroupActivityStatus.Ended,
+          __typename: 'GroupActivity',
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId } },
+      ],
+    }
+  )
 
   const [confirmations, setConfirmations] = useState({
     startedInstances: false,
@@ -60,8 +83,8 @@ function GroupActivityEndingModal({
       setOpen={setOpen}
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
-      onSubmit={async () => null} // TODO
-      submitting={false} // TODO
+      onSubmit={async () => await endGroupActivity()}
+      submitting={endingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="confirm"

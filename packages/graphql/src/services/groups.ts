@@ -1632,6 +1632,32 @@ export async function unpublishGroupActivity(
   return updatedGroupActivity
 }
 
+export async function endGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: GroupActivityStatus.PUBLISHED,
+      isDeleted: false,
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.ENDED,
+      scheduledEndAt: new Date(),
+    },
+  })
+
+  return updatedGroupActivity
+}
+
 export async function deleteGroupActivity(
   { id }: GetGroupActivityArgs,
   ctx: ContextWithUser

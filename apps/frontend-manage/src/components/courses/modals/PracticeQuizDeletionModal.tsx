@@ -40,6 +40,7 @@ function PracticeQuizDeletionModal({
         __typename: 'Mutation',
         deletePracticeQuiz: {
           id: activityId,
+          scheduledEndAt: new Date(),
           __typename: 'PracticeQuiz',
         },
       },
