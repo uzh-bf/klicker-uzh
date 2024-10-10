@@ -3,11 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useState, useEffect } from 'react';
 interface Feature {
   title: string;
-  icon: any;
+  icon: any; // You can specify the correct type for FontAwesomeIcon
   text: string;
   hoverImage: string;
-  shadow?: boolean; 
+  shadow?: boolean;
 }
+
 interface FeatureSectionProps {
   title: string;
   description: string;
@@ -16,12 +17,12 @@ interface FeatureSectionProps {
 
 function FeatureSection({ title, description, features }: FeatureSectionProps) { 
   const [hoveredImage, setHoveredImage] = useState(features[0]?.hoverImage || '');
-  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(null); 
+  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(features[0]); // Set the first feature as default
 
   useEffect(() => {
     if (features.length > 0) {
       setHoveredImage(features[0].hoverImage);
-      setHoveredFeature(features[0]);
+      setHoveredFeature(features[0]); // Initialize with the first feature
     }
   }, [features]);
 
@@ -31,7 +32,8 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
   };
 
   const handleMouseLeave = () => {
-    setHoveredFeature(null); 
+    setHoveredFeature(features[0]); // Reset to first feature when mouse leaves
+    setHoveredImage(features[0].hoverImage); // Reset image to first feature's image
   };
 
   return (
@@ -73,7 +75,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               <img
                 src={hoveredImage}
                 alt="Feature specific screenshot"
-                className={`object-contain max-h-[400px] p-4   w-full h-auto 
+                className={`object-contain max-h-[400px] p-4 w-full h-auto 
                   ${hoveredFeature?.shadow ? 'shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
               />
             </div>
@@ -83,5 +85,6 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
     </div>
   );
 }
+
 
 export default FeatureSection;

@@ -35,6 +35,7 @@ function Home() {
             text: 'You can create Group Activities to encourage collaboration on a task. Questions and clues that are distributed within each group and the group needs to communicate to find the solutions.',
             hoverImage:
               'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Filmaspectratios.svg/290px-Filmaspectratios.svg.png',
+            shadow: false,
           },
         ]}
       />
@@ -87,6 +88,7 @@ function Home() {
       />
       <div className="mx-auto max-w-7xl space-y-8 p-4">
         <UseCaseOverview />
+
         <CTA />
       </div>
     </Layout>
