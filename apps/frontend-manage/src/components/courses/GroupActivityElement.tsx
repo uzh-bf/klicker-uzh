@@ -23,6 +23,7 @@ import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
+import GroupActivityExtensionButton from './groupActivity/GroupActivityExtensionButton'
 import GroupActivityGradingLink from './groupActivity/GroupActivityGradingLink'
 import GroupActivityUnpublishButton from './groupActivity/GroupActivityUnpublishButton'
 import GroupActivityDeletionModal from './modals/GroupActivityDeletionModal'
@@ -87,38 +88,25 @@ function GroupActivityElement({
       />
     ),
 
-    [GroupActivityStatus.Graded]: (isFuture && (
+    [GroupActivityStatus.Graded]: (
       <StatusTag
-        color="bg-green-300"
-        status={t('shared.generic.scheduled')}
-        icon={faClock}
+        color={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? 'bg-green-300'
+            : 'bg-orange-300'
+        }
+        status={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? t('shared.generic.completed')
+            : t('shared.generic.grading')
+        }
+        icon={
+          groupActivity.status === GroupActivityStatus.Graded
+            ? faCheck
+            : faArrowsRotate
+        }
       />
-    )) ||
-      (isPast && (
-        <StatusTag
-          color={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? 'bg-green-300'
-              : 'bg-orange-300'
-          }
-          status={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? t('shared.generic.completed')
-              : t('shared.generic.grading')
-          }
-          icon={
-            groupActivity.status === GroupActivityStatus.Graded
-              ? faCheck
-              : faArrowsRotate
-          }
-        />
-      )) || (
-        <StatusTag
-          color="bg-green-300"
-          status={t('shared.generic.running')}
-          icon={faPlay}
-        />
-      ),
+    ),
   }
 
   const DeletionItem = {
@@ -236,9 +224,11 @@ function GroupActivityElement({
 
           {groupActivity.status === GroupActivityStatus.Published && (
             <>
-              <GroupActivityGradingLink
+              <GroupActivityExtensionButton
                 activityId={groupActivity.id}
                 activityName={groupActivity.name}
+                scheduledEndAt={groupActivity.scheduledEndAt}
+                courseId={courseId}
               />
               <Dropdown
                 data={{ cy: `groupActivity-actions-${groupActivity.name}` }}

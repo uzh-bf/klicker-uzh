@@ -610,8 +610,8 @@ describe('Create and solve a group activity', () => {
   // remove seed-dependency here and grade student responses from previous test segments
   it('(SEED-DEPENDENT): Grade seeded group activity', function () {
     cy.loginLecturer()
-    const groupActivityName = 'Gruppenquest Completed'
-    const activityDisplayName = 'Gruppenquest Completed'
+    const groupActivityName = 'Gruppenquest Ended'
+    const activityDisplayName = 'Gruppenquest Ended'
     const courseName = 'Testkurs'
 
     cy.get('[data-cy="courses"]').click()
