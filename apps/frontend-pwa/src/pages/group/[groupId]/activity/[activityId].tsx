@@ -11,7 +11,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H1, Toast } from '@uzh-bf/design-system'
+import { Button, H1, Toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -110,6 +110,14 @@ function GroupActivityDetails() {
       <div className="mx-auto flex max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
+            {(groupActivity.status === GroupActivityStatus.Ended ||
+              groupActivity.status === GroupActivityStatus.Graded) && (
+              <UserNotification
+                type="warning"
+                message={t('pwa.groupActivity.groupActivityEnded')}
+                className={{ root: 'mb-4' }}
+              />
+            )}
             <H1>{t('pwa.groupActivity.initialSituation')}</H1>
 
             <Markdown
@@ -179,7 +187,10 @@ function GroupActivityDetails() {
                 {t('pwa.groupActivity.groupCompleteQuestion')}
               </p>
               <Button
-                disabled={groupActivity.group.participants?.length === 1}
+                disabled={
+                  groupActivity.group.participants?.length === 1 ||
+                  groupActivity.status !== GroupActivityStatus.Published
+                }
                 loading={startLoading}
                 className={{ root: 'mt-4 self-end text-lg font-bold' }}
                 onClick={() => startGroupActivity()}

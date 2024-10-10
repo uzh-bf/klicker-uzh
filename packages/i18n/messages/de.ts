@@ -738,6 +738,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       maxNumberOfGroupMembers:
         'Deine Gruppe hat die maximale Anzahl von Teilnehmenden erreicht, wie von deinem Dozierenden festgelegt. Es können keine weiteren Studierenden dieser Gruppe beitreten.',
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
+      groupActivityEnded:
+        'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
       groupActivityEndedNoSubmissions:
         'Die Abgabgefrist für diese Gruppenaktivität ist abgelaufen und es können keine Antworten mehr abgegeben werden.',
     },

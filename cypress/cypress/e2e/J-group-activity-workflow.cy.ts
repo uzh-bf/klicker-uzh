@@ -542,7 +542,7 @@ describe('Create and solve a group activity', () => {
     cy.loginStudent()
 
     // start the group activity
-    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
       `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
@@ -596,7 +596,7 @@ describe('Create and solve a group activity', () => {
     cy.loginStudent()
 
     // open the group activity
-    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
       `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
@@ -604,6 +604,90 @@ describe('Create and solve a group activity', () => {
 
     // check that the same answers are visible to the second student
     checkPersistentAnswers()
+  })
+
+  it('Login as a student in a second group and start the group activity', () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+
+    // open the group activity
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-group-activity"]').click()
+  })
+
+  it('End the running group activity through the corresponding action on the lecturer interface', () => {
+    // navigate to course overview
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(testCourse).click()
+
+    // end the group activity
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="end-groupActivity-${runningActivityName}"]`).click()
+    cy.get('[data-cy="confirm-instances-loosing-access"]').click()
+    cy.get('[data-cy="confirm-successful-submissions"]').should('not.exist')
+    cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="end-groupActivity-${runningActivityName}"]`).click()
+    cy.get('[data-cy="confirm-instances-loosing-access"]').click()
+    cy.get('[data-cy="confirm-successful-submissions"]').should('not.exist')
+    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+
+    // check that the group activity is now in the grading state
+    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`).findByText(
+      messages.shared.generic.grading
+    )
+  })
+
+  it('Verify that a valid submission is still visible after the group activity ended', () => {
+    cy.loginStudent()
+
+    // open the group activity
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).contains(
+      messages.pwa.groupActivity.submitted
+    )
+    cy.get(`[data-cy="open-submission-${runningActivityDisplayName}"]`).click()
+
+    // check that the same answers are visible to the student
+    checkPersistentAnswers()
+    cy.get('[data-cy="submit-group-activity"]').should('not.exist')
+  })
+
+  it("Verify that a started group activity can still be seen, but not submitted after it's ended", () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+
+    // open the group activity
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).contains(
+      messages.pwa.groupActivity.past
+    )
+    cy.get(
+      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.findByText(
+      messages.pwa.groupActivity.groupActivityEndedNoSubmissions
+    ).should('exist')
+  })
+
+  it("Verify that a group activity can't be started after it's ended", () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME3') })
+
+    // open the group activity
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-group-activity"]').should('be.disabled')
+    cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
   // TODO: If a possibility is introduced that allows to end a group activity immediately,
@@ -687,16 +771,14 @@ describe('Create and solve a group activity', () => {
     )
 
     // login as a student with passed group activitiy and check the results (group 1)
-    cy.clearAllCookies()
-    cy.clearLocalStorage()
     cy.loginStudent()
-    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(`[data-cy="group-activity-${activityDisplayName}"]`).should(
       'contain',
       messages.shared.generic.passed
     )
-    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${activityDisplayName}"]`).click()
 
     cy.findByText(messages.pwa.groupActivity.groupActivityPassed).should(
       'exist'
@@ -736,25 +818,14 @@ describe('Create and solve a group activity', () => {
     )
 
     // Check student view for failed group activity submission (group 2)
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="username-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_USERNAME2'))
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
-    cy.wait(500)
-
-    cy.get('[data-cy="course-button-Testkurs"]').click()
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(`[data-cy="group-activity-${activityDisplayName}"]`).should(
       'contain',
       messages.shared.generic.failed
     )
-    cy.get(`[data-cy="open-group-activity-${activityDisplayName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${activityDisplayName}"]`).click()
 
     cy.findByText(messages.pwa.groupActivity.groupActivityFailed).should(
       'exist'
@@ -821,7 +892,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
     cy.get(`[data-cy="delete-groupActivity-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-started-instances]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).should(
