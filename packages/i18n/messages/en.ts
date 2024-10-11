@@ -1706,7 +1706,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please specify, if the group passed or failed the group challenge.',
       scoreMissingError:
         'Plase make sure that all quesitons are graded with a valid value.',
-      didGroupPass: 'Is the group activitied passed?',
+      didGroupPass: 'Is the group activity passed?',
       optionalFeedback:
         'Enter an optional general feedback for the group challenge here',
       saveGrading: 'Save Grading',

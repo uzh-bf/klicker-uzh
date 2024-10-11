@@ -277,10 +277,7 @@ function QuestionEditModal({
     {}
   )
 
-  const questionManipulationSchema = useMemo(
-    () => createValidationSchema(t),
-    [t]
-  )
+  const questionManipulationSchema = createValidationSchema(t)
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,

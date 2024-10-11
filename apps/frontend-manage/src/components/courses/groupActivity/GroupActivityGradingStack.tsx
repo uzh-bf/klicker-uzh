@@ -21,7 +21,7 @@ import {
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
@@ -123,23 +123,21 @@ function GroupActivityGradingStack({
     [submission?.decisions]
   )
 
-  const gradingSchema = useMemo(() => {
-    Yup.object().shape({
-      passed: Yup.boolean().required(
-        t('manage.groupActivity.passedMissingError')
-      ),
-      comment: Yup.string(),
-      grading: Yup.array().of(
-        Yup.object().shape({
-          instanceId: Yup.number().required(),
-          score: Yup.number()
-            .required(t('manage.groupActivity.scoreMissingError'))
-            .min(0, t('manage.groupActivity.scoreMissingError')),
-          feedback: Yup.string(),
-        })
-      ),
-    })
-  }, [t])
+  const gradingSchema = Yup.object().shape({
+    passed: Yup.boolean().required(
+      t('manage.groupActivity.passedMissingError')
+    ),
+    comment: Yup.string(),
+    grading: Yup.array().of(
+      Yup.object().shape({
+        instanceId: Yup.number().required(),
+        score: Yup.number()
+          .required(t('manage.groupActivity.scoreMissingError'))
+          .min(0, t('manage.groupActivity.scoreMissingError')),
+        feedback: Yup.string(),
+      })
+    ),
+  })
 
   if (!submission) {
     return null
