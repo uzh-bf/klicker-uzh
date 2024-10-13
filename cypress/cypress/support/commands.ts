@@ -120,11 +120,12 @@ interface CreateChoicesQuestionArgs {
   title: string
   content: string
   choices: { content: string; correct?: boolean }[]
+  multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionSC',
-  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
     // throw an error if no choices were provided
     if (choices.length < 2) {
       throw new Error('SC questions require at least 2 choices')
@@ -132,6 +133,16 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(title)
+
+    if (typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.sessionForms.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
     cy.get('[data-cy="insert-question-text"]').click().type(content)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
 
@@ -159,7 +170,7 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'createQuestionMC',
-  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
     // throw an error if no choices were provided
     if (choices.length < 2) {
       throw new Error('MC questions require at least 2 choices')
@@ -177,6 +188,15 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-question-title"]').type(title)
     cy.get('[data-cy="insert-question-text"]').click().type(content)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+
+    if (typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.sessionForms.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
 
     choices.slice(1).forEach((choice, ix) => {
       cy.get('[data-cy="add-new-answer"]').click({ force: true })
@@ -202,7 +222,7 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'createQuestionKPRIM',
-  ({ title, content, choices }: CreateChoicesQuestionArgs) => {
+  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
     // throw an error if there are not 4 choices
     if (choices.length !== 4) {
       throw new Error('KPRIM questions require exactly 4 choices')
@@ -227,6 +247,16 @@ Cypress.Commands.add(
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
+
+    if (typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.sessionForms.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
     cy.get('[data-cy="insert-question-text"]').click().type(content)
     cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1.content)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
@@ -261,6 +291,7 @@ interface CreateQuestionNRArgs {
   unit?: string
   accuracy?: string
   solutionRanges?: { min: string; max: string }[]
+  multiplier?: string
 }
 
 Cypress.Commands.add(
@@ -273,6 +304,7 @@ Cypress.Commands.add(
     unit,
     accuracy,
     solutionRanges,
+    multiplier,
   }: CreateQuestionNRArgs) => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -285,6 +317,15 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
     cy.get('[data-cy="insert-question-text"]').click().type(content)
+
+    if (typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.sessionForms.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
 
     if (typeof min !== 'undefined') {
       cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
@@ -321,11 +362,12 @@ interface CreateQuestionFTArgs {
   title: string
   content: string
   maxLength?: string
+  multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
-  ({ title, content, maxLength }: CreateQuestionFTArgs) => {
+  ({ title, content, maxLength, multiplier }: CreateQuestionFTArgs) => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
     cy.get(
@@ -337,6 +379,15 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
     cy.get('[data-cy="insert-question-text"]').click().type(content)
+
+    if (typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.sessionForms.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
 
     if (typeof maxLength !== 'undefined') {
       cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
@@ -637,16 +688,19 @@ declare global {
         title,
         content,
         choices,
+        multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionMC({
         title,
         content,
         choices,
+        multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionKPRIM({
         title,
         content,
         choices,
+        multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionNR({
         title,
@@ -656,11 +710,13 @@ declare global {
         unit,
         accuracy,
         solutionRanges,
+        multiplier,
       }: CreateQuestionNRArgs): Chainable<void>
       createQuestionFT({
         title,
         content,
         maxLength,
+        multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
       createFlashcard({
         title,
