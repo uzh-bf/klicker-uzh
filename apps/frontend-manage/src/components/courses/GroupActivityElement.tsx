@@ -241,7 +241,9 @@ function GroupActivityElement({
                       </div>
                     ),
                     onClick: () => setStartingModal(true),
-                    data: { cy: `start-groupActivity-${groupActivity.name}` },
+                    data: {
+                      cy: `start-group-activity-${groupActivity.name}-now`,
+                    },
                   },
                   DeletionItem,
                 ]}
@@ -277,7 +279,7 @@ function GroupActivityElement({
                       </div>
                     ),
                     onClick: () => setEndingModal(true),
-                    data: { cy: `end-groupActivity-${groupActivity.name}` },
+                    data: { cy: `end-group-activity-${groupActivity.name}` },
                   },
                   DeletionItem,
                 ]}
