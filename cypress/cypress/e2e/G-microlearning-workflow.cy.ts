@@ -55,6 +55,7 @@ const duplicatedMLDisplayName = runningMLDisplayName + ' (NEW!)'
 // ? All microlearning creation steps are bundled in the beginning of the test, since reloading the page
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
 describe('Different microlearning workflows', () => {
+  // ! Part 0: Preparation - Question Creation
   it('Create questions required for microlearning creation', () => {
     cy.loginLecturer()
 
@@ -132,6 +133,7 @@ describe('Different microlearning workflows', () => {
     })
   })
 
+  // ! Part 1: Microlearning Creation
   it('Create a microlearning around the current time', () => {
     // Start creation
     cy.loginLecturer()
@@ -422,51 +424,6 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('Create a microlearning that starts in the future', () => {
-    cy.loginLecturer()
-    cy.createMicroLearning({
-      name: futureMLName,
-      displayName: futureMLDisplayName,
-      description: futureMLDescription,
-      courseName: testCourse,
-      multiplier: messages.manage.sessionForms.multiplier2,
-      startDate: `${currentYear + 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-12-31T18:00`,
-      stacks: [{ elements: [SCQuestionTitle] }],
-    })
-
-    // check if creation was successful
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
-      messages.shared.generic.draft
-    )
-  })
-
-  it('Create a microlearning with all element types', () => {
-    cy.loginLecturer()
-    cy.createMicroLearning({
-      name: completeMLName,
-      displayName: completeMLDisplayName,
-      courseName: testCourse,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-12-31T18:00`,
-      stacks: [
-        {
-          elements: [
-            SCQuestionTitle,
-            MCQuestionTitle,
-            KPRIMQuestionTitle,
-            NRQuestionTitle,
-            FTQuestionTitle,
-            FCQuestionTitle,
-            CTQuestionTitle,
-          ],
-        },
-      ],
-    })
-  })
-
   it('Duplicate a microlearning and check the editors content', () => {
     // duplicate the microlearning
     cy.loginLecturer()
@@ -532,6 +489,52 @@ describe('Different microlearning workflows', () => {
     )
   })
 
+  it('Create a microlearning that starts in the future', () => {
+    cy.loginLecturer()
+    cy.createMicroLearning({
+      name: futureMLName,
+      displayName: futureMLDisplayName,
+      description: futureMLDescription,
+      courseName: testCourse,
+      multiplier: messages.manage.sessionForms.multiplier2,
+      startDate: `${currentYear + 1}-01-01T02:00`,
+      endDate: `${currentYear + 1}-12-31T18:00`,
+      stacks: [{ elements: [SCQuestionTitle] }],
+    })
+
+    // check if creation was successful
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
+
+  it('Create a microlearning with all element types', () => {
+    cy.loginLecturer()
+    cy.createMicroLearning({
+      name: completeMLName,
+      displayName: completeMLDisplayName,
+      courseName: testCourse,
+      startDate: `${currentYear - 1}-01-01T02:00`,
+      endDate: `${currentYear + 1}-12-31T18:00`,
+      stacks: [
+        {
+          elements: [
+            SCQuestionTitle,
+            MCQuestionTitle,
+            KPRIMQuestionTitle,
+            NRQuestionTitle,
+            FTQuestionTitle,
+            FCQuestionTitle,
+            CTQuestionTitle,
+          ],
+        },
+      ],
+    })
+  })
+
+  // ! Part 2: Running Microlearning
   it('Publish a microlearning that will immediately be running', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -625,6 +628,114 @@ describe('Different microlearning workflows', () => {
     cy.viewport('macbook-16')
   })
 
+  it('Cleanup: Delete the running microlearning to avoid name collisions', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    // delete the running microlearning
+    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'not.be.disabled'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Cleanup: Delete the duplicated microlearning to avoid name collisions', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    // delete the duplicated microlearning
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${duplicatedMLName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Make sure that the running microlearning is no longer visible to students', () => {
+    cy.loginStudent()
+    cy.contains('[data-cy="microlearnings"]', runningMLDisplayName).should(
+      'not.exist'
+    )
+  })
+
+  // ! Part 3: Future Microlearning
+  it('Publish the future microlearning', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    cy.get(`[data-cy="publish-microlearning-${futureMLName}"]`)
+      .contains(messages.manage.course.publishMicrolearning)
+      .click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
+      messages.shared.generic.scheduled
+    )
+  })
+
+  it('Verify that future microlearnings are not shown to students', () => {
+    cy.loginStudent()
+    cy.contains('[data-cy="microlearnings"]', futureMLDisplayName).should(
+      'not.exist'
+    )
+  })
+
+  it('Unpublish the future microlearning from the lecturer view', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(testCourse).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).click()
+    cy.get(`[data-cy="unpublish-microlearning-${futureMLName}"]`).click()
+    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
+
+  it('Cleanup: Delete the future microlearning to avoid name collisions', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    // delete the future microlearning
+    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${futureMLName}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  // ! Part 4: Complete Microlearning
   it('Publish the microlearning that contains all question types', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -691,41 +802,33 @@ describe('Different microlearning workflows', () => {
       .click() // finish quiz
   })
 
-  it('Publish the future microlearning', () => {
+  it('Cleanup: Delete the complete microlearning to avoid naming collisions', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
 
-    cy.get(`[data-cy="publish-microlearning-${futureMLName}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
-      messages.shared.generic.scheduled
+    // delete the microlearning with all element types
+    cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).click()
+    cy.get(`[data-cy="delete-microlearning-${completeMLName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
     )
-  })
-
-  it('Verify that future microlearnings are not shown to students', () => {
-    cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', futureMLDisplayName).should(
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).should(
       'not.exist'
     )
   })
 
-  it('Unpublish the future microlearning from the lecturer view', () => {
-    cy.loginLecturer()
-    cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
-    cy.get('[data-cy="tab-microLearnings"]').click()
-
-    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).click()
-    cy.get(`[data-cy="unpublish-microlearning-${futureMLName}"]`).click()
-    cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
-      messages.shared.generic.draft
+  it('Make sure that the complete microlearning is no longer visible to students', () => {
+    cy.loginStudent()
+    cy.contains('[data-cy="microlearnings"]', completeMLDisplayName).should(
+      'not.exist'
     )
   })
 
+  // ! Part 5: Practice Quiz Conversion
   it('Convert the seeded past microlearning into a practice quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -787,57 +890,10 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('Cleanup: Remove all created microlearnings to avoid naming collisions', () => {
+  it('Cleanup: Delete the converted practice quiz to avoid naming collisions', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-    cy.get('[data-cy="tab-microLearnings"]').click()
-
-    // delete the running microlearning
-    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'not.be.disabled'
-    )
-    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).should(
-      'not.exist'
-    )
-
-    // delete the future microlearning
-    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${futureMLName}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
-    cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).should(
-      'not.exist'
-    )
-
-    // delete the microlearning with all element types
-    cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${completeMLName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).should(
-      'not.exist'
-    )
 
     // delete the converted practice quiz
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
@@ -851,24 +907,5 @@ describe('Different microlearning workflows', () => {
     cy.get(
       `[data-cy="practice-quiz-actions-${convertedPracticeQuizName}"]`
     ).should('not.exist')
-
-    // delete the duplicated microlearning
-    cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).click()
-    cy.get(`[data-cy="delete-microlearning-${duplicatedMLName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).should(
-      'not.exist'
-    )
-  })
-
-  it('Make sure that deleted microlearnings are no longer visible to the students', () => {
-    cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', runningMLDisplayName).should(
-      'not.exist'
-    )
-    cy.contains('[data-cy="microlearnings"]', completeMLDisplayName).should(
-      'not.exist'
-    )
   })
 })
