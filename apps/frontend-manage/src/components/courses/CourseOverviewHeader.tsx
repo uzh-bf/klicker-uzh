@@ -185,7 +185,7 @@ function CourseOverviewHeader({
 
       <Toast
         openExternal={copyToast}
-        setOpenExternal={setCopyToast}
+        onCloseExternal={() => setCopyToast(false)}
         type="success"
         className={{ root: 'w-[24rem]' }}
       >

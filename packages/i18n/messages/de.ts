@@ -211,6 +211,7 @@ export default {
       withoutGroups: 'Ohne Gruppen',
       forgotPassword: 'Passwort vergessen?',
       archived: 'Archiviert',
+      ended: 'Beendet',
     },
     contentInput: {
       boldStyle:
@@ -504,6 +505,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
+      groupActivityEnded:
+        'Gruppenaktivität "{activityName}" beendet, keine weiteren Einreichungen möglich.',
       coursePracticeArea:
         'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
@@ -708,6 +711,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerPARTIAL: 'Eure Antwort ist teilweise korrekt.',
       answerINCORRECT: 'Eure Antwort ist falsch.',
       openGroupActivity: 'Zur Gruppenaktivität',
+      openGroupActivitySubmission: 'Zur Abgabe',
       openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:
         'Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.',
@@ -734,6 +738,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       maxNumberOfGroupMembers:
         'Deine Gruppe hat die maximale Anzahl von Teilnehmenden erreicht, wie von deinem Dozierenden festgelegt. Es können keine weiteren Studierenden dieser Gruppe beitreten.',
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
+      groupActivityEnded:
+        'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
     },
   },
   manage: {
@@ -975,6 +981,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startDate: 'Bitte geben Sie ein Startdatum für Ihre Session ein.',
       endDate: 'Bitte geben Sie ein Enddatum für Ihre Session ein.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
+      endInFuture: 'Das Enddatum muss in der Zukunft liegen.',
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
       checkValues:
         'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
@@ -1027,7 +1034,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningInformation:
         'Geben Sie in diesem Schritt den Namen für das Microlearning ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       microLearningNoCourse:
-        'Microlearnings müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Microlearnings müssen immer einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       microLearningLecturerDocs:
         'Für weitere Informationen zur Erstellung und Durchführung von Microlearnings, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
       microLearningStudentDocs:
@@ -1133,7 +1140,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
       liveQuizTSinceFirstCorrect: 'Zeit seit erster korrekter Antwort [s]',
       practiceQuizNoCourse:
-        'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Übungs-Quizzes müssen einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:
         'Bitte geben Sie einen Namen für Ihr Übungs-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       practiceQuizInformation:
@@ -1202,7 +1209,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
       groupActivityNoCourse:
-        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
+        'Gruppenaktivitäten müssen immer einem laufenden Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
       groupActivityIntroductionName:
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       groupActivityLecturerDocs:
@@ -1650,6 +1657,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityPublishingHint:
         'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editGroupActivity: 'Gruppenaktivität bearbeiten',
+      endGroupActivity: 'Gruppenaktivität beenden',
+      endGroupActivityMessage:
+        'Bitte bestätigen Sie, dass Sie diese Gruppenaktivität beenden möchten. Beachten Sie, dass nach dem Beenden der Gruppenaktivität keine weiteren Abgaben mehr akzeptiert werden.',
+      noStartedInstancesLoosingAccess:
+        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
+      startedInstancesLoosingAccess:
+        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate eingereicht. Sie verlieren den Zugriff auf die Gruppenaktivität.',
+      noSubmissionsToActivity:
+        'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
+      unaffectedSubmissions:
+        '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',

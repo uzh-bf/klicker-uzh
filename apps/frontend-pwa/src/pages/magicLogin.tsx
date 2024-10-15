@@ -75,7 +75,7 @@ function MagicLogin() {
         type="error"
         duration={8000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
       >
         {t('pwa.general.magicLinkLoginFailed')}
       </Toast>

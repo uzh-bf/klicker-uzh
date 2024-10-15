@@ -251,17 +251,10 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishScheduledPracticeQuizzes: t.boolean({
+      publishScheduledActivities: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
-        },
-      }),
-
-      publishScheduledMicroLearnings: t.boolean({
-        resolve(_, __, ctx) {
-          checkCronToken(ctx)
-          return MicroLearningService.publishScheduledMicroLearnings(ctx)
+          return CourseService.publishScheduledActivities(ctx)
         },
       }),
 
@@ -1422,6 +1415,19 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.unpublishGroupActivity(args, ctx)
+          },
+        }),
+
+      endGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.endGroupActivity(args, ctx)
           },
         }),
 

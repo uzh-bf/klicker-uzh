@@ -290,7 +290,9 @@ model GroupActivityClueInstance {
 
 enum GroupActivityStatus {
   DRAFT
+  SCHEDULED
   PUBLISHED
+  ENDED
   GRADED
 }
 

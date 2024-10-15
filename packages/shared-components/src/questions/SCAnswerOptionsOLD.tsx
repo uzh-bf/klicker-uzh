@@ -37,7 +37,7 @@ export function SCAnswerOptionsOLD({
             onClick={onChange(index)}
             key={`${choice.value}-${index}`}
             active={value?.includes(index)}
-            data={{ cy: 'sc-answer-options' }}
+            data={{ cy: `sc-answer-option-${index}` }}
           >
             <Button.Label>
               <Markdown

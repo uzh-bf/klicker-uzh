@@ -34,7 +34,7 @@ import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
+import { orderStacks } from '../lib/util.js'
 import {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
@@ -3020,62 +3020,4 @@ export async function publishPracticeQuiz(
 
     return updatedQuiz
   }
-}
-
-export async function publishScheduledPracticeQuizzes(ctx: Context) {
-  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
-    where: {
-      status: PublicationStatus.SCHEDULED,
-      availableFrom: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedQuizzes = await Promise.all(
-    quizzesToPublish.map((quiz) =>
-      ctx.prisma.practiceQuiz.update({
-        where: {
-          id: quiz.id,
-        },
-        data: {
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          stacks: true,
-        },
-      })
-    )
-  )
-
-  await Promise.all(
-    updatedQuizzes.map((quiz) =>
-      ctx.prisma.course.update({
-        where: {
-          id: quiz.courseId,
-        },
-        data: {
-          elementStacks: {
-            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
-          },
-        },
-      })
-    )
-  )
-
-  if (updatedQuizzes.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledPracticeQuizzes',
-      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
-    )
-  }
-
-  updatedQuizzes.forEach((quiz) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id: quiz.id,
-    })
-  })
-
-  return true
 }

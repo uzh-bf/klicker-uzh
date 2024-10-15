@@ -277,10 +277,7 @@ function QuestionEditModal({
     {}
   )
 
-  const questionManipulationSchema = useMemo(
-    () => createValidationSchema(t),
-    [t]
-  )
+  const questionManipulationSchema = createValidationSchema(t)
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -1006,7 +1003,9 @@ function QuestionEditModal({
                                                   newValue
                                                 )
                                               }}
-                                              data={{ cy: 'set-correctness' }}
+                                              data={{
+                                                cy: `set-correctness-${index}`,
+                                              }}
                                             />
                                           )}
                                         </FastField>

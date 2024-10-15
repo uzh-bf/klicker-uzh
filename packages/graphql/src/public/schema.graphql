@@ -576,6 +576,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
+  status: GroupActivityStatus!
 }
 
 type GroupActivityGrading {
@@ -621,8 +622,10 @@ type GroupActivityResults {
 
 enum GroupActivityStatus {
   DRAFT
+  ENDED
   GRADED
   PUBLISHED
+  SCHEDULED
 }
 
 type GroupActivitySummary {
@@ -793,6 +796,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
+  endGroupActivity(id: String!): GroupActivity
   endSession(id: String!): Session
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
@@ -827,8 +831,7 @@ type Mutation {
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
-  publishScheduledMicroLearnings: Boolean!
-  publishScheduledPracticeQuizzes: Boolean!
+  publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestMigrationToken(email: String!): Boolean
@@ -1355,7 +1358,9 @@ type Subscription {
   feedbackCreated(sessionId: String!): Feedback!
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
+  groupActivityEnded(courseId: String!): GroupActivity!
   runningSessionUpdated(sessionId: String!): SessionBlock
+  singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 
 input SubscriptionKeysInput {

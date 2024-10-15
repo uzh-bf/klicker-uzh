@@ -13,7 +13,7 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../sessions/creation/EditorField'
@@ -62,60 +62,64 @@ function CourseManipulationModal({
   const endDatePast =
     initialValues?.endDate && new Date(initialValues.endDate) < new Date()
 
-  const schema = useMemo(
-    () =>
-      yup.object().shape({
-        name: yup.string().required(t('manage.courseList.courseNameReq')),
-        displayName: yup
-          .string()
-          .required(t('manage.courseList.courseDisplayNameReq')),
-        description: yup.string(),
-        color: yup.string().required(t('manage.courseList.courseColorReq')),
-        startDate: yup.date().required(t('manage.courseList.courseStartReq')),
-        endDate: endDatePast
-          ? yup.date()
-          : yup
-              .date()
-              .min(new Date(), t('manage.courseList.endDateFuture'))
-              .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
-              .required(t('manage.courseList.courseEndReq')),
-        isGamificationEnabled: yup.boolean(),
-        isGroupCreationEnabled: yup.boolean(),
-        groupCreationDeadline: initialValues?.groupDeadlineDate
-          ? yup
-              .date()
-              .min(
-                yup.ref('startDate'),
-                t('manage.courseList.groupDeadlineAfterStart')
-              )
-              .max(
-                yup.ref('endDate'),
-                t('manage.courseList.groupDeadlineBeforeEnd')
-              )
-              .required(t('manage.courseList.groupDeadlineReq'))
-          : yup
-              .date()
-              .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
-              .max(
-                yup.ref('endDate'),
-                t('manage.courseList.groupDeadlineBeforeEnd')
-              )
-              .required(t('manage.courseList.groupDeadlineReq')),
-        maxGroupSize: yup
-          .number()
-          .min(2, t('manage.courseList.maxGroupSizeMin'))
-          .moreThan(
-            yup.ref('preferredGroupSize'),
-            t('manage.courseList.maxGroupSizeLargerThanPreferred')
+  const schema = yup.object().shape({
+    name: yup.string().required(t('manage.courseList.courseNameReq')),
+    displayName: yup
+      .string()
+      .required(t('manage.courseList.courseDisplayNameReq')),
+    description: yup.string(),
+    color: yup.string().required(t('manage.courseList.courseColorReq')),
+    startDate: yup.date().required(t('manage.courseList.courseStartReq')),
+    endDate: endDatePast
+      ? yup.date()
+      : yup
+          .date()
+          .test(
+            'checkDateInPast',
+            t('manage.courseList.endDateFuture'),
+            (d) => {
+              return !!(d && d > new Date())
+            }
           )
-          .required(t('manage.courseList.maxGroupSizeReq')),
-        preferredGroupSize: yup
-          .number()
-          .min(2, t('manage.courseList.preferredGroupSizeMin'))
-          .required(t('manage.courseList.preferredGroupSizeReq')),
-      }),
-    [endDatePast, initialValues?.groupDeadlineDate, t]
-  )
+          .when('startDate', (startDate, schema) =>
+            schema.min(startDate, t('manage.courseList.endAfterStart'))
+          )
+          .required(t('manage.courseList.courseEndReq')),
+    isGamificationEnabled: yup.boolean(),
+    isGroupCreationEnabled: yup.boolean(),
+    groupCreationDeadline: initialValues?.groupDeadlineDate
+      ? yup
+          .date()
+          .min(
+            yup.ref('startDate'),
+            t('manage.courseList.groupDeadlineAfterStart')
+          )
+          .max(
+            yup.ref('endDate'),
+            t('manage.courseList.groupDeadlineBeforeEnd')
+          )
+          .required(t('manage.courseList.groupDeadlineReq'))
+      : yup
+          .date()
+          .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
+          .max(
+            yup.ref('endDate'),
+            t('manage.courseList.groupDeadlineBeforeEnd')
+          )
+          .required(t('manage.courseList.groupDeadlineReq')),
+    maxGroupSize: yup
+      .number()
+      .min(2, t('manage.courseList.maxGroupSizeMin'))
+      .moreThan(
+        yup.ref('preferredGroupSize'),
+        t('manage.courseList.maxGroupSizeLargerThanPreferred')
+      )
+      .required(t('manage.courseList.maxGroupSizeReq')),
+    preferredGroupSize: yup
+      .number()
+      .min(2, t('manage.courseList.preferredGroupSizeMin'))
+      .required(t('manage.courseList.preferredGroupSizeReq')),
+  })
 
   // convert all dates back to local time
   const today = new Date()

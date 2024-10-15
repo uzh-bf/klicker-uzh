@@ -14,7 +14,6 @@ import { GraphQLError } from 'graphql'
 import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {
@@ -385,46 +384,6 @@ export async function publishMicroLearning(
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
   return updatedMicroLearning
-}
-
-export async function publishScheduledMicroLearnings(ctx: Context) {
-  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
-    where: {
-      status: PublicationStatus.SCHEDULED,
-      scheduledStartAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedMicroLearnings = await Promise.all(
-    microlearningsToPublish.map((micro) =>
-      ctx.prisma.microLearning.update({
-        where: {
-          id: micro.id,
-        },
-        data: {
-          status: PublicationStatus.PUBLISHED,
-        },
-      })
-    )
-  )
-
-  if (updatedMicroLearnings.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledMicroLearnings',
-      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
-    )
-  }
-
-  updatedMicroLearnings.forEach((micro) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'MicroLearning',
-      id: micro.id,
-    })
-  })
-
-  return true
 }
 
 interface UnpublishMicroLearningArgs {
