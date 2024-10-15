@@ -22,7 +22,7 @@ import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SuspensedGroupView from '~/components/course/SuspensedGroupView'
+import SuspendedGroupView from '~/components/course/SuspendedGroupView'
 import Layout from '../../../components/Layout'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
@@ -403,7 +403,7 @@ function CourseOverview({
                 course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
                   <Suspense key={group.id} fallback={<Loader />}>
-                    <SuspensedGroupView
+                    <SuspendedGroupView
                       group={group}
                       participation={participation}
                       participant={participant}

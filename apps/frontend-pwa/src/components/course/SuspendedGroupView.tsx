@@ -45,7 +45,7 @@ import GroupActivityListSubscriber from '../groupActivity/GroupActivityListSubsc
 import GroupVisualization from '../participant/groups/GroupVisualization'
 import EditableGroupName from './EditableGroupName'
 
-interface SuspensedGroupViewProps {
+interface SuspendedGroupViewProps {
   group: Omit<ParticipantGroup, 'participants' | 'messages'> & {
     participants?: Omit<Participant, 'isActive' | 'locale' | 'xp'>[] | null
     messages?: Omit<GroupMessage, 'group'>[] | null
@@ -66,7 +66,7 @@ interface SuspensedGroupViewProps {
   >
 }
 
-function SuspensedGroupView({
+function SuspendedGroupView({
   group,
   participation,
   participant,
@@ -77,7 +77,7 @@ function SuspensedGroupView({
   groupActivityQueryRef,
   setSelectedTab,
   subscribeActivityList,
-}: SuspensedGroupViewProps) {
+}: SuspendedGroupViewProps) {
   const t = useTranslations()
   const [endedGroupActivity, setEndedGroupActivity] = useState<
     string | undefined
@@ -384,4 +384,4 @@ function SuspensedGroupView({
   )
 }
 
-export default SuspensedGroupView
+export default SuspendedGroupView
