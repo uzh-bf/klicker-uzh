@@ -18,7 +18,7 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupActivitySubscriber from '~/components/groupActivity/GroupActivitySubscriber'
 import Layout from '../../../../components/Layout'
@@ -29,7 +29,6 @@ function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
-  const [submissionDisabled, setSubmissionDisabled] = useState(false)
 
   const { data, loading, error, subscribeToMore } = useQuery(
     GroupActivityDetailsDocument,
@@ -40,15 +39,6 @@ function GroupActivityDetails() {
       },
     }
   )
-
-  useEffect(() => {
-    if (
-      data?.groupActivityDetails?.status === GroupActivityStatus.Ended ||
-      activityEnded
-    ) {
-      setSubmissionDisabled(true)
-    }
-  }, [data?.groupActivityDetails, activityEnded])
 
   const [startGroupActivity, { loading: startLoading }] = useMutation(
     StartGroupActivityDocument,
@@ -255,7 +245,9 @@ function GroupActivityDetails() {
               <GroupActivityStack
                 key={`group-activity-stack-ended-${activityEnded}`}
                 activityId={instance.id}
-                activityEnded={submissionDisabled}
+                activityEnded={
+                  groupActivity.status === GroupActivityStatus.Ended
+                }
                 stack={groupActivity.stacks[0] as ElementStack}
                 decisions={instance.decisions}
                 results={instance.results}
@@ -275,7 +267,7 @@ function GroupActivityDetails() {
         className={{ root: 'max-w-[30rem]' }}
         dismissible
       >
-        {t('pwa.courses.groupActivityEnded', {
+        {t('pwa.groupActivity.groupActivityEnded', {
           activityName: groupActivity.displayName,
         })}
       </Toast>

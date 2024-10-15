@@ -242,6 +242,8 @@ function CourseOverviewPage() {
           >
             <GroupActivityList
               groupActivities={course.groupActivities ?? []}
+              groupDeadlineDate={course.groupDeadlineDate}
+              numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
               courseId={course.id}
               userCatalyst={user?.userProfile?.catalyst}
             />

@@ -196,21 +196,6 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
-            groupActivities: {
-              where: {
-                status: {
-                  in: [
-                    GroupActivityStatus.PUBLISHED,
-                    GroupActivityStatus.ENDED,
-                    GroupActivityStatus.GRADED,
-                  ],
-                },
-                isDeleted: false,
-              },
-              orderBy: {
-                scheduledStartAt: 'asc',
-              },
-            },
           },
         },
         participant: {
@@ -224,15 +209,6 @@ export async function getCourseOverviewData(
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
-    })
-
-    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
-      where: {
-        groupId: {
-          in:
-            participation?.participant.participantGroups.map((g) => g.id) ?? [],
-        },
-      },
     })
 
     const lbEntries =
@@ -363,7 +339,6 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
-        groupActivityInstances,
         inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
@@ -728,6 +703,9 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
+      _count: {
+        select: { participantGroups: true },
+      },
       sessions: {
         where: {
           isDeleted: false,
@@ -894,6 +872,7 @@ export async function getCourseData(
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
+    numOfParticipantGroups: course._count.participantGroups,
     leaderboard: activeLBEntries,
     averageActiveScore,
   }

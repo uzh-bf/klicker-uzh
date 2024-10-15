@@ -1632,6 +1632,35 @@ export async function unpublishGroupActivity(
   return updatedGroupActivity
 }
 
+export async function openGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: GroupActivityStatus.SCHEDULED,
+      isDeleted: false,
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+    },
+  })
+
+  // trigger subscription to immediately update student frontend
+  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
+
+  return updatedGroupActivity
+}
+
 export async function endGroupActivity(
   { id }: GetGroupActivityArgs,
   ctx: ContextWithUser
@@ -1708,6 +1737,58 @@ export async function deleteGroupActivity(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedGroupActivity
   }
+}
+
+export async function getCourseGroupActivities(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      groupActivities: {
+        where: {
+          status: {
+            in: [
+              GroupActivityStatus.PUBLISHED,
+              GroupActivityStatus.ENDED,
+              GroupActivityStatus.GRADED,
+            ],
+          },
+          isDeleted: false,
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return course?.groupActivities
+}
+
+export async function getGroupActivityInstances(
+  { groupId, courseId }: { groupId: string; courseId: string },
+  ctx: ContextWithUser
+) {
+  const instances = await ctx.prisma.groupActivityInstance.findMany({
+    where: {
+      groupActivity: {
+        course: {
+          id: courseId,
+        },
+      },
+      group: {
+        id: groupId,
+      },
+    },
+  })
+
+  return instances
 }
 
 export async function getGroupActivitySummary(

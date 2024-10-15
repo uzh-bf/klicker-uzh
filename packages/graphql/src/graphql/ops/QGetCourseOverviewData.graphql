@@ -44,15 +44,6 @@ query GetCourseOverviewData($courseId: String!) {
           name
         }
       }
-
-      groupActivities {
-        id
-        displayName
-        status
-        description
-        scheduledStartAt
-        scheduledEndAt
-      }
     }
     leaderboard {
       id
@@ -78,13 +69,6 @@ query GetCourseOverviewData($courseId: String!) {
     groupLeaderboardStatistics {
       participantCount
       averageScore
-    }
-    groupActivityInstances {
-      id
-      decisionsSubmittedAt
-      results
-      resultsComputedAt
-      groupActivityId
     }
   }
   participantGroups(courseId: $courseId) {

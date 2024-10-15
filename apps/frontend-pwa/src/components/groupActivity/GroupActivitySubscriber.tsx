@@ -21,7 +21,7 @@ function GroupActivitySubscriber({
       document: SingleGroupActivityEndedDocument,
       variables: { activityId },
       updateQuery: (
-        prev: GroupActivityDetails,
+        prev: { groupActivityDetails: GroupActivityDetails },
         {
           subscriptionData,
         }: {
@@ -36,10 +36,11 @@ function GroupActivitySubscriber({
         setEndedGroupActivity(true)
 
         // update the values returned by the course overview data query
-        return {
-          ...prev,
+        const updatedActivity = {
+          ...prev.groupActivityDetails,
           status: subscriptionData.data.singleGroupActivityEnded.status,
         }
+        return { groupActivityDetails: updatedActivity }
       },
     })
   }, [activityId, subscribeToMore])

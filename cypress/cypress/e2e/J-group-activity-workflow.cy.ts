@@ -79,6 +79,39 @@ const comments2 = [
 const gradingComment1 = 'This is a test grading comment'
 const gradingComment2 = undefined
 
+const synchronousActivityName = 'Synchronous Group Activity'
+const synchronousActivityDisplayName = synchronousActivityName + ' (Display)'
+const synchronousActivityTask = 'Synchronous Group Activity Task Description'
+const synchronousActivityStart = `${currentYear + 1}-01-01T02:00`
+const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
+const synchronousActivityClues: {
+  type: 'text' | 'number'
+  name: string
+  displayName: string
+  content: string
+  unit?: string
+}[] = [
+  {
+    type: 'text',
+    name: 'Test Clue 1',
+    displayName: 'Test Clue Display Name 1',
+    content: 'Test Clue Content 1',
+  },
+  {
+    type: 'number',
+    name: 'Test Clue 2',
+    displayName: 'Test Clue Display Name 2',
+    content: '42',
+    unit: 'kg',
+  },
+  {
+    type: 'text',
+    name: 'Test Clue 3',
+    displayName: 'Test Clue Display Name 3',
+    content: 'Content 3',
+  },
+]
+
 describe('Create and solve a group activity', () => {
   it('Create questions required for microlearning creation', () => {
     cy.loginLecturer()
@@ -279,6 +312,22 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="load-session-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(activityName).should('exist')
+  })
+
+  it('Creates a group activity that starts and ends in the future', () => {
+    cy.loginLecturer()
+    cy.createGroupActivity({
+      name: synchronousActivityName,
+      displayName: synchronousActivityDisplayName,
+      task: synchronousActivityTask,
+      courseName: testCourse,
+      scheduledStartDate: synchronousActivityStart,
+      scheduledEndDate: synchronousActivityEnd,
+      clues: synchronousActivityClues,
+      stack: {
+        elements: [SCQuestionTitle, MCQuestionTitle, KPRIMQuestionTitle],
+      },
+    })
   })
 
   it('Publish and unpublish the future group activity', () => {
@@ -699,14 +748,12 @@ describe('Create and solve a group activity', () => {
     // end the group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="end-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="end-group-activity-${runningActivityName}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
-    cy.get('[data-cy="confirm-successful-submissions"]').should('not.exist')
     cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
     cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="end-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="end-group-activity-${runningActivityName}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
-    cy.get('[data-cy="confirm-successful-submissions"]').should('not.exist')
     cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
@@ -1014,20 +1061,170 @@ describe('Create and solve a group activity', () => {
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
-  // it('Cleanup: Delete all the created group activities', () => {
-  //   cy.loginLecturer()
+  it('Publish the synchronous group activity', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
 
-  //   // delete the created group activity
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-  //   cy.get('[data-cy="tab-groupActivities"]').click()
-  //   cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-  //   cy.get(`[data-cy="delete-groupActivity-${runningActivityName}"]`).click()
-  //   cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
-  //   cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
-  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
+    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`)
+      .findByText(messages.shared.generic.draft)
+      .should('exist')
+    cy.get(
+      `[data-cy="publish-groupActivity-${synchronousActivityName}"]`
+    ).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`)
+      .findByText(messages.shared.generic.scheduled)
+      .should('exist')
+  })
+
+  it('Login as a student and check that the group activity is not visible', () => {
+    cy.loginStudent()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="group-activity-${synchronousActivityDisplayName}"]`
+    ).should('not.exist')
+  })
+
+  it('Start the synchronous group activity', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+    ).click()
+    cy.get(
+      `[data-cy="start-group-activity-${synchronousActivityName}-now"]`
+    ).click()
+    cy.get('[data-cy="confirm-groups-getting-access"]').click()
+    cy.get('[data-cy="confirm-activity-available-until"]').click()
+    cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+    ).click()
+    cy.get(
+      `[data-cy="start-group-activity-${synchronousActivityName}-now"]`
+    ).click()
+    cy.get('[data-cy="confirm-groups-getting-access"]').click()
+    cy.get('[data-cy="confirm-activity-available-until"]').click()
+    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+  })
+
+  it('Login as a student and solve the group activity', () => {
+    cy.loginStudent()
+
+    // start the group activity
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-group-activity"]').click()
+
+    // answer the questions
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="submit-group-activity"]').click()
+    cy.wait(2000)
+  })
+
+  it('Login as a student and start the synchronous group activity', () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-group-activity"]').click()
+  })
+
+  it('End the synchronous group activity', () => {
+    // navigate to course overview
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(testCourse).click()
+
+    // end the group activity
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+    ).click()
+    cy.get(`[data-cy="end-group-activity-${synchronousActivityName}"]`).click()
+    cy.get('[data-cy="confirm-instances-loosing-access"]').click()
+    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+
+    // check that the group activity is now in the grading state
+    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`).findByText(
+      messages.shared.generic.grading
+    )
+  })
+
+  it('Login as a student with a valid submission', () => {
+    cy.loginStudent()
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-submission-${synchronousActivityDisplayName}"]`
+    ).click()
+
+    // check that the inputs are disabled
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+  })
+
+  it('Login as a second student and check that the group activity cannot be started anymore', () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(
+      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-group-activity"]').should('not.exist')
+  })
+
+  it('Cleanup: Delete all the created group activities', () => {
+    cy.loginLecturer()
+
+    // delete the created group activities
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="delete-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
+    cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).should(
+      'not.exist'
+    )
+
+    cy.get(
+      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-groupActivity-${synchronousActivityName}"]`
+    ).click()
+    cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
+    cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+    ).should('not.exist')
+  })
 })

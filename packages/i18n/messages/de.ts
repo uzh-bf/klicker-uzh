@@ -505,8 +505,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
-      groupActivityEnded:
+      groupActivityEndedToast:
         'Gruppenaktivität "{activityName}" beendet, keine weiteren Einreichungen möglich.',
+      groupActivityStartedToast:
+        'Die Gruppenaktivität "{activityName}" hat begonnen. Startet sie jetzt!',
       coursePracticeArea:
         'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
@@ -1668,6 +1670,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
       unaffectedSubmissions:
         '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
+      startGroupActivityNow: 'Gruppenaktivität jetzt starten',
+      startGroupActivityNowMessage:
+        'Bitte bestätigen Sie, dass Sie die Gruppenaktivität jetzt starten möchten. Beachten Sie, dass eine Gruppenaktivität nach dem Starten nicht mehr bearbeitet werden kann.',
+      noParticipantGroupsAvailable:
+        'In diesem Kurs wurden bisher keine Teilnehmergruppen gebildet, welche eine Gruppenaktivität lösen könnten. Bitte warten Sie die Gruppenbildung ab oder verschieben Sie die entsprechende Deadline über die Kurseinstellungen in die Zukunft.',
+      groupFormationNotCompleted:
+        'Die Gruppenbildung wurde noch nicht abgeschlossen. Bitte warten Sie das eingestellte Enddatum ab oder wählen sie die sofortige Gruppenzuteilung.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} Teilnehmergruppe(n) erhalten nach dem Start der Gruppenaktivität sofort Zugriff auf den entsprechenden Inhalt.',
+      groupActivityAvailableUntil:
+        'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',

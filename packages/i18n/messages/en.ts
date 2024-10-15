@@ -504,8 +504,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
-      groupActivityEnded:
+      groupActivityEndedToast:
         'Group activity "{activityName}" ended, no more submissions are possible.',
+      groupActivityStartedToast:
+        'Group activity "{activityName}" has just opened, start it now!',
       coursePracticeArea:
         'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
@@ -1648,6 +1650,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
         '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
+      startGroupActivityNow: 'Start group activity now',
+      startGroupActivityNowMessage:
+        'Please confirm that you want to start the group activity now. Note that a group activity cannot be edited after starting.',
+      noParticipantGroupsAvailable:
+        'No participant groups have been formed in this course yet. Please wait for the group formation to be completed or move the corresponding deadline to the future in the course settings.',
+      groupFormationNotCompleted:
+        'Group formation has not been completed yet. Please wait for the set deadline or choose immediate group assignment.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} group(s) will get immediate access to the corresponding content after the group activity is started.',
+      groupActivityAvailableUntil:
+        'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
       deleteGroupActivity: 'Delete group activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
