@@ -1632,6 +1632,35 @@ export async function unpublishGroupActivity(
   return updatedGroupActivity
 }
 
+export async function openGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: GroupActivityStatus.SCHEDULED,
+      isDeleted: false,
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+    },
+  })
+
+  // trigger subscription to immediately update student frontend
+  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
+
+  return updatedGroupActivity
+}
+
 export async function endGroupActivity(
   { id }: GetGroupActivityArgs,
   ctx: ContextWithUser

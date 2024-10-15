@@ -728,6 +728,9 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
+      _count: {
+        select: { participantGroups: true },
+      },
       sessions: {
         where: {
           isDeleted: false,
@@ -894,6 +897,7 @@ export async function getCourseData(
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
+    numOfParticipantGroups: course._count.participantGroups,
     leaderboard: activeLBEntries,
     averageActiveScore,
   }

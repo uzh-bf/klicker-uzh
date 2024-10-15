@@ -10,6 +10,7 @@ query GetSingleCourse($courseId: String!) {
     color
     numOfParticipants
     numOfActiveParticipants
+    numOfParticipantGroups
     averageScore
     averageActiveScore
     startDate

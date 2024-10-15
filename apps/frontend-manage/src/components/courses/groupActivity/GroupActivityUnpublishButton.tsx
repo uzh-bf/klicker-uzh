@@ -39,7 +39,7 @@ function GroupActivityUnpublishButton({
       basic
     >
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-        <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
         <div>{t('manage.course.unpublishGroupActivity')}</div>
       </div>
     </Button>

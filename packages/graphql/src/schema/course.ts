@@ -23,6 +23,7 @@ import { IUser, UserRef } from './user.js'
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
   numOfActiveParticipants?: number
+  numOfParticipantGroups?: number
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
@@ -54,6 +55,9 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
+      nullable: true,
+    }),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups', {
       nullable: true,
     }),
 

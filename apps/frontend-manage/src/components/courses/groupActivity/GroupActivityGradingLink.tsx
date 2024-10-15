@@ -20,7 +20,7 @@ function GroupActivityGradingLink({
       data-cy={`grade-groupActivity-${activityName}`}
     >
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-        <FontAwesomeIcon icon={faUpRightFromSquare} className="w-[1.1rem]" />
+        <FontAwesomeIcon icon={faUpRightFromSquare} className="w-[1.2rem]" />
         <div>{t('manage.course.gradeGroupActivity')}</div>
       </div>
     </Link>

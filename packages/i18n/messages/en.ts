@@ -1648,6 +1648,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
         '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
+      startGroupActivityNow: 'Start group activity now',
+      startGroupActivityNowMessage:
+        'Please confirm that you want to start the group activity now. Note that a group activity cannot be edited after starting.',
+      noParticipantGroupsAvailable:
+        'No participant groups have been formed in this course yet. Please wait for the group formation to be completed or move the corresponding deadline to the future in the course settings.',
+      groupFormationNotCompleted:
+        'Group formation has not been completed yet. Please wait for the set deadline or choose immediate group assignment.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} group(s) will get immediate access to the corresponding content after the group activity is started.',
+      groupActivityAvailableUntil:
+        'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
       deleteGroupActivity: 'Delete group activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
