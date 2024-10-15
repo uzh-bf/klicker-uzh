@@ -20,6 +20,7 @@ import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
   GroupActivityDetails,
+  GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
 import { MicroLearning } from './microLearning.js'
@@ -545,6 +546,29 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.getCourseOverviewData(args, ctx) as any
+        },
+      }),
+
+      groupActivities: asParticipant.field({
+        nullable: true,
+        type: [GroupActivity],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getCourseGroupActivities(args, ctx)
+        },
+      }),
+
+      groupActivityInstances: asParticipant.field({
+        nullable: true,
+        type: [GroupActivityInstance],
+        args: {
+          groupId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.getGroupActivityInstances(args, ctx)
         },
       }),
 

@@ -1109,8 +1109,10 @@ type Query {
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
+  groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
+  groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]

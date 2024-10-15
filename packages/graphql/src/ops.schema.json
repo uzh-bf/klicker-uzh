@@ -14,6 +14,7 @@
         "kind": "OBJECT",
         "name": "Achievement",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "descriptionDE",
@@ -117,6 +118,7 @@
         "kind": "OBJECT",
         "name": "ActivityEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "description",
@@ -208,6 +210,7 @@
         "kind": "OBJECT",
         "name": "ActivitySummary",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "numOfAnonymousResponses",
@@ -251,6 +254,7 @@
         "kind": "INPUT_OBJECT",
         "name": "AvatarSettingsInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -406,6 +410,7 @@
         "kind": "OBJECT",
         "name": "AwardEntry",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "description",
@@ -537,6 +542,7 @@
         "kind": "INPUT_OBJECT",
         "name": "BlockInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -596,6 +602,7 @@
         "kind": "SCALAR",
         "name": "Boolean",
         "description": "The `Boolean` scalar type represents `true` or `false`.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -606,6 +613,7 @@
         "kind": "OBJECT",
         "name": "Choice",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "correct",
@@ -673,6 +681,7 @@
         "kind": "OBJECT",
         "name": "ChoiceElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "correct",
@@ -740,6 +749,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ChoiceInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -807,6 +817,7 @@
         "kind": "OBJECT",
         "name": "ChoiceQuestionOptions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "choices",
@@ -890,6 +901,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1039,6 +1051,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1180,6 +1193,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "anonymousAnswers",
@@ -1247,6 +1261,7 @@
         "kind": "OBJECT",
         "name": "ChoicesQuestionData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1392,6 +1407,7 @@
         "kind": "OBJECT",
         "name": "ClassAchievementInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -1419,6 +1435,7 @@
         "kind": "OBJECT",
         "name": "ConfusionSummary",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "difficulty",
@@ -1474,6 +1491,7 @@
         "kind": "OBJECT",
         "name": "ConfusionTimestep",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "createdAt",
@@ -1533,6 +1551,7 @@
         "kind": "OBJECT",
         "name": "ContentElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1666,6 +1685,7 @@
         "kind": "OBJECT",
         "name": "ContentElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1807,6 +1827,7 @@
         "kind": "OBJECT",
         "name": "ContentElementQData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -1936,6 +1957,7 @@
         "kind": "OBJECT",
         "name": "ContentElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "anonymousAnswers",
@@ -1979,6 +2001,7 @@
         "kind": "OBJECT",
         "name": "Course",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "averageActiveScore",
@@ -2498,6 +2521,7 @@
         "kind": "OBJECT",
         "name": "CourseSummary",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "numOfGroupActivities",
@@ -2621,6 +2645,7 @@
         "kind": "SCALAR",
         "name": "Date",
         "description": "A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -2631,6 +2656,7 @@
         "kind": "OBJECT",
         "name": "Element",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -2878,6 +2904,7 @@
         "kind": "INTERFACE",
         "name": "ElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -3031,6 +3058,7 @@
         "kind": "ENUM",
         "name": "ElementDisplayMode",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3054,6 +3082,7 @@
         "kind": "OBJECT",
         "name": "ElementFeedback",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "downvote",
@@ -3141,6 +3170,7 @@
         "kind": "OBJECT",
         "name": "ElementInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "elementData",
@@ -3248,6 +3278,7 @@
         "kind": "INTERFACE",
         "name": "ElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -3393,6 +3424,7 @@
         "kind": "OBJECT",
         "name": "ElementInstanceOptions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "pointsMultiplier",
@@ -3428,6 +3460,7 @@
         "kind": "ENUM",
         "name": "ElementInstanceType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3463,6 +3496,7 @@
         "kind": "ENUM",
         "name": "ElementOrderType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3486,6 +3520,7 @@
         "kind": "OBJECT",
         "name": "ElementStack",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "description",
@@ -3585,6 +3620,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ElementStackInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -3660,6 +3696,7 @@
         "kind": "ENUM",
         "name": "ElementStackType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3695,6 +3732,7 @@
         "kind": "ENUM",
         "name": "ElementStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3724,6 +3762,7 @@
         "kind": "ENUM",
         "name": "ElementType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -3777,6 +3816,7 @@
         "kind": "OBJECT",
         "name": "EvaluationBlock",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "blockIx",
@@ -3844,6 +3884,7 @@
         "kind": "OBJECT",
         "name": "Feedback",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -3999,6 +4040,7 @@
         "kind": "OBJECT",
         "name": "FeedbackResponse",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -4090,6 +4132,7 @@
         "kind": "OBJECT",
         "name": "FileUploadSAS",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "containerName",
@@ -4165,6 +4208,7 @@
         "kind": "ENUM",
         "name": "FlashcardCorrectness",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -4194,6 +4238,7 @@
         "kind": "ENUM",
         "name": "FlashcardCorrectnessType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -4223,6 +4268,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -4356,6 +4402,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -4497,6 +4544,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementQData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -4626,6 +4674,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "anonymousAnswers",
@@ -4717,6 +4766,7 @@
         "kind": "SCALAR",
         "name": "Float",
         "description": "The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -4727,6 +4777,7 @@
         "kind": "OBJECT",
         "name": "FreeElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -4868,6 +4919,7 @@
         "kind": "OBJECT",
         "name": "FreeElementResult",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "correct",
@@ -4923,6 +4975,7 @@
         "kind": "OBJECT",
         "name": "FreeElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "anonymousAnswers",
@@ -5022,6 +5075,7 @@
         "kind": "OBJECT",
         "name": "FreeTextElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -5171,6 +5225,7 @@
         "kind": "OBJECT",
         "name": "FreeTextQuestionData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -5316,6 +5371,7 @@
         "kind": "OBJECT",
         "name": "FreeTextQuestionOptions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "hasAnswerFeedbacks",
@@ -5387,6 +5443,7 @@
         "kind": "OBJECT",
         "name": "FreeTextRestrictions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "maxLength",
@@ -5410,6 +5467,7 @@
         "kind": "INPUT_OBJECT",
         "name": "FreeTextRestrictionsInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -5457,6 +5515,7 @@
         "kind": "OBJECT",
         "name": "GroupAchievementInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -5484,6 +5543,7 @@
         "kind": "OBJECT",
         "name": "GroupActivity",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "activityInstances",
@@ -5699,6 +5759,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClue",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "displayName",
@@ -5802,6 +5863,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClueAssignment",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -5829,6 +5891,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityClueInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -5916,6 +5979,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClueInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "displayName",
@@ -6031,6 +6095,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityDecision",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "choicesResponse",
@@ -6130,6 +6195,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityDecisionInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -6189,6 +6255,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityDetails",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "activityInstance",
@@ -6392,6 +6459,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityGrading",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "feedback",
@@ -6463,6 +6531,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityGradingDecisionInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -6518,6 +6587,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityGradingInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -6581,6 +6651,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "clues",
@@ -6704,6 +6775,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityParameter",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -6731,6 +6803,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "comment",
@@ -6810,6 +6883,7 @@
         "kind": "ENUM",
         "name": "GroupActivityStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -6851,6 +6925,7 @@
         "kind": "OBJECT",
         "name": "GroupActivitySummary",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "numOfStartedInstances",
@@ -6894,6 +6969,7 @@
         "kind": "OBJECT",
         "name": "GroupAssignmentPoolEntry",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "courseId",
@@ -6965,6 +7041,7 @@
         "kind": "OBJECT",
         "name": "GroupLeaderboardEntry",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -7052,6 +7129,7 @@
         "kind": "OBJECT",
         "name": "GroupMessage",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -7151,6 +7229,7 @@
         "kind": "SCALAR",
         "name": "ID",
         "description": "The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `\"4\"`) or integer (such as `4`) input value will be accepted as an ID.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -7161,6 +7240,7 @@
         "kind": "OBJECT",
         "name": "InstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "answers",
@@ -7392,6 +7472,7 @@
         "kind": "OBJECT",
         "name": "InstanceResult",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "blockIx",
@@ -7523,6 +7604,7 @@
         "kind": "SCALAR",
         "name": "Int",
         "description": "The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -7533,6 +7615,7 @@
         "kind": "SCALAR",
         "name": "Json",
         "description": "The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -7543,6 +7626,7 @@
         "kind": "OBJECT",
         "name": "LeaderboardEntry",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "avatar",
@@ -7726,6 +7810,7 @@
         "kind": "OBJECT",
         "name": "LeaderboardStatistics",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "averageScore",
@@ -7769,6 +7854,7 @@
         "kind": "OBJECT",
         "name": "LeaveCourseParticipation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -7812,6 +7898,7 @@
         "kind": "OBJECT",
         "name": "Level",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "avatar",
@@ -7907,6 +7994,7 @@
         "kind": "ENUM",
         "name": "LocaleType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -7930,6 +8018,7 @@
         "kind": "OBJECT",
         "name": "MediaFile",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "createdAt",
@@ -8021,6 +8110,7 @@
         "kind": "OBJECT",
         "name": "MicroLearning",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "arePushNotificationsSent",
@@ -8216,6 +8306,7 @@
         "kind": "OBJECT",
         "name": "Mutation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "activateParticipantAccount",
@@ -14040,6 +14131,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -14189,6 +14281,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementInstanceEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -14330,6 +14423,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementResult",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "correct",
@@ -14385,6 +14479,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementResults",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "anonymousAnswers",
@@ -14500,6 +14595,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementSolutions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "max",
@@ -14535,6 +14631,7 @@
         "kind": "OBJECT",
         "name": "NumericalQuestionData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -14680,6 +14777,7 @@
         "kind": "OBJECT",
         "name": "NumericalQuestionOptions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "accuracy",
@@ -14787,6 +14885,7 @@
         "kind": "OBJECT",
         "name": "NumericalRestrictions",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "max",
@@ -14822,6 +14921,7 @@
         "kind": "INPUT_OBJECT",
         "name": "NumericalRestrictionsInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -14881,6 +14981,7 @@
         "kind": "OBJECT",
         "name": "NumericalSolutionRange",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "max",
@@ -14916,6 +15017,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsChoicesInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -14983,6 +15085,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsFreeTextInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -15074,6 +15177,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsNumericalInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -15177,6 +15281,7 @@
         "kind": "ENUM",
         "name": "ParameterType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -15200,6 +15305,7 @@
         "kind": "OBJECT",
         "name": "Participant",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "achievements",
@@ -15451,6 +15557,7 @@
         "kind": "OBJECT",
         "name": "ParticipantAchievementInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "achievedAt",
@@ -15526,6 +15633,7 @@
         "kind": "OBJECT",
         "name": "ParticipantGroup",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "averageMemberScore",
@@ -15669,6 +15777,7 @@
         "kind": "OBJECT",
         "name": "ParticipantLearningData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "course",
@@ -15840,6 +15949,7 @@
         "kind": "OBJECT",
         "name": "ParticipantTokenData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "participant",
@@ -15875,6 +15985,7 @@
         "kind": "OBJECT",
         "name": "ParticipantWithAchievements",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "achievements",
@@ -15926,6 +16037,7 @@
         "kind": "OBJECT",
         "name": "Participation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "completedMicroLearnings",
@@ -16037,6 +16149,7 @@
         "kind": "OBJECT",
         "name": "PracticeQuiz",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "availableFrom",
@@ -16240,6 +16353,7 @@
         "kind": "ENUM",
         "name": "PublicationStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -16269,6 +16383,7 @@
         "kind": "OBJECT",
         "name": "PushSubscription",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "endpoint",
@@ -16312,6 +16427,7 @@
         "kind": "OBJECT",
         "name": "Query",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "basicCourseInformation",
@@ -17249,6 +17365,43 @@
             "deprecationReason": null
           },
           {
+            "name": "groupActivities",
+            "description": null,
+            "args": [
+              {
+                "name": "courseId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "GroupActivity",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "groupActivity",
             "description": null,
             "args": [
@@ -17318,6 +17471,59 @@
               "kind": "OBJECT",
               "name": "GroupActivityDetails",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "groupActivityInstances",
+            "description": null,
+            "args": [
+              {
+                "name": "courseId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "groupId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "GroupActivityInstance",
+                  "ofType": null
+                }
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -18014,6 +18220,7 @@
         "kind": "INTERFACE",
         "name": "QuestionData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "content",
@@ -18163,6 +18370,7 @@
         "kind": "OBJECT",
         "name": "QuestionFeedback",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "correct",
@@ -18230,6 +18438,7 @@
         "kind": "OBJECT",
         "name": "QuestionInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -18285,6 +18494,7 @@
         "kind": "OBJECT",
         "name": "QuestionOrElementInstance",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "elementInstance",
@@ -18320,6 +18530,7 @@
         "kind": "OBJECT",
         "name": "QuestionResponse",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "aggregatedResponses",
@@ -18611,6 +18822,7 @@
         "kind": "OBJECT",
         "name": "QuestionResponseDetail",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -18638,6 +18850,7 @@
         "kind": "ENUM",
         "name": "ResponseCorrectness",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -18667,6 +18880,7 @@
         "kind": "ENUM",
         "name": "ResponseCorrectnessType",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -18696,6 +18910,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ResponseInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -18739,6 +18954,7 @@
         "kind": "OBJECT",
         "name": "RunningLiveQuizSummary",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "numOfConfusionFeedbacks",
@@ -18814,6 +19030,7 @@
         "kind": "OBJECT",
         "name": "Session",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "accessMode",
@@ -19253,6 +19470,7 @@
         "kind": "ENUM",
         "name": "SessionAccessMode",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -19276,6 +19494,7 @@
         "kind": "OBJECT",
         "name": "SessionBlock",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "execution",
@@ -19415,6 +19634,7 @@
         "kind": "ENUM",
         "name": "SessionBlockStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -19444,6 +19664,7 @@
         "kind": "OBJECT",
         "name": "SessionEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "blocks",
@@ -19615,6 +19836,7 @@
         "kind": "ENUM",
         "name": "SessionStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -19650,6 +19872,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SolutionRangeInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -19685,6 +19908,7 @@
         "kind": "INPUT_OBJECT",
         "name": "StackElementsInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -19728,6 +19952,7 @@
         "kind": "OBJECT",
         "name": "StackEvaluation",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "instances",
@@ -19819,6 +20044,7 @@
         "kind": "OBJECT",
         "name": "StackFeedback",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "evaluations",
@@ -19894,6 +20120,7 @@
         "kind": "ENUM",
         "name": "StackFeedbackStatus",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -19935,6 +20162,7 @@
         "kind": "INPUT_OBJECT",
         "name": "StackResponseInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -20046,6 +20274,7 @@
         "kind": "OBJECT",
         "name": "Statistics",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "max",
@@ -20169,6 +20398,7 @@
         "kind": "SCALAR",
         "name": "String",
         "description": "The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -20179,6 +20409,7 @@
         "kind": "OBJECT",
         "name": "StudentCourse",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "color",
@@ -20278,6 +20509,7 @@
         "kind": "OBJECT",
         "name": "Subscription",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "feedbackAdded",
@@ -20549,6 +20781,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SubscriptionKeysInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -20592,6 +20825,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SubscriptionObjectInput",
         "description": null,
+        "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
@@ -20647,6 +20881,7 @@
         "kind": "OBJECT",
         "name": "TabData",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -20714,6 +20949,7 @@
         "kind": "OBJECT",
         "name": "Tag",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -20773,6 +21009,7 @@
         "kind": "OBJECT",
         "name": "Title",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -20800,6 +21037,7 @@
         "kind": "OBJECT",
         "name": "User",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "catalyst",
@@ -20979,6 +21217,7 @@
         "kind": "OBJECT",
         "name": "UserLogin",
         "description": null,
+        "isOneOf": null,
         "fields": [
           {
             "name": "id",
@@ -21062,6 +21301,7 @@
         "kind": "ENUM",
         "name": "UserLoginScope",
         "description": null,
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -21109,6 +21349,7 @@
         "kind": "OBJECT",
         "name": "__Directive",
         "description": "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "name",
@@ -21225,6 +21466,7 @@
         "kind": "ENUM",
         "name": "__DirectiveLocation",
         "description": "A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -21350,6 +21592,7 @@
         "kind": "OBJECT",
         "name": "__EnumValue",
         "description": "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "name",
@@ -21417,6 +21660,7 @@
         "kind": "OBJECT",
         "name": "__Field",
         "description": "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "name",
@@ -21537,6 +21781,7 @@
         "kind": "OBJECT",
         "name": "__InputValue",
         "description": "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "name",
@@ -21632,6 +21877,7 @@
         "kind": "OBJECT",
         "name": "__Schema",
         "description": "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "description",
@@ -21743,6 +21989,7 @@
         "kind": "OBJECT",
         "name": "__Type",
         "description": "The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByURL`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.",
+        "isOneOf": null,
         "fields": [
           {
             "name": "kind",
@@ -21946,6 +22193,18 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "isOneOf",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -21957,6 +22216,7 @@
         "kind": "ENUM",
         "name": "__TypeKind",
         "description": "An enum describing what kind of type a given `__Type` is.",
+        "isOneOf": null,
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -22066,6 +22326,15 @@
             "deprecationReason": null
           }
         ]
+      },
+      {
+        "name": "oneOf",
+        "description": "Indicates exactly one field must be supplied and this field must not be `null`.",
+        "isRepeatable": false,
+        "locations": [
+          "INPUT_OBJECT"
+        ],
+        "args": []
       },
       {
         "name": "skip",

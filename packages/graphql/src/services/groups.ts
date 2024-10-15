@@ -1739,6 +1739,58 @@ export async function deleteGroupActivity(
   }
 }
 
+export async function getCourseGroupActivities(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      groupActivities: {
+        where: {
+          status: {
+            in: [
+              GroupActivityStatus.PUBLISHED,
+              GroupActivityStatus.ENDED,
+              GroupActivityStatus.GRADED,
+            ],
+          },
+          isDeleted: false,
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return course?.groupActivities
+}
+
+export async function getGroupActivityInstances(
+  { groupId, courseId }: { groupId: string; courseId: string },
+  ctx: ContextWithUser
+) {
+  const instances = await ctx.prisma.groupActivityInstance.findMany({
+    where: {
+      groupActivity: {
+        course: {
+          id: courseId,
+        },
+      },
+      group: {
+        id: groupId,
+      },
+    },
+  })
+
+  return instances
+}
+
 export async function getGroupActivitySummary(
   { id }: { id: string },
   ctx: ContextWithUser

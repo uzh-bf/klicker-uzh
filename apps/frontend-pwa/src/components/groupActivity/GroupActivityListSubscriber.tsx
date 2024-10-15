@@ -2,7 +2,6 @@ import {
   GroupActivity,
   GroupActivityEndedDocument,
   GroupActivityStartedDocument,
-  ParticipantLearningData,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
@@ -24,31 +23,25 @@ function GroupActivityListSubscriber({
       document: GroupActivityEndedDocument,
       variables: { courseId },
       updateQuery: (
-        prev: ParticipantLearningData,
+        prev: { groupActivities: GroupActivity[] },
         {
           subscriptionData,
         }: {
           subscriptionData: { data: { groupActivityEnded: GroupActivity } }
         }
-      ) => {
+      ): { groupActivities: GroupActivity[] } => {
         if (!subscriptionData.data) return prev
 
         // trigger toast for ended group activity
         const updatedActivity = subscriptionData.data.groupActivityEnded
         setEndedGroupActivity(updatedActivity.displayName)
 
-        // update the values returned by the course overview data query
-        const updatedCourse = Object.assign({}, prev, {
-          course: Object.assign({}, prev.course, {
-            groupActivities: prev.course?.groupActivities?.map((activity) =>
-              activity.id === updatedActivity.id
-                ? { ...updatedActivity }
-                : activity
-            ),
-          }),
-        })
+        // update the values returned by the course group activity data query
+        const updatedQueryContent = prev.groupActivities.map((activity) =>
+          activity.id === updatedActivity.id ? updatedActivity : activity
+        )
 
-        return updatedCourse
+        return { groupActivities: updatedQueryContent }
       },
     })
 
@@ -56,28 +49,32 @@ function GroupActivityListSubscriber({
       document: GroupActivityStartedDocument,
       variables: { courseId },
       updateQuery: (
-        prev: ParticipantLearningData,
+        prev: { groupActivities: GroupActivity[] },
         {
           subscriptionData,
         }: {
           subscriptionData: { data: { groupActivityStarted: GroupActivity } }
         }
-      ) => {
+      ): { groupActivities: GroupActivity[] } => {
         if (!subscriptionData.data) return prev
+
+        // required saveguard since the subscription is somehow triggered twice
+        if (
+          prev.groupActivities.some(
+            (activity) =>
+              activity.id === subscriptionData.data.groupActivityStarted.id
+          )
+        ) {
+          return prev
+        }
 
         // trigger toast for ended group activity
         const newActivity = subscriptionData.data.groupActivityStarted
         setStartedGroupActivity(newActivity.displayName)
 
         // update the values returned by the course overview data query
-        return Object.assign({}, prev, {
-          course: Object.assign({}, prev.course ?? {}, {
-            groupActivities: [
-              newActivity,
-              ...(prev.course?.groupActivities ?? []),
-            ],
-          }),
-        })
+        const updatedQueryContent = [newActivity, ...prev.groupActivities]
+        return { groupActivities: updatedQueryContent }
       },
     })
   }, [courseId, subscribeToMore])

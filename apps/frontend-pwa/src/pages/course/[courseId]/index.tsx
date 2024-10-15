@@ -1,11 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client'
-import GroupView from '@components/course/GroupView'
+import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
 import {
+  GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
-  GroupActivityInstance,
   JoinCourseDocument,
   LeaveCourseDocument,
-  LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -15,23 +13,17 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import {
-  Button,
-  H3,
-  Tabs,
-  Toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SuspensedGroupView from '~/components/course/SuspensedGroupView'
 import Layout from '../../../components/Layout'
-import GroupActivityListSubscriber from '../../../components/groupActivity/GroupActivityListSubscriber'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
@@ -53,24 +45,20 @@ function CourseOverview({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
-  const [endedGroupActivity, setEndedGroupActivity] = useState<
-    string | undefined
-  >(undefined)
-  const [startedGroupActivity, setStartedGroupActivity] = useState<
-    string | undefined
-  >(undefined)
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { data, loading, error, subscribeToMore } = useQuery(
-    GetCourseOverviewDataDocument,
-    {
+  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
+    variables: { courseId },
+  })
+
+  const [groupActivityQueryRef, { subscribeToMore: subscribeActivityList }] =
+    useBackgroundQuery(GetCourseGroupActivitiesDocument, {
       variables: { courseId },
-    }
-  )
+    })
 
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
@@ -85,8 +73,6 @@ function CourseOverview({
       { query: GetCourseOverviewDataDocument, variables: { courseId } },
     ],
   })
-
-  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   useEffect(() => {
     if (
@@ -121,7 +107,6 @@ function CourseOverview({
     leaderboardStatistics,
     groupLeaderboard,
     groupLeaderboardStatistics,
-    groupActivityInstances,
     inRandomGroupPool,
   } = data.getCourseOverviewData
 
@@ -132,17 +117,6 @@ function CourseOverview({
   const top10Participants = leaderboard
     ? leaderboard.map((entry) => entry.participantId)
     : []
-
-  const indexedGroupActivityInstances =
-    groupActivityInstances?.reduce<Record<string, GroupActivityInstance>>(
-      (acc, groupActivityInstance) => {
-        return {
-          ...acc,
-          [groupActivityInstance.groupActivityId]: groupActivityInstance,
-        }
-      },
-      {}
-    ) ?? {}
 
   const openProfileModal = (id: string, isSelf: boolean) => {
     if (isSelf) {
@@ -165,12 +139,6 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
-          <GroupActivityListSubscriber
-            courseId={courseId}
-            subscribeToMore={subscribeToMore}
-            setEndedGroupActivity={setEndedGroupActivity}
-            setStartedGroupActivity={setStartedGroupActivity}
-          />
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
@@ -434,22 +402,22 @@ function CourseOverview({
                 participation &&
                 course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
-                  <GroupView
-                    key={group.id}
-                    group={group}
-                    participation={participation}
-                    participant={participant}
-                    groupActivities={course.groupActivities ?? []}
-                    groupActivityInstances={indexedGroupActivityInstances}
-                    courseId={course.id}
-                    maxGroupSize={course.maxGroupSize}
-                    groupDeadlineDate={course.groupDeadlineDate}
-                    isGroupDeadlinePassed={
-                      course.isGroupDeadlinePassed ?? false
-                    }
-                    setSelectedTab={setSelectedTab}
-                    subscribeToMore={subscribeToMore}
-                  />
+                  <Suspense key={group.id} fallback={<Loader />}>
+                    <SuspensedGroupView
+                      group={group}
+                      participation={participation}
+                      participant={participant}
+                      courseId={course.id}
+                      maxGroupSize={course.maxGroupSize}
+                      groupDeadlineDate={course.groupDeadlineDate}
+                      isGroupDeadlinePassed={
+                        course.isGroupDeadlinePassed ?? false
+                      }
+                      groupActivityQueryRef={groupActivityQueryRef}
+                      setSelectedTab={setSelectedTab}
+                      subscribeActivityList={subscribeActivityList}
+                    />
+                  </Suspense>
                 ))}
 
               {course.isGamificationEnabled && (
@@ -488,30 +456,6 @@ function CourseOverview({
           })}
         />
       )}
-      <Toast
-        type="warning"
-        openExternal={typeof endedGroupActivity !== 'undefined'}
-        onCloseExternal={() => setEndedGroupActivity(undefined)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.groupActivityEndedToast', {
-          activityName: endedGroupActivity,
-        })}
-      </Toast>
-      <Toast
-        type="success"
-        openExternal={typeof startedGroupActivity !== 'undefined'}
-        onCloseExternal={() => setStartedGroupActivity(undefined)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.groupActivityStartedToast', {
-          activityName: startedGroupActivity,
-        })}
-      </Toast>
     </Layout>
   )
 }
