@@ -6,7 +6,7 @@ describe('Create questions', () => {
     cy.loginLecturer()
   })
 
-  it('creates a content element', () => {
+  it('Create a content element', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Content ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -39,7 +39,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
-  it('creates a flashcard element', () => {
+  it('Create a flashcard element', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Flashcard ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -73,7 +73,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
-  it('creates a single choice question', () => {
+  it('Create a single choice question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -121,7 +121,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
   })
 
-  it('creates a multiple choice question', () => {
+  it('Create a multiple choice question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -179,7 +179,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
   })
 
-  it('creates a KPRIM question', () => {
+  it('Create a KPRIM question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A KPRIM ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -264,7 +264,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
 
-  it('creates a Numeric question', () => {
+  it('Create a Numeric question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Numeric ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -305,7 +305,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="input-numerical-unit"]').contains('%')
   })
 
-  it('creates a Free Text question', () => {
+  it('Create a Free Text question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Free Text ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -340,7 +340,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="free-text-input-1"]').should('exist')
   })
 
-  it('creates a new question, duplicates it and then deletes the duplicate again', () => {
+  it('Create a new question, duplicates it and then deletes the duplicate again', () => {
     const randomNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
