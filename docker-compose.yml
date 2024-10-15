@@ -34,22 +34,6 @@ services:
     networks:
       - klicker
 
-  reverse_proxy_wsl_jannis:
-    image: docker.io/library/traefik:v2.10
-    command:
-      - --api.insecure=true
-      - --providers.file=true
-      - --providers.file.filename=/etc/traefik/rules.yaml
-      - --providers.file.watch=true
-      - --entrypoints.web.address=:80
-    ports:
-      - 80:80
-      - 8080:8080
-    volumes:
-      - './util/traefik/rules_wsl_jannis.yaml:/etc/traefik/rules.yaml'
-    networks:
-      - klicker
-
   auth:
     profiles:
       - full
