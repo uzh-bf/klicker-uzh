@@ -1,10 +1,40 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
+auth:
+  priorityClassName: staging-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: auth.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-auth-tls
+        hosts:
+          - auth.klicker-qa.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 frontendPWA:
   priorityClassName: staging-workload
 
-  hostname: pwa.klicker-qa.bf-app.ch
+  autoscaling:
+    enabled: false
 
   ingress:
     hosts:
@@ -31,7 +61,8 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
 
-  hostname: manage.klicker-qa.bf-app.ch
+  autoscaling:
+    enabled: false
 
   ingress:
     hosts:
@@ -55,10 +86,43 @@ frontendManage:
       cpu: 200m
       memory: 200Mi
 
+frontendControl:
+  priorityClassName: staging-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: control.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-control-tls
+        hosts:
+          - control.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 backendGraphql:
   priorityClassName: staging-workload
 
-  hostname: backend-sls.klicker-qa.bf-app.ch
+  autoscaling:
+    enabled: false
+
+  appManageSubdomain: manage
+  appStudentSubdomain: pwa
+  appControlSubdomain: control
 
   ingress:
     hosts:
@@ -82,7 +146,22 @@ backendGraphql:
       cpu: 200m
       memory: 200Mi
 
+lti:
+  priorityClassName: staging-workload
+
+  ingress:
+    hosts:
+      - host: lti.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-lti-tls
+        hosts:
+          - lti.klicker-qa.bf-app.ch
+
 redis:
+  priorityClassName: staging-workload
   architecture: standalone
   auth:
     enabled: false

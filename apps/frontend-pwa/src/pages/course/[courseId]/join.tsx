@@ -7,7 +7,12 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { initializeApollo } from '@lib/apollo'
-import { Button, H2, PinField, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikPinField,
+  H2,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
@@ -79,13 +84,13 @@ function JoinCourse({
       displayName={t('pwa.general.joinCourse')}
       course={{ displayName: displayName, color: color, id: courseId }}
     >
-      <div className="max-w-5xl mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="mx-auto max-w-5xl md:mb-4 md:rounded md:border md:p-8 md:pt-6">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -112,14 +117,13 @@ function JoinCourse({
               {({ isSubmitting, isValid }) => {
                 return (
                   <Form>
-                    <PinField
+                    <FormikPinField
                       name="pin"
                       label={t('pwa.joinCourse.coursePinFormat')}
                     />
-
                     <Button
                       className={{
-                        root: 'float-right mt-2 border-uzh-grey-80',
+                        root: 'border-uzh-grey-80 float-right mt-2',
                       }}
                       type="submit"
                       disabled={isSubmitting || !isValid}
@@ -134,7 +138,7 @@ function JoinCourse({
           </div>
         ) : (
           <div>
-            <div className="mb-5 ">
+            <div className="mb-5">
               {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <CreateAccountForm
@@ -151,10 +155,16 @@ function JoinCourse({
                     username: values.username.trim(),
                     password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
+                    courseId,
                   },
                 })
 
-                router.reload()
+                await router.push({
+                  pathname: '/login',
+                  query: {
+                    newAccount: true,
+                  },
+                })
               }}
             />
           </div>

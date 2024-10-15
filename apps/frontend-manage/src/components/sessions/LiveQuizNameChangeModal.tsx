@@ -43,7 +43,7 @@ function LiveQuizNameChangeModal({
         onClose={(): void => setOpen(false)}
         title={t('manage.sessions.changeLiveQuizName')}
         className={{
-          content: 'w-[30rem] min-h-max h-max self-center pt-0',
+          content: 'w-[30rem]',
           title: 'text-xl',
         }}
       >
@@ -86,13 +86,12 @@ function LiveQuizNameChangeModal({
             <>
               <FormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="name"
                 label={t('manage.sessionForms.name')}
                 tooltip={t('manage.sessionForms.liveQuizName')}
                 className={{
-                  root: 'mb-2 -mt-2 w-full',
+                  root: '-mt-2 mb-2 w-full',
                   tooltip: 'z-20 w-80',
                   label: 'w-36',
                 }}
@@ -101,7 +100,6 @@ function LiveQuizNameChangeModal({
               />
               <FormikTextField
                 required
-                labelType="small"
                 autoComplete="off"
                 name="displayName"
                 label={t('manage.sessionForms.displayName')}
@@ -113,7 +111,7 @@ function LiveQuizNameChangeModal({
                 }}
                 data-cy="insert-live-quiz-display-name"
               />
-              <div className="flex flex-row justify-between mt-3 -mb-4">
+              <div className="mt-3 flex flex-row justify-between">
                 <Button
                   type="button"
                   onClick={(): void => setOpen(false)}
@@ -142,16 +140,20 @@ function LiveQuizNameChangeModal({
         </Formik>
       </Modal>
       <Toast
+        dismissible
         openExternal={successToast}
-        setOpenExternal={setSuccessToast}
+        onCloseExternal={() => setSuccessToast(false)}
         type="success"
+        duration={6000}
       >
         {t('manage.sessions.liveQuizNameChangeSuccess')}
       </Toast>
       <Toast
+        dismissible
         openExternal={errorToast}
-        setOpenExternal={setErrorToast}
+        onCloseExternal={() => setErrorToast(false)}
         type="error"
+        duration={6000}
       >
         {t('manage.sessions.liveQuizNameChangeError')}
       </Toast>

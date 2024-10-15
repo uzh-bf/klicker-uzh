@@ -12,15 +12,24 @@ import {
   ElementInstance,
   ElementInstanceType,
   ElementOrderType,
+  ElementStack,
   ElementStackType,
   ElementType,
+  InstanceStatistics,
+  Participation,
+  QuestionResponse as PrismaQuestionResponse,
   PublicationStatus,
+  ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
@@ -35,13 +44,21 @@ import {
 import { IInstanceEvaluation } from '../schema/question.js'
 import {
   AllElementTypeData,
+  Choice,
+  ChoicesElementData,
   ContentResults,
+  ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardCorrectness,
   FlashcardResults,
+  FreeTextElementData,
+  NumericalElementData,
   QuestionResponse,
   QuestionResponseChoices,
+  QuestionResponseContent,
+  QuestionResponseFlashcard,
+  QuestionResponseValue,
   StackFeedbackStatus,
   StackInput,
 } from '../types/app.js'
@@ -49,6 +66,12 @@ import {
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
+
+const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> = {
+  [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
+  [FlashcardCorrectness.PARTIAL]: StackFeedbackStatus.PARTIAL,
+  [FlashcardCorrectness.CORRECT]: StackFeedbackStatus.CORRECT,
+}
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -60,6 +83,7 @@ export async function getPracticeQuizData(
       OR: [
         {
           status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
         },
         {
           status: PublicationStatus.SCHEDULED,
@@ -104,10 +128,11 @@ export async function getPracticeQuizData(
   }
 
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
-    // TODO: add time decay as well
     // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense
-    // const orderedStacks = quiz.stacks.toSorted((a, b) => { // TODO: use once nodejs 20 is used
-    const orderedStacks = orderStacks(quiz.stacks)
+    const orderedStacks =
+      quiz.orderType === ElementOrderType.SPACED_REPETITION
+        ? orderStacks(quiz.stacks)
+        : quiz.stacks
 
     return {
       ...quiz,
@@ -115,6 +140,286 @@ export async function getPracticeQuizData(
       numOfStacks: orderedStacks.length,
     }
   }
+
+  return quiz
+}
+
+export function computeStackEvaluation(
+  stacks: (ElementStack & { elements: ElementInstance[] })[]
+) {
+  return stacks.map((stack) => {
+    return {
+      stackId: stack.id!,
+      stackName: stack.displayName,
+      stackDescription: stack.description,
+      stackOrder: stack.order,
+
+      instances: stack.elements.flatMap((instance) => {
+        let hasSampleSolution = false
+        let hasAnswerFeedbacks = false
+        const instanceType = instance.elementData.type
+
+        if (
+          instanceType !== ElementType.FLASHCARD &&
+          instanceType !== ElementType.CONTENT
+        ) {
+          hasSampleSolution =
+            instance.elementData.options.hasSampleSolution ?? false
+          hasAnswerFeedbacks =
+            instance.elementData.options.hasAnswerFeedbacks ?? false
+        }
+
+        const commonInstanceData = {
+          id: instance.id,
+          type: instanceType,
+          name: instance.elementData.name,
+          content: instance.elementData.content,
+          explanation: instance.elementData.explanation,
+
+          hasSampleSolution,
+          hasAnswerFeedbacks,
+        }
+
+        switch (instanceType) {
+          case ElementType.SC:
+          case ElementType.MC:
+          case ElementType.KPRIM: {
+            const instanceResults = instance.results as ElementResultsChoices
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsChoices
+            const choiceResults = instanceResults.choices
+            const anonymousChoiceResults = anonymousInstanceResults.choices
+            const availableChoices = instance.elementData.options
+              .choices as Choice[]
+
+            // combine anonymous and participant results into new format
+            const choices = availableChoices.map((choice) => {
+              return {
+                value: choice.value,
+                count:
+                  (choiceResults[choice.ix] ?? 0) +
+                  (anonymousChoiceResults[choice.ix] ?? 0),
+                correct: choice.correct,
+                feedback: choice.feedback,
+              }
+            })
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
+                choices,
+              },
+            }
+          }
+
+          case ElementType.NUMERICAL: {
+            const instanceResults = instance.results as ElementResultsOpen
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsOpen
+            const options = instance.elementData
+              .options as NumericalQuestionOptions
+
+            // combine anonymous and participant results into new format
+            const nrResponses = [
+              ...Object.values(instanceResults.responses),
+              ...Object.values(anonymousInstanceResults.responses),
+            ].reduce<
+              { value: number; count: number; correct?: boolean | null }[]
+            >((acc, response) => {
+              const responseValue = parseFloat(response.value)
+              const ix = acc.findIndex(
+                (r) => Math.abs(r.value - responseValue) < Number.EPSILON
+              )
+              if (ix === -1) {
+                acc.push({
+                  value: responseValue,
+                  count: response.count,
+                  correct: response.correct,
+                })
+              } else {
+                acc[ix] = {
+                  ...acc[ix]!,
+                  count: acc[ix]!.count + response.count,
+                }
+              }
+              return acc
+            }, [])
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
+                maxValue: options.restrictions?.max,
+                minValue: options.restrictions?.min,
+                solutionRanges: options.solutionRanges,
+                responseValues: nrResponses,
+                // TODO: extend with statistics
+              },
+            }
+          }
+
+          case ElementType.FREE_TEXT: {
+            const instanceResults = instance.results as ElementResultsOpen
+            const anonymousInstanceResults =
+              instance.anonymousResults as ElementResultsOpen
+            const options = instance.elementData
+              .options as FreeTextQuestionOptions
+
+            // combine anonymous and participant results into new format
+            const ftResponses = [
+              ...Object.values(instanceResults.responses),
+              ...Object.values(anonymousInstanceResults.responses),
+            ].reduce<
+              { value: string; count: number; correct?: boolean | null }[]
+            >((acc, response) => {
+              const ix = acc.findIndex((r) => r.value === response.value)
+              if (ix === -1) {
+                acc.push({
+                  value: response.value,
+                  count: response.count,
+                  correct: response.correct,
+                })
+              } else {
+                acc[ix] = {
+                  ...acc[ix]!,
+                  count: acc[ix]!.count + response.count,
+                }
+              }
+              return acc
+            }, [])
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
+                maxLength: options.restrictions?.maxLength,
+                solutions: options.solutions,
+                responses: ftResponses,
+              },
+            }
+          }
+
+          case ElementType.FLASHCARD: {
+            const instanceResults = instance.results as FlashcardResults
+            const anonymousInstanceResults =
+              instance.anonymousResults as FlashcardResults
+
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instanceResults.total + anonymousInstanceResults.total,
+                anonymousAnswers: anonymousInstanceResults.total,
+                correctCount:
+                  instanceResults[FlashcardCorrectness.CORRECT] +
+                  anonymousInstanceResults[FlashcardCorrectness.CORRECT],
+                partialCount:
+                  instanceResults[FlashcardCorrectness.PARTIAL] +
+                  anonymousInstanceResults[FlashcardCorrectness.PARTIAL],
+                incorrectCount:
+                  instanceResults[FlashcardCorrectness.INCORRECT] +
+                  anonymousInstanceResults[FlashcardCorrectness.INCORRECT],
+              },
+            }
+          }
+
+          case ElementType.CONTENT: {
+            return {
+              ...commonInstanceData,
+              results: {
+                totalAnswers:
+                  instance.results.total + instance.anonymousResults.total,
+                anonymousAnswers: instance.anonymousResults.total,
+              },
+            }
+          }
+
+          default:
+            return []
+        }
+      }),
+    }
+  })
+}
+
+export async function getPracticeQuizEvaluation(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // compute evaluation
+  const stackEvaluation = computeStackEvaluation(practiceQuiz.stacks)
+
+  return {
+    id: practiceQuiz.id,
+    name: practiceQuiz.name,
+    displayName: practiceQuiz.displayName,
+    description: practiceQuiz.description,
+    results: stackEvaluation,
+  }
+}
+
+export async function getSinglePracticeQuiz(
+  { id }: { id: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      isDeleted: false,
+    },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
 
   return quiz
 }
@@ -168,8 +473,8 @@ function combineCorrectnessParams({
       increment: correct
         ? 1
         : existingResponse
-        ? -existingResponse.correctCountStreak
-        : 0,
+          ? -existingResponse.correctCountStreak
+          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -241,389 +546,684 @@ function updateSpacedRepetition({
   }
 }
 
+function computeNewAverageTimes({
+  existingInstance,
+  existingResponse,
+  answerTime,
+}: {
+  existingInstance: ElementInstance & {
+    instanceStatistics: InstanceStatistics | null
+  }
+  existingResponse: PrismaQuestionResponse | null
+  answerTime: number
+}): { newAverageResponseTime: number; newAverageInstanceTime: number } {
+  const existingParticipantCount =
+    existingInstance.instanceStatistics!.uniqueParticipantCount
+  const existingInstanceTime =
+    existingInstance.instanceStatistics!.averageTimeSpent
+  const newAverageResponseTime = existingResponse
+    ? (existingResponse.averageTimeSpent * existingResponse.trialsCount +
+        answerTime) /
+      (existingResponse.trialsCount + 1)
+    : answerTime
+  const newAverageInstanceTime = existingResponse
+    ? (existingInstanceTime! * existingParticipantCount -
+        existingResponse.averageTimeSpent +
+        answerTime) /
+      existingParticipantCount
+    : ((existingInstanceTime ?? 0) * existingParticipantCount + answerTime) /
+      (existingParticipantCount + 1)
+
+  return { newAverageResponseTime, newAverageInstanceTime }
+}
+
+function computeUpdatedInstanceStatistics({
+  participation,
+  existingResponse,
+  newAverageInstanceTime,
+  answerCorrect,
+  answerPartial,
+  answerIncorrect,
+  instanceInPracticeQuiz,
+}: {
+  participation: Participation | null
+  existingResponse: PrismaQuestionResponse | null
+  newAverageInstanceTime?: number
+  answerCorrect: boolean
+  answerPartial: boolean
+  answerIncorrect: boolean
+  instanceInPracticeQuiz: boolean
+}) {
+  return participation
+    ? {
+        update: {
+          uniqueParticipantCount: {
+            increment: Number(!existingResponse),
+          },
+          averageTimeSpent: newAverageInstanceTime,
+          correctCount: {
+            increment: Number(answerCorrect),
+          },
+          partialCorrectCount: {
+            increment: Number(answerPartial),
+          },
+          wrongCount: {
+            increment: Number(answerIncorrect),
+          },
+          firstCorrectCount: {
+            increment: Number(
+              answerCorrect && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          firstPartialCorrectCount: {
+            increment: Number(
+              answerPartial && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          firstWrongCount: {
+            increment: Number(
+              answerIncorrect && !existingResponse && instanceInPracticeQuiz
+            ),
+          },
+          lastCorrectCount: {
+            increment:
+              Number(answerCorrect && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.CORRECT
+              ),
+          },
+          lastPartialCorrectCount: {
+            increment:
+              Number(answerPartial && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.PARTIAL
+              ),
+          },
+          lastWrongCount: {
+            increment:
+              Number(answerIncorrect && instanceInPracticeQuiz) -
+              Number(
+                existingResponse?.lastResponseCorrectness ===
+                  ResponseCorrectness.WRONG
+              ),
+          },
+        },
+      }
+    : {
+        update: {
+          anonymousCorrectCount: {
+            increment: Number(answerCorrect),
+          },
+          anonymousPartialCorrectCount: {
+            increment: Number(answerPartial),
+          },
+          anonymousWrongCount: {
+            increment: Number(answerIncorrect),
+          },
+        },
+      }
+}
+
+export function updateFlashcardResults({
+  previousResults,
+  response,
+}: {
+  previousResults: FlashcardResults
+  response: FlashcardCorrectness
+}): FlashcardResults {
+  return {
+    ...previousResults,
+    [response]: (previousResults[response] ?? 0) + 1,
+    total: previousResults.total + 1,
+  }
+}
+
 interface RespondToFlashcardInput {
   id: number
   courseId: string
   response: FlashcardCorrectness
+  answerTime: number
 }
 
 async function respondToFlashcard(
-  { id, courseId, response }: RespondToFlashcardInput,
+  { id, courseId, response, answerTime }: RespondToFlashcardInput,
   ctx: Context
 ) {
-  const existingInstance = await ctx.prisma.elementInstance.findUnique({
-    where: {
-      id,
-    },
-  })
-
-  // check if the instance exists and the response is valid
-  if (
-    !existingInstance ||
-    ![
-      FlashcardCorrectness.INCORRECT,
-      FlashcardCorrectness.PARTIAL,
-      FlashcardCorrectness.CORRECT,
-    ].includes(response)
-  ) {
-    return null
-  }
-
-  // create result from flashcard response
-  const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> =
-    {
-      [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
-      [FlashcardCorrectness.PARTIAL]: StackFeedbackStatus.PARTIAL,
-      [FlashcardCorrectness.CORRECT]: StackFeedbackStatus.CORRECT,
-    }
-  const result = {
-    grading: flashcardResultMap[response],
-    score: null,
-  }
-
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as FlashcardResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        ...existingResults,
-        [response]: (existingResults[response] ?? 0) + 1,
-        total: existingResults.total + 1,
+  const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
+    const existingInstance = await prisma.elementInstance.findUnique({
+      where: {
+        id,
       },
-    },
-  })
+      include: {
+        elementStack: true,
+        instanceStatistics: true,
+      },
+    })
 
-  // fetch the participation of the participant
-  const participation = ctx.user?.sub
-    ? await ctx.prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
+    // check if the instance exists and the response is valid
+    if (
+      !existingInstance ||
+      ![
+        FlashcardCorrectness.INCORRECT,
+        FlashcardCorrectness.PARTIAL,
+        FlashcardCorrectness.CORRECT,
+      ].includes(response)
+    ) {
+      return null
+    }
+
+    const existingResponse = ctx.user?.sub
+      ? await prisma.questionResponse.findUnique({
+          where: {
+            participantId_elementInstanceId: {
+              participantId: ctx.user.sub,
+              elementInstanceId: id,
+            },
+          },
+        })
+      : null
+
+    // create result from flashcard response
+    const result = {
+      grading: flashcardResultMap[response],
+      score: null,
+    }
+
+    // fetch the participation of the participant
+    const participation = ctx.user?.sub
+      ? await prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+          include: {
+            participant: true,
+          },
+        })
+      : null
+
+    const newResults = updateFlashcardResults({
+      previousResults: participation
+        ? (existingInstance.results as FlashcardResults)
+        : (existingInstance.anonymousResults as FlashcardResults),
+      response,
+    })
+
+    // average answer time computations if participant is logged in
+    const { newAverageResponseTime, newAverageInstanceTime } = participation
+      ? computeNewAverageTimes({
+          existingInstance,
+          existingResponse,
+          answerTime,
+        })
+      : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+
+    // variable summaries for code readability
+    const answerCorrect = response === FlashcardCorrectness.CORRECT
+    const answerPartial = response === FlashcardCorrectness.PARTIAL
+    const answerIncorrect = response === FlashcardCorrectness.INCORRECT
+    const instanceInPracticeQuiz =
+      !!existingInstance.elementStack.practiceQuizId
+
+    // compute updated instance statistics
+    const statisticsUpdate = computeUpdatedInstanceStatistics({
+      participation,
+      existingResponse,
+      newAverageInstanceTime,
+      answerCorrect,
+      answerPartial,
+      answerIncorrect,
+      instanceInPracticeQuiz,
+    })
+
+    await prisma.elementInstance.update({
+      where: {
+        id,
+      },
+      data: {
+        results: participation ? newResults : undefined,
+        anonymousResults: participation ? undefined : newResults,
+        instanceStatistics: statisticsUpdate,
+      },
+    })
+
+    // if no user exists, return the grading for client display
+    if (!ctx.user?.sub || !participation) {
+      return result
+    }
+
+    // create question detail response
+    await prisma.questionResponseDetail.create({
+      data: {
+        response: {
+          correctness: response,
+        },
+        timeSpent: answerTime,
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
           },
         },
-        include: {
-          participant: true,
-        },
-      })
-    : null
+      },
+    })
 
-  // if no user exists, return the grading for client display
-  if (!ctx.user?.sub || !participation) {
+    // find existing question response to this instance by this user and/or create/update it
+    const aggregatedResponses =
+      (existingResponse?.aggregatedResponses as FlashcardResults) ?? {
+        [FlashcardCorrectness.INCORRECT]: 0,
+        [FlashcardCorrectness.PARTIAL]: 0,
+        [FlashcardCorrectness.CORRECT]: 0,
+        total: 0,
+      }
+
+    const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
+    const correctness =
+      response === FlashcardCorrectness.CORRECT
+        ? 1
+        : response === FlashcardCorrectness.PARTIAL
+          ? 0.5
+          : 0
+    const responseCorrectness =
+      correctness === 1
+        ? ResponseCorrectness.CORRECT
+        : correctness === 0
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor || 2.5,
+      interval: existingResponse?.interval || 1,
+      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      grade: correctness,
+    })
+
+    await prisma.questionResponse.upsert({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: id,
+        },
+      },
+      create: {
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        averageTimeSpent: newAverageResponseTime,
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+        // RESPONSE and aggregated response creation
+        firstResponse: {
+          correctness: response,
+        },
+        firstResponseCorrectness: responseCorrectness,
+        lastResponse: {
+          correctness: response,
+        },
+        lastResponseCorrectness: responseCorrectness,
+        aggregatedResponses: {
+          ...aggregatedResponses,
+          total: 1,
+          [response]: 1,
+        },
+        trialsCount: 1,
+
+        ...combineNewCorrectnessParams({
+          correct: response === FlashcardCorrectness.CORRECT,
+          partial: response === FlashcardCorrectness.PARTIAL,
+          incorrect: response === FlashcardCorrectness.INCORRECT,
+        }),
+
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+      update: {
+        // RESPONSE
+        lastResponse: {
+          correctness: response,
+        },
+        lastResponseCorrectness: responseCorrectness,
+        averageTimeSpent: newAverageResponseTime,
+        aggregatedResponses: {
+          ...aggregatedResponses,
+          [response]: aggregatedResponses[response] + 1,
+          total: aggregatedResponses.total + 1,
+        },
+
+        trialsCount: {
+          increment: 1,
+        },
+
+        ...combineCorrectnessParams({
+          correct: response === FlashcardCorrectness.CORRECT,
+          partial: response === FlashcardCorrectness.PARTIAL,
+          incorrect: response === FlashcardCorrectness.INCORRECT,
+          existingResponse,
+        }),
+
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+    })
     return result
-  }
-
-  // create question detail response
-  await ctx.prisma.questionResponseDetail.create({
-    data: {
-      response: {
-        correctness: response,
-      },
-      participant: {
-        connect: { id: ctx.user.sub },
-      },
-      elementInstance: {
-        connect: { id },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-      },
-    },
   })
 
-  // find existing question response to this instance by this user and/or create/update it
-  const existingResponse = await ctx.prisma.questionResponse.findUnique({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-  })
-  const aggregatedResponses =
-    (existingResponse?.aggregatedResponses as FlashcardResults) ?? {
-      [FlashcardCorrectness.INCORRECT]: 0,
-      [FlashcardCorrectness.PARTIAL]: 0,
-      [FlashcardCorrectness.CORRECT]: 0,
-      total: 0,
-    }
-
-  const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
-  const correctness =
-    response === FlashcardCorrectness.CORRECT
-      ? 1
-      : response === FlashcardCorrectness.PARTIAL
-      ? 0.5
-      : 0
-  const resultSpacedRepetition = updateSpacedRepetition({
-    eFactor: existingResponse?.eFactor || 2.5,
-    interval: existingResponse?.interval || 1,
-    streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
-    grade: correctness,
-  })
-
-  const questionResponse = await ctx.prisma.questionResponse.upsert({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-    create: {
-      participant: {
-        connect: { id: ctx.user.sub },
-      },
-      elementInstance: {
-        connect: { id },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-      },
-      // RESPONSE and aggregated response creation
-      response: {
-        correctness: response,
-      },
-      aggregatedResponses: {
-        ...aggregatedResponses,
-        total: 1,
-        [response]: 1,
-      },
-      trialsCount: 1,
-
-      ...combineNewCorrectnessParams({
-        correct: response === FlashcardCorrectness.CORRECT,
-        partial: response === FlashcardCorrectness.PARTIAL,
-        incorrect: response === FlashcardCorrectness.INCORRECT,
-      }),
-
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
-    update: {
-      // RESPONSE
-      response: {
-        correctness: response,
-      },
-      aggregatedResponses: {
-        ...aggregatedResponses,
-        [response]: aggregatedResponses[response] + 1,
-        total: aggregatedResponses.total + 1,
-      },
-
-      trialsCount: {
-        increment: 1,
-      },
-
-      ...combineCorrectnessParams({
-        correct: response === FlashcardCorrectness.CORRECT,
-        partial: response === FlashcardCorrectness.PARTIAL,
-        incorrect: response === FlashcardCorrectness.INCORRECT,
-        existingResponse,
-      }),
-
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
-  })
-
-  return result
+  return transactionResult
 }
 
 interface RespondToContentInput {
   id: number
   courseId: string
+  answerTime: number
 }
 
 async function respondToContent(
-  { id, courseId }: RespondToContentInput,
+  { id, courseId, answerTime }: RespondToContentInput,
   ctx: Context
 ) {
-  const existingInstance = await ctx.prisma.elementInstance.findUnique({
-    where: {
-      id,
-    },
-  })
-
-  // check if the instance exists and the response is valid
-  if (!existingInstance) {
-    return null
-  }
-
-  // context elements can only be "read" when submitted
-  const result = {
-    grading: StackFeedbackStatus.CORRECT,
-    score: null,
-  }
-
-  // update the aggregated data on the element instance
-  const existingResults = existingInstance.results as ContentResults
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        total: existingResults.total + 1,
+  const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
+    const existingInstance = await prisma.elementInstance.findUnique({
+      where: {
+        id,
       },
-    },
-  })
+      include: {
+        elementStack: true,
+        instanceStatistics: true,
+      },
+    })
 
-  // fetch the participation of the participant
-  const participation = ctx.user?.sub
-    ? await ctx.prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-        include: {
-          participant: true,
-        },
-      })
-    : null
-
-  // if no user exists, return the grading for client display
-  if (!ctx.user?.sub || !participation) {
-    return result
-  }
-
-  // create question detail response
-  await ctx.prisma.questionResponseDetail.create({
-    data: {
-      response: {
-        viewed: true,
-      },
-      participant: {
-        connect: { id: ctx.user.sub },
-      },
-      elementInstance: {
-        connect: { id },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-      },
-    },
-  })
-
-  // find existing question response
-  const existingResponse = await ctx.prisma.questionResponse.findUnique({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
-      },
-    },
-  })
-  const aggregatedResponses =
-    (existingResponse?.aggregatedResponses as ContentResults) ?? {
-      total: 0,
+    // check if the instance exists and the response is valid
+    if (!existingInstance) {
+      return null
     }
 
-  const resultSpacedRepetition = updateSpacedRepetition({
-    eFactor: existingResponse?.eFactor || 2.5,
-    interval: existingResponse?.interval || 1,
-    streak: (existingResponse?.correctCountStreak || 0) + 1,
-    grade: 1,
-  })
+    const existingResponse = ctx.user?.sub
+      ? await prisma.questionResponse.findUnique({
+          where: {
+            participantId_elementInstanceId: {
+              participantId: ctx.user.sub,
+              elementInstanceId: id,
+            },
+          },
+        })
+      : null
 
-  // create / update question response
-  const questionResponse = await ctx.prisma.questionResponse.upsert({
-    where: {
-      participantId_elementInstanceId: {
-        participantId: ctx.user.sub,
-        elementInstanceId: id,
+    // context elements can only be "read" when submitted
+    const result = {
+      grading: StackFeedbackStatus.CORRECT,
+      score: null,
+    }
+
+    // fetch the participation of the participant
+    const participation = ctx.user?.sub
+      ? await prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+          include: {
+            participant: true,
+          },
+        })
+      : null
+
+    // average answer time computations if participant is logged in
+    const { newAverageResponseTime, newAverageInstanceTime } = participation
+      ? computeNewAverageTimes({
+          existingInstance,
+          existingResponse,
+          answerTime,
+        })
+      : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+
+    // compute updated instance statistics
+    const instanceInPracticeQuiz =
+      !!existingInstance.elementStack.practiceQuizId
+    const statisticsUpdate = computeUpdatedInstanceStatistics({
+      participation,
+      existingResponse,
+      newAverageInstanceTime,
+      answerCorrect: true,
+      answerPartial: false,
+      answerIncorrect: false,
+      instanceInPracticeQuiz,
+    })
+
+    await prisma.elementInstance.update({
+      where: {
+        id,
       },
-    },
-    create: {
-      participant: {
-        connect: { id: ctx.user.sub },
+      data: {
+        results: participation
+          ? { total: existingInstance.results.total + 1 }
+          : undefined,
+        anonymousResults: participation
+          ? undefined
+          : {
+              total: existingInstance.anonymousResults.total + 1,
+            },
+        instanceStatistics: statisticsUpdate,
       },
-      elementInstance: {
-        connect: { id },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
+    })
+
+    // if no user exists, return the grading for client display
+    if (!ctx.user?.sub || !participation) {
+      return result
+    }
+
+    // create question detail response
+    await prisma.questionResponseDetail.create({
+      data: {
+        response: {
+          viewed: true,
+        },
+        timeSpent: answerTime,
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
           },
         },
       },
-      // RESPONSE and aggregated response creation
-      response: {
-        viewed: true,
-      },
-      trialsCount: 1,
+    })
 
-      // AGGREGATED RESPONSES
-      aggregatedResponses: {
-        total: 1,
-      },
+    const aggregatedResponses =
+      (existingResponse?.aggregatedResponses as ContentResults) ?? {
+        total: 0,
+      }
 
-      // CORRECT
-      correctCount: 1,
-      correctCountStreak: 1,
-      lastAnsweredAt: new Date(),
-      lastCorrectAt: new Date(),
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor || 2.5,
+      interval: existingResponse?.interval || 1,
+      streak: (existingResponse?.correctCountStreak || 0) + 1,
+      grade: 1,
+    })
 
-      // update spaced repetition parameters
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
-    update: {
-      // RESPONSE
-      response: {
-        viewed: true,
+    // create / update question response
+    await prisma.questionResponse.upsert({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: ctx.user.sub,
+          elementInstanceId: id,
+        },
       },
-      trialsCount: {
-        increment: 1,
-      },
+      create: {
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        averageTimeSpent: newAverageResponseTime,
+        elementInstance: {
+          connect: { id },
+        },
+        practiceQuiz: existingInstance.elementStack.practiceQuizId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.practiceQuizId,
+              },
+            }
+          : undefined,
+        microLearning: existingInstance.elementStack.microLearningId
+          ? {
+              connect: {
+                id: existingInstance.elementStack.microLearningId,
+              },
+            }
+          : undefined,
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+        // RESPONSE and aggregated response creation
+        firstResponse: {
+          viewed: true,
+        },
+        firstResponseCorrectness: ResponseCorrectness.CORRECT,
+        lastResponse: {
+          viewed: true,
+        },
+        lastResponseCorrectness: ResponseCorrectness.CORRECT,
+        trialsCount: 1,
 
-      // AGGREGATED RESPONSES
-      aggregatedResponses: {
-        total: aggregatedResponses.total + 1,
-      },
+        // AGGREGATED RESPONSES
+        aggregatedResponses: {
+          total: 1,
+        },
 
-      // CORRECT
-      correctCount: {
-        increment: 1,
-      },
-      correctCountStreak: {
-        increment: 1,
-      },
-      lastAnsweredAt: new Date(),
-      lastCorrectAt: new Date(),
+        // CORRECT
+        correctCount: 1,
+        correctCountStreak: 1,
+        lastAnsweredAt: new Date(),
+        lastCorrectAt: new Date(),
 
-      // update spaced repetition parameters
-      eFactor: resultSpacedRepetition.efactor,
-      interval: resultSpacedRepetition.interval,
-      nextDueAt: resultSpacedRepetition.nextDueAt,
-    },
+        // update spaced repetition parameters
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+      update: {
+        // RESPONSE
+        averageTimeSpent: newAverageResponseTime,
+        lastResponse: {
+          viewed: true,
+        },
+        lastResponseCorrectness: ResponseCorrectness.CORRECT,
+        trialsCount: {
+          increment: 1,
+        },
+
+        // AGGREGATED RESPONSES
+        aggregatedResponses: {
+          total: aggregatedResponses.total + 1,
+        },
+
+        // CORRECT
+        correctCount: {
+          increment: 1,
+        },
+        correctCountStreak: {
+          increment: 1,
+        },
+        lastAnsweredAt: new Date(),
+        lastCorrectAt: new Date(),
+
+        // update spaced repetition parameters
+        eFactor: resultSpacedRepetition.efactor,
+        interval: resultSpacedRepetition.interval,
+        nextDueAt: resultSpacedRepetition.nextDueAt,
+      },
+    })
+    return result
   })
 
-  return result
+  return transactionResult
 }
 
 interface EvaluateAnswerCorrectnessArgs {
@@ -803,7 +1403,9 @@ function evaluateElementResponse(
       return {
         feedbacks: [],
         numAnswers: results.total,
-        answers: results.responses ?? {},
+        answers: elementData.options.hasSampleSolution
+          ? (results.responses ?? {})
+          : {},
         score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correctness,
@@ -820,14 +1422,14 @@ function evaluateElementResponse(
 }
 
 interface UpdateQuestionResultsInputs {
-  instance: ElementInstance
+  previousResults: ElementInstanceResults
   elementData: AllElementTypeData
   response: ResponseInput
   correct?: boolean
 }
 
 export function updateQuestionResults({
-  instance,
+  previousResults,
   elementData,
   response,
   correct,
@@ -838,7 +1440,7 @@ export function updateQuestionResults({
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM: {
-      const results = instance?.results as ElementResultsChoices
+      const results = previousResults as ElementResultsChoices
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
@@ -855,7 +1457,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.NUMERICAL: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -883,7 +1485,7 @@ export function updateQuestionResults({
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
-      if (Object.keys(results.responses).includes(value)) {
+      if (Object.keys(results.responses).includes(hashedValue)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
@@ -902,7 +1504,7 @@ export function updateQuestionResults({
     }
 
     case ElementType.FREE_TEXT: {
-      const results = instance?.results as ElementResultsOpen
+      const results = previousResults as ElementResultsOpen
       let updatedResults: ElementResultsOpen = results
 
       if (
@@ -919,7 +1521,7 @@ export function updateQuestionResults({
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
-      if (Object.keys(results.responses).includes(value)) {
+      if (Object.keys(results.responses).includes(hashedValue)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
@@ -951,7 +1553,13 @@ export async function respondToQuestion(
     courseId,
     id,
     response,
-  }: { courseId: string; id: number; response: ResponseInput },
+    answerTime,
+  }: {
+    courseId: string
+    id: number
+    response: ResponseInput
+    answerTime: number
+  },
   ctx: Context
 ) {
   const MD5 = createHash('md5')
@@ -976,96 +1584,121 @@ export async function respondToQuestion(
     treatAnonymous = true
   }
 
-  const { instance, updatedInstance, correctness, validResponse } =
-    await ctx.prisma.$transaction(async (prisma) => {
-      const instance = await prisma.elementInstance.findUnique({
-        where: { id },
-        // if the participant is logged in, fetch the last response of the participant
-        // the response will not be counted and will only yield points if not within the past week
-        include:
-          ctx.user?.sub &&
-          !treatAnonymous &&
-          ctx.user.role === UserRole.PARTICIPANT
-            ? {
-                responses: {
-                  where: {
-                    participant: {
-                      id: ctx.user.sub,
-                    },
-                  },
-                  take: 1,
-                },
-              }
-            : {
-                responses: {
-                  take: 1,
-                },
-              },
-      })
-
-      if (!instance) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      // if the participant had already responded, don't track the new response
-      // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-      // const hasPreviousResponse = instance?.responses.length > 0
-      // if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
-      //   return {
-      //     instance,
-      //     updatedInstance: instance,
-      //   }
-      // }
-
-      const elementData = instance?.elementData
-
-      if (!elementData) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      // evaluate the correctness of the response
-      const correctness = evaluateAnswerCorrectness({ elementData, response })
-
-      const updatedResults = updateQuestionResults({
-        instance,
-        elementData,
-        response,
-        correct: correctness === 1,
-      })
-
-      if (!updatedResults.results) {
-        return {
-          instance: null,
-          updatedInstance: null,
-          correctness: null,
-          validResponse: false,
-        }
-      }
-
-      const updatedInstance = await prisma.elementInstance.update({
-        where: { id },
-        data: {
-          results: updatedResults.results,
-        },
-      })
-
-      return {
-        instance,
-        updatedInstance,
-        correctness,
-        validResponse: true,
-      }
+  const {
+    instance,
+    existingResponse,
+    updatedInstance,
+    correctness,
+    newAverageResponseTime,
+    validResponse,
+  } = await ctx.prisma.$transaction(async (prisma) => {
+    const instance = await prisma.elementInstance.findUnique({
+      where: { id },
+      include: {
+        elementStack: true,
+        instanceStatistics: true,
+      },
     })
+
+    if (!instance || !instance?.elementData) {
+      return {
+        instance: null,
+        existingResponse: null,
+        updatedInstance: null,
+        correctness: null,
+        newAverageResponseTime: null,
+        validResponse: false,
+      }
+    }
+
+    const existingResponse = ctx.user?.sub
+      ? await ctx.prisma.questionResponse.findUnique({
+          where: {
+            participantId_elementInstanceId: {
+              participantId: ctx.user.sub,
+              elementInstanceId: id,
+            },
+          },
+        })
+      : null
+
+    // evaluate the correctness of the response
+    const elementData = instance?.elementData
+    const correctness = elementData.options.hasSampleSolution
+      ? evaluateAnswerCorrectness({ elementData, response })
+      : 1
+
+    const updatedResults = updateQuestionResults({
+      previousResults:
+        ctx.user?.sub && !treatAnonymous
+          ? instance.results
+          : instance.anonymousResults,
+      elementData,
+      response,
+      correct: correctness === 1,
+    })
+
+    if (!updatedResults.results) {
+      return {
+        instance: null,
+        existingResponse: null,
+        updatedInstance: null,
+        correctness: null,
+        newAverageResponseTime: null,
+        validResponse: false,
+      }
+    }
+
+    // average answer time computations if participant is logged in
+    const { newAverageResponseTime, newAverageInstanceTime } = participation
+      ? computeNewAverageTimes({
+          existingInstance: instance,
+          existingResponse: existingResponse, // this is safe because we check for the participation before
+          answerTime,
+        })
+      : {
+          newAverageInstanceTime: undefined,
+          newAverageResponseTime: undefined,
+        }
+
+    // variable summaries for code readability
+    const answerCorrect = correctness === 1
+    const answerPartial = (correctness ?? 0) < 1 && (correctness ?? 0) > 0
+    const answerIncorrect = correctness === 0
+    const instanceInPracticeQuiz = !!instance.elementStack.practiceQuizId
+
+    // compute updated instance statistics
+    const statisticsUpdate = computeUpdatedInstanceStatistics({
+      participation,
+      existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
+      newAverageInstanceTime,
+      answerCorrect,
+      answerPartial,
+      answerIncorrect,
+      instanceInPracticeQuiz,
+    })
+
+    const updatedInstance = await prisma.elementInstance.update({
+      where: { id },
+      data: {
+        results: participation ? updatedResults.results : undefined,
+        anonymousResults: participation ? undefined : updatedResults.results,
+        instanceStatistics: statisticsUpdate,
+      },
+      include: {
+        elementStack: true,
+      },
+    })
+
+    return {
+      instance,
+      existingResponse,
+      updatedInstance,
+      correctness,
+      newAverageResponseTime,
+      validResponse: true,
+    }
+  })
 
   const elementData = updatedInstance?.elementData
   const results = updatedInstance?.results
@@ -1076,8 +1709,9 @@ export async function respondToQuestion(
     !elementData ||
     !validResponse ||
     correctness === null
-  )
+  ) {
     return null
+  }
 
   const evaluation = evaluateElementResponse(
     elementData,
@@ -1086,7 +1720,7 @@ export async function respondToQuestion(
     updatedInstance.options.pointsMultiplier
   )
   const score = evaluation?.score || 0
-  const xp = evaluation?.xp || 0
+  const xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
@@ -1102,12 +1736,10 @@ export async function respondToQuestion(
     !treatAnonymous &&
     ctx.user.role === UserRole.PARTICIPANT
   ) {
-    const hasPreviousResponse = instance?.responses?.length > 0
-
-    if (hasPreviousResponse) {
+    if (existingResponse) {
       const previousResponseOutsideTimeframe =
-        !instance.responses[0]!.lastAwardedAt ||
-        dayjs(instance.responses[0]!.lastAwardedAt).isBefore(
+        !existingResponse.lastAwardedAt ||
+        dayjs(existingResponse.lastAwardedAt).isBefore(
           dayjs().subtract(
             instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
             'days'
@@ -1121,8 +1753,8 @@ export async function respondToQuestion(
       }
 
       const previousXpResponseOutsideTimeframe =
-        !instance.responses[0]!.lastXpAwardedAt ||
-        dayjs(instance.responses[0]!.lastXpAwardedAt).isBefore(
+        !existingResponse.lastXpAwardedAt ||
+        dayjs(existingResponse.lastXpAwardedAt).isBefore(
           dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
         )
 
@@ -1134,10 +1766,10 @@ export async function respondToQuestion(
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0]!.lastAwardedAt
+        : existingResponse.lastAwardedAt
       lastXpAwardedAt = previousXpResponseOutsideTimeframe
         ? new Date()
-        : instance.responses[0]!.lastXpAwardedAt
+        : existingResponse.lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(
           instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
@@ -1171,15 +1803,6 @@ export async function respondToQuestion(
     }
 
     // update aggregated results for choices and open questions
-    const existingResponse = await ctx.prisma.questionResponse.findUnique({
-      where: {
-        participantId_elementInstanceId: {
-          participantId: ctx.user.sub,
-          elementInstanceId: id,
-        },
-      },
-    })
-
     let newAggResponses
     if (
       instance.elementType === ElementType.SC ||
@@ -1215,7 +1838,7 @@ export async function respondToQuestion(
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
@@ -1239,7 +1862,7 @@ export async function respondToQuestion(
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
@@ -1269,6 +1892,13 @@ export async function respondToQuestion(
       grade: correctness,
     })
 
+    const responseCorrectness =
+      correctness === 1
+        ? ResponseCorrectness.CORRECT
+        : correctness === 0
+          ? ResponseCorrectness.WRONG
+          : ResponseCorrectness.PARTIAL
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -1282,15 +1912,38 @@ export async function respondToQuestion(
           totalPointsAwarded: pointsAwarded,
           totalXpAwarded: xpAwarded,
           trialsCount: 1,
+          averageTimeSpent: newAverageResponseTime,
           lastAwardedAt,
           lastXpAwardedAt,
-          response: response as QuestionResponse,
+          firstResponse: response as QuestionResponse,
+          firstResponseCorrectness: responseCorrectness,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           participant: {
             connect: { id: ctx.user.sub },
           },
           elementInstance: {
             connect: { id },
+          },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
+          course: {
+            connect: {
+              id: courseId,
+            },
           },
           participation: {
             connect: {
@@ -1313,13 +1966,15 @@ export async function respondToQuestion(
           interval: resultSpacedRepetition.interval,
         },
         update: {
-          response: response as QuestionResponse,
+          lastResponse: response as QuestionResponse,
+          lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           lastAwardedAt,
           lastXpAwardedAt,
           trialsCount: {
             increment: 1,
           },
+          averageTimeSpent: newAverageResponseTime,
           totalScore: {
             increment: score,
           },
@@ -1350,6 +2005,7 @@ export async function respondToQuestion(
           score,
           pointsAwarded,
           xpAwarded,
+          timeSpent: answerTime,
           response: response as QuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
@@ -1357,6 +2013,20 @@ export async function respondToQuestion(
           elementInstance: {
             connect: { id },
           },
+          practiceQuiz: updatedInstance.elementStack.practiceQuizId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.practiceQuizId,
+                },
+              }
+            : undefined,
+          microLearning: updatedInstance.elementStack.microLearningId
+            ? {
+                connect: {
+                  id: updatedInstance.elementStack.microLearningId,
+                },
+              }
+            : undefined,
           participation: {
             connect: {
               courseId_participantId: {
@@ -1433,8 +2103,8 @@ export async function respondToQuestion(
     evaluation?.percentile === 0
       ? StackFeedbackStatus.INCORRECT
       : evaluation?.percentile === 1
-      ? StackFeedbackStatus.CORRECT
-      : StackFeedbackStatus.PARTIAL
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
 
   return {
     ...updatedInstance,
@@ -1446,11 +2116,13 @@ export async function respondToQuestion(
           xpAwarded,
           newXpFrom,
           solutions:
-            elementData.type === 'FREE_TEXT'
-              ? elementData.options.solutions
+            elementData.type === ElementType.FREE_TEXT
+              ? elementData.options.hasSampleSolution
+                ? elementData.options.solutions
+                : []
               : null,
           solutionRanges:
-            elementData.type === 'NUMERICAL'
+            elementData.type === ElementType.NUMERICAL
               ? elementData.options.solutionRanges
               : null,
         }
@@ -1494,6 +2166,220 @@ function combineStackStatus({
   return prevStatus
 }
 
+export async function getPreviousStackEvaluation(
+  { stackId }: { stackId: number },
+  ctx: Context
+) {
+  // previous results only exist for logged in users
+  if (!ctx.user?.sub) {
+    return null
+  }
+
+  const stackEvaluation = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId, type: ElementStackType.MICROLEARNING },
+    include: {
+      elements: {
+        include: {
+          responses: {
+            where: {
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // if no previous response exists, return null
+  if (
+    !stackEvaluation ||
+    !stackEvaluation.elements ||
+    !stackEvaluation.elements[0] ||
+    !stackEvaluation.elements[0].responses
+  ) {
+    return null
+  }
+
+  // aggregate the evaluation content from the responses
+  let stackScore: number | undefined = undefined
+  let stackFeedback = StackFeedbackStatus.UNANSWERED
+
+  // TODO: investigate if this logic can be combined with content of the respondToElementStack
+  // function once it is refactored and split up into smaller functions
+  const evaluations: IInstanceEvaluation[] = stackEvaluation.elements.flatMap(
+    (element) => {
+      if (!element.responses || element.responses.length === 0) {
+        return []
+      }
+
+      if (element.elementType === ElementType.FLASHCARD) {
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseFlashcard
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: flashcardResultMap[lastResponse.correctness],
+        })
+
+        return {
+          ...element.elementData,
+          instanceId: element.id,
+          score: 0,
+          correctness: null,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseFlashcard,
+        }
+      } else if (element.elementType === ElementType.CONTENT) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: StackFeedbackStatus.CORRECT,
+        })
+
+        return {
+          ...element.elementData,
+          instanceId: element.id,
+          score: 0,
+          correctness: 1,
+          lastResponse: element.responses[0]!
+            .lastResponse as QuestionResponseContent,
+        }
+      } else if (
+        element.elementType === ElementType.SC ||
+        element.elementType === ElementType.MC ||
+        element.elementType === ElementType.KPRIM
+      ) {
+        const elementData = element.elementData as ChoicesElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseChoices
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else if (element.elementType === ElementType.NUMERICAL) {
+        const elementData = element.elementData as NumericalElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseValue
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          solutionRanges: elementData.options.hasSampleSolution
+            ? elementData.options.solutionRanges
+            : [],
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else if (element.elementType === ElementType.FREE_TEXT) {
+        const elementData = element.elementData as FreeTextElementData
+        const lastResponse = element.responses[0]!
+          .lastResponse as QuestionResponseValue
+        const correctness = evaluateAnswerCorrectness({
+          elementData,
+          response: lastResponse,
+        })
+
+        const evaluation = evaluateElementResponse(
+          elementData,
+          element.results,
+          correctness,
+          element.options.pointsMultiplier
+        )
+
+        // update stack aggregates
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus:
+            correctness === 1
+              ? StackFeedbackStatus.CORRECT
+              : correctness === 0
+                ? StackFeedbackStatus.INCORRECT
+                : StackFeedbackStatus.PARTIAL,
+        })
+        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
+
+        return {
+          ...evaluation,
+          ...element.elementData,
+          instanceId: element.id,
+          pointsAwarded: evaluation?.score,
+          xpAwarded: evaluation?.xp,
+          solutions: elementData.options.hasSampleSolution
+            ? elementData.options.solutions
+            : [],
+          correctness,
+          lastResponse,
+        } as IInstanceEvaluation
+      } else {
+        throw new Error(
+          'Evaluation of previous stack answers not implemented for type ' +
+            element.elementType
+        )
+      }
+    }
+  )
+
+  return {
+    id: stackEvaluation.id,
+    status: stackFeedback,
+    score: stackScore,
+    evaluations,
+  }
+}
+
 export interface RespondToElementStackInput {
   stackId: number
   courseId: string
@@ -1506,15 +2392,46 @@ export interface RespondToElementStackInput {
     numericalResponse?: number | null
     freeTextResponse?: string | null
   }[]
+  stackAnswerTime: number
 }
 
 export async function respondToElementStack(
-  { stackId, courseId, responses }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
+  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
+  if (ctx.user?.sub) {
+    const stack = await ctx.prisma.elementStack.findUnique({
+      where: { id: stackId },
+      include: {
+        microLearning: true,
+        elements: {
+          include: {
+            responses: {
+              where: {
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (
+      stack?.microLearning &&
+      stack.elements.some((element) => element.responses.length > 0)
+    ) {
+      return null
+    }
+  }
+
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: IInstanceEvaluation[] = []
+
+  // compute average answer time per element / question by dividing the
+  // answer time for the entire stack through the number of responses
+  const elementAnswerTime = round(stackAnswerTime / responses.length)
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
@@ -1524,6 +2441,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           courseId: courseId,
           response: response.flashcardResponse!,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1548,6 +2466,7 @@ export async function respondToElementStack(
         {
           id: response.instanceId,
           courseId: courseId,
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1574,6 +2493,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { choices: response.choicesResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1600,6 +2520,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: String(response.numericalResponse) },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1626,6 +2547,7 @@ export async function respondToElementStack(
           courseId: courseId,
           id: response.instanceId,
           response: { value: response.freeTextResponse },
+          answerTime: elementAnswerTime,
         },
         ctx
       )
@@ -1696,6 +2618,7 @@ export async function manipulatePracticeQuiz(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -1750,7 +2673,7 @@ export async function manipulatePracticeQuiz(
   const availabilityTime =
     availableFrom && dayjs(availableFrom).isBefore(dayjs())
       ? null
-      : availableFrom ?? undefined
+      : (availableFrom ?? undefined)
 
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -1771,8 +2694,9 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-
               const processedElementData = processElementData(element)
+              const initialResults =
+                getInitialElementResults(processedElementData)
 
               return {
                 elementType: element.type,
@@ -1784,7 +2708,13 @@ export async function manipulatePracticeQuiz(
                   pointsMultiplier: multiplier * element.pointsMultiplier,
                   resetTimeDays,
                 },
-                results: getInitialElementResults(processedElementData),
+                results: initialResults,
+                anonymousResults: initialResults,
+                instanceStatistics: {
+                  create: getInitialInstanceStatistics(
+                    ElementInstanceType.PRACTICE_QUIZ
+                  ),
+                },
                 element: {
                   connect: { id: element.id },
                 },
@@ -1895,6 +2825,52 @@ export async function unpublishPracticeQuiz(
   return practiceQuiz
 }
 
+export async function getPracticeQuizSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = practiceQuiz.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
 interface DeletePracticeQuizArgs {
   id: string
 }
@@ -1903,30 +2879,67 @@ export async function deletePracticeQuiz(
   { id }: DeletePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    practiceQuiz.status === PublicationStatus.DRAFT ||
+    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The practice quiz is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
+  } else {
+    // if the practice quiz is published and has responses -> soft deletion
+    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+      include: {
+        stacks: true,
+      },
+    })
 
-    throw e
+    // disconnect the stacks from the course they are linked to
+    const stackIds = updatedPracticeQuiz.stacks.map((stack) => stack.id)
+    await ctx.prisma.elementStack.updateMany({
+      where: {
+        id: {
+          in: stackIds,
+        },
+      },
+      data: {
+        courseId: null,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedPracticeQuiz
   }
 }
 
@@ -1942,6 +2955,7 @@ export async function publishPracticeQuiz(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
   })
 
@@ -2006,55 +3020,4 @@ export async function publishPracticeQuiz(
 
     return updatedQuiz
   }
-}
-
-export async function publishScheduledPracticeQuizzes(ctx: Context) {
-  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
-    where: {
-      status: PublicationStatus.SCHEDULED,
-      availableFrom: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedQuizzes = await Promise.all(
-    quizzesToPublish.map((quiz) =>
-      ctx.prisma.practiceQuiz.update({
-        where: {
-          id: quiz.id,
-        },
-        data: {
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          stacks: true,
-        },
-      })
-    )
-  )
-
-  await Promise.all(
-    updatedQuizzes.map((quiz) =>
-      ctx.prisma.course.update({
-        where: {
-          id: quiz.courseId,
-        },
-        data: {
-          elementStacks: {
-            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
-          },
-        },
-      })
-    )
-  )
-
-  updatedQuizzes.forEach((quiz) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id: quiz.id,
-    })
-  })
-
-  return true
 }

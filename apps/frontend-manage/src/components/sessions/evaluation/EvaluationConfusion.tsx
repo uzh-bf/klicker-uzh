@@ -1,7 +1,7 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { FormikTextField, Tooltip } from '@uzh-bf/design-system'
+import { FormikNumberField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -131,24 +131,24 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
   })
 
   return (
-    <div className="flex flex-col justify-start h-full">
-      <div className="flex-auto min-h-[10rem] w-full">
+    <div className="flex h-full flex-col justify-start">
+      <div className="min-h-[10rem] w-full flex-auto">
         <div className="ml-2">
           <Tooltip
             tooltip={t('manage.evaluation.confusionDiagramsTooltip')}
             className={{
-              tooltip: 'max-w-[20%] md:max-w-[30%] text-sm z-10',
+              tooltip: 'z-10 max-w-[20%] text-sm md:max-w-[30%]',
             }}
             withIndicator={false}
           >
             <FontAwesomeIcon
               icon={faQuestion}
-              className="w-3 h-3 p-1 mt-1 text-white border border-white border-solid rounded-full bg-primary-60"
+              className="bg-primary-60 mt-1 h-3 w-3 rounded-full border border-solid border-white p-1 text-white"
             />
           </Tooltip>
         </div>
 
-        <ResponsiveContainer className="w-full mb-4" height={300}>
+        <ResponsiveContainer className="mb-4 w-full" height={300}>
           <LineChart
             data={confusionValues}
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -166,11 +166,11 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                   )
                   const speed = payload.find((item) => item.name === 'speed')
                   return (
-                    <div className="p-2 text-gray-600 bg-white border border-gray-400 border-solid rounded">
+                    <div className="rounded border border-solid border-gray-400 bg-white p-2 text-gray-600">
                       <div className="font-bold">
                         {payload[0].payload.windowStart}
                       </div>
-                      <div className="flex flex-row justify-between gap-4 mt-2">
+                      <div className="mt-2 flex flex-row justify-between gap-4">
                         <div className="font-bold">
                           {t('manage.evaluation.avgDifficulty')}
                         </div>
@@ -178,7 +178,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                           <MatchingEmoji value={Number(difficulty?.value)} />
                         </div>
                       </div>
-                      <div className="flex flex-row justify-between gap-4 mt-2">
+                      <div className="mt-2 flex flex-row justify-between gap-4">
                         <div className="font-bold">
                           {t('manage.evaluation.avgSpeed')}
                         </div>
@@ -186,7 +186,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                           <MatchingEmoji value={Number(speed?.value)} />
                         </div>
                       </div>
-                      <div className="flex flex-row justify-between gap-4 mt-2">
+                      <div className="mt-2 flex flex-row justify-between gap-4">
                         <div className="font-bold">
                           {t('shared.generic.feedbacks')}
                         </div>
@@ -231,7 +231,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
       </div>
 
       <div className="flex-initial p-3 lg:w-1/2">
-        <div className="mb-2 font-bold ">
+        <div className="mb-2 font-bold">
           {t('manage.evaluation.graphSettings')}
         </div>
 
@@ -248,7 +248,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             return (
               <Form className="flex flex-col">
                 <div>
-                  <FormikTextField
+                  <FormikNumberField
                     value={String(values.xInterval)}
                     onChange={(newValue: string) => {
                       const interval = Number(newValue.replace(/[^0-9]/g, ''))
@@ -259,24 +259,17 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.timestepX')}
                     tooltip={t('manage.evaluation.timestepXTooltip')}
-                    className={{
-                      root: !errors.xInterval ? 'mb-1' : '',
-                      label: 'font-normal',
-                      input: errors.xInterval
-                        ? 'border-red-500 bg-red-100'
-                        : '',
-                    }}
                     placeholder={t('manage.evaluation.minTimestep')}
                     data={{ cy: 'confusion-graph-timestep-setting' }}
                   />
                   {errors.xInterval && (
-                    <div className="float-right text-sm text-red-600 mb-1.5">
+                    <div className="float-right mb-1.5 text-sm text-red-600">
                       {errors.xInterval}
                     </div>
                   )}
                 </div>
                 <div>
-                  <FormikTextField
+                  <FormikNumberField
                     value={String(values.windowLength)}
                     onChange={(newValue: string) => {
                       const window = Number(newValue.replace(/[^0-9]/g, ''))
@@ -287,18 +280,11 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                     }}
                     label={t('manage.evaluation.windowLength')}
                     tooltip={t('manage.evaluation.windowLengthTooltip')}
-                    className={{
-                      root: !errors.windowLength ? 'mb-1' : '',
-                      label: 'font-normal',
-                      input: errors.windowLength
-                        ? 'border-red-500 bg-red-100'
-                        : '',
-                    }}
                     placeholder={t('manage.evaluation.minWindow')}
                     data={{ cy: 'confusion-graph-window-setting' }}
                   />
                   {errors.windowLength && (
-                    <div className="float-right text-sm text-red-600 mb-1.5">
+                    <div className="float-right mb-1.5 text-sm text-red-600">
                       {errors.windowLength}
                     </div>
                   )}

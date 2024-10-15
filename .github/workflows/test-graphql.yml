@@ -1,0 +1,34 @@
+name: Test graphql package logic functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'packages/graphql/**'
+      - '.github/workflows/test-graphql.yml'
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'packages/graphql/**'
+      - '.github/workflows/test-graphql.yml'
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.9.0
+          run_install: true
+      - name: Test functions
+        shell: bash
+        run: |
+          cd packages/graphql
+          pnpm run test

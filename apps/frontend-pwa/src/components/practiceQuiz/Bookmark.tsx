@@ -64,18 +64,22 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
   })
 
   return (
-    <div
-      className={twMerge(
-        'flex flex-row gap-2',
-        (bookmarks === null || typeof bookmarks === 'undefined') && 'hidden'
-      )}
+    <Button
+      onClick={() => bookmarkElementStack()}
+      data={{ cy: 'bookmark-element-stack' }}
+      className={{
+        root: twMerge(
+          'flex flex-row items-center text-sm shadow-none',
+          bookmarks === null || typeof bookmarks === 'undefined'
+            ? 'hidden'
+            : undefined
+        ),
+      }}
     >
-      <div>{t('shared.generic.bookmark')}</div>
-      <Button
-        basic
-        onClick={() => bookmarkElementStack()}
-        data={{ cy: 'bookmark-element-stack' }}
-      >
+      <Button.Label>
+        <div>{t('shared.generic.bookmark')}</div>
+      </Button.Label>
+      <Button.Icon>
         {isBookmarked ? (
           <FontAwesomeIcon
             className="text-red-600 hover:text-red-500"
@@ -84,8 +88,8 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
         ) : (
           <FontAwesomeIcon className="hover:text-red-400" icon={faBookmark} />
         )}
-      </Button>
-    </div>
+      </Button.Icon>
+    </Button>
   )
 }
 

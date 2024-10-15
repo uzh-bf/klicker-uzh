@@ -15,6 +15,16 @@ notifications:
   secret: ''
   supportEmail: ''
 
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: 'false'
+  requireTLS: 'true'
+
 eduId:
   clientSecret: ''
 
@@ -43,9 +53,11 @@ vapid:
   privateKey: ''
 
 cron:
-  dailyGroupScores: "* * * * *"
-  pushNotifications: "*/5 * * * *"
-  practiceQuizPublications: "*/5 * * * *"
+  dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
+  pushNotifications: "*/5 * * * *" # runs every 5 minutes
+  activityPublications: "*/5 * * * *" # runs every 5 minutes
+  runningRandomGroups: "5 0 * * *" # running at midnight
+  finalRandomGroups: "5 0 * * *" # running at midnight
   token: ""
 
 auth:
@@ -253,17 +265,30 @@ lti:
 
   replicaCount: 2
 
+  appSecret: ''
+
   clientId:
   redirectURL:
   cookieDomain:
   encryptionKey:
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
+  port: 4000
+
+  devMode: 'true'
+  ltiaas: 'false'
 
   db:
-    host:
-    port:
-    name:
-    username:
-    password:
+    type: postgres
+    host: ''
+    port: 5432
+    name: ''
+    username: ''
+    password: ''
+    connectionString: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti

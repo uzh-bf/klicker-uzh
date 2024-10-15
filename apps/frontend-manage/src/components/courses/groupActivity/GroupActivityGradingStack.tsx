@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import ContentInput from '@components/common/ContentInput'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,6 +12,7 @@ import {
 import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
+  FormLabel,
   FormikNumberField,
   H2,
   H3,
@@ -21,9 +21,10 @@ import {
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import ContentInput from '../../common/ContentInput'
 
 interface GroupActivityGradingStackProps {
   setEdited: (edited: boolean) => void
@@ -43,10 +44,8 @@ function GroupActivityGradingStack({
   maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
-
   const [gradeGroupActivitySubmissions] = useMutation(
     GradeGroupActivitySubmissionDocument
   )
@@ -63,61 +62,66 @@ function GroupActivityGradingStack({
     return null
   }
 
-  if (!submission) {
-    return <div></div>
-  }
-
-  const results = submission.results
-  const findResponse = (elementId: number, type: ElementType) => {
-    const decision = submission.decisions.find(
-      (decision: GroupActivityDecision) => decision.instanceId === elementId
-    )
-
-    if (type === ElementType.FreeText) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.freeTextResponse,
-          valid: true,
-        },
-      }
-    } else if (type === ElementType.Sc || type === ElementType.Mc) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.choicesResponse,
-          valid: true,
-        },
-      }
-    } else if (type === ElementType.Kprim) {
-      const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
-        (acc, choice) => ({ ...acc, [choice]: false }),
-        {} as Record<number, boolean>
+  const results = submission?.results
+  const findResponse = useCallback(
+    (elementId: number, type: ElementType) => {
+      const decision = submission?.decisions.find(
+        (decision: GroupActivityDecision) => decision.instanceId === elementId
       )
 
-      return {
-        [elementId]: {
-          type: type,
-          response: decision.choicesResponse?.reduce(
-            (acc: Record<number, boolean>, choice: number) => ({
-              ...acc,
-              [choice]: true,
-            }),
-            responseObj as Record<number, boolean>
-          ),
-          valid: true,
-        },
+      if (type === ElementType.FreeText) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.freeTextResponse,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Sc || type === ElementType.Mc) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.choicesResponse?.reduce(
+              (acc: Record<number, boolean>, choice: any) => ({
+                ...acc,
+                [choice]: true,
+              }),
+              {}
+            ),
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Kprim) {
+        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
+          (acc, choice) => ({ ...acc, [choice]: false }),
+          {} as Record<number, boolean>
+        )
+
+        return {
+          [elementId]: {
+            type: type,
+            response: decision.choicesResponse?.reduce(
+              (acc: Record<number, boolean>, choice: number) => ({
+                ...acc,
+                [choice]: true,
+              }),
+              responseObj as Record<number, boolean>
+            ),
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Numerical) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.numericalResponse,
+            valid: true,
+          },
+        }
       }
-    } else if (type === ElementType.Numerical) {
-      return {
-        [elementId]: {
-          type: type,
-          response: decision?.numericalResponse,
-          valid: true,
-        },
-      }
-    }
-  }
+    },
+    [submission?.decisions]
+  )
 
   const gradingSchema = Yup.object().shape({
     passed: Yup.boolean().required(
@@ -134,6 +138,10 @@ function GroupActivityGradingStack({
       })
     ),
   })
+
+  if (!submission) {
+    return null
+  }
 
   return (
     <Formik
@@ -158,7 +166,7 @@ function GroupActivityGradingStack({
           })),
       }}
       validationSchema={gradingSchema}
-      onSubmit={async (values, { setSubmitting, resetForm, setTouched }) => {
+      onSubmit={async (values, { setSubmitting, resetForm }) => {
         setSubmitting(true)
         const result = await gradeGroupActivitySubmissions({
           variables: {
@@ -209,8 +217,8 @@ function GroupActivityGradingStack({
               />
             )}
             {elements.map((element, ix) => (
-              <div key={element.id}>
-                <H3 className={{ root: 'border-t pt-2 -mb-2 border-gray-400' }}>
+              <div key={element.id} className="flex flex-col">
+                <H3 className={{ root: 'border-t border-gray-400 pt-2' }}>
                   {element.elementData.name}
                 </H3>
                 <StudentElement
@@ -231,10 +239,13 @@ function GroupActivityGradingStack({
                   }
                 >
                   {({ field, meta }: FastFieldProps) => (
-                    <>
-                      <div className="font-bold mt-2">
-                        {t('shared.generic.feedback')}
-                      </div>
+                    <div className="mt-2 w-full">
+                      <FormLabel
+                        label={t('shared.generic.feedback')}
+                        labelType="small"
+                        required={false}
+                        className={{ label: 'text-black' }}
+                      />
                       <ContentInput
                         error={meta.error}
                         touched={meta.touched}
@@ -251,16 +262,17 @@ function GroupActivityGradingStack({
                         data={{ cy: `groupActivity-grading-comment-${ix}` }}
                         className={{ content: 'max-w-none' }}
                       />
-                    </>
+                    </div>
                   )}
                 </FastField>
-                <div className="flex flex-row items-center gap-3 mt-2 justify-end">
+                <div className="mt-2 flex w-max flex-row items-center justify-end gap-3 self-end">
                   <FormikNumberField
                     hideError
                     required
                     disabled={gradingCompleted}
                     name={`grading.${ix}.score`}
                     label={t('manage.groupActivity.achievedScore')}
+                    labelType="large"
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
                     min={0}
                     max={
@@ -268,17 +280,20 @@ function GroupActivityGradingStack({
                       pointsPerInstance
                     }
                     data={{ cy: `groupActivity-grading-score-${ix}` }}
-                    className={{ numberField: { input: 'w-20' } }}
+                    className={{ input: 'w-20' }}
                   />
-                  <div>{`/ ${t('manage.groupActivity.nPoints', {
-                    number:
-                      (element.options?.pointsMultiplier || 1) *
-                      pointsPerInstance,
-                  })}`}</div>
+                  <div className="min-w-max">{`/ ${t(
+                    'manage.groupActivity.nPoints',
+                    {
+                      number:
+                        (element.options?.pointsMultiplier || 1) *
+                        pointsPerInstance,
+                    }
+                  )}`}</div>
                 </div>
               </div>
             ))}
-            <div className="border-t border-black pt-2 self-end font-bold text-lg">
+            <div className="self-end border-t border-black pt-2 text-lg font-bold">
               {t('manage.groupActivity.totalAchievedPoints', {
                 achieved: values.grading.reduce(
                   (
@@ -303,7 +318,7 @@ function GroupActivityGradingStack({
             </div>
             <div className="-mt-4">
               <H2>{t('manage.groupActivity.generalFeedback')}</H2>
-              <div className="flex flex-row items-center gap-2 mb-3">
+              <div className="mb-3 flex flex-row items-center gap-2">
                 <div className="flex flex-row">
                   {t('manage.groupActivity.didGroupPass')}
                   <div className="mb-1 ml-0.5 mr-2 text-red-600">*</div>
@@ -356,9 +371,9 @@ function GroupActivityGradingStack({
               type="submit"
               className={{
                 root: twMerge(
-                  '-mt-2 h-10 w-max self-end font-bold bg-primary-80 text-white',
+                  'bg-primary-80 -mt-2 h-10 w-max self-end font-bold text-white',
                   (!isValid || gradingCompleted) &&
-                    'cursor-not-allowed bg-primary-60'
+                    'bg-primary-60 cursor-not-allowed'
                 ),
               }}
               loading={isSubmitting}
@@ -369,16 +384,18 @@ function GroupActivityGradingStack({
             </Button>
             <EditingDetector />
             <Toast
+              dismissible
               openExternal={successToast}
-              setOpenExternal={setSuccessToast}
+              onCloseExternal={() => setSuccessToast(false)}
               type="success"
               duration={4000}
             >
               {t('manage.groupActivity.stackGradingSuccess')}
             </Toast>
             <Toast
+              dismissible
               openExternal={errorToast}
-              setOpenExternal={setErrorToast}
+              onCloseExternal={() => setErrorToast(false)}
               type="error"
               duration={6000}
             >

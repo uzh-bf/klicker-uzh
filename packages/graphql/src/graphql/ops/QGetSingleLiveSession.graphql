@@ -17,6 +17,8 @@ query GetSingleLiveSession($sessionId: String!) {
       id
     }
     pointsMultiplier
+    maxBonusPoints
+    timeToZeroBonus
     isGamificationEnabled
     isLiveQAEnabled
     isConfusionFeedbackEnabled

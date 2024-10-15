@@ -36,14 +36,14 @@ function TokenGeneration() {
 
   return (
     <Layout displayName={t('manage.token.pageName')}>
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
         <H2>{t('manage.token.tokenGenerationTitle')}</H2>
         <div className="mb-2">
           {t.rich('manage.token.tokenGenerationExplanation', {
             link: (displayLink) => (
               <Link
                 href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
-                className="text-primary"
+                className="text-primary-100"
                 legacyBehavior
                 passHref
               >
@@ -66,7 +66,7 @@ function TokenGeneration() {
               setHadToken(true)
             }
           }}
-          className={{ root: 'text-white mb-3 bg-primary-80' }}
+          className={{ root: 'bg-primary-80 mb-3 text-white' }}
         >
           {t('manage.token.generateToken')}
         </Button>

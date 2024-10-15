@@ -16,6 +16,7 @@ function LeaveLeaderboardModal({
 
   return (
     <Modal
+      hideCloseButton
       onPrimaryAction={
         <Button
           onClick={() => onConfirm()}
@@ -35,13 +36,12 @@ function LeaveLeaderboardModal({
       }
       onClose={(): void => setIsModalOpen(false)}
       open={isModalOpen}
-      hideCloseButton={true}
-      className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+      className={{ content: 'w-[40rem] !pt-0' }}
     >
       <div>
         <H2>{t('pwa.courses.leaveCourseTitle')}</H2>
         <div>{t('pwa.courses.leaveCourseConfirmation')}</div>
-        <div className="mt-6 mb-2 text-sm italic">
+        <div className="mb-2 mt-6 text-sm italic">
           {t('pwa.courses.leaveCourseInformation')}
         </div>
       </div>

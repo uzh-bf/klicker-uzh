@@ -1,6 +1,7 @@
 query GetCourseOverviewData($courseId: String!) {
   getCourseOverviewData(courseId: $courseId) {
     id
+    inRandomGroupPool
     participant {
       id
       avatar
@@ -23,6 +24,9 @@ query GetCourseOverviewData($courseId: String!) {
       isGamificationEnabled
       groupDeadlineDate
       isGroupDeadlinePassed
+      isGroupCreationEnabled
+      maxGroupSize
+      preferredGroupSize
 
       awards {
         id
@@ -39,14 +43,6 @@ query GetCourseOverviewData($courseId: String!) {
           id
           name
         }
-      }
-
-      groupActivities {
-        id
-        displayName
-        description
-        scheduledStartAt
-        scheduledEndAt
       }
     }
     leaderboard {
@@ -74,13 +70,6 @@ query GetCourseOverviewData($courseId: String!) {
       participantCount
       averageScore
     }
-    groupActivityInstances {
-      id
-      decisionsSubmittedAt
-      results
-      resultsComputedAt
-      groupActivityId
-    }
   }
   participantGroups(courseId: $courseId) {
     id
@@ -89,6 +78,17 @@ query GetCourseOverviewData($courseId: String!) {
     averageMemberScore
     groupActivityScore
     score
+    messages {
+      id
+      content
+      participant {
+        id
+        username
+        avatar
+      }
+      createdAt
+      updatedAt
+    }
     participants {
       id
       username

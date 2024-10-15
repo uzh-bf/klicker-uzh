@@ -59,7 +59,7 @@ function DeletionModal({
       hideCloseButton={true}
       title={title}
       className={{
-        content: 'w-[40rem] min-h-max h-max self-center pt-0',
+        content: 'h-max min-h-max w-[40rem] self-center pt-0',
         title: 'text-xl',
       }}
     >
@@ -67,7 +67,7 @@ function DeletionModal({
         <div>{description}</div>
         <H3
           className={{
-            root: 'p-2 mt-1 border border-solid rounded border-uzh-grey-40',
+            root: 'border-uzh-grey-40 mt-1 rounded border border-solid p-2',
           }}
         >
           {elementName}

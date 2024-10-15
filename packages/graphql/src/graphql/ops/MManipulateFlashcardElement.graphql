@@ -1,5 +1,6 @@
 mutation ManipulateFlashcardElement(
   $id: Int
+  $status: ElementStatus
   $name: String
   $content: String
   $explanation: String
@@ -8,6 +9,7 @@ mutation ManipulateFlashcardElement(
 ) {
   manipulateFlashcardElement(
     id: $id
+    status: $status
     name: $name
     content: $content
     explanation: $explanation
@@ -16,6 +18,7 @@ mutation ManipulateFlashcardElement(
   ) {
     id
     name
+    status
     type
     content
     explanation

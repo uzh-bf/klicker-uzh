@@ -1,7 +1,7 @@
-import React from 'react'
 import type { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 
 interface PracticeQuizPointsProps {
   evaluation: InstanceEvaluation
@@ -29,7 +29,7 @@ function PracticeQuizPoints({ evaluation }: PracticeQuizPointsProps) {
         </div>
         {(evaluation.pointsAwarded !== null ||
           evaluation.xpAwarded !== null) && (
-          <div>
+          <div className="mb-2">
             <div className="font-bold">{t('shared.leaderboard.collected')}</div>
             <div>
               {evaluation.pointsAwarded !== null && (

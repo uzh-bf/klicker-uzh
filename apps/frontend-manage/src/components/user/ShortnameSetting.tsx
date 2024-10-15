@@ -96,15 +96,15 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 </Tooltip>
               )}
               <DebouncedUsernameField
+                t={t}
                 className={{
                   root: 'w-36',
                   label: 'hidden',
-                  input: 'bg-white h-8',
+                  input: 'h-9 bg-white',
                   icon: 'bg-transparent',
                 }}
                 name="shortname"
-                label={t('shared.generic.shortname')}
-                labelType="normal"
+                labelType="large"
                 valid={isShortnameAvailable}
                 setValid={(shortnameAvailable: boolean | undefined) =>
                   setIsShortnameAvailable(shortnameAvailable)
@@ -126,7 +126,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 disabled={isSubmitting || !isValid}
                 type="submit"
                 className={{
-                  root: 'h-8 w-8 items-center justify-center shadow-none border-uzh-grey-60',
+                  root: 'border-uzh-grey-60 h-9 w-9 items-center justify-center shadow-none',
                 }}
                 data={{ cy: 'save-shortname' }}
               >
@@ -136,11 +136,11 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
           )}
         </Formik>
       ) : (
-        <div className="flex flex-row items-center gap-5 italic font-normal text-black">
+        <div className="flex h-9 flex-row items-center gap-5 font-normal italic text-black">
           <div>{user?.shortname}</div>
           <FontAwesomeIcon
             icon={faPencil}
-            className="hover:cursor-pointer hover:text-primary-80"
+            className="hover:text-primary-80 hover:cursor-pointer"
             onClick={() => setEditShortname(true)}
           />
         </div>

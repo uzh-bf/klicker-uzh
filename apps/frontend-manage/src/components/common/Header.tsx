@@ -50,7 +50,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
 
   return (
     <div
-      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:!hidden"
+      className="flex h-full w-full flex-row items-center justify-between bg-slate-800 px-4 font-bold text-white print:!hidden"
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
@@ -61,11 +61,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
             label={item.label}
             className={{
               label: twMerge(
-                'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+                'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
                 item.active &&
-                  'text-red underline underline-offset-[0.3rem] decoration-2'
+                  'text-red underline decoration-2 underline-offset-[0.3rem]'
               ),
-              root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+              root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
             }}
             onClick={() => {
               router.push(item.href)
@@ -73,17 +73,17 @@ function Header({ user }: HeaderProps): React.ReactElement {
           />
         ))}
       </Navigation>
-      <Navigation className={{ root: '!p-0 bg-slate-800' }}>
+      <Navigation className={{ root: 'bg-slate-800 !p-0' }}>
         <Navigation.ButtonItem
           onClick={() => router.push('/migration')}
           label={t('manage.general.migration')}
           className={{
             label: twMerge(
-              'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+              'bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
               router.pathname === '/migration' &&
-                'text-red underline underline-offset-[0.3rem] decoration-2'
+                'text-red underline decoration-2 underline-offset-[0.3rem]'
             ),
-            root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            root: 'group text-white transition-all duration-300 ease-in-out hover:bg-inherit',
           }}
         />
         <div className="hidden md:block">
@@ -96,13 +96,13 @@ function Header({ user }: HeaderProps): React.ReactElement {
             }
             dropdownWidth="w-[12rem]"
             className={{
-              root: 'h-10 w-2 group',
+              root: 'group h-10 w-2',
               icon: twMerge(
                 'text-uzh-grey-80',
                 data?.userRunningSessions?.length !== 0 && 'text-green-600'
               ),
               disabled: '!text-gray-400',
-              dropdown: 'p-1.5 gap-0',
+              dropdown: 'gap-0 p-1.5',
             }}
             disabled={data?.userRunningSessions?.length === 0}
           >
@@ -130,7 +130,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           label=""
           icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-7" />}
           className={{
-            root: 'hidden md:block h-7 group-hover:text-white bg-transparent hover:bg-transparent text-white hover:text-uzh-blue-40 -mt-1',
+            root: 'hover:text-uzh-blue-40 -mt-1 hidden h-7 bg-transparent text-white hover:bg-transparent group-hover:text-white md:block',
           }}
         />
         <Navigation.TriggerItem
@@ -139,9 +139,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
           dropdownWidth="w-[16rem]"
           className={{
             label:
-              'my-auto font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
-            root: 'group flex flex-row items-center gap-1 text-white hover:bg-inherit transition-all duration-300 ease-in-out',
-            dropdown: 'p-1.5 gap-0',
+              'my-auto bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base font-bold transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
+            root: 'group flex flex-row items-center gap-1 text-white transition-all duration-300 ease-in-out hover:bg-inherit',
+            dropdown: 'gap-0 p-1.5',
           }}
           data={{ cy: 'user-menu' }}
         >

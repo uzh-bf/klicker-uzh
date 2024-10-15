@@ -20,10 +20,10 @@ function TitleImage() {
               <polygon points="0,0 90,0 50,100 0,100" />
             </svg>
 
-            <div className="relative px-6 py-12 md:py-32 sm:py-40 lg:px-8 lg:py-56 lg:pr-0">
+            <div className="relative px-6 py-12 sm:py-40 md:py-32 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
                 <div className="hidden sm:mb-10 sm:flex">
-                  <div className="relative rounded-full px-3 py-1 text-md leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                  <div className="text-md relative rounded-full px-3 py-1 leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
                     KlickerUZH v3.1 has been released with brand new features{' '}
                     <a
                       href="https://community.klicker.uzh.ch/t/klickeruzh-v3-1-release-information/310"
@@ -37,7 +37,7 @@ function TitleImage() {
                   </div>
                 </div>
 
-                <img className="w-80 -ml-2" src="/img/KlickerLogo.png" />
+                <img className="-ml-2 w-80" src="/img/KlickerLogo.png" />
                 <p className="mt-6 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>
@@ -45,7 +45,7 @@ function TitleImage() {
                   <a href="https://manage.klicker.uzh.ch" target="_blank">
                     <Button
                       className={{
-                        root: 'w-full md:w-max cursor-pointer text-xl border-uzh-blue-40',
+                        root: 'border-uzh-blue-40 w-full cursor-pointer text-xl md:w-max',
                       }}
                     >
                       Sign Up / Login
@@ -58,7 +58,7 @@ function TitleImage() {
                     Get started <span aria-hidden="true">→</span>
                   </a>
                 </div>
-                <div className="border border-solid rounded-md px-3 py-2 mt-4 bg-slate-100 border-slate-200 shadow">
+                <div className="mt-4 rounded-md border border-solid border-slate-200 bg-slate-100 px-3 py-2 shadow">
                   We are now regularly offering introductory courses through UZH
                   Central IT. For more details see{' '}
                   <a
@@ -73,7 +73,7 @@ function TitleImage() {
             </div>
           </div>
         </div>
-        <div className="hidden md:block bg-gray-50 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+        <div className="hidden bg-gray-50 md:block lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
             className="aspect-[3/2] object-cover lg:aspect-auto lg:h-full lg:w-full"
             src="/img_v3/hero.jpg"
@@ -87,9 +87,9 @@ function TitleImage() {
 
 function CTA() {
   return (
-    <div className="text-center space-y-4 md:space-y-8 py-16 sm:py-24">
+    <div className="space-y-4 py-16 text-center sm:py-24 md:space-y-8">
       <H2 className={{ root: 'text-3xl' }}>Be Part of the Journey</H2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+      <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2">
         <a
           href="https://klicker-uzh.feedbear.com"
           rel="noreferrer noopener"
@@ -97,7 +97,7 @@ function CTA() {
         >
           <Button
             className={{
-              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-uzh-blue-20 border-uzh-blue-100',
+              root: 'bg-uzh-blue-20 border-uzh-blue-100 cursor-pointer flex-col items-start p-4 text-left text-xl',
             }}
           >
             <div className="font-bold">Roadmap</div>
@@ -115,7 +115,7 @@ function CTA() {
         >
           <Button
             className={{
-              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-uzh-blue-20 border-uzh-blue-100',
+              root: 'bg-uzh-blue-20 border-uzh-blue-100 cursor-pointer flex-col items-start p-4 text-left text-xl',
             }}
           >
             <div className="font-bold">Community</div>
@@ -164,7 +164,7 @@ function FeatureFocusSection({ title, description, features, imgSrc }) {
                 <FontAwesomeIcon
                   aria-hidden="true"
                   icon={feature.icon}
-                  className="absolute left-1 top-1 h-5 w-5 text-uzh-red-100"
+                  className="text-uzh-red-100 absolute left-1 top-1 h-5 w-5"
                 />
                 {feature.title}
               </dt>{' '}
@@ -197,7 +197,7 @@ function FeatureSection({ title, description, features, imgSrc }) {
                       <FontAwesomeIcon
                         aria-hidden="true"
                         icon={feature.icon}
-                        className="absolute left-1 top-1 h-5 w-5 text-uzh-red-100"
+                        className="text-uzh-red-100 absolute left-1 top-1 h-5 w-5"
                       />
                       {feature.title}
                     </dt>{' '}
@@ -210,7 +210,7 @@ function FeatureSection({ title, description, features, imgSrc }) {
           <img
             src={imgSrc}
             alt="Product screenshot"
-            className="w-full md:w-[48rem] max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0"
+            className="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 md:w-[48rem] lg:-ml-0"
             // width={2432}
             // height={1442}
           />
@@ -224,11 +224,11 @@ function UseCaseOverview() {
   return (
     <div className="space-y-4">
       <H2 className={{ root: 'text-2xl' }}>Use Cases</H2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded">
+      <div className="grid grid-cols-1 gap-4 rounded md:grid-cols-3">
         {Object.entries(USE_CASES).map(([href, item]) => (
           <div
             key={item.title}
-            className="shadow p-4 flex flex-col gap-4 justify-between"
+            className="flex flex-col justify-between gap-4 p-4 shadow"
           >
             <div className="flex-1">
               <H3>{item.title}</H3>
@@ -236,7 +236,7 @@ function UseCaseOverview() {
             </div>
             <div className="flex-none">
               <a
-                className="inline-flex gap-2 items-center"
+                className="inline-flex items-center gap-2"
                 href={`/use_cases/${href}`}
               >
                 <FontAwesomeIcon icon={faArrowRight} />
@@ -316,7 +316,7 @@ function Home() {
           },
         ]}
       />
-      <div className="max-w-7xl mx-auto space-y-8 p-4">
+      <div className="mx-auto max-w-7xl space-y-8 p-4">
         <UseCaseOverview />
         <CTA />
       </div>

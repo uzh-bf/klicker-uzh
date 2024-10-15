@@ -131,9 +131,9 @@ function PublicFeedback({
   }
 
   return (
-    <div className="w-full mb-3">
-      <div className="flex flex-row w-full p-1.5 text-sm border border-solid rounded-md bg-opacity-30 mb-1 bg-primary-20 border-primary-40">
-        <div className="flex flex-col flex-1">
+    <div className="mb-3 w-full">
+      <div className="bg-primary-20 border-primary-40 mb-1 flex w-full flex-row rounded-md border border-solid bg-opacity-30 p-1.5 text-sm">
+        <div className="flex flex-1 flex-col">
           <div className="mb-0.5">{feedback.content}</div>
           <div className="text-xs italic text-gray-600">
             {feedback.resolvedAt
@@ -148,7 +148,7 @@ function PublicFeedback({
         <Button
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
-          className={{ root: 'w-10 h-10' }}
+          className={{ root: 'h-10 w-10' }}
           disabled={feedback.resolvedAt}
           data={{ cy: `feedback-upvote-${feedback.content}` }}
         >
@@ -164,16 +164,16 @@ function PublicFeedback({
             response && (
               <div
                 key={response.content}
-                className="ml-8 flex flex-row flex-1 p-1.5 text-sm border-2 border-solid rounded-md border-uzh-grey-60 bg-uzh-grey-20 mb-1"
+                className="border-uzh-grey-60 bg-uzh-grey-20 mb-1 ml-8 flex flex-1 flex-row rounded-md border-2 border-solid p-1.5 text-sm"
               >
-                <div className="flex flex-col flex-1">{response.content}</div>
+                <div className="flex flex-1 flex-col">{response.content}</div>
                 <div>
                   <Button
                     onClick={() =>
                       onResponseUpvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === 1}
-                    className={{ root: 'mr-1 w-9 h-9' }}
+                    className={{ root: 'mr-1 h-9 w-9' }}
                     data={{
                       cy: `feedback-response-upvote-${response.content}`,
                     }}
@@ -187,7 +187,7 @@ function PublicFeedback({
                       onResponseDownvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === -1}
-                    className={{ root: 'w-9 h-9' }}
+                    className={{ root: 'h-9 w-9' }}
                     data={{ cy: 'feedback-response-downvote' }}
                   >
                     <Button.Icon>

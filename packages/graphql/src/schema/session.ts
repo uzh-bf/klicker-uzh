@@ -19,6 +19,10 @@ export const SessionAccessMode = builder.enumType('SessionAccessMode', {
   values: Object.values(DB.AccessMode),
 })
 
+export const ResponseCorrectness = builder.enumType('ResponseCorrectness', {
+  values: Object.values(DB.ResponseCorrectness),
+})
+
 export const BlockInput = builder.inputType('BlockInput', {
   fields: (t) => ({
     questionIds: t.intList({ required: true }),
@@ -55,6 +59,8 @@ export const Session = SessionRef.implement({
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    maxBonusPoints: t.exposeInt('maxBonusPoints'),
+    timeToZeroBonus: t.exposeInt('timeToZeroBonus'),
 
     status: t.expose('status', { type: SessionStatus }),
     accessMode: t.expose('accessMode', { type: SessionAccessMode }),
@@ -117,6 +123,23 @@ export const SessionBlock = SessionBlockRef.implement({
       type: [QuestionInstanceRef],
       nullable: true,
     }),
+  }),
+})
+
+export interface IRunningLiveQuizSummary {
+  numOfResponses: number
+  numOfFeedbacks: number
+  numOfConfusionFeedbacks: number
+  numOfLeaderboardEntries: number
+}
+export const RunningLiveQuizSummaryRef =
+  builder.objectRef<IRunningLiveQuizSummary>('RunningLiveQuizSummary')
+export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfFeedbacks: t.exposeInt('numOfFeedbacks'),
+    numOfConfusionFeedbacks: t.exposeInt('numOfConfusionFeedbacks'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
   }),
 })
 
@@ -274,7 +297,7 @@ export const QuestionResponse = QuestionResponseRef.implement({
     wrongCount: t.exposeInt('wrongCount'),
     lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
 
-    response: t.expose('response', { type: 'Json' }),
+    lastResponse: t.expose('lastResponse', { type: 'Json' }),
 
     aggregatedResponses: t.expose('aggregatedResponses', {
       type: 'Json',

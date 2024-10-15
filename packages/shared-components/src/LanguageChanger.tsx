@@ -1,14 +1,12 @@
-import React from 'react'
 import { Select } from '@uzh-bf/design-system'
+import React from 'react'
 
 function LanguageChanger({
   value,
   onChange,
-  className,
 }: {
   value: string
   onChange: (locale: string) => void
-  className?: string
 }) {
   return (
     <Select
@@ -19,11 +17,9 @@ function LanguageChanger({
       ]}
       onChange={onChange}
       className={{
-        root: className,
-        trigger: 'border bg-slate-100 hover:shadow',
+        trigger: 'w-max',
       }}
       data={{ cy: 'select-value-language-changer' }}
-      basic
     />
   )
 }

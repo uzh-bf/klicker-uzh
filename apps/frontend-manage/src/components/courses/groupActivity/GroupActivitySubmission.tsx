@@ -16,6 +16,7 @@ interface GroupActivitySubmissionProps {
   selectedSubmission: number | undefined
   selectSubmission: (submissionId: number) => void
   maxPoints: number
+  activityIndex: number
 }
 
 function GroupActivitySubmission({
@@ -23,6 +24,7 @@ function GroupActivitySubmission({
   selectedSubmission,
   selectSubmission,
   maxPoints,
+  activityIndex,
 }: GroupActivitySubmissionProps) {
   const t = useTranslations()
 
@@ -44,7 +46,7 @@ function GroupActivitySubmission({
       disabled={!submission.decisions}
       className={{
         root: twMerge(
-          'bg-slate-200 justify-between',
+          'justify-between bg-slate-200',
           submission.results && submission.results.passed && 'bg-green-200',
           submission.results && !submission.results.passed && 'bg-red-200',
           submission.decisions && !submission.results && 'bg-orange-100'
@@ -52,7 +54,7 @@ function GroupActivitySubmission({
         active: 'border-2 border-red-500',
       }}
       onClick={() => selectSubmission(submission.id)}
-      data={{ cy: `group-activity-submission-${submission.id}` }}
+      data={{ cy: `group-activity-submission-${activityIndex}` }}
     >
       <div className="flex flex-col items-start">
         <div>

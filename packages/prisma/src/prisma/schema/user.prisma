@@ -1,0 +1,117 @@
+enum UserRole {
+  PARTICIPANT
+  USER
+  ADMIN
+}
+
+model Account {
+  id String @id @default(uuid()) @db.Uuid
+
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  sessionToken String   @unique
+  expires      DateTime
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserLoginScope {
+  ACCOUNT_OWNER
+  FULL_ACCESS
+  SESSION_EXEC
+  READ_ONLY
+  OTP
+  ACTIVATION
+}
+
+model UserLogin {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String         @default("-")
+  password    String
+  scope       UserLoginScope @default(READ_ONLY)
+  lastLoginAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+}
+
+enum Locale {
+  en
+  de
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  originalId String? @unique
+
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  sendProjectUpdates Boolean   @default(false)
+  image              String?
+
+  shortname           String    @unique
+  lastLoginAt         DateTime?
+  deletionToken       String?
+  deletionRequestedAt DateTime?
+  loginToken          String?
+  loginTokenExpiresAt DateTime?
+
+  locale Locale @default(en)
+
+  role UserRole @default(USER)
+
+  catalystInstitutional Boolean @default(false)
+  catalystIndividual    Boolean @default(false)
+  catalystTier          String?
+
+  logins            UserLogin[]
+  session           Session[]
+  accounts          Account[]
+  courses           Course[]
+  questions         Element[]
+  mediaFiles        MediaFile[]
+  tags              Tag[]
+  questionInstances QuestionInstance[]
+  sessions          LiveSession[]
+  groupActivities   GroupActivity[]
+  elementInstances  ElementInstance[]
+  practiceQuizzes   PracticeQuiz[]
+  microLearnings    MicroLearning[]
+  liveQuizzes       LiveQuiz[]
+  competencyTrees   CompetencyTree[]
+
+  firstLogin Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -38,7 +38,7 @@ function EvaluationCollapsible({
 
   const computedClassName = twMerge(
     questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',
-    !showExtensibleButton && 'border-solid border-b-only border-primary',
+    !showExtensibleButton && 'border-solid border-b-only border-primary-100',
     showExtensibleButton &&
       questionCollapsed &&
       'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
@@ -46,12 +46,12 @@ function EvaluationCollapsible({
   )
 
   return (
-    <div className="border-b-[0.1rem] border-solid border-uzh-grey-80">
+    <div className="border-uzh-grey-80 border-b-[0.1rem] border-solid">
       <div ref={(ref) => setQuestionElem(ref)} className={computedClassName}>
         <Prose
           className={{
             root: twMerge(
-              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg prose-img:m-0',
+              'prose-p:m-0 prose-lg prose-img:m-0 max-w-full flex-initial leading-8',
               proseSize
             ),
           }}
@@ -66,7 +66,7 @@ function EvaluationCollapsible({
         <Button
           className={{
             root: twMerge(
-              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block print:hidden hover:bg-none hover:bg-primary-20',
+              'hover:bg-primary-20 hidden h-4 w-full rounded-none border-0 text-center text-xs shadow-none hover:bg-none md:block print:hidden',
               questionCollapsed && 'bg-gradient-to-b from-white to-slate-100'
             ),
           }}
@@ -75,7 +75,7 @@ function EvaluationCollapsible({
         >
           <FontAwesomeIcon
             icon={questionCollapsed ? faChevronDown : faChevronUp}
-            className={twMerge('h-6 -mt-1.5', questionCollapsed && '-mt-2')}
+            className={twMerge('-mt-1.5 h-6', questionCollapsed && '-mt-2')}
           />
         </Button>
       )}

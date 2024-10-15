@@ -230,6 +230,7 @@ export interface IGroupActivityDetails {
   id: string
   name: string
   displayName: string
+  status: DB.GroupActivityStatus
   description?: string | null
   scheduledStartAt?: Date
   scheduledEndAt?: Date
@@ -249,6 +250,7 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     name: t.exposeString('name', { nullable: false }),
     displayName: t.exposeString('displayName', { nullable: false }),
     description: t.exposeString('description', { nullable: true }),
+    status: t.expose('status', { type: GroupActivityStatus }),
 
     scheduledStartAt: t.expose('scheduledStartAt', {
       type: 'Date',
@@ -279,6 +281,20 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     group: t.expose('group', {
       type: ParticipantGroupRef,
     }),
+  }),
+})
+
+export interface IGroupActivitySummary {
+  numOfStartedInstances: number
+  numOfSubmissions: number
+}
+export const GroupActivitySummaryRef = builder.objectRef<IGroupActivitySummary>(
+  'GroupActivitySummary'
+)
+export const GroupActivitySummary = GroupActivitySummaryRef.implement({
+  fields: (t) => ({
+    numOfStartedInstances: t.exposeInt('numOfStartedInstances'),
+    numOfSubmissions: t.exposeInt('numOfSubmissions'),
   }),
 })
 

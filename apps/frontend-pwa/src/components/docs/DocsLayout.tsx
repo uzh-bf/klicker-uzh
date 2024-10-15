@@ -56,7 +56,7 @@ function DocsLayout({
       course={data.basicCourseInformation}
       displayName={t('shared.generic.documentation')}
     >
-      <div className="w-full max-w-4xl mx-auto">
+      <div className="mx-auto w-full max-w-4xl">
         <Navigation
           style={{
             root: {
@@ -108,7 +108,7 @@ function DocsLayout({
             }
           />
         </Navigation>
-        <div className="p-4 prose border rounded-b max-w-none prose-img:m-0">
+        <div className="prose prose-img:m-0 max-w-none rounded-b border p-4">
           {typeof children === 'function'
             ? children(data.basicCourseInformation!)
             : children}

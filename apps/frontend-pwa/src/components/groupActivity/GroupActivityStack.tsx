@@ -19,10 +19,12 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
   activityId: number
+  activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[]
   results: GroupActivityResults
@@ -31,6 +33,7 @@ interface GroupActivityStackProps {
 
 function GroupActivityStack({
   activityId,
+  activityEnded,
   stack,
   decisions,
   results,
@@ -51,6 +54,10 @@ function GroupActivityStack({
         },
       ],
     })
+  const elementFeedbacks = useStackElementFeedbacks({
+    instanceIds: stack.elements?.map((element) => element.id) ?? [],
+    withParticipant: true,
+  })
 
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
@@ -156,10 +163,17 @@ function GroupActivityStack({
             return (
               <div key={`${element.id}-student`} className="mb-2 text-lg">
                 <InstanceHeader
+                  index={elementIx}
                   instanceId={element.id}
+                  elementId={parseInt(element.elementData.id)}
                   name={element.elementData.name}
                   className="mb-0"
                   correctness={correctness}
+                  previousElementFeedback={elementFeedbacks[element.id]}
+                  stackInstanceIds={
+                    stack.elements?.map((element) => element.id) ?? []
+                  }
+                  showSeparator={element.elementType === ElementType.Flashcard}
                   withParticipant
                 />
                 <StudentElement
@@ -168,12 +182,12 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
-                  disabledInput={!!decisions}
+                  disabledInput={!!decisions || activityEnded}
                 />
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'rounded mb-6 mt-3 shadow !border-l-4 text-base',
+                      'mb-6 mt-3 rounded !border-l-4 text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
                         '!border-l-green-500',
                       correctness === ResponseCorrectnessType.Partial &&
@@ -195,7 +209,7 @@ function GroupActivityStack({
                       )}
                     >
                       <div>{t(`pwa.groupActivity.answer${correctness}`)}</div>
-                      <div className="font-bold self-end">{`${grading.score}/${
+                      <div className="self-end font-bold">{`${grading.score}/${
                         grading.maxPoints
                       } ${t('shared.generic.points')}`}</div>
                     </div>
@@ -211,14 +225,16 @@ function GroupActivityStack({
             )
           })}
       </div>
-      {!decisions ? (
+      {!decisions && !activityEnded ? (
         <Button
           className={{
-            root: 'mt-4 text-lg font-bold float-right',
+            root: 'float-right mt-4 text-lg font-bold',
           }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
+          disabled={
+            Object.values(studentResponse).some(
+              (response) => !response.valid
+            ) || activityEnded
+          }
           onClick={async () => {
             const result = await submitGroupActivityDecisions({
               variables: {
@@ -286,14 +302,15 @@ function GroupActivityStack({
         >
           {t('pwa.groupActivity.sendAnswers')}
         </Button>
-      ) : (
-        <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
+      ) : null}
+      {!!decisions ? (
+        <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,
             date: submittedAt,
           })}
         </div>
-      )}
+      ) : null}
     </>
   )
 }

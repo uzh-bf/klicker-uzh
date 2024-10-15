@@ -154,12 +154,12 @@ function Histogram({
             content={({ active, payload }) => {
               if (active && payload && payload.length > 0) {
                 return (
-                  <div className="rounded-md border border-solid border-uzh-grey-100 bg-white p-2">
+                  <div className="border-uzh-grey-100 rounded-md border border-solid bg-white p-2">
                     <div>
                       {t('manage.evaluation.histogramRange')}:{' '}
                       {payload[0]!.payload.label}
                     </div>
-                    <div className="text-primary font-bold">
+                    <div className="text-primary-100 font-bold">
                       {t('manage.evaluation.count')}:{' '}
                       {payload[0]!.payload.count}
                     </div>
@@ -190,7 +190,7 @@ function Histogram({
               className={textSize}
               key={`mean-` + data.statistics.mean}
               stroke="blue"
-              x={Math.round(data.statistics.mean || 0)}
+              x={data.statistics.mean}
             />
           )}
           {data.statistics && showSolution.median && (
@@ -204,7 +204,7 @@ function Histogram({
               className={textSize}
               key={`median-` + data.statistics.median}
               stroke="red"
-              x={Math.round(data.statistics.median || 0)}
+              x={data.statistics.median}
             />
           )}
           {data.statistics && showSolution.q1 && (
@@ -218,7 +218,7 @@ function Histogram({
               className={textSize}
               key={`q1-` + data.statistics.q1}
               stroke="black"
-              x={Math.round(data.statistics.q1 || 0)}
+              x={data.statistics.q1}
             />
           )}
           {data.statistics && showSolution.q3 && (
@@ -232,18 +232,18 @@ function Histogram({
               className={textSize}
               key={`q3-` + data.statistics.q3}
               stroke="black"
-              x={Math.round(data.statistics.q3 || 0)}
+              x={data.statistics.q3}
             />
           )}
           {data.statistics && showSolution.sd && (
             <ReferenceArea
               key="sd-area"
               x1={Math.max(
-                (data.statistics.mean || 0) - (data.statistics.sd ?? 0),
+                data.statistics.mean - data.statistics.sd,
                 processedData.domain.min
               )}
               x2={Math.min(
-                (data.statistics.mean || 0) + (data.statistics.sd ?? 0),
+                data.statistics.mean + data.statistics.sd,
                 processedData.domain.max
               )}
               fill="gray"

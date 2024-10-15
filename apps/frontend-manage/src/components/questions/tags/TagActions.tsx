@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import DeletionModal from '@components/courses/modals/DeletionModal'
 import {
   faArrowDown,
   faArrowUp,
@@ -15,6 +14,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import DeletionModal from '../../courses/modals/DeletionModal'
 
 interface TagActionsProps {
   tag: Tag
@@ -57,14 +57,14 @@ function TagActions({
   })
 
   return (
-    <div className="flex-row hidden text-black group-hover:flex">
+    <div className="hidden flex-row text-black group-hover:flex">
       {onMoveUp && (
         <Button
           basic
           disabled={!onMoveUp}
           onClick={() => onMoveUp?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-up` }}
         >
@@ -77,7 +77,7 @@ function TagActions({
           disabled={!onMoveDown}
           onClick={() => onMoveDown?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-down` }}
         >
@@ -90,7 +90,7 @@ function TagActions({
           disabled={active}
           onClick={() => setEditMode(true)}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
           }}
           data={{ cy: `tag-list-item-${tag.name}-edit` }}
         >
@@ -103,7 +103,7 @@ function TagActions({
           disabled={active}
           onClick={() => setIsDeletionModalOpen(true)}
           className={{
-            root: 'hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
+            root: 'disabled:text-uzh-grey-60 disabled:hover:text-none hover:text-red-600',
           }}
           data={{ cy: `tag-list-item-${tag.name}-delete` }}
         >

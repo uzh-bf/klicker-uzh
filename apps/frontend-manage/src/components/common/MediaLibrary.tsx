@@ -9,7 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { Suspense, useState } from 'react'
+import { Suspense, useCallback, useState } from 'react'
 import Dropzone from 'react-dropzone'
 
 interface Props {
@@ -22,12 +22,12 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
   const { data } = useSuspenseQuery(GetUserMediaFilesDocument)
 
   return (
-    <div className="flex-none w-4/5 p-2 border-r">
+    <div className="w-4/5 flex-none border-r p-2">
       <div className="font-bold">{t('manage.questionForms.mediaLibrary')}</div>
-      <div className="grid grid-cols-5 gap-2 overflow-y-auto max-h-64">
+      <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto">
         {data.userMediaFiles?.map((file) => (
           <Button
-            className={{ root: 'text-xs flex flex-col overflow-hidden' }}
+            className={{ root: 'flex flex-col overflow-hidden text-xs' }}
             key={file.id}
             onClick={() => onImageClick(file.href, file.name)}
             data={{ cy: `media-file-${file.name}` }}
@@ -44,50 +44,50 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
 }
 
 function MediaLibrary({ onImageClick }: Props) {
-  const client = useApolloClient()
-
   const t = useTranslations()
-
+  const client = useApolloClient()
   const [isUploading, setIsUploading] = useState(false)
-
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
 
-  const handleFileFieldChange = async (files: File[]) => {
-    const file = files?.[0]
-    if (!file) return
+  const handleFileFieldChange = useCallback(
+    async (files: File[]) => {
+      const file = files?.[0]
+      if (!file) return
 
-    setIsUploading(true)
+      setIsUploading(true)
 
-    const { data } = await getFileUploadSAS({
-      variables: {
-        fileName: file.name,
-        contentType: file.type,
-      },
-    })
-    if (!data?.getFileUploadSas) return
+      const { data } = await getFileUploadSAS({
+        variables: {
+          fileName: file.name,
+          contentType: file.type,
+        },
+      })
+      if (!data?.getFileUploadSas) return
 
-    const blobServiceClient = new BlobServiceClient(
-      data.getFileUploadSas.uploadSasURL
-    )
-    const containerClient = blobServiceClient.getContainerClient(
-      data.getFileUploadSas.containerName
-    )
-    const blobClient = containerClient.getBlobClient(
-      data.getFileUploadSas.fileName
-    )
-    const blockBlobClient = blobClient.getBlockBlobClient()
-    const result = await blockBlobClient.uploadData(file, {
-      blockSize: 4 * 1024 * 1024, // 4MB block size
-    })
+      const blobServiceClient = new BlobServiceClient(
+        data.getFileUploadSas.uploadSasURL
+      )
+      const containerClient = blobServiceClient.getContainerClient(
+        data.getFileUploadSas.containerName
+      )
+      const blobClient = containerClient.getBlobClient(
+        data.getFileUploadSas.fileName
+      )
+      const blockBlobClient = blobClient.getBlockBlobClient()
+      const result = await blockBlobClient.uploadData(file, {
+        blockSize: 4 * 1024 * 1024, // 4MB block size
+      })
 
-    client.refetchQueries({
-      include: ['GetUserMediaFiles'],
-    })
+      client.refetchQueries({
+        include: ['GetUserMediaFiles'],
+      })
 
-    onImageClick(data.getFileUploadSas.uploadHref, file.name)
+      onImageClick(data.getFileUploadSas.uploadHref, file.name)
 
-    setIsUploading(false)
-  }
+      setIsUploading(false)
+    },
+    [client, getFileUploadSAS, onImageClick]
+  )
 
   return (
     <Dropzone

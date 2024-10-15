@@ -67,8 +67,11 @@ export const convertToMd = (slateObj: any) => {
   return result.join('\n')
 }
 
-export const convertToSlate = (mdObj: string) => {
-  const trimmedMdObj = mdObj.trim() === '' ? '<br>' : mdObj
+export const convertToSlate = (mdObj?: string | null) => {
+  const trimmedMdObj =
+    typeof mdObj === 'undefined' || mdObj === null || mdObj.trim() === ''
+      ? '<br>'
+      : mdObj
 
   const result = unified()
     .use(markdown)

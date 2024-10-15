@@ -8,7 +8,7 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../../questions/Question'
-import { LiveQuizBlockFormValues } from '../MultistepWizard'
+import { LiveQuizBlockFormValues } from '../WizardLayout'
 
 interface LiveQuizAddBlockButtonProps {
   push: (value: LiveQuizBlockFormValues) => void
@@ -53,7 +53,7 @@ function LiveQuizAddBlockButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-1 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
               const { questionIds, titles, types } = Object.values(
@@ -95,7 +95,7 @@ function LiveQuizAddBlockButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-2 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
               Object.values(selection).forEach((question) => {
@@ -126,7 +126,7 @@ function LiveQuizAddBlockButton({
       )}
       <div
         className={twMerge(
-          'flex flex-col items-center justify-center rounded text-center border border-solid md:w-16 cursor-pointer hover:bg-primary-20 w-full p-2',
+          'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
           isOver && 'bg-primary-20'
         )}
         onClick={() =>

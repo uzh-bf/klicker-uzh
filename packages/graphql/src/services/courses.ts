@@ -11,7 +11,7 @@ import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops.js'
 import { ILeaderboardEntry } from 'src/schema/course.js'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks } from '../lib/util.js'
+import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -174,6 +174,7 @@ export async function getCourseOverviewData(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
@@ -195,19 +196,6 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
-            groupActivities: {
-              where: {
-                status: {
-                  in: [
-                    GroupActivityStatus.PUBLISHED,
-                    GroupActivityStatus.GRADED,
-                  ],
-                },
-              },
-              orderBy: {
-                scheduledStartAt: 'asc',
-              },
-            },
           },
         },
         participant: {
@@ -221,15 +209,6 @@ export async function getCourseOverviewData(
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
-    })
-
-    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
-      where: {
-        groupId: {
-          in:
-            participation?.participant.participantGroups.map((g) => g.id) ?? [],
-        },
-      },
     })
 
     const lbEntries =
@@ -331,6 +310,16 @@ export async function getCourseOverviewData(
         return { ...entry, rank: ix + 1 }
       })
 
+      const groupCreationPoolEntry =
+        await ctx.prisma.groupAssignmentPoolEntry.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        })
+
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
@@ -350,7 +339,7 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
-        groupActivityInstances,
+        inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
   }
@@ -392,7 +381,10 @@ interface CreateCourseArgs {
   color?: string | null
   startDate: Date
   endDate: Date
+  isGroupCreationEnabled?: boolean | null
   groupDeadlineDate?: Date | null
+  maxGroupSize?: number | null
+  preferredGroupSize?: number | null
   notificationEmail?: string | null
   isGamificationEnabled: boolean
 }
@@ -405,7 +397,10 @@ export async function createCourse(
     color,
     startDate,
     endDate,
+    isGroupCreationEnabled,
     groupDeadlineDate,
+    maxGroupSize,
+    preferredGroupSize,
     notificationEmail,
     isGamificationEnabled,
   }: CreateCourseArgs,
@@ -418,6 +413,8 @@ export async function createCourse(
   // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
   // endDate.setHours(endDate.getHours() - endDate.getTimezoneOffset() / 60)
 
+  const defaultMaxGroupSize = 5
+  const defaultPreferredGroupSize = 3
   const course = await ctx.prisma.course.create({
     data: {
       name: name.trim(),
@@ -426,7 +423,10 @@ export async function createCourse(
       color: color ?? '#CCD5ED',
       startDate: startDate,
       endDate: endDate,
+      isGroupCreationEnabled: isGroupCreationEnabled ?? true,
       groupDeadlineDate: groupDeadlineDate ?? endDate,
+      maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+      preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
       notificationEmail: notificationEmail,
       isGamificationEnabled: isGamificationEnabled,
       pinCode: randomPin,
@@ -439,6 +439,108 @@ export async function createCourse(
   })
 
   return course
+}
+
+interface ToggleArchiveCourseProps {
+  id: string
+  isArchived: boolean
+}
+
+export async function toggleArchiveCourse(
+  { id, isArchived }: ToggleArchiveCourseProps,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      endDate: {
+        lte: new Date(),
+      },
+    },
+    data: {
+      isArchived,
+    },
+  })
+
+  return course
+}
+
+interface UpdateCourseSettingsArgs {
+  id: string
+  name?: string | null
+  displayName?: string | null
+  description?: string | null
+  color?: string | null
+  startDate?: Date | null
+  endDate?: Date | null
+  isGroupCreationEnabled?: boolean | null
+  groupDeadlineDate?: Date | null
+  notificationEmail?: string | null
+  isGamificationEnabled?: boolean | null
+}
+
+export async function updateCourseSettings(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    color,
+    startDate,
+    endDate,
+    isGroupCreationEnabled,
+    groupDeadlineDate,
+    notificationEmail,
+    isGamificationEnabled,
+  }: UpdateCourseSettingsArgs,
+  ctx: ContextWithUser
+) {
+  // verify that no past dates are modified or enabled gamification / group creation settings are disabled
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!course) return null
+
+  const currentStartDatePast = course.startDate < new Date()
+  const newStartDatePast = startDate ? startDate < new Date() : false
+  const newGroupDeadlinePast = groupDeadlineDate
+    ? groupDeadlineDate < new Date()
+    : false
+
+  const updatedCourse = await ctx.prisma.course.update({
+    where: {
+      id,
+    },
+    data: {
+      name: name ?? undefined,
+      displayName: displayName ?? undefined,
+      description: description ?? undefined,
+      color: color ?? undefined,
+      startDate:
+        currentStartDatePast || newStartDatePast || !startDate
+          ? undefined
+          : startDate,
+      endDate: endDate ?? undefined,
+      isGroupCreationEnabled:
+        course.isGroupCreationEnabled || !isGroupCreationEnabled
+          ? undefined
+          : isGroupCreationEnabled,
+      groupDeadlineDate: groupDeadlineDate ?? undefined,
+      notificationEmail: notificationEmail ?? undefined,
+      isGamificationEnabled:
+        course.isGamificationEnabled || !isGamificationEnabled
+          ? undefined
+          : isGamificationEnabled,
+      // reset the random assignment tracking if the group deadline is extended
+      randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+    },
+  })
+
+  return updatedCourse
 }
 
 export async function getUserCourses(ctx: ContextWithUser) {
@@ -455,7 +557,109 @@ export async function getUserCourses(ctx: ContextWithUser) {
     },
   })
 
+  // sort courses by archived or not
+  const archivedSortedCourses =
+    userCourses?.courses.sort((a, b) => {
+      return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+    }) ?? []
+
+  // sort courses by start date descending
+  const startDateSortedCourses = archivedSortedCourses.sort((a, b) => {
+    return a.startDate > b.startDate ? -1 : a.startDate < b.startDate ? 1 : 0
+  })
+
+  return startDateSortedCourses
+}
+
+export async function getActiveUserCourses(ctx: ContextWithUser) {
+  const userCourses = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      courses: {
+        where: {
+          endDate: {
+            gte: new Date(),
+          },
+          isArchived: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
   return userCourses?.courses ?? []
+}
+
+export async function getCourseSummary(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          sessions: true,
+          practiceQuizzes: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          microLearnings: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          groupActivities: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          leaderboard: true,
+          participantGroups: true,
+          participations: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  return {
+    numOfParticipations: course._count.participations,
+    numOfLiveQuizzes: course._count.sessions,
+    numOfPracticeQuizzes: course._count.practiceQuizzes,
+    numOfMicroLearnings: course._count.microLearnings,
+    numOfGroupActivities: course._count.groupActivities,
+    numOfLeaderboardEntries: course._count.leaderboard,
+    numOfParticipantGroups: course._count.participantGroups,
+  }
+}
+
+export async function deleteCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const deletedCourse = await ctx.prisma.course.delete({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Course',
+    id,
+  })
+
+  return deletedCourse
 }
 
 export async function getParticipantCourses(ctx: ContextWithUser) {
@@ -499,6 +703,9 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
+      _count: {
+        select: { participantGroups: true },
+      },
       sessions: {
         where: {
           isDeleted: false,
@@ -517,6 +724,9 @@ export async function getCourseData(
         },
       },
       practiceQuizzes: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },
@@ -527,6 +737,9 @@ export async function getCourseData(
         },
       },
       groupActivities: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           stacks: {
             include: {
@@ -539,6 +752,9 @@ export async function getCourseData(
         },
       },
       microLearnings: {
+        where: {
+          isDeleted: false,
+        },
         include: {
           _count: {
             select: { stacks: true },
@@ -656,6 +872,7 @@ export async function getCourseData(
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
+    numOfParticipantGroups: course._count.participantGroups,
     leaderboard: activeLBEntries,
     averageActiveScore,
   }
@@ -685,64 +902,6 @@ export async function getControlCourse(
           createdAt: 'desc',
         },
       },
-    },
-  })
-
-  return course
-}
-
-export async function changeCourseDescription(
-  { courseId, input }: { courseId: string; input: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      description: input,
-    },
-  })
-
-  return course
-}
-
-export async function changeCourseColor(
-  { courseId, color }: { courseId: string; color: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      color,
-    },
-  })
-
-  return course
-}
-
-interface ChangeCourseDates {
-  courseId: string
-  startDate?: Date | null
-  endDate?: Date | null
-}
-
-export async function changeCourseDates(
-  { courseId, startDate, endDate }: ChangeCourseDates,
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      ...(startDate && { startDate }),
-      ...(endDate && { endDate }),
     },
   })
 
@@ -814,6 +973,7 @@ export async function getCoursePracticeQuiz(
     availableFrom: null,
     course,
     courseId,
+    isDeleted: false,
     ownerId: course.ownerId,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
@@ -835,4 +995,174 @@ export async function enableGamification(
   })
 
   return course
+}
+
+export async function publishScheduledActivities(ctx: Context) {
+  // ! Publish scheduled practice quizzes
+  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      availableFrom: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedQuizzes = await Promise.all(
+    quizzesToPublish.map((quiz) =>
+      ctx.prisma.practiceQuiz.update({
+        where: {
+          id: quiz.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          stacks: true,
+        },
+      })
+    )
+  )
+
+  await Promise.all(
+    updatedQuizzes.map((quiz) =>
+      ctx.prisma.course.update({
+        where: {
+          id: quiz.courseId,
+        },
+        data: {
+          elementStacks: {
+            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
+          },
+        },
+      })
+    )
+  )
+
+  if (updatedQuizzes.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledPracticeQuizzes',
+      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
+    )
+  }
+
+  updatedQuizzes.forEach((quiz) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: quiz.id,
+    })
+  })
+
+  // ! Publish scheduled microlearnings
+  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearnings = await Promise.all(
+    microlearningsToPublish.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedMicroLearnings.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledMicroLearnings',
+      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
+    )
+  }
+
+  updatedMicroLearnings.forEach((micro) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
+  // ! Publish scheduled group activities
+  const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
+    where: {
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedGroupActivities = await Promise.all(
+    groupActivitiesToPublish.map((group) =>
+      ctx.prisma.groupActivity.update({
+        where: {
+          id: group.id,
+        },
+        data: {
+          status: PublicationStatus.PUBLISHED,
+        },
+      })
+    )
+  )
+
+  if (updatedGroupActivities.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/publishScheduledGroupActivities',
+      `Successfully published ${updatedGroupActivities.length} scheduled group activities`
+    )
+  }
+
+  updatedGroupActivities.forEach((group) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: group.id,
+    })
+  })
+
+  // ! Set group activity status to ended for all published group activities that have ended
+  const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
+    where: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledEndAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedGroupActivitiesToEnd = await Promise.all(
+    groupActivitiesToEnd.map((group) =>
+      ctx.prisma.groupActivity.update({
+        where: {
+          id: group.id,
+        },
+        data: {
+          status: GroupActivityStatus.ENDED,
+        },
+      })
+    )
+  )
+
+  if (updatedGroupActivitiesToEnd.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/endGroupActivities',
+      `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
+    )
+  }
+
+  updatedGroupActivitiesToEnd.forEach((group) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: group.id,
+    })
+  })
+
+  return true
 }

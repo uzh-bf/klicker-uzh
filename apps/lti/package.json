@@ -10,11 +10,13 @@
   ],
   "dependencies": {
     "cross-env": "7.0.3",
-    "ltijs": "5.9.4"
+    "jsonwebtoken": "9.0.2",
+    "ltijs": "5.9.4",
+    "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
     "@types/ltijs": "^4.0.11",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "nodemon": "3.0.1",
     "npm-run-all": "4.1.5",
     "tsup": "7.2.0",
@@ -24,14 +26,12 @@
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "tsup",
     "check": "tsc --noEmit",
-    "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:lti": "npm-run-all --parallel dev:build dev:run",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
     "dev:build": "tsup --watch",
-    "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
-    "dev:run": "nodemon -w dist/ --exec 'node --env-file=.env ./dist/index.js'",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "start": "node --env-file=.env dist/index.js"
+    "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
+    "start": "node dist/index.js"
   },
   "engines": {
     "node": "=20"

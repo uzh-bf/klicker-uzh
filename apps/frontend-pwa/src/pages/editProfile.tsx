@@ -2,7 +2,8 @@ import { useQuery } from '@apollo/client'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { Toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,11 +13,23 @@ import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
 
-function EditProfile() {
+interface Props {
+  participantToken?: string
+  cookiesAvailable?: boolean
+}
+
+function EditProfile({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
-  const { data, loading } = useQuery(SelfDocument)
   const [showError, setShowError] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  const { data, loading, refetch } = useQuery(SelfDocument)
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+    callback: () => refetch(),
+  })
 
   if (loading || !data?.self) {
     return (
@@ -34,8 +47,8 @@ function EditProfile() {
       course={{ displayName: t('shared.generic.title') }}
       displayName={t('pwa.profile.editProfile')}
     >
-      <div className="flex flex-col gap-8 md:gap-4 md:w-full md:max-w-5xl md:mx-auto">
-        <div className="flex flex-col w-full gap-8 md:gap-4 md:flex-row">
+      <div className="flex flex-col gap-8 md:mx-auto md:w-full md:max-w-5xl md:gap-4">
+        <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
           <div className="w-full md:w-1/2">
             <UpdateAccountInfoForm
               user={data.self}
@@ -43,7 +56,7 @@ function EditProfile() {
               setShowSuccess={setShowSuccess}
             />
           </div>
-          <div className="w-full md:w-1/2 md:h-full">
+          <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
               user={data.self}
               setShowError={setShowError}
@@ -54,17 +67,19 @@ function EditProfile() {
         <AccountDeletionForm />
       </div>
       <Toast
+        dismissible
         type="error"
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
         duration={8000}
       >
         {t('pwa.profile.editProfileFailed')}
       </Toast>
       <Toast
+        dismissible
         type="success"
         openExternal={showSuccess}
-        setOpenExternal={setShowSuccess}
+        onCloseExternal={() => setShowSuccess(false)}
         duration={4000}
       >
         {t('pwa.profile.editProfileSuccess')}
@@ -76,42 +91,34 @@ function EditProfile() {
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
     ctx,
   })
 
-  if (typeof participantToken !== 'string') {
+  if (!participantToken) {
     return {
       redirect: {
-        destination: '/login',
+        destination: `/createAccount`,
         permanent: false,
       },
     }
   }
 
-  const result = await apolloClient.query({
-    query: SelfDocument,
-    context: participantToken
-      ? {
-          headers: {
-            authorization: `Bearer ${participantToken}`,
-          },
-        }
-      : undefined,
-  })
-
-  if (!result.data.self) {
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
+      props: {
+        participantToken,
+        cookiesAvailable,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }
 
   return addApolloState(apolloClient, {
     props: {
+      cookiesAvailable,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },

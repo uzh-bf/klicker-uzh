@@ -112,7 +112,7 @@ function SessionList() {
                 link: (text) => (
                   <Link
                     href="/"
-                    className="text-primary hover:underline"
+                    className="text-primary-100 hover:underline"
                     legacyBehavior
                     passHref
                   >

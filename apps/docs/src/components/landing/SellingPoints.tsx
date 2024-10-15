@@ -31,11 +31,11 @@ function SellingPoints() {
     },
   ]
   return (
-    <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+    <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
       {data.map((entry) => (
         <Button
           className={{
-            root: 'hover:text-primary-80 bg-uzh-grey-20 flex flex-col items-center justify-center p-2 pt-4 rounded hover:scale-[103%] cursor-pointer',
+            root: 'hover:text-primary-80 bg-uzh-grey-20 flex cursor-pointer flex-col items-center justify-center rounded p-2 pt-4 hover:scale-[103%]',
           }}
           onClick={() => window.location.replace(entry.href)}
         >

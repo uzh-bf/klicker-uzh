@@ -1,52 +1,44 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
 import {
-  CreateParticipantGroupDocument,
+  GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
-  GetParticipantGroupsDocument,
-  GroupActivityInstance,
   JoinCourseDocument,
-  JoinParticipantGroupDocument,
   LeaveCourseDocument,
-  LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
-import {
-  Button,
-  FormikNumberField,
-  FormikTextField,
-  H3,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
+import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
-import Tabs from '../../../components/common/Tabs'
-import GroupVisualization from '../../../components/participant/GroupVisualization'
-import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
-import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-
-import GroupActivityList from '@components/groupActivity/GroupActivityList'
-import { Markdown } from '@klicker-uzh/markdown'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-
-// TODO: replace fields in this component through our own design system components
+import { Suspense, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import SuspendedGroupView from '~/components/course/SuspendedGroupView'
+import Layout from '../../../components/Layout'
+import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
+import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 
 interface Props {
   courseId: string
+  participantToken?: string
+  cookiesAvailable?: boolean
 }
 
-function CourseOverview({ courseId }: Props) {
+function CourseOverview({
+  courseId,
+  participantToken,
+  cookiesAvailable,
+}: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
@@ -54,9 +46,19 @@ function CourseOverview({ courseId }: Props) {
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
 
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
+
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
+
+  const [groupActivityQueryRef, { subscribeToMore: subscribeActivityList }] =
+    useBackgroundQuery(GetCourseGroupActivitiesDocument, {
+      variables: { courseId },
+    })
 
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
@@ -71,10 +73,6 @@ function CourseOverview({ courseId }: Props) {
       { query: GetCourseOverviewDataDocument, variables: { courseId } },
     ],
   })
-
-  const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
-  const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
-  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   useEffect(() => {
     if (
@@ -109,7 +107,7 @@ function CourseOverview({ courseId }: Props) {
     leaderboardStatistics,
     groupLeaderboard,
     groupLeaderboardStatistics,
-    groupActivityInstances,
+    inRandomGroupPool,
   } = data.getCourseOverviewData
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
@@ -119,17 +117,6 @@ function CourseOverview({ courseId }: Props) {
   const top10Participants = leaderboard
     ? leaderboard.map((entry) => entry.participantId)
     : []
-
-  const indexedGroupActivityInstances =
-    groupActivityInstances?.reduce<Record<string, GroupActivityInstance>>(
-      (acc, groupActivityInstance) => {
-        return {
-          ...acc,
-          [groupActivityInstance.groupActivityId]: groupActivityInstance,
-        }
-      },
-      {}
-    ) ?? {}
 
   const openProfileModal = (id: string, isSelf: boolean) => {
     if (isSelf) {
@@ -152,7 +139,7 @@ function CourseOverview({ courseId }: Props) {
     >
       {course.isGamificationEnabled || course.description ? (
         <>
-          <div className="md:mx-auto md:max-w-6xl md:w-full md:border md:rounded">
+          <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
@@ -188,6 +175,7 @@ function CourseOverview({ courseId }: Props) {
                   ))}
 
                 {course.isGamificationEnabled &&
+                  course.isGroupCreationEnabled &&
                   !course.isGroupDeadlinePassed &&
                   (data.participantGroups?.length ?? 0) < 1 && (
                     <Tabs.Tab
@@ -219,7 +207,7 @@ function CourseOverview({ courseId }: Props) {
                   className="md:px-4"
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
-                    <div className="flex flex-col justify-between flex-1 gap-6">
+                    <div className="flex flex-1 flex-col justify-between gap-6">
                       <div>
                         <H3 className={{ root: 'mb-4' }}>
                           {t('pwa.courses.individualLeaderboard')}
@@ -243,7 +231,7 @@ function CourseOverview({ courseId }: Props) {
                         {participant?.id && !participation?.isActive && (
                           <div className="space-y-4">
                             <Podium leaderboard={[]} />
-                            <div className="p-2 text-sm border rounded max-w-none bg-slate-100 border-slate-300 text-slate-600">
+                            <div className="max-w-none rounded border border-slate-300 bg-slate-100 p-2 text-sm text-slate-600">
                               <Markdown
                                 withProse
                                 withLinkButtons={false}
@@ -272,7 +260,7 @@ function CourseOverview({ courseId }: Props) {
                           </div>
                         )}
 
-                        <div className="mt-4 mb-2 text-sm text-right text-slate-600">
+                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
                           <div>
                             {t('shared.leaderboard.participantCount', {
                               number: leaderboardStatistics?.participantCount,
@@ -287,75 +275,77 @@ function CourseOverview({ courseId }: Props) {
                         </div>
                       </div>
 
-                      <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
+                      <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
                         {t('pwa.courses.individualLeaderboardUpdate')}
                       </div>
                     </div>
 
-                    <div className="flex flex-col justify-between flex-1 gap-8">
-                      <div>
-                        <H3 className={{ root: 'mb-4' }}>
-                          {t('pwa.courses.groupLeaderboard')}
-                        </H3>
+                    {course.isGroupCreationEnabled && (
+                      <div className="flex flex-1 flex-col justify-between gap-8">
+                        <div>
+                          <H3 className={{ root: 'mb-4' }}>
+                            {t('pwa.courses.groupLeaderboard')}
+                          </H3>
 
-                        <Leaderboard
-                          leaderboard={
-                            filteredGroupLeaderboard?.map((entry) => ({
-                              id: entry.id,
-                              username: entry.name,
-                              score: entry.score,
-                              rank: entry.rank,
-                              isMember: entry.isMember ?? false,
-                            })) || []
-                          }
-                          hideAvatars={true}
-                        />
+                          <Leaderboard
+                            leaderboard={
+                              filteredGroupLeaderboard?.map((entry) => ({
+                                id: entry.id,
+                                username: entry.name,
+                                score: entry.score,
+                                rank: entry.rank,
+                                isMember: entry.isMember ?? false,
+                              })) || []
+                            }
+                            hideAvatars={true}
+                          />
 
-                        {!groupLeaderboard ||
-                          (groupLeaderboard.length === 0 && (
-                            <div className="mt-6">
-                              {t('pwa.courses.noGroups')}
+                          {!groupLeaderboard ||
+                            (groupLeaderboard.length === 0 && (
+                              <div className="mt-6">
+                                {t('pwa.courses.noGroups')}
+                              </div>
+                            ))}
+                          {groupLeaderboard &&
+                            groupLeaderboard.length !== 0 &&
+                            filteredGroupLeaderboard?.length === 0 && (
+                              <div>{t('pwa.courses.noGroupPoints')}</div>
+                            )}
+
+                          <div className="mb-2 mt-4 text-right text-sm text-slate-600">
+                            <div>
+                              {t('shared.leaderboard.participantCount', {
+                                number:
+                                  groupLeaderboardStatistics?.participantCount,
+                              })}
                             </div>
-                          ))}
-                        {groupLeaderboard &&
-                          groupLeaderboard.length !== 0 &&
-                          filteredGroupLeaderboard?.length === 0 && (
-                            <div>{t('pwa.courses.noGroupPoints')}</div>
-                          )}
-
-                        <div className="mt-4 mb-2 text-sm text-right text-slate-600">
-                          <div>
-                            {t('shared.leaderboard.participantCount', {
-                              number:
-                                groupLeaderboardStatistics?.participantCount,
-                            })}
-                          </div>
-                          <div>
-                            {t('shared.leaderboard.averagePoints', {
-                              number:
-                                groupLeaderboardStatistics?.averageScore?.toFixed(
-                                  2
-                                ),
-                            })}
+                            <div>
+                              {t('shared.leaderboard.averagePoints', {
+                                number:
+                                  groupLeaderboardStatistics?.averageScore?.toFixed(
+                                    2
+                                  ),
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                        {t.rich('pwa.courses.groupLeaderboardUpdate', {
-                          b: () => <br />,
-                        })}
+                        <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
+                          {t.rich('pwa.courses.groupLeaderboardUpdate', {
+                            b: () => <br />,
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
                   {course.awards && course.awards?.length != 0 && (
-                    <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
+                    <div className="mt-4 rounded border border-orange-200 bg-orange-100 px-4 py-3 shadow md:mt-6">
                       <H3 className={{ root: 'mb-2 text-base' }}>
                         {t('pwa.courses.awards')}
                       </H3>
-                      <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
+                      <div className="flex flex-col gap-1 text-sm text-gray-700 md:flex-row md:flex-wrap md:gap-6">
                         <div className="flex-1 space-y-1">
                           {course.awards
                             ?.filter((award) => award.type === 'PARTICIPANT')
@@ -408,178 +398,35 @@ function CourseOverview({ courseId }: Props) {
                 </Tabs.TabContent>
               )}
 
-              {course.isGamificationEnabled &&
+              {participant &&
+                participation &&
+                course.isGamificationEnabled &&
                 data.participantGroups?.map((group) => (
-                  <Tabs.TabContent key={group.id} value={group.id}>
-                    <div className="flex flex-col gap-4">
-                      <H3 className={{ root: 'flex flex-row justify-between' }}>
-                        <div>
-                          {t('shared.generic.group')} {group.name}
-                        </div>
-                        <div>{group.code}</div>
-                      </H3>
-
-                      <div className="flex flex-row flex-wrap gap-4">
-                        <div className="flex flex-col flex-1">
-                          <div className="mb-2">
-                            {!participation?.isActive && (
-                              <UserNotification
-                                type="warning"
-                                message={t('pwa.groupActivity.joinLeaderboard')}
-                              />
-                            )}
-                          </div>
-                          <Leaderboard
-                            leaderboard={
-                              group.participants?.map((participant) => {
-                                return {
-                                  ...participant,
-                                  score: participant.score ?? 0,
-                                  rank: participant.rank ?? 1,
-                                  level: participant.level ?? 1,
-                                }
-                              }) ?? []
-                            }
-                            participant={participant}
-                            onLeave={
-                              course.isGroupDeadlinePassed
-                                ? undefined
-                                : () => {
-                                    leaveParticipantGroup({
-                                      variables: {
-                                        courseId,
-                                        groupId: group.id,
-                                      },
-                                      refetchQueries: [
-                                        GetCourseOverviewDataDocument,
-                                      ],
-                                    })
-
-                                    setSelectedTab('global')
-                                  }
-                            }
-                            hidePodium
-                            podiumImgSrc={{
-                              rank1: Rank1Img,
-                              rank2: Rank2Img,
-                              rank3: Rank3Img,
-                            }}
-                          />
-                          <div className="self-end mt-6 text-sm w-60 text-slate-600">
-                            <div className="flex flex-row justify-between">
-                              <div>{t('pwa.courses.membersScore')}</div>
-                              <div>{group.averageMemberScore}</div>
-                            </div>
-                            <div className="flex flex-row justify-between">
-                              <div>{t('pwa.courses.groupActivityScore')}</div>
-                              <div>{group.groupActivityScore}</div>
-                            </div>
-                            <div className="flex flex-row justify-between font-bold">
-                              <div>{t('pwa.courses.totalScore')}</div>
-                              <div>{group.score}</div>
-                            </div>
-                          </div>
-                        </div>
-                        <GroupVisualization
-                          groupName={group.name}
-                          participants={group.participants!}
-                        />
-                      </div>
-
-                      {(course.groupActivities?.length ?? -1) > 0 && (
-                        <GroupActivityList
-                          groupId={group.id}
-                          groupActivities={course.groupActivities}
-                          groupActivityInstances={indexedGroupActivityInstances}
-                        />
-                      )}
-                    </div>
-                  </Tabs.TabContent>
+                  <Suspense key={group.id} fallback={<Loader />}>
+                    <SuspendedGroupView
+                      group={group}
+                      participation={participation}
+                      participant={participant}
+                      courseId={course.id}
+                      maxGroupSize={course.maxGroupSize}
+                      groupDeadlineDate={course.groupDeadlineDate}
+                      isGroupDeadlinePassed={
+                        course.isGroupDeadlinePassed ?? false
+                      }
+                      groupActivityQueryRef={groupActivityQueryRef}
+                      setSelectedTab={setSelectedTab}
+                      subscribeActivityList={subscribeActivityList}
+                    />
+                  </Suspense>
                 ))}
 
               {course.isGamificationEnabled && (
                 <Tabs.TabContent key="create" value="create">
-                  <H3>{t('pwa.courses.createGroup')}</H3>
-                  <Formik
-                    initialValues={{ groupName: '' }}
-                    onSubmit={async (values) => {
-                      const result = await createParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          name: values.groupName,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetParticipantGroupsDocument,
-                            variables: { courseId: courseId },
-                          },
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId: courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.createParticipantGroup?.id) {
-                        setSelectedTab(result.data.createParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikTextField
-                          name="groupName"
-                          placeholder={t('pwa.courses.groupName')}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'create-new-participant-group' }}
-                        >
-                          {t('shared.generic.create')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
-
-                  <H3 className={{ root: 'mt-4' }}>
-                    {t('pwa.courses.joinGroup')}
-                  </H3>
-                  <Formik
-                    initialValues={{ code: '' }}
-                    onSubmit={async (values) => {
-                      const result = await joinParticipantGroup({
-                        variables: {
-                          courseId: courseId,
-                          code: Number(values.code) >> 0,
-                        },
-                        refetchQueries: [
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId },
-                          },
-                        ],
-                      })
-
-                      if (result.data?.joinParticipantGroup?.id) {
-                        setSelectedTab(result.data.joinParticipantGroup.id)
-                      }
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-row gap-4">
-                        <FormikNumberField
-                          name="code"
-                          placeholder={t('pwa.courses.code')}
-                        />
-                        <Button
-                          type="submit"
-                          data={{ cy: 'join-participant-group' }}
-                        >
-                          {t('shared.generic.join')}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Formik>
+                  <GroupCreationActions
+                    courseId={courseId}
+                    setSelectedTab={setSelectedTab}
+                    inRandomGroupPool={inRandomGroupPool ?? false}
+                  />
                 </Tabs.TabContent>
               )}
             </Tabs>
@@ -625,39 +472,20 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
+    courseId: ctx.params.courseId,
     ctx,
   })
 
-  if (typeof participantToken !== 'string') {
+  if (participantToken) {
     return {
-      redirect: {
-        destination: '/createAccount',
-        permanent: false,
-      },
-    }
-  }
-
-  const result = await apolloClient.query({
-    query: GetCourseOverviewDataDocument,
-    variables: {
-      courseId: ctx.params.courseId as string,
-    },
-    context: participantToken
-      ? {
-          headers: {
-            authorization: `Bearer ${participantToken}`,
-          },
-        }
-      : undefined,
-  })
-
-  if (!result.data.getCourseOverviewData) {
-    return {
-      redirect: {
-        destination: '/404',
-        statusCode: 302,
+      props: {
+        participantToken,
+        cookiesAvailable,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

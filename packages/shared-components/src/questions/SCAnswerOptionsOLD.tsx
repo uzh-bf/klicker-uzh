@@ -37,14 +37,14 @@ export function SCAnswerOptionsOLD({
             onClick={onChange(index)}
             key={`${choice.value}-${index}`}
             active={value?.includes(index)}
-            data={{ cy: 'sc-answer-options' }}
+            data={{ cy: `sc-answer-option-${index}` }}
           >
             <Button.Label>
               <Markdown
                 withProse
                 content={choice.value}
                 className={{
-                  root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
+                  root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
                 }}
               />
             </Button.Label>

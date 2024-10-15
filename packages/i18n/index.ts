@@ -23,6 +23,6 @@ export function getMessageFallback({
   if (error.code === IntlErrorCode.MISSING_MESSAGE) {
     return `${path} is not yet translated`
   } else {
-    return `Dear developer, please fix this message: ${path}`
+    return `Dear developer, please fix this message: ${path}. Error: ${error.message}`
   }
 }

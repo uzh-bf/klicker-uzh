@@ -10,10 +10,17 @@ query GetSingleCourse($courseId: String!) {
     color
     numOfParticipants
     numOfActiveParticipants
+    numOfParticipantGroups
     averageScore
     averageActiveScore
     startDate
     endDate
+
+    isGroupCreationEnabled
+    groupDeadlineDate
+    maxGroupSize
+    preferredGroupSize
+    randomAssignmentFinalized
 
     sessions {
       id
@@ -58,6 +65,7 @@ query GetSingleCourse($courseId: String!) {
       score
       rank
       username
+      email
       avatar
     }
   }

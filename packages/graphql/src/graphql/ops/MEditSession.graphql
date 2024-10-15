@@ -6,6 +6,8 @@ mutation EditSession(
   $blocks: [BlockInput!]!
   $courseId: String
   $multiplier: Int!
+  $maxBonusPoints: Int!
+  $timeToZeroBonus: Int!
   $isGamificationEnabled: Boolean!
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
@@ -19,6 +21,8 @@ mutation EditSession(
     blocks: $blocks
     courseId: $courseId
     multiplier: $multiplier
+    maxBonusPoints: $maxBonusPoints
+    timeToZeroBonus: $timeToZeroBonus
     isGamificationEnabled: $isGamificationEnabled
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled

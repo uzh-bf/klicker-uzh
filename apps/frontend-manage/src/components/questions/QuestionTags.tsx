@@ -19,7 +19,7 @@ function QuestionTags({
   }
 
   return (
-    <div className="flex flex-row max-w-2xl overflow-auto">
+    <div className="flex max-w-2xl flex-row overflow-auto">
       {tags.map((tag): React.ReactElement => {
         const selected = tagfilter?.includes(tag.name)
 
@@ -27,7 +27,7 @@ function QuestionTags({
           <Button
             className={{
               root: twMerge(
-                'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max shadow-none',
+                'border-blue-40 m-1 mt-0 w-max rounded-md border border-solid bg-slate-100 px-3 py-1 shadow-none',
                 selected && 'bg-primary-20'
               ),
             }}

@@ -52,9 +52,6 @@ function useFeedbackFilter(
       const search = new JsSearch.Search('id')
       search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
       search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-      search.tokenizer = new JsSearch.StopWordsTokenizer(
-        new JsSearch.SimpleTokenizer()
-      )
       search.addIndex('content')
       search.addDocuments(feedbacks as Object[])
       setSearchIndex(search)

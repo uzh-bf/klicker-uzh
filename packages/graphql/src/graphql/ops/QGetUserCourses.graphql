@@ -3,10 +3,14 @@ query GetUserCourses {
     id
     name
     displayName
+    color
     pinCode
     isArchived
     isGamificationEnabled
+    isGroupCreationEnabled
     description
+    startDate
+    endDate
     createdAt
     updatedAt
   }

@@ -34,15 +34,20 @@ function LazyHMACLink({
   }`
 
   return (
-    <div className="flex flex-row items-center gap-3">
+    <div className="flex max-w-full flex-row items-center justify-between gap-3">
       <Link
-        className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200"
+        className="rounded bg-slate-100 px-2 py-1 hover:bg-slate-200"
         href={link}
         target="_blank"
         legacyBehavior
         passHref
       >
-        <a data-cy={`open-embedding-link-session-${sessionId}`}>{link}</a>
+        <a
+          data-cy={`open-embedding-link-session-${sessionId}`}
+          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+        >
+          {link}
+        </a>
       </Link>
       <Button
         onClick={() => navigator?.clipboard?.writeText(link)}
@@ -94,7 +99,7 @@ function EmbeddingModal({
         />
       </div>
       <div className="mb-4">
-        <div className="font-bold w-30">{t('shared.generic.evaluation')}</div>
+        <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
         <LazyHMACLink sessionId={sessionId} params={``} />
       </div>
       <div className="flex flex-col gap-2">
@@ -115,7 +120,7 @@ function EmbeddingModal({
           )
         })}
         <div>
-          <div className="font-bold w-30">
+          <div className="w-30 font-bold">
             {t('shared.generic.leaderboard')}:
           </div>
           <LazyHMACLink

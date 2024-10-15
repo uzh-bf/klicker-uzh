@@ -1,4 +1,6 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
+import { faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -6,13 +8,13 @@ import usePWAInstall, {
 import {
   Button,
   FormikTextField,
-  PinField,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useRef, useState } from 'react'
 import CreateAccountJoinForm from './CreateAccountJoinForm'
 
@@ -30,9 +32,10 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  usePinField?: boolean
   installAndroid?: string
   installIOS?: string
+  magicLinkLogin: boolean
+  setMagicLinkLogin: (value: boolean) => void
 }
 
 export function LoginForm({
@@ -43,10 +46,12 @@ export function LoginForm({
   fieldSecret,
   dataSecret,
   isSubmitting,
-  usePinField = false,
   installAndroid,
   installIOS,
+  magicLinkLogin,
+  setMagicLinkLogin,
 }: LoginFormProps) {
+  const router = useRouter()
   const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
   const [oniOS, setOniOS] = useState(false)
@@ -60,9 +65,9 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex flex-col flex-grow max-w-xl md:!flex-grow-0 md:border md:rounded-lg md:shadow">
-      <div className="flex flex-col items-center justify-center flex-1">
-        <div className="w-full mb-8 text-center sm:my-12">
+    <div className="flex max-w-xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="mb-8 w-full text-center sm:my-12">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -72,6 +77,7 @@ export function LoginForm({
             data-cy="login-logo"
           />
         </div>
+
         <Tabs defaultValue="login" className={{ root: 'w-full border-t' }}>
           <Tabs.TabList>
             <Tabs.Tab
@@ -80,7 +86,7 @@ export function LoginForm({
               label={t('shared.generic.login')}
               className={{
                 root: '!rounded-none',
-                label: 'font-bold text-md',
+                label: 'text-md font-bold',
               }}
             />
             <Tabs.Tab
@@ -89,7 +95,7 @@ export function LoginForm({
               label={t('pwa.login.createAccountJoin')}
               className={{
                 root: '!rounded-none',
-                label: 'font-bold text-md',
+                label: 'text-md font-bold',
               }}
             />
           </Tabs.TabList>
@@ -104,11 +110,22 @@ export function LoginForm({
             key="login"
             value="login"
             className={{
-              root: 'md:px-4 rounded-none h-full flex items-center md:pb-14 md:-my-2',
+              root: 'flex h-full items-center rounded-none md:-my-2 md:px-4 md:pb-14',
             }}
           >
-            {/* // TODO: move this into login form component / shared-components or similar */}
             <Form className="mx-auto w-72 sm:w-96">
+              {router.query.newAccount ? (
+                <UserNotification type="success">
+                  {t('pwa.general.waitingForActivation')}
+                </UserNotification>
+              ) : null}
+
+              {magicLinkLogin && (
+                <UserNotification type="info">
+                  {t('pwa.profile.forgotPasswordInfo')}
+                </UserNotification>
+              )}
+
               <FormikTextField
                 required
                 label={labelIdentifier}
@@ -117,48 +134,88 @@ export function LoginForm({
                 data={dataIdentifier}
               />
 
-              {usePinField ? (
-                <PinField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  className={{ root: 'mt-1' }}
-                  data={dataSecret}
-                />
-              ) : (
-                <FormikTextField
-                  required
-                  label={labelSecret}
-                  labelType="small"
-                  name={fieldSecret}
-                  data={dataSecret}
-                  icon={passwordHidden ? faEye : faEyeSlash}
-                  onIconClick={() => setPasswordHidden(!passwordHidden)}
-                  className={{ root: 'mt-1', icon: 'bg-transparent' }}
-                  type={passwordHidden ? 'password' : 'text'}
-                />
+              {magicLinkLogin && (
+                <div className="mt-3 flex flex-col gap-2 md:mt-2">
+                  {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
+                    <Button
+                      fluid
+                      className={{
+                        root: 'bg-primary-80 justify-start gap-4 text-white',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      data={{ cy: 'magic-link-login' }}
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEnvelope} />
+                      </Button.Icon>
+                      <Button.Label>
+                        {t('pwa.general.magicLinkLogin')}
+                      </Button.Label>
+                    </Button>
+                  )}
+                  <Button
+                    fluid
+                    className={{ root: 'justify-start gap-4' }}
+                    type="button"
+                    onClick={() => setMagicLinkLogin(false)}
+                    data={{ cy: 'password-login' }}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faKey} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('pwa.general.passwordLogin')}
+                    </Button.Label>
+                  </Button>
+                </div>
               )}
 
-              <div className="flex flex-row justify-end w-full">
-                <Button
-                  className={{
-                    root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
-                  }}
-                  type="submit"
-                  disabled={isSubmitting}
-                  data={{ cy: 'submit-login' }}
-                >
-                  <Button.Label>{t('shared.generic.signin')}</Button.Label>
-                </Button>
-              </div>
+              {!magicLinkLogin && (
+                <>
+                  <FormikTextField
+                    required
+                    label={labelSecret}
+                    labelType="small"
+                    iconPosition="right"
+                    name={fieldSecret}
+                    data={dataSecret}
+                    icon={passwordHidden ? faEye : faEyeSlash}
+                    onIconClick={() => setPasswordHidden(!passwordHidden)}
+                    className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                    type={passwordHidden ? 'password' : 'text'}
+                  />
 
-              {installAndroid && onChrome && (
-                <div className="flex flex-col justify-center mt-4 md:hidden">
+                  <div className="flex flex-row justify-between">
+                    <Button
+                      basic
+                      onClick={() => setMagicLinkLogin(true)}
+                      className={{
+                        root: 'text-primary-80 hover:text-primary-100 text-sm hover:underline',
+                      }}
+                    >
+                      {t('shared.generic.forgotPassword')}
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'border-uzh-grey-80 bg-primary-80 mt-3 !justify-center text-white md:mb-0 md:mt-2 md:w-max md:self-end',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      data={{ cy: 'submit-login' }}
+                    >
+                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {!magicLinkLogin && installAndroid && onChrome && (
+                <div className="mt-4 flex flex-col justify-center md:hidden">
                   <UserNotification type="info" message={installAndroid}>
                     <Button
                       className={{
-                        root: 'mt-2 w-fit border-uzh-grey-80',
+                        root: 'border-uzh-grey-80 mt-2 w-fit',
                       }}
                       onClick={onInstallClick}
                       data={{ cy: 'install-student-pwa' }}
@@ -170,7 +227,7 @@ export function LoginForm({
                   </UserNotification>
                 </div>
               )}
-              {installIOS && oniOS && (
+              {!magicLinkLogin && installIOS && oniOS && (
                 <UserNotification
                   className={{ root: 'mt-4' }}
                   type="info"
@@ -181,7 +238,7 @@ export function LoginForm({
           </Tabs.TabContent>
         </Tabs>
       </div>
-      <div className="flex-none w-full">
+      <div className="w-full flex-none">
         <Footer />
       </div>
     </div>

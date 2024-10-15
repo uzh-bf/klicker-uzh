@@ -9,12 +9,8 @@ export default {
   theme: {
     extend: {
       ...TailwindAnimations,
-      colors: {
-        ...TailwindColorsUZH,
-      },
-      fontFamily: {
-        ...TailwindFonts,
-      },
+      colors: TailwindColorsUZH,
+      fontFamily: TailwindFonts,
     },
   },
   future: {
@@ -31,5 +27,6 @@ export default {
     require('@tailwindcss/typography'),
     require('@tailwindcss/aspect-ratio'),
     require('@tailwindcss/forms'),
+    require('@tailwindcss/container-queries'),
   ],
 }

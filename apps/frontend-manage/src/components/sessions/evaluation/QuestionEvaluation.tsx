@@ -44,7 +44,7 @@ function QuestionEvaluation({
   })
 
   return (
-    <div className={twMerge('h-full flex flex-col', className)}>
+    <div className={twMerge('flex h-full flex-col', className)}>
       <div className="flex-none">
         <EvaluationCollapsible
           currentInstance={currentInstance}
@@ -53,8 +53,8 @@ function QuestionEvaluation({
         />
       </div>
 
-      <div className="flex flex-col flex-1 min-h-0 md:flex-row">
-        <div className="flex-1 order-2 px-4 md:order-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="order-2 flex-1 px-4 md:order-1">
           <Chart
             chartType={chartType}
             data={currentInstance}
@@ -71,17 +71,17 @@ function QuestionEvaluation({
         </div>
         <div
           className={twMerge(
-            'flex-none flex flex-col gap-2 order-1 px-4 py-2 border-l md:w-64 lg:w-72 xl:w-80 md:order-2',
+            'order-1 flex flex-none flex-col gap-2 border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
             textSize.text
           )}
         >
           {(currentInstance.questionData.type === 'SC' ||
             currentInstance.questionData.type === 'MC' ||
             currentInstance.questionData.type === 'KPRIM') && (
-            <div className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
+            <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2">
               <div
                 className={twMerge(
-                  'flex-1 overflow-y-auto flex flex-col gap-2.5',
+                  'flex flex-1 flex-col gap-2.5 overflow-y-auto',
                   textSize.text
                 )}
               >
@@ -106,24 +106,24 @@ function QuestionEvaluation({
                               width: `calc(${correctFraction * 100}%)`,
                             }}
                             className={twMerge(
-                              'mr-2 items-center flex justify-center rounded-md text-white font-bold h-5',
+                              'mr-2 flex h-5 items-center justify-center rounded-md font-bold text-white',
                               choice.correct && showSolution && 'text-black'
                             )}
                           >
                             {String.fromCharCode(65 + innerIndex)}
                           </div>
-                          <div className="text-right whitespace-nowrap">
+                          <div className="whitespace-nowrap text-right">
                             {Math.round(100 * correctFraction)} %
                           </div>
                         </div>
 
-                        <div className="w-full line-clamp-3">
+                        <div className="line-clamp-3 w-full">
                           <Ellipsis
                             // maxLines={3}
                             maxLength={60}
                             className={{
                               tooltip:
-                                'z-20 float-right !text-white min-w-[25rem]',
+                                'z-20 float-right min-w-[25rem] !text-white',
                               markdown: textSize.text,
                             }}
                           >
@@ -153,7 +153,6 @@ function QuestionEvaluation({
               <div className="mt-4 font-bold">
                 {t('manage.evaluation.statistics')}:
               </div>
-              {console.log(currentInstance.statistics)}
               {currentInstance.statistics ? (
                 Object.entries(currentInstance.statistics)
                   .slice(1)

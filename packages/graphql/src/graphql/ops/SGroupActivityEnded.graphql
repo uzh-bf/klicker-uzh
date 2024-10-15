@@ -1,0 +1,10 @@
+subscription GroupActivityEnded($courseId: String!) {
+  groupActivityEnded(courseId: $courseId) {
+    id
+    displayName
+    status
+    description
+    scheduledStartAt
+    scheduledEndAt
+  }
+}

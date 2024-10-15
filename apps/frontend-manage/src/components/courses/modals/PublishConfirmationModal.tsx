@@ -29,27 +29,37 @@ function PublishConfirmationModal({
   setOpen,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
-  const [publishPracticeQuiz] = useMutation(PublishPracticeQuizDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
-  const [publishMicroLearning] = useMutation(PublishMicroLearningDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
-  const [publishGroupActivity] = useMutation(PublishGroupActivityDocument, {
-    variables: {
-      id: elementId,
-    },
-  })
+  const [publishPracticeQuiz, { loading: pqPublishLoading }] = useMutation(
+    PublishPracticeQuizDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
+  const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
+    PublishMicroLearningDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
+  const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
+    PublishGroupActivityDocument,
+    {
+      variables: {
+        id: elementId,
+      },
+    }
+  )
 
   return (
     <Modal
       title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
+          loading={pqPublishLoading || mlPublishLoading || gaPublishLoading}
           onClick={async () => {
             if (elementType === ElementInstanceType.Microlearning) {
               await publishMicroLearning()
@@ -61,7 +71,7 @@ function PublishConfirmationModal({
             setOpen(false)
           }}
           className={{
-            root: 'font-bold text-white bg-primary-80 text-base',
+            root: 'bg-primary-80 text-base font-bold text-white',
           }}
           data={{ cy: 'confirm-publish-action' }}
         >
@@ -81,16 +91,16 @@ function PublishConfirmationModal({
       open={open}
       hideCloseButton={true}
       className={{
-        content: 'w-[40rem] h-max self-center pt-0',
+        content: 'w-[40rem]',
         title: 'text-xl',
       }}
     >
       <div>
         <div className="text-base">{t('manage.course.confirmPublishing')}</div>
-        <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
+        <div className="border-uzh-grey-40 mt-1 rounded border border-solid p-2">
           <H3>{title}</H3>
         </div>
-        <div className="mt-3 mb-2 text-sm italic">{publicationHint}</div>
+        <div className="mb-2 mt-3 text-sm italic">{publicationHint}</div>
       </div>
     </Modal>
   )

@@ -183,8 +183,12 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsPercentage,
@@ -247,9 +251,10 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
             getsMaxPoints: parsedSolutions && answerCorrect === 1,
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
+            timeToZeroBonus:
+              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,
@@ -307,9 +312,10 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: MAX_BONUS_POINTS,
             getsMaxPoints: Boolean(answerCorrect),
-            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
+            timeToZeroBonus:
+              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,

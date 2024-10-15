@@ -23,18 +23,18 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
     !confusionValues.numberOfParticipants
   ) {
     return (
-      <div className="flex justify-center items-center font-bold min-h-[355px]">
+      <div className="flex min-h-[355px] items-center justify-center font-bold">
         {t('manage.cockpit.noDataYet')}
       </div>
     )
   }
 
   return (
-    <div className="flex flex-row w-full">
-      <div className="flex flex-col w-full sm:flex-row lg:flex-col ">
+    <div className="flex w-full flex-row">
+      <div className="flex w-full flex-col sm:flex-row lg:flex-col">
         <div className="w-full">
-          <div className="w-full h-10 ">
-            <H3 className={{ root: 'inline-block mr-2' }}>
+          <div className="h-10 w-full">
+            <H3 className={{ root: 'mr-2 inline-block' }}>
               {t('manage.cockpit.speed')}
             </H3>
             <div className="inline-block">
@@ -44,14 +44,14 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
             <Tooltip
               tooltip={t('manage.cockpit.confusionSpeedTooltip')}
               className={{
-                trigger: 'block float-right sm:hidden lg:block',
-                tooltip: 'max-w-[20%] md:max-w-[30%] text-sm',
+                trigger: 'float-right block sm:hidden lg:block',
+                tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
               }}
               withIndicator={false}
             >
               <FontAwesomeIcon
                 icon={faQuestion}
-                className="w-3 h-3 p-1 mt-1 text-white border border-white border-solid rounded-full bg-primary-60"
+                className="bg-primary-60 mt-1 h-3 w-3 rounded-full border border-solid border-white p-1 text-white"
               />
             </Tooltip>
           </div>
@@ -66,8 +66,8 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
           />
         </div>
         <div className="w-full">
-          <div className="w-full h-10">
-            <H3 className={{ root: 'inline-block mr-2' }}>
+          <div className="h-10 w-full">
+            <H3 className={{ root: 'mr-2 inline-block' }}>
               {t('manage.cockpit.difficulty')}
             </H3>
             <div className="inline-block">
@@ -77,14 +77,14 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
             <Tooltip
               tooltip={t('manage.cockpit.confusionDifficultyTooltip')}
               className={{
-                trigger: 'block float-right sm:hidden lg:block',
-                tooltip: 'max-w-[20%] md:max-w-[30%] text-sm',
+                trigger: 'float-right block sm:hidden lg:block',
+                tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
               }}
               withIndicator={false}
             >
               <FontAwesomeIcon
                 icon={faQuestion}
-                className="w-3 h-3 p-1 mt-1 text-white border border-white border-solid rounded-full bg-primary-60"
+                className="bg-primary-60 mt-1 h-3 w-3 rounded-full border border-solid border-white p-1 text-white"
               />
             </Tooltip>
           </div>

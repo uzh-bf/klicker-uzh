@@ -47,7 +47,7 @@ function PracticeQuizOverview({
               <Button
                 basic
                 className={{
-                  root: 'font-bold hover:text-primary',
+                  root: 'hover:text-primary-100 font-bold',
                 }}
                 onClick={() =>
                   router.push(
@@ -74,7 +74,7 @@ function PracticeQuizOverview({
 
       {description && <DynamicMarkdown content={description} />}
 
-      <div className="flex flex-col gap-2 text-sm md:gap-16 md:flex-row">
+      <div className="flex flex-col gap-2 text-sm md:flex-row md:gap-16">
         <div className="flex-1 space-y-2">
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />

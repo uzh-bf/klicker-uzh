@@ -9,10 +9,12 @@ function ActivityInstanceLink({
   groupId,
   activity,
   label,
+  data,
 }: {
   groupId: string
   activity: Omit<GroupActivity, 'name' | 'status'>
   label: string
+  data: { cy?: string; test?: string }
 }) {
   return (
     <Link
@@ -21,11 +23,9 @@ function ActivityInstanceLink({
     >
       <Button
         className={{
-          root: 'gap-2 text-left text-sm h-max py-0.5',
+          root: 'h-max gap-2 py-0.5 text-left text-sm',
         }}
-        data={{
-          cy: `open-group-activity-${activity.displayName}`,
-        }}
+        data={data}
       >
         <Button.Icon>
           <FontAwesomeIcon icon={faExternalLink} className="h-3 w-3" />

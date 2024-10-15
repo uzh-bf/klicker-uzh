@@ -1,6 +1,11 @@
 import { useMutation } from '@apollo/client'
 import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, PinField, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikPinField,
+  H2,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -24,9 +29,9 @@ function JoinPage() {
 
   return (
     <Layout displayName={t('pwa.general.joinCourse')}>
-      <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="mx-auto max-w-sm md:mb-4 md:rounded md:border md:p-8 md:pt-6 lg:max-w-md">
         <H2>{t('pwa.general.joinCourse')}</H2>
-        <div className="mb-5 ">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
+        <div className="mb-5">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
           initialValues={{
             pin: '',
@@ -51,14 +56,15 @@ function JoinPage() {
           {({ isSubmitting, isValid }) => {
             return (
               <Form>
-                <PinField
+                <FormikPinField
                   name="pin"
                   label={t('pwa.joinCourse.coursePinFormat')}
+                  data={{ cy: 'join-course-pin-field' }}
                 />
 
                 <Button
                   className={{
-                    root: 'float-right mt-2 border-uzh-grey-80',
+                    root: 'border-uzh-grey-80 float-right mt-2',
                   }}
                   type="submit"
                   disabled={isSubmitting || !isValid}

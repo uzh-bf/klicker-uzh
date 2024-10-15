@@ -2,6 +2,7 @@
 .DS_Store
 node_modules
 src/prisma/client
+src/public/emails
 dist/
 instrumented/
 hive.json

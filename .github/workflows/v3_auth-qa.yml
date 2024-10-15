@@ -5,12 +5,9 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      - 'CI'
-    paths:
-      - 'apps/auth/**'
-      - '.github/workflows/v3_auth**'
   pull_request:
     # branches: [ "v3" ]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/auth/**'
       - '.github/workflows/v3_auth**'
@@ -21,6 +18,7 @@ env:
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,6 +26,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Replace .env.production with .env.qa
+        shell: bash
+        run: |
+          rm apps/auth/.env.production
+          mv apps/auth/.env.qa apps/auth/.env.production
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2

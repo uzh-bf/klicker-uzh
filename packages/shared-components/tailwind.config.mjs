@@ -1,6 +1,6 @@
 import {
-  TailwindColorsUZH,
   TailwindAnimations,
+  TailwindColorsUZH,
   TailwindFonts,
 } from '@uzh-bf/design-system/dist/constants'
 
@@ -9,12 +9,8 @@ export default {
   theme: {
     extend: {
       ...TailwindAnimations,
-      colors: {
-        ...TailwindColorsUZH,
-      },
-      fontFamily: {
-        ...TailwindFonts,
-      },
+      colors: TailwindColorsUZH,
+      fontFamily: TailwindFonts,
     },
   },
   future: {

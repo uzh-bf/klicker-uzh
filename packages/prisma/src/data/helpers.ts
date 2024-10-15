@@ -1,5 +1,6 @@
 import {
   getInitialElementResults,
+  getInitialInstanceStatistics,
   processElementData,
   processQuestionData,
 } from '@klicker-uzh/util'
@@ -16,7 +17,7 @@ import {
   QuestionInstanceType,
   UserLoginScope,
   type Element,
-} from '../client/index.js'
+} from '../prisma/client/index.js'
 
 export async function prepareUser({
   name,
@@ -70,7 +71,10 @@ export function prepareCourse({
   pinCode: number
   startDate: Date
   endDate: Date
+  isGroupCreationEnabled: boolean
   groupDeadlineDate: Date
+  maxGroupSize: number
+  preferredGroupSize: number
   notificationEmail?: string
 }) {
   const data = {
@@ -102,8 +106,22 @@ export async function prepareParticipant({
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
+  const availableAvatars = [
+    '43de5cc3e88371b82515e365b61ca4f56b3fff76',
+    'd6a8459b605f0caca2d132821e3c7213004a6a28',
+    'f812911166dee1e4943bd781ed658845812d71be',
+    '217ed4744160a52219711edc6636550d49b6d672',
+  ]
+
+  // with probability 60%, select one of the available avatars at random
+  const avatar =
+    Math.random() < 0.6
+      ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
+      : undefined
+
   const data = {
     ...args,
+    avatar: avatar,
     password: hashedPassword,
     username,
     email: `${username}@test.uzh.ch`,
@@ -164,7 +182,10 @@ export function prepareQuestion({
 
     return {
       where: {
-        originalId: args.originalId,
+        ownerId_originalId: {
+          ownerId: args.ownerId,
+          originalId: args.originalId,
+        },
       },
       create: data,
       update: data,
@@ -179,7 +200,10 @@ export function prepareQuestion({
 
   return {
     where: {
-      originalId: args.originalId,
+      ownerId_originalId: {
+        ownerId: args.ownerId,
+        originalId: args.originalId,
+      },
     },
     create: data,
     update: data,
@@ -191,12 +215,16 @@ export function prepareQuestionInstance({
   type,
   pointsMultiplier,
   resetTimeDays,
+  maxBonusPoints,
+  timeToZeroBonus,
   order,
 }: {
   question: Partial<Prisma.Element>
   type: QuestionInstanceType
   pointsMultiplier?: number
   resetTimeDays?: number
+  maxBonusPoints?: number
+  timeToZeroBonus?: number
   order?: number
 }): any {
   const common = {
@@ -204,6 +232,8 @@ export function prepareQuestionInstance({
     type,
     pointsMultiplier,
     resetTimeDays,
+    maxBonusPoints,
+    timeToZeroBonus,
     questionData: processQuestionData(question as Element),
     question: {
       connect: {
@@ -311,6 +341,8 @@ export async function prepareSession({
                 question,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: args.pointsMultiplier,
+                maxBonusPoints: 100,
+                timeToZeroBonus: 50,
               })
             )
 
@@ -373,7 +405,7 @@ export function prepareGroupActivityStack({
   questions,
   contentElements,
   courseId,
-  connectStackToCourse,
+  connectStackToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -390,41 +422,50 @@ export function prepareGroupActivityStack({
     type: Prisma.ElementStackType.GROUP_ACTIVITY,
     options: {},
     elements: {
-      createMany: {
-        data: [
-          ...questions
-            .sort(
-              (q1, q2) =>
-                parseInt(q1.originalId ?? '-1') -
-                parseInt(q2.originalId ?? '-1')
-            )
-            .map((el, ix) => ({
-              migrationId: String(migrationIdOffset + 2 + ix),
-              order: 2 + ix,
-              type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-              elementType: el.type,
-              elementData: processElementData(el),
-              options: {
-                pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
-                resetTimeDays: 5,
-              },
-              results: getInitialElementResults(el),
-              ownerId: el.ownerId,
-              elementId: el.id,
-            })),
-          ...contentElements.slice(0, 2).map((el, ix) => ({
-            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
-            order: questions.length + 2 + ix,
+      create: [
+        ...questions
+          .sort(
+            (q1, q2) =>
+              parseInt(q1.originalId ?? '-1') - parseInt(q2.originalId ?? '-1')
+          )
+          .map((el, ix) => ({
+            migrationId: String(migrationIdOffset + 2 + ix),
+            order: 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
             elementData: processElementData(el),
-            options: {},
+            options: {
+              pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
+              resetTimeDays: 5,
+            },
             results: getInitialElementResults(el),
+            anonymousResults: getInitialElementResults(el),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(
+                Prisma.ElementInstanceType.GROUP_ACTIVITY
+              ),
+            },
             ownerId: el.ownerId,
             elementId: el.id,
           })),
-        ],
-      },
+        ...contentElements.slice(0, 2).map((el, ix) => ({
+          migrationId: String(migrationIdOffset + questions.length + 2 + ix),
+          order: questions.length + 2 + ix,
+          type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+          elementType: el.type,
+          elementData: processElementData(el),
+          options: {},
+          results: getInitialElementResults(el),
+          anonymousResults: getInitialElementResults(el),
+          instanceStatistics: {
+            create: getInitialInstanceStatistics(
+              Prisma.ElementInstanceType.GROUP_ACTIVITY
+            ),
+          },
+          ownerId: el.ownerId,
+          elementId: el.id,
+        })),
+      ],
     },
     course: connectStackToCourse
       ? {
@@ -443,7 +484,7 @@ export function prepareStackVariety({
   stackType,
   elementInstanceType,
   courseId,
-  connectToCourse = true,
+  connectToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -464,21 +505,23 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: [
-            {
-              migrationId: String(migrationIdOffset + ix),
-              order: ix,
-              type: elementInstanceType,
-              elementType: el.type,
-              elementData: processElementData(el),
-              options: { resetTimeDays: 7 },
-              results: getInitialElementResults(el),
-              ownerId: el.ownerId,
-              elementId: el.id,
+        create: [
+          {
+            migrationId: String(migrationIdOffset + ix),
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { resetTimeDays: 7 },
+            results: getInitialElementResults(el),
+            anonymousResults: getInitialElementResults(el),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-          ],
-        },
+            ownerId: el.ownerId,
+            elementId: el.id,
+          },
+        ],
       },
       course: connectToCourse
         ? {
@@ -496,19 +539,21 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: flashcards.map((el, ix) => ({
-            migrationId: String(migrationIdOffset + flashcards.length + ix),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: { resetTimeDays: 6 },
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
-        },
+        create: flashcards.map((el, ix) => ({
+          migrationId: String(migrationIdOffset + flashcards.length + ix),
+          order: ix,
+          type: elementInstanceType,
+          elementType: el.type,
+          elementData: processElementData(el),
+          options: { resetTimeDays: 6 },
+          results: getInitialElementResults(el),
+          anonymousResults: getInitialElementResults(el),
+          instanceStatistics: {
+            create: getInitialInstanceStatistics(elementInstanceType),
+          },
+          ownerId: el.ownerId,
+          elementId: el.id,
+        })),
       },
       course: connectToCourse
         ? {
@@ -526,23 +571,23 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: [
-            {
-              migrationId: String(
-                migrationIdOffset + 2 * flashcards.length + ix
-              ),
-              order: ix,
-              type: elementInstanceType,
-              elementType: el.type,
-              elementData: processElementData(el),
-              options: { pointsMultiplier: 1, resetTimeDays: 5 },
-              results: getInitialElementResults(el),
-              ownerId: el.ownerId,
-              elementId: el.id,
+        create: [
+          {
+            migrationId: String(migrationIdOffset + 2 * flashcards.length + ix),
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { pointsMultiplier: 1, resetTimeDays: 5 },
+            results: getInitialElementResults(el),
+            anonymousResults: getInitialElementResults(el),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-          ],
-        },
+            ownerId: el.ownerId,
+            elementId: el.id,
+          },
+        ],
       },
       course: connectToCourse
         ? {
@@ -560,21 +605,23 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: questions.map((el, ix) => ({
-            migrationId: String(
-              migrationIdOffset + 2 * flashcards.length + questions.length + ix
-            ),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: { pointsMultiplier: 4, resetTimeDays: 8 },
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
-        },
+        create: questions.map((el, ix) => ({
+          migrationId: String(
+            migrationIdOffset + 2 * flashcards.length + questions.length + ix
+          ),
+          order: ix,
+          type: elementInstanceType,
+          elementType: el.type,
+          elementData: processElementData(el),
+          options: { pointsMultiplier: 4, resetTimeDays: 8 },
+          results: getInitialElementResults(el),
+          anonymousResults: getInitialElementResults(el),
+          instanceStatistics: {
+            create: getInitialInstanceStatistics(elementInstanceType),
+          },
+          ownerId: el.ownerId,
+          elementId: el.id,
+        })),
       },
       course: connectToCourse
         ? {
@@ -592,26 +639,28 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: [
-            {
-              migrationId: String(
-                migrationIdOffset +
-                  2 * flashcards.length +
-                  2 * questions.length +
-                  ix
-              ),
-              order: ix,
-              type: elementInstanceType,
-              elementType: el.type,
-              elementData: processElementData(el),
-              options: { pointsMultiplier: 4, resetTimeDays: 7 },
-              results: getInitialElementResults(el),
-              ownerId: el.ownerId,
-              elementId: el.id,
+        create: [
+          {
+            migrationId: String(
+              migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                ix
+            ),
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { pointsMultiplier: 4, resetTimeDays: 7 },
+            results: getInitialElementResults(el),
+            anonymousResults: getInitialElementResults(el),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-          ],
-        },
+            ownerId: el.ownerId,
+            elementId: el.id,
+          },
+        ],
       },
       course: connectToCourse
         ? {
@@ -634,26 +683,28 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: contentElements.map((el, ix) => ({
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                contentElements.length +
-                outer_ix * contentElements.length +
-                ix
-            ),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options: { pointsMultiplier: 2, resetTimeDays: 6 },
-            results: getInitialElementResults(el),
-            ownerId: el.ownerId,
-            elementId: el.id,
-          })),
-        },
+        create: contentElements.map((el, ix) => ({
+          migrationId: String(
+            migrationIdOffset +
+              2 * flashcards.length +
+              2 * questions.length +
+              contentElements.length +
+              outer_ix * contentElements.length +
+              ix
+          ),
+          order: ix,
+          type: elementInstanceType,
+          elementType: el.type,
+          elementData: processElementData(el),
+          options: { pointsMultiplier: 2, resetTimeDays: 6 },
+          results: getInitialElementResults(el),
+          anonymousResults: getInitialElementResults(el),
+          instanceStatistics: {
+            create: getInitialInstanceStatistics(elementInstanceType),
+          },
+          ownerId: el.ownerId,
+          elementId: el.id,
+        })),
       },
       course: connectToCourse
         ? {
@@ -673,63 +724,73 @@ export function prepareStackVariety({
       type: stackType,
       options: {},
       elements: {
-        createMany: {
-          data: [
-            {
-              migrationId: String(
-                migrationIdOffset +
-                  2 * flashcards.length +
-                  2 * questions.length +
-                  3 * contentElements.length +
-                  ix * 5
-              ),
-              order: 0,
-              type: elementInstanceType,
-              elementType: flashcards[0]!.type,
-              elementData: processElementData(flashcards[0]!),
-              options: { resetTimeDays: 5 },
-              results: getInitialElementResults(flashcards[0]!),
-              ownerId: flashcards[0]!.ownerId,
-              elementId: flashcards[0]!.id,
+        create: [
+          {
+            migrationId: String(
+              migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5
+            ),
+            order: 0,
+            type: elementInstanceType,
+            elementType: flashcards[0]!.type,
+            elementData: processElementData(flashcards[0]!),
+            options: { resetTimeDays: 5 },
+            results: getInitialElementResults(flashcards[0]!),
+            anonymousResults: getInitialElementResults(flashcards[0]!),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-            {
-              migrationId: String(
-                migrationIdOffset +
-                  2 * flashcards.length +
-                  2 * questions.length +
-                  3 * contentElements.length +
-                  ix * 5 +
-                  1
-              ),
-              order: 1,
-              type: elementInstanceType,
-              elementType: questions[0]!.type,
-              elementData: processElementData(questions[0]!),
-              options: { pointsMultiplier: 3, resetTimeDays: 6 },
-              results: getInitialElementResults(questions[0]!),
-              ownerId: questions[0]!.ownerId,
-              elementId: questions[0]!.id,
+            ownerId: flashcards[0]!.ownerId,
+            elementId: flashcards[0]!.id,
+          },
+          {
+            migrationId: String(
+              migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5 +
+                1
+            ),
+            order: 1,
+            type: elementInstanceType,
+            elementType: questions[0]!.type,
+            elementData: processElementData(questions[0]!),
+            options: { pointsMultiplier: 3, resetTimeDays: 6 },
+            results: getInitialElementResults(questions[0]!),
+            anonymousResults: getInitialElementResults(questions[0]!),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-            {
-              migrationId: String(
-                migrationIdOffset +
-                  2 * flashcards.length +
-                  2 * questions.length +
-                  3 * contentElements.length +
-                  ix * 5 +
-                  2
-              ),
-              order: 2,
-              type: elementInstanceType,
-              elementType: contentElements[0]!.type,
-              elementData: processElementData(contentElements[0]!),
-              options: {},
-              results: getInitialElementResults(contentElements[0]!),
-              ownerId: contentElements[0]!.ownerId,
-              elementId: contentElements[0]!.id,
+            ownerId: questions[0]!.ownerId,
+            elementId: questions[0]!.id,
+          },
+          {
+            migrationId: String(
+              migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5 +
+                2
+            ),
+            order: 2,
+            type: elementInstanceType,
+            elementType: contentElements[0]!.type,
+            elementData: processElementData(contentElements[0]!),
+            options: {},
+            results: getInitialElementResults(contentElements[0]!),
+            anonymousResults: getInitialElementResults(contentElements[0]!),
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
             },
-          ],
-        },
+            ownerId: contentElements[0]!.ownerId,
+            elementId: contentElements[0]!.id,
+          },
+        ],
       },
       course: connectToCourse
         ? {
@@ -1016,7 +1077,10 @@ export async function prepareFlashcardsFromFile(
     quizInfo.elements.map(async (data: any) => {
       const flashcard = await prismaClient.element.upsert({
         where: {
-          originalId: data.originalId,
+          ownerId_originalId: {
+            ownerId: userId,
+            originalId: data.originalId,
+          },
         },
         create: {
           ...data,

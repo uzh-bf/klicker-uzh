@@ -13,14 +13,12 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@types/node": "^20.12.13",
+    "@types/node": "^20.16.1",
     "@types/ramda": "^0.29.3",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "eslint": "8.45.0",
     "npm-run-all": "4.1.5",
-    "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.3",
     "size-limit": "8.2.4",
     "tsup": "7.2.0",
     "typescript": "5.4.5"
@@ -35,9 +33,8 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsup --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "size": "size-limit"
   },
   "engines": {

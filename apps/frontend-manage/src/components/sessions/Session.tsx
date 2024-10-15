@@ -9,6 +9,7 @@ import {
   faPencil,
   faPlay,
   faTrash,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -21,8 +22,7 @@ import {
   SoftDeleteLiveSessionDocument,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
+import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -116,7 +116,7 @@ function Session({ session }: SessionProps) {
 
   return (
     <>
-      <div key={session.id} className="p-1 border rounded" data-cy="session">
+      <div key={session.id} className="rounded border p-1" data-cy="session">
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
@@ -153,7 +153,7 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary',
+                        root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
                       }}
                       data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
@@ -182,7 +182,7 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary"
+                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
                       data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -197,8 +197,10 @@ function Session({ session }: SessionProps) {
                     passHref
                   >
                     <a
-                      className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary"
+                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
                       data-cy={`session-evaluation-${session.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
@@ -215,13 +217,13 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: `start-session-${session.name}` }}
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-primary">
+                    <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
                       <div>{t('manage.sessions.startSession')}</div>
                     </div>
                   </Button>
                 )}
-                <div className="flex flex-row items-center text-sm gap-1">
+                <div className="flex flex-row items-center gap-1 text-sm">
                   <FontAwesomeIcon
                     icon={timeIcon[session.status]}
                     className="mr-1"
@@ -240,9 +242,9 @@ function Session({ session }: SessionProps) {
             </div>
           }
           primary={
-            <div className="flex flex-row float-right gap-1">
+            <div className="float-right flex flex-row gap-1">
               <Button
-                className={{ root: 'text-sm py-1 px-3' }}
+                className={{ root: 'px-3 py-1 text-sm' }}
                 onClick={() =>
                   router.push({
                     pathname: '/',
@@ -265,7 +267,7 @@ function Session({ session }: SessionProps) {
                 SessionStatus.Scheduled === session.status) && (
                 <>
                   <Button
-                    className={{ root: 'text-sm py-1 px-3' }}
+                    className={{ root: 'px-3 py-1 text-sm' }}
                     onClick={() =>
                       router.push({
                         pathname: '/',
@@ -286,7 +288,7 @@ function Session({ session }: SessionProps) {
                   </Button>
                   <Button
                     className={{
-                      root: 'border-red-600 text-sm py-1 px-3',
+                      root: 'border-red-600 px-3 py-1 text-sm',
                     }}
                     onClick={() => setDeletionModal(true)}
                     data={{ cy: `delete-session-${session.name}` }}
@@ -303,7 +305,7 @@ function Session({ session }: SessionProps) {
               {SessionStatus.Completed === session.status && (
                 <Button
                   className={{
-                    root: 'border-red-600 text-sm py-1 px-3',
+                    root: 'border-red-600 px-3 py-1 text-sm',
                   }}
                   onClick={() => setSoftDeletionModal(true)}
                   data={{ cy: `delete-past-session-${session.name}` }}
@@ -319,40 +321,61 @@ function Session({ session }: SessionProps) {
             </div>
           }
         >
-          <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
+          <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
             {session.blocks?.map((block, index) => (
-              <div key={block.id} className="flex flex-col gap-1">
-                <div className="italic">
-                  {t('manage.sessions.blockXQuestions', {
-                    block: index + 1,
-                    questions: block.instances?.length,
+              <div
+                key={block.id}
+                className="w-64 min-w-52 border-r border-black pr-4 last:border-r-0 last:pr-0"
+              >
+                <div className="flex flex-row justify-between">
+                  <H4>
+                    {t('shared.generic.blockN', {
+                      number: index + 1,
+                    })}
+                  </H4>
+                  {block.numOfParticipants ? (
+                    <div className="flex flex-row items-center">
+                      <div>{block.numOfParticipants}</div>
+                      <FontAwesomeIcon
+                        icon={faUserGroup}
+                        className="ml-1 w-4"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <div>
+                  {block.instances?.map((instance) => (
+                    <Link
+                      href={`/questions/${instance.questionData!.questionId}`}
+                      className="text-sm hover:text-slate-700"
+                      key={instance.id}
+                      legacyBehavior
+                      passHref
+                    >
+                      <a
+                        data-cy={`open-question-live-quiz-${instance.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <div className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm">
+                          <div>
+                            {instance.questionData?.name} (
+                            {t(`shared.${instance.questionData!.type}.short`)})
+                          </div>
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            className="h-3 w-3"
+                          />
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
+                <div className="float-right text-sm">
+                  {t('shared.generic.Nelements', {
+                    number: block.instances?.length,
                   })}
                 </div>
-                {block.instances?.map((instance) => (
-                  <div
-                    key={instance.id}
-                    className="text-sm border border-solid rounded-md w-60 border-uzh-grey-100"
-                  >
-                    <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
-                      <Ellipsis
-                        className={{ markdown: 'font-bold' }}
-                        maxLength={20}
-                      >
-                        {instance.questionData!.name}
-                      </Ellipsis>
-
-                      <div className="italic">
-                        ({t(`shared.${instance.questionData!.type}.short`)})
-                      </div>
-                    </div>
-                    <Ellipsis
-                      maxLength={50}
-                      className={{ markdown: 'px-1 text-sm' }}
-                    >
-                      {instance.questionData!.content}
-                    </Ellipsis>
-                  </div>
-                ))}
               </div>
             ))}
           </div>

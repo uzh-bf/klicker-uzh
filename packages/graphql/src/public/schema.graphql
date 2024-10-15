@@ -14,6 +14,19 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityEvaluation {
+  description: String
+  displayName: String
+  id: ID!
+  name: String!
+  results: [StackEvaluation!]!
+}
+
+type ActivitySummary {
+  numOfAnonymousResponses: Int!
+  numOfResponses: Int!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -50,6 +63,13 @@ type Choice {
   value: String!
 }
 
+type ChoiceElementResults {
+  correct: Boolean
+  count: Int!
+  feedback: String
+  value: String!
+}
+
 input ChoiceInput {
   correct: Boolean
   feedback: String
@@ -74,6 +94,23 @@ type ChoicesElementData implements ElementData {
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
+}
+
+type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ChoicesElementResults!
+  type: ElementType!
+}
+
+type ChoicesElementResults {
+  anonymousAnswers: Int!
+  choices: [ChoiceElementResults!]!
+  totalAnswers: Int!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -115,6 +152,17 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
+type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ContentElementResults!
+  type: ElementType!
+}
+
 type ContentElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -126,33 +174,55 @@ type ContentElementQData implements QuestionData {
   type: ElementType!
 }
 
+type ContentElementResults {
+  anonymousAnswers: Int!
+  totalAnswers: Int!
+}
+
 type Course {
   averageActiveScore: Float
   averageScore: Float
   awards: [AwardEntry!]
   color: String!
-  createdAt: Date!
+  createdAt: Date
   description: String
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
+  groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
   isGamificationEnabled: Boolean!
+  isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
+  maxGroupSize: Int!
   microLearnings: [MicroLearning!]
   name: String!
   notificationEmail: String
   numOfActiveParticipants: Int
+  numOfParticipantGroups: Int
   numOfParticipants: Int
   owner: User
+  participantGroups: [ParticipantGroup!]
   pinCode: Int
   practiceQuizzes: [PracticeQuiz!]
+  preferredGroupSize: Int!
+  randomAssignmentFinalized: Boolean!
   sessions: [Session!]
   startDate: Date!
-  updatedAt: Date!
+  updatedAt: Date
+}
+
+type CourseSummary {
+  numOfGroupActivities: Int!
+  numOfLeaderboardEntries: Int!
+  numOfLiveQuizzes: Int!
+  numOfMicroLearnings: Int!
+  numOfParticipantGroups: Int!
+  numOfParticipations: Int!
+  numOfPracticeQuizzes: Int!
 }
 
 """
@@ -171,6 +241,7 @@ type Element {
   options: Json!
   pointsMultiplier: Int!
   questionData: QuestionData
+  status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
   updatedAt: Date!
@@ -193,12 +264,31 @@ enum ElementDisplayMode {
   LIST
 }
 
+type ElementFeedback {
+  downvote: Boolean!
+  elementInstanceId: Int!
+  feedback: String
+  id: Int!
+  upvote: Boolean!
+}
+
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  feedbacks: [ElementFeedback!]
   id: Int!
   options: ElementInstanceOptions
   type: ElementInstanceType!
+}
+
+interface ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  type: ElementType!
 }
 
 type ElementInstanceOptions {
@@ -239,6 +329,12 @@ enum ElementStackType {
   LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
+}
+
+enum ElementStatus {
+  DRAFT
+  READY
+  REVIEW
 }
 
 enum ElementType {
@@ -284,6 +380,12 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+enum FlashcardCorrectness {
+  CORRECT
+  INCORRECT
+  PARTIAL
+}
+
 enum FlashcardCorrectnessType {
   CORRECT
   INCORRECT
@@ -301,6 +403,17 @@ type FlashcardElementData implements ElementData {
   type: ElementType!
 }
 
+type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FlashcardElementResults!
+  type: ElementType!
+}
+
 type FlashcardElementQData implements QuestionData {
   content: String!
   elementId: Int
@@ -310,6 +423,39 @@ type FlashcardElementQData implements QuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+type FlashcardElementResults {
+  anonymousAnswers: Int!
+  correctCount: Int!
+  incorrectCount: Int!
+  partialCount: Int!
+  totalAnswers: Int!
+}
+
+type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FreeElementResults!
+  type: ElementType!
+}
+
+type FreeElementResult {
+  correct: Boolean
+  count: Int!
+  value: String!
+}
+
+type FreeElementResults {
+  anonymousAnswers: Int!
+  maxLength: Int
+  responses: [FreeElementResult!]!
+  solutions: [String!]
+  totalAnswers: Int!
 }
 
 type FreeTextElementData implements ElementData {
@@ -431,6 +577,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
+  status: GroupActivityStatus!
 }
 
 type GroupActivityGrading {
@@ -476,8 +623,22 @@ type GroupActivityResults {
 
 enum GroupActivityStatus {
   DRAFT
+  ENDED
   GRADED
   PUBLISHED
+  SCHEDULED
+}
+
+type GroupActivitySummary {
+  numOfStartedInstances: Int!
+  numOfSubmissions: Int!
+}
+
+type GroupAssignmentPoolEntry {
+  courseId: ID!
+  id: ID!
+  participant: Participant
+  participantId: ID!
 }
 
 type GroupLeaderboardEntry {
@@ -488,12 +649,23 @@ type GroupLeaderboardEntry {
   score: Float!
 }
 
+type GroupMessage {
+  content: String!
+  createdAt: Date!
+  group: ParticipantGroup
+  id: Int!
+  participant: Participant
+  updatedAt: Date!
+}
+
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  correctness: Float
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
+  lastResponse: Json
   newPointsFrom: Date
   newXpFrom: Date
   numAnswers: Int
@@ -524,6 +696,7 @@ scalar Json
 
 type LeaderboardEntry {
   avatar: String
+  email: String
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int
@@ -584,13 +757,12 @@ type MicroLearning {
 }
 
 type Mutation {
+  activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelSession(id: String!): Session
-  changeCourseColor(color: String!, courseId: String!): Course
-  changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
-  changeCourseDescription(courseId: String!, input: String!): Course
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizName(displayName: String!, id: String!, name: String!): Session
@@ -598,16 +770,17 @@ type Mutation {
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
-  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
+  deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
@@ -621,53 +794,68 @@ type Mutation {
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
+  endGroupActivity(id: String!): GroupActivity
   endSession(id: String!): Session
+  extendGroupActivity(endDate: Date!, id: String!): GroupActivity
+  extendMicroLearning(endDate: Date!, id: String!): MicroLearning
+  finalRandomGroupAssignments: Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
-  flagElement(content: String!, elementInstanceId: Int!): String
+  flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
-  joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  joinParticipantGroup(code: Int!, courseId: String!): String
+  joinRandomCourseGroupPool(courseId: String!): Boolean!
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
+  leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
+  loginParticipantMagicLink(token: String!): ID
+  loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
-  manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, tags: [String!]): Element
-  manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, tags: [String!]): Element
-  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!]): Element
-  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!]): Element
+  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(id: String!): PracticeQuiz
-  publishScheduledPracticeQuizzes: Boolean!
+  publishScheduledActivities: Boolean!
+  rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
-  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
+  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  runningRandomGroupAssignments: Boolean!
+  sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
@@ -687,6 +875,37 @@ type NumericalElementData implements ElementData {
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
+}
+
+type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: NumericalElementResults!
+  type: ElementType!
+}
+
+type NumericalElementResult {
+  correct: Boolean
+  count: Int!
+  value: Float!
+}
+
+type NumericalElementResults {
+  anonymousAnswers: Int!
+  maxValue: Float
+  minValue: Float
+  responseValues: [NumericalElementResult!]!
+  solutionRanges: [NumericalElementSolutions!]!
+  totalAnswers: Int!
+}
+
+type NumericalElementSolutions {
+  max: Float
+  min: Float
 }
 
 type NumericalQuestionData implements QuestionData {
@@ -791,6 +1010,7 @@ type ParticipantGroup {
   code: Int!
   groupActivityScore: Int!
   id: ID!
+  messages: [GroupMessage!]
   name: String!
   participants: [Participant!]
   score: Float
@@ -802,6 +1022,7 @@ type ParticipantLearningData {
   groupLeaderboard: [GroupLeaderboardEntry!]
   groupLeaderboardStatistics: LeaderboardStatistics
   id: String!
+  inRandomGroupPool: Boolean
   leaderboard: [LeaderboardEntry!]
   leaderboardStatistics: LeaderboardStatistics
   participant: Participant
@@ -867,16 +1088,31 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
+  getGroupActivitySummary(id: String!): GroupActivitySummary
+  getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
+  getMicroLearningEvaluation(id: String!): ActivityEvaluation
+  getMicroLearningSummary(id: String!): ActivitySummary
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
+  getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
+  getPracticeQuizSummary(id: String!): ActivitySummary
+  getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getSingleMicroLearning(id: String!): MicroLearning
+  getSinglePracticeQuiz(id: String!): PracticeQuiz
+  getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
+  groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
+  groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
@@ -887,6 +1123,7 @@ type Query {
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   runningSessions(shortname: String!): [Session!]
+  runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
@@ -945,11 +1182,11 @@ type QuestionResponse {
   lastAwardedAt: Date
   lastCorrectAt: Date
   lastPartialCorrectAt: Date
+  lastResponse: Json!
   lastWrongAt: Date
   lastXpAwardedAt: Date
   nextDueAt: Date
   partialCorrectCount: Int!
-  response: Json!
   totalPointsAwarded: Float
   totalScore: Float!
   totalXpAwarded: Float
@@ -961,6 +1198,12 @@ type QuestionResponseDetail {
   id: Int!
 }
 
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
+}
+
 enum ResponseCorrectnessType {
   CORRECT
   INCORRECT
@@ -970,6 +1213,13 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
+}
+
+type RunningLiveQuizSummary {
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
 }
 
 type Session {
@@ -991,6 +1241,7 @@ type Session {
   isModerationEnabled: Boolean!
   linkTo: String
   linkToJoin: String
+  maxBonusPoints: Int!
   name: String!
   namespace: String!
   numOfBlocks: Int
@@ -999,6 +1250,7 @@ type Session {
   pointsMultiplier: Int!
   startedAt: Date
   status: SessionStatus!
+  timeToZeroBonus: Int!
   updatedAt: Date
 }
 
@@ -1053,6 +1305,14 @@ input StackElementsInput {
   order: Int!
 }
 
+type StackEvaluation {
+  instances: [ElementInstanceEvaluation!]!
+  stackDescription: String
+  stackId: Int!
+  stackName: String
+  stackOrder: Int!
+}
+
 type StackFeedback {
   evaluations: [InstanceEvaluation!]
   id: Int!
@@ -1102,7 +1362,10 @@ type Subscription {
   feedbackCreated(sessionId: String!): Feedback!
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
+  groupActivityEnded(courseId: String!): GroupActivity!
+  groupActivityStarted(courseId: String!): GroupActivity!
   runningSessionUpdated(sessionId: String!): SessionBlock
+  singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 
 input SubscriptionKeysInput {
@@ -1157,7 +1420,9 @@ type UserLogin {
 
 enum UserLoginScope {
   ACCOUNT_OWNER
+  ACTIVATION
   FULL_ACCESS
+  OTP
   READ_ONLY
   SESSION_EXEC
 }

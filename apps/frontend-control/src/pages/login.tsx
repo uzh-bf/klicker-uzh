@@ -21,7 +21,7 @@ function Login() {
   })
 
   return (
-    <div className="flex flex-col items-center h-full md:justify-center">
+    <div className="flex h-full flex-col items-center md:justify-center">
       <Formik
         isInitialValid={false}
         initialValues={{ shortname: '', token: '' }}
@@ -52,7 +52,6 @@ function Login() {
               fieldSecret="token"
               dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
-              usePinField={true}
               installAndroid={t('control.login.installAndroid')}
               installIOS={t('control.login.installIOS')}
             />
@@ -60,10 +59,11 @@ function Login() {
         }}
       </Formik>
       <Toast
+        dismissible
         type="error"
         duration={6000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
         className={{ root: 'max-w-[30rem]' }}
       >
         {error}

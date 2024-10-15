@@ -2,9 +2,15 @@ name: Klicker automated testing with cypress
 on:
   push:
     branches: ['v3', 'v3*']
+    paths:
+      - apps/**
+      - packages/**
   pull_request:
+    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
-  # workflow_dispatch:
+    paths:
+      - apps/**
+      - packages/**
 
 env:
   REGISTRY: ghcr.io
@@ -62,7 +68,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.7.0
+          version: 9.9.0
           run_install: false
 
       - name: Get pnpm store directory

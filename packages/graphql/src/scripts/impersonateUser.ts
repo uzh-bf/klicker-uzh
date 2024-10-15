@@ -1,5 +1,6 @@
 import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma'
 import JWT from 'jsonwebtoken'
+import readline from 'readline'
 
 async function run(email: string) {
   const prisma = new PrismaClient()
@@ -33,12 +34,12 @@ async function run(email: string) {
   console.log(jwt)
 }
 
-const readline = require('readline').createInterface({
+const readLine = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 })
 
-readline.question('Email of user to impersonate:', async (email: string) => {
+readLine.question('Email of user to impersonate:', async (email: string) => {
   await run(email)
-  readline.close()
+  readLine.close()
 })

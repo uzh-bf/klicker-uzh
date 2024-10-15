@@ -145,6 +145,7 @@ export const Participant = ParticipantRef.implement({
 export interface IParticipantGroup extends DB.ParticipantGroup {
   score?: number
   participants?: IParticipant[]
+  messages?: IGroupMessage[] | null
 }
 export const ParticipantGroupRef =
   builder.objectRef<IParticipantGroup>('ParticipantGroup')
@@ -157,12 +158,58 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
       nullable: true,
     }),
 
+    messages: t.expose('messages', {
+      type: [GroupMessageRef],
+      nullable: true,
+    }),
+
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
 
     averageMemberScore: t.exposeInt('averageMemberScore'),
     groupActivityScore: t.exposeInt('groupActivityScore'),
     score: t.exposeFloat('score', { nullable: true }),
+  }),
+})
+
+export interface IGroupMessage extends DB.GroupMessage {
+  group?: IParticipantGroup
+  participant?: IParticipant
+}
+export const GroupMessageRef = builder.objectRef<IGroupMessage>('GroupMessage')
+export const GroupMessage = GroupMessageRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    content: t.exposeString('content'),
+    group: t.expose('group', {
+      type: ParticipantGroupRef,
+      nullable: true,
+    }),
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
+
+export interface IGroupAssignmentPoolEntryRef
+  extends DB.GroupAssignmentPoolEntry {
+  participant?: IParticipant
+}
+export const GroupAssignmentPoolEntryRef =
+  builder.objectRef<IGroupAssignmentPoolEntryRef>('GroupAssignmentPoolEntry')
+export const GroupAssignmentPoolEntry = GroupAssignmentPoolEntryRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    participantId: t.exposeID('participantId'),
+    courseId: t.exposeID('courseId'),
+
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
   }),
 })
 
@@ -219,6 +266,7 @@ export interface IParticipantLearningData {
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
   groupActivityInstances?: IGroupActivityInstance[]
+  inRandomGroupPool?: boolean
 }
 export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
@@ -267,6 +315,8 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
       type: [GroupActivityInstanceRef],
       nullable: true,
     }),
+
+    inRandomGroupPool: t.exposeBoolean('inRandomGroupPool', { nullable: true }),
   }),
 })
 

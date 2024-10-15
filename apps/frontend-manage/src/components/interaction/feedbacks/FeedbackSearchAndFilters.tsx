@@ -85,7 +85,7 @@ function FeedbackSearchAndFilters({
   return (
     <div
       className={twMerge(
-        'flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden',
+        'mt-4 flex flex-col items-stretch justify-between md:flex-row md:items-end print:hidden',
         className
       )}
     >
@@ -97,22 +97,22 @@ function FeedbackSearchAndFilters({
             onChange={(e: any) => setSearchString(e.target.value)}
             placeholder={t('manage.general.searchPlaceholder')}
             className={twMerge(
-              'py-2 px-1.5 border border-solid rounded-md border-uzh-grey-60 order-1 w-full md:mr-2 md:w-64 md:order-0',
+              'border-uzh-grey-60 md:order-0 order-1 w-full rounded-md border border-solid px-1.5 py-2 md:mr-2 md:w-64',
               disabled?.search && 'cursor-not-allowed'
             )}
           />
         )}
         {!hidden?.filters && (
           <>
-            <div className="block mr-1 md:mr-0 xl:hidden order-0 md:order-1">
+            <div className="order-0 mr-1 block md:order-1 md:mr-0 xl:hidden">
               <Dropdown
                 disabled={disabled?.filters}
                 trigger={
                   <FontAwesomeIcon
                     icon={faFilter}
                     className={twMerge(
-                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md hover:shadow-none hover:bg-primary-20',
-                      disabled?.filters && 'hover:bg-white shadow-none'
+                      'border-uzh-grey-60 hover:bg-primary-20 ml-2 rounded-md border border-solid p-2.5 shadow-md hover:shadow-none',
+                      disabled?.filters && 'shadow-none hover:bg-white'
                     )}
                   />
                 }
@@ -121,7 +121,7 @@ function FeedbackSearchAndFilters({
                     label: (
                       <span
                         className={twMerge(
-                          'flex items-center hover:cursor-pointer px-2 py-0.5 hover:bg-primary-60'
+                          'hover:bg-primary-60 flex items-center px-2 py-0.5 hover:cursor-pointer'
                         )}
                       >
                         <Checkbox
@@ -141,7 +141,7 @@ function FeedbackSearchAndFilters({
               />
             </div>
 
-            <div className="flex-row flex-wrap justify-between flex-initial order-1 hidden gap-3 mt-4 mb-1 ml-4 xl:flex md:mt-0">
+            <div className="order-1 mb-1 ml-4 mt-4 hidden flex-initial flex-row flex-wrap justify-between gap-3 md:mt-0 xl:flex">
               {filter.map((filter) => (
                 <div className="inline-block" key={filter.label}>
                   <span
@@ -165,13 +165,13 @@ function FeedbackSearchAndFilters({
         )}
       </div>
 
-      <div className="flex flex-row">
+      <div className="flex flex-row items-center">
         {!hidden?.print && (
           <Button
             basic
             className={{
               root: twMerge(
-                'flex justify-center items-center h-9 w-9 rounded-md hover:bg-primary-20',
+                'hover:bg-primary-20 flex h-9 w-9 items-center justify-center rounded-md',
                 !hidden?.sorting && 'mr-2'
               ),
             }}
@@ -179,9 +179,7 @@ function FeedbackSearchAndFilters({
             disabled={disabled?.print}
             data={{ cy: 'print-feedback-channel-button' }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faPrint} />
-            </Button.Icon>
+            <FontAwesomeIcon icon={faPrint} />
           </Button>
         )}
 

@@ -6,37 +6,51 @@ import {
   EditSessionDocument,
   Element,
   ElementType,
-  GetSingleCourseDocument,
-  GetUserSessionsDocument,
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LQ_MAX_BONUS_POINTS,
+  LQ_TIME_TO_ZERO_BONUS,
+} from '@klicker-uzh/shared-components/src/constants'
+import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button } from '@uzh-bf/design-system'
+import { FormikProps } from 'formik'
+import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
+import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
-import MultistepWizard, { LiveSessionFormValues } from '../MultistepWizard'
+import WizardLayout, { LiveSessionFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
 import LiveQuizSettingsStep from './LiveQuizSettingsStep'
+import submitLiveSessionForm from './submitLiveSessionForm'
 
 export interface LiveQuizWizardStepProps {
-  onSubmit?: () => void
+  editMode: boolean
+  formRef: any
+  formData: LiveSessionFormValues
+  continueDisabled: boolean
+  activeStep: number
+  stepValidity: boolean[]
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  selection?: Record<number, Element>
-  resetSelection?: () => void
+  onSubmit?: (newValues: LiveSessionFormValues) => void
+  setStepValidity: Dispatch<SetStateAction<boolean[]>>
+  onNextStep?: (newValues: LiveSessionFormValues) => void
+  onPrevStep?: (newValues: LiveSessionFormValues) => void
+  closeWizard: () => void
 }
 
 interface LiveSessionWizardProps {
   title: string
-  gamifiedCourses: ElementSelectCourse[]
-  nonGamifiedCourses: ElementSelectCourse[]
+  courses: ElementSelectCourse[]
   initialValues?: Partial<Session>
   selection: Record<number, Element>
   resetSelection: () => void
@@ -46,8 +60,7 @@ interface LiveSessionWizardProps {
 
 function LiveSessionWizard({
   title,
-  gamifiedCourses,
-  nonGamifiedCourses,
+  courses,
   initialValues,
   selection,
   resetSelection,
@@ -57,12 +70,17 @@ function LiveSessionWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  const [editSession] = useMutation(EditSessionDocument)
-  const [createSession, { data }] = useMutation(CreateSessionDocument)
-  const [startSession] = useMutation(StartSessionDocument)
-
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [activeStep, setActiveStep] = useState(0)
+  const [stepValidity, setStepValidity] = useState(
+    Array(4).fill(!!initialValues)
+  )
+  const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
+
+  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
+    courseSelection: courses,
+  })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -83,6 +101,14 @@ function LiveSessionWizard({
     isGamificationEnabled: yup
       .boolean()
       .required(t('manage.sessionForms.liveQuizGamified')),
+    maxBonusPoints: yup
+      .number()
+      .required(t('manage.sessionForms.liveQuizMaxBonusPointsReq'))
+      .min(0, t('manage.sessionForms.liveQuizMaxBonusPointsMin')),
+    timeToZeroBonus: yup
+      .number()
+      .required(t('manage.sessionForms.liveQuizTimeToZeroBonusReq'))
+      .min(1, t('manage.sessionForms.liveQuizTimeToZeroBonusMin')),
   })
 
   const questionsValidationSchema = yup.object().shape({
@@ -113,211 +139,248 @@ function LiveSessionWizard({
     ),
   })
 
-  const onSubmit = async (values: LiveSessionFormValues) => {
-    const blockQuestions = values.blocks
-      .filter((block) => block.questionIds.length > 0)
-      .map((block) => {
-        return {
-          questionIds: block.questionIds,
-          timeLimit: block.timeLimit,
-        }
-      })
-
-    try {
-      let success = false
-
-      if (editMode && initialValues) {
-        const session = await editSession({
-          variables: {
-            id: initialValues.id || '',
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            blocks: blockQuestions,
-            courseId: values.courseId,
-            multiplier:
-              values.courseId !== '' ? parseInt(values.multiplier) : 1,
-            isGamificationEnabled:
-              values.courseId !== '' && values.isGamificationEnabled,
-            isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
-            isLiveQAEnabled: values.isLiveQAEnabled,
-            isModerationEnabled: values.isModerationEnabled,
-          },
-          refetchQueries: [
-            {
-              query: GetUserSessionsDocument,
-            },
-            values.courseId
-              ? {
-                  query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
-                }
-              : '',
-          ],
-        })
-        success = Boolean(session.data?.editSession)
-      } else {
-        const session = await createSession({
-          variables: {
-            name: values.name,
-            displayName: values.displayName,
-            description: values.description,
-            blocks: blockQuestions,
-            courseId: values.courseId,
-            multiplier: parseInt(values.multiplier),
-            isGamificationEnabled:
-              values.courseId !== '' && values.isGamificationEnabled,
-            isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
-            isLiveQAEnabled: values.isLiveQAEnabled,
-            isModerationEnabled: values.isModerationEnabled,
-          },
-          refetchQueries: [
-            {
-              query: GetUserSessionsDocument,
-            },
-            values.courseId
-              ? {
-                  query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
-                }
-              : '',
-          ],
-        })
-        success = Boolean(session.data?.createSession)
-      }
-
-      if (success) {
-        setIsWizardCompleted(true)
-      }
-    } catch (error) {
-      console.log('error: ', error)
-      setErrorToastOpen(true)
-    }
+  const formDefaultValues = {
+    name: '',
+    displayName: '',
+    description: '',
+    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
+    courseId: '',
+    multiplier: '1',
+    maxBonusPoints: LQ_MAX_BONUS_POINTS,
+    timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
+    isGamificationEnabled: false,
+    isConfusionFeedbackEnabled: true,
+    isLiveQAEnabled: false,
+    isModerationEnabled: true,
   }
+
+  const workflowItems = [
+    {
+      title: t('shared.generic.information'),
+      tooltip: t('manage.sessionForms.liveQuizInformation'),
+    },
+    {
+      title: t('shared.generic.description'),
+      tooltip: t('manage.sessionForms.liveQuizDescription'),
+      tooltipDisabled: t('manage.sessionForms.liveQuizDescription'),
+    },
+    {
+      title: t('shared.generic.settings'),
+      tooltip: t('manage.sessionForms.liveQuizSettings'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+    {
+      title: t('manage.sessionForms.liveQuizBlocks'),
+      tooltip: t('manage.sessionForms.liveQuizDragDrop'),
+      tooltipDisabled: t('manage.sessionForms.checkValues'),
+    },
+  ]
+
+  const [formData, setFormData] = useState<LiveSessionFormValues>({
+    name: initialValues?.name || formDefaultValues.name,
+    displayName: initialValues?.displayName || formDefaultValues.displayName,
+    description: initialValues?.description || formDefaultValues.description,
+    blocks:
+      initialValues?.blocks?.map((block) => {
+        return {
+          questionIds:
+            block.instances?.map(
+              (instance) => instance.questionData!.questionId!
+            ) ?? [],
+          titles:
+            block.instances?.map((instance) => instance.questionData!.name!) ??
+            [],
+          types:
+            block.instances?.map((instance) => instance.questionData!.type) ??
+            [],
+          timeLimit: block.timeLimit ?? undefined,
+        }
+      }) || formDefaultValues.blocks,
+    courseId: initialValues?.course?.id || formDefaultValues.courseId,
+    multiplier: initialValues?.pointsMultiplier
+      ? String(initialValues?.pointsMultiplier)
+      : formDefaultValues.multiplier,
+    maxBonusPoints:
+      initialValues?.maxBonusPoints ?? formDefaultValues.maxBonusPoints,
+    timeToZeroBonus:
+      initialValues?.timeToZeroBonus ?? formDefaultValues.timeToZeroBonus,
+    isGamificationEnabled:
+      initialValues?.isGamificationEnabled ??
+      formDefaultValues.isGamificationEnabled,
+    isConfusionFeedbackEnabled:
+      initialValues?.isConfusionFeedbackEnabled ??
+      formDefaultValues.isConfusionFeedbackEnabled,
+    isLiveQAEnabled:
+      initialValues?.isLiveQAEnabled ?? formDefaultValues.isLiveQAEnabled,
+    isModerationEnabled:
+      initialValues?.isModerationEnabled ??
+      formDefaultValues.isModerationEnabled,
+  })
+
+  const [editSession] = useMutation(EditSessionDocument)
+  const [createSession, { data }] = useMutation(CreateSessionDocument)
+  const [startSession] = useMutation(StartSessionDocument)
+  const handleSubmit = useCallback(
+    async (values: LiveSessionFormValues) => {
+      submitLiveSessionForm({
+        id: initialValues?.id,
+        editMode,
+        values,
+        createLiveSession: createSession,
+        editLiveSession: editSession,
+        setIsWizardCompleted,
+        setErrorToastOpen,
+      })
+    },
+    [createSession, editMode, editSession, initialValues?.id]
+  )
 
   return (
     <>
-      <MultistepWizard
+      <WizardLayout
         title={title}
-        onCloseWizard={closeWizard}
-        completionSuccessMessage={(elementName) => (
-          <div>
-            {editMode
-              ? t.rich('manage.sessionForms.liveQuizUpdated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })
-              : t.rich('manage.sessionForms.liveQuizCreated', {
-                  b: (text) => <strong>{text}</strong>,
-                  name: elementName,
-                })}
-          </div>
-        )}
-        customCompletionAction={
-          !editMode &&
-          data?.createSession?.id && (
-            <Button
-              data={{ cy: 'quick-start' }}
-              onClick={async () => {
-                await startSession({
-                  variables: {
-                    id: data?.createSession?.id as string,
-                  },
-                })
-                router.push(`/sessions/${data?.createSession?.id}/cockpit`)
-              }}
-              className={{ root: 'space-x-1' }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faPlay} />
-              </Button.Icon>
-              <Button.Label>
-                {t('manage.sessionForms.liveQuizStartNow')}
-              </Button.Label>
-            </Button>
-          )
-        }
-        initialValues={{
-          name: initialValues?.name || '',
-          displayName: initialValues?.displayName || '',
-          description: initialValues?.description || '',
-          blocks: initialValues?.blocks?.map((block) => {
-            return {
-              questionIds: block.instances?.map(
-                (instance) => instance.questionData!.questionId
-              ),
-              titles: block.instances?.map(
-                (instance) => instance.questionData!.name
-              ),
-              types: block.instances?.map(
-                (instance) => instance.questionData!.type
-              ),
-              timeLimit: block.timeLimit ?? undefined,
-            }
-          }) || [
-            { questionIds: [], titles: [], types: [], timeLimit: undefined },
-          ],
-          courseId: initialValues?.course?.id || '',
-          multiplier: initialValues?.pointsMultiplier
-            ? String(initialValues?.pointsMultiplier)
-            : '1',
-          isGamificationEnabled: initialValues?.isGamificationEnabled ?? false,
-          isConfusionFeedbackEnabled:
-            initialValues?.isConfusionFeedbackEnabled ?? true,
-          isLiveQAEnabled: initialValues?.isLiveQAEnabled ?? false,
-          isModerationEnabled: initialValues?.isModerationEnabled ?? true,
-        }}
-        onSubmit={onSubmit}
-        isCompleted={isWizardCompleted}
         editMode={editMode}
-        initialValid={!!initialValues}
-        onRestartForm={() => {
-          setIsWizardCompleted(false)
-        }}
-        onViewElement={() => {
-          router.push(`/sessions`)
-        }}
-        workflowItems={[
-          {
-            title: t('shared.generic.information'),
-            tooltip: t('manage.sessionForms.liveQuizInformation'),
-          },
-          {
-            title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.liveQuizDescription'),
-            tooltipDisabled: t('manage.sessionForms.liveQuizDescription'),
-          },
-          {
-            title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.liveQuizSettings'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
-          {
-            title: t('manage.sessionForms.liveQuizBlocks'),
-            tooltip: t('manage.sessionForms.liveQuizDragDrop'),
-            tooltipDisabled: t('manage.sessionForms.checkValues'),
-          },
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+        workflowItems={workflowItems}
+        isCompleted={isWizardCompleted}
+        completionStep={
+          <CompletionStep
+            completionSuccessMessage={(elementName) => (
+              <div>
+                {editMode
+                  ? t.rich('manage.sessionForms.liveQuizUpdated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })
+                  : t.rich('manage.sessionForms.liveQuizCreated', {
+                      b: (text) => <strong>{text}</strong>,
+                      name: elementName,
+                    })}
+              </div>
+            )}
+            name={formData.name}
+            editMode={editMode}
+            onViewElement={() => {
+              router.push(`/sessions`)
+            }}
+            onRestartForm={() => {
+              setIsWizardCompleted(false)
+              closeWizard()
+            }}
+            resetForm={() => setFormData(formDefaultValues)}
+            setStepNumber={setActiveStep}
+            onCloseWizard={closeWizard}
+          >
+            {!editMode && data?.createSession?.id && (
+              <Button
+                data={{ cy: 'quick-start' }}
+                onClick={async () => {
+                  await startSession({
+                    variables: {
+                      id: data?.createSession?.id as string,
+                    },
+                  })
+                  router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+                }}
+                className={{ root: 'space-x-1' }}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faPlay} />
+                </Button.Icon>
+                <Button.Label>
+                  {t('manage.sessionForms.liveQuizStartNow')}
+                </Button.Label>
+              </Button>
+            )}
+          </CompletionStep>
+        }
+        steps={[
+          <LiveQuizInformationStep
+            key="live-quiz-information-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={nameValidationSchema}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <LiveQuizDescriptionStep
+            key="live-quiz-description-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={descriptionValidationSchema}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <LiveQuizSettingsStep
+            key="live-quiz-settings-step"
+            editMode={editMode}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={settingsValidationSchema}
+            gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
+            setStepValidity={setStepValidity}
+            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep + 1)
+            }}
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
+            closeWizard={closeWizard}
+          />,
+          <LiveQuizQuestionsStep
+            key="live-quiz-questions-step"
+            editMode={editMode}
+            selection={selection}
+            resetSelection={resetSelection}
+            formRef={formRef}
+            formData={formData}
+            continueDisabled={false}
+            activeStep={activeStep}
+            stepValidity={stepValidity}
+            validationSchema={questionsValidationSchema}
+            setStepValidity={setStepValidity}
+            onSubmit={(newValues: LiveSessionFormValues) =>
+              handleSubmit({ ...formData, ...newValues })
+            }
+            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+              setFormData((prev) => ({ ...prev, ...newValues }))
+              setActiveStep((currentStep) => currentStep - 1)
+            }}
+            closeWizard={closeWizard}
+          />,
         ]}
-      >
-        <LiveQuizInformationStep validationSchema={nameValidationSchema} />
-        <LiveQuizDescriptionStep
-          validationSchema={descriptionValidationSchema}
-        />
-        <LiveQuizSettingsStep
-          validationSchema={settingsValidationSchema}
-          gamifiedCourses={gamifiedCourses}
-          nonGamifiedCourses={nonGamifiedCourses}
-        />
-        <LiveQuizQuestionsStep
-          validationSchema={questionsValidationSchema}
-          selection={selection}
-          resetSelection={resetSelection}
-        />
-      </MultistepWizard>
+        saveFormData={() => {
+          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
+        }}
+      />
       <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}

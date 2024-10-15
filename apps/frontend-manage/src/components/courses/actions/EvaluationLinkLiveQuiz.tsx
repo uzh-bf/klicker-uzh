@@ -12,7 +12,7 @@ function EvaluationLinkLiveQuiz({ liveQuiz }: EvaluationLinkLiveQuizProps) {
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center gap-2 text-primary">
+    <div className="text-primary-100 flex flex-row items-center gap-2">
       <FontAwesomeIcon icon={faUpRightFromSquare} />
       <Link
         href={`/sessions/${liveQuiz.id}/evaluation`}

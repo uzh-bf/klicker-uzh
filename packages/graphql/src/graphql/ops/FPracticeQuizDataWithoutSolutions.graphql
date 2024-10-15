@@ -7,8 +7,8 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   displayName
   description
   pointsMultiplier
-  availableFrom
   resetTimeDays
+  availableFrom
   orderType
   numOfStacks
   # previouslyAnswered
@@ -35,28 +35,6 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
       type
       elementType
       ...ElementDataWithoutSolutions
-      # mdContent
-      # questionInstance {
-      #   id
-      #   pointsMultiplier
-      #   ...QuestionData
-      #   evaluation {
-      #     feedbacks {
-      #       ix
-      #       feedback
-      #       correct
-      #       value
-      #     }
-      #     choices
-      #     answers
-      #     score
-      #     pointsAwarded
-      #     percentile
-      #     newPointsFrom
-      #     xpAwarded
-      #     newXpFrom
-      #   }
-      # }
     }
   }
 }

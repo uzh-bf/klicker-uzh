@@ -44,7 +44,7 @@ function ListButton({
       onClick={onClick ? onClick : () => router.push(link)}
       className={{
         root: twMerge(
-          'p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100 w-full',
+          'bg-uzh-grey-40 border-uzh-grey-100 w-full rounded-md border border-solid p-2',
           className?.root
         ),
       }}

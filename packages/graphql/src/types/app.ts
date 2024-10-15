@@ -2,6 +2,7 @@
 import type {
   Element,
   ElementStackType,
+  ElementStatus,
   ElementType,
   Prisma,
   PrismaClient,
@@ -122,7 +123,7 @@ export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,
-  Results extends QuestionResults
+  Results extends QuestionResults,
 > extends QuestionInstance {
   elementType?: Type
   questionData: AllElementTypeData
@@ -216,6 +217,7 @@ export type ElementOptions =
   | ElementOptionsContent
 
 export interface BaseElementData {
+  status: ElementStatus
   type: ElementType
 
   id: string
@@ -269,6 +271,8 @@ export type AllElementTypeData =
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
   resetTimeDays?: number
+  maxBonusPoints?: number
+  timeToZeroBonus?: number
 }
 
 export type ElementResultsChoices = {
@@ -366,7 +370,7 @@ export type ElementStackOptions =
 
 interface IElementStackOptions<
   Type extends ElementStackType,
-  Options extends ElementStackOptions | null
+  Options extends ElementStackOptions | null,
 > {}
 
 export type AllElementStackOptions =

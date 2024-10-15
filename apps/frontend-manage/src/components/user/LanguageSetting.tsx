@@ -49,7 +49,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
         ]}
         className={{
           content: 'font-normal text-black',
-          trigger: 'font-normal text-black',
+          trigger: 'h-9 w-max font-normal text-black',
         }}
         data={{ cy: 'language-select' }}
       />

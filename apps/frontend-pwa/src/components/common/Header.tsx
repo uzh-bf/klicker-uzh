@@ -46,13 +46,13 @@ function Header({
     <div
       style={{ borderColor: course?.color || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between px-4 text-white bg-slate-800 border-b-8 py-1',
+        'flex flex-row items-center justify-between border-b-8 bg-slate-800 px-4 py-1 text-white',
         !course?.color && 'border-uzh-red-60'
       )}
     >
       {title && course?.displayName && (
         <div>
-          <H1 className={{ root: 'm-0 text-xs md:text-sm text-uzh-grey-60' }}>
+          <H1 className={{ root: 'text-uzh-grey-60 m-0 text-xs md:text-sm' }}>
             {course.displayName}
           </H1>
           <H2 className={{ root: 'm-0 text-sm md:text-base' }}>{title}</H2>
@@ -63,7 +63,7 @@ function Header({
       )}
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
-        <div className="flex flex-row text-black bg-transparent rounded">
+        <div className="flex flex-row rounded bg-transparent text-black">
           <Select
             value={router.locale}
             items={[
@@ -87,11 +87,11 @@ function Header({
               })
             }}
             className={{
-              trigger:
-                'text-white border-b border-solid p-0.5 pb-0 rounded-none hover:bg-transparent hover:text-white',
+              trigger: 'p-0 px-1 text-white focus:ring-0',
             }}
             data={{ cy: 'language-select' }}
             basic
+            contentPosition="popper"
           />
         </div>
         {/* {hasSeenSurvey === 'false' && (
@@ -116,7 +116,7 @@ function Header({
           <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
-                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 hover:text-primary',
+                root: 'hover:bg-primary-20 hover:text-primary-100 block rounded px-1 py-1 md:px-2',
               }}
               basic
               data={{ cy: 'course-docs' }}
@@ -130,7 +130,7 @@ function Header({
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
-              className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+              className={{ root: 'hidden bg-slate-800 text-white md:block' }}
               onClick={() => router.back()}
               data={{ cy: 'header-back' }}
             >
@@ -139,7 +139,7 @@ function Header({
           ) : (
             <Link href="/">
               <Button
-                className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+                className={{ root: 'hidden bg-slate-800 text-white md:block' }}
                 data={{ cy: 'header-home' }}
               >
                 {t('shared.generic.home')}
@@ -149,7 +149,7 @@ function Header({
         ) : (
           <Link href="/login">
             <Button
-              className={{ root: 'text-white bg-slate-800' }}
+              className={{ root: 'bg-slate-800 text-white' }}
               data={{ cy: 'header-login' }}
             >
               {t('shared.generic.login')}
@@ -160,7 +160,7 @@ function Header({
           <Link href="/editProfile">
             <Button
               className={{
-                root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
+                root: 'bg-uzh-red-100 border-uzh-red-100 hidden text-white md:block',
               }}
               data={{ cy: 'header-setup-profile' }}
             >
@@ -184,13 +184,13 @@ function Header({
               width="35"
               height="35"
               className={twMerge(
-                'bg-white cursor-pointer rounded-full hover:bg-uzh-red-20',
+                'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white',
                 participant?.avatar ? '' : 'p-1'
               )}
             />
             {participant?.level && (
               <div
-                className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600"
+                className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-white text-xs font-bold text-slate-600"
                 data-cy="participant-level"
               >
                 {participant.level}

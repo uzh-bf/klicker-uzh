@@ -46,7 +46,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                   setSessionId(session.id)
                 }}
                 className={{
-                  root: 'h-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
+                  root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
                 }}
                 data={{ cy: `ppt-link-${session.name}` }}
               >
@@ -87,7 +87,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                   setSessionId(session.id)
                 }}
                 className={{
-                  root: 'h-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
+                  root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
                 }}
                 data={{ cy: `ppt-link-${session.name}` }}
               >

@@ -1,22 +1,39 @@
-import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import DescriptionStep from '../DescriptionStep'
-import { LiveSessionFormValues } from '../MultistepWizard'
 import { LiveQuizWizardStepProps } from './LiveSessionWizard'
 
-function LiveQuizDescriptionStep(props: LiveQuizWizardStepProps) {
+function LiveQuizDescriptionStep({
+  editMode,
+  formRef,
+  formData,
+  continueDisabled,
+  activeStep,
+  stepValidity,
+  validationSchema,
+  setStepValidity,
+  onNextStep,
+  onPrevStep,
+  closeWizard,
+}: LiveQuizWizardStepProps) {
   const t = useTranslations()
-  const { values } = useFormikContext<LiveSessionFormValues>()
 
   return (
     <DescriptionStep
-      displayName={values.displayName}
-      description={values.description}
       displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
       descriptionTooltip={t('manage.sessionForms.liveQuizDescField')}
       dataDisplayName={{ cy: 'insert-live-display-name' }}
       dataDescription={{ cy: 'insert-live-description' }}
-      validationSchema={props.validationSchema}
+      validationSchema={validationSchema}
+      editMode={editMode}
+      formRef={formRef}
+      formData={formData}
+      continueDisabled={continueDisabled}
+      activeStep={activeStep}
+      stepValidity={stepValidity}
+      setStepValidity={setStepValidity}
+      onNextStep={onNextStep}
+      onPrevStep={onPrevStep}
+      closeWizard={closeWizard}
     />
   )
 }

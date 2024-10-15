@@ -223,7 +223,7 @@ const Index = function () {
   return (
     <Layout key="pwa-home-layout" displayName={t('shared.generic.title')}>
       <div
-        className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
+        className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
       >
         {/* {hasSeenSurvey === 'false' && (
@@ -249,7 +249,7 @@ const Index = function () {
 
         {activeSessions.length !== 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>
+            <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.activeSessions')}
             </H1>
             <div className="flex flex-col gap-2">
@@ -270,7 +270,7 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>
+          <H1 className={{ root: 'mb-2 text-xl' }}>
             {t('shared.generic.practice')}
           </H1>
           <div className="flex flex-col gap-2">
@@ -299,7 +299,7 @@ const Index = function () {
         </div>
         {activeMicrolearning.length > 0 && (
           <div data-cy="microlearnings">
-            <H1 className={{ root: 'text-xl mb-2' }}>
+            <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.microlearning')}
             </H1>
             <div className="flex flex-col gap-2">
@@ -330,7 +330,7 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>
+          <H1 className={{ root: 'mb-2 text-xl' }}>
             {t('pwa.general.myCourses')}
           </H1>
           <div className="flex flex-col gap-2">

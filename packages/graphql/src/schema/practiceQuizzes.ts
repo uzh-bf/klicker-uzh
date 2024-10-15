@@ -104,10 +104,17 @@ export const ElementStack = ElementStackRef.implement({
   }),
 })
 
-export interface IPracticeQuiz extends DB.PracticeQuiz {
+export interface IPracticeQuiz
+  extends Omit<
+    DB.PracticeQuiz,
+    'startedCount' | 'completedCount' | 'repeatedCount'
+  > {
   course?: ICourse
   stacks?: IElementStack[]
   numOfStacks?: number
+  startedCount?: number
+  completedCount?: number
+  repeatedCount?: number
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -125,5 +132,22 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     courseId: t.exposeString('courseId', { nullable: true }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
     availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
+
+    // startedCount: t.exposeInt('startedCount', { nullable: true }),
+    // completedCount: t.exposeInt('completedCount', { nullable: true }),
+    // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
+  }),
+})
+
+export interface IActivitySummary {
+  numOfResponses: number
+  numOfAnonymousResponses: number
+}
+export const ActivitySummaryRef =
+  builder.objectRef<IActivitySummary>('ActivitySummary')
+export const ActivitySummary = ActivitySummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfAnonymousResponses: t.exposeInt('numOfAnonymousResponses'),
   }),
 })

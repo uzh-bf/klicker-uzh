@@ -177,10 +177,10 @@ function Index({ id }: Props) {
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
-      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:mx-auto">
+      <div className="gap-4 md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
         <div
           className={twMerge(
-            'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
+            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
             isLiveQAEnabled && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||
@@ -190,7 +190,7 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div className={twMerge('bg-white min-h-full flex-1')}>
+              <div className={twMerge('min-h-full flex-1 bg-white')}>
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (
@@ -218,7 +218,7 @@ function Index({ id }: Props) {
         {selfData?.self && isGamificationEnabled && (
           <div
             className={twMerge(
-              'bg-white hidden min-h-full flex-1 md:p-8',
+              'hidden min-h-full flex-1 bg-white md:p-8',
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
@@ -228,7 +228,7 @@ function Index({ id }: Props) {
 
         <div
           className={twMerge(
-            'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:rounded-lg',
+            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
             (isLiveQAEnabled || isConfusionFeedbackEnabled) && 'md:block',
             activeMobilePage === 'feedbacks' &&
               (isLiveQAEnabled || isConfusionFeedbackEnabled) &&

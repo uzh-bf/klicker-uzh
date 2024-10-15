@@ -119,9 +119,9 @@ function UpdateAccountInfoForm({
       {({ values, isSubmitting, isValid, validateField }) => {
         return (
           <Form>
-            <div className="flex flex-col justify-between order-2 gap-3 rounded-md md:order-1 md:bg-slate-50 md:p-4">
+            <div className="order-2 flex flex-col justify-between gap-3 rounded-md md:order-1 md:bg-slate-50 md:p-4">
               <div>
-                <H3 className={{ root: 'border-b mb-0' }}>
+                <H3 className={{ root: 'mb-0 border-b' }}>
                   {t('shared.generic.profile')}
                 </H3>
                 {!user.email ? (
@@ -142,11 +142,13 @@ function UpdateAccountInfoForm({
                     }
                     name="email"
                     label={t('shared.generic.email')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{
+                      label: 'mt-2 text-black',
+                    }}
                     data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
+                    t={t}
                     name="username"
                     label={t('shared.generic.username')}
                     valid={isUsernameAvailable}
@@ -163,21 +165,20 @@ function UpdateAccountInfoForm({
                         })
                       return result?.checkParticipantNameAvailable ?? false
                     }}
+                    className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />
                   <FormikTextField
                     name="password"
                     label={t('shared.generic.password')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password' }}
                   />
                   <FormikTextField
                     name="passwordRepetition"
                     label={t('shared.generic.passwordRepetition')}
-                    labelType="small"
-                    className={{ label: 'font-bold text-md text-black' }}
+                    className={{ label: 'text-black' }}
                     type="password"
                     data={{ cy: 'update-account-password-repetition' }}
                   />
@@ -185,7 +186,7 @@ function UpdateAccountInfoForm({
                     <div className="font-bold">
                       {t('pwa.profile.publicProfile')}
                     </div>
-                    <div className="flex flex-row gap-4 space-between">
+                    <div className="space-between flex flex-row gap-4">
                       <div className="flex flex-col items-center gap-1">
                         <FormikSwitchField
                           name="isProfilePublic"
@@ -208,7 +209,7 @@ function UpdateAccountInfoForm({
               <Button
                 fluid
                 type="submit"
-                disabled={isSubmitting || !isValid}
+                disabled={isSubmitting || !isValid || !isUsernameAvailable}
                 data={{ cy: 'save-account-update' }}
               >
                 <Button.Icon>

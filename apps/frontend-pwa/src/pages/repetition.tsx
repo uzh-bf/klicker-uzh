@@ -42,19 +42,20 @@ function Repetition() {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.practiceQuiz.repetitionTitle')}
     >
-      <div className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.repetition')}
         </H1>
-        {courses?.length &&
-          courses.map((course) => (
-            <CourseCollapsible
-              key={`list-${course.id}`}
-              courseId={course.id}
-              courseName={course.displayName}
-              elements={course.elements}
-            />
-          ))}
+        {courses?.length
+          ? courses.map((course) => (
+              <CourseCollapsible
+                key={`list-${course.id}`}
+                courseId={course.id}
+                courseName={course.displayName}
+                elements={course.elements}
+              />
+            ))
+          : null}
 
         {courses?.length === 0 && (
           <UserNotification

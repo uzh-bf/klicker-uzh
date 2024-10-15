@@ -48,7 +48,7 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'w-[500px] my-auto h-max max-h-full overflow-auto',
+        content: 'my-auto w-[500px]',
         title: 'text-3xl',
         onNext: 'hidden md:block',
         onPrev: 'hidden md:block',
@@ -60,7 +60,7 @@ function ParticipantProfileModal({
       {loading || !participant ? (
         <Loader />
       ) : (
-        <div className="flex flex-col items-center justify-between w-full h-full px-auto">
+        <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData
             level={participant.levelData}
             xp={participant.xp}
@@ -71,12 +71,12 @@ function ParticipantProfileModal({
               participant.isProfilePublic || participant.isSelf
             }
           />
-          <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
+          <div className="grid w-full grid-cols-10 justify-items-center pt-5">
             {top10Participants.slice(0, 10).map((p, index) => (
               <div
                 key={index}
                 className={twMerge(
-                  'w-2 h-2 rounded-full hover:cursor-pointer',
+                  'h-2 w-2 rounded-full hover:cursor-pointer',
                   index === currentIndex ? 'bg-black' : 'bg-gray-300'
                 )}
                 onClick={() => {

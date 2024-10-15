@@ -19,11 +19,11 @@ function MicroLearningPreviewLink({
     <Link
       href={href}
       target="_blank"
-      className="flex flex-row items-center gap-1 text-primary"
+      className="text-primary-100 flex flex-row items-center gap-1"
       data-cy={`open-microlearning-${microLearning.name}`}
     >
       <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
-      <div>{t('shared.generic.open')}</div>
+      <div>{t('manage.courseList.openPreview')}</div>
     </Link>
   )
 }

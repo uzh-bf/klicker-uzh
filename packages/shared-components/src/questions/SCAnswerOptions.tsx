@@ -1,7 +1,8 @@
-import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
@@ -28,6 +29,8 @@ export function SCAnswerOptions({
   disabled,
   hideFeedbacks = false,
 }: SCAnswerOptionsProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -37,6 +40,11 @@ export function SCAnswerOptions({
           : 'flex flex-col'
       )}
     >
+      <div>
+        {t.rich(`shared.${ElementType.Sc}.richtext`, {
+          b: (text) => <span className="font-bold">{text}</span>,
+        })}
+      </div>
       {choices.map((choice, index) => {
         return (
           <div key={`sc-choice-${index}-${choice.value}`}>
@@ -65,7 +73,7 @@ export function SCAnswerOptions({
                   withProse
                   content={choice.value}
                   className={{
-                    root: 'max-w-none p-1 pt-2 prose-p:!m-0 prose-img:!m-0',
+                    root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
                   }}
                 />
               </Button.Label>

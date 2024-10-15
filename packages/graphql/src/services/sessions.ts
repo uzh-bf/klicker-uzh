@@ -11,6 +11,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
+import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -20,10 +21,7 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import {
   AllQuestionInstanceTypeData,
@@ -76,6 +74,8 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -90,6 +90,8 @@ export async function createSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -105,6 +107,8 @@ export async function createSession(
       displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -120,6 +124,8 @@ export async function createSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -169,6 +175,8 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
+  maxBonusPoints: number
+  timeToZeroBonus: number
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -184,6 +192,8 @@ export async function editSession(
     blocks,
     courseId,
     multiplier,
+    maxBonusPoints,
+    timeToZeroBonus,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -247,6 +257,8 @@ export async function editSession(
       displayName: displayName.trim(),
       description,
       pointsMultiplier: multiplier,
+      maxBonusPoints: maxBonusPoints,
+      timeToZeroBonus: timeToZeroBonus,
       isGamificationEnabled: isGamificationEnabled,
       isConfusionFeedbackEnabled,
       isLiveQAEnabled,
@@ -262,6 +274,8 @@ export async function editSession(
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints: maxBonusPoints,
+                timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -799,7 +813,13 @@ export async function activateSessionBlock(
     },
     include: {
       activeBlock: {
-        include: { instances: true },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
       },
       blocks: {
         orderBy: {
@@ -846,6 +866,8 @@ export async function activateSessionBlock(
       sessionBlockId,
       type: questionData.type,
       pointsMultiplier: instance.pointsMultiplier,
+      maxBonusPoints: instance.maxBonusPoints,
+      timeToZeroBonus: instance.timeToZeroBonus,
     }
 
     switch (questionData.type) {
@@ -977,13 +999,17 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed((count: number, responseHash: string) => {
-          return {
-            count: +count,
-            value:
-              acc[instance.id]['responseHashes'][responseHash] ?? responseHash,
-          }
-        }, dissoc('participants', cacheObj))
+        const results = mapObjIndexed(
+          (count: number, responseHash: string) => {
+            return {
+              count: +count,
+              value:
+                acc[instance.id]['responseHashes'][responseHash] ??
+                responseHash,
+            }
+          },
+          dissoc('participants', cacheObj)
+        )
 
         return {
           ...acc,
@@ -1468,6 +1494,36 @@ export async function getRunningSessions(
   return userWithSessions.sessions
 }
 
+export async function getRunningSessionsCourse(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: SessionStatus.RUNNING,
+        },
+      },
+    },
+  })
+
+  const sessionList =
+    course?.sessions.map((session) => {
+      session.course = { id: course.id, displayName: course.displayName }
+      return session
+    }) ?? []
+
+  return sessionList
+}
+
 export async function getUserRunningSessions(ctx: ContextWithUser) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
@@ -1530,7 +1586,10 @@ export async function getUserSessions(ctx: ContextWithUser) {
 
   return user?.sessions.map((session) => ({
     ...session,
-    blocks: session.blocks,
+    blocks: session.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: block.instances[0]?.participants,
+    })),
     course: session.course ? session.course : undefined,
     numOfBlocks: session._count?.blocks,
     numOfQuestions: session.blocks.reduce(
@@ -2037,7 +2096,6 @@ export async function getSessionEvaluation(
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
-      // FIXME: ensure this can be assigned to AllElementTypeData
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],
@@ -2188,6 +2246,49 @@ export async function deleteSession(
     }
 
     throw e
+  }
+}
+
+export async function getLiveQuizSummary(
+  { quizId }: { quizId: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+        },
+      },
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+    acc_b += block.instances.reduce((acc_i, instance) => {
+      acc_i += instance.participants
+      return acc_i
+    }, 0)
+    return acc_b
+  }, 0)
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
   }
 }
 

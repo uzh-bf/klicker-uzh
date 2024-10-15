@@ -1,0 +1,7 @@
+mutation OpenGroupActivity($id: String!) {
+  openGroupActivity(id: $id) {
+    id
+    status
+    scheduledStartAt
+  }
+}

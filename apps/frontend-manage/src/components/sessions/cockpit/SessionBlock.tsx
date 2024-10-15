@@ -82,14 +82,14 @@ function SessionBlock({
     <div
       className={twMerge(
         className,
-        'bg-uzh-grey-40 p-4 rounded min-w-[150px]',
+        'bg-uzh-grey-40 min-w-[150px] rounded p-4',
         active && 'bg-green-300',
         inCooldown && 'bg-orange-200'
       )}
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between items-center text-gray-700'
+          'flex flex-row items-center justify-between text-gray-700'
         )}
       >
         <div>
@@ -104,7 +104,7 @@ function SessionBlock({
               })}
             </span>
             <span className="ml-1">{` - ${block.numOfParticipants}`}</span>
-            <FontAwesomeIcon icon={faUserGroup} className="w-4 ml-1" />
+            <FontAwesomeIcon icon={faUserGroup} className="ml-1 w-4" />
           </div>
         ) : (
           <div>{t('shared.generic.blockN', { number: block.order! + 1 })}</div>
@@ -146,11 +146,14 @@ function SessionBlock({
           <Link
             href={`/questions/${instance.questionData!.questionId}`}
             className="text-sm hover:text-slate-700"
-            target="_blank"
             legacyBehavior
             passHref
           >
-            <a data-cy={`open-embedding-link-session-${instance.id}`}>
+            <a
+              data-cy={`open-question-live-quiz-${instance.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {instance.questionData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
             </a>

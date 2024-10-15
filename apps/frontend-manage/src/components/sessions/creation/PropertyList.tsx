@@ -22,7 +22,7 @@ function PropertyList({ elements }: PropertyListProps) {
           <div className="w-fit">
             <FontAwesomeIcon
               icon={element.icon}
-              className={twMerge('w-10 -ml-1.5', element.iconColor)}
+              className={twMerge('-ml-1.5 w-10', element.iconColor)}
               size="lg"
             />
           </div>

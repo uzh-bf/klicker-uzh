@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.1.2-rc.2",
+  "version": "3.2.0",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -26,12 +26,17 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@prisma/nextjs-monorepo-workaround-plugin": "5.9.1",
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.18.0",
     "cross-env": "7.0.3",
+    "eslint-config-prettier": "9.1.0",
     "husky": "8.0.3",
+    "prettier": "3.3.3",
+    "prettier-plugin-organize-imports": "4.0.0",
+    "prettier-plugin-tailwindcss": "0.6.6",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
-    "turbo": "2.0.12",
+    "turbo": "2.1.0",
+    "typescript": "5.4.5",
     "yaml": "2.3.2"
   },
   "scripts": {
@@ -41,12 +46,14 @@
     "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev --concurrency 30",
-    "dev:docs": "doppler run --config dev -- turbo run dev:docs",
+    "dev:docs": "turbo run dev:docs",
+    "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
+    "dev:cleverreach": "doppler run --config dev_cleverreach -- turbo run dev --concurrency 30",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline --concurrency 30",
     "dev:test": "cross-env NODE_ENV=test turbo run dev:test",
-    "format": "turbo run format --parallel --continue",
-    "format:check": "turbo run format:check --parallel --continue",
+    "format": "prettier --write . --config .prettierrc.mjs",
+    "format:check": "prettier --check . --config .prettierrc.mjs",
     "lint": "turbo run lint --parallel --continue",
     "prepare": "husky install",
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
@@ -77,8 +84,8 @@
     "node": "=20"
   },
   "volta": {
-    "node": "20.16.0",
-    "pnpm": "9.7.0"
+    "node": "20.17.0",
+    "pnpm": "9.9.0"
   },
-  "packageManager": "pnpm@9.7.0"
+  "packageManager": "pnpm@9.9.0"
 }

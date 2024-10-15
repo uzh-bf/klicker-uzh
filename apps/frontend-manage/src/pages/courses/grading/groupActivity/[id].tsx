@@ -1,9 +1,4 @@
 import { useQuery } from '@apollo/client'
-import FinalizeGradingModal from '@components/courses/groupActivity/FinalizeGradingModal'
-import GroupActivityGradingStack from '@components/courses/groupActivity/GroupActivityGradingStack'
-import GroupActivitySubmission from '@components/courses/groupActivity/GroupActivitySubmission'
-import SubmissionSwitchModal from '@components/courses/groupActivity/SubmissionSwitchModal'
-import Layout from '@components/Layout'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
@@ -18,6 +13,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Layout from '../../../../components/Layout'
+import FinalizeGradingModal from '../../../../components/courses/groupActivity/FinalizeGradingModal'
+import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
+import GroupActivitySubmission from '../../../../components/courses/groupActivity/GroupActivitySubmission'
+import SubmissionSwitchModal from '../../../../components/courses/groupActivity/SubmissionSwitchModal'
 
 const MAX_POINTS_PER_QUESTION = 25
 
@@ -62,8 +62,6 @@ function GroupActivityGrading() {
       [...(groupActivity?.activityInstances || [])].sort((a, b) => {
         if (a.decisions && !b.decisions) return -1
         if (!a.decisions && b.decisions) return 1
-        if (a.results && !b.results) return 1
-        if (!a.results && b.results) return -1
         if (a.decisionsSubmittedAt && b.decisionsSubmittedAt)
           return dayjs(a.decisionsSubmittedAt).diff(
             dayjs(b.decisionsSubmittedAt)
@@ -104,13 +102,17 @@ function GroupActivityGrading() {
               />
             ) : (
               <>
-                {submissions.map((submission) => (
+                {submissions.map((submission, ix) => (
                   <GroupActivitySubmission
                     key={submission.id}
+                    activityIndex={ix}
                     submission={submission as GroupActivityInstance}
                     selectedSubmission={selectedSubmission}
                     selectSubmission={(submissionId: number) => {
-                      if (currentEditing) {
+                      if (
+                        currentEditing &&
+                        groupActivity.status !== GroupActivityStatus.Graded
+                      ) {
                         setSwitchingModal(true)
                         setNextSubmission(submissionId)
                       } else {
@@ -129,13 +131,13 @@ function GroupActivityGrading() {
                   }
                   className={{
                     root: twMerge(
-                      'bg-primary-80 font-bold text-white w-max self-end',
+                      'bg-primary-80 w-max self-end font-bold text-white',
                       (submissions.some(
                         (submission) =>
                           !submission.results && submission.decisions
                       ) ||
                         groupActivity.status === GroupActivityStatus.Graded) &&
-                        'cursor-not-allowed bg-primary-60'
+                        'bg-primary-60 cursor-not-allowed'
                     ),
                   }}
                   onClick={() => setFinalizeModal(true)}

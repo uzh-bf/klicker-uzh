@@ -101,6 +101,7 @@ function Index() {
       return buildIndex('questions', dataQuestions.userQuestions as Element[], [
         'name',
         'createdAt',
+        'updatedAt',
       ])
     }
     return null
@@ -153,14 +154,14 @@ function Index() {
             elementId={router.query.elementId as string}
             editMode={router.query.editMode as string}
             conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as string}
+            duplicationMode={router.query.duplicationMode as WizardMode}
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />
         </>
       )}
 
-      <div className="flex flex-col gap-4 overflow-y-auto md:flex-row h-full">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
             <div className="hidden h-full md:block">
@@ -169,6 +170,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
@@ -186,6 +188,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
                 answerFeedbacks={filters.answerFeedbacks}
@@ -199,14 +202,14 @@ function Index() {
             </div>
           </div>
         )}
-        <div className="flex flex-col flex-1 w-full overflow-auto">
+        <div className="flex w-full flex-1 flex-col overflow-auto">
           {!dataQuestions || loadingQuestions ? (
             <Loader />
           ) : (
             <>
-              <div className="flex flex-row content-center justify-between flex-none">
+              <div className="flex flex-none flex-row content-center justify-between">
                 <div className="flex flex-row items-center gap-1 pb-3">
-                  <div className="flex flex-col text-sm pr-0.5">
+                  <div className="flex flex-col pr-0.5 text-sm">
                     <Checkbox
                       checked={
                         Object.values(selectedQuestions).filter(
@@ -266,7 +269,7 @@ function Index() {
                     className={{
                       input: 'h-10 pl-9',
 
-                      field: 'w-30 pr-3 rounded-md',
+                      field: 'w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -277,7 +280,7 @@ function Index() {
                         handleSortOrderToggle()
                       }}
                       className={{
-                        root: 'h-10 shadow-sm rounded-md',
+                        root: 'h-10 rounded-md shadow-sm',
                       }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
@@ -289,13 +292,19 @@ function Index() {
                       className={{
                         root: 'min-w-30',
                         trigger: 'h-10',
+                        item: 'text-sm',
                       }}
                       placeholder={t('manage.general.sortBy')}
                       items={[
                         {
                           value: SortyByType.CREATED,
-                          label: t('manage.general.date'),
+                          label: t('manage.general.dateCreated'),
                           data: { cy: 'sort-by-question-pool-created' },
+                        },
+                        {
+                          value: SortyByType.MODIFIED,
+                          label: t('manage.general.dateModified'),
+                          data: { cy: 'sort-by-question-pool-modified' },
                         },
                         {
                           value: SortyByType.TITLE,
@@ -308,6 +317,7 @@ function Index() {
                         handleSortByChange(newSortBy as SortyByType)
                       }}
                       data={{ cy: 'sort-by-question-pool' }}
+                      contentPosition="popper"
                     />
                   </div>
 
@@ -316,7 +326,7 @@ function Index() {
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
                           className={{
-                            root: 'h-10 ml-1',
+                            root: 'ml-1 h-10',
                           }}
                           onClick={async () => {
                             await toggleIsArchived({
@@ -338,7 +348,7 @@ function Index() {
                       >
                         <Button
                           className={{
-                            root: 'h-10 ml-1',
+                            root: 'ml-1 h-10',
                           }}
                           onClick={async () => {
                             await toggleIsArchived({
@@ -363,7 +373,7 @@ function Index() {
                     setIsQuestionCreationModalOpen(!isQuestionCreationModalOpen)
                   }
                   className={{
-                    root: 'h-10 font-bold text-white bg-primary-80',
+                    root: 'bg-primary-80 h-10 font-bold text-white',
                   }}
                   data={{ cy: 'create-question' }}
                 >
@@ -382,7 +392,12 @@ function Index() {
                   }}
                   tagfilter={filters.tags}
                   handleTagClick={(tag: string) =>
-                    handleTagClick(tag, false, false)
+                    handleTagClick({
+                      tagName: tag,
+                      isTypeTag: false,
+                      isStatusTag: false,
+                      isUntagged: false,
+                    })
                   }
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {

@@ -6,7 +6,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
+import getParticipantToken from '@lib/getParticipantToken'
+import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
@@ -19,12 +20,24 @@ import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
 interface Props {
   courseId: string
   id: string
+  participantToken?: string
+  cookiesAvailable?: boolean
 }
 
-function PracticeQuizPage({ courseId, id }: Props) {
+function PracticeQuizPage({
+  courseId,
+  id,
+  participantToken,
+  cookiesAvailable,
+}: Props) {
   const t = useTranslations()
 
   const [currentIx, setCurrentIx] = useState(-1)
+
+  useParticipantToken({
+    participantToken,
+    cookiesAvailable,
+  })
 
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
@@ -113,10 +126,24 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
+  const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
+    courseId: ctx.params.courseId,
     ctx,
   })
+
+  if (participantToken) {
+    return {
+      props: {
+        participantToken,
+        cookiesAvailable,
+        id: ctx.params.id,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
+      },
+    }
+  }
 
   return addApolloState(apolloClient, {
     props: {

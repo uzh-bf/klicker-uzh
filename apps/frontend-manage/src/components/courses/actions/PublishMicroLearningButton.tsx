@@ -23,12 +23,12 @@ function PublishMicroLearningButton({
     <>
       <Button
         basic
-        className={{ root: 'text-primary' }}
+        className={{ root: 'text-primary-100' }}
         onClick={() => setPublishModal(true)}
         data={{ cy: `publish-microlearning-${microLearning.name}` }}
       >
         <Button.Icon>
-          <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
+          <FontAwesomeIcon icon={faUserGroup} className="w-[1.2rem]" />
         </Button.Icon>
         <Button.Label>{t('manage.course.publishMicrolearning')}</Button.Label>
       </Button>

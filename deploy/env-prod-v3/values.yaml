@@ -2,7 +2,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
 
 cron:
-  dailyGroupScores: "5 6,20 * * *"
+  dailyGroupScores: '5 6,20 * * *'
 
 auth:
   autoscaling:
@@ -144,10 +144,6 @@ backendGraphql:
   autoscaling:
     enabled: false
 
-  appManageSubdomain: manage
-  appStudentSubdomain: pwa
-  appControlSubdomain: control
-
   ingress:
     hosts:
       - host: backend-sls.klicker.uzh.ch
@@ -177,6 +173,25 @@ backendGraphql:
     limits:
       cpu: 1000m
       memory: 1000Mi
+
+lti:
+  ingress:
+    hosts:
+      - host: lti.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: lti.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-lti-tls-uzh
+        hosts:
+          - lti.klicker.uzh.ch
+      - secretName: klicker-prod-lti-tls
+        hosts:
+          - lti.klicker-prod.bf-app.ch
 
 redis:
   auth:

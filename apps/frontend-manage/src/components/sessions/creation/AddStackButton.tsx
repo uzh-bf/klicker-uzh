@@ -8,7 +8,7 @@ import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
-import { ElementStackFormValues } from './MultistepWizard'
+import { ElementStackFormValues } from './WizardLayout'
 
 interface AddStackButtonProps {
   push: (value: ElementStackFormValues) => void
@@ -31,10 +31,14 @@ function AddStackButton({
         push({
           displayName: '',
           description: '',
-          elementIds: [item.id],
-          titles: [item.title],
-          types: [item.questionType],
-          hasSampleSolutions: [item.hasSampleSolution],
+          elements: [
+            {
+              id: item.id,
+              title: item.title,
+              type: item.questionType,
+              hasSampleSolution: item.hasSampleSolution,
+            },
+          ],
         })
       },
       collect: (monitor) => ({
@@ -51,32 +55,22 @@ function AddStackButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-1 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              const { elementIds, titles, types, hasSampleSolutions } =
-                Object.values(selection).reduce<ElementStackFormValues>(
-                  (acc, question) => {
-                    acc.elementIds.push(question.id)
-                    acc.titles.push(question.name)
-                    acc.types.push(question.type)
-                    return acc
-                  },
-                  {
-                    elementIds: [],
-                    titles: [],
-                    types: [],
-                    hasSampleSolutions: [],
-                  }
-                )
+              const stackElements = Object.values(selection).map(
+                (question) => ({
+                  id: question.id,
+                  title: question.name,
+                  type: question.type,
+                  hasSampleSolution: question.options.hasSampleSolution,
+                })
+              )
 
               push({
                 displayName: '',
                 description: '',
-                elementIds: elementIds,
-                titles: titles,
-                types: types,
-                hasSampleSolutions: hasSampleSolutions,
+                elements: stackElements,
               })
               resetSelection?.()
             }}
@@ -95,17 +89,21 @@ function AddStackButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-2 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
               Object.values(selection).forEach((question) => {
                 push({
                   displayName: '',
                   description: '',
-                  elementIds: [question.id],
-                  titles: [question.name],
-                  types: [question.type],
-                  hasSampleSolutions: [question.options.hasSampleSolution],
+                  elements: [
+                    {
+                      id: question.id,
+                      title: question.name,
+                      type: question.type,
+                      hasSampleSolution: question.options.hasSampleSolution,
+                    },
+                  ],
                 })
               })
               resetSelection?.()
@@ -119,7 +117,7 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.pasteSingleQuestions', {
+              {t('manage.sessionForms.pasteSingleElementsStack', {
                 count: Object.keys(selection).length,
               })}
             </div>
@@ -128,17 +126,14 @@ function AddStackButton({
       )}
       <div
         className={twMerge(
-          'flex flex-col items-center justify-center rounded text-center border border-solid md:w-16 cursor-pointer hover:bg-primary-20 w-full p-2',
+          'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
           isOver && 'bg-primary-20'
         )}
         onClick={() =>
           push({
             displayName: '',
             description: '',
-            elementIds: [],
-            titles: [],
-            types: [],
-            hasSampleSolutions: [],
+            elements: [],
           })
         }
         data-cy="drop-elements-add-stack"

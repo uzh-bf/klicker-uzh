@@ -3,9 +3,6 @@ name: Build Docker image for frontend-manage (Production)
 on:
   push:
     tags: ['v*.*.*']
-    paths:
-      - 'apps/frontend-manage/**'
-      - '.github/workflows/v3_frontend-manage**'
 
 env:
   REGISTRY: ghcr.io

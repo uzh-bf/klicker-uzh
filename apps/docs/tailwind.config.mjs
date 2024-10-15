@@ -10,9 +10,7 @@ export default {
   theme: {
     extend: {
       ...TailwindAnimations,
-      colors: {
-        ...TailwindColorsUZH,
-      },
+      color: TailwindColorsUZH,
       fontFamily: {
         sans: ['Source Sans Pro', fontFamily.sans],
       },
@@ -25,5 +23,5 @@ export default {
     preflight: false,
     aspectRatio: false,
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: ['@tailwindcss/typography'],
 }

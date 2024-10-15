@@ -5,16 +5,17 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  processElementData,
+  processQuestionData,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Tag } from 'src/ops.js'
 import { ContextWithUser } from '../lib/context.js'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions.js'
+import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { DisplayMode } from '../types/app.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
@@ -160,6 +161,7 @@ interface QuestionOptionsArgs {
 
 interface ManipulateQuestionArgs {
   id?: number | null
+  status?: DB.ElementStatus | null
   type: DB.ElementType
   name?: string | null
   content?: string | null
@@ -172,6 +174,7 @@ interface ManipulateQuestionArgs {
 export async function manipulateQuestion(
   {
     id,
+    status,
     type,
     name,
     content,
@@ -212,6 +215,7 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
+      status: status ?? undefined,
       type,
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
@@ -239,9 +243,10 @@ export async function manipulateQuestion(
       },
     },
     update: {
+      status: status ?? undefined,
       name: name ?? undefined,
       content: content ?? undefined,
-      explanation: explanation ?? undefined,
+      explanation: typeof explanation === 'undefined' ? undefined : explanation,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,
@@ -533,6 +538,8 @@ export async function updateQuestionInstances(
   const instanceData: {
     instanceId: number
     multiplier: number
+    maxBonusPoints: number | undefined
+    timeToZeroBonus: number | undefined
     sessionId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
@@ -541,6 +548,8 @@ export async function updateQuestionInstances(
       {
         instanceId: number
         multiplier: number
+        maxBonusPoints: number | undefined
+        timeToZeroBonus: number | undefined
         sessionId: string | undefined
         practiceQuizId: string | undefined
         microLearningId: string | undefined
@@ -555,6 +564,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.sessionBlock.session.pointsMultiplier,
+            maxBonusPoints: instance.sessionBlock.session.maxBonusPoints,
+            timeToZeroBonus: instance.sessionBlock.session.timeToZeroBonus,
             sessionId: instance.sessionBlock.session.id,
             practiceQuizId: undefined,
             microLearningId: undefined,
@@ -567,6 +578,8 @@ export async function updateQuestionInstances(
       {
         instanceId: number
         multiplier: number
+        maxBonusPoints: number | undefined
+        timeToZeroBonus: number | undefined
         sessionId: string | undefined
         practiceQuizId: string | undefined
         microLearningId: string | undefined
@@ -581,6 +594,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.elementStack.microLearning.pointsMultiplier,
+            maxBonusPoints: undefined,
+            timeToZeroBonus: undefined,
             sessionId: undefined,
             practiceQuizId: undefined,
             microLearningId: instance.elementStack.microLearning.id,
@@ -597,6 +612,8 @@ export async function updateQuestionInstances(
           {
             instanceId: instance.id,
             multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+            maxBonusPoints: undefined,
+            timeToZeroBonus: undefined,
             sessionId: undefined,
             practiceQuizId: instance.elementStack.practiceQuiz.id,
             microLearningId: undefined,
@@ -614,6 +631,8 @@ export async function updateQuestionInstances(
         async ({
           instanceId,
           multiplier,
+          maxBonusPoints,
+          timeToZeroBonus,
           sessionId,
           practiceQuizId,
           microLearningId,
@@ -634,6 +653,8 @@ export async function updateQuestionInstances(
                 questionData: newQuestionData,
                 results: newResults,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
+                maxBonusPoints,
+                timeToZeroBonus,
               },
             })
 
@@ -661,6 +682,7 @@ export async function updateQuestionInstances(
               data: {
                 elementData: newQuestionData,
                 results: newResults,
+                anonymousResults: newResults,
                 options: {
                   ...oldInstance.options,
                   pointsMultiplier: multiplier * question.pointsMultiplier,
@@ -690,6 +712,7 @@ export async function updateQuestionInstances(
               data: {
                 elementData: newQuestionData,
                 results: newResults,
+                anonymousResults: newResults,
                 options: {
                   ...oldInstance.options,
                   pointsMultiplier: multiplier * question.pointsMultiplier,

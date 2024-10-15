@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
   GroupActivity,
@@ -23,6 +24,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
+  GroupMessage,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
@@ -46,7 +48,7 @@ import {
   QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementType } from './questionData.js'
+import { ElementStatus, ElementType } from './questionData.js'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -160,6 +162,37 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginParticipantMagicLink: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantMagicLink(args, ctx)
+        },
+      }),
+
+      activateParticipantAccount: t.id({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.activateParticipantAccount(args, ctx)
+        },
+      }),
+
+      sendMagicLink: t.boolean({
+        nullable: true,
+        args: {
+          usernameOrEmail: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
+          return AccountService.sendMagicLink(args, ctx)
+        },
+      }),
+
       // createParticipantAndJoinCourse: t.field({
       //   nullable: true,
       //   type: Participant,
@@ -197,6 +230,7 @@ export const Mutation = builder.mutationType({
             type: [StackResponseInput],
             required: true,
           }),
+          stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: (_, args, ctx) => {
           return PracticeQuizService.respondToElementStack(args, ctx)
@@ -217,10 +251,10 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishScheduledPracticeQuizzes: t.boolean({
+      publishScheduledActivities: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
+          return CourseService.publishScheduledActivities(ctx)
         },
       }),
 
@@ -235,6 +269,7 @@ export const Mutation = builder.mutationType({
           password: t.arg.string({ required: true }),
           email: t.arg.string({ required: true, validate: { email: true } }),
           isProfilePublic: t.arg.boolean({ required: true }),
+          courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
@@ -247,6 +282,7 @@ export const Mutation = builder.mutationType({
         type: ParticipantTokenData,
         args: {
           signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
@@ -256,6 +292,18 @@ export const Mutation = builder.mutationType({
 
       // ----- PARTICIPANT OPERATIONS
       // #region
+      addMessageToGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: GroupMessage,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.addMessageToGroup(args, ctx)
+        },
+      }),
+
       joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
@@ -293,9 +341,33 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinParticipantGroup: t.withAuth(asParticipant).field({
+      runningRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.runningRandomGroupAssignments(ctx)
+        },
+      }),
+
+      finalRandomGroupAssignments: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return GroupService.finalRandomGroupAssignments(ctx)
+        },
+      }),
+
+      manualRandomGroupAssignments: t.withAuth(asUser).field({
+        type: Course,
         nullable: true,
-        type: ParticipantGroup,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.manualRandomGroupAssignments(args, ctx)
+        },
+      }),
+
+      joinParticipantGroup: t.withAuth(asParticipant).string({
+        nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
           code: t.arg.int({ required: true }),
@@ -346,6 +418,18 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return GroupService.leaveParticipantGroup(args, ctx)
+        },
+      }),
+
+      renameParticipantGroup: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantGroup,
+        args: {
+          groupId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.renameParticipantGroup(args, ctx)
         },
       }),
 
@@ -432,6 +516,26 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      joinRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.joinRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
+      leaveRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return GroupService.leaveRandomCourseGroupPool(args, ctx)
+        },
+      }),
+
       bookmarkElementStack: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],
@@ -445,14 +549,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagElement: t.withAuth(asParticipant).string({
+      flagElement: t.withAuth(asParticipant).field({
+        type: ElementFeedback,
         nullable: true,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagElement(args, ctx)
+        },
+      }),
+
+      rateElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ElementFeedback,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
+          rating: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.rateElement(args, ctx)
         },
       }),
 
@@ -488,30 +607,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseColor: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          color: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseColor(args, ctx)
-        },
-      }),
-
-      changeCourseDescription: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          input: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseDescription(args, ctx)
-        },
-      }),
-
       enableCourseGamification: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -520,6 +615,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.enableGamification(args, ctx)
+        },
+      }),
+
+      deleteCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.deleteCourse(args, ctx)
         },
       }),
 
@@ -716,6 +822,8 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
+          maxBonusPoints: t.arg.int({ required: true }),
+          timeToZeroBonus: t.arg.int({ required: true }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
@@ -740,6 +848,8 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
+          maxBonusPoints: t.arg.int({ required: true }),
+          timeToZeroBonus: t.arg.int({ required: true }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
@@ -755,6 +865,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
@@ -773,6 +884,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -792,6 +904,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
@@ -812,6 +925,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -834,6 +948,7 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -871,7 +986,10 @@ export const Mutation = builder.mutationType({
           color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          isGroupCreationEnabled: t.arg.boolean({ required: true }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+          maxGroupSize: t.arg.int({ required: true }),
+          preferredGroupSize: t.arg.int({ required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: true },
@@ -883,16 +1001,39 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseDates: t.withAuth(asUserFullAccess).field({
+      updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
-          courseId: t.arg.string({ required: true }),
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: false }),
+          displayName: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          color: t.arg.string({ required: false }),
           startDate: t.arg({ type: 'Date', required: false }),
           endDate: t.arg({ type: 'Date', required: false }),
+          isGroupCreationEnabled: t.arg.boolean({ required: false }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: false },
+          }),
+          isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
-          return CourseService.changeCourseDates(args, ctx)
+          return CourseService.updateCourseSettings(args, ctx)
+        },
+      }),
+
+      toggleArchiveCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.toggleArchiveCourse(args, ctx)
         },
       }),
 
@@ -1102,6 +1243,20 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      extendMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.extendMicroLearning(args, ctx)
+          },
+        }),
+
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1142,6 +1297,20 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      extendGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.extendGroupActivity(args, ctx)
           },
         }),
 
@@ -1246,6 +1415,32 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.unpublishGroupActivity(args, ctx)
+          },
+        }),
+
+      openGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.openGroupActivity(args, ctx)
+          },
+        }),
+
+      endGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.endGroupActivity(args, ctx)
           },
         }),
 
