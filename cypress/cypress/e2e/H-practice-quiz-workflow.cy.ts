@@ -36,6 +36,7 @@ const scheduledDisplayName = 'Scheduled Practice Quiz'
 
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', () => {
+  // ! Part 0: Preparation - Question Creation
   it('Create questions required for practice quiz creation', () => {
     cy.loginLecturer()
 
@@ -118,6 +119,7 @@ describe('Different practice quiz workflows', () => {
     })
   })
 
+  // ! Part 1: Practice Quiz Creation
   it('Test the creation of a practice quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="questions"]').click()
@@ -469,6 +471,21 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
+  it('Cleanup: Delete the duplicated practice quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+
+    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${runningNameDupl}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).should(
+      'not.exist'
+    )
+  })
+
+  // ! Part 2: Running Practice Quiz
   it('Publish the practice quiz around the current time', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -588,124 +605,128 @@ describe('Different practice quiz workflows', () => {
       .click()
   })
 
-  // it('Publish the future practice quiz and verify scheduled state', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
-  //     messages.shared.generic.scheduled
-  //   )
-  // })
+  it('Cleanup: Delete the running practice quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
-  // it('Verify that scheduled practice quizzes are not visible to students', () => {
-  //   cy.loginStudent()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
+    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${runningName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).should(
+      'not.exist'
+    )
+  })
 
-  // it('Unpublish the practice quiz again on the lecturer view', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="unpublish-practiceQuiz-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
+  it('Verify that the running practice quiz is no longer visible to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${runningName}"]`).should('not.exist')
+  })
 
-  //   // change the availability start date of the practice quiz to the past
-  //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="edit-practice-quiz-${scheduledName}"]`).click()
-  //   cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
-  //     'exist'
-  //   )
-  //   cy.get('[data-cy="insert-practice-quiz-name"]').should(
-  //     'have.value',
-  //     scheduledName
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
-  //     'have.value',
-  //     scheduledDisplayName
-  //   )
-  //   cy.get('[data-cy="next-or-submit"]').click()
+  // ! Part 3: Future Practice Quiz
+  it('Publish the future practice quiz and verify scheduled state', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.scheduled
+    )
+  })
 
-  //   cy.get('[data-cy="select-available-from"]')
-  //     .click()
-  //     .type(`${currentYear - 1}-01-01T02:00`)
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="next-or-submit"]').click()
-  //   cy.get('[data-cy="load-session-list"]').click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
-  //     messages.shared.generic.draft
-  //   )
-  // })
+  it('Verify that scheduled practice quizzes are not visible to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
+      'not.exist'
+    )
+  })
 
-  // it('Check that immediate publication works for practice quizzes with past start dates', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
-  //   cy.get('[data-cy="confirm-publish-action"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
-  //     messages.shared.generic.published
-  //   )
-  // })
+  it('Unpublish the practice quiz again on the lecturer view', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="unpublish-practiceQuiz-${scheduledName}"]`).click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.draft
+    )
 
-  // it('Verify that the modified and published practice quiz is available to students', () => {
-  //   cy.loginStudent()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should('exist')
-  // })
+    // change the availability start date of the practice quiz to the past
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="edit-practice-quiz-${scheduledName}"]`).click()
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+    cy.get('[data-cy="insert-practice-quiz-name"]').should(
+      'have.value',
+      scheduledName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
+      'have.value',
+      scheduledDisplayName
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
 
-  // it('Cleanup: Delete all created practice quizzes', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="courses"]').click()
-  //   cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-  //   cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get('[data-cy="select-available-from"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
 
-  //   // delete the running practice quiz
-  //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
-  //   cy.get(`[data-cy="delete-practice-quiz-${runningName}"]`).click()
-  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should('be.disabled')
-  //   cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).should(
-  //     'not.exist'
-  //   )
+  it('Check that immediate publication works for practice quizzes with past start dates', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+      messages.shared.generic.published
+    )
+  })
 
-  //   // delete the scheduled practice quiz
-  //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="delete-practice-quiz-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).should(
-  //     'not.exist'
-  //   )
+  it('Verify that the modified and published practice quiz is available to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should('exist')
+  })
 
-  //   // delete the duplicated practice quiz
-  //   cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).click()
-  //   cy.get(`[data-cy="delete-practice-quiz-${runningNameDupl}"]`).click()
-  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-  //   cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
+  it('Cleanup: Delete the scheduled practice quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
-  // it('Check that none of the deleted practice quizzes are visible to students', () => {
-  //   cy.loginStudent()
-  //   cy.get('[data-cy="quizzes"]').click()
-  //   cy.get(`[data-cy="practice-quiz-${runningName}"]`).should('not.exist')
-  //   cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${scheduledName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Verify that the scheduled practice quiz is not visible to students', () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
+      'not.exist'
+    )
+  })
 })
