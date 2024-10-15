@@ -340,7 +340,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
         <Toast
           dismissible
           openExternal={copiedPassword}
-          setOpenExternal={setCopiedPassword}
+          onCloseExternal={() => setCopiedPassword(false)}
           type="success"
           duration={4000}
         >

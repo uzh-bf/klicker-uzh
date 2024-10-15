@@ -2,7 +2,7 @@ import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
-import DeletionItem from '../../common/DeletionItem'
+import ConfirmationItem from '../../common/ConfirmationItem'
 import { CourseDeletionConfirmationType } from './CourseDeletionModal'
 
 interface CourseDeletionConfirmationsProps {
@@ -25,7 +25,7 @@ function CourseDeletionConfirmations({
         message={t('manage.courseList.courseDeletionMessage')}
         className={{ root: 'mb-1 text-base' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfParticipations === 0
             ? t('manage.courseList.noParticipationsToDelete')
@@ -41,9 +41,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deleteParticipations}
         notApplicable={summary.numOfParticipations === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-participations-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfLiveQuizzes === 0
             ? t('manage.courseList.noLiveQuizzesDisconnected')
@@ -59,9 +60,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.disconnectLiveQuizzes}
         notApplicable={summary.numOfLiveQuizzes === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-live-quiz-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfPracticeQuizzes === 0
             ? t('manage.courseList.noPracticeQuizzesToDelete')
@@ -77,9 +79,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deletePracticeQuizzes}
         notApplicable={summary.numOfPracticeQuizzes === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-practice-quiz-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfMicroLearnings === 0
             ? t('manage.courseList.noMicroLearningsToDelete')
@@ -95,9 +98,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deleteMicroLearnings}
         notApplicable={summary.numOfMicroLearnings === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-micro-learning-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfGroupActivities === 0
             ? t('manage.courseList.noGroupActivitiesToDelete')
@@ -113,9 +117,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deleteGroupActivities}
         notApplicable={summary.numOfGroupActivities === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-group-activity-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfParticipantGroups === 0
             ? t('manage.courseList.noParticipantGroupsToDelete')
@@ -131,9 +136,10 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deleteParticipantGroups}
         notApplicable={summary.numOfParticipantGroups === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-participant-group-confirm' }}
       />
-      <DeletionItem
+      <ConfirmationItem
         label={
           summary.numOfLeaderboardEntries === 0
             ? t('manage.courseList.noLeaderboardEntriesToDelete')
@@ -149,6 +155,7 @@ function CourseDeletionConfirmations({
         }}
         confirmed={confirmations.deleteLeaderboardEntries}
         notApplicable={summary.numOfLeaderboardEntries === 0}
+        confirmationType="delete"
         data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
       />
     </div>

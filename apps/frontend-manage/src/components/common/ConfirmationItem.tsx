@@ -8,19 +8,23 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-function DeletionItem({
-  label,
-  confirmed,
-  notApplicable,
-  onClick,
-  data,
-}: {
+interface ConfirmationItemProps {
   label: string
   confirmed: boolean
   notApplicable: boolean
   onClick: () => void
+  confirmationType?: 'confirm' | 'delete'
   data?: { cy?: string; test?: string }
-}) {
+}
+
+function ConfirmationItem({
+  label,
+  confirmed,
+  notApplicable,
+  onClick,
+  confirmationType = 'confirm',
+  data,
+}: ConfirmationItemProps) {
   const t = useTranslations()
 
   return (
@@ -50,7 +54,12 @@ function DeletionItem({
       ) : (
         <Button
           onClick={onClick}
-          className={{ root: 'h-7 border-red-600' }}
+          className={{
+            root: twMerge(
+              'border-primary-100 h-7',
+              confirmationType === 'delete' && 'border-red-600'
+            ),
+          }}
           data={data}
         >
           {t('shared.generic.confirm')}
@@ -60,4 +69,4 @@ function DeletionItem({
   )
 }
 
-export default DeletionItem
+export default ConfirmationItem

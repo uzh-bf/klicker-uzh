@@ -202,6 +202,7 @@ type Course {
   name: String!
   notificationEmail: String
   numOfActiveParticipants: Int
+  numOfParticipantGroups: Int
   numOfParticipants: Int
   owner: User
   participantGroups: [ParticipantGroup!]
@@ -576,6 +577,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
+  status: GroupActivityStatus!
 }
 
 type GroupActivityGrading {
@@ -621,6 +623,7 @@ type GroupActivityResults {
 
 enum GroupActivityStatus {
   DRAFT
+  ENDED
   GRADED
   PUBLISHED
   SCHEDULED
@@ -794,6 +797,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
+  endGroupActivity(id: String!): GroupActivity
   endSession(id: String!): Session
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
@@ -823,6 +827,7 @@ type Mutation {
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -1104,8 +1109,10 @@ type Query {
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
+  groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
+  groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
@@ -1355,7 +1362,10 @@ type Subscription {
   feedbackCreated(sessionId: String!): Feedback!
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
+  groupActivityEnded(courseId: String!): GroupActivity!
+  groupActivityStarted(courseId: String!): GroupActivity!
   runningSessionUpdated(sessionId: String!): SessionBlock
+  singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 
 input SubscriptionKeysInput {

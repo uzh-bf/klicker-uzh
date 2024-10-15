@@ -70,7 +70,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
         dismissible
         type="error"
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
         duration={8000}
       >
         {t('pwa.profile.editProfileFailed')}
@@ -79,7 +79,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
         dismissible
         type="success"
         openExternal={showSuccess}
-        setOpenExternal={setShowSuccess}
+        onCloseExternal={() => setShowSuccess(false)}
         duration={4000}
       >
         {t('pwa.profile.editProfileSuccess')}

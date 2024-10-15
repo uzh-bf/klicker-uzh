@@ -1,23 +1,27 @@
-import { useQuery } from '@apollo/client'
-import DeletionItem from '@components/common/DeletionItem'
-import { GetGroupActivitySummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  DeleteGroupActivityDocument,
+  GetGroupActivitySummaryDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import ActivityDeletionModal from './ActivityDeletionModal'
+import ConfirmationItem from '../../common/ConfirmationItem'
+import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface GroupActivityDeletionModalProps {
+interface GroupActivityConfirmationModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   courseId: string
 }
 
-function GroupActivityDeletionModal({
+function GroupActivityConfirmationModal({
   open,
   setOpen,
   activityId,
   courseId,
-}: GroupActivityDeletionModalProps) {
+}: GroupActivityConfirmationModalProps) {
   const t = useTranslations()
   const {
     data: summaryData,
@@ -27,6 +31,25 @@ function GroupActivityDeletionModal({
     variables: { id: activityId },
     skip: !open,
   })
+
+  const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
+    DeleteGroupActivityDocument,
+    {
+      variables: {
+        id: activityId,
+      },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteGroupActivity: {
+          __typename: 'GroupActivity',
+          id: activityId,
+        },
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId } },
+      ],
+    }
+  )
 
   const [confirmations, setConfirmations] = useState({
     deleteStartedInstances: false,
@@ -56,19 +79,19 @@ function GroupActivityDeletionModal({
   const summary = summaryData.getGroupActivitySummary
 
   return (
-    <ActivityDeletionModal
+    <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
-      activityId={activityId}
-      activityType="GroupActivity"
-      courseId={courseId}
+      onSubmit={async () => await deleteGroupActivity()}
+      submitting={deletingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
+      confirmationType="delete"
     >
       <div className="flex flex-col gap-2">
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfStartedInstances === 0
               ? t('manage.course.noStartedInstancesToDelete')
@@ -84,9 +107,10 @@ function GroupActivityDeletionModal({
           }}
           confirmed={confirmations.deleteStartedInstances}
           notApplicable={summary.numOfStartedInstances === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-started-instances' }}
         />
-        <DeletionItem
+        <ConfirmationItem
           label={
             summary.numOfSubmissions === 0
               ? t('manage.course.noSubmissionsToDelete')
@@ -102,11 +126,12 @@ function GroupActivityDeletionModal({
           }}
           confirmed={confirmations.deleteSubmissions}
           notApplicable={summary.numOfSubmissions === 0}
+          confirmationType="delete"
           data={{ cy: 'confirm-deletion-submissions' }}
         />
       </div>
-    </ActivityDeletionModal>
+    </ActivityConfirmationModal>
   )
 }
 
-export default GroupActivityDeletionModal
+export default GroupActivityConfirmationModal

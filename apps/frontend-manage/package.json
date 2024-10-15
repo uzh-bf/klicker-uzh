@@ -1,11 +1,11 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.2.0-rc.4",
+  "version": "3.2.0",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@apollo/client": "3.8.3",
     "@azure/storage-blob": "12.24.0",
+    "@apollo/client": "3.11.8",
     "@fortawesome/fontawesome-svg-core": "6.6.0",
     "@fortawesome/free-brands-svg-icons": "6.4.2",
     "@fortawesome/free-regular-svg-icons": "6.6.0",
@@ -19,7 +19,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.6.1",
     "@tanstack/react-table": "8.20.5",
-    "@uzh-bf/design-system": "3.0.0-alpha.31",
+    "@uzh-bf/design-system": "3.0.0-alpha.32",
     "d3": "7.8.4",
     "dayjs": "1.11.12",
     "deepmerge": "4.3.1",

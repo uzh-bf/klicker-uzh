@@ -6,12 +6,16 @@ import GroupActivityElement from './GroupActivityElement'
 interface GroupActivityListProps {
   groupActivities: (Partial<GroupActivity> &
     Pick<GroupActivity, 'id' | 'name'>)[]
+  groupDeadlineDate: Date
+  numOfParticipantGroups: number
   courseId: string
   userCatalyst?: boolean
 }
 
 function GroupActivityList({
   groupActivities,
+  groupDeadlineDate,
+  numOfParticipantGroups,
   courseId,
   userCatalyst,
 }: GroupActivityListProps) {
@@ -24,6 +28,8 @@ function GroupActivityList({
           {groupActivities.map((groupActivity) => (
             <GroupActivityElement
               groupActivity={groupActivity}
+              groupDeadlineDate={groupDeadlineDate}
+              numOfParticipantGroups={numOfParticipantGroups}
               courseId={courseId}
               key={groupActivity.id}
             />

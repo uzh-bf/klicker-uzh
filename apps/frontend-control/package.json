@@ -1,10 +1,10 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.2.0-rc.4",
+  "version": "3.2.0",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@apollo/client": "3.8.3",
+    "@apollo/client": "3.11.8",
     "@fortawesome/fontawesome-svg-core": "6.6.0",
     "@fortawesome/free-regular-svg-icons": "6.6.0",
     "@fortawesome/free-solid-svg-icons": "6.6.0",
@@ -18,7 +18,7 @@
     "@sentry/nextjs": "7.61.1",
     "@socialgouv/matomo-next": "1.6.1",
     "@types/js-cookie": "^3.0.3",
-    "@uzh-bf/design-system": "3.0.0-alpha.31",
+    "@uzh-bf/design-system": "3.0.0-alpha.32",
     "body-parser": "1.20.2",
     "cross-env": "7.0.3",
     "dayjs": "1.11.12",

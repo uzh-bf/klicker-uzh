@@ -676,9 +676,9 @@ describe('Different practice quiz workflows', () => {
   //   cy.get('[data-cy="tab-practiceQuizzes"]').click()
   //   cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
   //   cy.get(`[data-cy="delete-practice-quiz-${runningName}"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should('be.disabled')
   //   cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
   //   cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).should(
   //     'not.exist'
   //   )
@@ -686,7 +686,7 @@ describe('Different practice quiz workflows', () => {
   //   // delete the scheduled practice quiz
   //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
   //   cy.get(`[data-cy="delete-practice-quiz-${scheduledName}"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
   //   cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).should(
   //     'not.exist'
   //   )
@@ -694,7 +694,7 @@ describe('Different practice quiz workflows', () => {
   //   // delete the duplicated practice quiz
   //   cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).click()
   //   cy.get(`[data-cy="delete-practice-quiz-${runningNameDupl}"]`).click()
-  //   cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+  //   cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
   //   cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).should(
   //     'not.exist'
   //   )

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.2.0-rc.4",
+  "version": "3.2.0",
   "license": "AGPL-3.0",
   "dependencies": {
     "@docusaurus/core": "3.5.2",
@@ -22,7 +22,7 @@
     "@mdx-js/react": "3.0.1",
     "@tailwindcss/typography": "0.5.9",
     "@tsconfig/docusaurus": "1.0.5",
-    "@uzh-bf/design-system": "3.0.0-alpha.31",
+    "@uzh-bf/design-system": "3.0.0-alpha.32",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
     "nodemon": "3.0.1",

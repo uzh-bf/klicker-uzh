@@ -62,8 +62,6 @@ function GroupActivityGrading() {
       [...(groupActivity?.activityInstances || [])].sort((a, b) => {
         if (a.decisions && !b.decisions) return -1
         if (!a.decisions && b.decisions) return 1
-        if (a.results && !b.results) return 1
-        if (!a.results && b.results) return -1
         if (a.decisionsSubmittedAt && b.decisionsSubmittedAt)
           return dayjs(a.decisionsSubmittedAt).diff(
             dayjs(b.decisionsSubmittedAt)
@@ -104,13 +102,17 @@ function GroupActivityGrading() {
               />
             ) : (
               <>
-                {submissions.map((submission) => (
+                {submissions.map((submission, ix) => (
                   <GroupActivitySubmission
                     key={submission.id}
+                    activityIndex={ix}
                     submission={submission as GroupActivityInstance}
                     selectedSubmission={selectedSubmission}
                     selectSubmission={(submissionId: number) => {
-                      if (currentEditing) {
+                      if (
+                        currentEditing &&
+                        groupActivity.status !== GroupActivityStatus.Graded
+                      ) {
                         setSwitchingModal(true)
                         setNextSubmission(submissionId)
                       } else {

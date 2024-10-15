@@ -195,20 +195,6 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
-            groupActivities: {
-              where: {
-                status: {
-                  in: [
-                    GroupActivityStatus.PUBLISHED,
-                    GroupActivityStatus.GRADED,
-                  ],
-                },
-                isDeleted: false,
-              },
-              orderBy: {
-                scheduledStartAt: 'asc',
-              },
-            },
           },
         },
         participant: {
@@ -222,15 +208,6 @@ export async function getCourseOverviewData(
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
-    })
-
-    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
-      where: {
-        groupId: {
-          in:
-            participation?.participant.participantGroups.map((g) => g.id) ?? [],
-        },
-      },
     })
 
     const lbEntries =
@@ -369,7 +346,6 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
-        groupActivityInstances,
         inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
@@ -734,6 +710,9 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
+      _count: {
+        select: { participantGroups: true },
+      },
       sessions: {
         where: {
           isDeleted: false,
@@ -895,6 +874,7 @@ export async function getCourseData(
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
+    numOfParticipantGroups: course._count.participantGroups,
     leaderboard: activeLBEntries,
     averageActiveScore,
   }
@@ -1143,6 +1123,43 @@ export async function publishScheduledActivities(ctx: Context) {
   }
 
   updatedGroupActivities.forEach((group) => {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: group.id,
+    })
+  })
+
+  // ! Set group activity status to ended for all published group activities that have ended
+  const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
+    where: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledEndAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedGroupActivitiesToEnd = await Promise.all(
+    groupActivitiesToEnd.map((group) =>
+      ctx.prisma.groupActivity.update({
+        where: {
+          id: group.id,
+        },
+        data: {
+          status: GroupActivityStatus.ENDED,
+        },
+      })
+    )
+  )
+
+  if (updatedGroupActivitiesToEnd.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/endGroupActivities',
+      `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
+    )
+  }
+
+  updatedGroupActivitiesToEnd.forEach((group) => {
     ctx.emitter.emit('invalidate', {
       typename: 'GroupActivity',
       id: group.id,

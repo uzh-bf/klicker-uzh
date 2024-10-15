@@ -24,6 +24,7 @@ import InstanceHeader from '../practiceQuiz/InstanceHeader'
 
 interface GroupActivityStackProps {
   activityId: number
+  activityEnded: boolean
   stack: ElementStack
   decisions?: GroupActivityDecision[]
   results: GroupActivityResults
@@ -32,6 +33,7 @@ interface GroupActivityStackProps {
 
 function GroupActivityStack({
   activityId,
+  activityEnded,
   stack,
   decisions,
   results,
@@ -180,7 +182,7 @@ function GroupActivityStack({
                   studentResponse={studentResponse}
                   setStudentResponse={setStudentResponse}
                   hideReadButton
-                  disabledInput={!!decisions}
+                  disabledInput={!!decisions || activityEnded}
                 />
                 {grading && correctness && (
                   <div
@@ -223,14 +225,16 @@ function GroupActivityStack({
             )
           })}
       </div>
-      {!decisions ? (
+      {!decisions && !activityEnded ? (
         <Button
           className={{
             root: 'float-right mt-4 text-lg font-bold',
           }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
+          disabled={
+            Object.values(studentResponse).some(
+              (response) => !response.valid
+            ) || activityEnded
+          }
           onClick={async () => {
             const result = await submitGroupActivityDecisions({
               variables: {
@@ -298,14 +302,15 @@ function GroupActivityStack({
         >
           {t('pwa.groupActivity.sendAnswers')}
         </Button>
-      ) : (
+      ) : null}
+      {!!decisions ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,
             date: submittedAt,
           })}
         </div>
-      )}
+      ) : null}
     </>
   )
 }

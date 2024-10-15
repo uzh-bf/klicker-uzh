@@ -796,17 +796,21 @@ describe('Different microlearning workflows', () => {
     // delete the running microlearning
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should(
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
       'not.be.disabled'
     )
-    cy.get(`[data-cy="activity-deletion-modal-cancel"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${runningMLName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).should(
       'not.exist'
     )
@@ -818,7 +822,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).should(
       'not.exist'
     )
@@ -826,9 +830,11 @@ describe('Different microlearning workflows', () => {
     // delete the microlearning with all element types
     cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${completeMLName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${completeMLName}"]`).should(
       'not.exist'
     )
@@ -841,7 +847,7 @@ describe('Different microlearning workflows', () => {
     cy.get(
       `[data-cy="delete-practice-quiz-${convertedPracticeQuizName}"]`
     ).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${convertedPracticeQuizName}"]`
     ).should('not.exist')
@@ -850,7 +856,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${duplicatedMLName}"]`).click()
-    cy.get(`[data-cy="activity-deletion-modal-confirm"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${duplicatedMLName}"]`).should(
       'not.exist'
     )
