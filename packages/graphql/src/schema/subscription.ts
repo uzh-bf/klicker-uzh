@@ -99,6 +99,19 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload,
       }),
 
+      groupActivityStarted: t.field({
+        type: GroupActivityRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('groupActivityStarted'),
+            filter((data) => data.courseId === args.courseId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
       singleGroupActivityEnded: t.field({
         type: GroupActivityRef,
         args: {

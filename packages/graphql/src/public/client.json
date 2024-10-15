@@ -169,6 +169,7 @@
    "FeedbackRemoved": "483f0c5d7011474da36ec8feb384ec2f9e5877a4283f75f6718da405e616bab6",
    "FeedbackUpdated": "8df9b3d8231f9e1e79dc90873dd080f34b67c7ecb14642babb6c6e482926e912",
    "GroupActivityEnded": "0ad24543da1344f7c15139865c767cfdd51952a6a1630f3e080a14e577852b2f",
+   "GroupActivityStarted": "68ba757fcf30a19c49cfdb2d47e803a0a4f0ed3ecf60a30e0b7ea3390ae0cf20",
    "RunningSessionUpdated": "c33f4cf2085920e7b73eac860c5011a6bc3c0fb8fc65db08af50853e9cee9f94",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
    "UpdateParticipantAvatar": "ea07d0ab75a016dd988627fcd6de74bdba36de21c8c2c6b59e4a8a7488758519"

@@ -56,6 +56,9 @@ function CourseOverview({
   const [endedGroupActivity, setEndedGroupActivity] = useState<
     string | undefined
   >(undefined)
+  const [startedGroupActivity, setStartedGroupActivity] = useState<
+    string | undefined
+  >(undefined)
 
   useParticipantToken({
     participantToken,
@@ -166,6 +169,7 @@ function CourseOverview({
             courseId={courseId}
             subscribeToMore={subscribeToMore}
             setEndedGroupActivity={setEndedGroupActivity}
+            setStartedGroupActivity={setStartedGroupActivity}
           />
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
             <Tabs
@@ -492,10 +496,20 @@ function CourseOverview({
         className={{ root: 'max-w-[30rem]' }}
         dismissible
       >
-        {t('pwa.courses.groupActivityEnded', {
-          activityName: course.groupActivities?.find(
-            (activity) => activity.id === endedGroupActivity
-          )?.displayName,
+        {t('pwa.courses.groupActivityEndedToast', {
+          activityName: endedGroupActivity,
+        })}
+      </Toast>
+      <Toast
+        type="success"
+        openExternal={typeof startedGroupActivity !== 'undefined'}
+        onCloseExternal={() => setStartedGroupActivity(undefined)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityStartedToast', {
+          activityName: startedGroupActivity,
         })}
       </Toast>
     </Layout>

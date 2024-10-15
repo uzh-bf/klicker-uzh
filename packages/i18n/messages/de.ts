@@ -505,8 +505,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
-      groupActivityEnded:
+      groupActivityEndedToast:
         'Gruppenaktivität "{activityName}" beendet, keine weiteren Einreichungen möglich.',
+      groupActivityStartedToast:
+        'Die Gruppenaktivität "{activityName}" hat begonnen. Startet sie jetzt!',
       coursePracticeArea:
         'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },

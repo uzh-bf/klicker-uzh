@@ -40,7 +40,7 @@ interface GroupViewProps {
   }
   participation: Omit<Participation, 'completedMicroLearnings'>
   participant: Omit<Participant, 'isActive' | 'locale' | 'participantGroups'>
-  groupActivities: Omit<GroupActivity, 'name' | 'status'>[]
+  groupActivities: Omit<GroupActivity, 'name'>[]
   groupActivityInstances: Record<string, GroupActivityInstance>
   courseId: string
   maxGroupSize: number
