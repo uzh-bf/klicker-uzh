@@ -14,6 +14,9 @@ services:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
+    # TODO: test that it still runs with this, otherwise separate linux container
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
 
   reverse_proxy_wsl:
     image: docker.io/library/traefik:v2.10
