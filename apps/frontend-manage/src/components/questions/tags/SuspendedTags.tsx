@@ -52,10 +52,10 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
         return search.search(searchInput) as Tag[]
       }
 
-      return data.userTags as Tag[]
+      return data.userTags
     }
 
-    return [] as Tag[]
+    return []
   }, [data?.userTags, searchInput])
 
   if (error) {
