@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.0...v3.3.0-alpha.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* ensure that feedback and response interactions return correct mutation content and trigger subscriptions ([#4309](https://github.com/uzh-bf/klicker-uzh/issues/4309)) ([140cabd](https://github.com/uzh-bf/klicker-uzh/commit/140cabd1636f2cbb49606aca30390ae8933ab85d))
+
+## [3.3.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0...v3.3.0-alpha.0) (2024-10-16)
+
+
+### Features
+
+* add possibility to end group activity manually and introduce additional ended status ([#4303](https://github.com/uzh-bf/klicker-uzh/issues/4303)) ([fa6c196](https://github.com/uzh-bf/klicker-uzh/commit/fa6c196f8225e976b2d9ea656ed8b9f6a585dcc6))
+* add possibility to start group activity synchronously before scheduled start date ([#4306](https://github.com/uzh-bf/klicker-uzh/issues/4306)) ([3e9b53e](https://github.com/uzh-bf/klicker-uzh/commit/3e9b53e93d0eb1f183f2aa81a0e65f4ad9cc3718))
+
+
+### Refactors
+
+* **cypress:** improve structure of test suite and separate deletion steps ([#4307](https://github.com/uzh-bf/klicker-uzh/issues/4307)) ([ef4e2d4](https://github.com/uzh-bf/klicker-uzh/commit/ef4e2d4611acf27667e3b3ed529106352addaacc))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show scheduled activities on group activity list ([#4308](https://github.com/uzh-bf/klicker-uzh/issues/4308)) ([77fdd39](https://github.com/uzh-bf/klicker-uzh/commit/77fdd39682109149324e115ba77dcac193973d21))
+* resolve seed-dependency of group activity through extended test suite ([#4305](https://github.com/uzh-bf/klicker-uzh/issues/4305)) ([dd00908](https://github.com/uzh-bf/klicker-uzh/commit/dd00908932eb6dc18201d9811636765d795dbf4e))
+
 ## [3.2.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.5...v3.2.0) (2024-10-09)
 
 ## [3.2.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.4...v3.2.0-rc.5) (2024-10-09)
