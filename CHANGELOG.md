@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.0...v3.3.0-alpha.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* ensure that feedback and response interactions return correct mutation content and trigger subscriptions ([#4309](https://github.com/uzh-bf/klicker-uzh/issues/4309)) ([140cabd](https://github.com/uzh-bf/klicker-uzh/commit/140cabd1636f2cbb49606aca30390ae8933ab85d))
+
 ## [3.3.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0...v3.3.0-alpha.0) (2024-10-16)
 
 
