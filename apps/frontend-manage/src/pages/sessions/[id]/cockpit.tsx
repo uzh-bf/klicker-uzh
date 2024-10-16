@@ -13,15 +13,12 @@ import { useState } from 'react'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const t = useTranslations()
-
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
@@ -37,6 +34,9 @@ function Cockpit() {
     ],
   })
 
+  // TODO: when refactoring this code to be compatible with the new live quiz setup,
+  // think about modifying this logic to only refetch the required live quiz elements
+  // regularly (feedbacks should be handled entirely through subscriptions, etc.)
   const {
     loading: cockpitLoading,
     error: cockpitError,

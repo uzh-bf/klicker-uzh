@@ -1,5 +1,18 @@
 mutation DeleteFeedbackResponse($id: Int!) {
   deleteFeedbackResponse(id: $id) {
     id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+    createdAt
+    resolvedAt
+    responses {
+      id
+      content
+      positiveReactions
+      negativeReactions
+    }
   }
 }
