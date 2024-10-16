@@ -2,13 +2,16 @@ import {
   faCheck,
   faHourglassEnd,
   faHourglassStart,
-  faPlay,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { H3 } from '@uzh-bf/design-system'
 
-import { faClock } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faFileLines,
+  faPlayCircle,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   GroupActivity,
   GroupActivityInstance,
@@ -73,6 +76,13 @@ function GroupActivityList({
                 </div>
               </div>
 
+              {activity.status === GroupActivityStatus.Scheduled && (
+                <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-orange-300 px-2 py-0.5 text-sm">
+                  <FontAwesomeIcon icon={faClock} />
+                  <div>{t('shared.generic.scheduled')}</div>
+                </div>
+              )}
+
               {activity.status === GroupActivityStatus.Published && (
                 <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
@@ -84,7 +94,7 @@ function GroupActivityList({
                     }}
                   />
                   <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-green-300 px-2 py-0.5 text-sm">
-                    <FontAwesomeIcon icon={faPlay} />
+                    <FontAwesomeIcon icon={faPlayCircle} />
                     <div>
                       {!groupActivityInstances[activity.id]?.id
                         ? t('pwa.groupActivity.available')
@@ -120,7 +130,7 @@ function GroupActivityList({
                   >
                     {existingSubmission ? (
                       <>
-                        <FontAwesomeIcon icon={faClock} />
+                        <FontAwesomeIcon icon={faFileLines} />
                         <div>{t('pwa.groupActivity.submitted')}</div>
                       </>
                     ) : (
