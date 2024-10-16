@@ -1086,8 +1086,11 @@ describe('Create and solve a group activity', () => {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${testCourse}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
+    cy.get(`[data-cy="group-activity-${synchronousActivityDisplayName}"]`)
+      .should('exist')
+      .contains(messages.shared.generic.scheduled)
     cy.get(
-      `[data-cy="group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
     ).should('not.exist')
   })
 

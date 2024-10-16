@@ -1754,6 +1754,7 @@ export async function getCourseGroupActivities(
         where: {
           status: {
             in: [
+              GroupActivityStatus.SCHEDULED,
               GroupActivityStatus.PUBLISHED,
               GroupActivityStatus.ENDED,
               GroupActivityStatus.GRADED,
