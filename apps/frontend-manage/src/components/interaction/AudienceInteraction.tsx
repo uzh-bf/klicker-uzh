@@ -12,6 +12,7 @@ import {
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
+  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2, Switch } from '@uzh-bf/design-system'
@@ -53,12 +54,21 @@ function AudienceInteraction({
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { cockpitSession: Session },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackCreated
+        const updatedSession = {
+          ...prev.cockpitSession,
+          feedbacks: [newItem, ...(prev.cockpitSession.feedbacks ?? [])],
+        }
+
         return {
-          ...prev,
-          feedbacks: [newItem, ...prev.cockpitSession.feedbacks],
+          cockpitSession: updatedSession,
         }
       },
     })
