@@ -26,13 +26,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node ${{ env.NODE_VERSION }} Environment
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9.10.0
           run_install: true
-
-      - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v2
 
       - name: Build all packages and apps
         run: |
