@@ -33,8 +33,6 @@ function CourseSelectionMonitorPracticeQuiz({
       }
 
       setCourseGamified(course.isGamified)
-
-      // TODO: spread previous value here and in all other uses of setTouched
       setTouched({
         availableFrom: true,
         courseStartDate: true,
