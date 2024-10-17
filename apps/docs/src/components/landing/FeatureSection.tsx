@@ -1,40 +1,39 @@
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react'
 interface Feature {
-  title: string;
-  icon: any; // You can specify the correct type for FontAwesomeIcon
-  text: string;
-  hoverImage: string;
-  shadow?: boolean;
+  title: string
+  icon: IconDefinition
+  text: string
+  hoverImage: string
+  shadow?: boolean
 }
 
 interface FeatureSectionProps {
-  title: string;
-  description: string;
-  features: Feature[];
+  title: string
+  description: string
+  features: Feature[]
 }
 
-function FeatureSection({ title, description, features }: FeatureSectionProps) { 
-  const [hoveredImage, setHoveredImage] = useState(features[0]?.hoverImage || '');
-  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(features[0]); // Set the first feature as default
+function FeatureSection({ title, description, features }: FeatureSectionProps) {
+  const [hoveredImage, setHoveredImage] = useState(
+    features[0]?.hoverImage || ''
+  )
+  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(
+    features[0]
+  ) // Set the first feature as default
 
   useEffect(() => {
     if (features.length > 0) {
-      setHoveredImage(features[0].hoverImage);
-      setHoveredFeature(features[0]); // Initialize with the first feature
+      setHoveredImage(features[0].hoverImage)
+      setHoveredFeature(features[0]) // Initialize with the first feature
     }
-  }, [features]);
+  }, [features])
 
   const handleMouseEnter = (feature: Feature) => {
-    setHoveredImage(feature.hoverImage);
-    setHoveredFeature(feature);
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredFeature(features[0]); // Reset to first feature when mouse leaves
-    setHoveredImage(features[0].hoverImage); // Reset image to first feature's image
-  };
+    setHoveredImage(feature.hoverImage)
+    setHoveredFeature(feature)
+  }
 
   return (
     <div className="overflow-hidden bg-white py-16 sm:py-24">
@@ -48,13 +47,12 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               <p className="mt-6 text-lg leading-8 text-gray-600">
                 {description}
               </p>
-              <dl className=" mt-10 max-w-xl space-y-8 text-base leading-7  text-gray-600 lg:max-w-none">
+              <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
                 {features.map((feature) => (
                   <div
                     key={feature.title}
-                    className={`relative pl-9 p-6 ${hoveredFeature === feature ? 'shadow-xl rounded-xl' : ''}`} // Add shadow if hovered
+                    className={`relative p-6 pl-9 ${hoveredFeature === feature ? 'rounded-xl shadow-xl' : ''}`} // Add shadow if hovered
                     onMouseEnter={() => handleMouseEnter(feature)}
-                    onMouseLeave={handleMouseLeave}
                   >
                     <dt className="inline font-semibold text-gray-900">
                       <FontAwesomeIcon
@@ -70,21 +68,19 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               </dl>
             </div>
           </div>
-          <div className="flex justify-center items-center p-0">
-            <div className=''>
+          <div className="flex items-center justify-center p-0">
+            <div className="">
               <img
                 src={hoveredImage}
                 alt="Feature specific screenshot"
-                className={`object-contain max-h-[400px] p-4 w-full h-auto 
-                  ${hoveredFeature?.shadow ? 'rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
+                className={`h-auto max-h-[400px] w-full object-contain p-4 ${hoveredFeature?.shadow ? 'rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
               />
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-
-export default FeatureSection;
+export default FeatureSection
