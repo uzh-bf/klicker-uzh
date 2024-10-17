@@ -190,7 +190,7 @@ function Session({ session }: SessionProps) {
                   SessionStatus.Scheduled === session.status) && (
                   <Button
                     basic
-                    loading={startingQuiz}
+                    disabled={startingQuiz}
                     onClick={async () => {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)

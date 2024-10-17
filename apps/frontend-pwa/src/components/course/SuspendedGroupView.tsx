@@ -347,7 +347,6 @@ function SuspendedGroupView({
                       cy: 'group-message-submit',
                     }}
                     disabled={!isValid || isSubmitting}
-                    loading={isSubmitting}
                   >
                     <FontAwesomeIcon icon={faPaperPlane} className="mr-0.5" />
                   </Button>

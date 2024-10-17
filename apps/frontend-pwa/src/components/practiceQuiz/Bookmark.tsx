@@ -68,7 +68,7 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
 
   return (
     <Button
-      loading={bookmarkingStack}
+      disabled={bookmarkingStack}
       onClick={() => bookmarkElementStack()}
       data={{ cy: 'bookmark-element-stack' }}
       className={{

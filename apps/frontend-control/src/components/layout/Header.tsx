@@ -37,7 +37,7 @@ function Header({ title }: HeaderProps) {
         />
         <Button
           basic
-          loading={loggingOut}
+          disabled={loggingOut}
           onClick={async () => {
             const userIdLogout = await logoutUser()
             userIdLogout.data?.logoutUser

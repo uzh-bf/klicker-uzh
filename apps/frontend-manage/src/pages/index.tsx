@@ -327,7 +327,7 @@ function Index() {
                     <>
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
-                          loading={toggelingArchive}
+                          disabled={toggelingArchive}
                           className={{
                             root: 'ml-1 h-10',
                           }}

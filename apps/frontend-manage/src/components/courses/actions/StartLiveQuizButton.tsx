@@ -19,7 +19,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
   return (
     <Button
       basic
-      loading={startingSession}
+      disabled={startingSession}
       onClick={async () => {
         try {
           await startSession({

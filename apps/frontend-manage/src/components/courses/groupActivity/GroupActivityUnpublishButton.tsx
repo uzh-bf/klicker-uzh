@@ -35,12 +35,12 @@ function GroupActivityUnpublishButton({
 
   return (
     <Button
-      loading={unpublishing}
+      basic
+      disabled={unpublishing}
       onClick={async () => await unpublishGroupActivity()}
       data={{
         cy: `unpublish-groupActivity-${activityName}`,
       }}
-      basic
     >
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
         <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
