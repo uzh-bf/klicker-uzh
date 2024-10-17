@@ -30,9 +30,9 @@ jobs:
           version: 9.10.0
           run_install: true
 
-      # - name: Build all packages and apps
-      #   run: |
-      #     pnpm run build
+      - name: Build all packages and apps
+        run: |
+          pnpm run build
 
       - name: Check prisma package typescript types
         shell: bash
