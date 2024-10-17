@@ -60,13 +60,6 @@ jobs:
         run: |
           pnpm run check
 
-      - name: Check lti package typescript types
-        if: always()
-        shell: bash
-        working-directory: packages/lti
-        run: |
-          pnpm run check
-
       - name: Check shared-components package typescript types
         if: always()
         shell: bash
