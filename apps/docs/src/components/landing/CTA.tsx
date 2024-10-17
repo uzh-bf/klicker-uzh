@@ -12,7 +12,7 @@ export function CTA() {
         >
           <Button
             className={{
-              root: 'bg-uzh-blue-20 border-uzh-blue-100 cursor-pointer flex-col items-start p-4 text-left text-xl',
+              root: 'shadow-md border-none cursor-pointer flex-col items-start p-4 text-left text-lg hover:bg-white hover:text-black',
             }}
           >
             <div className="font-bold">Roadmap</div>
@@ -30,7 +30,7 @@ export function CTA() {
         >
           <Button
             className={{
-              root: 'bg-uzh-blue-20 border-uzh-blue-100 cursor-pointer flex-col items-start p-4 text-left text-xl',
+              root: 'shadow-md border-none cursor-pointer flex-col items-start p-4 text-left text-lg hover:bg-white hover:text-black',
             }}
           >
             <div className="font-bold">Community</div>
@@ -45,4 +45,4 @@ export function CTA() {
     </div>
   )
 }
-export default CTA;
+export default CTA
