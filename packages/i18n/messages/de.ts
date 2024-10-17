@@ -1238,6 +1238,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
       groupActivityEndDate:
         'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityStartAfterCourseStart:
+        'Das Startdatum der Gruppenaktivität muss nach dem Startdatum des Kurses liegen.',
+      groupActivityStartAfterGroupDeadline:
+        'Das Startdatum der Gruppenaktivität muss nach dem Enddatum der Gruppenbildung liegen.',
+      groupActivityEndBeforeCourseEnd:
+        'Das Enddatum der Gruppenaktivität muss vor dem Enddatum des Kurses liegen.',
       groupActivityMultiplier:
         'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
       groupActivityUseCase:

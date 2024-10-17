@@ -32,6 +32,9 @@ export type ElementSelectCourse = {
   value: string
   isGamified: boolean
   isGroupCreationEnabled: boolean
+  startDate: Date
+  endDate: Date
+  groupDeadline: Date
   data?: { cy: string }
 }
 
@@ -108,20 +111,29 @@ function ElementCreation({
   } = useQuery(GetActiveUserCoursesDocument)
 
   const courseSelection = useMemo(
-    () =>
+    (): ElementSelectCourse[] =>
       dataCourses?.getActiveUserCourses?.map(
         (
           course: Pick<
             Course,
-            'id' | 'name' | 'isGamificationEnabled' | 'isGroupCreationEnabled'
+            | 'id'
+            | 'name'
+            | 'isGamificationEnabled'
+            | 'isGroupCreationEnabled'
+            | 'startDate'
+            | 'endDate'
+            | 'groupDeadlineDate'
           >
         ) => ({
           label: course.name,
           value: course.id,
           isGamified: course.isGamificationEnabled,
           isGroupCreationEnabled: course.isGroupCreationEnabled,
+          startDate: course.startDate,
+          endDate: course.endDate,
+          groupDeadline: course.groupDeadlineDate,
         })
-      ),
+      ) ?? [],
     [dataCourses]
   )
 

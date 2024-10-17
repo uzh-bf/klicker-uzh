@@ -1228,6 +1228,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
       groupActivityEndDate:
         'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityStartAfterCourseStart:
+        'The start date of the group activity must be after the start date of the course.',
+      groupActivityStartAfterGroupDeadline:
+        'The start date of the group activity must be after the group formation deadline.',
+      groupActivityEndBeforeCourseEnd:
+        'The end date of the group activity must be before the end date of the course.',
       groupActivityMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
       groupActivityUseCase:
