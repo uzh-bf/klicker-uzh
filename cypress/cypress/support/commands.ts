@@ -18,21 +18,23 @@ import messages from '../../../packages/i18n/messages/en'
 // -- This is a parent command --
 // Cypress.Commands.add('login', (email, password) => { ... })
 
-const loginFactory = (tokenData) => () => {
-  cy.clearAllCookies()
-  cy.clearAllLocalStorage()
+const loginFactory = (tokenData) => {
+  return () => {
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
 
-  cy.viewport('macbook-16')
+    cy.viewport('macbook-16')
 
-  const secret = new TextEncoder().encode('abcd')
-  const alg = 'HS256'
+    const secret = new TextEncoder().encode('abcd')
+    const alg = 'HS256'
 
-  new jose.SignJWT(tokenData)
-    .setProtectedHeader({ alg })
-    .setIssuedAt()
-    .setExpirationTime('2h')
-    .sign(secret)
-    .then((token) => {
+    cy.wrap(null).then(async () => {
+      const token = await new jose.SignJWT(tokenData)
+        .setProtectedHeader({ alg })
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(secret)
+
       cy.setCookie('next-auth.session-token', token, {
         domain: '127.0.0.1',
         path: '/',
@@ -40,9 +42,10 @@ const loginFactory = (tokenData) => () => {
         sameSite: 'lax',
         secure: false,
       })
-
-      cy.visit(Cypress.env('URL_MANAGE'))
     })
+
+    cy.visit(Cypress.env('URL_MANAGE'))
+  }
 }
 
 Cypress.Commands.add(
