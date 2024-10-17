@@ -9,7 +9,7 @@
   ],
   "dependencies": {
     "@azure/functions": "4.5.1",
-    "@azure/storage-blob": "12.24.0",
+    "@azure/storage-blob": "12.25.0",
     "@klicker-uzh/prisma": "workspace:*",
     "axios": "1.7.7",
     "jsonwebtoken": "9.0.2",

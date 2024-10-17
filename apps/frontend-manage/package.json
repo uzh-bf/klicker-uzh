@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.11.8",
-    "@azure/storage-blob": "12.24.0",
+    "@azure/storage-blob": "12.25.0",
     "@fortawesome/fontawesome-svg-core": "6.6.0",
     "@fortawesome/free-brands-svg-icons": "6.4.2",
     "@fortawesome/free-regular-svg-icons": "6.6.0",
@@ -24,7 +24,7 @@
     "dayjs": "1.11.13",
     "deepmerge": "4.3.1",
     "formik": "2.4.6",
-    "generate-password": "1.7.0",
+    "generate-password": "1.7.1",
     "graphql": "16.9.0",
     "graphql-codegen-persisted-query-ids": "0.2.0",
     "graphql-ws": "5.16.0",

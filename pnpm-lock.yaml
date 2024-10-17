@@ -64,7 +64,7 @@ importers:
         version: link:../../packages/shared-components
       '@next-auth/prisma-adapter':
         specifier: 1.0.7
-        version: 1.0.7(@prisma/client@5.19.1(prisma@5.19.1))(next-auth@4.24.8(next@14.2.15(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        version: 1.0.7(@prisma/client@5.19.1(prisma@5.19.1))(next-auth@4.24.8(next@14.2.15(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@uzh-bf/design-system':
         specifier: 3.0.0-alpha.32
         version: 3.0.0-alpha.32(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.0)(@types/react@18.3.4)(class-variance-authority@0.7.0)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.47))(postcss@8.4.47)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.3.101(@swc/helpers@0.5.5))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.3.101(@swc/helpers@0.5.5))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.3.101(@swc/helpers@0.5.5))(@types/node@20.16.1)(typescript@5.6.3)))(yup@1.4.0)
@@ -88,7 +88,7 @@ importers:
         version: 14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-auth:
         specifier: 4.24.8
-        version: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-intl:
         specifier: 3.21.1
         version: 3.21.1(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -245,7 +245,7 @@ importers:
         version: 9.0.2
       next-auth:
         specifier: 4.24.8
-        version: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       passport:
         specifier: 0.7.0
         version: 0.7.0
@@ -258,7 +258,7 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: ~3.13.4
-        version: 3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1)))(cypress@13.13.2)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))
+        version: 3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1)))(cypress@13.15.0)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))
       '@istanbuljs/nyc-config-typescript':
         specifier: ~1.0.2
         version: 1.0.2(nyc@17.1.0)
@@ -627,8 +627,8 @@ importers:
         specifier: 3.11.8
         version: 3.11.8(@types/react@18.3.4)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@azure/storage-blob':
-        specifier: 12.24.0
-        version: 12.24.0
+        specifier: 12.25.0
+        version: 12.25.0
       '@fortawesome/fontawesome-svg-core':
         specifier: 6.6.0
         version: 6.6.0
@@ -684,8 +684,8 @@ importers:
         specifier: 2.4.6
         version: 2.4.6(react@18.3.1)
       generate-password:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       graphql:
         specifier: 16.9.0
         version: 16.9.0
@@ -943,8 +943,8 @@ importers:
         specifier: 2.4.6
         version: 2.4.6(react@18.3.1)
       generate-password:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       graphql:
         specifier: 16.9.0
         version: 16.9.0
@@ -1082,8 +1082,8 @@ importers:
         specifier: 4.5.1
         version: 4.5.1
       '@azure/service-bus':
-        specifier: 7.9.0
-        version: 7.9.0
+        specifier: 7.9.5
+        version: 7.9.5
       '@sentry/node':
         specifier: 7.103.0
         version: 7.103.0
@@ -1134,8 +1134,8 @@ importers:
         specifier: 4.5.1
         version: 4.5.1
       '@azure/storage-blob':
-        specifier: 12.24.0
-        version: 12.24.0
+        specifier: 12.25.0
+        version: 12.25.0
       axios:
         specifier: 1.7.7
         version: 1.7.7(debug@4.3.7)
@@ -1183,8 +1183,8 @@ importers:
         specifier: 4.5.1
         version: 4.5.1
       '@azure/storage-blob':
-        specifier: 12.24.0
-        version: 12.24.0
+        specifier: 12.25.0
+        version: 12.25.0
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1476,10 +1476,10 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: ~3.13.4
-        version: 3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0))(cypress@13.13.2)(webpack@5.94.0)
+        version: 3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0))(cypress@13.15.0)(webpack@5.94.0)
       '@testing-library/cypress':
         specifier: ~10.0.2
-        version: 10.0.2(cypress@13.13.2)
+        version: 10.0.2(cypress@13.15.0)
       '@types/jsonwebtoken':
         specifier: ^9.0.6
         version: 9.0.6
@@ -1490,11 +1490,11 @@ importers:
         specifier: ^9.0.8
         version: 9.0.8
       cypress:
-        specifier: ~13.13.2
-        version: 13.13.2
+        specifier: ~13.15.0
+        version: 13.15.0
       cypress-real-events:
         specifier: ~1.13.0
-        version: 1.13.0(cypress@13.13.2)
+        version: 1.13.0(cypress@13.15.0)
       jsonwebtoken:
         specifier: ~9.0.2
         version: 9.0.2
@@ -1539,11 +1539,11 @@ importers:
   packages/graphql:
     dependencies:
       '@azure/service-bus':
-        specifier: 7.9.0
-        version: 7.9.0
+        specifier: 7.9.5
+        version: 7.9.5
       '@azure/storage-blob':
-        specifier: 12.24.0
-        version: 12.24.0
+        specifier: 12.25.0
+        version: 12.25.0
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
@@ -1554,20 +1554,20 @@ importers:
         specifier: workspace:*
         version: link:../util
       '@pothos/core':
-        specifier: 4.2.0
-        version: 4.2.0(graphql@16.9.0)
+        specifier: 4.3.0
+        version: 4.3.0(graphql@16.9.0)
       '@pothos/plugin-directives':
         specifier: 4.1.0
         version: 4.1.0(graphql@16.9.0)
       '@pothos/plugin-prisma':
         specifier: 4.2.1
-        version: 4.2.1(@pothos/core@4.2.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)
+        version: 4.2.1(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)
       '@pothos/plugin-scope-auth':
         specifier: 4.1.0
-        version: 4.1.0(@pothos/core@4.2.0(graphql@16.9.0))(graphql@16.9.0)
+        version: 4.1.0(@pothos/core@4.3.0(graphql@16.9.0))(graphql@16.9.0)
       '@pothos/plugin-zod':
         specifier: 4.1.0
-        version: 4.1.0(@pothos/core@4.2.0(graphql@16.9.0))(graphql@16.9.0)(zod@3.21.4)
+        version: 4.1.0(@pothos/core@4.3.0(graphql@16.9.0))(graphql@16.9.0)(zod@3.23.8)
       axios:
         specifier: 1.7.7
         version: 1.7.7(debug@4.3.7)
@@ -1578,8 +1578,8 @@ importers:
         specifier: 1.11.13
         version: 1.11.13
       generate-password:
-        specifier: 1.7.0
-        version: 1.7.0
+        specifier: 1.7.1
+        version: 1.7.1
       graphql:
         specifier: 16.9.0
         version: 16.9.0
@@ -1602,8 +1602,8 @@ importers:
         specifier: 2.1.1
         version: 2.1.1
       nodemailer:
-        specifier: 6.9.14
-        version: 6.9.14
+        specifier: 6.9.15
+        version: 6.9.15
       remeda:
         specifier: 2.15.0
         version: 2.15.0
@@ -1614,11 +1614,11 @@ importers:
         specifier: 9.0.1
         version: 9.0.1
       validator:
-        specifier: 13.11.0
-        version: 13.11.0
+        specifier: 13.12.0
+        version: 13.12.0
       zod:
-        specifier: 3.21.4
-        version: 3.21.4
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@graphql-codegen/cli':
         specifier: ~5.0.2
@@ -1859,7 +1859,7 @@ importers:
         version: link:../transactional
       '@pothos/plugin-prisma':
         specifier: ~4.2.1
-        version: 4.2.1(@pothos/core@4.2.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)
+        version: 4.2.1(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)
       '@types/bcryptjs':
         specifier: ^2.4.2
         version: 2.4.6
@@ -2334,16 +2334,8 @@ packages:
     resolution: {integrity: sha512-6BeOF2eQWNLq22ch7xP9RxYnPjtGev54OUCGggKOWoOvmesK7jUZbIyLk8JeXDT21PEl7iyYnxw78gxJ7zBxQw==}
     engines: {node: '>=14.0.0'}
 
-  '@azure/core-amqp@3.3.0':
-    resolution: {integrity: sha512-RYIyC8PtGpMzZRiSokADw0ezFgNq1eUkCPV8rd7tJ85dn8CAhYDEYapzMYxAwIBLWidshu14m9UWjQS7hKYDpA==}
-    engines: {node: '>=14.0.0'}
-
-  '@azure/core-auth@1.7.2':
-    resolution: {integrity: sha512-Igm/S3fDYmnMq1uKS38Ae1/m37B3zigdlZw+kocwEhh5GjyKjPrXKO2J6rzpC1wAxrNil/jX9BJRqBshyjnF3g==}
-    engines: {node: '>=18.0.0'}
-
-  '@azure/core-auth@1.8.0':
-    resolution: {integrity: sha512-YvFMowkXzLbXNM11yZtVLhUCmuG0ex7JKOH366ipjmHBhL3vpDcPAeWF+jf0X+jVXwFqo3UhsWUq4kH0ZPdu/g==}
+  '@azure/core-amqp@4.3.2':
+    resolution: {integrity: sha512-I8sI81E0o38zYjdXcM8cnnvveM6X3f90zqi51zSuD+ZX96P6ZsW8jEXpd/1E7aEUG+MuFGnsEx0iPPS53Lpfnw==}
     engines: {node: '>=18.0.0'}
 
   '@azure/core-auth@1.9.0':
@@ -2366,10 +2358,6 @@ packages:
     resolution: {integrity: sha512-YKWi9YuCU04B55h25cnOYZHxXYtEvQEbKST5vqRga7hWY9ydd3FZHdeQF8pyh+acWZvppw13M/LMGx0LABUVMA==}
     engines: {node: '>=18.0.0'}
 
-  '@azure/core-rest-pipeline@1.16.3':
-    resolution: {integrity: sha512-VxLk4AHLyqcHsfKe4MZ6IQ+D+ShuByy+RfStKfSjxJoL3WBWq17VNmrz8aT8etKzqc2nAeIyLxScjpzsS4fz8w==}
-    engines: {node: '>=18.0.0'}
-
   '@azure/core-rest-pipeline@1.17.0':
     resolution: {integrity: sha512-62Vv8nC+uPId3j86XJ0WI+sBf0jlqTqPUFCBNrGtlaUeQUIXWV/D8GE5A1d+Qx8H7OQojn2WguC8kChD6v0shA==}
     engines: {node: '>=18.0.0'}
@@ -2378,28 +2366,16 @@ packages:
     resolution: {integrity: sha512-nvo2Wc4EKZGN6eFu9n3U7OXmASmL8VxoPIH7xaD6OlQqi44bouF0YIi9ID5rEsKLiAU59IYx6M297nqWVMWPDg==}
     engines: {node: '>=12.0.0'}
 
-  '@azure/core-tracing@1.1.2':
-    resolution: {integrity: sha512-dawW9ifvWAWmUm9/h+/UQ2jrdvjCJ7VJEuCJ6XVNudzcOwm53BFZH4Q845vjfgoUAM8ZxokvVNxNxAITc502YA==}
-    engines: {node: '>=18.0.0'}
-
   '@azure/core-tracing@1.2.0':
     resolution: {integrity: sha512-UKTiEJPkWcESPYJz3X5uKRYyOcJD+4nYph+KpfdPRnQJVrZfk0KJgdnaAWKfhsBBtAf/D58Az4AvCJEmWgIBAg==}
-    engines: {node: '>=18.0.0'}
-
-  '@azure/core-util@1.10.0':
-    resolution: {integrity: sha512-dqLWQsh9Nro1YQU+405POVtXnwrIVqPyfUzc4zXCbThTg7+vNNaiMkwbX9AMXKyoFYFClxmB3s25ZFr3+jZkww==}
     engines: {node: '>=18.0.0'}
 
   '@azure/core-util@1.11.0':
     resolution: {integrity: sha512-DxOSLua+NdpWoSqULhjDyAZTXFdP/LKkqtYuxxz1SCN289zk3OG8UOpnCQAz/tygyACBtWp/BoO72ptK7msY8g==}
     engines: {node: '>=18.0.0'}
 
-  '@azure/core-util@1.9.2':
-    resolution: {integrity: sha512-l1Qrqhi4x1aekkV+OlcqsJa4AnAkj5p0JV8omgwjaV9OAbP41lvrMvs+CptfetKkeEaGRGSzby7sjPZEX7+kkQ==}
-    engines: {node: '>=18.0.0'}
-
-  '@azure/core-xml@1.4.3':
-    resolution: {integrity: sha512-D6G7FEmDiTctPKuWegX2WTrS1enKZwqYwdKTO6ZN6JMigcCehlT0/CYl+zWpI9vQ9frwwp7GQT3/owaEXgnOsA==}
+  '@azure/core-xml@1.4.4':
+    resolution: {integrity: sha512-J4FYAqakGXcbfeZjwjMzjNcpcH4E+JtEBv+xcV1yL0Ydn/6wbQfeFKTCHh9wttAi0lmajHw7yBbHPRG+YHckZQ==}
     engines: {node: '>=18.0.0'}
 
   '@azure/functions@4.5.1':
@@ -2451,12 +2427,12 @@ packages:
     resolution: {integrity: sha512-gVPW8YLz92ZeCibQH2QUw96odJoiM3k/ZPH3f2HxptozmH6+OnyyvKXo/Egg39HAM230akarQKHf0W74UHlh0Q==}
     engines: {node: '>=16'}
 
-  '@azure/service-bus@7.9.0':
-    resolution: {integrity: sha512-DzvWGmIertkF404nQ/AZQ6hwgXtOtabjBME7dsNvzXmBMfGRjviNWLD5yGyPT4x+clJzbMjRuzvTER+cbRwTYw==}
-    engines: {node: '>=14.0.0'}
+  '@azure/service-bus@7.9.5':
+    resolution: {integrity: sha512-R5Af+4jtZZII2snLomaddMyElFtTCBRZp2qERPlP8PuISLU87eFYFM7xWzxjNd0yeiyQUBkamx/ZhOC8eWhCHA==}
+    engines: {node: '>=18.0.0'}
 
-  '@azure/storage-blob@12.24.0':
-    resolution: {integrity: sha512-l8cmWM4C7RoNCBOImoFMxhTXe1Lr+8uQ/IgnhRNMpfoA9bAFWoLG4XrWm6O5rKXortreVQuD+fc1hbzWklOZbw==}
+  '@azure/storage-blob@12.25.0':
+    resolution: {integrity: sha512-oodouhA3nCCIh843tMMbxty3WqfNT+Vgzj3Xo5jqR9UPnzq3d7mzLjlHAYz7lW+b4km3SIgz+NAgztvhm7Z6kQ==}
     engines: {node: '>=18.0.0'}
 
   '@babel/code-frame@7.12.11':
@@ -3304,8 +3280,8 @@ packages:
       cypress: '*'
       webpack: ^4 || ^5
 
-  '@cypress/request@3.0.1':
-    resolution: {integrity: sha512-TWivJlJi8ZDx2wGOw1dbLuHJKUYX7bWySw377nlnGOW3hP9/MUKIsEdXT/YngWxVdgNCHRBmFlBipE+5/2ZZlQ==}
+  '@cypress/request@3.0.5':
+    resolution: {integrity: sha512-v+XHd9XmWbufxF1/bTaVm2yhbxY+TB4YtWRqF2zaXBlDNMkls34KiATz0AVDLavL3iB6bQk9/7n3oY1EoLSWGA==}
     engines: {node: '>= 6'}
 
   '@cypress/webpack-preprocessor@6.0.2':
@@ -5183,8 +5159,8 @@ packages:
   '@polka/url@1.0.0-next.25':
     resolution: {integrity: sha512-j7P6Rgr3mmtdkeDGTe0E/aYyWEWVtc5yFXtHCRHs28/jptDEWfaVOc5T7cblqy1XKPPfCxJc/8DwQ5YgLOZOVQ==}
 
-  '@pothos/core@4.2.0':
-    resolution: {integrity: sha512-dEoQCaA/pCPg3MhjGCwBF1QRbtOPysXm4nivQQsq6OrOvC7pU+KJNVdBSwpi1ZtTLtd4wg+PCC8Js9GrCyh9sw==}
+  '@pothos/core@4.3.0':
+    resolution: {integrity: sha512-i4nyI8wSCjxdHUomqQ2K3FH0Glklomfv4tJNifQVU9lPtQKoKaS69VxGv+fru0HAZzb1eC1XPEPN3XPCYcvZ7Q==}
     peerDependencies:
       graphql: '>=16.6.0'
 
@@ -7286,9 +7262,6 @@ packages:
   '@types/node@20.16.12':
     resolution: {integrity: sha512-LfPFB0zOeCeCNQV3i+67rcoVvoN5n0NVuR2vLG0O5ySQMgchuZlC4lgz546ZOJyDtj5KIgOxy+lacOimfqZAIA==}
 
-  '@types/node@20.16.5':
-    resolution: {integrity: sha512-VwYCweNo3ERajwy0IUlqqcyZ8/A7Zwa9ZP3MnENWcB11AejO+tLy3pu850goUW2FC/IJMdZUfKpX/yxL1gymCA==}
-
   '@types/nodemailer@6.4.15':
     resolution: {integrity: sha512-0EBJxawVNjPkng1zm2vopRctuWVCxk34JcIlRuXSf54habUWdz1FB7wHDqOqvDa8Mtpt0Q3LTXQkAs2LNyK5jQ==}
 
@@ -9113,8 +9086,8 @@ packages:
     peerDependencies:
       cypress: ^4.x || ^5.x || ^6.x || ^7.x || ^8.x || ^9.x || ^10.x || ^11.x || ^12.x || ^13.x
 
-  cypress@13.13.2:
-    resolution: {integrity: sha512-PvJQU33933NvS1StfzEb8/mu2kMy4dABwCF+yd5Bi7Qly1HOVf+Bufrygee/tlmty/6j5lX+KIi8j9Q3JUMbhA==}
+  cypress@13.15.0:
+    resolution: {integrity: sha512-53aO7PwOfi604qzOkCSzNlWquCynLlKE/rmmpSPcziRH6LNfaDUAklQT6WJIsD8ywxlIy+uVZsnTMCCQVd2kTw==}
     engines: {node: ^16.0.0 || ^18.0.0 || >=20.0.0}
     hasBin: true
 
@@ -10195,8 +10168,8 @@ packages:
   fast-url-parser@1.1.3:
     resolution: {integrity: sha512-5jOCVXADYNuRkKFzNJ0dCCewsZiYo0dz8QNYljkOpFC6r2U4OBmKtvm/Tsuh4w1YYdDqDb31a8TVhBJ2OJKdqQ==}
 
-  fast-xml-parser@4.4.1:
-    resolution: {integrity: sha512-xkjOecfnKGkSsOwtZ5Pz7Us/T6mrbPQrq0nh+aCO5V9nk5NLWmasAHumTKjiPJPWANe+kAZ84Jc8ooJkzZ88Sw==}
+  fast-xml-parser@4.5.0:
+    resolution: {integrity: sha512-/PlTQCI96+fZMAOLMZK4CWG1ItCbfZ/0jx7UIJFChPNrx7tcEgerUgWbeieCM9MfHInUDyK8DWYZ+YrywDJuTg==}
     hasBin: true
 
   fastest-levenshtein@1.0.16:
@@ -10367,10 +10340,6 @@ packages:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
 
-  form-data@2.3.3:
-    resolution: {integrity: sha512-1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==}
-    engines: {node: '>= 0.12'}
-
   form-data@2.5.1:
     resolution: {integrity: sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==}
     engines: {node: '>= 0.12'}
@@ -10463,8 +10432,8 @@ packages:
   generate-function@2.3.1:
     resolution: {integrity: sha512-eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==}
 
-  generate-password@1.7.0:
-    resolution: {integrity: sha512-WPCtlfy0jexf7W5IbwxGUgpIDvsZIohbI2DAq2Q6TSlKKis+G4GT9sxvPxrZUGL8kP6WUXMWNqYnxY6DDKAdFA==}
+  generate-password@1.7.1:
+    resolution: {integrity: sha512-9bVYY+16m7W7GczRBDqXE+VVuCX+bWNrfYKC/2p2JkZukFb2sKxT6E3zZ3mJGz7GMe5iRK0A/WawSL3jQfJuNQ==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -10937,8 +10906,8 @@ packages:
     resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
     engines: {node: '>=8.0.0'}
 
-  http-signature@1.3.6:
-    resolution: {integrity: sha512-3adrsD6zqo4GsTqtO7FyrejHNv+NgiIfAfv68+jVlFmSr9OGy7zrxONceFRLKvnnZA5jbxQBX1u9PpB6Wi32Gw==}
+  http-signature@1.4.0:
+    resolution: {integrity: sha512-G5akfn7eKbpDN+8nPS/cb57YeA1jLTVxjpCj7tmm3QKPdyDy7T+qSC40e9ptydSWvkwjSXw1VbkpyEm39ukeAg==}
     engines: {node: '>=0.10'}
 
   http2-client@1.3.5:
@@ -12942,8 +12911,8 @@ packages:
     resolution: {integrity: sha512-OXdegQq03OmXEjt2hZP33W2YPs/E5BcFQks46+G2gAxs4gHOIVD1u7EqlYLYSKsaIpyKCK9Gbk0ta1/gjRSMRQ==}
     engines: {node: '>=6'}
 
-  nodemailer@6.9.14:
-    resolution: {integrity: sha512-Dobp/ebDKBvz91sbtRKhcznLThrKxKt97GI2FAlAyy+fk19j73Uz3sBXolVtmcXjaorivqsbbbjDY+Jkt4/bQA==}
+  nodemailer@6.9.15:
+    resolution: {integrity: sha512-AHf04ySLC6CIfuRtRiEYtGEXgRfa6INgWGluDhnxTZhHSKvrBu7lc1VVchQ0d8nPc4cFaZoPq8vkyNoZr0TpGQ==}
     engines: {node: '>=6.0.0'}
 
   nodemon@3.1.7:
@@ -14131,10 +14100,6 @@ packages:
   qrcode-generator@1.4.4:
     resolution: {integrity: sha512-HM7yY8O2ilqhmULxGMpcHSF1EhJJ9yBj8gvDEuZ6M+KGJ0YY2hKpnXvRD+hZPLrDVck3ExIGhmPtSdcjC+guuw==}
 
-  qs@6.10.4:
-    resolution: {integrity: sha512-OQiU+C+Ds5qiH91qh/mg0w+8nwQuLjM4F4M/PbmhDOoYehPh+Fb0bDjtR1sOvy7YKxvj28Y/M0PhP5uVX0kB+g==}
-    engines: {node: '>=0.6'}
-
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
     engines: {node: '>=0.6'}
@@ -14582,6 +14547,10 @@ packages:
     resolution: {integrity: sha512-NcDiDkTLuPR+++OCKB0nWafEmhg/Da8aUPLPMQbK+bxKKCm1/S5he+AqYa4PlMCVBalb4/yxIRub6qkEx5yJbw==}
     engines: {node: '>= 0.4'}
 
+  regexp.prototype.flags@1.5.3:
+    resolution: {integrity: sha512-vqlC04+RQoFalODCbCumG2xIOvapzVMHwsyIGM/SIE8fRhFFsXeH8/QQ+s0T0kDAhKc4k30s73/0ydkHQz6HlQ==}
+    engines: {node: '>= 0.4'}
+
   regexpp@3.2.0:
     resolution: {integrity: sha512-pq2bWo9mVD43nbts2wGv17XLiNLya+GklZ8kaDLV2Z08gDCsGpnKn9BFMepvWuHCbyVvY7J5o5+BVvoQbmlJLg==}
     engines: {node: '>=8'}
@@ -14808,8 +14777,8 @@ packages:
   rhea-promise@3.0.3:
     resolution: {integrity: sha512-a875P5YcMkePSTEWMsnmCQS7Y4v/XvIw7ZoMtJxqtQRZsqSA6PsZxuz4vktyRykPuUgdNsA6F84dS3iEXZoYnQ==}
 
-  rhea@3.0.2:
-    resolution: {integrity: sha512-0G1ZNM9yWin8VLvTxyISKH6KfR6gl1TW/1+5yMKPf2r1efhkzTLze09iFtT2vpDjuWIVtSmXz8r18lk/dO8qwQ==}
+  rhea@3.0.3:
+    resolution: {integrity: sha512-Y7se0USZQu6dErWSZ7eCmSVTMscyVfz/0+jjhBF7f9PqYfEXdIoQpPkC9Strks6wF9WytuBhn8w8Nz/tmBWpgA==}
 
   rimraf@2.7.1:
     resolution: {integrity: sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==}
@@ -16349,9 +16318,6 @@ packages:
   util@0.10.4:
     resolution: {integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==}
 
-  util@0.12.5:
-    resolution: {integrity: sha512-kZf/K6hEIrWHI6XqOFUiiMa+79wE/D8Q+NCNAWclkyg3b4d2k7s0QGepNjiABc+aR3N1PAyHL7p6UcLY6LmrnA==}
-
   utila@0.4.0:
     resolution: {integrity: sha512-Z0DbgELS9/L/75wZbro8xAnT50pBVFQZ+hUEueGDU5FN51YSCYM+jdxsfCiHjwNP/4LCDD0i/graKpeBnOXKRA==}
 
@@ -16401,8 +16367,8 @@ packages:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  validator@13.11.0:
-    resolution: {integrity: sha512-Ii+sehpSfZy+At5nPdnyMhx78fEoPDkR2XW/zimHEL3MyGJQOCQ7WeP20jPYRz7ZCpcKLB21NxuXHF3bxjStBQ==}
+  validator@13.12.0:
+    resolution: {integrity: sha512-c1Q0mCiPlgdTVVVIJIrBuxNicYE+t/7oKeI9MWLj3fh/uq2Pxh/3eeWbVZ4OcGW1TUf53At0njHw5SMdA3tmMg==}
     engines: {node: '>= 0.10'}
 
   value-equal@1.0.1:
@@ -16873,9 +16839,6 @@ packages:
   zen-observable@0.8.15:
     resolution: {integrity: sha512-PQ2PC7R9rslx84ndNBZB/Dkv8V8fZEpk83RLgXtYd0fwUgEjseMn1Dgajh2x6S8QbZAFa9p2qVCEuYZNgve0dQ==}
 
-  zod@3.21.4:
-    resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
-
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
@@ -17263,34 +17226,20 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@azure/core-amqp@3.3.0':
+  '@azure/core-amqp@4.3.2':
     dependencies:
-      '@azure/abort-controller': 1.1.0
-      '@azure/core-auth': 1.7.2
-      '@azure/core-util': 1.9.2
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.9.0
+      '@azure/core-util': 1.11.0
       '@azure/logger': 1.1.4
       buffer: 6.0.3
       events: 3.3.0
-      jssha: 3.3.1
       process: 0.11.10
-      rhea: 3.0.2
+      rhea: 3.0.3
       rhea-promise: 3.0.3
       tslib: 2.8.0
-      util: 0.12.5
     transitivePeerDependencies:
       - supports-color
-
-  '@azure/core-auth@1.7.2':
-    dependencies:
-      '@azure/abort-controller': 2.1.2
-      '@azure/core-util': 1.9.2
-      tslib: 2.8.0
-
-  '@azure/core-auth@1.8.0':
-    dependencies:
-      '@azure/abort-controller': 2.1.2
-      '@azure/core-util': 1.10.0
-      tslib: 2.8.0
 
   '@azure/core-auth@1.9.0':
     dependencies:
@@ -17301,10 +17250,10 @@ snapshots:
   '@azure/core-client@1.9.2':
     dependencies:
       '@azure/abort-controller': 2.1.2
-      '@azure/core-auth': 1.7.2
-      '@azure/core-rest-pipeline': 1.16.3
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.9.2
+      '@azure/core-auth': 1.9.0
+      '@azure/core-rest-pipeline': 1.17.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.11.0
       '@azure/logger': 1.1.4
       tslib: 2.8.0
     transitivePeerDependencies:
@@ -17321,7 +17270,7 @@ snapshots:
   '@azure/core-lro@2.7.2':
     dependencies:
       '@azure/abort-controller': 2.1.2
-      '@azure/core-util': 1.10.0
+      '@azure/core-util': 1.11.0
       '@azure/logger': 1.1.4
       tslib: 2.8.0
 
@@ -17329,25 +17278,12 @@ snapshots:
     dependencies:
       tslib: 2.8.0
 
-  '@azure/core-rest-pipeline@1.16.3':
-    dependencies:
-      '@azure/abort-controller': 2.1.2
-      '@azure/core-auth': 1.7.2
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.9.2
-      '@azure/logger': 1.1.4
-      http-proxy-agent: 7.0.2
-      https-proxy-agent: 7.0.5
-      tslib: 2.8.0
-    transitivePeerDependencies:
-      - supports-color
-
   '@azure/core-rest-pipeline@1.17.0':
     dependencies:
       '@azure/abort-controller': 2.1.2
-      '@azure/core-auth': 1.8.0
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.10.0
+      '@azure/core-auth': 1.9.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.11.0
       '@azure/logger': 1.1.4
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.5
@@ -17360,17 +17296,8 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       tslib: 2.8.0
 
-  '@azure/core-tracing@1.1.2':
-    dependencies:
-      tslib: 2.8.0
-
   '@azure/core-tracing@1.2.0':
     dependencies:
-      tslib: 2.8.0
-
-  '@azure/core-util@1.10.0':
-    dependencies:
-      '@azure/abort-controller': 2.1.2
       tslib: 2.8.0
 
   '@azure/core-util@1.11.0':
@@ -17378,14 +17305,9 @@ snapshots:
       '@azure/abort-controller': 2.1.2
       tslib: 2.8.0
 
-  '@azure/core-util@1.9.2':
+  '@azure/core-xml@1.4.4':
     dependencies:
-      '@azure/abort-controller': 2.1.2
-      tslib: 2.8.0
-
-  '@azure/core-xml@1.4.3':
-    dependencies:
-      fast-xml-parser: 4.4.1
+      fast-xml-parser: 4.5.0
       tslib: 2.8.0
 
   '@azure/functions@4.5.1':
@@ -17396,9 +17318,9 @@ snapshots:
 
   '@azure/identity@1.5.2(debug@4.3.6)':
     dependencies:
-      '@azure/core-auth': 1.7.2
+      '@azure/core-auth': 1.9.0
       '@azure/core-client': 1.9.2
-      '@azure/core-rest-pipeline': 1.16.3
+      '@azure/core-rest-pipeline': 1.17.0
       '@azure/core-tracing': 1.0.0-preview.12
       '@azure/logger': 1.1.4
       '@azure/msal-node': 1.0.0-beta.6(debug@4.3.6)
@@ -17440,14 +17362,14 @@ snapshots:
   '@azure/keyvault-keys@4.8.0':
     dependencies:
       '@azure/abort-controller': 1.1.0
-      '@azure/core-auth': 1.7.2
+      '@azure/core-auth': 1.9.0
       '@azure/core-client': 1.9.2
       '@azure/core-http-compat': 2.1.2
       '@azure/core-lro': 2.7.2
       '@azure/core-paging': 1.6.2
-      '@azure/core-rest-pipeline': 1.16.3
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.9.2
+      '@azure/core-rest-pipeline': 1.17.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.11.0
       '@azure/logger': 1.1.4
       tslib: 2.8.0
     transitivePeerDependencies:
@@ -17461,7 +17383,7 @@ snapshots:
 
   '@azure/ms-rest-js@2.7.0':
     dependencies:
-      '@azure/core-auth': 1.8.0
+      '@azure/core-auth': 1.9.0
       abort-controller: 3.0.0
       form-data: 2.5.1
       node-fetch: 2.7.0
@@ -17489,7 +17411,7 @@ snapshots:
 
   '@azure/msal-common@4.5.1':
     dependencies:
-      debug: 4.3.6
+      debug: 4.3.7(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -17509,17 +17431,17 @@ snapshots:
       jsonwebtoken: 9.0.2
       uuid: 8.3.2
 
-  '@azure/service-bus@7.9.0':
+  '@azure/service-bus@7.9.5':
     dependencies:
       '@azure/abort-controller': 1.1.0
-      '@azure/core-amqp': 3.3.0
-      '@azure/core-auth': 1.7.2
+      '@azure/core-amqp': 4.3.2
+      '@azure/core-auth': 1.9.0
       '@azure/core-client': 1.9.2
       '@azure/core-paging': 1.6.2
-      '@azure/core-rest-pipeline': 1.16.3
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.9.2
-      '@azure/core-xml': 1.4.3
+      '@azure/core-rest-pipeline': 1.17.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.11.0
+      '@azure/core-xml': 1.4.4
       '@azure/logger': 1.1.4
       '@types/is-buffer': 2.0.2
       buffer: 6.0.3
@@ -17528,25 +17450,25 @@ snapshots:
       long: 5.2.3
       process: 0.11.10
       rhea-promise: 3.0.3
-      tslib: 2.6.3
+      tslib: 2.8.0
     transitivePeerDependencies:
       - supports-color
 
-  '@azure/storage-blob@12.24.0':
+  '@azure/storage-blob@12.25.0':
     dependencies:
-      '@azure/abort-controller': 1.1.0
-      '@azure/core-auth': 1.8.0
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.9.0
       '@azure/core-client': 1.9.2
       '@azure/core-http-compat': 2.1.2
       '@azure/core-lro': 2.7.2
       '@azure/core-paging': 1.6.2
       '@azure/core-rest-pipeline': 1.17.0
-      '@azure/core-tracing': 1.1.2
-      '@azure/core-util': 1.10.0
-      '@azure/core-xml': 1.4.3
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.11.0
+      '@azure/core-xml': 1.4.4
       '@azure/logger': 1.1.4
       events: 3.3.0
-      tslib: 2.7.0
+      tslib: 2.8.0
     transitivePeerDependencies:
       - supports-color
 
@@ -20007,14 +19929,14 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@cypress/code-coverage@3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1)))(cypress@13.13.2)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))':
+  '@cypress/code-coverage@3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1)))(cypress@13.15.0)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))':
     dependencies:
       '@babel/core': 7.25.8
       '@babel/preset-env': 7.25.4(@babel/core@7.25.8)
       '@cypress/webpack-preprocessor': 6.0.2(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1)))(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))
       babel-loader: 9.2.1(@babel/core@7.25.8)(webpack@5.94.0(@swc/core@1.3.101(@swc/helpers@0.5.5))(esbuild@0.23.1))
       chalk: 4.1.2
-      cypress: 13.13.2
+      cypress: 13.15.0
       dayjs: 1.11.13
       debug: 4.3.7(supports-color@5.5.0)
       execa: 4.1.0
@@ -20026,14 +19948,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@cypress/code-coverage@3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0))(cypress@13.13.2)(webpack@5.94.0)':
+  '@cypress/code-coverage@3.13.4(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0))(cypress@13.15.0)(webpack@5.94.0)':
     dependencies:
       '@babel/core': 7.25.8
       '@babel/preset-env': 7.25.4(@babel/core@7.25.8)
       '@cypress/webpack-preprocessor': 6.0.2(@babel/core@7.25.8)(@babel/preset-env@7.25.4(@babel/core@7.25.8))(babel-loader@9.2.1(@babel/core@7.25.8)(webpack@5.94.0))(webpack@5.94.0)
       babel-loader: 9.2.1(@babel/core@7.25.8)(webpack@5.94.0)
       chalk: 4.1.2
-      cypress: 13.13.2
+      cypress: 13.15.0
       dayjs: 1.11.13
       debug: 4.3.7(supports-color@5.5.0)
       execa: 4.1.0
@@ -20045,7 +19967,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@cypress/request@3.0.1':
+  '@cypress/request@3.0.5':
     dependencies:
       aws-sign2: 0.7.0
       aws4: 1.13.1
@@ -20053,14 +19975,14 @@ snapshots:
       combined-stream: 1.0.8
       extend: 3.0.2
       forever-agent: 0.6.1
-      form-data: 2.3.3
-      http-signature: 1.3.6
+      form-data: 4.0.1
+      http-signature: 1.4.0
       is-typedarray: 1.0.0
       isstream: 0.1.2
       json-stringify-safe: 5.0.1
       mime-types: 2.1.35
       performance-now: 2.1.0
-      qs: 6.10.4
+      qs: 6.13.0
       safe-buffer: 5.2.1
       tough-cookie: 4.1.4
       tunnel-agent: 0.6.0
@@ -20993,7 +20915,7 @@ snapshots:
 
   '@envelop/types@3.0.2':
     dependencies:
-      tslib: 2.8.0
+      tslib: 2.6.3
 
   '@envelop/validation-cache@5.1.3(@envelop/core@3.0.6)(graphql@16.9.0)':
     dependencies:
@@ -21618,7 +21540,7 @@ snapshots:
       '@graphql-tools/utils': 10.5.4(graphql@16.9.0)
       globby: 11.1.0
       graphql: 16.9.0
-      tslib: 2.8.0
+      tslib: 2.7.0
       unixify: 1.0.0
     transitivePeerDependencies:
       - supports-color
@@ -21703,7 +21625,7 @@ snapshots:
       graphql: 16.9.0
       is-glob: 4.0.3
       micromatch: 4.0.8
-      tslib: 2.8.0
+      tslib: 2.7.0
       unixify: 1.0.0
     transitivePeerDependencies:
       - supports-color
@@ -21716,7 +21638,7 @@ snapshots:
       '@graphql-tools/utils': 10.5.4(graphql@16.9.0)
       '@whatwg-node/fetch': 0.9.21
       graphql: 16.9.0
-      tslib: 2.8.0
+      tslib: 2.7.0
       value-or-promise: 1.0.12
     transitivePeerDependencies:
       - '@types/node'
@@ -21729,7 +21651,7 @@ snapshots:
       '@graphql-tools/utils': 10.5.4(graphql@16.9.0)
       globby: 11.1.0
       graphql: 16.9.0
-      tslib: 2.8.0
+      tslib: 2.7.0
       unixify: 1.0.0
 
   '@graphql-tools/graphql-tag-pluck@8.3.2(graphql@16.9.0)':
@@ -21757,7 +21679,7 @@ snapshots:
       '@graphql-tools/utils': 10.5.4(graphql@16.9.0)
       globby: 11.1.0
       graphql: 16.9.0
-      tslib: 2.8.0
+      tslib: 2.7.0
       unixify: 1.0.0
 
   '@graphql-tools/load@8.0.2(graphql@16.9.0)':
@@ -21766,13 +21688,13 @@ snapshots:
       '@graphql-tools/utils': 10.5.4(graphql@16.9.0)
       graphql: 16.9.0
       p-limit: 3.1.0
-      tslib: 2.8.0
+      tslib: 2.7.0
 
   '@graphql-tools/merge@8.4.2(graphql@16.9.0)':
     dependencies:
       '@graphql-tools/utils': 9.2.1(graphql@16.9.0)
       graphql: 16.9.0
-      tslib: 2.8.0
+      tslib: 2.6.3
 
   '@graphql-tools/merge@9.0.6(graphql@16.9.0)':
     dependencies:
@@ -21802,7 +21724,7 @@ snapshots:
       js-yaml: 4.1.0
       lodash: 4.17.21
       scuid: 1.1.0
-      tslib: 2.8.0
+      tslib: 2.7.0
       yaml-ast-parser: 0.0.43
     transitivePeerDependencies:
       - '@types/node'
@@ -21850,7 +21772,7 @@ snapshots:
       '@whatwg-node/fetch': 0.9.21
       graphql: 16.9.0
       isomorphic-ws: 5.0.0(ws@8.18.0)
-      tslib: 2.8.0
+      tslib: 2.7.0
       value-or-promise: 1.0.12
       ws: 8.18.0
     transitivePeerDependencies:
@@ -21929,7 +21851,7 @@ snapshots:
   '@graphql-yoga/typed-event-target@1.0.0':
     dependencies:
       '@repeaterjs/repeater': 3.0.6
-      tslib: 2.6.3
+      tslib: 2.8.0
 
   '@hapi/hoek@9.3.0': {}
 
@@ -22149,7 +22071,7 @@ snapshots:
     dependencies:
       '@ionic/utils-terminal': 2.3.5
       debug: 4.3.7(supports-color@5.5.0)
-      tslib: 2.8.0
+      tslib: 2.7.0
     transitivePeerDependencies:
       - supports-color
 
@@ -22165,7 +22087,7 @@ snapshots:
       '@types/fs-extra': 8.1.5
       debug: 4.3.7(supports-color@5.5.0)
       fs-extra: 9.1.0
-      tslib: 2.8.0
+      tslib: 2.7.0
     transitivePeerDependencies:
       - supports-color
 
@@ -22203,7 +22125,7 @@ snapshots:
       '@ionic/utils-terminal': 2.3.4
       cross-spawn: 7.0.3
       debug: 4.3.7(supports-color@5.5.0)
-      tslib: 2.8.0
+      tslib: 2.7.0
     transitivePeerDependencies:
       - supports-color
 
@@ -22229,7 +22151,7 @@ snapshots:
       slice-ansi: 4.0.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
-      tslib: 2.8.0
+      tslib: 2.7.0
       untildify: 4.0.0
       wrap-ansi: 7.0.0
     transitivePeerDependencies:
@@ -22623,7 +22545,7 @@ snapshots:
       '@azure/core-auth': 1.9.0
       '@azure/identity': 4.4.1
       '@azure/msal-node': 2.15.0
-      '@azure/storage-blob': 12.24.0
+      '@azure/storage-blob': 12.25.0
       '@feathersjs/hooks': 0.6.5
       '@microsoft/dev-tunnels-contracts': 1.1.9
       '@microsoft/dev-tunnels-management': 1.1.9
@@ -22663,7 +22585,7 @@ snapshots:
       swagger2openapi: 7.0.8
       typedi: 0.10.0
       uuid: 8.3.2
-      validator: 13.11.0
+      validator: 13.12.0
       xml2js: 0.5.0
       yaml: 2.6.0
     transitivePeerDependencies:
@@ -22676,10 +22598,10 @@ snapshots:
       sparse-bitfield: 3.0.3
     optional: true
 
-  '@next-auth/prisma-adapter@1.0.7(@prisma/client@5.19.1(prisma@5.19.1))(next-auth@4.24.8(next@14.2.15(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@next-auth/prisma-adapter@1.0.7(@prisma/client@5.19.1(prisma@5.19.1))(next-auth@4.24.8(next@14.2.15(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       '@prisma/client': 5.19.1(prisma@5.19.1)
-      next-auth: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next-auth: 4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   '@next/env@14.1.4': {}
 
@@ -22945,7 +22867,7 @@ snapshots:
       '@peculiar/asn1-schema': 2.3.13
       '@peculiar/json-schema': 1.1.12
       pvtsutils: 1.3.5
-      tslib: 2.8.0
+      tslib: 2.7.0
       webcrypto-core: 1.8.0
 
   '@pkgjs/parseargs@0.11.0':
@@ -22965,7 +22887,7 @@ snapshots:
 
   '@polka/url@1.0.0-next.25': {}
 
-  '@pothos/core@4.2.0(graphql@16.9.0)':
+  '@pothos/core@4.3.0(graphql@16.9.0)':
     dependencies:
       graphql: 16.9.0
 
@@ -22973,24 +22895,24 @@ snapshots:
     dependencies:
       graphql: 16.9.0
 
-  '@pothos/plugin-prisma@4.2.1(@pothos/core@4.2.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)':
+  '@pothos/plugin-prisma@4.2.1(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.19.1(prisma@5.19.1))(graphql@16.9.0)(typescript@5.6.3)':
     dependencies:
-      '@pothos/core': 4.2.0(graphql@16.9.0)
+      '@pothos/core': 4.3.0(graphql@16.9.0)
       '@prisma/client': 5.19.1(prisma@5.19.1)
       '@prisma/generator-helper': 5.18.0
       graphql: 16.9.0
       typescript: 5.6.3
 
-  '@pothos/plugin-scope-auth@4.1.0(@pothos/core@4.2.0(graphql@16.9.0))(graphql@16.9.0)':
+  '@pothos/plugin-scope-auth@4.1.0(@pothos/core@4.3.0(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
-      '@pothos/core': 4.2.0(graphql@16.9.0)
+      '@pothos/core': 4.3.0(graphql@16.9.0)
       graphql: 16.9.0
 
-  '@pothos/plugin-zod@4.1.0(@pothos/core@4.2.0(graphql@16.9.0))(graphql@16.9.0)(zod@3.21.4)':
+  '@pothos/plugin-zod@4.1.0(@pothos/core@4.3.0(graphql@16.9.0))(graphql@16.9.0)(zod@3.23.8)':
     dependencies:
-      '@pothos/core': 4.2.0(graphql@16.9.0)
+      '@pothos/core': 4.3.0(graphql@16.9.0)
       graphql: 16.9.0
-      zod: 3.21.4
+      zod: 3.23.8
 
   '@prisma/client@5.19.1(prisma@5.19.1)':
     optionalDependencies:
@@ -26089,11 +26011,11 @@ snapshots:
 
   '@tanstack/table-core@8.20.5': {}
 
-  '@testing-library/cypress@10.0.2(cypress@13.13.2)':
+  '@testing-library/cypress@10.0.2(cypress@13.15.0)':
     dependencies:
       '@babel/runtime': 7.25.6
       '@testing-library/dom': 10.4.0
-      cypress: 13.13.2
+      cypress: 13.15.0
 
   '@testing-library/dom@10.4.0':
     dependencies:
@@ -26350,7 +26272,7 @@ snapshots:
 
   '@types/fs-extra@8.1.5':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.1
 
   '@types/geojson@7946.0.14': {}
 
@@ -26399,7 +26321,7 @@ snapshots:
 
   '@types/is-buffer@2.0.2':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 20.16.1
 
   '@types/is-hotkey@0.1.10': {}
 
@@ -26493,10 +26415,6 @@ snapshots:
       undici-types: 6.19.8
 
   '@types/node@20.16.12':
-    dependencies:
-      undici-types: 6.19.8
-
-  '@types/node@20.16.5':
     dependencies:
       undici-types: 6.19.8
 
@@ -27348,7 +27266,7 @@ snapshots:
       busboy: 1.6.0
       fast-querystring: 1.1.2
       fast-url-parser: 1.1.3
-      tslib: 2.8.0
+      tslib: 2.7.0
 
   '@whatwg-node/node-fetch@0.5.25':
     dependencies:
@@ -28987,7 +28905,7 @@ snapshots:
 
   cross-inspect@1.0.1:
     dependencies:
-      tslib: 2.8.0
+      tslib: 2.7.0
 
   cross-spawn@6.0.5:
     dependencies:
@@ -29141,13 +29059,13 @@ snapshots:
 
   csstype@3.1.3: {}
 
-  cypress-real-events@1.13.0(cypress@13.13.2):
+  cypress-real-events@1.13.0(cypress@13.15.0):
     dependencies:
-      cypress: 13.13.2
+      cypress: 13.15.0
 
-  cypress@13.13.2:
+  cypress@13.15.0:
     dependencies:
-      '@cypress/request': 3.0.1
+      '@cypress/request': 3.0.5
       '@cypress/xvfb': 1.2.4(supports-color@8.1.1)
       '@types/sinonjs__fake-timers': 8.1.1
       '@types/sizzle': 2.3.8
@@ -29450,7 +29368,7 @@ snapshots:
       object-is: 1.1.6
       object-keys: 1.1.1
       object.assign: 4.1.5
-      regexp.prototype.flags: 1.5.2
+      regexp.prototype.flags: 1.5.3
       side-channel: 1.0.6
       which-boxed-primitive: 1.0.2
       which-collection: 1.0.2
@@ -29862,7 +29780,7 @@ snapshots:
       object-inspect: 1.13.2
       object-keys: 1.1.1
       object.assign: 4.1.5
-      regexp.prototype.flags: 1.5.2
+      regexp.prototype.flags: 1.5.3
       safe-array-concat: 1.1.2
       safe-regex-test: 1.0.3
       string.prototype.trim: 1.2.9
@@ -30615,7 +30533,7 @@ snapshots:
     dependencies:
       punycode: 1.4.1
 
-  fast-xml-parser@4.4.1:
+  fast-xml-parser@4.5.0:
     dependencies:
       strnum: 1.0.5
 
@@ -30815,12 +30733,6 @@ snapshots:
 
   form-data-encoder@2.1.4: {}
 
-  form-data@2.3.3:
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      mime-types: 2.1.35
-
   form-data@2.5.1:
     dependencies:
       asynckit: 0.4.0
@@ -30918,7 +30830,7 @@ snapshots:
     dependencies:
       is-property: 1.0.2
 
-  generate-password@1.7.0: {}
+  generate-password@1.7.1: {}
 
   gensync@1.0.0-beta.2: {}
 
@@ -31170,7 +31082,7 @@ snapshots:
       jiti: 1.21.6
       minimatch: 9.0.5
       string-env-interpolation: 1.0.1
-      tslib: 2.8.0
+      tslib: 2.7.0
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
@@ -31614,7 +31526,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  http-signature@1.3.6:
+  http-signature@1.4.0:
     dependencies:
       assert-plus: 1.0.0
       jsprim: 2.0.2
@@ -34028,7 +33940,7 @@ snapshots:
       plist: 3.1.0
       split2: 4.2.0
       through2: 4.0.2
-      tslib: 2.8.0
+      tslib: 2.7.0
       yauzl: 2.10.0
     transitivePeerDependencies:
       - supports-color
@@ -34043,7 +33955,7 @@ snapshots:
 
   neverthrow@3.2.0: {}
 
-  next-auth@4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next-auth@4.24.8(next@14.2.15(@babel/core@7.25.8)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@babel/runtime': 7.25.7
       '@panva/hkdf': 1.2.1
@@ -34058,7 +33970,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       uuid: 8.3.2
     optionalDependencies:
-      nodemailer: 6.9.14
+      nodemailer: 6.9.15
 
   next-intl@3.21.1(next@14.2.15(@babel/core@7.21.8)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1):
     dependencies:
@@ -34269,7 +34181,7 @@ snapshots:
       long-timeout: 0.1.1
       sorted-array-functions: 1.3.0
 
-  nodemailer@6.9.14: {}
+  nodemailer@6.9.15: {}
 
   nodemon@3.1.7:
     dependencies:
@@ -35570,10 +35482,6 @@ snapshots:
 
   qrcode-generator@1.4.4: {}
 
-  qs@6.10.4:
-    dependencies:
-      side-channel: 1.0.6
-
   qs@6.13.0:
     dependencies:
       side-channel: 1.0.6
@@ -36245,6 +36153,13 @@ snapshots:
       es-errors: 1.3.0
       set-function-name: 2.0.2
 
+  regexp.prototype.flags@1.5.3:
+    dependencies:
+      call-bind: 1.0.7
+      define-properties: 1.2.1
+      es-errors: 1.3.0
+      set-function-name: 2.0.2
+
   regexpp@3.2.0: {}
 
   regexpu-core@5.3.2:
@@ -36550,12 +36465,12 @@ snapshots:
   rhea-promise@3.0.3:
     dependencies:
       debug: 4.3.7(supports-color@5.5.0)
-      rhea: 3.0.2
+      rhea: 3.0.3
       tslib: 2.8.0
     transitivePeerDependencies:
       - supports-color
 
-  rhea@3.0.2:
+  rhea@3.0.3:
     dependencies:
       debug: 4.3.7(supports-color@5.5.0)
     transitivePeerDependencies:
@@ -36775,7 +36690,7 @@ snapshots:
     dependencies:
       '@types/debug': 4.1.12
       '@types/validator': 13.12.0
-      debug: 4.3.6
+      debug: 4.3.7(supports-color@5.5.0)
       dottie: 2.0.6
       inflection: 1.13.4
       lodash: 4.17.21
@@ -36787,7 +36702,7 @@ snapshots:
       sequelize-pool: 7.1.0
       toposort-class: 1.0.1
       uuid: 8.3.2
-      validator: 13.11.0
+      validator: 13.12.0
       wkx: 0.5.0
     optionalDependencies:
       mariadb: 2.5.6
@@ -38510,14 +38425,6 @@ snapshots:
     dependencies:
       inherits: 2.0.3
 
-  util@0.12.5:
-    dependencies:
-      inherits: 2.0.4
-      is-arguments: 1.1.1
-      is-generator-function: 1.0.10
-      is-typed-array: 1.1.13
-      which-typed-array: 1.1.15
-
   utila@0.4.0: {}
 
   utility-types@3.11.0: {}
@@ -38559,7 +38466,7 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  validator@13.11.0: {}
+  validator@13.12.0: {}
 
   value-equal@1.0.1: {}
 
@@ -39402,8 +39309,6 @@ snapshots:
       zen-observable: 0.8.15
 
   zen-observable@0.8.15: {}
-
-  zod@3.21.4: {}
 
   zod@3.23.8: {}
 
