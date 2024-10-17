@@ -6,9 +6,10 @@ import GroupActivityElement from './GroupActivityElement'
 interface GroupActivityListProps {
   groupActivities: (Partial<GroupActivity> &
     Pick<GroupActivity, 'id' | 'name'>)[]
-  groupDeadlineDate: Date
+  groupDeadlineDate: string
   numOfParticipantGroups: number
   courseId: string
+  courseStartDate: string
   userCatalyst?: boolean
 }
 
@@ -17,6 +18,7 @@ function GroupActivityList({
   groupDeadlineDate,
   numOfParticipantGroups,
   courseId,
+  courseStartDate,
   userCatalyst,
 }: GroupActivityListProps) {
   const t = useTranslations()
@@ -31,6 +33,7 @@ function GroupActivityList({
               groupDeadlineDate={groupDeadlineDate}
               numOfParticipantGroups={numOfParticipantGroups}
               courseId={courseId}
+              courseStartDate={courseStartDate}
               key={groupActivity.id}
             />
           ))}
