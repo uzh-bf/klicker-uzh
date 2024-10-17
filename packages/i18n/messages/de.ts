@@ -1486,6 +1486,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.',
       courseEndReq:
         'Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.',
+      courseStartBeforeEarliestActivityStart:
+        'Das Kursstartdatum muss vor dem Startdatum der ersten Aktivität ({date}) liegen.',
+      endBeforeEarliestActivityEnd:
+        'Das Kursenddatum muss nach dem Enddatum der letzten Aktivität ({date}) liegen.',
+      groupDeadlineBeforeFirstGroupActivity:
+        'Die Deadline für die Gruppenbildung muss vor dem Start der ersten Gruppenaktivität ({date}) liegen.',
       endDateFuture: 'Das Enddatum muss in der Zukunft liegen.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
       courseName: 'Kursname',

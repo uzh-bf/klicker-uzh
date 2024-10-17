@@ -1472,6 +1472,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a start date for your course. The dates can be changed after creating the course.',
       courseEndReq:
         'Please enter an end date for your course. The dates can be changed after creating the course.',
+      courseStartBeforeEarliestActivityStart:
+        'The course start date must be before the start date of the earliest activity ({date}).',
+      endBeforeEarliestActivityEnd:
+        'The course end date must be after the end date of the last activity ({date}).',
+      groupDeadlineBeforeFirstGroupActivity:
+        'The group creation deadline must be before the start of the first group activity ({date}).',
       endDateFuture: 'The end date must be in the future.',
       endAfterStart: 'The end date must be after the start date.',
       courseName: 'Course name',

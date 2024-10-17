@@ -59,6 +59,7 @@ function GroupActivityClueModal({
       </Button>
 
       <Modal
+        escapeDisabled
         open={open}
         onClose={() => setOpen(false)}
         title={t('manage.sessionForms.groupActivityAddClue')}
