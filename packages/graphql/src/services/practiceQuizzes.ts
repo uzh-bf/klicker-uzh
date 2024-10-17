@@ -2419,7 +2419,8 @@ export async function respondToElementStack(
 
     if (
       stack?.microLearning &&
-      stack.elements.some((element) => element.responses.length > 0)
+      (stack.elements.some((element) => element.responses.length > 0) ||
+        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
     ) {
       return null
     }
