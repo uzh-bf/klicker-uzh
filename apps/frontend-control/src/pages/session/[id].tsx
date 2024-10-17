@@ -27,11 +27,18 @@ function RunningSession() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-  const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
-  const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
-  const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [{ query: GetUserRunningSessionsDocument }],
-  })
+  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
+    ActivateSessionBlockDocument
+  )
+  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateSessionBlockDocument
+  )
+  const [endSession, { loading: endingLiveQuiz }] = useMutation(
+    EndSessionDocument,
+    {
+      refetchQueries: [{ query: GetUserRunningSessionsDocument }],
+    }
+  )
 
   const {
     loading: sessionLoading,
@@ -139,6 +146,7 @@ function RunningSession() {
                 </div>
               )}
             <Button
+              loading={deactivatingBlock}
               onClick={async () => {
                 await deactivateSessionBlock({
                   variables: {
@@ -183,6 +191,7 @@ function RunningSession() {
               />
             )}
             <Button
+              loading={activatingBlock}
               onClick={async () => {
                 {
                   await activateSessionBlock({
@@ -215,6 +224,7 @@ function RunningSession() {
               className={{ root: 'mb-2' }}
             />
             <Button
+              loading={endingLiveQuiz}
               onClick={async () => {
                 await endSession({ variables: { id: id } })
                 router.push(

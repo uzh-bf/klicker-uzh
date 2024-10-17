@@ -41,15 +41,19 @@ function Session({ session }: SessionProps) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [startSession] = useMutation(StartSessionDocument, {
-    variables: { id: session.id },
-    refetchQueries: [
-      {
-        query: GetUserRunningSessionsDocument,
-      },
-    ],
-  })
+  const [startSession, { loading: startingQuiz }] = useMutation(
+    StartSessionDocument,
+    {
+      variables: { id: session.id },
+      refetchQueries: [
+        {
+          query: GetUserRunningSessionsDocument,
+        },
+      ],
+    }
+  )
 
+  // TODO fuse these two mutations as on other view and add update, loading state, etc.
   const [deleteSession] = useMutation(DeleteSessionDocument, {
     variables: { id: session.id },
     update(cache) {

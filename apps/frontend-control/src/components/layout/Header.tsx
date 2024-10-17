@@ -12,7 +12,7 @@ interface HeaderProps {
 function Header({ title }: HeaderProps) {
   const router = useRouter()
   const { pathname, asPath, query } = router
-  const [logoutUser] = useMutation(LogoutUserDocument)
+  const [logoutUser, { loading: loggingOut }] = useMutation(LogoutUserDocument)
 
   return (
     <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
@@ -37,6 +37,7 @@ function Header({ title }: HeaderProps) {
         />
         <Button
           basic
+          loading={loggingOut}
           onClick={async () => {
             const userIdLogout = await logoutUser()
             userIdLogout.data?.logoutUser

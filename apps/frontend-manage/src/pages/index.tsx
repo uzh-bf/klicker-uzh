@@ -45,7 +45,9 @@ function Index() {
   const router = useRouter()
   const t = useTranslations()
 
-  const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
+  const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
+    ToggleIsArchivedDocument
+  )
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
@@ -325,6 +327,7 @@ function Index() {
                     <>
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
+                          loading={toggelingArchive}
                           className={{
                             root: 'ml-1 h-10',
                           }}
@@ -347,6 +350,7 @@ function Index() {
                         tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
                         <Button
+                          loading={toggelingArchive}
                           className={{
                             root: 'ml-1 h-10',
                           }}

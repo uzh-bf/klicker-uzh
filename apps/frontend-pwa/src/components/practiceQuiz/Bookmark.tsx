@@ -30,41 +30,45 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     return bookmarks.includes(stackId)
   }, [bookmarks, stackId])
 
-  const [bookmarkElementStack] = useMutation(BookmarkElementStackDocument, {
-    variables: {
-      stackId: stackId,
-      courseId: router.query.courseId as string,
-      bookmarked: !isBookmarked,
-    },
-    update(cache) {
-      const data = cache.readQuery({
-        query: GetBookmarksPracticeQuizDocument,
-        variables: {
-          courseId: router.query.courseId as string,
-          quizId: quizId,
-        },
-      })
-      cache.writeQuery({
-        query: GetBookmarksPracticeQuizDocument,
-        variables: { courseId: router.query.courseId as string, quizId },
-        data: {
-          getBookmarksPracticeQuiz: isBookmarked
-            ? (data?.getBookmarksPracticeQuiz ?? []).filter(
-                (entry) => entry !== stackId
-              )
-            : [...(data?.getBookmarksPracticeQuiz ?? []), stackId],
-        },
-      })
-    },
-    optimisticResponse: {
-      bookmarkElementStack: isBookmarked
-        ? (bookmarks || []).filter((entry) => entry !== stackId)
-        : [...(bookmarks || []), stackId],
-    },
-  })
+  const [bookmarkElementStack, { loading: bookmarkingStack }] = useMutation(
+    BookmarkElementStackDocument,
+    {
+      variables: {
+        stackId: stackId,
+        courseId: router.query.courseId as string,
+        bookmarked: !isBookmarked,
+      },
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetBookmarksPracticeQuizDocument,
+          variables: {
+            courseId: router.query.courseId as string,
+            quizId: quizId,
+          },
+        })
+        cache.writeQuery({
+          query: GetBookmarksPracticeQuizDocument,
+          variables: { courseId: router.query.courseId as string, quizId },
+          data: {
+            getBookmarksPracticeQuiz: isBookmarked
+              ? (data?.getBookmarksPracticeQuiz ?? []).filter(
+                  (entry) => entry !== stackId
+                )
+              : [...(data?.getBookmarksPracticeQuiz ?? []), stackId],
+          },
+        })
+      },
+      optimisticResponse: {
+        bookmarkElementStack: isBookmarked
+          ? (bookmarks || []).filter((entry) => entry !== stackId)
+          : [...(bookmarks || []), stackId],
+      },
+    }
+  )
 
   return (
     <Button
+      loading={bookmarkingStack}
       onClick={() => bookmarkElementStack()}
       data={{ cy: 'bookmark-element-stack' }}
       className={{

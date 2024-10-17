@@ -68,6 +68,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   const [deletionModal, setDeletionModal] = useState(false)
   const [softDeletionModal, setSoftDeletionModal] = useState(false)
 
+  // TODO: COMBINE MUTATIONS; ADD OPTIMISTIC RESPONSE; LOADING STATES; ETC.
   // TODO: implement update and optimistic response
   const [deleteSession] = useMutation(DeleteSessionDocument, {
     variables: { id: session.id },

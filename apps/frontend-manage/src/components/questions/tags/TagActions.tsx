@@ -36,7 +36,7 @@ function TagActions({
   onMoveDown,
 }: TagActionsProps) {
   const t = useTranslations()
-  const [deleteTag] = useMutation(DeleteTagDocument, {
+  const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
     variables: {
       id: tag.id,
     },

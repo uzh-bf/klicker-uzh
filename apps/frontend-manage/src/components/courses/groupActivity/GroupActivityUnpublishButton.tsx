@@ -21,17 +21,21 @@ function GroupActivityUnpublishButton({
 }: GroupActivityUnpublishButtonProps) {
   const t = useTranslations()
 
-  const [unpublishGroupActivity] = useMutation(UnpublishGroupActivityDocument, {
-    variables: {
-      id: activityId,
-    },
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId } },
-    ],
-  })
+  const [unpublishGroupActivity, { loading: unpublishing }] = useMutation(
+    UnpublishGroupActivityDocument,
+    {
+      variables: {
+        id: activityId,
+      },
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId } },
+      ],
+    }
+  )
 
   return (
     <Button
+      loading={unpublishing}
       onClick={async () => await unpublishGroupActivity()}
       data={{
         cy: `unpublish-groupActivity-${activityName}`,

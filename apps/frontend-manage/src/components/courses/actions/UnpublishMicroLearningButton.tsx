@@ -16,13 +16,17 @@ function UnpublishMicroLearningButton({
   microLearning,
 }: UnpublishMicroLearningButtonProps) {
   const t = useTranslations()
-  const [unpublishMicrolearning] = useMutation(UnpublishMicroLearningDocument, {
-    variables: { id: microLearning.id },
-  })
+  const [unpublishMicrolearning, { loading: unpublishing }] = useMutation(
+    UnpublishMicroLearningDocument,
+    {
+      variables: { id: microLearning.id },
+    }
+  )
 
   return (
     <Button
       basic
+      loading={unpublishing}
       className={{ root: 'text-primary-100' }}
       onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
