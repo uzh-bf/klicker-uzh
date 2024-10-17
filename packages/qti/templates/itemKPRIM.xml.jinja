@@ -1,0 +1,102 @@
+{% extends "item.xml.jinja" %}
+
+{% block responseDeclaration %}
+<responseDeclaration identifier="RESPONSE_1" cardinality="multiple" baseType="directedPair">
+  <correctResponse>
+    {% for correct_response in item.correct_response %}
+    <value>{{correct_response}}</value>
+    {% endfor %}
+  </correctResponse>
+  <mapping defaultValue="-0.25">
+    {% for correct_response in item.correct_response %}
+    <mapEntry mapKey="{{correct_response}}" mappedValue="0.25" />
+    {% endfor %}
+  </mapping>
+</responseDeclaration>
+{% endblock %}
+
+{% block outcomeDeclarations %}
+{% endblock %}
+
+{% block itemBody %}
+<div>{{item.content}}</div>
+
+<matchInteraction class="match_krpim" responseIdentifier="RESPONSE_1" shuffle="false"
+  maxAssociations="4">
+  <simpleMatchSet>
+    <simpleAssociableChoice identifier="kp1" matchMax="1" matchMin="1"><p>New answer a</p></simpleAssociableChoice>
+    <simpleAssociableChoice identifier="kp2" matchMax="1" matchMin="1"><p>New answer b</p></simpleAssociableChoice>
+    <simpleAssociableChoice identifier="kp3" matchMax="1" matchMin="1"><p>New answer c</p></simpleAssociableChoice>
+    <simpleAssociableChoice identifier="kp4" matchMax="1" matchMin="1"><p>New answer d</p></simpleAssociableChoice>
+  </simpleMatchSet>
+  <simpleMatchSet>
+    <simpleAssociableChoice identifier="correct" fixed="true" matchMax="4">+</simpleAssociableChoice>
+    <simpleAssociableChoice identifier="wrong" fixed="true" matchMax="4">-</simpleAssociableChoice>
+  </simpleMatchSet>
+</matchInteraction>
+{% endblock %}
+
+{% block responseProcessing %}
+<responseCondition>
+  <responseIf>
+    <isNull>
+      <variable identifier="RESPONSE_1" />
+    </isNull>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">empty</baseValue>
+    </setOutcomeValue>
+  </responseIf>
+  <responseElseIf>
+    <not>
+      <equal toleranceMode="exact">
+        <containerSize>
+          <variable identifier="RESPONSE_1" />
+        </containerSize>
+        <baseValue baseType="integer">4</baseValue>
+      </equal>
+    </not>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <mapResponse identifier="RESPONSE_1" />
+        <product>
+          <subtract>
+            <baseValue baseType="integer">4</baseValue>
+            <containerSize>
+              <variable identifier="RESPONSE_1" />
+            </containerSize>
+          </subtract>
+          <baseValue baseType="float">-0.25</baseValue>
+        </product>
+      </sum>
+    </setOutcomeValue>
+  </responseElseIf>
+  <responseElseIf>
+    <match>
+      <variable identifier="RESPONSE_1" />
+      <correct identifier="RESPONSE_1" />
+    </match>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <variable identifier="SCORE" />
+        <variable identifier="MAXSCORE" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">correct</baseValue>
+    </setOutcomeValue>
+  </responseElseIf>
+  <responseElse>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <mapResponse identifier="RESPONSE_1" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">incorrect</baseValue>
+    </setOutcomeValue>
+  </responseElse>
+</responseCondition>
+{% endblock %}
+
+{% block modalFeedbacks %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "item.xml.jinja" %}
+
+{% block responseDeclaration %}
+<responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="float">
+  <correctResponse>
+    <value>42.0</value>
+  </correctResponse>
+</responseDeclaration>
+{% endblock %}
+
+{% block outcomeDeclarations %}
+{% endblock %}
+
+{% block itemBody %}
+<p>{{item.content}}<br /><textEntryInteraction responseIdentifier="RESPONSE_1" /></p>
+{% endblock %}
+
+{% block responseProcessing %}
+<responseCondition>
+  <responseIf>
+    <and>
+      <equal toleranceMode="exact" includeLowerBound="true" includeUpperBound="true">
+        <correct identifier="RESPONSE_1" />
+        <variable identifier="RESPONSE_1" />
+      </equal>
+    </and>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <variable identifier="SCORE" />
+        <variable identifier="MAXSCORE" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">correct</baseValue>
+    </setOutcomeValue>
+  </responseIf>
+  <responseElse>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">incorrect</baseValue>
+    </setOutcomeValue>
+  </responseElse>
+</responseCondition>
+{% endblock %}
+
+{% block feedbackModals %}
+{% endblock %}

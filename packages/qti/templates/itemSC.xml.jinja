@@ -1,0 +1,61 @@
+{% extends "item.xml.jinja" %}
+
+{% block responseDeclaration %}
+<responseDeclaration identifier="RESPONSE_1" cardinality="single" baseType="identifier">
+  <correctResponse>
+    {% for correct_response in item.correct_response %}
+    <value>{{correct_response}}</value>
+    {% endfor %}
+  </correctResponse>
+</responseDeclaration>
+{% endblock %}
+
+{% block outcomeDeclarations %}
+{% endblock %}
+
+{% block itemBody %}
+<div>{{item.content}}</div>
+
+<choiceInteraction responseIdentifier="RESPONSE_1" shuffle="true" maxChoices="1"
+  orientation="vertical">
+  {% for option in item.options %}
+  <simpleChoice identifier="{{option.identifier}}"><p>{{option.content}}</p></simpleChoice>
+  {% endfor %}
+</choiceInteraction>
+{% endblock %}
+
+{% block responseProcessing %}
+<responseCondition>
+  <responseIf>
+    <isNull>
+      <variable identifier="RESPONSE_1" />
+    </isNull>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">empty</baseValue>
+    </setOutcomeValue>
+  </responseIf>
+  <responseElseIf>
+    <match>
+      <variable identifier="RESPONSE_1" />
+      <correct identifier="RESPONSE_1" />
+    </match>
+    <setOutcomeValue identifier="SCORE">
+      <sum>
+        <variable identifier="SCORE" />
+        <variable identifier="MAXSCORE" />
+      </sum>
+    </setOutcomeValue>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">correct</baseValue>
+    </setOutcomeValue>
+  </responseElseIf>
+  <responseElse>
+    <setOutcomeValue identifier="FEEDBACKBASIC">
+      <baseValue baseType="identifier">incorrect</baseValue>
+    </setOutcomeValue>
+  </responseElse>
+</responseCondition>
+{% endblock %}
+
+{% block modalFeedbacks %}
+{% endblock %}

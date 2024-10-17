@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assessmentItem xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/qti/qtiv2p1/imsqti_v2p1.xsd"
+  identifier="flying-animals" title="Flying Animals" adaptive="false" timeDependent="false">
+
+  <responseDeclaration identifier="RESPONSE" cardinality="multiple" baseType="identifier">
+    <correctResponse>
+      <value>choice_b</value>
+      <value>choice_d</value>
+    </correctResponse>
+  </responseDeclaration>
+
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float" />
+
+  <itemBody>
+    <choiceInteraction responseIdentifier="RESPONSE" maxChoices="0">
+      <prompt>Which animals can fly?</prompt>
+      <simpleChoice identifier="choice_a">Crocodiles <feedbackInline identifier="feedback_a"
+          outcomeIdentifier="FEEDBACK" showHide="show">No, crocodiles cannot fly!</feedbackInline>
+      </simpleChoice>
+      <simpleChoice identifier="choice_b">Eagles <feedbackInline identifier="feedback_b"
+          outcomeIdentifier="FEEDBACK" showHide="show">Yes, eagles can fly!</feedbackInline>
+      </simpleChoice>
+      <simpleChoice identifier="choice_c">Kangaroos <feedbackInline identifier="feedback_c"
+          outcomeIdentifier="FEEDBACK" showHide="show">No kangaroos cannot fly!</feedbackInline>
+      </simpleChoice>
+      <simpleChoice identifier="choice_d">Butterflies <feedbackInline identifier="feedback_d"
+          outcomeIdentifier="FEEDBACK" showHide="show">Yes, butterflies can fly!</feedbackInline>
+      </simpleChoice>
+      <simpleChoice identifier="choice_e">Dogs <feedbackInline identifier="feedback_e"
+          outcomeIdentifier="FEEDBACK" showHide="show">No, dogs cannot fly!</feedbackInline>
+      </simpleChoice>
+    </choiceInteraction>
+  </itemBody>
+
+
+  <responseProcessing
+    template="http://www.imsglobal.org/question/qti_v2p1/rptemplates/match_correct" />
+
+  <modalFeedback outcomeIdentifier="FEEDBACK" showHide="show" identifier="correct">
+    <p>The eagle and butterfly have wings and can fly. The other animals are land animals that
+    cannot fly.</p>
+  </modalFeedback>
+</assessmentItem>

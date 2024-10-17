@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assessmentTest xmlns="http://www.imsglobal.org/xsd/imsqti_v2p1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/qti/qtiv2p1/imsqti_v2p1.xsd"
+  identifier="flying-animals-test" title="Flying Animals Test">
+
+  <outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float">
+    <defaultValue>
+      <value>0</value>
+    </defaultValue>
+  </outcomeDeclaration>
+
+  <outcomeDeclaration identifier="FEEDBACK" cardinality="multiple" baseType="identifier" />
+
+  <testPart identifier="testPart1" navigationMode="linear" submissionMode="individual">
+    <assessmentSection identifier="section1" title="Animal Knowledge" visible="true">
+      <assessmentItemRef identifier="flying-animals-item" href="flying-animals.xml">
+        <variableMapping sourceIdentifier="RESPONSE" targetIdentifier="RESPONSE" />
+        <weight identifier="W1" value="1.0" />
+      </assessmentItemRef>
+    </assessmentSection>
+  </testPart>
+
+  <testFeedback access="atEnd" showHide="show" identifier="testFeedback"
+    outcomeIdentifier="FEEDBACK">
+    <p>Thank you for completing the Flying Animals test.</p>
+  </testFeedback>
+
+</assessmentTest>

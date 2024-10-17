@@ -1,0 +1,32 @@
+{
+  "question_type": "multiple_choice",
+  "title": "Which person is the president of the United States?",
+  "description": "Which person is the president of the United States?",
+  "prompt": "Pick the correct answer.",
+  "feedback": {
+      "general": "The student will always see this feedback.",
+      "correct": "The student will see this feedback if they answer correctly.",
+      "incorrect": "The student will see this feedback if they answer incorrectly."
+  },
+  "answers": [
+      {
+          "correct": true,
+          "text": "Alice",
+          "feedback": "You got the correct answer\\!"
+      },
+      {
+          "correct": false,
+          "text": "Bob",
+          "feedback": "Sorry, it was not Bob."
+      },
+      {
+          "correct": true,
+          "text": "Claire",
+          "feedback": "Sorry, Claire is not the correct answer."
+      },
+      {
+          "correct": false,
+          "text": "Doug"
+      }
+  ]
+}
