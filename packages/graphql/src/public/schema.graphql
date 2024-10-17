@@ -1365,6 +1365,7 @@ type Subscription {
   feedbackUpdated(sessionId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
+  microLearningEnded(activityId: String!): MicroLearning!
   runningSessionUpdated(sessionId: String!): SessionBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }

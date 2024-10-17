@@ -508,6 +508,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Group activity "{activityName}" ended, no more submissions are possible.',
       groupActivityStartedToast:
         'Group activity "{activityName}" has just opened, start it now!',
+      microLearningEndedToast:
+        'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
         'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
