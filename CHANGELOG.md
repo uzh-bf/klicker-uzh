@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2024-10-17)
+
+
+### Features
+
+* add possibility to end microlearnings immediately including student-side subscriptions ([#4315](https://github.com/uzh-bf/klicker-uzh/issues/4315)) ([1a19b59](https://github.com/uzh-bf/klicker-uzh/commit/1a19b5941a70b3059e714578da43bb2cb82fec33))
+
+
+### Bug Fixes
+
+* add loading states where required and update live quiz deletion logic ([#4314](https://github.com/uzh-bf/klicker-uzh/issues/4314)) ([3ab1a1a](https://github.com/uzh-bf/klicker-uzh/commit/3ab1a1ab32aba83e42e92d7e37adf923900b0114))
+* enforce in backend that no responses to past microlearning are accepted ([#4316](https://github.com/uzh-bf/klicker-uzh/issues/4316)) ([723350d](https://github.com/uzh-bf/klicker-uzh/commit/723350d989d11d8f2270045a1e39d84002a1985c))
+* **packages/graphql:** allow moving course start date into the past ([#4311](https://github.com/uzh-bf/klicker-uzh/issues/4311)) ([e402d7e](https://github.com/uzh-bf/klicker-uzh/commit/e402d7ec44ccbc5ceb5078b8cfcdc5f9b270d144))
+
+
+### Other
+
+* **apps/frontend-manage:** display notification if course description is missing ([#4313](https://github.com/uzh-bf/klicker-uzh/issues/4313)) ([e1a27ac](https://github.com/uzh-bf/klicker-uzh/commit/e1a27ac924b60ee6e94c8912a96b5993cfdc5e08))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** enforce that activity dates are consistent with course dates ([#4310](https://github.com/uzh-bf/klicker-uzh/issues/4310)) ([24e1bb9](https://github.com/uzh-bf/klicker-uzh/commit/24e1bb99210c57dd6d58ea4257cbf56d6821f62d))
+* **apps/frontend-manage:** ensure that group activity can only be started after course start and group formation ([#4312](https://github.com/uzh-bf/klicker-uzh/issues/4312)) ([8fae5d7](https://github.com/uzh-bf/klicker-uzh/commit/8fae5d76bf5c3de83a6dbe9518cc3e01a229e8a3))
+
 ## [3.3.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.0...v3.3.0-alpha.1) (2024-10-16)
 
 
