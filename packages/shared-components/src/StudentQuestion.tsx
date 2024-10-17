@@ -1,3 +1,7 @@
+// @ts-nocheck
+// ! This file can be ignored in type checks, since a newer version is already available
+// ! and will replace the live quiz components as well (StudentElement)
+
 import type {
   ChoicesQuestionData,
   FreeTextQuestionData,

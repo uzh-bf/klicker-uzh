@@ -106,6 +106,7 @@ export default {
       passwordError: 'Please enter your password.',
       studentLoginError:
         'The username or password are incorrect. If you have forgotten your password, please use the "E-Mail Login" function.',
+      usernameAvailability: 'This username is already taken.',
       systemError: 'An unexpected error occurred. Please try again later.',
       error: 'Error',
       back: 'Back',
@@ -336,7 +337,6 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
-      usernameAvailability: 'This username is already taken.',
     },
     studentDocs: {
       pageList: `

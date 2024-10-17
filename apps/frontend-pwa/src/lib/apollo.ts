@@ -64,34 +64,32 @@ function createIsomorphLink() {
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
-      graphQLErrors.forEach(
-        ({ message, locations, path, extensions, originalError }) => {
-          console.log(
-            `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
-              locations,
-              false,
-              null,
-              true
-            )}, Path: ${path}, Extensions: ${util.inspect(
-              extensions,
-              false,
-              null,
-              true
-            )}, Original: ${originalError}`
-          )
+      graphQLErrors.forEach(({ message, locations, path, extensions }) => {
+        console.log(
+          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+            locations,
+            false,
+            null,
+            true
+          )}, Path: ${path}, Extensions: ${util.inspect(
+            extensions,
+            false,
+            null,
+            true
+          )}`
+        )
 
-          // redirect the user to the login page on errors
-          if (isBrowser && message === 'Unauthorized') {
-            Router.push(
-              `/login?expired=true&redirect_to=${
-                encodeURIComponent(
-                  window?.location?.pathname + (window?.location?.search ?? '')
-                ) ?? '/'
-              }`
-            )
-          }
+        // redirect the user to the login page on errors
+        if (isBrowser && message === 'Unauthorized') {
+          Router.push(
+            `/login?expired=true&redirect_to=${
+              encodeURIComponent(
+                window?.location?.pathname + (window?.location?.search ?? '')
+              ) ?? '/'
+            }`
+          )
         }
-      )
+      })
     if (networkError) console.log(`[Network error]`, networkError)
   })
 

@@ -118,6 +118,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                   })
                   return result?.checkShortnameAvailable ?? false
                 }}
+                unavailableMessage={t('shared.generic.usernameAvailability')}
                 data={{ cy: 'shortname-update-field' }}
                 required
                 hideError
