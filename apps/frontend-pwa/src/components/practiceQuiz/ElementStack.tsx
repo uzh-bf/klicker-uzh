@@ -61,7 +61,9 @@ function ElementStack({
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
-  const [respondToElementStack] = useMutation(RespondToElementStackDocument)
+  const [respondToElementStack, { loading: submittingResponse }] = useMutation(
+    RespondToElementStackDocument
+  )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: withParticipant,
@@ -315,6 +317,7 @@ function ElementStack({
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
           className={{ root: 'float-right mt-4 text-lg' }}
+          loading={submittingResponse}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}

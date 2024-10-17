@@ -40,7 +40,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   return `${hours}:${minutes}:${seconds}`
 }
 
-interface Props {
+interface SessionTimelineProps {
   shortname: string
   blocks?: ISessionBlock[]
   sessionName: string
@@ -51,6 +51,7 @@ interface Props {
   isEvaluationPublic?: boolean
   sessionId: string
   startedAt?: string
+  loading?: boolean
 }
 
 function SessionTimeline({
@@ -64,7 +65,8 @@ function SessionTimeline({
   handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
-}: Props): React.ReactElement {
+  loading,
+}: SessionTimelineProps): React.ReactElement {
   const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
   const { locale } = useRouter()
@@ -218,6 +220,7 @@ function SessionTimeline({
           {isFeedbackSession && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
+                loading={loading}
                 className={{
                   root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
@@ -282,6 +285,7 @@ function SessionTimeline({
               {t('manage.cockpit.abortSession')}
             </Button>
             <Button
+              loading={loading}
               className={{
                 root: twMerge(
                   (buttonState === 'firstBlock' ||

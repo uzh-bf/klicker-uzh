@@ -163,7 +163,8 @@ function AvatarUpdateForm({
                   <Button
                     fluid
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    loading={isSubmitting}
+                    disabled={!isValid}
                     data={{ cy: 'save-avatar-update' }}
                   >
                     <Button.Icon>

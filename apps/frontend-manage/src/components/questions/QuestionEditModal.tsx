@@ -483,7 +483,8 @@ function QuestionEditModal({
       initialValues={question}
       validationSchema={questionManipulationSchema}
       // TODO: extract this to useCallback hook once proper typing is available in question edit modal
-      onSubmit={async (values) => {
+      onSubmit={async (values, { setSubmitting }) => {
+        setSubmitting(true)
         const common = {
           id: questionId,
           name: values.name,
@@ -640,6 +641,7 @@ function QuestionEditModal({
           }
         }
 
+        setSubmitting(false)
         handleSetIsOpen(false)
       }}
     >

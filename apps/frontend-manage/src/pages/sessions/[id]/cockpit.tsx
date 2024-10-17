@@ -21,18 +21,25 @@ function Cockpit() {
   const router = useRouter()
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
-  const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
-  const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
-  const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [
-      {
-        query: GetUserRunningSessionsDocument,
-      },
-      {
-        query: GetUserSessionsDocument,
-      },
-    ],
-  })
+  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
+    ActivateSessionBlockDocument
+  )
+  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateSessionBlockDocument
+  )
+  const [endSession, { loading: endingLiveQuiz }] = useMutation(
+    EndSessionDocument,
+    {
+      refetchQueries: [
+        {
+          query: GetUserRunningSessionsDocument,
+        },
+        {
+          query: GetUserSessionsDocument,
+        },
+      ],
+    }
+  )
 
   // TODO: when refactoring this code to be compatible with the new live quiz setup,
   // think about modifying this logic to only refetch the required live quiz elements
@@ -111,6 +118,7 @@ function Cockpit() {
           isEvaluationPublic={isEvaluationPublic}
           sessionId={id}
           startedAt={startedAt}
+          loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />
       </div>
 
