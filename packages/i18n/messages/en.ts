@@ -1565,6 +1565,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
+      noDescriptionNotification: 'No description available.',
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
