@@ -19,9 +19,9 @@ export function TitleImage() {
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
                 <div className="hidden sm:mb-10 sm:flex">
                   <div className="text-md relative rounded-full px-3 py-1 leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                    KlickerUZH v3.1 has been released with brand new features{' '}
+                    KlickerUZH v3.2 has been released with brand new features
                     <a
-                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-1-release-information/310"
+                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
                       className="whitespace-nowrap font-semibold"
                       target="_blank"
                       style={{ marginLeft: '0.75rem' }}
