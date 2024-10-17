@@ -1,5 +1,6 @@
 {
   "name": "@klicker-uzh/i18n",
+  "version": "3.3.0-alpha.1",
   "files": [
     "index.ts",
     "messages/"

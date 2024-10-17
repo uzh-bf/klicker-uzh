@@ -8,7 +8,7 @@ export default {
         'resolutions',
         'overrides',
         'pnpmOverrides',
-        'local',
+        // 'local',
       ],
       dependencies: ['**'],
       packages: ['**'],
