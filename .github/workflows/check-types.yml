@@ -40,6 +40,7 @@ jobs:
 
       - name: Build all packages and apps
         run: |
+          pnpm install
           pnpm run build
 
       - name: Check prisma package typescript types
