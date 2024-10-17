@@ -12,13 +12,13 @@ function Home() {
     <Layout>
       <TitleImage />
       <FeatureSection
-        title="Gamified Learning"
+        title="Gamified Learning is what it is"
         description=""
         features={[
           {
             title: 'Progress Tracking',
             icon: faArrowRight,
-            text: 'Students ',
+            text: 'Students hi ',
             hoverImage: '/img_v3/06_live_quiz.png',
             shadow: false,
           },

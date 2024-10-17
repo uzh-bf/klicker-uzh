@@ -1,6 +1,7 @@
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+
 interface Feature {
   title: string
   icon: IconDefinition
@@ -19,16 +20,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
   const [hoveredImage, setHoveredImage] = useState(
     features[0]?.hoverImage || ''
   )
-  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(
-    features[0]
-  ) // Set the first feature as default
-
-  useEffect(() => {
-    if (features.length > 0) {
-      setHoveredImage(features[0].hoverImage)
-      setHoveredFeature(features[0]) // Initialize with the first feature
-    }
-  }, [features])
+  const [hoveredFeature, setHoveredFeature] = useState<Feature | null>()
 
   const handleMouseEnter = (feature: Feature) => {
     setHoveredImage(feature.hoverImage)
@@ -51,7 +43,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                 {features.map((feature) => (
                   <div
                     key={feature.title}
-                    className={`relative p-6 pl-9 ${hoveredFeature === feature ? 'rounded-xl shadow-xl' : ''}`} // Add shadow if hovered
+                    className={`relative p-6 pl-9 ${hoveredFeature === feature ? 'hover:rounded-xl hover:shadow-xl' : ''}`}
                     onMouseEnter={() => handleMouseEnter(feature)}
                   >
                     <dt className="inline font-semibold text-gray-900">
@@ -73,7 +65,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               <img
                 src={hoveredImage}
                 alt="Feature specific screenshot"
-                className={`h-auto max-h-[400px] w-full object-contain p-4 ${hoveredFeature?.shadow ? 'rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0' : ''}`}
+                className="h-auto max-h-[400px] w-full rounded-xl object-contain p-4 shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0"
               />
             </div>
           </div>
