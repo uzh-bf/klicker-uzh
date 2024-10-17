@@ -32,7 +32,7 @@
     "nodemailer": "6.9.15",
     "remeda": "2.15.0",
     "unique-names-generator": "4.7.1",
-    "uuid": "9.0.1",
+    "uuid": "10.0.0",
     "validator": "13.12.0",
     "zod": "3.23.8"
   },
@@ -56,7 +56,7 @@
     "@types/node": "^20.16.1",
     "@types/node-schedule": "^2.1.0",
     "@types/nodemailer": "^6.4.15",
-    "@types/uuid": "^9.0.8",
+    "@types/uuid": "^10.0.0",
     "@types/validator": "^13.9.0",
     "@types/web-push": "^3.6.3",
     "cross-env": "~7.0.3",

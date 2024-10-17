@@ -16,7 +16,7 @@
     "@types/bcryptjs": "^2.4.2",
     "@types/node": "^20.16.1",
     "@types/turndown": "^5.0.4",
-    "@types/uuid": "^9.0.8",
+    "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
     "bcryptjs": "~2.4.3",
     "cross-env": "~7.0.3",
@@ -32,7 +32,7 @@
     "tsx": "~4.19.1",
     "turndown": "~7.1.2",
     "typescript": "~5.6.3",
-    "uuid": "~9.0.1",
+    "uuid": "~10.0.0",
     "uuidv4": "~6.2.13",
     "xml2js": "~0.6.2"
   },
