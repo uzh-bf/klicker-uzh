@@ -36,10 +36,8 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 {title}
               </h2>
-              <p className="mt-6 text-lg leading-8 text-gray-600">
-                {description}
-              </p>
-              <dl className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
+              <p className="mt-6 text-lg text-gray-600">{description}</p>
+              <dl className="mt-10 max-w-xl space-y-6 text-base text-gray-600 lg:max-w-none">
                 {features.map((feature) => (
                   <div
                     key={feature.title}
@@ -54,7 +52,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                       />
                       {feature.title}
                     </dt>{' '}
-                    <dd className="inline">{feature.text}</dd>
+                    <dd className="ml-0 block">{feature.text}</dd>
                   </div>
                 ))}
               </dl>
