@@ -45,7 +45,7 @@
     "build": "turbo run build",
     "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "run-p check:*",
-    "check:app": "turbo run check --parallel --continue",
+    "//check:app": "turbo run check --parallel --continue",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev --concurrency 30",

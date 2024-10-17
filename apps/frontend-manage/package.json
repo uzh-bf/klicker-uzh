@@ -4,8 +4,8 @@
   "version": "3.3.0-alpha.1",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@azure/storage-blob": "12.24.0",
     "@apollo/client": "3.11.8",
+    "@azure/storage-blob": "12.24.0",
     "@fortawesome/fontawesome-svg-core": "6.6.0",
     "@fortawesome/free-brands-svg-icons": "6.4.2",
     "@fortawesome/free-regular-svg-icons": "6.6.0",
