@@ -4,12 +4,11 @@
   "devDependencies": {
     "@cypress/code-coverage": "~3.13.4",
     "@testing-library/cypress": "~10.0.2",
-    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.16.1",
     "@types/uuid": "^10.0.0",
     "cypress": "~13.15.0",
     "cypress-real-events": "~1.13.0",
-    "jsonwebtoken": "~9.0.2",
+    "jose": "~5.9.4",
     "typescript": "~5.6.3",
     "uuid": "~10.0.0"
   },

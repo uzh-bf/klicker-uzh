@@ -1,6 +1,6 @@
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
-import { sign } from 'jsonwebtoken'
+import * as jose from 'jose'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
@@ -24,17 +24,25 @@ const loginFactory = (tokenData) => () => {
 
   cy.viewport('macbook-16')
 
-  const token = sign(tokenData, 'abcd') // sign token with app secret
+  const secret = new TextEncoder().encode('abcd')
+  const alg = 'HS256'
 
-  cy.setCookie('next-auth.session-token', token, {
-    domain: '127.0.0.1',
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-  })
+  new jose.SignJWT(tokenData)
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(secret)
+    .then((token) => {
+      cy.setCookie('next-auth.session-token', token, {
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      })
 
-  cy.visit(Cypress.env('URL_MANAGE'))
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
 }
 
 Cypress.Commands.add(
