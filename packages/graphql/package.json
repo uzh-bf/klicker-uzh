@@ -20,7 +20,7 @@
     "@pothos/plugin-zod": "4.1.0",
     "axios": "1.7.7",
     "bcryptjs": "2.4.3",
-    "dayjs": "1.11.12",
+    "dayjs": "1.11.13",
     "generate-password": "1.7.0",
     "graphql": "16.9.0",
     "graphql-scalars": "1.23.0",

@@ -20,7 +20,7 @@
     "@fortawesome/react-fontawesome": "~0.2.2",
     "@gabrielcsapo/docusaurus-plugin-matomo": "~0.1.2",
     "@mdx-js/react": "~3.0.1",
-    "@tailwindcss/typography": "~0.5.9",
+    "@tailwindcss/typography": "~0.5.15",
     "@tsconfig/docusaurus": "~1.0.5",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
     "autoprefixer": "~10.4.20",
