@@ -2,6 +2,7 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementType,
   GetFeedbacksDocument,
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
@@ -92,7 +93,7 @@ function Index({ id }: Props) {
   } = data.session
 
   const handleNewResponse = async (
-    type: string,
+    type: ElementType,
     instanceId: number,
     answer: any
   ) => {

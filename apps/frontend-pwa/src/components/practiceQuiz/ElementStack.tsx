@@ -162,10 +162,12 @@ function ElementStack({
               )
             } else if (elementType === ElementType.Kprim) {
               const storedChoices = evaluation.lastResponse.choices as number[]
-              response = { 0: false, 1: false, 2: false, 3: false }
-              storedChoices.forEach((choice) => {
-                response[choice] = true
-              })
+              response = {
+                0: storedChoices.includes(0),
+                1: storedChoices.includes(1),
+                2: storedChoices.includes(2),
+                3: storedChoices.includes(3),
+              }
             } else if (
               elementType === ElementType.Numerical ||
               elementType === ElementType.FreeText

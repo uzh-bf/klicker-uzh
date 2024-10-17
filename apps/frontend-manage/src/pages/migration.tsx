@@ -17,7 +17,7 @@ import { twMerge } from 'tailwind-merge'
 
 type SetBooleanState = React.Dispatch<React.SetStateAction<boolean>>
 
-function Migration({ query }) {
+function Migration({ query }: any) {
   //TODO: refactor code and simplify state handling
   const t = useTranslations()
   const router = useRouter()
@@ -104,7 +104,6 @@ function Migration({ query }) {
                 label="E-Mail: "
                 onChange={(newValue: string) => setEmail(newValue)}
                 className={{
-                  root: 'w-full',
                   field: 'w-[500px]',
                   input: 'w-[500px]',
                 }}
