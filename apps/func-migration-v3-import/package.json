@@ -11,7 +11,7 @@
     "@azure/functions": "4.5.1",
     "@azure/storage-blob": "12.24.0",
     "@klicker-uzh/prisma": "workspace:*",
-    "axios": "1.4.0",
+    "axios": "1.7.7",
     "jsonwebtoken": "9.0.2",
     "mongoose": "7.3.3",
     "uuid": "9.0.1"
