@@ -11,6 +11,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
 import { Button, Prose, Tabs } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -37,6 +38,13 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
+
+  const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
+    useEarliestLatestCourseDates({
+      groupActivities: data?.course?.groupActivities ?? undefined,
+      microLearnings: data?.course?.microLearnings ?? undefined,
+      practiceQuizzes: data?.course?.practiceQuizzes ?? undefined,
+    })
 
   useEffect(() => {
     if (data && !data.course) {
@@ -83,6 +91,9 @@ function CourseOverviewPage() {
           name={course.name}
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}
+          earliestGroupDeadline={earliestGroupDeadline}
+          earliestStartDate={earliestStartDate}
+          latestEndDate={latestEndDate}
         />
       </div>
 

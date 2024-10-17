@@ -9,6 +9,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import CourseChangeMonitor from '../CourseChangeMonitor'
 import CreationFormValidator from '../CreationFormValidator'
 import DateChangeMonitor from '../DateChangeMonitor'
 import MultiplierSelector from '../MultiplierSelector'
@@ -47,7 +48,7 @@ function GroupActivitySettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setTouched }) => (
+      {({ values, touched, isValid, isSubmitting, setTouched, setValues }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -55,6 +56,12 @@ function GroupActivitySettingsStep({
             setStepValidity={setStepValidity}
           />
           <DateChangeMonitor values={values} setTouched={setTouched} />
+          <CourseChangeMonitor
+            values={values}
+            setTouched={setTouched}
+            setValues={setValues}
+            courses={coursesWithGroups ?? []}
+          />
           <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div

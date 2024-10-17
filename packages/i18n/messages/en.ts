@@ -1063,6 +1063,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
         'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
+      microlearningStartAfterCourseStart:
+        'The start date of the microlearning must be after the start date of the course.',
+      microlearningEndBeforeCourseEnd:
+        'The end date of the microlearning must be before the end date of the course.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
@@ -1149,6 +1153,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
         'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
+      practiceQuizStartAfterCourseStart:
+        'The start date of the practice quiz must be after the start date of the course.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1228,6 +1234,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
       groupActivityEndDate:
         'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityStartAfterCourseStart:
+        'The start date of the group activity must be after the start date of the course.',
+      groupActivityStartAfterGroupDeadline:
+        'The start date of the group activity must be after the group formation deadline.',
+      groupActivityEndBeforeCourseEnd:
+        'The end date of the group activity must be before the end date of the course.',
       groupActivityMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
       groupActivityUseCase:
@@ -1466,6 +1478,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a start date for your course. The dates can be changed after creating the course.',
       courseEndReq:
         'Please enter an end date for your course. The dates can be changed after creating the course.',
+      courseStartBeforeEarliestActivityStart:
+        'The course start date must be before the start date of the earliest activity ({date}).',
+      endBeforeEarliestActivityEnd:
+        'The course end date must be after the end date of the last activity ({date}).',
+      groupDeadlineBeforeFirstGroupActivity:
+        'The group creation deadline must be before the start of the first group activity ({date}).',
       endDateFuture: 'The end date must be in the future.',
       endAfterStart: 'The end date must be after the start date.',
       courseName: 'Course name',

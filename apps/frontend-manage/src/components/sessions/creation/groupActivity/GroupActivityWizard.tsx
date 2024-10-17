@@ -106,11 +106,37 @@ function GroupActivityWizard({
   })
 
   const settingsValidationSchema = yup.object().shape({
-    startDate: yup.date().required(t('manage.sessionForms.startDate')),
+    startDate: yup
+      .date()
+      .required(t('manage.sessionForms.groupActivityStartDate'))
+      .test(
+        'afterCourseStart',
+        t('manage.sessionForms.groupActivityStartAfterCourseStart'),
+        (value, context) =>
+          context.parent.courseStartDate
+            ? dayjs(value) > dayjs(context.parent.courseStartDate)
+            : true
+      )
+      .test(
+        'afterGroupDeadline',
+        t('manage.sessionForms.groupActivityStartAfterGroupDeadline'),
+        (value, context) =>
+          context.parent.courseGroupDeadline
+            ? dayjs(value) > dayjs(context.parent.courseGroupDeadline)
+            : true
+      ),
     endDate: yup
       .date()
+      .required(t('manage.sessionForms.groupActivityEndDate'))
       .min(yup.ref('startDate'), t('manage.sessionForms.endAfterStart'))
-      .required(t('manage.sessionForms.endDate')),
+      .test(
+        'beforeCourseEnd',
+        t('manage.sessionForms.groupActivityEndBeforeCourseEnd'),
+        (value, context) =>
+          context.parent.courseEndDate
+            ? dayjs(value) < dayjs(context.parent.courseEndDate)
+            : true
+      ),
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
@@ -184,6 +210,9 @@ function GroupActivityWizard({
     endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
     multiplier: '1',
     courseId: undefined,
+    courseStartDate: undefined,
+    courseEndDate: undefined,
+    courseGroupDeadline: undefined,
   }
 
   const workflowItems = [
@@ -244,6 +273,9 @@ function GroupActivityWizard({
     endDate: initialValues?.scheduledEndAt
       ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
       : formDefaultValues.endDate,
+    courseStartDate: formDefaultValues.courseStartDate,
+    courseEndDate: formDefaultValues.courseEndDate,
+    courseGroupDeadline: formDefaultValues.courseGroupDeadline,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
