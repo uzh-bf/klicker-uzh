@@ -50,7 +50,7 @@
     "react-select": "5.7.4",
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",
-    "recharts": "2.7.2",
+    "recharts": "2.13.0",
     "remark-slate": "1.8.6",
     "remeda": "2.15.0",
     "sharp": "0.33.5",
