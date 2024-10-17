@@ -843,23 +843,23 @@
   opacity: 0.5
 }
 
-.prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+.prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin: 0px !important
 }
 
-.prose-p\:mb-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+.prose-p\:mb-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin-bottom: 0px
 }
 
-.prose-p\:mb-1 :is(:where(p):not(:where([class~="not-prose"] *))) {
+.prose-p\:mb-1 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin-bottom: 0.25rem
 }
 
-.prose-p\:mt-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+.prose-p\:mt-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin-top: 0px
 }
 
-.prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"] *))) {
+.prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin: 0px !important
 }
 
