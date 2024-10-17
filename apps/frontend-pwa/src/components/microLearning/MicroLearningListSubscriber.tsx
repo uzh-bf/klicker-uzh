@@ -33,7 +33,7 @@ function MicroLearningListSubscriber({
       ): { participations: Participation[] } => {
         if (!subscriptionData.data) return prev
 
-        // trigger toast for ended group activity
+        // trigger toast for ended microlearning
         setEndedMicroLearning(
           subscriptionData.data.microLearningEnded.displayName
         )

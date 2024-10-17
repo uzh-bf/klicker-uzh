@@ -58,8 +58,6 @@ export async function getMicroLearningData(
     },
   })
 
-  // TODO: handle here if already responded to the element? goal with micro = one try
-
   return microLearning
 }
 

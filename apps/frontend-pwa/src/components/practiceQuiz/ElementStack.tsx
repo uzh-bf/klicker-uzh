@@ -41,7 +41,7 @@ interface ElementStackProps {
   bookmarks?: number[] | null
   hideBookmark?: boolean
   singleSubmission?: boolean
-  acitvityExpired?: boolean
+  activityExpired?: boolean
   activityExpiredMessage?: string
 }
 
@@ -203,6 +203,14 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
+        {activityExpired && activityExpiredMessage && (
+          <UserNotification
+            type="error"
+            message={activityExpiredMessage}
+            className={{ root: 'mb-2' }}
+          />
+        )}
+
         {!hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
@@ -214,10 +222,6 @@ function ElementStack({
           </div>
         ) : (
           <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
-        )}
-
-        {activityExpired && activityExpiredMessage && (
-          <UserNotification type="warning" message={activityExpiredMessage} />
         )}
 
         {stack.description && (
