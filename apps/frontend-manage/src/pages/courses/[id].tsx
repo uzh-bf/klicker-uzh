@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client'
 import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCrown,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
@@ -92,7 +95,17 @@ function CourseOverviewPage() {
         <div>
           <div className="font-bold">{t('shared.generic.description')}</div>
           <Prose className={{ root: 'prose-p:m-0 prose-img:m-0' }}>
-            <Ellipsis maxLines={3}>{course.description}</Ellipsis>
+            {course.description ? (
+              <Ellipsis maxLines={3}>{course.description}</Ellipsis>
+            ) : (
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon
+                  icon={faTriangleExclamation}
+                  className="text-orange-600"
+                />
+                <div>{t('manage.course.noDescriptionNotification')}</div>
+              </div>
+            )}
           </Prose>
         </div>
         <div className="grid grid-cols-2">

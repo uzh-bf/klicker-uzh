@@ -1585,6 +1585,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
+      noDescriptionNotification: 'Keine Beschreibung vorhanden',
       changedDate: 'Datum wurde erfolgreich angepasst.',
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
