@@ -14,7 +14,7 @@ import StudentElement, {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H2 } from '@uzh-bf/design-system'
+import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
@@ -41,6 +41,8 @@ interface ElementStackProps {
   bookmarks?: number[] | null
   hideBookmark?: boolean
   singleSubmission?: boolean
+  activityExpired?: boolean
+  activityExpiredMessage?: string
 }
 
 function ElementStack({
@@ -56,12 +58,16 @@ function ElementStack({
   bookmarks,
   hideBookmark = false,
   singleSubmission = false,
+  activityExpired = false,
+  activityExpiredMessage,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
-  const [respondToElementStack] = useMutation(RespondToElementStackDocument)
+  const [respondToElementStack, { loading: submittingResponse }] = useMutation(
+    RespondToElementStackDocument
+  )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: withParticipant,
@@ -199,6 +205,14 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
+        {activityExpired && activityExpiredMessage && (
+          <UserNotification
+            type="error"
+            message={activityExpiredMessage}
+            className={{ root: 'mb-2' }}
+          />
+        )}
+
         {!hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
@@ -314,10 +328,12 @@ function ElementStack({
 
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
+          loading={submittingResponse}
+          disabled={
+            activityExpired ||
+            Object.values(studentResponse).some((response) => !response.valid)
+          }
           className={{ root: 'float-right mt-4 text-lg' }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {

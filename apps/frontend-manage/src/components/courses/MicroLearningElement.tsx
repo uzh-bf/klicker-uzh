@@ -7,6 +7,7 @@ import {
 import {
   faArrowsRotate,
   faCheck,
+  faFlagCheckered,
   faHandPointer,
   faHourglassEnd,
   faHourglassStart,
@@ -37,6 +38,7 @@ import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import ExtensionModal from './modals/ExtensionModal'
 import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
+import MicroLearningEndingModal from './modals/MicroLearningEndingModal'
 
 interface MicroLearningElementProps {
   microLearning: Pick<
@@ -60,6 +62,7 @@ function MicroLearningElement({
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
+  const [endingModal, setEndingModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -347,6 +350,21 @@ function MicroLearningElement({
                             cy: `extend-microlearning-${microLearning.name}`,
                           },
                         },
+                        {
+                          label: (
+                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faFlagCheckered}
+                                className="w-[1.2rem]"
+                              />
+                              <div>{t('manage.course.endMicroLearning')}</div>
+                            </div>
+                          ),
+                          onClick: () => setEndingModal(true),
+                          data: {
+                            cy: `end-microlearning-${microLearning.name}`,
+                          },
+                        },
                       ]
                     : []),
                   ...(isPast
@@ -392,6 +410,12 @@ function MicroLearningElement({
       <MicroLearningDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
+        activityId={microLearning.id}
+        courseId={courseId}
+      />
+      <MicroLearningEndingModal
+        open={endingModal}
+        setOpen={setEndingModal}
         activityId={microLearning.id}
         courseId={courseId}
       />

@@ -508,6 +508,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Group activity "{activityName}" ended, no more submissions are possible.',
       groupActivityStartedToast:
         'Group activity "{activityName}" has just opened, start it now!',
+      microLearningEndedToast:
+        'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
         'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
@@ -589,6 +591,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       availableFrom: 'Available from {date}',
       availableUntil: 'Available until {date}',
       questionSetN: 'Question set {number}',
+      activityExpired:
+        'This microlearning has expired and no new answers can be submitted anymore.',
     },
     session: {
       noActiveQuestion: 'No question active.',
@@ -1661,6 +1665,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endGroupActivity: 'End group activity',
       endGroupActivityMessage:
         'Please confirm that you want to end this group activity. Note that no further submissions will be accepted after triggering this action.',
+      endMicroLearning: 'End microlearning',
+      endMicroLearningMessage:
+        'Please confirm that you want to end this microlearning. Note that no further submissions will be accepted after triggering this action.',
+      noResponsesToMicroLearning:
+        'No logged in participants have submitted answers for elements in this microlearning yet.',
+      responsesToMicroLearning:
+        '{number} response(s) have been submitted for elements in this microlearning by logged in participants.',
+      noAnonResponsesToMicroLearning:
+        'No anonymous responses have been submitted for elements in this microlearning yet.',
+      anonResponsesToMicroLearning:
+        '{number} anonymous response(s) have been submitted for elements in this microlearning.',
       noStartedInstancesLoosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
       startedInstancesLoosingAccess:

@@ -367,7 +367,7 @@ function GroupActivityGradingStack({
               </FastField>
             </div>
             <Button
-              disabled={!isValid || isSubmitting || gradingCompleted}
+              disabled={!isValid || gradingCompleted}
               type="submit"
               className={{
                 root: twMerge(

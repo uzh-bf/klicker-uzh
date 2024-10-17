@@ -313,6 +313,7 @@ function SuspendedGroupView({
                 content: Yup.string().required(t('pwa.groups.messageRequired')),
               })}
               onSubmit={async (values, { resetForm, setSubmitting }) => {
+                setSubmitting(true)
                 await addMessageToGroup({
                   variables: { groupId: group.id, content: values.content },
                   refetchQueries: [
@@ -346,7 +347,6 @@ function SuspendedGroupView({
                       cy: 'group-message-submit',
                     }}
                     disabled={!isValid || isSubmitting}
-                    loading={isSubmitting}
                   >
                     <FontAwesomeIcon icon={faPaperPlane} className="mr-0.5" />
                   </Button>
