@@ -18,7 +18,7 @@ function Home() {
           {
             title: 'Progress Tracking',
             icon: faArrowRight,
-            text: 'Students hi ',
+            text: 'Students',
             hoverImage: '/img_v3/06_live_quiz.png',
             shadow: false,
           },

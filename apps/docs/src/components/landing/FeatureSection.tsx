@@ -43,7 +43,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                 {features.map((feature) => (
                   <div
                     key={feature.title}
-                    className={`relative p-6 pl-9 ${hoveredFeature === feature ? 'hover:rounded-xl hover:shadow-xl' : ''}`}
+                    className={`relative p-6 pl-9 ${hoveredFeature === feature ? 'hover:rounded-xl hover:bg-gray-100' : ''}`}
                     onMouseEnter={() => handleMouseEnter(feature)}
                   >
                     <dt className="inline font-semibold text-gray-900">
