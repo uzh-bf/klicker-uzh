@@ -1063,6 +1063,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
         'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
+      microlearningStartAfterCourseStart:
+        'The start date of the microlearning must be after the start date of the course.',
+      microlearningEndBeforeCourseEnd:
+        'The end date of the microlearning must be before the end date of the course.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
@@ -1149,6 +1153,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
         'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
+      practiceQuizStartAfterCourseStart:
+        'The start date of the practice quiz must be after the start date of the course.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:

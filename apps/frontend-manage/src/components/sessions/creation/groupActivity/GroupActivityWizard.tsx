@@ -273,6 +273,9 @@ function GroupActivityWizard({
     endDate: initialValues?.scheduledEndAt
       ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
       : formDefaultValues.endDate,
+    courseStartDate: formDefaultValues.courseStartDate,
+    courseEndDate: formDefaultValues.courseEndDate,
+    courseGroupDeadline: formDefaultValues.courseGroupDeadline,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,

@@ -1065,6 +1065,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie das Startdatum des Microlearnings aus. Es wird den Teilnehmenden nach Publikation ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:
         'Wählen Sie das Enddatum des Microlearnings aus. Es wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+      microlearningStartAfterCourseStart:
+        'Das Startdatum des Microlearnings muss nach dem Startdatum des Kurses liegen.',
+      microlearningEndBeforeCourseEnd:
+        'Das Enddatum des Microlearnings muss vor dem Enddatum des Kurses liegen.',
       microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
@@ -1155,6 +1159,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
         'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
+      practiceQuizStartAfterCourseStart:
+        'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
