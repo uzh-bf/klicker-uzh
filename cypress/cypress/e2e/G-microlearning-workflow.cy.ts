@@ -208,14 +208,14 @@ describe('Different microlearning workflows', () => {
 
     // add displayname and description to stacks
 
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').click().type(stackTitle1OLD)
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       stackTitle1OLD
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').click().type(stackTitle2OLD)
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
@@ -229,13 +229,13 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="question-1-stack-1"]').contains(FTQuestionTitle)
     cy.get('[data-cy="question-0-stack-0"]').contains(FCQuestionTitle)
     cy.get('[data-cy="question-1-stack-0"]').contains(CTQuestionTitle)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       stackTitle2OLD
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       stackTitle1OLD
@@ -246,13 +246,13 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="question-1-stack-0"]').contains(FTQuestionTitle)
     cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
     cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       stackTitle1OLD
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       stackTitle2OLD
@@ -354,7 +354,7 @@ describe('Different microlearning workflows', () => {
     })
 
     // check stack descriptions
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       stackTitle1OLD
@@ -362,7 +362,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="stack-0-displayname"]').click().clear().type(stackTitle1)
     cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle1)
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       stackTitle2OLD
@@ -410,10 +410,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
     cy.get('[data-cy="question-0-stack-2"]').contains(SCQuestionTitle)
     cy.get('[data-cy="question-1-stack-2"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle1)
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should('have.value', stackTitle2)
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -428,7 +428,7 @@ describe('Different microlearning workflows', () => {
     // duplicate the microlearning
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="duplicate-microlearning-${runningMLName}"]`).click()
@@ -473,10 +473,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
     cy.get('[data-cy="question-0-stack-2"]').contains(SCQuestionTitle)
     cy.get('[data-cy="question-1-stack-2"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle1)
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should('have.value', stackTitle2)
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -553,7 +553,7 @@ describe('Different microlearning workflows', () => {
   it('Extend the running microlearning', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
 
     // open extension modal
     cy.get('[data-cy="tab-microLearnings"]').click()
@@ -586,10 +586,7 @@ describe('Different microlearning workflows', () => {
 
   it('Respond to the first stack of the running microlearning from a laptop', () => {
     cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', runningMLDisplayName).should(
-      'exist'
-    )
-    cy.findByText(runningMLDisplayName).click()
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -603,10 +600,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllSessionStorage()
     cy.loginStudent()
 
-    cy.contains('[data-cy="microlearnings"]', runningMLDisplayName).should(
-      'exist'
-    )
-    cy.findByText(runningMLDisplayName).click()
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-2"]').should(
@@ -625,7 +619,52 @@ describe('Different microlearning workflows', () => {
     )
     cy.get('[data-cy="read-content-element-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+
+    // answer the third element stack and finish microlearning
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer 2')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="finish-microlearning"]').click()
+    cy.wait(1000)
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).should('exist')
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).should(
+      'be.disabled'
+    )
+  })
+
+  it('End the running microlearning', () => {
     cy.viewport('macbook-16')
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+
+    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
+    cy.get(`[data-cy="end-microlearning-${runningMLName}"]`).click()
+    cy.get(`[data-cy="confirm-responses-microlearning"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-anonymous-responses-microlearning"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
+    cy.get(`[data-cy="end-microlearning-${runningMLName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+  })
+
+  it('Check that the microlearning is no longer visible to the student that submitted answers', () => {
+    cy.loginStudent()
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it("Check that other students can't see the microlearning", () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get(`[data-cy="microlearning-${runningMLDisplayName}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Cleanup: Delete the running microlearning to avoid name collisions', () => {
@@ -673,13 +712,6 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('Make sure that the running microlearning is no longer visible to students', () => {
-    cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', runningMLDisplayName).should(
-      'not.exist'
-    )
-  })
-
   // ! Part 3: Future Microlearning
   it('Publish the future microlearning', () => {
     cy.loginLecturer()
@@ -698,7 +730,7 @@ describe('Different microlearning workflows', () => {
 
   it('Verify that future microlearnings are not shown to students', () => {
     cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', futureMLDisplayName).should(
+    cy.get(`[data-cy="microlearning-${futureMLDisplayName}"]`).should(
       'not.exist'
     )
   })
@@ -706,7 +738,7 @@ describe('Different microlearning workflows', () => {
   it('Unpublish the future microlearning from the lecturer view', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
 
     cy.get(`[data-cy="microlearning-actions-${futureMLName}"]`).click()
@@ -754,8 +786,7 @@ describe('Different microlearning workflows', () => {
   it('Respond to all questions in the microlearning covering all element types', () => {
     cy.loginStudent()
 
-    cy.contains('[data-cy="microlearnings"]', completeMLName).should('exist')
-    cy.findByText(completeMLDisplayName).click()
+    cy.get(`[data-cy="microlearning-${completeMLDisplayName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
 
     // enter valid response for all questions to check correct input validation afterwards
@@ -823,7 +854,7 @@ describe('Different microlearning workflows', () => {
 
   it('Make sure that the complete microlearning is no longer visible to students', () => {
     cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', completeMLDisplayName).should(
+    cy.get(`[data-cy="microlearning-${completeMLDisplayName}"]`).should(
       'not.exist'
     )
   })
@@ -832,7 +863,7 @@ describe('Different microlearning workflows', () => {
   it('Convert the seeded past microlearning into a practice quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
 
     // start conversion of a microlearning into a practice quiz
     cy.get('[data-cy="tab-microLearnings"]').click()

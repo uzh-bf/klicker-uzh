@@ -143,13 +143,16 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choices[0].content)
 
     choices.slice(1).forEach((choice, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="add-new-answer"]').click()
+      cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .click()
+        .realClick()
         .type(choice.content)
     })
 
@@ -186,8 +189,10 @@ Cypress.Commands.add(
       .contains(messages.shared.MC.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choices[0].content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -199,9 +204,10 @@ Cypress.Commands.add(
     }
 
     choices.slice(1).forEach((choice, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="add-new-answer"]').click()
+      cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .click()
+        .realClick()
         .type(choice.content)
     })
 
@@ -257,17 +263,28 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1.content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choice1.content)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .type(choice2.content)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .type(choice3.content)
     cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-3"]')
+      .realClick()
+      .type(choice4.content)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4.content)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -316,7 +333,7 @@ Cypress.Commands.add(
       .contains(messages.shared.NUMERICAL.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -378,7 +395,7 @@ Cypress.Commands.add(
       .contains(messages.shared.FREE_TEXT.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -417,8 +434,10 @@ Cypress.Commands.add(
       .contains(messages.shared.FLASHCARD.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-question-explanation"]').click().type(explanation)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(explanation)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
   }
@@ -442,7 +461,7 @@ Cypress.Commands.add(
       .contains(messages.shared.CONTENT.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
   }
@@ -576,7 +595,7 @@ Cypress.Commands.add(
 
     if (typeof description !== 'undefined') {
       cy.get('[data-cy="insert-practice-quiz-description"]')
-        .click()
+        .realClick()
         .type(description)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -636,7 +655,7 @@ Cypress.Commands.add(
       .type(displayName)
     if (description) {
       cy.get('[data-cy="insert-microlearning-description"]')
-        .click()
+        .realClick()
         .type(description)
     }
     cy.get('[data-cy="next-or-submit"]').click()

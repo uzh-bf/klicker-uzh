@@ -245,7 +245,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
 
   it("Verify that the microlearning is no longer visible on the student's view", () => {
     cy.loginStudent()
-    cy.contains('[data-cy="microlearnings"]', microlearningDisplayName).should(
+    cy.get(`[data-cy="microlearning-${microlearningDisplayName}"]`).should(
       'not.exist'
     )
   })

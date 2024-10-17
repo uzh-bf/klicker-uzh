@@ -27,7 +27,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -60,8 +60,8 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-question-explanation"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-question-explanation"]').realClick().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -87,11 +87,12 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -145,11 +146,12 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -205,17 +207,20 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-2"]').realClick().type(choice3)
     cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-3"]').realClick().type(choice4)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -285,7 +290,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="set-numerical-minimum"]').click().type('0')
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
     cy.get('[data-cy="set-numerical-unit"]').click().type('%')
@@ -326,7 +331,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
@@ -351,10 +356,11 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
