@@ -24,6 +24,9 @@ import GamificationSettingMonitor from './GamificationSettingMonitor'
 interface CourseManipulationModalProps {
   initialValues?: Course
   modalOpen: boolean
+  earliestGroupDeadline?: string
+  earliestStartDate?: string
+  latestEndDate?: string
   onModalClose: () => void
   onSubmit: (
     values: CourseManipulationFormData,
@@ -49,6 +52,9 @@ export interface CourseManipulationFormData {
 function CourseManipulationModal({
   initialValues,
   modalOpen,
+  earliestGroupDeadline,
+  earliestStartDate,
+  latestEndDate,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
@@ -69,7 +75,20 @@ function CourseManipulationModal({
       .required(t('manage.courseList.courseDisplayNameReq')),
     description: yup.string(),
     color: yup.string().required(t('manage.courseList.courseColorReq')),
-    startDate: yup.date().required(t('manage.courseList.courseStartReq')),
+    startDate: yup
+      .date()
+      .required(t('manage.courseList.courseStartReq'))
+      .test(
+        'afterEarliestActivityStart',
+        t('manage.courseList.courseStartBeforeEarliestActivityStart', {
+          date: dayjs(earliestStartDate).format('DD.MM.YYYY'),
+        }),
+        (date) => {
+          return earliestStartDate
+            ? dayjs(date).isBefore(dayjs(earliestStartDate))
+            : true
+        }
+      ),
     endDate: endDatePast
       ? yup.date()
       : yup
@@ -81,6 +100,17 @@ function CourseManipulationModal({
               return !!(d && d > new Date())
             }
           )
+          .test(
+            'beforeEarliestActivityEnd',
+            t('manage.courseList.endBeforeEarliestActivityEnd', {
+              date: dayjs(latestEndDate).format('DD.MM.YYYY'),
+            }),
+            (date) => {
+              return latestEndDate
+                ? dayjs(date).isAfter(dayjs(latestEndDate))
+                : true
+            }
+          )
           .when('startDate', (startDate, schema) =>
             schema.min(startDate, t('manage.courseList.endAfterStart'))
           )
@@ -90,6 +120,7 @@ function CourseManipulationModal({
     groupCreationDeadline: initialValues?.groupDeadlineDate
       ? yup
           .date()
+          .required(t('manage.courseList.groupDeadlineReq'))
           .min(
             yup.ref('startDate'),
             t('manage.courseList.groupDeadlineAfterStart')
@@ -98,7 +129,17 @@ function CourseManipulationModal({
             yup.ref('endDate'),
             t('manage.courseList.groupDeadlineBeforeEnd')
           )
-          .required(t('manage.courseList.groupDeadlineReq'))
+          .test(
+            'isBeforeFirstGroupActivity',
+            t('manage.courseList.groupDeadlineBeforeFirstGroupActivity', {
+              date: dayjs(earliestGroupDeadline).format('DD.MM.YYYY, HH:mm'),
+            }),
+            (date) => {
+              return earliestGroupDeadline
+                ? dayjs(date).isBefore(dayjs(earliestGroupDeadline))
+                : true
+            }
+          )
       : yup
           .date()
           .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
