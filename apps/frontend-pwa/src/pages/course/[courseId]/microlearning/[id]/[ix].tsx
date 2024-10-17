@@ -5,36 +5,48 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Progress } from '@uzh-bf/design-system'
+import { Progress, Toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '~/components/Layout'
-import ElementStack from '~/components/practiceQuiz/ElementStack'
+import Layout from '../../../../../components/Layout'
+import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
+import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
 
 function MicrolearningInstance() {
+  const t = useTranslations()
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
+  const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
-  const { loading, error, data } = useQuery(GetMicroLearningDocument, {
-    variables: { id },
-    skip: !id,
-  })
+  const { loading, data, subscribeToMore } = useQuery(
+    GetMicroLearningDocument,
+    {
+      variables: { id },
+      skip: !id,
+    }
+  )
   const { data: selfData } = useQuery(SelfDocument)
 
   if (loading || !data?.microLearning) {
     return <Loader />
   }
 
-  const microlearning = data.microLearning
+  const microLearning = data.microLearning
+  const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
+    dayjs()
+  )
 
   // throw error if length of stacks is smaller than number
-  if (!microlearning.stacks || !(ix <= (microlearning.stacks.length || -1))) {
+  if (!microLearning.stacks || !(ix <= (microLearning.stacks.length || -1))) {
     throw new Error('Stack not found')
   }
 
-  const currentStack = microlearning.stacks[ix]
+  const currentStack = microLearning.stacks[ix]
 
   if (!currentStack) {
     throw new Error('Stack not found')
@@ -42,9 +54,14 @@ function MicrolearningInstance() {
 
   return (
     <Layout
-      displayName={microlearning.displayName}
-      course={microlearning.course ?? undefined}
+      displayName={microLearning.displayName}
+      course={microLearning.course ?? undefined}
     >
+      <MicroLearningSubscriber
+        activityId={microLearning.id}
+        subscribeToMore={subscribeToMore}
+        setEndedMicroLearning={setEndedMicroLearning}
+      />
       <div className="flex-1">
         <div
           className={twMerge(
@@ -55,16 +72,15 @@ function MicrolearningInstance() {
             isMaxVisible
             formatter={(v) => v}
             value={ix + 1}
-            max={(microlearning?.stacks?.length ?? -1) + 1}
+            max={(microLearning?.stacks?.length ?? -1) + 1}
           />
           <ElementStack
             key={currentStack.id}
-            parentId={microlearning.id}
-            courseId={microlearning.course!.id}
-            // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
+            parentId={microLearning.id}
+            courseId={microLearning.course!.id}
             stack={currentStack as ElementStackType}
             currentStep={ix + 1}
-            totalSteps={microlearning.stacks?.length ?? 0}
+            totalSteps={microLearning.stacks?.length ?? 0}
             handleNextElement={() =>
               router.push(`/microlearning/${id}/${ix + 1}`)
             }
@@ -75,9 +91,25 @@ function MicrolearningInstance() {
             withParticipant={!!selfData?.self}
             hideBookmark
             singleSubmission
+            activityExpired={dayjs(microLearning.scheduledEndAt).isBefore(
+              dayjs()
+            )}
+            activityExpiredMessage={t('pwa.microLearning.activityExpired')}
           />
         </div>
       </div>
+      <Toast
+        type="warning"
+        openExternal={endedMicroLearning}
+        onCloseExternal={() => setEndedMicroLearning(false)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.microLearningEndedToast', {
+          activityName: microLearning.displayName,
+        })}
+      </Toast>
     </Layout>
   )
 }

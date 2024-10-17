@@ -58,8 +58,6 @@ export async function getMicroLearningData(
     },
   })
 
-  // TODO: handle here if already responded to the element? goal with micro = one try
-
   return microLearning
 }
 
@@ -442,6 +440,30 @@ export async function extendMicroLearning(
       scheduledEndAt: endDate,
     },
   })
+}
+
+export async function endMicroLearning(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
+    },
+    data: {
+      scheduledEndAt: new Date(),
+    },
+  })
+
+  ctx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+  return updatedMicroLearning
 }
 
 export async function getMicroLearningSummary(
