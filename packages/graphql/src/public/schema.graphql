@@ -784,11 +784,11 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
+  deleteLiveQuiz(id: String!): Session
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
-  deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -843,7 +843,6 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int

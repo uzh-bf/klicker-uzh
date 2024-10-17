@@ -13,13 +13,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteSessionDocument,
+  DeleteLiveQuizDocument,
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
   SessionBlock,
   SessionStatus,
   Session as SessionType,
-  SoftDeleteLiveSessionDocument,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
@@ -53,8 +52,7 @@ function Session({ session }: SessionProps) {
     }
   )
 
-  // TODO fuse these two mutations as on other view and add update, loading state, etc.
-  const [deleteSession] = useMutation(DeleteSessionDocument, {
+  const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
     variables: { id: session.id },
     update(cache) {
       const data = cache.readQuery({
@@ -69,29 +67,7 @@ function Session({ session }: SessionProps) {
       })
     },
     optimisticResponse: {
-      deleteSession: {
-        __typename: 'Session',
-        id: session.id,
-      },
-    },
-  })
-
-  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
-    variables: { id: session.id },
-    update(cache) {
-      const data = cache.readQuery({
-        query: GetUserSessionsDocument,
-      })
-      cache.writeQuery({
-        query: GetUserSessionsDocument,
-        data: {
-          userSessions:
-            data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
-        },
-      })
-    },
-    optimisticResponse: {
-      softDeleteLiveSession: {
+      deleteLiveQuiz: {
         __typename: 'Session',
         id: session.id,
       },
@@ -102,7 +78,6 @@ function Session({ session }: SessionProps) {
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
-  const [softDeletionModal, setSoftDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
 
   const timeIcon: Record<SessionStatus, IconDefinition> = {
@@ -215,6 +190,7 @@ function Session({ session }: SessionProps) {
                   SessionStatus.Scheduled === session.status) && (
                   <Button
                     basic
+                    loading={startingQuiz}
                     onClick={async () => {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)
@@ -269,50 +245,36 @@ function Session({ session }: SessionProps) {
               </Button>
               {(SessionStatus.Prepared === session.status ||
                 SessionStatus.Scheduled === session.status) && (
-                <>
-                  <Button
-                    className={{ root: 'px-3 py-1 text-sm' }}
-                    onClick={() =>
-                      router.push({
-                        pathname: '/',
-                        query: {
-                          elementId: session.id,
-                          editMode: WizardMode.LiveQuiz,
-                        },
-                      })
-                    }
-                    data={{ cy: `edit-session-${session.name}` }}
-                  >
-                    <Button.Icon className={{ root: 'text-slate-600' }}>
-                      <FontAwesomeIcon icon={faPencil} />
-                    </Button.Icon>
-                    <Button.Label>
-                      {t('manage.sessions.editSession')}
-                    </Button.Label>
-                  </Button>
-                  <Button
-                    className={{
-                      root: 'border-red-600 px-3 py-1 text-sm',
-                    }}
-                    onClick={() => setDeletionModal(true)}
-                    data={{ cy: `delete-session-${session.name}` }}
-                  >
-                    <Button.Icon className={{ root: 'text-red-400' }}>
-                      <FontAwesomeIcon icon={faTrash} />
-                    </Button.Icon>
-                    <Button.Label>
-                      {t('manage.sessions.deleteSession')}
-                    </Button.Label>
-                  </Button>
-                </>
+                <Button
+                  className={{ root: 'px-3 py-1 text-sm' }}
+                  onClick={() =>
+                    router.push({
+                      pathname: '/',
+                      query: {
+                        elementId: session.id,
+                        editMode: WizardMode.LiveQuiz,
+                      },
+                    })
+                  }
+                  data={{ cy: `edit-session-${session.name}` }}
+                >
+                  <Button.Icon className={{ root: 'text-slate-600' }}>
+                    <FontAwesomeIcon icon={faPencil} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {t('manage.sessions.editSession')}
+                  </Button.Label>
+                </Button>
               )}
-              {SessionStatus.Completed === session.status && (
+              {(SessionStatus.Prepared === session.status ||
+                SessionStatus.Scheduled === session.status ||
+                SessionStatus.Completed === session.status) && (
                 <Button
                   className={{
                     root: 'border-red-600 px-3 py-1 text-sm',
                   }}
-                  onClick={() => setSoftDeletionModal(true)}
-                  data={{ cy: `delete-past-session-${session.name}` }}
+                  onClick={() => setDeletionModal(true)}
+                  data={{ cy: `delete-live-quiz-${session.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-red-400' }}>
                     <FontAwesomeIcon icon={faTrash} />
@@ -390,20 +352,9 @@ function Session({ session }: SessionProps) {
         description={t('manage.sessions.confirmLiveQuizDeletion')}
         elementName={session.name || ''}
         message={t('manage.sessions.liveQuizDeletionHint')}
-        deleteElement={deleteSession}
+        deleteElement={deleteLiveQuiz}
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-live-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
-      />
-      <DeletionModal
-        title={t('manage.sessions.deleteLiveQuiz')}
-        description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name || ''}
-        message={t('manage.sessions.pastLiveQuizDeletionHint')}
-        deleteElement={softDeleteLiveSession}
-        open={softDeletionModal}
-        setOpen={setSoftDeletionModal}
         primaryData={{ cy: 'confirm-delete-live-quiz' }}
         secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
