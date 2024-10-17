@@ -8,6 +8,7 @@ interface DeletionModalProps {
   elementName: string
   message: string
   deleteElement: () => Promise<any>
+  deleting?: boolean
   open: boolean
   setOpen: (value: boolean) => void
   primaryData: {
@@ -26,6 +27,7 @@ function DeletionModal({
   elementName,
   message,
   deleteElement,
+  deleting,
   open,
   setOpen,
   primaryData,
@@ -37,6 +39,7 @@ function DeletionModal({
     <Modal
       onPrimaryAction={
         <Button
+          loading={deleting}
           onClick={async () => {
             await deleteElement()
             setOpen(false)

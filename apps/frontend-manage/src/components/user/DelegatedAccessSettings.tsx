@@ -134,7 +134,11 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
               scope: UserLoginScope.FullAccess,
             }}
             validationSchema={loginSchema}
-            onSubmit={async (values, { resetForm, setFieldValue }) => {
+            onSubmit={async (
+              values,
+              { resetForm, setFieldValue, setSubmitting }
+            ) => {
+              setSubmitting(true)
               const result = await createUserLogin({
                 variables: {
                   name: values.name,
@@ -142,6 +146,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   scope: values.scope,
                 },
               })
+              setSubmitting(false)
               setConfirmationModal(false)
 
               if (result.data?.createUserLogin) {

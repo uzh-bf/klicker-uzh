@@ -1062,25 +1062,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteSession: t.withAuth(asUserFullAccess).field({
+      deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteSession(args, ctx)
-        },
-      }),
-
-      softDeleteLiveSession: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.softDeleteLiveSession(args, ctx)
+          return SessionService.deleteLiveQuiz(args, ctx)
         },
       }),
 
