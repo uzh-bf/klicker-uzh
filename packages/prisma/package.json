@@ -13,7 +13,7 @@
   "devDependencies": {
     "@klicker-uzh/transactional": "workspace:*",
     "@pothos/plugin-prisma": "~4.2.1",
-    "@types/bcryptjs": "^2.4.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.16.1",
     "@types/turndown": "^5.0.4",
     "@types/uuid": "^10.0.0",

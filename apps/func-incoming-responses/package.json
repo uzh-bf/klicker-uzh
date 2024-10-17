@@ -14,7 +14,7 @@
     "jsonwebtoken": "9.0.2"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
     "azure-functions-core-tools": "~4.0.6280",
