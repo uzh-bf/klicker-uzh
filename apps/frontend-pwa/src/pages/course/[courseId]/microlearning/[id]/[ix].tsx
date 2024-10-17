@@ -6,18 +6,21 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Progress } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import Layout from '~/components/Layout'
 import ElementStack from '~/components/practiceQuiz/ElementStack'
 
 function MicrolearningInstance() {
+  const t = useTranslations()
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
 
-  const { loading, error, data } = useQuery(GetMicroLearningDocument, {
+  const { loading, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
     skip: !id,
   })
@@ -61,7 +64,6 @@ function MicrolearningInstance() {
             key={currentStack.id}
             parentId={microlearning.id}
             courseId={microlearning.course!.id}
-            // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
             stack={currentStack as ElementStackType}
             currentStep={ix + 1}
             totalSteps={microlearning.stacks?.length ?? 0}
@@ -75,6 +77,10 @@ function MicrolearningInstance() {
             withParticipant={!!selfData?.self}
             hideBookmark
             singleSubmission
+            acitvityExpired={dayjs(microlearning.scheduledEndAt).isBefore(
+              dayjs()
+            )}
+            activityExpiredMessage={t('pwa.microLearning.activityExpired')}
           />
         </div>
       </div>

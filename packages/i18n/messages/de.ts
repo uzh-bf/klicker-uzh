@@ -589,6 +589,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableFrom: 'Verfügbar ab {date}',
       availableUntil: 'Verfügbar bis {date}',
       questionSetN: 'Frageset {number}',
+      activityExpired:
+        'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',
@@ -1681,6 +1683,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endGroupActivity: 'Gruppenaktivität beenden',
       endGroupActivityMessage:
         'Bitte bestätigen Sie, dass Sie diese Gruppenaktivität beenden möchten. Beachten Sie, dass nach dem Beenden der Gruppenaktivität keine weiteren Abgaben mehr akzeptiert werden.',
+      endMicroLearning: 'Microlearning beenden',
+      endMicroLearningMessage:
+        'Bitte bestätigen Sie, dass Sie dieses Microlearning beenden möchten. Beachten Sie, dass nach dem Beenden des Microlearnings keine weiteren Abgaben mehr akzeptiert werden.',
       noStartedInstancesLoosingAccess:
         'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
       startedInstancesLoosingAccess:

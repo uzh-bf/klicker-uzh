@@ -1257,6 +1257,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      endMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.endMicroLearning(args, ctx)
+          },
+        }),
+
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
