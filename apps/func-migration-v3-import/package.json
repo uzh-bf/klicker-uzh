@@ -25,14 +25,14 @@
     "eslint": "~8.45.0",
     "npm-run-all": "~4.1.5",
     "prisma": "~5.21.0",
-    "ts-node": "~10.9.1",
     "tsup": "~8.3.0",
+    "tsx": "~4.19.1",
     "typescript": "~5.6.3"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "check": "tsc --noEmit",
-    "dev:copy": "ts-node src/copy.ts",
+    "dev:copy": "tsx src/copy.ts",
     "dev:func": "func start -p 7075 --verbose --javascript",
     "dev:function": "run-p dev:func dev:ts",
     "dev:migration": "run-s dev:copy dev:function",
