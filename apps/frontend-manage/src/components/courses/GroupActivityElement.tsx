@@ -32,9 +32,10 @@ import GroupActivityStartingModal from './modals/GroupActivityStartingModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
-  groupDeadlineDate: Date
+  groupDeadlineDate: string
   numOfParticipantGroups: number
   courseId: string
+  courseStartDate: string
 }
 
 function GroupActivityElement({
@@ -42,6 +43,7 @@ function GroupActivityElement({
   groupDeadlineDate,
   numOfParticipantGroups,
   courseId,
+  courseStartDate,
 }: GroupActivityElementProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -233,18 +235,28 @@ function GroupActivityElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  {
-                    label: (
-                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                        <FontAwesomeIcon icon={faPlay} className="w-[1.2rem]" />
-                        <div>{t('manage.course.startGroupActivityNow')}</div>
-                      </div>
-                    ),
-                    onClick: () => setStartingModal(true),
-                    data: {
-                      cy: `start-group-activity-${groupActivity.name}-now`,
-                    },
-                  },
+                  ...(dayjs(courseStartDate).isBefore(dayjs()) &&
+                  dayjs(groupDeadlineDate).isBefore(dayjs())
+                    ? [
+                        {
+                          label: (
+                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faPlay}
+                                className="w-[1.2rem]"
+                              />
+                              <div>
+                                {t('manage.course.startGroupActivityNow')}
+                              </div>
+                            </div>
+                          ),
+                          onClick: () => setStartingModal(true),
+                          data: {
+                            cy: `start-group-activity-${groupActivity.name}-now`,
+                          },
+                        },
+                      ]
+                    : []),
                   DeletionItem,
                 ]}
                 triggerIcon={faHandPointer}

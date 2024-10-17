@@ -245,6 +245,7 @@ function CourseOverviewPage() {
               groupDeadlineDate={course.groupDeadlineDate}
               numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
               courseId={course.id}
+              courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
             />
           </Tabs.TabContent>
