@@ -179,7 +179,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
 
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string
-  email: string
+  email?: string | null
   avatar?: string | null
   rank: number
   lastBlockOrder?: number

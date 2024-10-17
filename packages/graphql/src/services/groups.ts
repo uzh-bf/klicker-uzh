@@ -17,8 +17,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { pickRandom } from 'mathjs'
-import * as R from 'ramda'
+import { omitBy, pick, prop, sortBy } from 'remeda'
 import { ElementInstanceOptions } from 'src/ops.js'
 import {
   adjectives,
@@ -898,13 +897,14 @@ export async function getParticipantGroups(
   return participant.participantGroups.map((group) => ({
     ...group,
     score: group.averageMemberScore + group.groupActivityScore,
-    participants: R.sortWith(
-      [R.descend(R.prop('score')), R.ascend(R.prop('username'))],
+    participants: sortBy(
       group.participants.map((participant) => ({
         ...participant,
         score: participant.leaderboards[0]?.score ?? 0,
         isSelf: participant.id === ctx.user.sub,
-      }))
+      })),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
     ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
   }))
 }
@@ -1267,9 +1267,9 @@ export async function getGroupActivityDetails(
               return {
                 ...(groupActivity.status === GroupActivityStatus.GRADED
                   ? clueAssignment.groupActivityClueInstance
-                  : R.dissoc(
-                      'value',
-                      clueAssignment.groupActivityClueInstance
+                  : omitBy(
+                      clueAssignment.groupActivityClueInstance,
+                      (_, key) => key === 'value'
                     )),
                 participant: {
                   ...clueAssignment.participant,
@@ -1305,7 +1305,7 @@ export async function startGroupActivity(
           },
         },
       },
-      parameters: true,
+      // parameters: true, // TODO: reintroduce as soon as these are used
     },
   })
 
@@ -1337,12 +1337,8 @@ export async function startGroupActivity(
   if (groupMemberCount < 2) return null
 
   const allClues = [
-    ...groupActivity.clues.map(
-      R.pick(['name', 'displayName', 'type', 'unit', 'value'])
-    ),
-    ...groupActivity.parameters.map((parameter) => ({
-      ...R.pick(['name', 'displayName', 'type', 'unit'], parameter),
-      value: pickRandom(parameter.options),
+    ...groupActivity.clues.map((clue) => ({
+      ...pick(clue, ['name', 'displayName', 'type', 'unit', 'value']),
     })),
   ]
 

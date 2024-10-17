@@ -1,10 +1,11 @@
 {
   "name": "@klicker-uzh/next-config",
+  "version": "3.3.0-alpha.1",
   "files": [
     "index.js"
   ],
   "peerDependencies": {
-    "next": "14.2.7"
+    "next": "^14.2.15"
   },
   "volta": {
     "extends": "../../package.json"

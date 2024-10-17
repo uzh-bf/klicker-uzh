@@ -15,9 +15,9 @@ import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
+import { isEmpty, swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
 import StackCreationErrors from './StackCreationErrors'
@@ -270,10 +270,10 @@ function StackBlockCreation({
                     if (!(questionIdx === 0 || stack.elements.length === 1)) {
                       replace(index, {
                         ...stack,
-                        elements: R.move(
+                        elements: swapIndices(
+                          stack.elements,
                           questionIdx,
-                          questionIdx - 1,
-                          stack.elements
+                          questionIdx - 1
                         ),
                       })
                     }
@@ -299,10 +299,10 @@ function StackBlockCreation({
                     ) {
                       replace(index, {
                         ...stack,
-                        elements: R.move(
+                        elements: swapIndices(
+                          stack.elements,
                           questionIdx,
-                          questionIdx + 1,
-                          stack.elements
+                          questionIdx + 1
                         ),
                       })
                     }
@@ -337,7 +337,7 @@ function StackBlockCreation({
           )
         })}
       </div>
-      {selection && !R.isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <Button
           fluid
           className={{

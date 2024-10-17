@@ -1,7 +1,6 @@
 // pn exec:prod scripts/fixQuestionData.ts
 
 import { PrismaClient } from '@klicker-uzh/prisma'
-import * as R from 'ramda'
 
 const prisma = new PrismaClient()
 
@@ -33,7 +32,7 @@ questionInstances.forEach((questionInstance) => {
 
   const existingKeys = Object.keys(questionInstance.questionData)
 
-  const difference = R.without(expectedKeys, existingKeys)
+  const difference = existingKeys.filter((key) => !expectedKeys.includes(key))
   if (difference.length !== 0) {
     console.log(difference)
   }

@@ -12,8 +12,7 @@ import {
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import * as R from 'ramda'
-import { Tag } from 'src/ops.js'
+import { prop, sortBy, swapIndices } from 'remeda'
 import { ContextWithUser } from '../lib/context.js'
 import { prepareInitialInstanceResults } from '../lib/questions.js'
 import { DisplayMode } from '../types/app.js'
@@ -377,12 +376,8 @@ export async function updateTagOrdering(
     },
   })
 
-  const sortedTags = R.sortWith<Tag>(
-    [R.ascend(R.prop('order')), R.ascend(R.prop('name'))],
-    tags
-  )
-
-  const reorderedTags = R.swap<Tag>(originIx, targetIx, sortedTags)
+  const sortedTags = sortBy(tags, [prop('order'), 'asc'], [prop('name'), 'asc'])
+  const reorderedTags = swapIndices(sortedTags, originIx, targetIx)
 
   await ctx.prisma.$transaction(
     reorderedTags.map((tag, ix) =>

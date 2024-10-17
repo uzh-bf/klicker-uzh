@@ -3,17 +3,9 @@ import {
   ElementType,
   type Element,
 } from '@klicker-uzh/prisma'
-import * as R from 'ramda'
-
-type ExtendedElement =
-  | Pick<Element, (typeof RELEVANT_KEYS)[number]>
-  | {
-      id: string
-      questionId: number
-    }
+import { pick } from 'remeda'
 
 const RELEVANT_KEYS = [
-  'id',
   'name',
   'content',
   'explanation',
@@ -22,28 +14,30 @@ const RELEVANT_KEYS = [
   'options',
 ] as const
 
-const extractRelevantKeys = R.pick<any>(RELEVANT_KEYS)
-
-export function processQuestionData(question: Element): ExtendedElement {
+export function processQuestionData(question: Element) {
   return {
-    ...(extractRelevantKeys(question) as Pick<
-      Element,
-      (typeof RELEVANT_KEYS)[number]
-    >),
+    ...pick(question, RELEVANT_KEYS),
     id: `${question.id}-v${question.version}`,
     questionId: question.id,
   }
 }
 
-const CONTENT_KEYS = ['name', 'content', 'type', 'pointsMultiplier']
-const FLASHCARD_KEYS = [
+// save custom type
+type ElementKeys = keyof Element
+const CONTENT_KEYS: ElementKeys[] = [
+  'name',
+  'content',
+  'type',
+  'pointsMultiplier',
+]
+const FLASHCARD_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
   'type',
   'pointsMultiplier',
 ]
-const QUESTION_KEYS = [
+const QUESTION_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
@@ -52,15 +46,10 @@ const QUESTION_KEYS = [
   'options',
 ]
 
-const extractContentKeys = R.pick<any>(CONTENT_KEYS)
-const extractFlashcardKeys = R.pick<any>(FLASHCARD_KEYS)
-const extractQuestionKeys = R.pick<any>(QUESTION_KEYS)
-
-// TODO: add union type for return value as pick removes the properties
 export function processElementData(element: Element) {
   if (element.type === ElementType.FLASHCARD) {
     return {
-      ...extractFlashcardKeys(element),
+      ...pick(element, FLASHCARD_KEYS),
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
@@ -72,13 +61,13 @@ export function processElementData(element: Element) {
     element.type === ElementType.FREE_TEXT
   ) {
     return {
-      ...extractQuestionKeys(element),
+      ...pick(element, QUESTION_KEYS),
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (element.type === ElementType.CONTENT) {
     return {
-      ...extractContentKeys(element),
+      ...pick(element, CONTENT_KEYS),
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
@@ -89,7 +78,9 @@ export function processElementData(element: Element) {
   }
 }
 
-export function getInitialElementResults(element: Element) {
+export function getInitialElementResults(
+  element: Omit<Element, 'id'> & { id: string }
+) {
   if (element.type === ElementType.FLASHCARD) {
     return {
       INCORRECT: 0,
