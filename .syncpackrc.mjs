@@ -1,5 +1,14 @@
 /** @type {import("syncpack").RcFile} */
 export default {
+  dependencyTypes: [
+    'dev',
+    'prod',
+    'peer',
+    'resolutions',
+    'overrides',
+    'pnpmOverrides',
+    // 'local',
+  ],
   semverGroups: [
     {
       range: '',
