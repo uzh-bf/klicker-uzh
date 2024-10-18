@@ -1151,40 +1151,10 @@ export async function deactivateSessionBlock(
                     data: {
                       results: results.results,
                       participants: Number(results.participants),
-                      // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
-                      // responses: {
-                      //   create: Object.entries(results.responses).map(
-                      //     ([participantId, response]) => ({
-                      //       response,
-                      //       participant: {
-                      //         connect: { id: participantId },
-                      //       },
-                      //       participation: {
-                      //         connect: {
-                      //           courseId_participantId: {
-                      //             // TODO: this is not set if the session is not in a course (i.e., not gamified)
-                      //             courseId: session.courseId as string,
-                      //             participantId,
-                      //           },
-                      //         },
-                      //       },
-                      //     })
-                      //   ),
-                      // },
                     },
                   })
                 ),
               },
-              // leaderboard: {
-              //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
-              //     score: parseInt(score),
-              //     participant: {
-              //       connect: { id },
-              //     },
-              //     type: 'SESSION_BLOCK',
-              //     username: id,
-              //   })),
-              // },
             },
           },
         },
