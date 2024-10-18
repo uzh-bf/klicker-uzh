@@ -15,9 +15,9 @@ interface GroupActivityStartingModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
-  activityEndDate: Date
+  activityEndDate: string
   courseId: string
-  groupDeadlineDate: Date
+  groupDeadlineDate: string
   numOfParticipantGroups: number
 }
 
@@ -78,7 +78,8 @@ function GroupActivityStartingModal({
       confirmationsInitializing={false}
       confirmationType="confirm"
     >
-      {numOfParticipantGroups === 0 || groupDeadlineDate > new Date() ? (
+      {numOfParticipantGroups === 0 ||
+      dayjs(groupDeadlineDate).isAfter(dayjs()) ? (
         <UserNotification
           type="warning"
           message={

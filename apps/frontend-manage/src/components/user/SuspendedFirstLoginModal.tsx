@@ -134,6 +134,7 @@ function SuspendedFirstLoginModal() {
                     })
                     return result?.checkShortnameAvailable ?? false
                   }}
+                  unavailableMessage={t('shared.generic.usernameAvailability')}
                   data={{ cy: 'first-login-shortname' }}
                   required
                 />

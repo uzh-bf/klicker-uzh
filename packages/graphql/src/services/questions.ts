@@ -14,8 +14,12 @@ import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
 import { ContextWithUser } from '../lib/context.js'
-import { prepareInitialInstanceResults } from '../lib/questions.js'
-import { DisplayMode } from '../types/app.js'
+import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
+import {
+  AllElementTypeData,
+  AllQuestionTypeData,
+  DisplayMode,
+} from '../types/app.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
   switch (elementType) {
@@ -637,10 +641,13 @@ export async function updateQuestionInstances(
           // invalidate cache for the corresponding element
           if (typeof sessionId !== 'undefined') {
             // prepare new question objects
-            const newQuestionData = processQuestionData(question)
+            const newQuestionData = processQuestionData(
+              question
+            ) as AllQuestionTypeData
 
             // prepare new results objects
-            const newResults = prepareInitialInstanceResults(question)
+            const newResults =
+              prepareInitialQuestionInstanceResults(newQuestionData)
 
             instance = await ctx.prisma.questionInstance.update({
               where: { id: instanceId },
@@ -667,7 +674,9 @@ export async function updateQuestionInstances(
             if (!oldInstance) return null
 
             // prepare new question objects
-            const newQuestionData = processElementData(question)
+            const newQuestionData = processElementData(
+              question
+            ) as AllElementTypeData
 
             // prepare new results objects
             const newResults = getInitialElementResults(question)
@@ -697,7 +706,9 @@ export async function updateQuestionInstances(
             if (!oldInstance) return null
 
             // prepare new question objects
-            const newQuestionData = processElementData(question)
+            const newQuestionData = processElementData(
+              question
+            ) as AllElementTypeData
 
             // prepare new results objects
             const newResults = getInitialElementResults(question)

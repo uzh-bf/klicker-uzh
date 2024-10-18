@@ -29,7 +29,7 @@ query GetGradingGroupActivity($id: String!) {
         options {
           pointsMultiplier
         }
-        ...ElementDataWithoutSolutions
+        ...ElementData
       }
     }
 

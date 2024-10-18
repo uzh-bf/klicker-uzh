@@ -132,6 +132,10 @@ function ElementStack({
           const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
           )
+          const commonAttributes = {
+            valid: true,
+            evaluation,
+          }
 
           if (!foundElement) {
             // Handle the error, log a warning, or skip this evaluation
@@ -139,50 +143,76 @@ function ElementStack({
             return acc
           } else {
             const elementType = foundElement.elementType
-            let response: StudentResponseType[0]['response']
-
             if (elementType === ElementType.Flashcard) {
-              response = evaluation.lastResponse
-                .correctness as FlashcardCorrectnessType
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse
+                    .correctness as FlashcardCorrectnessType,
+                },
+              }
             } else if (elementType === ElementType.Content) {
-              response = evaluation.lastResponse.viewed as boolean
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.viewed as boolean,
+                },
+              }
             } else if (
               elementType === ElementType.Sc ||
               elementType === ElementType.Mc
             ) {
               const storedChoices = evaluation.lastResponse.choices as number[]
-              response = storedChoices.reduce(
-                (acc, choice) => {
-                  return {
-                    ...acc,
-                    [choice]: true,
-                  }
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: storedChoices.reduce(
+                    (acc, choice) => {
+                      return {
+                        ...acc,
+                        [choice]: true,
+                      }
+                    },
+                    {} as Record<number, boolean>
+                  ),
                 },
-                {} as Record<number, boolean>
-              )
+              }
             } else if (elementType === ElementType.Kprim) {
               const storedChoices = evaluation.lastResponse.choices as number[]
-              response = { 0: false, 1: false, 2: false, 3: false }
-              storedChoices.forEach((choice) => {
-                response[choice] = true
-              })
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: {
+                    0: storedChoices.includes(0),
+                    1: storedChoices.includes(1),
+                    2: storedChoices.includes(2),
+                    3: storedChoices.includes(3),
+                  },
+                },
+              }
             } else if (
               elementType === ElementType.Numerical ||
               elementType === ElementType.FreeText
             ) {
-              response = evaluation.lastResponse.value
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.value,
+                },
+              }
             }
 
-            return {
-              ...acc,
-              [evaluation.instanceId]: {
-                type: elementType,
-                response,
-                correct: evaluation.correctness,
-                valid: true,
-                evaluation,
-              },
-            }
+            return acc
           }
         }, {} as StudentResponseType)
       )

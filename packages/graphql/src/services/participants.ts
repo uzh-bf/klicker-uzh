@@ -21,7 +21,7 @@ export async function updateParticipantProfile(
   }
 
   if (typeof email === 'string') {
-    if (!isEmail(email)) {
+    if (!isEmail.default(email)) {
       return null
     }
   }

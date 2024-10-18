@@ -25,7 +25,6 @@ query GetUserSessions {
         questionData {
           id
           questionId
-          elementId
           name
           type
           content

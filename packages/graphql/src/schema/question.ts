@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import { BaseElementData } from '../types/app.js'
+import { BaseQuestionData } from '../types/app.js'
 import { ElementFeedbackRef } from './analytics.js'
 import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
 import {
@@ -200,9 +200,10 @@ export const Element = ElementRef.implement({
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
+    // TODO: try to replace this through an improved type structure
     questionData: t.field({
       type: QuestionDataRef,
-      resolve: (q) => q as unknown as BaseElementData,
+      resolve: (q) => q as unknown as BaseQuestionData,
       nullable: true,
     }),
 
@@ -245,7 +246,7 @@ export const QuestionInstanceRef =
 export const QuestionInstance = QuestionInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     questionData: t.field({
       type: QuestionDataRef,

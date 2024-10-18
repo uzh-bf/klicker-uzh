@@ -24,7 +24,12 @@ function ElementWordcloud({
 
   const processedData =
     instance.type === ElementType.Numerical
-      ? (instance as NumericalElementInstanceEvaluation).results.responseValues
+      ? (
+          instance as NumericalElementInstanceEvaluation
+        ).results.responseValues.map((response) => ({
+          value: String(response.value),
+          count: response.count,
+        }))
       : instance.type === ElementType.FreeText
         ? (instance as FreeElementInstanceEvaluation).results.responses
         : []

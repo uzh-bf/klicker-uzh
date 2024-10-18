@@ -2,7 +2,6 @@
 import type {
   Element,
   ElementStackType,
-  ElementStatus,
   ElementType,
   Prisma,
   PrismaClient,
@@ -121,12 +120,13 @@ export type QuestionResultsOpen = {
 
 export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
+// TODO: update during migration of live quiz -> element data instead of question data
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,
   Results extends QuestionResults,
 > extends QuestionInstance {
   elementType?: Type
-  questionData: AllElementTypeData
+  questionData: AllQuestionTypeData
   results: Results
   statistics?: {
     max?: number
@@ -217,12 +217,9 @@ export type ElementOptions =
   | ElementOptionsContent
 
 export interface BaseElementData {
-  status: ElementStatus
-  type: ElementType
-
   id: string
   elementId: number
-  questionId?: number | null // TODO - remove questionId after migration
+  type: ElementType
   name: string
   content: string
   pointsMultiplier: number
@@ -230,15 +227,46 @@ export interface BaseElementData {
   options: object
 }
 
-export type BaseElementDataKeys = (keyof BaseElementData)[]
+// TODO: remove after migration of live quiz
+export interface BaseQuestionData {
+  id: string
+  questionId: number
+  type: ElementType
+  name: string
+  content: string
+  pointsMultiplier: number
+  explanation?: string | null
+  options: object
+}
 
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
   extends Omit<Element, 'id'> {
+  id: string
+  type: Type
+  options: Options
+  elementId: number
+}
+
+// TODO: remove after migration of live quiz
+interface IQuestionData<
+  Type extends ElementType,
+  Options extends ElementOptions,
+> extends Omit<
+    Element,
+    | 'id'
+    | 'originalId'
+    | 'status'
+    | 'version'
+    | 'isArchived'
+    | 'isDeleted'
+    | 'ownerId'
+    | 'createdAt'
+    | 'updatedAt'
+  > {
   type: Type
   options: Options
   id: string
-  elementId: number
-  questionId?: number | null // TODO - remove questionId after migration
+  questionId: number
 }
 
 export type ChoicesElementData = IElementData<
@@ -265,6 +293,28 @@ export type AllElementTypeData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
+
+// TODO: remove after migration of live quiz
+export type ChoicesQuestionData = IQuestionData<
+  'SC' | 'MC' | 'KPRIM',
+  ElementOptionsChoices
+>
+// TODO: remove after migration of live quiz
+export type FreeTextQuestionData = IQuestionData<
+  'FREE_TEXT',
+  ElementOptionsFreeText
+>
+// TODO: remove after migration of live quiz
+export type NumericalQuestionData = IQuestionData<
+  'NUMERICAL',
+  ElementOptionsNumerical
+>
+
+// TODO: remove after migration of live quiz
+export type AllQuestionTypeData =
+  | ChoicesQuestionData
+  | FreeTextQuestionData
+  | NumericalQuestionData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -335,6 +385,7 @@ declare global {
     type PrismaElementResults = ElementInstanceResults
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
+    type PrismaQuestionData = AllQuestionTypeData // TODO: remove after migration of live quiz
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults

@@ -9,12 +9,11 @@ import Link from 'next/link'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface Props {
+function SessionQRModal({
+  sessionId,
+}: {
   sessionId: string
-  shortname: string
-}
-
-function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
+}): React.ReactElement {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -22,7 +21,8 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
     fetchPolicy: 'cache-only',
   })
 
-  const accountRelativeLink = `/join/${data?.userProfile?.shortname}`
+  const shortname = data?.userProfile?.shortname
+  const accountRelativeLink = `/join/${shortname}`
   const sessionRelativeLink = `/session/${sessionId}`
 
   return (

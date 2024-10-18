@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder.js'
-import { AllElementTypeData, QuestionResults } from '../types/app.js'
+import { AllQuestionTypeData, QuestionResults } from '../types/app.js'
 import type { ICourse } from './course.js'
 import { CourseRef } from './course.js'
 import { QuestionInstanceRef } from './question.js'
@@ -229,14 +229,12 @@ export const Statistics = builder
 
 export interface IInstanceResult {
   id: string
-
   blockIx?: number
   instanceIx: number
   participants: number
   results: QuestionResults
   status: DB.SessionBlockStatus
-
-  questionData: AllElementTypeData
+  questionData: AllQuestionTypeData
   statistics?: IStatistics
 }
 export const InstanceResultRef =

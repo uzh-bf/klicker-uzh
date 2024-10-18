@@ -30,8 +30,7 @@ export const ElementDataRef =
 export const ElementData = ElementDataRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    elementId: t.exposeInt('elementId', { nullable: true }), // TODO: remove nullability
-    questionId: t.exposeInt('questionId', { nullable: true }), // TODO: remove after migration
+    elementId: t.exposeInt('elementId'),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
