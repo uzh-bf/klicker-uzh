@@ -86,13 +86,12 @@ type ChoiceQuestionOptions {
 
 type ChoicesElementData implements ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
@@ -115,7 +114,6 @@ type ChoicesElementResults {
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -143,12 +141,11 @@ type ConfusionTimestep {
 
 type ContentElementData implements ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
@@ -165,7 +162,6 @@ type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
 
 type ContentElementQData implements QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -250,12 +246,11 @@ type Element {
 
 interface ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
@@ -394,12 +389,11 @@ enum FlashcardCorrectnessType {
 
 type FlashcardElementData implements ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
@@ -416,7 +410,6 @@ type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
 
 type FlashcardElementQData implements QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -460,19 +453,17 @@ type FreeElementResults {
 
 type FreeTextElementData implements ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -867,13 +858,12 @@ type Mutation {
 
 type NumericalElementData implements ElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
@@ -910,7 +900,6 @@ type NumericalElementSolutions {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -1144,7 +1133,6 @@ type Query {
 
 interface QuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!

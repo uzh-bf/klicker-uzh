@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import { BaseElementData, DisplayMode } from '../types/app.js'
+import { BaseQuestionData, DisplayMode } from '../types/app.js'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
@@ -20,11 +20,10 @@ export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
 
 // ----- QUESTION DATA INTERFACE -----
 export const QuestionDataRef =
-  builder.interfaceRef<BaseElementData>('QuestionData')
+  builder.interfaceRef<BaseQuestionData>('QuestionData')
 export const QuestionData = QuestionDataRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    elementId: t.exposeInt('elementId', { nullable: true }),
     questionId: t.exposeInt('questionId', { nullable: true }),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
@@ -85,7 +84,7 @@ export const ChoiceQuestionOptions = builder
     }),
   })
 
-export interface IChoicesQuestionData extends BaseElementData {
+export interface IChoicesQuestionData extends BaseQuestionData {
   options: IChoiceQuestionOptions
 }
 export const ChoicesQuestionData = builder
@@ -155,7 +154,7 @@ export const NumericalQuestionOptions = builder
     }),
   })
 
-export interface INumericalQuestionData extends BaseElementData {
+export interface INumericalQuestionData extends BaseQuestionData {
   options: INumericalQuestionOptions
 }
 export const NumericalQuestionData = builder
@@ -201,7 +200,7 @@ export const FreeTextQuestionOptions = builder
     }),
   })
 
-export interface IFreeTextQuestionData extends BaseElementData {
+export interface IFreeTextQuestionData extends BaseQuestionData {
   options: IFreeTextQuestionOptions
 }
 export const FreeTextQuestionData = builder
@@ -214,7 +213,7 @@ export const FreeTextQuestionData = builder
   })
 
 // ----- CONTENT ELEMENTS -----
-export interface IContentElementQData extends BaseElementData {}
+export interface IContentElementQData extends BaseQuestionData {}
 export const ContentElementQData = builder
   .objectRef<IContentElementQData>('ContentElementQData')
   .implement({
@@ -223,7 +222,7 @@ export const ContentElementQData = builder
   })
 
 // ----- FLASHCARD ELEMENTS -----
-export interface IFlashcardElementQData extends BaseElementData {}
+export interface IFlashcardElementQData extends BaseQuestionData {}
 export const FlashcardElementQData = builder
   .objectRef<IFlashcardElementQData>('FlashcardElementQData')
   .implement({
