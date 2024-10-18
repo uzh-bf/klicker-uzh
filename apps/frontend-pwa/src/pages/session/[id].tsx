@@ -2,9 +2,12 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChoicesQuestionData,
   ElementType,
+  FreeTextQuestionData,
   GetFeedbacksDocument,
   GetRunningSessionDocument,
+  NumericalQuestionData,
   RunningSessionUpdatedDocument,
   SelfDocument,
   Session,
@@ -201,12 +204,29 @@ function Index({ id }: Props) {
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
               questions={
-                activeBlock.instances?.map((question) => {
-                  return {
-                    ...question.questionData,
-                    instanceId: question.id,
-                  }
-                }) ?? []
+                activeBlock.instances
+                  ?.map((question) => {
+                    const questionData = question.questionData
+                    if (!questionData) return null
+
+                    if (questionData.type === ElementType.FreeText) {
+                      return {
+                        ...(questionData as FreeTextQuestionData),
+                        instanceId: question.id,
+                      }
+                    } else if (questionData.type === ElementType.Numerical) {
+                      return {
+                        ...(questionData as NumericalQuestionData),
+                        instanceId: question.id,
+                      }
+                    } else {
+                      return {
+                        ...(questionData as ChoicesQuestionData),
+                        instanceId: question.id,
+                      }
+                    }
+                  })
+                  .filter((q) => q !== null) ?? []
               }
               handleNewResponse={handleNewResponse}
               sessionId={id}

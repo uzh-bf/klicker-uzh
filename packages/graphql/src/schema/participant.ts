@@ -174,7 +174,7 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
 
 export interface IGroupMessage extends DB.GroupMessage {
   group?: IParticipantGroup
-  participant?: IParticipant
+  participant: IParticipant
 }
 export const GroupMessageRef = builder.objectRef<IGroupMessage>('GroupMessage')
 export const GroupMessage = GroupMessageRef.implement({
@@ -187,7 +187,6 @@ export const GroupMessage = GroupMessageRef.implement({
     }),
     participant: t.expose('participant', {
       type: ParticipantRef,
-      nullable: true,
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

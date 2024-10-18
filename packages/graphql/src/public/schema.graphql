@@ -654,7 +654,7 @@ type GroupMessage {
   createdAt: Date!
   group: ParticipantGroup
   id: Int!
-  participant: Participant
+  participant: Participant!
   updatedAt: Date!
 }
 
