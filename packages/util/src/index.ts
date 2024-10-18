@@ -1,10 +1,11 @@
 import {
-  ElementInstanceType,
-  ElementStackType,
-  ElementType,
-  SessionBlockStatus,
   type Element,
+  type ElementStackType,
+  type ElementType,
   type QuestionInstance,
+  type SessionBlockStatus,
+  ElementInstanceType as PrismaElementInstanceType,
+  ElementType as PrismaElementType,
 } from '@klicker-uzh/prisma'
 import { pick } from 'remeda'
 
@@ -22,11 +23,11 @@ export function processQuestionData(
   question: Element
 ): AllQuestionTypeData | null {
   if (
-    question.type === ElementType.SC ||
-    question.type === ElementType.MC ||
-    question.type === ElementType.KPRIM ||
-    question.type === ElementType.NUMERICAL ||
-    question.type === ElementType.FREE_TEXT
+    question.type === PrismaElementType.SC ||
+    question.type === PrismaElementType.MC ||
+    question.type === PrismaElementType.KPRIM ||
+    question.type === PrismaElementType.NUMERICAL ||
+    question.type === PrismaElementType.FREE_TEXT
   ) {
     return {
       ...pick(question, RELEVANT_KEYS),
@@ -61,25 +62,25 @@ const QUESTION_KEYS: ElementKeys[] = [
 ]
 
 export function processElementData(element: Element): AllElementTypeData {
-  if (element.type === ElementType.FLASHCARD) {
+  if (element.type === PrismaElementType.FLASHCARD) {
     return {
       ...pick(element, FLASHCARD_KEYS),
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (
-    element.type === ElementType.SC ||
-    element.type === ElementType.MC ||
-    element.type === ElementType.KPRIM ||
-    element.type === ElementType.NUMERICAL ||
-    element.type === ElementType.FREE_TEXT
+    element.type === PrismaElementType.SC ||
+    element.type === PrismaElementType.MC ||
+    element.type === PrismaElementType.KPRIM ||
+    element.type === PrismaElementType.NUMERICAL ||
+    element.type === PrismaElementType.FREE_TEXT
   ) {
     return {
       ...pick(element, QUESTION_KEYS),
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
-  } else if (element.type === ElementType.CONTENT) {
+  } else if (element.type === PrismaElementType.CONTENT) {
     return {
       ...pick(element, CONTENT_KEYS),
       id: `${element.id}-v${element.version}`,
@@ -95,7 +96,7 @@ export function processElementData(element: Element): AllElementTypeData {
 export function getInitialElementResults(
   element: Element
 ): ElementInstanceResults {
-  if (element.type === ElementType.FLASHCARD) {
+  if (element.type === PrismaElementType.FLASHCARD) {
     return {
       INCORRECT: 0,
       PARTIAL: 0,
@@ -103,9 +104,9 @@ export function getInitialElementResults(
       total: 0,
     }
   } else if (
-    element.type === ElementType.SC ||
-    element.type === ElementType.MC ||
-    element.type === ElementType.KPRIM
+    element.type === PrismaElementType.SC ||
+    element.type === PrismaElementType.MC ||
+    element.type === PrismaElementType.KPRIM
   ) {
     const choices = element.options.choices.reduce(
       (acc: Record<string, number>, _: any, ix: number) => ({
@@ -116,14 +117,14 @@ export function getInitialElementResults(
     )
     return { choices, total: 0 }
   } else if (
-    element.type === ElementType.NUMERICAL ||
-    element.type === ElementType.FREE_TEXT
+    element.type === PrismaElementType.NUMERICAL ||
+    element.type === PrismaElementType.FREE_TEXT
   ) {
     return {
       responses: {},
       total: 0,
     }
-  } else if (element.type === ElementType.CONTENT) {
+  } else if (element.type === PrismaElementType.CONTENT) {
     return {
       total: 0,
     }
@@ -134,10 +135,10 @@ export function getInitialElementResults(
   }
 }
 
-export function getInitialInstanceStatistics(type: ElementInstanceType) {
-  if (type === ElementInstanceType.LIVE_QUIZ) {
+export function getInitialInstanceStatistics(type: PrismaElementInstanceType) {
+  if (type === PrismaElementInstanceType.LIVE_QUIZ) {
     return undefined
-  } else if (type === ElementInstanceType.PRACTICE_QUIZ) {
+  } else if (type === PrismaElementInstanceType.PRACTICE_QUIZ) {
     return {
       anonymousCorrectCount: 0,
       anonymousPartialCorrectCount: 0,
@@ -159,7 +160,7 @@ export function getInitialInstanceStatistics(type: ElementInstanceType) {
       uniqueParticipantCount: 0,
       averageTimeSpent: 0,
     }
-  } else if (type === ElementInstanceType.MICROLEARNING) {
+  } else if (type === PrismaElementInstanceType.MICROLEARNING) {
     return {
       anonymousCorrectCount: 0,
       anonymousPartialCorrectCount: 0,
@@ -175,7 +176,7 @@ export function getInitialInstanceStatistics(type: ElementInstanceType) {
       uniqueParticipantCount: 0,
       averageTimeSpent: 0,
     }
-  } else if (type === ElementInstanceType.GROUP_ACTIVITY) {
+  } else if (type === PrismaElementInstanceType.GROUP_ACTIVITY) {
     return {
       // correct counts are currently only set on group activity instance
       correctCount: -1,
