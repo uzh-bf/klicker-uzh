@@ -8,7 +8,11 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { processQuestionData } from '@klicker-uzh/util'
+import {
+  AllQuestionInstanceTypeData,
+  processQuestionData,
+  QuestionResultsChoices,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -19,11 +23,6 @@ import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import {
-  AllQuestionInstanceTypeData,
-  AllQuestionTypeData,
-  QuestionResultsChoices,
-} from '../types/app.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -115,9 +114,7 @@ export async function createSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(
-                question
-              ) as AllQuestionTypeData
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
@@ -125,9 +122,9 @@ export async function createSession(
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
-                questionData: processedQuestionData,
+                questionData: processedQuestionData!,
                 results: prepareInitialQuestionInstanceResults(
-                  processedQuestionData
+                  processedQuestionData!
                 ),
                 question: {
                   connect: { id: questionId },
@@ -269,9 +266,7 @@ export async function editSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(
-                question
-              ) as AllQuestionTypeData
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
@@ -279,9 +274,9 @@ export async function editSession(
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
-                questionData: processedQuestionData,
+                questionData: processedQuestionData!,
                 results: prepareInitialQuestionInstanceResults(
-                  processedQuestionData
+                  processedQuestionData!
                 ),
                 question: {
                   connect: { id: questionId },

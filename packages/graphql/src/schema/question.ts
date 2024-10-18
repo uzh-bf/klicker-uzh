@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { BaseQuestionData } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { BaseQuestionData } from '../types/app.js'
 import { ElementFeedbackRef } from './analytics.js'
 import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
 import {

@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { ResponseCorrectness } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { ResponseCorrectness } from '../types/app.js'
 import { CourseRef, type ICourse } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { ParticipantGroupRef, ParticipantRef } from './participant.js'

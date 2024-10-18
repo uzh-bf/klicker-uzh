@@ -14,6 +14,8 @@ import {
   getInitialElementResults,
   getInitialInstanceStatistics,
   processElementData,
+  ResponseCorrectness,
+  StackInput,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -33,11 +35,6 @@ import {
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import {
-  AllElementTypeData,
-  ResponseCorrectness,
-  StackInput,
-} from '../types/app.js'
 import {
   RespondToElementStackInput,
   updateQuestionResults,
@@ -1050,9 +1047,7 @@ export async function manipulateGroupActivity(
         elements: {
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
-            const processedElementData = processElementData(
-              element
-            ) as AllElementTypeData
+            const processedElementData = processElementData(element)
             const initialResults = getInitialElementResults(element)
 
             return {

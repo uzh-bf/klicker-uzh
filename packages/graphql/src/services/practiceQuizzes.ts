@@ -23,9 +23,27 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import {
+  AllElementTypeData,
+  Choice,
+  ChoicesElementData,
+  ContentResults,
+  ElementInstanceResults,
+  ElementResultsChoices,
+  ElementResultsOpen,
+  FlashcardCorrectness,
+  FlashcardResults,
+  FreeTextElementData,
   getInitialElementResults,
   getInitialInstanceStatistics,
+  NumericalElementData,
   processElementData,
+  QuestionResponse,
+  QuestionResponseChoices,
+  QuestionResponseContent,
+  QuestionResponseFlashcard,
+  QuestionResponseValue,
+  StackFeedbackStatus,
+  StackInput,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -42,26 +60,6 @@ import {
   ResponseInput,
 } from '../ops.js'
 import { IInstanceEvaluation } from '../schema/question.js'
-import {
-  AllElementTypeData,
-  Choice,
-  ChoicesElementData,
-  ContentResults,
-  ElementInstanceResults,
-  ElementResultsChoices,
-  ElementResultsOpen,
-  FlashcardCorrectness,
-  FlashcardResults,
-  FreeTextElementData,
-  NumericalElementData,
-  QuestionResponse,
-  QuestionResponseChoices,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-  QuestionResponseValue,
-  StackFeedbackStatus,
-  StackInput,
-} from '../types/app.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -2713,9 +2711,7 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(
-                element
-              ) as AllElementTypeData
+              const processedElementData = processElementData(element)
               const initialResults = getInitialElementResults(element)
 
               return {

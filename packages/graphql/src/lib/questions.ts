@@ -3,7 +3,7 @@ import {
   AllQuestionTypeData,
   QuestionResults,
   QuestionResultsChoices,
-} from '../types/app.js'
+} from '@klicker-uzh/util'
 
 export function prepareInitialQuestionInstanceResults(
   questionData: AllQuestionTypeData
