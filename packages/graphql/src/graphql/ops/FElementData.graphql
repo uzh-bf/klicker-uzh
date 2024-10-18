@@ -6,6 +6,7 @@ fragment ElementData on ElementInstance {
     type
     content
     explanation
+    pointsMultiplier
 
     ... on ChoicesElementData {
       options {

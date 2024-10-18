@@ -828,6 +828,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
       ACCOUNT_OWNER: 'Konto-Besitzer',
+      OTP: 'Einmalpasswort',
+      ACTIVATION: 'Aktivierung',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',
