@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { BaseQuestionData, DisplayMode } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { BaseQuestionData, DisplayMode } from '../types/app.js'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),

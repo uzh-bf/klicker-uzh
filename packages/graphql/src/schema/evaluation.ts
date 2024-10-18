@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { FlashcardCorrectness as FlashcardCorrectnessType } from '../types/app.js'
 import { ElementType } from './questionData.js'
 
 // TODO: move types to separate file with type definitions?
