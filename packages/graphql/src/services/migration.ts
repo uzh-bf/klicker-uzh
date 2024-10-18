@@ -37,6 +37,7 @@ export async function requestMigrationToken(
 
   const matchingUsersNormalized = await db
     .collection('users')
+    // @ts-ignore
     .find({ email: normalizeEmail(args.email) })
     .toArray()
 

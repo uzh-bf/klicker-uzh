@@ -5,7 +5,7 @@ mutation CreateMicroLearning(
   $displayName: String!
   $description: String
   $stacks: [ElementStackInput!]!
-  $courseId: String
+  $courseId: String!
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!

@@ -2713,9 +2713,10 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(element)
-              const initialResults =
-                getInitialElementResults(processedElementData)
+              const processedElementData = processElementData(
+                element
+              ) as AllElementTypeData
+              const initialResults = getInitialElementResults(element)
 
               return {
                 elementType: element.type,

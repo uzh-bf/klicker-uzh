@@ -241,9 +241,9 @@ export interface BaseQuestionData {
 
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
   extends Omit<Element, 'id'> {
+  id: string
   type: Type
   options: Options
-  id: string
   elementId: number
 }
 
@@ -251,7 +251,18 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
 interface IQuestionData<
   Type extends ElementType,
   Options extends ElementOptions,
-> extends Omit<Element, 'id'> {
+> extends Omit<
+    Element,
+    | 'id'
+    | 'originalId'
+    | 'status'
+    | 'version'
+    | 'isArchived'
+    | 'isDeleted'
+    | 'ownerId'
+    | 'createdAt'
+    | 'updatedAt'
+  > {
   type: Type
   options: Options
   id: string

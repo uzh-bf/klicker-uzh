@@ -33,7 +33,11 @@ import {
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { ResponseCorrectness, StackInput } from '../types/app.js'
+import {
+  AllElementTypeData,
+  ResponseCorrectness,
+  StackInput,
+} from '../types/app.js'
 import {
   RespondToElementStackInput,
   updateQuestionResults,
@@ -1046,9 +1050,10 @@ export async function manipulateGroupActivity(
         elements: {
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
-            const processedElementData = processElementData(element)
-            const initialResults =
-              getInitialElementResults(processedElementData)
+            const processedElementData = processElementData(
+              element
+            ) as AllElementTypeData
+            const initialResults = getInitialElementResults(element)
 
             return {
               elementType: element.type,

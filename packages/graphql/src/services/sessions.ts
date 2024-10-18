@@ -17,10 +17,11 @@ import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
 import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialInstanceResults } from '../lib/questions.js'
+import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import {
   AllQuestionInstanceTypeData,
+  AllQuestionTypeData,
   QuestionResultsChoices,
 } from '../types/app.js'
 
@@ -114,7 +115,9 @@ export async function createSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(question)
+              const processedQuestionData = processQuestionData(
+                question
+              ) as AllQuestionTypeData
 
               return {
                 order: ix,
@@ -123,7 +126,9 @@ export async function createSession(
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
+                results: prepareInitialQuestionInstanceResults(
+                  processedQuestionData
+                ),
                 question: {
                   connect: { id: questionId },
                 },
@@ -264,7 +269,9 @@ export async function editSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]!
-              const processedQuestionData = processQuestionData(question)
+              const processedQuestionData = processQuestionData(
+                question
+              ) as AllQuestionTypeData
 
               return {
                 order: ix,
@@ -273,7 +280,9 @@ export async function editSession(
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
                 questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
+                results: prepareInitialQuestionInstanceResults(
+                  processedQuestionData
+                ),
                 question: {
                   connect: { id: questionId },
                 },
@@ -533,13 +542,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       const awardAchievements = session.blocks.some(
         (block) =>
           block.instances.some((instance) => {
-            if (
-              instance.questionData.type === ElementType.CONTENT ||
-              instance.questionData.type === ElementType.FLASHCARD
-            ) {
-              return false
-            }
-
             return instance.questionData.options.hasSampleSolution ?? false
           }) &&
           existingParticipants.filter(
@@ -2194,7 +2196,9 @@ export async function cancelSession(
           },
           data: {
             participants: 0,
-            results: prepareInitialInstanceResults(instance.questionData),
+            results: prepareInitialQuestionInstanceResults(
+              instance.questionData
+            ),
           },
         })
       ),
