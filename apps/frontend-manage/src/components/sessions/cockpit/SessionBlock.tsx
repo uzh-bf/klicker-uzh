@@ -8,6 +8,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChoicesQuestionData,
+  FreeTextQuestionData,
+  NumericalQuestionData,
   QuestionInstance,
   SessionBlockStatus,
   SessionBlock as SessionBlockType,
@@ -19,10 +22,22 @@ import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+type SessionTimelineInstance = Omit<QuestionInstance, 'questionData'> & {
+  questionData?:
+    | Omit<ChoicesQuestionData, 'options'>
+    | Omit<NumericalQuestionData, 'options'>
+    | Omit<FreeTextQuestionData, 'options'>
+    | null
+}
+
+export type SessionTimelineBlock = Omit<SessionBlockType, 'instances'> & {
+  instances?: SessionTimelineInstance[] | null
+}
+
 interface SessionBlockProps {
   className?: string
   active: boolean
-  block: SessionBlockType
+  block: SessionTimelineBlock
   inCooldown: boolean
   setInCooldown: (value: boolean) => void
 }
@@ -141,7 +156,7 @@ function SessionBlock({
           />
         )}
       </div>
-      {block.instances?.map((instance: QuestionInstance) => (
+      {block.instances?.map((instance: SessionTimelineInstance) => (
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData!.questionId}`}

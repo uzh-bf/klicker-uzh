@@ -90,7 +90,6 @@ function Cockpit() {
     feedbacks,
   } = cockpitData.cockpitSession
 
-  // TODO: add gamification leaderboard button
   return (
     <Layout>
       <div className="mb-8 print:hidden">

@@ -7,7 +7,6 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import durationPlugin from 'dayjs/plugin/duration'
@@ -18,7 +17,7 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
-import SessionBlock from './SessionBlock'
+import SessionBlock, { SessionTimelineBlock } from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
 
 dayjs.extend(durationPlugin)
@@ -39,7 +38,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 }
 
 interface SessionTimelineProps {
-  blocks?: ISessionBlock[]
+  blocks?: SessionTimelineBlock[]
   sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
