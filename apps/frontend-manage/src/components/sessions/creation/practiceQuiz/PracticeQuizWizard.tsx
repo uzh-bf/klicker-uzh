@@ -220,7 +220,9 @@ function PracticeQuizWizard({
                 title: element.elementData.name,
                 type: element.elementData.type,
                 hasSampleSolution:
-                  element.elementData.options?.hasSampleSolution ?? true,
+                  'options' in element.elementData
+                    ? element.elementData.options.hasSampleSolution
+                    : true,
               }
             }),
           }
