@@ -6,16 +6,16 @@ fragment EvaluationResults on ActivityEvaluation {
     stackOrder
 
     instances {
-      id
-      type
-      name
-      content
-      explanation
-
-      hasSampleSolution
-      hasAnswerFeedbacks
-
       ... on ChoicesElementInstanceEvaluation {
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
         results {
           totalAnswers
           anonymousAnswers
@@ -29,6 +29,15 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on FreeElementInstanceEvaluation {
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
         results {
           totalAnswers
           anonymousAnswers
@@ -43,6 +52,15 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on NumericalElementInstanceEvaluation {
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
         results {
           totalAnswers
           anonymousAnswers
@@ -61,6 +79,15 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on FlashcardElementInstanceEvaluation {
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
         results {
           totalAnswers
           anonymousAnswers
@@ -71,6 +98,15 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on ContentElementInstanceEvaluation {
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
         results {
           totalAnswers
           anonymousAnswers

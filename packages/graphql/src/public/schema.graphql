@@ -95,7 +95,7 @@ type ChoicesElementData {
   type: ElementType!
 }
 
-type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ChoicesElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -149,7 +149,7 @@ type ContentElementData {
   type: ElementType!
 }
 
-type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ContentElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -268,15 +268,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-interface ElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  type: ElementType!
-}
+union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
 
 type ElementInstanceOptions {
   pointsMultiplier: Int
@@ -389,7 +381,7 @@ type FlashcardElementData {
   type: ElementType!
 }
 
-type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FlashcardElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -418,7 +410,7 @@ type FlashcardElementResults {
   totalAnswers: Int!
 }
 
-type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -859,7 +851,7 @@ type NumericalElementData {
   type: ElementType!
 }
 
-type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+type NumericalElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
