@@ -33,6 +33,7 @@ export interface StudentQuestionProps {
   expiresAt?: Date
   timeLimit?: number
   isSubmitDisabled: boolean
+  isSubmitHidden?: boolean
   onSubmit: () => void
   onExpire: () => void
   currentQuestion: (
@@ -52,6 +53,7 @@ export const StudentQuestion = ({
   expiresAt,
   timeLimit,
   isSubmitDisabled,
+  isSubmitHidden = false,
   onSubmit,
   onExpire,
   currentQuestion,
@@ -230,6 +232,7 @@ export const StudentQuestion = ({
         expiresAt={expiresAt}
         timeLimit={timeLimit}
         isSubmitDisabled={isSubmitDisabled}
+        isSubmitHidden={isSubmitHidden}
         onSubmit={onSubmit}
         onExpire={onExpire}
       />

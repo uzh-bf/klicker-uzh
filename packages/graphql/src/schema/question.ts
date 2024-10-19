@@ -184,6 +184,7 @@ export const InstanceEvaluation = builder
 
 export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
+  questionData?: BaseQuestionData | null
 }
 export const ElementRef = builder.objectRef<IElement>('Element')
 export const Element = ElementRef.implement({
@@ -200,10 +201,9 @@ export const Element = ElementRef.implement({
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
-    // TODO: try to replace this through an improved type structure
     questionData: t.field({
       type: QuestionData,
-      resolve: (q) => q as unknown as BaseQuestionData,
+      resolve: (q) => q.questionData,
       nullable: true,
     }),
 
