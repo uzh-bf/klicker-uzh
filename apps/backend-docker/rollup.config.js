@@ -21,7 +21,7 @@ const config = defineConfig([
       nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
-        rootDir: 'src',
+        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies

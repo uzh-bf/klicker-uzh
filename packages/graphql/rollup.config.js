@@ -22,7 +22,7 @@ const config = defineConfig([
       nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
-        rootDir: 'src',
+        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
       copy({
         targets: [{ src: 'src/public/*', dest: 'dist' }],
