@@ -160,6 +160,16 @@ type ContentElementInstanceEvaluation {
   type: ElementType!
 }
 
+type ContentElementQData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
+}
+
 type ContentElementResults {
   anonymousAnswers: Int!
   totalAnswers: Int!
@@ -379,6 +389,16 @@ type FlashcardElementInstanceEvaluation {
   id: Int!
   name: String!
   results: FlashcardElementResults!
+  type: ElementType!
+}
+
+type FlashcardElementQData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
   type: ElementType!
 }
 
@@ -1095,7 +1115,7 @@ type Query {
   userTags: [Tag!]
 }
 
-union QuestionData = ChoicesQuestionData | FreeTextQuestionData | NumericalQuestionData
+union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean

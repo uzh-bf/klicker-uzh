@@ -29,5 +29,25 @@ fragment QuestionDataInfo on QuestionInstance {
       explanation
       pointsMultiplier
     }
+
+    ... on FlashcardElementQData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
+
+    ... on ContentElementQData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
   }
 }

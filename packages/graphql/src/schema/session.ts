@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { AllQuestionTypeData, QuestionResults } from '@klicker-uzh/types'
+import type { QuestionResults } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
 import { QuestionInstanceRef } from './question.js'
@@ -232,7 +232,7 @@ export interface IInstanceResult {
   participants: number
   results: QuestionResults
   status: DB.SessionBlockStatus
-  questionData: AllQuestionTypeData
+  questionData: DB.QuestionInstance['questionData']
   statistics?: IStatistics
 }
 export const InstanceResultRef =

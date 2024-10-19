@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementType,
   EvaluationBlock as EvaluationBlockType,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
@@ -57,22 +56,9 @@ function Evaluation() {
   const [showSolution, setShowSolution] = useState<boolean>(false)
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
 
-  const [currentInstance, setCurrentInstance] = useState<InstanceResult>({
-    blockIx: 0,
-    id: '',
-    instanceIx: 0,
-    participants: 0,
-    questionData: {
-      id: '',
-      name: '',
-      content: '',
-      type: ElementType.Sc,
-      options: { choices: [] },
-    },
-    results: {},
-    statistics: undefined,
-    status: SessionBlockStatus.Executed,
-  })
+  const [currentInstance, setCurrentInstance] = useState<
+    InstanceResult | undefined
+  >(undefined)
 
   const [textSize, settextSize] = useReducer(sizeReducer, TextSizes['md'])
 
@@ -192,17 +178,20 @@ function Evaluation() {
 
   if (loading || !data) return <Loader />
 
-  if (!currentInstance.id && selectedInstanceIndex !== -1) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
-        <UserNotification
-          className={{
-            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
-          }}
-          message={t('manage.evaluation.evaluationNotYetAvailable')}
-        />
-      </div>
-    )
+  if (!currentInstance?.id) {
+    if (selectedInstanceIndex !== -1) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center">
+          <UserNotification
+            className={{
+              root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+            }}
+            message={t('manage.evaluation.evaluationNotYetAvailable')}
+          />
+        </div>
+      )
+    }
+    return null
   }
 
   return (

@@ -8,9 +8,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChoicesQuestionData,
-  FreeTextQuestionData,
-  NumericalQuestionData,
   QuestionInstance,
   SessionBlockStatus,
   SessionBlock as SessionBlockType,
@@ -23,11 +20,7 @@ import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type SessionTimelineInstance = Omit<QuestionInstance, 'questionData'> & {
-  questionData?:
-    | Omit<ChoicesQuestionData, 'options'>
-    | Omit<NumericalQuestionData, 'options'>
-    | Omit<FreeTextQuestionData, 'options'>
-    | null
+  questionData?: { questionId?: number | null; name: string } | null
 }
 
 export type SessionTimelineBlock = Omit<SessionBlockType, 'instances'> & {

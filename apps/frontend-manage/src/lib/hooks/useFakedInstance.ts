@@ -1,8 +1,10 @@
 import {
   ChoiceQuestionOptions,
   ChoicesQuestionData,
+  ContentElementQData,
   Element,
   ElementType,
+  FlashcardElementQData,
   FreeTextElementData,
   FreeTextQuestionData,
   FreeTextQuestionOptions,
@@ -20,6 +22,8 @@ function useFakedInstance({
     | Pick<ChoicesQuestionData, 'options'>
     | Pick<NumericalElementData, 'options'>
     | Pick<FreeTextElementData, 'options'>
+    | Partial<FlashcardElementQData>
+    | Partial<ContentElementQData>
     | null
 }): ChoicesQuestionData | NumericalQuestionData | FreeTextQuestionData | null {
   if (!element || !questionData) {
@@ -35,20 +39,27 @@ function useFakedInstance({
   }
 
   if (
-    element.type === ElementType.Sc ||
-    element.type === ElementType.Mc ||
-    element.type === ElementType.Kprim
+    'options' in questionData &&
+    (element.type === ElementType.Sc ||
+      element.type === ElementType.Mc ||
+      element.type === ElementType.Kprim)
   ) {
     return {
       ...common,
       options: questionData.options as ChoiceQuestionOptions,
     }
-  } else if (element.type === ElementType.Numerical) {
+  } else if (
+    'options' in questionData &&
+    element.type === ElementType.Numerical
+  ) {
     return {
       ...common,
       options: questionData.options as NumericalQuestionOptions,
     }
-  } else if (element.type === ElementType.FreeText) {
+  } else if (
+    'options' in questionData &&
+    element.type === ElementType.FreeText
+  ) {
     return {
       ...common,
       options: questionData.options as FreeTextQuestionOptions,
