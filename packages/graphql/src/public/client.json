@@ -147,7 +147,7 @@
    "GetSessionEvaluation": "501c94ebe98c52b2ecf1c7feccf6c58612c599a034aa1a4a71724b8670752559",
    "GetSessionHMAC": "4db837cd1133fbd15929e0e13cef25dc30c6283f9e2d74505fc750e5493c5613",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",
-   "GetSingleCourse": "b82569bda4e02582f6b5dac9c219696251ec8c3c00ada624259947484ed5ef7c",
+   "GetSingleCourse": "6def03d960d0f702d91ebf5153c548630641afbc4c8c047aa411408f11e014d0",
    "GetSingleLiveSession": "89734ea4900e0a7b9a1e7981bba92124fdeccf92b59c349d1878f29a0f75f418",
    "GetSingleMicroLearning": "c0a053fa0bdf6ac50bb13f6b4c19e502200d79c578930458cb03de0e03357eac",
    "GetSinglePracticeQuiz": "50397e2b40cd4a2d291532170a66381c044619b24b7fcd1a0afc04fc77cdd93d",

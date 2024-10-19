@@ -1744,7 +1744,7 @@ export async function respondToQuestion(
   let lastXpAwardedAt
   let xpAwarded
   let newXpFrom
-  const promises = []
+  const promises: any[] = []
 
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response

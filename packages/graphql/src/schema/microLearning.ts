@@ -27,7 +27,9 @@ export const MicroLearning = MicroLearningRef.implement({
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
-    arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent'),
+    arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent', {
+      nullable: true,
+    }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     course: t.expose('course', {

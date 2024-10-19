@@ -71,7 +71,9 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function createValidationSchema(t: ReturnType<typeof useTranslations>) {
+function useValidationSchema() {
+  const t = useTranslations()
+
   return Yup.object().shape({
     status: Yup.string().oneOf(Object.values(ElementStatus)),
     name: Yup.string().required(t('manage.formErrors.questionName')),
@@ -277,7 +279,7 @@ function QuestionEditModal({
     {}
   )
 
-  const questionManipulationSchema = createValidationSchema(t)
+  const questionManipulationSchema = useValidationSchema()
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
