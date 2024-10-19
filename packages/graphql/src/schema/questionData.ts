@@ -46,8 +46,8 @@ export const Choice = builder.objectRef<IChoice>('Choice').implement({
 
 export interface IChoiceQuestionOptions {
   displayMode: DisplayMode
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   choices: IChoice[]
 }
 export const ChoiceQuestionOptions = builder
@@ -55,8 +55,12 @@ export const ChoiceQuestionOptions = builder
   .implement({
     fields: (t) => ({
       displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       choices: t.expose('choices', { type: [Choice] }),
     }),
   })
@@ -101,8 +105,8 @@ export const NumericalSolutionRange = builder
   })
 
 export interface INumericalQuestionOptions {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   accuracy?: number | null
   placeholder?: string | null
   unit?: string | null
@@ -113,7 +117,9 @@ export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
   .implement({
     fields: (t) => ({
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
       hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
         nullable: true,
       }),
@@ -156,8 +162,8 @@ export const FreeTextRestrictions = builder
   })
 
 export interface IFreeTextQuestionOptions {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   restrictions?: IFreeTextRestrictions | null
   solutions?: string[] | null
 }
@@ -165,7 +171,9 @@ export const FreeTextQuestionOptions = builder
   .objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
   .implement({
     fields: (t) => ({
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
       hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
         nullable: true,
       }),

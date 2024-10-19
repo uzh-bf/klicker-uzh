@@ -80,8 +80,8 @@ input ChoiceInput {
 type ChoiceQuestionOptions {
   choices: [Choice!]!
   displayMode: ElementDisplayMode!
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
 }
 
 type ChoicesElementData {
@@ -459,7 +459,7 @@ type FreeTextQuestionData {
 
 type FreeTextQuestionOptions {
   hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean!
+  hasSampleSolution: Boolean
   restrictions: FreeTextRestrictions
   solutions: [String!]
 }
@@ -896,7 +896,7 @@ type NumericalQuestionData {
 type NumericalQuestionOptions {
   accuracy: Int
   hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean!
+  hasSampleSolution: Boolean
   placeholder: String
   restrictions: NumericalRestrictions
   solutionRanges: [NumericalSolutionRange!]

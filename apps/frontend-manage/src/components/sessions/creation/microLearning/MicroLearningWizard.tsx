@@ -225,7 +225,7 @@ function MicroLearningWizard({
                 type: element.elementData.type,
                 hasSampleSolution:
                   'options' in element.elementData
-                    ? element.elementData.options.hasSampleSolution
+                    ? (element.elementData.options.hasSampleSolution ?? false)
                     : true,
               }
             }),
