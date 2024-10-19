@@ -1,5 +1,3 @@
-#import "./FElementData.graphql"
-
 mutation EditPracticeQuiz(
   $id: String!
   $name: String!

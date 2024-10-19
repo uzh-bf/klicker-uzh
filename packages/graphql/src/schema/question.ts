@@ -2,13 +2,13 @@ import * as DB from '@klicker-uzh/prisma'
 import type { BaseQuestionData } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
-import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
+import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementStatus,
   ElementType,
-  QuestionDataRef,
+  QuestionData,
 } from './questionData.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
@@ -202,7 +202,7 @@ export const Element = ElementRef.implement({
 
     // TODO: try to replace this through an improved type structure
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q as unknown as BaseQuestionData,
       nullable: true,
     }),
@@ -249,7 +249,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q.questionData,
       nullable: true,
     }),
@@ -269,7 +269,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementType: t.expose('elementType', { type: ElementType }),
 
     elementData: t.field({
-      type: ElementDataRef,
+      type: ElementData,
       resolve: (q) => q.elementData,
     }),
 

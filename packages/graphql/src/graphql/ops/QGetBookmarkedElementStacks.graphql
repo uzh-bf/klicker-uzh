@@ -1,5 +1,3 @@
-#import "./FElementDataWithoutSolutions.graphql"
-
 query GetBookmarkedElementStacks($courseId: String!) {
   getBookmarkedElementStacks(courseId: $courseId) {
     id

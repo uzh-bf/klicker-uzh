@@ -1,5 +1,3 @@
-#import "./FPracticeQuizData.graphql"
-
 query GetSinglePracticeQuiz($id: String!) {
   getSinglePracticeQuiz(id: $id) {
     ...PracticeQuizData

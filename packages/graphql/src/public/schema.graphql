@@ -84,7 +84,7 @@ type ChoiceQuestionOptions {
   hasSampleSolution: Boolean!
 }
 
-type ChoicesElementData implements ElementData {
+type ChoicesElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -95,7 +95,7 @@ type ChoicesElementData implements ElementData {
   type: ElementType!
 }
 
-type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ChoicesElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -112,7 +112,7 @@ type ChoicesElementResults {
   totalAnswers: Int!
 }
 
-type ChoicesQuestionData implements QuestionData {
+type ChoicesQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -139,7 +139,7 @@ type ConfusionTimestep {
   speed: Int!
 }
 
-type ContentElementData implements ElementData {
+type ContentElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -149,7 +149,7 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
-type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ContentElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -160,7 +160,7 @@ type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
   type: ElementType!
 }
 
-type ContentElementQData implements QuestionData {
+type ContentElementQData {
   content: String!
   explanation: String
   id: ID!
@@ -244,15 +244,7 @@ type Element {
   version: Int!
 }
 
-interface ElementData {
-  content: String!
-  elementId: Int!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int!
-  type: ElementType!
-}
+union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
 enum ElementDisplayMode {
   GRID
@@ -276,15 +268,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-interface ElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  type: ElementType!
-}
+union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
 
 type ElementInstanceOptions {
   pointsMultiplier: Int
@@ -387,7 +371,7 @@ enum FlashcardCorrectnessType {
   PARTIAL
 }
 
-type FlashcardElementData implements ElementData {
+type FlashcardElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -397,7 +381,7 @@ type FlashcardElementData implements ElementData {
   type: ElementType!
 }
 
-type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FlashcardElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -408,7 +392,7 @@ type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
   type: ElementType!
 }
 
-type FlashcardElementQData implements QuestionData {
+type FlashcardElementQData {
   content: String!
   explanation: String
   id: ID!
@@ -426,7 +410,7 @@ type FlashcardElementResults {
   totalAnswers: Int!
 }
 
-type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -451,7 +435,7 @@ type FreeElementResults {
   totalAnswers: Int!
 }
 
-type FreeTextElementData implements ElementData {
+type FreeTextElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -462,7 +446,7 @@ type FreeTextElementData implements ElementData {
   type: ElementType!
 }
 
-type FreeTextQuestionData implements QuestionData {
+type FreeTextQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -856,7 +840,7 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
-type NumericalElementData implements ElementData {
+type NumericalElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -867,7 +851,7 @@ type NumericalElementData implements ElementData {
   type: ElementType!
 }
 
-type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+type NumericalElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -898,7 +882,7 @@ type NumericalElementSolutions {
   min: Float
 }
 
-type NumericalQuestionData implements QuestionData {
+type NumericalQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -1131,15 +1115,7 @@ type Query {
   userTags: [Tag!]
 }
 
-interface QuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
+union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean

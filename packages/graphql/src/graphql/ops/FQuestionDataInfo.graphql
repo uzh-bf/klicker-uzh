@@ -1,4 +1,4 @@
-fragment QuestionDataWithoutSolutions on QuestionInstance {
+fragment QuestionDataInfo on QuestionInstance {
   questionData {
     ... on ChoicesQuestionData {
       id
@@ -8,14 +8,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
       content
       explanation
       pointsMultiplier
-
-      options {
-        displayMode
-        choices {
-          ix
-          value
-        }
-      }
     }
 
     ... on NumericalQuestionData {
@@ -26,16 +18,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
       content
       explanation
       pointsMultiplier
-
-      options {
-        unit
-        accuracy
-        placeholder
-        restrictions {
-          min
-          max
-        }
-      }
     }
 
     ... on FreeTextQuestionData {
@@ -46,12 +28,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
       content
       explanation
       pointsMultiplier
-
-      options {
-        restrictions {
-          maxLength
-        }
-      }
     }
   }
 }

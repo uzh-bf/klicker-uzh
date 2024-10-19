@@ -218,7 +218,7 @@ export interface BaseElementData {
   content: string
   pointsMultiplier: number
   explanation?: string | null
-  options: object
+  options: ElementOptions
 }
 
 // TODO: remove after migration of live quiz

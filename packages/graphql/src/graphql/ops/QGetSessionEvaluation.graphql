@@ -22,12 +22,12 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
       status
 
       questionData {
-        id
-        name
-        type
-        content
-
         ... on ChoicesQuestionData {
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             hasAnswerFeedbacks
@@ -41,6 +41,11 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         }
 
         ... on NumericalQuestionData {
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             restrictions {
@@ -55,6 +60,11 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         }
 
         ... on FreeTextQuestionData {
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             restrictions {

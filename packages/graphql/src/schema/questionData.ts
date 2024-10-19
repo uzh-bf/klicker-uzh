@@ -18,40 +18,17 @@ export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DisplayMode),
 })
 
-// ----- QUESTION DATA INTERFACE -----
-export const QuestionDataRef =
-  builder.interfaceRef<BaseQuestionData>('QuestionData')
-export const QuestionData = QuestionDataRef.implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    questionId: t.exposeInt('questionId', { nullable: true }),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: ElementType }),
-    content: t.exposeString('content'),
-    explanation: t.exposeString('explanation', { nullable: true }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-  }),
-  resolveType(value) {
-    switch (value.type) {
-      case DB.ElementType.SC:
-      case DB.ElementType.MC:
-      case DB.ElementType.KPRIM:
-        return 'ChoicesQuestionData'
-      case DB.ElementType.NUMERICAL:
-        return 'NumericalQuestionData'
-      case DB.ElementType.FREE_TEXT:
-        return 'FreeTextQuestionData'
-      case DB.ElementType.CONTENT:
-        return 'ContentElementQData'
-      case DB.ElementType.FLASHCARD:
-        return 'FlashcardElementQData'
-      default:
-        return null
-    }
-  },
+// ----- CHOICE QUESTIONS -----
+const sharedQuestionData = (t) => ({
+  id: t.exposeID('id'),
+  questionId: t.exposeInt('questionId', { nullable: true }),
+  name: t.exposeString('name'),
+  type: t.expose('type', { type: ElementType }),
+  content: t.exposeString('content'),
+  explanation: t.exposeString('explanation', { nullable: true }),
+  pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 })
 
-// ----- CHOICE QUESTIONS -----
 export interface IChoice {
   ix: number
   correct?: boolean
@@ -90,8 +67,8 @@ export interface IChoicesQuestionData extends BaseQuestionData {
 export const ChoicesQuestionData = builder
   .objectRef<IChoicesQuestionData>('ChoicesQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: ChoiceQuestionOptions }),
     }),
   })
@@ -160,8 +137,8 @@ export interface INumericalQuestionData extends BaseQuestionData {
 export const NumericalQuestionData = builder
   .objectRef<INumericalQuestionData>('NumericalQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: NumericalQuestionOptions }),
     }),
   })
@@ -206,8 +183,8 @@ export interface IFreeTextQuestionData extends BaseQuestionData {
 export const FreeTextQuestionData = builder
   .objectRef<IFreeTextQuestionData>('FreeTextQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: FreeTextQuestionOptions }),
     }),
   })
@@ -217,8 +194,9 @@ export interface IContentElementQData extends BaseQuestionData {}
 export const ContentElementQData = builder
   .objectRef<IContentElementQData>('ContentElementQData')
   .implement({
-    interfaces: [QuestionDataRef],
-    fields: (t) => ({}),
+    fields: (t) => ({
+      ...sharedQuestionData(t),
+    }),
   })
 
 // ----- FLASHCARD ELEMENTS -----
@@ -226,6 +204,34 @@ export interface IFlashcardElementQData extends BaseQuestionData {}
 export const FlashcardElementQData = builder
   .objectRef<IFlashcardElementQData>('FlashcardElementQData')
   .implement({
-    interfaces: [QuestionDataRef],
-    fields: (t) => ({}),
+    fields: (t) => ({
+      ...sharedQuestionData(t),
+    }),
   })
+
+// ----- QUESTION DATA INTERFACE -----
+export const QuestionData = builder.unionType('QuestionData', {
+  types: [
+    ChoicesQuestionData,
+    NumericalQuestionData,
+    FreeTextQuestionData,
+    FlashcardElementQData,
+    ContentElementQData,
+  ],
+  resolveType: (element) => {
+    switch (element.type) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesQuestionData
+      case DB.ElementType.NUMERICAL:
+        return NumericalQuestionData
+      case DB.ElementType.FREE_TEXT:
+        return FreeTextQuestionData
+      case DB.ElementType.FLASHCARD:
+        return FlashcardElementQData
+      case DB.ElementType.CONTENT:
+        return ContentElementQData
+    }
+  },
+})

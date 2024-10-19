@@ -1,9 +1,9 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ContentElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CTEvaluationProps {
-  evaluation: ElementInstanceEvaluation
+  evaluation: ContentElementInstanceEvaluation
 }
 
 function CTEvaluation({ evaluation }: CTEvaluationProps) {
