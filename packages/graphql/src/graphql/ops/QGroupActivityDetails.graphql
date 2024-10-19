@@ -1,5 +1,3 @@
-#import "./FElementDataWithoutSolutions.graphql"
-
 query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id

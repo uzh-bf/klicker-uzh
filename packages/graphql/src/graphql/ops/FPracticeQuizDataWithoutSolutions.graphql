@@ -1,5 +1,3 @@
-#import "./FElementDataWithoutSolutions.graphql"
-
 fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   id
   status

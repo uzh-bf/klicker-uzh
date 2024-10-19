@@ -22,13 +22,7 @@ query GetUserSessions {
       numOfParticipants
       instances {
         id
-        questionData {
-          id
-          questionId
-          name
-          type
-          content
-        }
+        ...QuestionDataInfo
       }
     }
     course {

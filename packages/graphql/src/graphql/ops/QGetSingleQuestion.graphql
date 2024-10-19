@@ -9,10 +9,10 @@ query GetSingleQuestion($id: Int!) {
     pointsMultiplier
 
     questionData {
-      id
-      questionId
-
       ... on ChoicesQuestionData {
+        id
+        questionId
+
         options {
           displayMode
           hasSampleSolution
@@ -27,6 +27,9 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on NumericalQuestionData {
+        id
+        questionId
+
         options {
           hasSampleSolution
           unit
@@ -44,6 +47,9 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on FreeTextQuestionData {
+        id
+        questionId
+
         options {
           hasSampleSolution
           restrictions {

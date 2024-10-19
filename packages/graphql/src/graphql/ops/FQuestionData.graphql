@@ -1,14 +1,14 @@
 fragment QuestionData on QuestionInstance {
   questionData {
-    id
-    questionId
-    name
-    type
-    content
-    explanation
-    pointsMultiplier
-
     ... on ChoicesQuestionData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         hasSampleSolution
         hasAnswerFeedbacks
@@ -23,6 +23,14 @@ fragment QuestionData on QuestionInstance {
     }
 
     ... on NumericalQuestionData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         hasSampleSolution
         accuracy
@@ -40,6 +48,14 @@ fragment QuestionData on QuestionInstance {
     }
 
     ... on FreeTextQuestionData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         hasSampleSolution
         restrictions {

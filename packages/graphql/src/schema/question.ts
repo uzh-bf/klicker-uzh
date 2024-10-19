@@ -8,7 +8,7 @@ import {
   ElementInstanceType,
   ElementStatus,
   ElementType,
-  QuestionDataRef,
+  QuestionData,
 } from './questionData.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
@@ -202,7 +202,7 @@ export const Element = ElementRef.implement({
 
     // TODO: try to replace this through an improved type structure
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q as unknown as BaseQuestionData,
       nullable: true,
     }),
@@ -249,7 +249,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q.questionData,
       nullable: true,
     }),

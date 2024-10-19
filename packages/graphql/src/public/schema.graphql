@@ -112,7 +112,7 @@ type ChoicesElementResults {
   totalAnswers: Int!
 }
 
-type ChoicesQuestionData implements QuestionData {
+type ChoicesQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -160,7 +160,7 @@ type ContentElementInstanceEvaluation {
   type: ElementType!
 }
 
-type ContentElementQData implements QuestionData {
+type ContentElementQData {
   content: String!
   explanation: String
   id: ID!
@@ -392,7 +392,7 @@ type FlashcardElementInstanceEvaluation {
   type: ElementType!
 }
 
-type FlashcardElementQData implements QuestionData {
+type FlashcardElementQData {
   content: String!
   explanation: String
   id: ID!
@@ -446,7 +446,7 @@ type FreeTextElementData {
   type: ElementType!
 }
 
-type FreeTextQuestionData implements QuestionData {
+type FreeTextQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -882,7 +882,7 @@ type NumericalElementSolutions {
   min: Float
 }
 
-type NumericalQuestionData implements QuestionData {
+type NumericalQuestionData {
   content: String!
   explanation: String
   id: ID!
@@ -1115,15 +1115,7 @@ type Query {
   userTags: [Tag!]
 }
 
-interface QuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
+union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean
