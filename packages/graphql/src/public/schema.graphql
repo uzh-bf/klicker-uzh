@@ -1150,7 +1150,7 @@ type QuestionFeedback {
 
 type QuestionInstance {
   id: Int!
-  pointsMultiplier: Int!
+  pointsMultiplier: Int
   questionData: QuestionData
 }
 

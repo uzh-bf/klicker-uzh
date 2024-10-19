@@ -14,7 +14,7 @@ interface useEvaluationInitializationProps {
   setSelectedBlockIndex: (index: number) => void
   setCurrentInstance: (instance: InstanceResult) => void
   setSelectedInstanceIndex: (index: number) => void
-  setChartType: (type: string) => void
+  setChartType: (type: ChartType) => void
 }
 
 function useEvaluationInitialization({

@@ -13,7 +13,10 @@ import {
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ACTIVE_CHART_TYPES,
+  ChartType,
+} from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   Select,
@@ -52,7 +55,7 @@ function Evaluation() {
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
-  const [chartType, setChartType] = useState<string>('')
+  const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
 
   const [currentInstance, setCurrentInstance] = useState<InstanceResult>({
     blockIx: 0,
@@ -390,7 +393,9 @@ function Evaluation() {
                       }
                     })}
                     value={chartType}
-                    onChange={(newValue: string) => setChartType(newValue)}
+                    onChange={(newValue: string) =>
+                      setChartType(newValue as ChartType)
+                    }
                     data={{ cy: 'change-chart-type' }}
                   />
                 </div>

@@ -831,6 +831,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
+      OTP: 'One-Time Password',
+      ACTIVATION: 'Activation',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
       createDelegatedLogin: 'Create delegated login',

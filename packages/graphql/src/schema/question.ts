@@ -246,7 +246,7 @@ export const QuestionInstanceRef =
 export const QuestionInstance = QuestionInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     questionData: t.field({
       type: QuestionDataRef,

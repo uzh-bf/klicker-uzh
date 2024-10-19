@@ -39,7 +39,6 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 }
 
 interface SessionTimelineProps {
-  shortname: string
   blocks?: ISessionBlock[]
   sessionName: string
   handleEndSession: () => void
@@ -53,7 +52,6 @@ interface SessionTimelineProps {
 }
 
 function SessionTimeline({
-  shortname,
   sessionId,
   blocks = [],
   sessionName,
@@ -173,7 +171,7 @@ function SessionTimeline({
                 questions={blocks.flatMap((block) => block.instances ?? [])}
               />
             )}
-            <SessionQRModal sessionId={sessionId} shortname={shortname} />
+            <SessionQRModal sessionId={sessionId} />
             <a
               className="flex-1"
               href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
