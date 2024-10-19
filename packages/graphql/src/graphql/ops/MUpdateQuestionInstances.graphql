@@ -13,14 +13,7 @@ mutation UpdateQuestionInstances($questionId: Int!) {
     }
     elementInstance {
       id
-      elementData {
-        id
-        name
-        type
-        content
-        pointsMultiplier
-        type
-      }
+      ...ElementDataWithoutSolutions
     }
   }
 }

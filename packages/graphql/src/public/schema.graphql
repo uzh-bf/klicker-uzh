@@ -84,7 +84,7 @@ type ChoiceQuestionOptions {
   hasSampleSolution: Boolean!
 }
 
-type ChoicesElementData implements ElementData {
+type ChoicesElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -139,7 +139,7 @@ type ConfusionTimestep {
   speed: Int!
 }
 
-type ContentElementData implements ElementData {
+type ContentElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -244,15 +244,7 @@ type Element {
   version: Int!
 }
 
-interface ElementData {
-  content: String!
-  elementId: Int!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int!
-  type: ElementType!
-}
+union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
 enum ElementDisplayMode {
   GRID
@@ -387,7 +379,7 @@ enum FlashcardCorrectnessType {
   PARTIAL
 }
 
-type FlashcardElementData implements ElementData {
+type FlashcardElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -451,7 +443,7 @@ type FreeElementResults {
   totalAnswers: Int!
 }
 
-type FreeTextElementData implements ElementData {
+type FreeTextElementData {
   content: String!
   elementId: Int!
   explanation: String
@@ -856,7 +848,7 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
-type NumericalElementData implements ElementData {
+type NumericalElementData {
   content: String!
   elementId: Int!
   explanation: String

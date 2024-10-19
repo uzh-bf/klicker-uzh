@@ -2,7 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import type { BaseQuestionData } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
-import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
+import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
@@ -269,7 +269,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementType: t.expose('elementType', { type: ElementType }),
 
     elementData: t.field({
-      type: ElementDataRef,
+      type: ElementData,
       resolve: (q) => q.elementData,
     }),
 
