@@ -53,5 +53,25 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
         }
       }
     }
+
+    ... on FlashcardElementQData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
+
+    ... on ContentElementQData {
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
   }
 }

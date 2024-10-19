@@ -141,7 +141,7 @@
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "216d1fa495c9128c952f6dbba816438d0b0ea4d1bb260866a0d1b7246e5ba0fc",
    "GetPublicParticipantProfile": "5732c91f4344a09b5a1e531f9a61a1584ccc529c26199f732ae9a15c21ba1af3",
-   "GetRunningSession": "cbce4cac1453151deb338f633329254b897a2b1135a385de564b71ee395fcb11",
+   "GetRunningSession": "8ffe760226b552f94e7b20b6314750dcb77dab32d3fdad0eef26e212d5db7c0e",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
    "GetRunningSessionsCourse": "dea0ffd684088b5fd57cb4b1a7a0fe6d7cfda1a8af50557696330aad05816c6e",
    "GetSessionEvaluation": "2292f26dbfe21903f94363ff6ad216fbe0330ae08cde81ef47f92dd57cdf91c1",
@@ -173,7 +173,7 @@
    "GroupActivityEnded": "0ad24543da1344f7c15139865c767cfdd51952a6a1630f3e080a14e577852b2f",
    "GroupActivityStarted": "68ba757fcf30a19c49cfdb2d47e803a0a4f0ed3ecf60a30e0b7ea3390ae0cf20",
    "MicroLearningEnded": "b296f5b68bb5cccea3da7f8947ee13a88ce78307e694e4caef561b3b5b8766cb",
-   "RunningSessionUpdated": "c76adf71deac09c5c204c49a9eeec1a0e034bea6cd9a48e9c40201067f378919",
+   "RunningSessionUpdated": "ce0214f8b6d6518683ceeaf4a129f335657f72c3abd915d89578705d44b82e80",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
    "UpdateParticipantAvatar": "ea07d0ab75a016dd988627fcd6de74bdba36de21c8c2c6b59e4a8a7488758519"
 }
