@@ -14,18 +14,21 @@
     "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.1",
     "@types/ltijs": "^4.0.11",
     "@types/node": "^20.16.1",
     "nodemon": "~3.1.7",
     "npm-run-all": "~4.1.5",
-    "tsup": "~8.3.0",
+    "rollup": "~4.24.0",
+    "rollup-plugin-copy": "~3.5.0",
     "typescript": "~5.6.3"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
-    "build:ts": "tsup",
+    "build:ts": "rollup -c",
     "check": "tsc --noEmit",
-    "dev:build": "tsup --watch",
+    "dev:build": "rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
     "dev:lti": "npm-run-all --parallel dev:build dev:run",
     "dev:offline": "pnpm run dev",

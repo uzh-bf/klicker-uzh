@@ -8,20 +8,39 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
-  Element,
-  ElementInstance,
+  type Element,
+  type ElementInstance,
   ElementInstanceType,
   ElementOrderType,
-  ElementStack,
+  type ElementStack,
   ElementStackType,
   ElementType,
-  InstanceStatistics,
-  Participation,
-  QuestionResponse as PrismaQuestionResponse,
+  type InstanceStatistics,
+  type Participation,
+  type QuestionResponse as PrismaQuestionResponse,
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
+import type {
+  AllElementTypeData,
+  Choice,
+  ChoicesElementData,
+  ContentResults,
+  ElementInstanceResults,
+  ElementResultsChoices,
+  ElementResultsOpen,
+  FlashcardResults,
+  FreeTextElementData,
+  NumericalElementData,
+  QuestionResponse,
+  QuestionResponseChoices,
+  QuestionResponseContent,
+  QuestionResponseFlashcard,
+  QuestionResponseValue,
+  StackInput,
+} from '@klicker-uzh/types'
+import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -33,35 +52,15 @@ import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import {
+import type {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops.js'
-import { IInstanceEvaluation } from '../schema/question.js'
-import {
-  AllElementTypeData,
-  Choice,
-  ChoicesElementData,
-  ContentResults,
-  ElementInstanceResults,
-  ElementResultsChoices,
-  ElementResultsOpen,
-  FlashcardCorrectness,
-  FlashcardResults,
-  FreeTextElementData,
-  NumericalElementData,
-  QuestionResponse,
-  QuestionResponseChoices,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-  QuestionResponseValue,
-  StackFeedbackStatus,
-  StackInput,
-} from '../types/app.js'
+import type { IInstanceEvaluation } from '../schema/question.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -2713,9 +2712,7 @@ export async function manipulatePracticeQuiz(
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(
-                element
-              ) as AllElementTypeData
+              const processedElementData = processElementData(element)
               const initialResults = getInitialElementResults(element)
 
               return {

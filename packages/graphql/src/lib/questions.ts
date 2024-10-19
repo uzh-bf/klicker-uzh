@@ -1,9 +1,9 @@
 import { ElementType } from '@klicker-uzh/prisma'
-import {
+import type {
   AllQuestionTypeData,
   QuestionResults,
   QuestionResultsChoices,
-} from '../types/app.js'
+} from '@klicker-uzh/types'
 
 export function prepareInitialQuestionInstanceResults(
   questionData: AllQuestionTypeData

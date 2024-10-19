@@ -5,6 +5,7 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   processElementData,
@@ -13,13 +14,8 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
-import { ContextWithUser } from '../lib/context.js'
+import type { ContextWithUser } from '../lib/context.js'
 import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
-import {
-  AllElementTypeData,
-  AllQuestionTypeData,
-  DisplayMode,
-} from '../types/app.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
   switch (elementType) {
@@ -641,18 +637,17 @@ export async function updateQuestionInstances(
           // invalidate cache for the corresponding element
           if (typeof sessionId !== 'undefined') {
             // prepare new question objects
-            const newQuestionData = processQuestionData(
-              question
-            ) as AllQuestionTypeData
+            const newQuestionData = processQuestionData(question)
 
             // prepare new results objects
-            const newResults =
-              prepareInitialQuestionInstanceResults(newQuestionData)
+            const newResults = prepareInitialQuestionInstanceResults(
+              newQuestionData!
+            )
 
             instance = await ctx.prisma.questionInstance.update({
               where: { id: instanceId },
               data: {
-                questionData: newQuestionData,
+                questionData: newQuestionData!,
                 results: newResults,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints,
@@ -674,9 +669,7 @@ export async function updateQuestionInstances(
             if (!oldInstance) return null
 
             // prepare new question objects
-            const newQuestionData = processElementData(
-              question
-            ) as AllElementTypeData
+            const newQuestionData = processElementData(question)
 
             // prepare new results objects
             const newResults = getInitialElementResults(question)
@@ -706,9 +699,7 @@ export async function updateQuestionInstances(
             if (!oldInstance) return null
 
             // prepare new question objects
-            const newQuestionData = processElementData(
-              question
-            ) as AllElementTypeData
+            const newQuestionData = processElementData(question)
 
             // prepare new results objects
             const newResults = getInitialElementResults(question)

@@ -1,13 +1,13 @@
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import dayjs from 'dayjs'
-import { evaluateAnswerCorrectness } from '../services/practiceQuizzes.js'
-import {
+import type {
   FlashcardCorrectness,
   QuestionResponseChoices,
   QuestionResponseContent,
   QuestionResponseFlashcard,
   QuestionResponseValue,
-} from '../types/app.js'
+} from '@klicker-uzh/types'
+import dayjs from 'dayjs'
+import { evaluateAnswerCorrectness } from '../services/practiceQuizzes.js'
 
 async function run() {
   const prisma = new PrismaClient()

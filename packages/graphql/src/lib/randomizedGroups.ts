@@ -10,7 +10,7 @@ export function splitGroupsRunning({
   // if more than double the preferred group size is in the pool, start creating groups
   if (participantIds.length >= preferredGroupSize * 2) {
     const participantIdsCopy = [...participantIds]
-    const groups = []
+    const groups: string[][] = []
 
     while (participantIdsCopy.length >= 2 * preferredGroupSize) {
       const group = participantIdsCopy.splice(0, preferredGroupSize)
@@ -35,7 +35,7 @@ export function splitGroupsFinal({
   // check if groups with the preferred size can be created
   let studentsInPool = participantIds.length
   if (studentsInPool % preferredGroupSize === 0) {
-    const groups = []
+    const groups: string[][] = []
     while (studentsInPool > 0) {
       const group = participantIds.splice(0, preferredGroupSize)
       groups.push(group)
