@@ -1,9 +1,9 @@
 import {
   AccessMode,
-  ConfusionTimestep,
-  Element,
+  type ConfusionTimestep,
+  type Element,
   ElementType,
-  QuestionInstance,
+  type QuestionInstance,
   QuestionInstanceType,
   SessionBlockStatus,
   SessionStatus,
@@ -19,8 +19,8 @@ import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
-import { ISession } from 'src/schema/session.js'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { ISession } from 'src/schema/session.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 

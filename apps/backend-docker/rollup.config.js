@@ -5,7 +5,10 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts', 'src/pure.ts'],
+    input:
+      process.env.NODE_ENV === 'test'
+        ? ['instrumented/index.ts']
+        : ['src/index.ts'],
     output: {
       dir: 'dist',
       format: 'esm',

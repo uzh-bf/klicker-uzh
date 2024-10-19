@@ -1,12 +1,12 @@
 import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import { getInitialElementResults } from '@klicker-uzh/util'
-import { createHash } from 'node:crypto'
 import {
   QuestionResponseChoices,
   QuestionResponseValue,
   QuestionResultsChoices,
   QuestionResultsOpen,
-} from 'src/types/app.js'
+} from '@klicker-uzh/types'
+import { getInitialElementResults } from '@klicker-uzh/util'
+import { createHash } from 'node:crypto'
 
 async function run() {
   const MD5 = createHash('md5')

@@ -1,14 +1,14 @@
 import {
-  Course,
-  Element,
+  type Course,
+  type Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
   GroupActivityStatus,
   LeaderboardType,
   ParameterType,
-  Participant,
-  ParticipantGroup,
+  type Participant,
+  type ParticipantGroup,
 } from '@klicker-uzh/prisma'
 import { ResponseCorrectness, type StackInput } from '@klicker-uzh/types'
 import {
@@ -19,7 +19,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import { ElementInstanceOptions } from 'src/ops.js'
+import type { ElementInstanceOptions } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -27,7 +27,7 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   splitGroupsFinal,
   splitGroupsRunning,
@@ -35,7 +35,7 @@ import {
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
-  RespondToElementStackInput,
+  type RespondToElementStackInput,
   updateQuestionResults,
 } from './practiceQuizzes.js'
 

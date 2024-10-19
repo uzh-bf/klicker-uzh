@@ -1,12 +1,10 @@
 import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import { getInitialElementResults } from '@klicker-uzh/util'
 import {
-  ContentInstanceResults,
   FlashcardCorrectness,
-  FlashcardInstanceResults,
   QuestionResponseContent,
   QuestionResponseFlashcard,
-} from 'src/types/app.js'
+} from '@klicker-uzh/types'
+import { getInitialElementResults } from '@klicker-uzh/util'
 
 async function run() {
   const prisma = new PrismaClient()
