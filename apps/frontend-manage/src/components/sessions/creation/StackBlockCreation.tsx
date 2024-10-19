@@ -370,16 +370,17 @@ function StackBlockCreation({
           </Button.Label>
         </Button>
       )}
-      <div
-        ref={drop}
-        className={twMerge(
-          'w-full rounded border border-solid p-0.5 text-center',
-          isOver && 'bg-primary-20'
-        )}
-        data-cy={`drop-elements-stack-${index}`}
-      >
-        <FontAwesomeIcon icon={faPlus} size="lg" />
-      </div>
+      {drop(
+        <div
+          className={twMerge(
+            'w-full rounded border border-solid p-0.5 text-center',
+            isOver && 'bg-primary-20'
+          )}
+          data-cy={`drop-elements-stack-${index}`}
+        >
+          <FontAwesomeIcon icon={faPlus} size="lg" />
+        </div>
+      )}
 
       <StackDescriptionModal
         stackIx={index}
