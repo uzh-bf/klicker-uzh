@@ -1,6 +1,5 @@
 {
-  "include": ["./src/**/*", "./scripts/**/*"],
-  "exclude": ["instrumented/"],
+  "include": ["./src/**/*", "./scripts/**/*", "./instrumented/**/*"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */

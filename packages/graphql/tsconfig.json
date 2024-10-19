@@ -1,6 +1,6 @@
 {
   "include": ["./**/*"],
-  "exclude": ["node_modules", "dist", "instrumented", "src/scripts"],
+  "exclude": ["node_modules", "dist", "src/scripts"],
   "compilerOptions": {
     "baseUrl": ".",
     "rootDir": ".",
