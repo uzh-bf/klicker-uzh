@@ -3,7 +3,7 @@ import JWT from 'jsonwebtoken'
 import normalizeEmail from 'validator/lib/normalizeEmail.js'
 
 import { ServiceBusClient } from '@azure/service-bus'
-import { ContextWithUser } from '../lib/context.js'
+import type { ContextWithUser } from '../lib/context.js'
 import getMongoDB from '../lib/mongo.js'
 import {
   sendEmailMigrationNotification,

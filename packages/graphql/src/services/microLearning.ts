@@ -1,5 +1,5 @@
 import {
-  Element,
+  type Element,
   ElementInstanceType,
   ElementStackType,
   PublicationStatus,
@@ -13,7 +13,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {

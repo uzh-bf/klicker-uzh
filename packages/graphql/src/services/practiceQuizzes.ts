@@ -8,16 +8,16 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
-  Element,
-  ElementInstance,
+  type Element,
+  type ElementInstance,
   ElementInstanceType,
   ElementOrderType,
-  ElementStack,
+  type ElementStack,
   ElementStackType,
   ElementType,
-  InstanceStatistics,
-  Participation,
-  QuestionResponse as PrismaQuestionResponse,
+  type InstanceStatistics,
+  type Participation,
+  type QuestionResponse as PrismaQuestionResponse,
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
@@ -52,15 +52,15 @@ import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import {
+import type {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops.js'
-import { IInstanceEvaluation } from '../schema/question.js'
+import type { IInstanceEvaluation } from '../schema/question.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6

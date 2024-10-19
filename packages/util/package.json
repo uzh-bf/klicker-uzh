@@ -12,10 +12,12 @@
     "@klicker-uzh/types": "workspace:*"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.1",
     "@types/node": "^20.16.1",
     "cross-env": "~7.0.3",
     "npm-run-all": "~4.1.5",
-    "tsup": "~8.3.0",
+    "rollup": "~4.24.0",
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
@@ -24,11 +26,11 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production tsup",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development tsup --watch"
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
   },
   "engines": {
     "node": "=20"

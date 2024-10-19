@@ -14,7 +14,7 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
-import { ContextWithUser } from '../lib/context.js'
+import type { ContextWithUser } from '../lib/context.js'
 import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
