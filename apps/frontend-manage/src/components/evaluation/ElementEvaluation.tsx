@@ -1,7 +1,9 @@
 import {
   ChoicesElementInstanceEvaluation,
+  ContentElementInstanceEvaluation,
   ElementInstanceEvaluation,
   ElementType,
+  FlashcardElementInstanceEvaluation,
   FreeElementInstanceEvaluation,
   NumericalElementInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -76,10 +78,14 @@ function ElementEvaluation({
           />
         )}
         {currentInstance.type === ElementType.Flashcard && (
-          <FCEvaluation evaluation={currentInstance} />
+          <FCEvaluation
+            evaluation={currentInstance as FlashcardElementInstanceEvaluation}
+          />
         )}
         {currentInstance.type === ElementType.Content && (
-          <CTEvaluation evaluation={currentInstance} />
+          <CTEvaluation
+            evaluation={currentInstance as ContentElementInstanceEvaluation}
+          />
         )}
       </div>
     </div>
