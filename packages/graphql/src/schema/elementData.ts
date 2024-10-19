@@ -2,12 +2,12 @@ import * as DB from '@klicker-uzh/prisma'
 import type { BaseElementData } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import {
+  type IChoiceQuestionOptions,
+  type IFreeTextQuestionOptions,
+  type INumericalQuestionOptions,
   ChoiceQuestionOptions,
   ElementType,
   FreeTextQuestionOptions,
-  IChoiceQuestionOptions,
-  IFreeTextQuestionOptions,
-  INumericalQuestionOptions,
   NumericalQuestionOptions,
 } from './questionData.js'
 

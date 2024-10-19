@@ -4,10 +4,10 @@ import {
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { CourseRef, ICourse } from './course.js'
+import { type ICourse, CourseRef } from './course.js'
 import {
+  type IInstanceEvaluation,
   ElementInstanceRef,
-  IInstanceEvaluation,
   InstanceEvaluation,
 } from './question.js'
 import { ElementType } from './questionData.js'

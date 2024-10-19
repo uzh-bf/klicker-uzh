@@ -1,10 +1,14 @@
 import * as DB from '@klicker-uzh/prisma'
 import { ResponseCorrectness } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { CourseRef, type ICourse } from './course.js'
-import type { IParticipant, IParticipantGroup } from './participant.js'
-import { ParticipantGroupRef, ParticipantRef } from './participant.js'
-import { ElementStackRef, IElementStack } from './practiceQuizzes.js'
+import { type ICourse, CourseRef } from './course.js'
+import {
+  type IParticipant,
+  type IParticipantGroup,
+  ParticipantGroupRef,
+  ParticipantRef,
+} from './participant.js'
+import { type IElementStack, ElementStackRef } from './practiceQuizzes.js'
 import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
