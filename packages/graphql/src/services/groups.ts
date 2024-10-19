@@ -10,12 +10,11 @@ import {
   Participant,
   ParticipantGroup,
 } from '@klicker-uzh/prisma'
+import { ResponseCorrectness, type StackInput } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
   processElementData,
-  ResponseCorrectness,
-  StackInput,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'

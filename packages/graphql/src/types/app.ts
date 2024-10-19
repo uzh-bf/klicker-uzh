@@ -1,6 +1,5 @@
-// @ts-ignore
 import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
-import {
+import type {
   AllElementTypeData,
   AllQuestionTypeData,
   AvatarSettings,
@@ -12,7 +11,7 @@ import {
   GroupActivityResults,
   QuestionResponse,
   QuestionResults,
-} from '@klicker-uzh/util'
+} from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,

@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/util'
+import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementType } from './questionData.js'
 

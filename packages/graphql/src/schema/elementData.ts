@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { BaseElementData } from '@klicker-uzh/util'
+import type { BaseElementData } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import {
   ChoiceQuestionOptions,

@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ResponseCorrectness } from '@klicker-uzh/util'
+import { ResponseCorrectness } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'

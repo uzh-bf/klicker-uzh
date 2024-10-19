@@ -1,5 +1,5 @@
 {
-  "name": "@klicker-uzh/util",
+  "name": "@klicker-uzh/types",
   "version": "3.1.0",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
@@ -8,8 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "@klicker-uzh/prisma": "workspace:*",
-    "@klicker-uzh/types": "workspace:*"
+    "@klicker-uzh/prisma": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.16.1",

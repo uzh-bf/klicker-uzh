@@ -8,11 +8,11 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import {
+import type {
   AllQuestionInstanceTypeData,
-  processQuestionData,
   QuestionResultsChoices,
-} from '@klicker-uzh/util'
+} from '@klicker-uzh/types'
+import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'

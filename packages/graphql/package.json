@@ -12,6 +12,7 @@
     "@azure/storage-blob": "12.25.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@pothos/core": "4.3.0",
     "@pothos/plugin-directives": "4.1.0",

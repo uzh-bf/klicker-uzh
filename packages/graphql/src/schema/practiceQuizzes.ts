@@ -2,7 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
-} from '@klicker-uzh/util'
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, ICourse } from './course.js'
 import {

@@ -5,8 +5,8 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
 import {
-  DisplayMode,
   getInitialElementResults,
   processElementData,
   processQuestionData,

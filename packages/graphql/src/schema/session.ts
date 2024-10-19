@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import { AllQuestionTypeData, QuestionResults } from '@klicker-uzh/util'
+import type { AllQuestionTypeData, QuestionResults } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { CourseRef } from './course.js'

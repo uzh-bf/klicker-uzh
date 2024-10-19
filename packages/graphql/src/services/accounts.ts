@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import { DisplayMode, processQuestionData } from '@klicker-uzh/util'
+import { DisplayMode } from '@klicker-uzh/types'
+import { processQuestionData } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'

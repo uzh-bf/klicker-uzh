@@ -22,7 +22,7 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
-import {
+import type {
   AllElementTypeData,
   Choice,
   ChoicesElementData,
@@ -30,20 +30,21 @@ import {
   ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
-  FlashcardCorrectness,
   FlashcardResults,
   FreeTextElementData,
-  getInitialElementResults,
-  getInitialInstanceStatistics,
   NumericalElementData,
-  processElementData,
   QuestionResponse,
   QuestionResponseChoices,
   QuestionResponseContent,
   QuestionResponseFlashcard,
   QuestionResponseValue,
-  StackFeedbackStatus,
   StackInput,
+} from '@klicker-uzh/types'
+import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'

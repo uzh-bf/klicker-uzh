@@ -4,11 +4,11 @@ import {
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
+import type { StackInput } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
   processElementData,
-  StackInput,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
