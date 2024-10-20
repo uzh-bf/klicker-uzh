@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
+  FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
@@ -151,8 +152,7 @@ function ElementStack({
                 [evaluation.instanceId]: {
                   ...commonAttributes,
                   type: elementType,
-                  response: evaluation.lastResponse
-                    .correctness as FlashcardCorrectnessType,
+                  response: evaluation.lastResponse.correctness,
                 },
               }
             } else if (
@@ -384,10 +384,21 @@ function ElementStack({
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
+                      let responseValue: FlashcardCorrectnessType
+                      if (value.response === FlashcardCorrectness.Correct) {
+                        responseValue = FlashcardCorrectnessType.Correct
+                      } else if (
+                        value.response === FlashcardCorrectness.Partial
+                      ) {
+                        responseValue = FlashcardCorrectnessType.Partial
+                      } else {
+                        responseValue = FlashcardCorrectnessType.Incorrect
+                      }
+
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Flashcard,
-                        flashcardResponse: value.response,
+                        flashcardResponse: responseValue,
                       }
                     } else if (value.type === ElementType.Content) {
                       return {

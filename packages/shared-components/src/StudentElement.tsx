@@ -1,11 +1,9 @@
 import type {
   ElementInstance,
+  FlashcardCorrectness,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  ElementType,
-  FlashcardCorrectnessType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import React from 'react'
 import ChoicesQuestion from './ChoicesQuestion'
@@ -23,7 +21,7 @@ export type StudentResponseType = Record<
   number,
   | {
       type: ElementType.Flashcard
-      response?: FlashcardCorrectnessType
+      response?: FlashcardCorrectness
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -78,9 +76,7 @@ function StudentElement({
         key={element.id}
         content={element.elementData.content}
         explanation={element.elementData.explanation!}
-        response={
-          studentResponse[element.id]?.response as FlashcardCorrectnessType
-        }
+        response={studentResponse[element.id]?.response as FlashcardCorrectness}
         setResponse={(studentResponse) => {
           setStudentResponse((response) => {
             return {
@@ -95,7 +91,7 @@ function StudentElement({
           })
         }}
         existingResponse={
-          stackStorage?.[element.id]?.response as FlashcardCorrectnessType
+          stackStorage?.[element.id]?.response as FlashcardCorrectness
         }
         elementIx={elementIx}
       />
