@@ -56,6 +56,7 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
+import ElementTypeMonitor from './ElementTypeMonitor'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
@@ -275,6 +276,8 @@ function QuestionEditModal({
 
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [elementDataTypename, setElementDataTypename] =
+    useState('ChoicesElementData')
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
@@ -691,6 +694,10 @@ function QuestionEditModal({
               </Button>
             }
           >
+            <ElementTypeMonitor
+              elementType={values.type ?? ElementType.Sc}
+              setElementDataTypename={setElementDataTypename}
+            />
             <div className="flex flex-row gap-12">
               <div className="max-w-5xl flex-1">
                 <Form className="w-full" id="question-manipulation-form">
@@ -1479,7 +1486,8 @@ function QuestionEditModal({
                         elementType: values.type,
                         elementData: {
                           id: '0',
-                          questionId: 0,
+                          elementId: 0,
+                          __typename: elementDataTypename,
                           content: values.content,
                           explanation: values.explanation,
                           name: values.name,
