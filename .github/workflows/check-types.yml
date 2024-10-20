@@ -30,10 +30,6 @@ jobs:
           version: 9.10.0
           run_install: true
 
-      # - name: Build all packages and apps
-      #   run: |
-      #     pnpm run build
-
       - name: Build relevant packages
         run: |
           cd packages/markdown
