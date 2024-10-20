@@ -1,11 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
-
+import type { QuestionResults } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { AllElementTypeData, QuestionResults } from '../types/app.js'
-import type { ICourse } from './course.js'
-import { CourseRef } from './course.js'
+import { type ICourse, CourseRef } from './course.js'
 import { QuestionInstanceRef } from './question.js'
-import { QuestionDataRef } from './questionData.js'
+import { QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -229,14 +227,12 @@ export const Statistics = builder
 
 export interface IInstanceResult {
   id: string
-
   blockIx?: number
   instanceIx: number
   participants: number
   results: QuestionResults
   status: DB.SessionBlockStatus
-
-  questionData: AllElementTypeData
+  questionData: DB.QuestionInstance['questionData']
   statistics?: IStatistics
 }
 export const InstanceResultRef =
@@ -252,7 +248,7 @@ export const InstanceResult = InstanceResultRef.implement({
     status: t.expose('status', { type: SessionBlockStatus }),
 
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q.questionData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),

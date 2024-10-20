@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { FlashcardCorrectness as FlashcardCorrectnessType } from '../types/app.js'
 import { ElementType } from './questionData.js'
 
 // TODO: move types to separate file with type definitions?
@@ -141,56 +141,31 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
     instances: t.field({
-      type: [ElementInstanceEvaluationRef],
+      type: [ElementInstanceEvaluation],
       resolve: (s) => s.instances,
     }),
   }),
 })
 
-// ----- ELEMENT EVALUATION INTERFACE -----
-export const ElementInstanceEvaluationRef =
-  builder.interfaceRef<IElementInstanceEvaluation>('ElementInstanceEvaluation')
-export const ElementInstanceEvaluation = ElementInstanceEvaluationRef.implement(
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      type: t.expose('type', { type: ElementType }),
-      name: t.exposeString('name'),
-      content: t.exposeString('content'),
-      explanation: t.exposeString('explanation', { nullable: true }),
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
-    }),
-    resolveType(value) {
-      switch (value.type) {
-        case DB.ElementType.SC:
-        case DB.ElementType.MC:
-        case DB.ElementType.KPRIM:
-          return 'ChoicesElementInstanceEvaluation'
-        case DB.ElementType.NUMERICAL:
-          return 'NumericalElementInstanceEvaluation'
-        case DB.ElementType.FREE_TEXT:
-          return 'FreeElementInstanceEvaluation'
-        case DB.ElementType.FLASHCARD:
-          return 'FlashcardElementInstanceEvaluation'
-        case DB.ElementType.CONTENT:
-          return 'ContentElementInstanceEvaluation'
-        default:
-          return null
-      }
-    },
-  }
-)
-
 // ----- CHOICES ELEMENT EVALUATION INTERFACE -----
+const sharedElementEvaluation = (t) => ({
+  id: t.exposeInt('id'),
+  type: t.expose('type', { type: ElementType }),
+  name: t.exposeString('name'),
+  content: t.exposeString('content'),
+  explanation: t.exposeString('explanation', { nullable: true }),
+  hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+  hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+})
+
 export const ChoicesElementInstanceEvaluationRef =
   builder.objectRef<IChoicesElementInstanceEvaluation>(
     'ChoicesElementInstanceEvaluation'
   )
 export const ChoicesElementInstanceEvaluation =
   ChoicesElementInstanceEvaluationRef.implement({
-    interfaces: [ElementInstanceEvaluation],
     fields: (t) => ({
+      ...sharedElementEvaluation(t),
       results: t.expose('results', {
         type: ChoicesElementResults,
       }),
@@ -228,8 +203,8 @@ export const NumericalElementInstanceEvaluationRef =
   )
 export const NumericalElementInstanceEvaluation =
   NumericalElementInstanceEvaluationRef.implement({
-    interfaces: [ElementInstanceEvaluation],
     fields: (t) => ({
+      ...sharedElementEvaluation(t),
       results: t.expose('results', {
         type: NumericalElementResults,
       }),
@@ -285,8 +260,8 @@ export const FreeElementInstanceEvaluationRef =
   )
 export const FreeElementInstanceEvaluation =
   FreeElementInstanceEvaluationRef.implement({
-    interfaces: [ElementInstanceEvaluation],
     fields: (t) => ({
+      ...sharedElementEvaluation(t),
       results: t.expose('results', {
         type: FreeElementResults,
       }),
@@ -326,8 +301,8 @@ export const FlashcardElementInstanceEvaluationRef =
   )
 export const FlashcardElementInstanceEvaluation =
   FlashcardElementInstanceEvaluationRef.implement({
-    interfaces: [ElementInstanceEvaluation],
     fields: (t) => ({
+      ...sharedElementEvaluation(t),
       results: t.expose('results', {
         type: FlashcardElementResults,
       }),
@@ -355,8 +330,8 @@ export const ContentElementInstanceEvaluationRef =
   )
 export const ContentElementInstanceEvaluation =
   ContentElementInstanceEvaluationRef.implement({
-    interfaces: [ElementInstanceEvaluation],
     fields: (t) => ({
+      ...sharedElementEvaluation(t),
       results: t.expose('results', {
         type: ContentElementResults,
       }),
@@ -371,3 +346,33 @@ export const ContentElementResults = ContentElementResultsRef.implement({
     anonymousAnswers: t.exposeInt('anonymousAnswers'),
   }),
 })
+
+// ----- ELEMENT EVALUATION INTERFACE -----
+export const ElementInstanceEvaluation = builder.unionType(
+  'ElementInstanceEvaluation',
+  {
+    types: [
+      ChoicesElementInstanceEvaluation,
+      NumericalElementInstanceEvaluation,
+      FreeElementInstanceEvaluation,
+      FlashcardElementInstanceEvaluation,
+      ContentElementInstanceEvaluation,
+    ],
+    resolveType: (element) => {
+      switch (element.type) {
+        case DB.ElementType.SC:
+        case DB.ElementType.MC:
+        case DB.ElementType.KPRIM:
+          return ChoicesElementInstanceEvaluation
+        case DB.ElementType.NUMERICAL:
+          return NumericalElementInstanceEvaluation
+        case DB.ElementType.FREE_TEXT:
+          return FreeElementInstanceEvaluation
+        case DB.ElementType.FLASHCARD:
+          return FlashcardElementInstanceEvaluation
+        case DB.ElementType.CONTENT:
+          return ContentElementInstanceEvaluation
+      }
+    },
+  }
+)

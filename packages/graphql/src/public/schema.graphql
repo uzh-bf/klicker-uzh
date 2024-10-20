@@ -80,23 +80,22 @@ input ChoiceInput {
 type ChoiceQuestionOptions {
   choices: [Choice!]!
   displayMode: ElementDisplayMode!
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
 }
 
-type ChoicesElementData implements ElementData {
+type ChoicesElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
-type ChoicesElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ChoicesElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -113,9 +112,8 @@ type ChoicesElementResults {
   totalAnswers: Int!
 }
 
-type ChoicesQuestionData implements QuestionData {
+type ChoicesQuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -141,18 +139,17 @@ type ConfusionTimestep {
   speed: Int!
 }
 
-type ContentElementData implements ElementData {
+type ContentElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
-type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
+type ContentElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -163,9 +160,8 @@ type ContentElementInstanceEvaluation implements ElementInstanceEvaluation {
   type: ElementType!
 }
 
-type ContentElementQData implements QuestionData {
+type ContentElementQData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -248,16 +244,7 @@ type Element {
   version: Int!
 }
 
-interface ElementData {
-  content: String!
-  elementId: Int
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int!
-  questionId: Int
-  type: ElementType!
-}
+union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
 enum ElementDisplayMode {
   GRID
@@ -281,15 +268,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-interface ElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  type: ElementType!
-}
+union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
 
 type ElementInstanceOptions {
   pointsMultiplier: Int
@@ -392,18 +371,17 @@ enum FlashcardCorrectnessType {
   PARTIAL
 }
 
-type FlashcardElementData implements ElementData {
+type FlashcardElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
-type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FlashcardElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -414,9 +392,8 @@ type FlashcardElementInstanceEvaluation implements ElementInstanceEvaluation {
   type: ElementType!
 }
 
-type FlashcardElementQData implements QuestionData {
+type FlashcardElementQData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -433,7 +410,7 @@ type FlashcardElementResults {
   totalAnswers: Int!
 }
 
-type FreeElementInstanceEvaluation implements ElementInstanceEvaluation {
+type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -458,21 +435,19 @@ type FreeElementResults {
   totalAnswers: Int!
 }
 
-type FreeTextElementData implements ElementData {
+type FreeTextElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
-type FreeTextQuestionData implements QuestionData {
+type FreeTextQuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -484,7 +459,7 @@ type FreeTextQuestionData implements QuestionData {
 
 type FreeTextQuestionOptions {
   hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean!
+  hasSampleSolution: Boolean
   restrictions: FreeTextRestrictions
   solutions: [String!]
 }
@@ -654,7 +629,7 @@ type GroupMessage {
   createdAt: Date!
   group: ParticipantGroup
   id: Int!
-  participant: Participant
+  participant: Participant!
   updatedAt: Date!
 }
 
@@ -742,7 +717,7 @@ type MediaFile {
 }
 
 type MicroLearning {
-  arePushNotificationsSent: Boolean!
+  arePushNotificationsSent: Boolean
   course: Course
   description: String
   displayName: String!
@@ -773,7 +748,7 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
-  createMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
+  createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
@@ -792,7 +767,7 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
-  editMicroLearning(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
+  editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
@@ -865,19 +840,18 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
-type NumericalElementData implements ElementData {
+type NumericalElementData {
   content: String!
-  elementId: Int
+  elementId: Int!
   explanation: String
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int
   type: ElementType!
 }
 
-type NumericalElementInstanceEvaluation implements ElementInstanceEvaluation {
+type NumericalElementInstanceEvaluation {
   content: String!
   explanation: String
   hasAnswerFeedbacks: Boolean!
@@ -908,9 +882,8 @@ type NumericalElementSolutions {
   min: Float
 }
 
-type NumericalQuestionData implements QuestionData {
+type NumericalQuestionData {
   content: String!
-  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -923,7 +896,7 @@ type NumericalQuestionData implements QuestionData {
 type NumericalQuestionOptions {
   accuracy: Int
   hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean!
+  hasSampleSolution: Boolean
   placeholder: String
   restrictions: NumericalRestrictions
   solutionRanges: [NumericalSolutionRange!]
@@ -1142,16 +1115,7 @@ type Query {
   userTags: [Tag!]
 }
 
-interface QuestionData {
-  content: String!
-  elementId: Int
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
+union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean
@@ -1162,7 +1126,7 @@ type QuestionFeedback {
 
 type QuestionInstance {
   id: Int!
-  pointsMultiplier: Int!
+  pointsMultiplier: Int
   questionData: QuestionData
 }
 

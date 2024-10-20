@@ -2,6 +2,7 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementType,
   GetFeedbacksDocument,
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
@@ -92,7 +93,7 @@ function Index({ id }: Props) {
   } = data.session
 
   const handleNewResponse = async (
-    type: string,
+    type: ElementType,
     instanceId: number,
     answer: any
   ) => {
@@ -200,12 +201,43 @@ function Index({ id }: Props) {
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
               questions={
-                activeBlock.instances?.map((question) => {
-                  return {
-                    ...question.questionData,
-                    instanceId: question.id,
-                  }
-                }) ?? []
+                activeBlock.instances
+                  ?.map((question) => {
+                    const questionData = question.questionData
+
+                    // filter out question data types that are not supported by live session
+                    if (
+                      !questionData ||
+                      questionData?.__typename === 'FlashcardElementQData' ||
+                      questionData?.__typename === 'ContentElementQData'
+                    ) {
+                      return null
+                    }
+
+                    if (questionData.__typename === 'FreeTextQuestionData') {
+                      return {
+                        ...questionData,
+                        instanceId: question.id,
+                      }
+                    } else if (
+                      questionData.__typename === 'NumericalQuestionData'
+                    ) {
+                      return {
+                        ...questionData,
+                        instanceId: question.id,
+                      }
+                    } else if (
+                      questionData.__typename === 'ChoicesQuestionData'
+                    ) {
+                      return {
+                        ...questionData,
+                        instanceId: question.id,
+                      }
+                    } else {
+                      return null
+                    }
+                  })
+                  .filter((q) => q !== null) ?? []
               }
               handleNewResponse={handleNewResponse}
               sessionId={id}

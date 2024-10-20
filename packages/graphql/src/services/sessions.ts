@@ -1,13 +1,19 @@
 import {
   AccessMode,
-  ConfusionTimestep,
-  Element,
+  type ConfusionTimestep,
+  type Element,
   ElementType,
-  QuestionInstance,
+  type QuestionInstance,
   QuestionInstanceType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
+import type {
+  AllQuestionInstanceTypeData,
+  QuestionResults,
+  QuestionResultsChoices,
+  QuestionResultsOpen,
+} from '@klicker-uzh/types'
 import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -15,14 +21,10 @@ import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
-import { ISession } from 'src/schema/session.js'
-import { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialInstanceResults } from '../lib/questions.js'
+import type { ISession } from 'src/schema/session.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
+import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import {
-  AllQuestionInstanceTypeData,
-  QuestionResultsChoices,
-} from '../types/app.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -122,8 +124,10 @@ export async function createSession(
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
-                questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
+                questionData: processedQuestionData!,
+                results: prepareInitialQuestionInstanceResults(
+                  processedQuestionData!
+                ),
                 question: {
                   connect: { id: questionId },
                 },
@@ -272,8 +276,10 @@ export async function editSession(
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints: maxBonusPoints,
                 timeToZeroBonus: timeToZeroBonus,
-                questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
+                questionData: processedQuestionData!,
+                results: prepareInitialQuestionInstanceResults(
+                  processedQuestionData!
+                ),
                 question: {
                   connect: { id: questionId },
                 },
@@ -533,13 +539,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       const awardAchievements = session.blocks.some(
         (block) =>
           block.instances.some((instance) => {
-            if (
-              instance.questionData.type === ElementType.CONTENT ||
-              instance.questionData.type === ElementType.FLASHCARD
-            ) {
-              return false
-            }
-
             return instance.questionData.options.hasSampleSolution ?? false
           }) &&
           existingParticipants.filter(
@@ -1147,42 +1146,13 @@ export async function deactivateSessionBlock(
                   ([id, results]) => ({
                     where: { id: Number(id) },
                     data: {
-                      results: results.results,
+                      // TODO: make sure that the results object itself is directly correctly typed after migration to element instances
+                      results: results.results as QuestionResults,
                       participants: Number(results.participants),
-                      // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
-                      // responses: {
-                      //   create: Object.entries(results.responses).map(
-                      //     ([participantId, response]) => ({
-                      //       response,
-                      //       participant: {
-                      //         connect: { id: participantId },
-                      //       },
-                      //       participation: {
-                      //         connect: {
-                      //           courseId_participantId: {
-                      //             // TODO: this is not set if the session is not in a course (i.e., not gamified)
-                      //             courseId: session.courseId as string,
-                      //             participantId,
-                      //           },
-                      //         },
-                      //       },
-                      //     })
-                      //   ),
-                      // },
                     },
                   })
                 ),
               },
-              // leaderboard: {
-              //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
-              //     score: parseInt(score),
-              //     participant: {
-              //       connect: { id },
-              //     },
-              //     type: 'SESSION_BLOCK',
-              //     username: id,
-              //   })),
-              // },
             },
           },
         },
@@ -1716,7 +1686,8 @@ export async function getCockpitSession(
       | [
           Error | null,
           {
-            // TODO: types for the result
+            // TODO: extend type with more content of cache (as needed)
+            participants: string
           },
         ][]
       | null
@@ -1821,7 +1792,12 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
-function checkCorrectnessFreeText(instance: AllQuestionInstanceTypeData) {
+type PickedInstanceType = Pick<
+  AllQuestionInstanceTypeData,
+  'questionData' | 'elementType' | 'results' | 'statistics'
+>
+
+function checkCorrectnessFreeText(instance: PickedInstanceType) {
   // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
   instance.elementType = instance.questionData.type
   if (
@@ -1846,14 +1822,14 @@ function checkCorrectnessFreeText(instance: AllQuestionInstanceTypeData) {
   return instance
 }
 
-function computeStatistics(instance: AllQuestionInstanceTypeData) {
+function computeStatistics(instance: PickedInstanceType) {
   // Compute the statistics for numerical questions
   instance.elementType = instance.questionData.type
   if (
     instance.elementType === 'NUMERICAL' &&
     instance.questionData.type === 'NUMERICAL'
   ) {
-    const results = []
+    const results: QuestionResultsOpen['responses'][0][] = []
     for (const key in instance.results) {
       results.push(instance.results[key])
     }
@@ -1865,11 +1841,11 @@ function computeStatistics(instance: AllQuestionInstanceTypeData) {
     // set correct attribute to each of the instance.results elements depending on solutionRanges
     for (const id in instance.results) {
       const value = parseFloat(instance.results[id].value)
-      let correct = undefined
+      let correct: boolean | undefined = undefined
 
       if (
         instance.questionData.options.solutionRanges &&
-        instance.questionData.options.solutionRanges.length > 0 &&
+        instance.questionData.options.solutionRanges[0] &&
         Object.keys(instance.questionData.options.solutionRanges[0]).length !==
           0
       ) {
@@ -1890,7 +1866,7 @@ function computeStatistics(instance: AllQuestionInstanceTypeData) {
         }
       } else if (
         instance.questionData.options.solutionRanges &&
-        instance.questionData.options.solutionRanges.length > 0 &&
+        instance.questionData.options.solutionRanges[0] &&
         Object.keys(instance.questionData.options.solutionRanges[0]).length ===
           0
       ) {
@@ -1916,7 +1892,7 @@ function computeStatistics(instance: AllQuestionInstanceTypeData) {
   return instance
 }
 
-function completeQuestionData(instances: AllQuestionInstanceTypeData[]) {
+function completeQuestionData(instances: PickedInstanceType[]) {
   return instances.map((instance) =>
     computeStatistics(checkCorrectnessFreeText(instance))
   )
@@ -2027,7 +2003,7 @@ export async function getSessionEvaluation(
 
     // FIXME: rework processCachedData with a clean return type
     const { instanceResults } = await processCachedData({
-      cachedResults,
+      cachedResults: cachedResults as any[],
       activeBlock: session.activeBlock,
     })
 
@@ -2194,7 +2170,9 @@ export async function cancelSession(
           },
           data: {
             participants: 0,
-            results: prepareInitialInstanceResults(instance.questionData),
+            results: prepareInitialQuestionInstanceResults(
+              instance.questionData
+            ),
           },
         })
       ),

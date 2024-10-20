@@ -1,10 +1,29 @@
 import DataTable from '@components/common/DataTable'
-import { Course } from '@klicker-uzh/graphql/dist/ops'
+import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { TableCell } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 
-function IndividualLeaderboard({ course }: { course: Course }) {
+export type InvididualLeaderboardEntry = Omit<
+  LeaderboardEntry,
+  'level' | 'participantId' | 'participation'
+>
+
+interface IndividualLeaderboardProps {
+  leaderboard?: InvididualLeaderboardEntry[] | null
+  courseName: string
+  numOfParticipants?: number | null
+  numOfActiveParticipants?: number | null
+  averageActiveScore?: number | null
+}
+
+function IndividualLeaderboard({
+  leaderboard,
+  courseName,
+  numOfParticipants,
+  numOfActiveParticipants,
+  averageActiveScore,
+}: IndividualLeaderboardProps) {
   const t = useTranslations()
 
   return (
@@ -30,8 +49,8 @@ function IndividualLeaderboard({ course }: { course: Course }) {
             header: t('shared.leaderboard.points'),
           },
         ]}
-        data={course.leaderboard ?? []}
-        csvFilename={`${course.name.replace(' ', '-')}_leaderboard`}
+        data={leaderboard ?? []}
+        csvFilename={`${courseName.replace(' ', '-')}_leaderboard`}
         className={{
           tableHeader: 'h-7 p-2',
           tableCell: 'h-7 p-2',
@@ -43,13 +62,13 @@ function IndividualLeaderboard({ course }: { course: Course }) {
           >
             <div>
               {t('manage.course.participantsLeaderboard', {
-                number: course.numOfActiveParticipants,
+                number: numOfActiveParticipants,
               })}
-              /{course.numOfParticipants}
+              /{numOfParticipants}
             </div>
             <div>
               {t('manage.course.avgPoints', {
-                points: course.averageActiveScore?.toFixed(2),
+                points: averageActiveScore?.toFixed(2),
               })}
             </div>
           </TableCell>

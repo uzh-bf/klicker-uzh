@@ -1,14 +1,10 @@
 import type {
-  ChoicesElementData,
   ElementInstance,
-  FreeTextElementData,
   InstanceEvaluation,
-  NumericalElementData,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   ElementType,
   FlashcardCorrectnessType,
-  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import React from 'react'
@@ -28,35 +24,30 @@ export type StudentResponseType = Record<
   | {
       type: ElementType.Flashcard
       response?: FlashcardCorrectnessType
-      correct?: StackFeedbackStatus
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Content
       response?: boolean
-      correct?: StackFeedbackStatus
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
       response?: Record<number, boolean | undefined>
-      correct?: StackFeedbackStatus
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Numerical
       response?: string
-      correct?: StackFeedbackStatus
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.FreeText
       response?: string
-      correct?: StackFeedbackStatus
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -81,7 +72,7 @@ function StudentElement({
   hideReadButton = false,
   disabledInput = false,
 }: StudentElementProps) {
-  if (element.elementData.type === ElementType.Flashcard) {
+  if (element.elementData.__typename === 'FlashcardElementData') {
     return (
       <Flashcard
         key={element.id}
@@ -109,17 +100,13 @@ function StudentElement({
         elementIx={elementIx}
       />
     )
-  } else if (
-    element.elementData.type === ElementType.Sc ||
-    element.elementData.type === ElementType.Mc ||
-    element.elementData.type === ElementType.Kprim
-  ) {
+  } else if (element.elementData.__typename === 'ChoicesElementData') {
     return (
       <ChoicesQuestion
         key={element.id}
         content={element.elementData.content}
-        type={element.elementData.type}
-        options={(element.elementData as ChoicesElementData).options}
+        type={element.elementData.type as ElementChoicesType}
+        options={element.elementData.options}
         response={
           studentResponse[element.id]?.response as Record<number, boolean>
         }
@@ -144,12 +131,12 @@ function StudentElement({
         disabled={disabledInput}
       />
     )
-  } else if (element.elementData.type === ElementType.Numerical) {
+  } else if (element.elementData.__typename === 'NumericalElementData') {
     return (
       <NumericalQuestion
         key={element.id}
         content={element.elementData.content}
-        options={(element.elementData as NumericalElementData).options}
+        options={element.elementData.options}
         response={studentResponse[element.id]?.response as string}
         valid={studentResponse[element.id]?.valid as boolean}
         setResponse={(newValue, valid) => {
@@ -171,12 +158,12 @@ function StudentElement({
         disabled={disabledInput}
       />
     )
-  } else if (element.elementData.type === ElementType.FreeText) {
+  } else if (element.elementData.__typename === 'FreeTextElementData') {
     return (
       <FreeTextQuestion
         key={element.id}
         content={element.elementData.content}
-        options={(element.elementData as FreeTextElementData).options}
+        options={element.elementData.options}
         response={studentResponse[element.id]?.response as string}
         valid={studentResponse[element.id]?.valid as boolean}
         setResponse={(newValue, valid) => {
@@ -198,7 +185,7 @@ function StudentElement({
         disabled={disabledInput}
       />
     )
-  } else if (element.elementData.type === ElementType.Content) {
+  } else if (element.elementData.__typename === 'ContentElementData') {
     return (
       <ContentElement
         key={element.id}

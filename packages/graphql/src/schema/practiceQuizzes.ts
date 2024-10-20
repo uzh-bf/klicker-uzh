@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder.js'
 import {
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
-} from '../types/app.js'
-import { CourseRef, ICourse } from './course.js'
+} from '@klicker-uzh/types'
+import builder from '../builder.js'
+import { type ICourse, CourseRef } from './course.js'
 import {
+  type IInstanceEvaluation,
   ElementInstanceRef,
-  IInstanceEvaluation,
   InstanceEvaluation,
 } from './question.js'
 import { ElementType } from './questionData.js'

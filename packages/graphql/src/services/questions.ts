@@ -5,6 +5,7 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   processElementData,
@@ -13,9 +14,8 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
-import { ContextWithUser } from '../lib/context.js'
-import { prepareInitialInstanceResults } from '../lib/questions.js'
-import { DisplayMode } from '../types/app.js'
+import type { ContextWithUser } from '../lib/context.js'
+import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
   switch (elementType) {
@@ -120,10 +120,28 @@ export async function getSingleQuestion(
 
   if (!question) return null
 
+  let questionDataType: string
+  if (
+    question.type === DB.ElementType.SC ||
+    question.type === DB.ElementType.MC ||
+    question.type === DB.ElementType.KPRIM
+  ) {
+    questionDataType = 'ChoicesElementData'
+  } else if (question.type === DB.ElementType.NUMERICAL) {
+    questionDataType = 'NumericalElementData'
+  } else if (question.type === DB.ElementType.FREE_TEXT) {
+    questionDataType = 'FreeTextElementData'
+  } else if (question.type === DB.ElementType.FLASHCARD) {
+    questionDataType = 'FlashcardElementData'
+  } else {
+    questionDataType = 'ContentElementData'
+  }
+
   return {
     ...question,
     questionData: {
       ...question,
+      __typename: questionDataType,
       id: `${question.id}-v${question.version}`,
       questionId: question.id,
     },
@@ -640,12 +658,14 @@ export async function updateQuestionInstances(
             const newQuestionData = processQuestionData(question)
 
             // prepare new results objects
-            const newResults = prepareInitialInstanceResults(question)
+            const newResults = prepareInitialQuestionInstanceResults(
+              newQuestionData!
+            )
 
             instance = await ctx.prisma.questionInstance.update({
               where: { id: instanceId },
               data: {
-                questionData: newQuestionData,
+                questionData: newQuestionData!,
                 results: newResults,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
                 maxBonusPoints,

@@ -1,13 +1,14 @@
 fragment ElementData on ElementInstance {
   elementData {
-    id
-    elementId
-    name
-    type
-    content
-    explanation
-
     ... on ChoicesElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         hasSampleSolution
         displayMode
@@ -21,6 +22,14 @@ fragment ElementData on ElementInstance {
     }
 
     ... on NumericalElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         hasSampleSolution
         accuracy
@@ -38,6 +47,14 @@ fragment ElementData on ElementInstance {
     }
 
     ... on FreeTextElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         hasSampleSolution
         restrictions {
@@ -47,14 +64,26 @@ fragment ElementData on ElementInstance {
       }
     }
 
-    # ... on FlashcardElementData {
-    #   options {
-    #   }
-    # }
+    ... on FlashcardElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
 
-    # ... on ContentElementData {
-    #   options {
-    #   }
-    # }
+    ... on ContentElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
   }
 }

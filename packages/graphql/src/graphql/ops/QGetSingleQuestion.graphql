@@ -9,14 +9,20 @@ query GetSingleQuestion($id: Int!) {
     pointsMultiplier
 
     questionData {
-      id
-      questionId
-
       ... on ChoicesQuestionData {
+        __typename
+        id
+        questionId
+        name
+        type
+        content
+        explanation
+        pointsMultiplier
+
         options {
-          displayMode
           hasSampleSolution
           hasAnswerFeedbacks
+          displayMode
           choices {
             ix
             correct
@@ -27,11 +33,20 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on NumericalQuestionData {
+        __typename
+        id
+        questionId
+        name
+        type
+        content
+        explanation
+        pointsMultiplier
+
         options {
           hasSampleSolution
-          unit
           accuracy
           placeholder
+          unit
           restrictions {
             min
             max
@@ -44,6 +59,15 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on FreeTextQuestionData {
+        __typename
+        id
+        questionId
+        name
+        type
+        content
+        explanation
+        pointsMultiplier
+
         options {
           hasSampleSolution
           restrictions {

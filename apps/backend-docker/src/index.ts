@@ -28,7 +28,9 @@ if (
   process.env.NODE_ENV === 'development' &&
   process.env.PRISMA_OPTIMIZE === 'true'
 ) {
-  prisma = prisma.$extends(withOptimize()) as PrismaClient
+  prisma = prisma.$extends(
+    withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
+  ) as PrismaClient
 }
 
 // if (process.env.SENTRY_DSN) {

@@ -1,7 +1,4 @@
-import type {
-  InstanceResult,
-  NumericalQuestionData,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { NumberField } from '@uzh-bf/design-system'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useTranslations } from 'next-intl'
@@ -68,8 +65,11 @@ function Histogram({
     return binCount
   }, [numBins])
 
-  const questionData = data.questionData as NumericalQuestionData
+  if (data.questionData?.__typename !== 'NumericalQuestionData') {
+    return <div>{t('manage.evaluation.histogramError')}</div>
+  }
 
+  const questionData = data.questionData
   const processedData = useMemo(() => {
     const mappedData = Object.values(
       data.results as Record<string, { count: number; value: string }>

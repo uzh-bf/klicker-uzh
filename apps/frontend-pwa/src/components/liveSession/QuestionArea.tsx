@@ -24,7 +24,11 @@ interface QuestionAreaProps {
     | NumericalQuestionData
     | FreeTextQuestionData
   ) & { instanceId: number })[]
-  handleNewResponse: (type: string, instanceId: number, answer: any) => void
+  handleNewResponse: (
+    type: ElementType,
+    instanceId: number,
+    answer: any
+  ) => void
   sessionId: string
   execution: number
   timeLimit?: number
@@ -152,7 +156,7 @@ function QuestionArea({
   // use the handleNewResponse function to add a response to the question instance
   const answerQuestion = (
     value: any,
-    type: string,
+    type: ElementType,
     instanceId: number
   ): void => {
     if (type === ElementType.Kprim) {

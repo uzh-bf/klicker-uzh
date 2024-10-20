@@ -1,14 +1,14 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { BaseQuestionData } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { BaseElementData } from '../types/app.js'
 import { ElementFeedbackRef } from './analytics.js'
-import { ElementDataRef, ElementInstanceOptions } from './elementData.js'
+import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementStatus,
   ElementType,
-  QuestionDataRef,
+  QuestionData,
 } from './questionData.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
@@ -184,6 +184,7 @@ export const InstanceEvaluation = builder
 
 export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
+  questionData?: BaseQuestionData | null
 }
 export const ElementRef = builder.objectRef<IElement>('Element')
 export const Element = ElementRef.implement({
@@ -201,8 +202,8 @@ export const Element = ElementRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
     questionData: t.field({
-      type: QuestionDataRef,
-      resolve: (q) => q as unknown as BaseElementData,
+      type: QuestionData,
+      resolve: (q) => q.questionData,
       nullable: true,
     }),
 
@@ -245,10 +246,10 @@ export const QuestionInstanceRef =
 export const QuestionInstance = QuestionInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q.questionData,
       nullable: true,
     }),
@@ -268,7 +269,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementType: t.expose('elementType', { type: ElementType }),
 
     elementData: t.field({
-      type: ElementDataRef,
+      type: ElementData,
       resolve: (q) => q.elementData,
     }),
 

@@ -1,12 +1,12 @@
 import { ElementType } from '@klicker-uzh/prisma'
-import {
-  AllElementTypeData,
+import type {
+  AllQuestionTypeData,
   QuestionResults,
   QuestionResultsChoices,
-} from '../types/app.js'
+} from '@klicker-uzh/types'
 
-export function prepareInitialInstanceResults(
-  questionData: AllElementTypeData
+export function prepareInitialQuestionInstanceResults(
+  questionData: AllQuestionTypeData
 ): QuestionResults {
   switch (questionData.type) {
     case ElementType.SC:

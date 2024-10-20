@@ -1,12 +1,7 @@
-import {
-  Choice,
-  ChoicesQuestionData,
-  InstanceResult,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import {
   CHART_COLORS,
   CHART_SOLUTION_COLORS,
-  QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
@@ -37,6 +32,7 @@ function BarChart({
   const t = useTranslations()
 
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
+  const questionData = data.questionData
   const dataWithLabels = useMemo(() => {
     const labeledData = Object.values(
       data.results as Record<string, { count: number; value: string }>
@@ -50,7 +46,7 @@ function BarChart({
           ? result.count
           : undefined
       const xLabel =
-        data.questionData.type === 'NUMERICAL'
+        questionData.type === 'NUMERICAL'
           ? Math.round(parseFloat(result.value) * 100) / 100
           : String.fromCharCode(Number(idx) + 65)
       return { count: result.count, labelIn, labelOut, xLabel }
@@ -65,7 +61,7 @@ function BarChart({
             xLabel: '0',
           },
         ]
-  }, [data.results, data.participants, data.questionData.type])
+  }, [data.results, data.participants, questionData.type])
 
   return (
     <ResponsiveContainer className="pb-2" height="99%" width="99%">
@@ -129,8 +125,8 @@ function BarChart({
             className={textSize.text3Xl}
             id="bar-chart-block"
           />
-          {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
-            (data.questionData as ChoicesQuestionData).options.choices.map(
+          {questionData.__typename === 'ChoicesQuestionData' &&
+            questionData.options.choices.map(
               (choice: Choice, index: number): React.ReactElement => (
                 <Cell
                   fill={
