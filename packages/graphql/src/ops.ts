@@ -154,6 +154,30 @@ export type ChoicesQuestionData = {
   type: ElementType;
 };
 
+export type ChoicesQuestionResponse = {
+  __typename?: 'ChoicesQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseChoices;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
+};
+
 export type ClassAchievementInstance = {
   __typename?: 'ClassAchievementInstance';
   id: Scalars['Int']['output'];
@@ -211,6 +235,30 @@ export type ContentElementResults = {
   __typename?: 'ContentElementResults';
   anonymousAnswers: Scalars['Int']['output'];
   totalAnswers: Scalars['Int']['output'];
+};
+
+export type ContentQuestionResponse = {
+  __typename?: 'ContentQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseContent;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type Course = {
@@ -456,6 +504,30 @@ export type FlashcardElementResults = {
   incorrectCount: Scalars['Int']['output'];
   partialCount: Scalars['Int']['output'];
   totalAnswers: Scalars['Int']['output'];
+};
+
+export type FlashcardQuestionResponse = {
+  __typename?: 'FlashcardQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseFlashcard;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type FreeElementInstanceEvaluation = {
@@ -1675,6 +1747,30 @@ export type NumericalSolutionRange = {
   min?: Maybe<Scalars['Float']['output']>;
 };
 
+export type OpenQuestionResponse = {
+  __typename?: 'OpenQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseValue;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
+};
+
 export type OptionsChoicesInput = {
   choices?: InputMaybe<Array<ChoiceInput>>;
   displayMode?: InputMaybe<ElementDisplayMode>;
@@ -2132,29 +2228,7 @@ export type QuestionOrElementInstance = {
   questionInstance?: Maybe<QuestionInstance>;
 };
 
-export type QuestionResponse = {
-  __typename?: 'QuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: Scalars['Json']['output'];
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
-};
+export type QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse;
 
 export type QuestionResponseDetail = {
   __typename?: 'QuestionResponseDetail';
@@ -2261,6 +2335,26 @@ export enum SessionStatus {
   Running = 'RUNNING',
   Scheduled = 'SCHEDULED'
 }
+
+export type SingleQuestionResponseChoices = {
+  __typename?: 'SingleQuestionResponseChoices';
+  choices: Array<Scalars['Int']['output']>;
+};
+
+export type SingleQuestionResponseContent = {
+  __typename?: 'SingleQuestionResponseContent';
+  viewed: Scalars['Boolean']['output'];
+};
+
+export type SingleQuestionResponseFlashcard = {
+  __typename?: 'SingleQuestionResponseFlashcard';
+  correctness: FlashcardCorrectness;
+};
+
+export type SingleQuestionResponseValue = {
+  __typename?: 'SingleQuestionResponseValue';
+  value: Scalars['String']['output'];
+};
 
 export type SolutionRangeInput = {
   max?: InputMaybe<Scalars['Float']['input']>;
@@ -4063,6 +4157,12 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       "FlashcardElementQData",
       "FreeTextQuestionData",
       "NumericalQuestionData"
+    ],
+    "QuestionResponse": [
+      "ChoicesQuestionResponse",
+      "ContentQuestionResponse",
+      "FlashcardQuestionResponse",
+      "OpenQuestionResponse"
     ]
   }
 };

@@ -17,7 +17,7 @@ import {
   ElementType,
   type InstanceStatistics,
   type Participation,
-  type QuestionResponse as PrismaSingleQuestionResponse,
+  type QuestionResponse as PrismaQuestionResponse,
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
@@ -54,7 +54,6 @@ import { orderStacks } from '../lib/util.js'
 import type {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
-  QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops.js'
 import type { IInstanceEvaluation } from '../schema/question.js'
@@ -425,7 +424,7 @@ interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
   incorrect: boolean
-  existingResponse?: QuestionResponseType | null
+  existingResponse?: PrismaQuestionResponse | null
 }
 
 function combineNewCorrectnessParams({
@@ -551,7 +550,7 @@ function computeNewAverageTimes({
   existingInstance: ElementInstance & {
     instanceStatistics: InstanceStatistics | null
   }
-  existingResponse: PrismaSingleQuestionResponse | null
+  existingResponse: PrismaQuestionResponse | null
   answerTime: number
 }): { newAverageResponseTime: number; newAverageInstanceTime: number } {
   const existingParticipantCount =
@@ -584,7 +583,7 @@ function computeUpdatedInstanceStatistics({
   instanceInPracticeQuiz,
 }: {
   participation: Participation | null
-  existingResponse: PrismaSingleQuestionResponse | null
+  existingResponse: PrismaQuestionResponse | null
   newAverageInstanceTime?: number
   answerCorrect: boolean
   answerPartial: boolean
