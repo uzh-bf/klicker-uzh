@@ -160,6 +160,7 @@ export type ChoicesQuestionResponse = {
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
   id: Scalars['Int']['output'];
   interval: Scalars['Int']['output'];
   lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
@@ -243,6 +244,7 @@ export type ContentQuestionResponse = {
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
   id: Scalars['Int']['output'];
   interval: Scalars['Int']['output'];
   lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
@@ -512,6 +514,7 @@ export type FlashcardQuestionResponse = {
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
   id: Scalars['Int']['output'];
   interval: Scalars['Int']['output'];
   lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
@@ -1753,6 +1756,7 @@ export type OpenQuestionResponse = {
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
   id: Scalars['Int']['output'];
   interval: Scalars['Int']['output'];
   lastAnsweredAt?: Maybe<Scalars['Date']['output']>;

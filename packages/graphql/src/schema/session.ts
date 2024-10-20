@@ -10,7 +10,7 @@ import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import { QuestionInstanceRef } from './question.js'
-import { QuestionData } from './questionData.js'
+import { ElementType, QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -303,10 +303,13 @@ export const SingleQuestionResponseContent = builder
 // ----- QUESTION RESPONSE INTERFACES -----
 const sharedQuestionResponseProps = (t: any) => ({
   id: t.exposeInt('id'),
+  elementType: t.expose('elementType', { type: ElementType }),
+
   trialsCount: t.exposeInt('trialsCount'),
   totalScore: t.exposeFloat('totalScore'),
   totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
   totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
+
   lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
   lastXpAwardedAt: t.expose('lastXpAwardedAt', {
     type: 'Date',
@@ -339,6 +342,7 @@ const sharedQuestionResponseProps = (t: any) => ({
 
 export interface IChoicesQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
   lastResponse: SingleQuestionResponseChoicesType
 }
 export const ChoicesQuestionResponse = builder
@@ -354,6 +358,7 @@ export const ChoicesQuestionResponse = builder
 
 export interface IOpenQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
   lastResponse: SingleQuestionResponseValueType
 }
 export const OpenQuestionResponse = builder
@@ -369,6 +374,7 @@ export const OpenQuestionResponse = builder
 
 export interface IFlashcardQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
   lastResponse: SingleQuestionResponseFlashcardType
 }
 export const FlashcardQuestionResponse = builder
@@ -384,6 +390,7 @@ export const FlashcardQuestionResponse = builder
 
 export interface IContentQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
   lastResponse: SingleQuestionResponseContentType
 }
 export const ContentQuestionResponse = builder

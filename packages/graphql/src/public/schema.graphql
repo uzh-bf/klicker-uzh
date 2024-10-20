@@ -128,6 +128,7 @@ type ChoicesQuestionResponse {
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
+  elementType: ElementType!
   id: Int!
   interval: Int!
   lastAnsweredAt: Date
@@ -203,6 +204,7 @@ type ContentQuestionResponse {
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
+  elementType: ElementType!
   id: Int!
   interval: Int!
   lastAnsweredAt: Date
@@ -461,6 +463,7 @@ type FlashcardQuestionResponse {
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
+  elementType: ElementType!
   id: Int!
   interval: Int!
   lastAnsweredAt: Date
@@ -994,6 +997,7 @@ type OpenQuestionResponse {
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
+  elementType: ElementType!
   id: Int!
   interval: Int!
   lastAnsweredAt: Date
