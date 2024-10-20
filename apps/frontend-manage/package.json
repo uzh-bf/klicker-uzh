@@ -54,9 +54,9 @@
     "remark-slate": "1.8.6",
     "remeda": "2.15.0",
     "sharp": "0.33.5",
-    "slate": "0.94.1",
-    "slate-history": "0.93.0",
-    "slate-react": "0.94.2",
+    "slate": "0.110.2",
+    "slate-history": "0.109.0",
+    "slate-react": "0.110.2",
     "tailwind-merge": "2.5.4",
     "yup": "1.4.0"
   },

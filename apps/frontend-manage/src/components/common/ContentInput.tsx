@@ -105,7 +105,7 @@ function ContentInput({
       {/* eslint-disable-next-line react/no-children-prop */}
       <Slate
         editor={editor}
-        value={editorValue}
+        initialValue={editorValue}
         onChange={(newValue) => onChange(convertToMd(newValue))}
       >
         <div className={twMerge('p-3', className?.content)}>
