@@ -17,7 +17,7 @@ import {
   ElementType,
   type InstanceStatistics,
   type Participation,
-  type QuestionResponse as PrismaQuestionResponse,
+  type QuestionResponse as PrismaSingleQuestionResponse,
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
@@ -30,11 +30,11 @@ import type {
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardResults,
-  QuestionResponse,
-  QuestionResponseChoices,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-  QuestionResponseValue,
+  SingleQuestionResponse,
+  SingleQuestionResponseChoices,
+  SingleQuestionResponseContent,
+  SingleQuestionResponseFlashcard,
+  SingleQuestionResponseValue,
   StackInput,
 } from '@klicker-uzh/types'
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
@@ -551,7 +551,7 @@ function computeNewAverageTimes({
   existingInstance: ElementInstance & {
     instanceStatistics: InstanceStatistics | null
   }
-  existingResponse: PrismaQuestionResponse | null
+  existingResponse: PrismaSingleQuestionResponse | null
   answerTime: number
 }): { newAverageResponseTime: number; newAverageInstanceTime: number } {
   const existingParticipantCount =
@@ -584,7 +584,7 @@ function computeUpdatedInstanceStatistics({
   instanceInPracticeQuiz,
 }: {
   participation: Participation | null
-  existingResponse: PrismaQuestionResponse | null
+  existingResponse: PrismaSingleQuestionResponse | null
   newAverageInstanceTime?: number
   answerCorrect: boolean
   answerPartial: boolean
@@ -1248,21 +1248,21 @@ export function evaluateAnswerCorrectness({
       if (elementData.type === ElementType.SC) {
         const correctness = gradeQuestionSC({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
       } else if (elementData.type === ElementType.MC) {
         const correctness = gradeQuestionMC({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
       } else {
         const correctness = gradeQuestionKPRIM({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
@@ -1441,7 +1441,7 @@ export function updateQuestionResults({
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
-        response as QuestionResponseChoices
+        response as SingleQuestionResponseChoices
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
@@ -1832,7 +1832,7 @@ export async function respondToQuestion(
 
       // update aggregated responses for choices
       newAggResponses.choices = (
-        response as QuestionResponseChoices
+        response as SingleQuestionResponseChoices
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
@@ -1930,9 +1930,9 @@ export async function respondToQuestion(
           averageTimeSpent: newAverageResponseTime,
           lastAwardedAt,
           lastXpAwardedAt,
-          firstResponse: response as QuestionResponse,
+          firstResponse: response as SingleQuestionResponse,
           firstResponseCorrectness: responseCorrectness,
-          lastResponse: response as QuestionResponse,
+          lastResponse: response as SingleQuestionResponse,
           lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           participant: {
@@ -1981,7 +1981,7 @@ export async function respondToQuestion(
           interval: resultSpacedRepetition.interval,
         },
         update: {
-          lastResponse: response as QuestionResponse,
+          lastResponse: response as SingleQuestionResponse,
           lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           lastAwardedAt,
@@ -2021,7 +2021,7 @@ export async function respondToQuestion(
           pointsAwarded,
           xpAwarded,
           timeSpent: answerTime,
-          response: response as QuestionResponse,
+          response: response as SingleQuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
           },
@@ -2229,7 +2229,7 @@ export async function getPreviousStackEvaluation(
 
       if (element.elementType === ElementType.FLASHCARD) {
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseFlashcard
+          .lastResponse as SingleQuestionResponseFlashcard
         stackFeedback = combineStackStatus({
           prevStatus: stackFeedback,
           newStatus: flashcardResultMap[lastResponse.correctness],
@@ -2241,7 +2241,7 @@ export async function getPreviousStackEvaluation(
           score: 0,
           correctness: null,
           lastResponse: element.responses[0]!
-            .lastResponse as QuestionResponseFlashcard,
+            .lastResponse as SingleQuestionResponseFlashcard,
         }
       } else if (element.elementType === ElementType.CONTENT) {
         stackFeedback = combineStackStatus({
@@ -2255,7 +2255,7 @@ export async function getPreviousStackEvaluation(
           score: 0,
           correctness: 1,
           lastResponse: element.responses[0]!
-            .lastResponse as QuestionResponseContent,
+            .lastResponse as SingleQuestionResponseContent,
         }
       } else if (
         (element.elementData.type === ElementType.SC ||
@@ -2267,7 +2267,7 @@ export async function getPreviousStackEvaluation(
       ) {
         const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseChoices
+          .lastResponse as SingleQuestionResponseChoices
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
@@ -2307,7 +2307,7 @@ export async function getPreviousStackEvaluation(
       ) {
         const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseValue
+          .lastResponse as SingleQuestionResponseValue
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
@@ -2350,7 +2350,7 @@ export async function getPreviousStackEvaluation(
       ) {
         const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseValue
+          .lastResponse as SingleQuestionResponseValue
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,

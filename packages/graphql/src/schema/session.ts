@@ -244,6 +244,8 @@ export const InstanceResult = InstanceResultRef.implement({
     blockIx: t.exposeInt('blockIx', { nullable: true }),
     instanceIx: t.exposeInt('instanceIx'),
     participants: t.exposeInt('participants'),
+
+    // TODO: introduce proper typing
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
@@ -255,8 +257,11 @@ export const InstanceResult = InstanceResultRef.implement({
   }),
 })
 
-export const QuestionResponseRef =
-  builder.objectRef<DB.QuestionResponse>('QuestionResponse')
+export const QuestionResponseRef = builder.objectRef<
+  Omit<DB.QuestionResponse, 'lastResponse'> & {
+    lastResponse: SingleQuestionResponseType
+  }
+>('QuestionResponse')
 export const QuestionResponse = QuestionResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -293,6 +298,7 @@ export const QuestionResponse = QuestionResponseRef.implement({
     wrongCount: t.exposeInt('wrongCount'),
     lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
 
+    // TODO: introduce proper typing
     lastResponse: t.expose('lastResponse', { type: 'Json' }),
 
     aggregatedResponses: t.expose('aggregatedResponses', {

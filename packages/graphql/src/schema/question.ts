@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { BaseQuestionData } from '@klicker-uzh/types'
+import type {
+  ChoicesQuestionData,
+  FreeTextQuestionData,
+  NumericalQuestionData,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import { ElementData, ElementInstanceOptions } from './elementData.js'
@@ -184,7 +188,11 @@ export const InstanceEvaluation = builder
 
 export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
-  questionData?: BaseQuestionData | null
+  questionData?:
+    | ChoicesQuestionData
+    | NumericalQuestionData
+    | FreeTextQuestionData
+    | null
 }
 export const ElementRef = builder.objectRef<IElement>('Element')
 export const Element = ElementRef.implement({
@@ -198,6 +206,7 @@ export const Element = ElementRef.implement({
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
 
+    // TODO: introduce proper typing
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 

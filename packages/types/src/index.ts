@@ -49,11 +49,11 @@ export type AvatarSettings = {
 
 // ----- ELEMENT DATA AND INSTANCES -----
 // #region
-export type QuestionResponseChoices = {
+export type SingleQuestionResponseChoices = {
   choices: number[]
 }
 
-export type QuestionResponseValue = {
+export type SingleQuestionResponseValue = {
   value: string
 }
 
@@ -77,19 +77,19 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
-export type QuestionResponseFlashcard = {
+export type SingleQuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
 
-export type QuestionResponseContent = {
+export type SingleQuestionResponseContent = {
   viewed: boolean
 }
 
-export type QuestionResponse =
-  | QuestionResponseChoices
-  | QuestionResponseValue
-  | QuestionResponseFlashcard
-  | QuestionResponseContent
+export type SingleQuestionResponse =
+  | SingleQuestionResponseChoices
+  | SingleQuestionResponseValue
+  | SingleQuestionResponseFlashcard
+  | SingleQuestionResponseContent
 
 export type QuestionResultsChoices = {
   choices: Record<string, number>

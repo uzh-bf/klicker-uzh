@@ -1,10 +1,10 @@
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import type {
   FlashcardCorrectness,
-  QuestionResponseChoices,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-  QuestionResponseValue,
+  SingleQuestionResponseChoices,
+  SingleQuestionResponseContent,
+  SingleQuestionResponseFlashcard,
+  SingleQuestionResponseValue,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { evaluateAnswerCorrectness } from '../services/practiceQuizzes.js'
@@ -147,8 +147,8 @@ async function run() {
             const correctness = evaluateAnswerCorrectness({
               elementData: response.elementInstance!.elementData,
               response: detailResponse.response as
-                | QuestionResponseChoices
-                | QuestionResponseValue,
+                | SingleQuestionResponseChoices
+                | SingleQuestionResponseValue,
             })
 
             if (correctness === null) {
@@ -255,7 +255,7 @@ async function run() {
         }>(
           (acc, detailResponse) => {
             const flashcardResponse =
-              detailResponse.response as QuestionResponseFlashcard
+              detailResponse.response as SingleQuestionResponseFlashcard
 
             if (flashcardResponse === null) {
               return acc
@@ -367,7 +367,7 @@ async function run() {
         }>(
           (acc, detailResponse) => {
             const contentResponse =
-              detailResponse.response as QuestionResponseContent
+              detailResponse.response as SingleQuestionResponseContent
 
             if (contentResponse === null) {
               return acc
