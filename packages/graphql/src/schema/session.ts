@@ -1,9 +1,16 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { QuestionResults } from '@klicker-uzh/types'
+import type {
+  QuestionResults,
+  SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
+  SingleQuestionResponseContent as SingleQuestionResponseContentType,
+  SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  SingleQuestionResponseValue as SingleQuestionResponseValueType,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
+import { FlashcardCorrectness } from './evaluation.js'
 import { QuestionInstanceRef } from './question.js'
-import { QuestionData } from './questionData.js'
+import { ElementType, QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -225,6 +232,7 @@ export const Statistics = builder
     }),
   })
 
+// ----- INSTANCE RESULT INTERFACE -----
 export interface IInstanceResult {
   id: string
   blockIx?: number
@@ -244,6 +252,8 @@ export const InstanceResult = InstanceResultRef.implement({
     blockIx: t.exposeInt('blockIx', { nullable: true }),
     instanceIx: t.exposeInt('instanceIx'),
     participants: t.exposeInt('participants'),
+
+    // TODO: introduce proper typing
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
@@ -255,53 +265,170 @@ export const InstanceResult = InstanceResultRef.implement({
   }),
 })
 
-export const QuestionResponseRef =
-  builder.objectRef<DB.QuestionResponse>('QuestionResponse')
-export const QuestionResponse = QuestionResponseRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-
-    trialsCount: t.exposeInt('trialsCount'),
-
-    totalScore: t.exposeFloat('totalScore'),
-    totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
-    totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
-    lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
-    lastXpAwardedAt: t.expose('lastXpAwardedAt', {
-      type: 'Date',
-      nullable: true,
+// ----- SINGLE QUESTION RESPONSE INTERFACES -----
+export const SingleQuestionResponseChoices = builder
+  .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
+  .implement({
+    fields: (t) => ({
+      choices: t.exposeIntList('choices'),
     }),
-    lastAnsweredAt: t.expose('lastAnsweredAt', {
-      type: 'Date',
-      nullable: true,
+  })
+
+export const SingleQuestionResponseValue = builder
+  .objectRef<SingleQuestionResponseValueType>('SingleQuestionResponseValue')
+  .implement({
+    fields: (t) => ({
+      value: t.exposeString('value'),
     }),
+  })
 
-    correctCount: t.exposeInt('correctCount'),
-    correctCountStreak: t.exposeInt('correctCountStreak'),
-    lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
-
-    partialCorrectCount: t.exposeInt('partialCorrectCount'),
-    lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
-      type: 'Date',
-      nullable: true,
+export const SingleQuestionResponseFlashcard = builder
+  .objectRef<SingleQuestionResponseFlashcardType>(
+    'SingleQuestionResponseFlashcard'
+  )
+  .implement({
+    fields: (t) => ({
+      correctness: t.expose('correctness', { type: FlashcardCorrectness }),
     }),
+  })
 
-    eFactor: t.exposeFloat('eFactor'),
-    interval: t.exposeInt('interval'),
-    nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
-
-    wrongCount: t.exposeInt('wrongCount'),
-    lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
-
-    lastResponse: t.expose('lastResponse', { type: 'Json' }),
-
-    aggregatedResponses: t.expose('aggregatedResponses', {
-      type: 'Json',
-      nullable: true,
+export const SingleQuestionResponseContent = builder
+  .objectRef<SingleQuestionResponseContentType>('SingleQuestionResponseContent')
+  .implement({
+    fields: (t) => ({
+      viewed: t.exposeBoolean('viewed'),
     }),
+  })
+
+// ----- QUESTION RESPONSE INTERFACES -----
+const sharedQuestionResponseProps = (t: any) => ({
+  id: t.exposeInt('id'),
+  elementType: t.expose('elementType', { type: ElementType }),
+
+  trialsCount: t.exposeInt('trialsCount'),
+  totalScore: t.exposeFloat('totalScore'),
+  totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
+  totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
+
+  lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
+  lastXpAwardedAt: t.expose('lastXpAwardedAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+  lastAnsweredAt: t.expose('lastAnsweredAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+
+  correctCount: t.exposeInt('correctCount'),
+  correctCountStreak: t.exposeInt('correctCountStreak'),
+  lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
+  partialCorrectCount: t.exposeInt('partialCorrectCount'),
+  lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+
+  eFactor: t.exposeFloat('eFactor'),
+  interval: t.exposeInt('interval'),
+  nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
+  wrongCount: t.exposeInt('wrongCount'),
+  lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
+  aggregatedResponses: t.expose('aggregatedResponses', {
+    type: 'Json',
+    nullable: true,
   }),
 })
 
+export interface IChoicesQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseChoicesType
+}
+export const ChoicesQuestionResponse = builder
+  .objectRef<IChoicesQuestionResponse>('ChoicesQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseChoices,
+      }),
+    }),
+  })
+
+export interface IOpenQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseValueType
+}
+export const OpenQuestionResponse = builder
+  .objectRef<IOpenQuestionResponse>('OpenQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseValue,
+      }),
+    }),
+  })
+
+export interface IFlashcardQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseFlashcardType
+}
+export const FlashcardQuestionResponse = builder
+  .objectRef<IFlashcardQuestionResponse>('FlashcardQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseFlashcard,
+      }),
+    }),
+  })
+
+export interface IContentQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseContentType
+}
+export const ContentQuestionResponse = builder
+  .objectRef<IContentQuestionResponse>('ContentQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseContent,
+      }),
+    }),
+  })
+
+export const QuestionResponse = builder.unionType('QuestionResponse', {
+  types: [
+    ChoicesQuestionResponse,
+    OpenQuestionResponse,
+    FlashcardQuestionResponse,
+    ContentQuestionResponse,
+  ],
+  resolveType: (response) => {
+    switch (response.elementType) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesQuestionResponse
+      case DB.ElementType.NUMERICAL:
+      case DB.ElementType.FREE_TEXT:
+        return OpenQuestionResponse
+      case DB.ElementType.FLASHCARD:
+        return FlashcardQuestionResponse
+      case DB.ElementType.CONTENT:
+        return ContentQuestionResponse
+    }
+  },
+})
+
+// ----- QUESTION RESPONSE DETAIL INTERFACE -----
 export const QuestionResponseDetailRef =
   builder.objectRef<DB.QuestionResponseDetail>('QuestionResponseDetail')
 export const QuestionResponseDetail = QuestionResponseDetailRef.implement({

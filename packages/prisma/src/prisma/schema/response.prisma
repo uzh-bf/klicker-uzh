@@ -32,11 +32,11 @@ model QuestionResponse {
   interval  Int       @default(1)
   nextDueAt DateTime?
 
-  /// [PrismaQuestionResponse]
+  /// [PrismaSingleQuestionResponse]
   firstResponse            Json
   firstResponseCorrectness ResponseCorrectness
 
-  /// [PrismaQuestionResponse]
+  /// [PrismaSingleQuestionResponse]
   lastResponse            Json
   lastResponseCorrectness ResponseCorrectness
 
@@ -81,7 +81,7 @@ model QuestionResponseDetail {
   xpAwarded     Float  @default(0)
   timeSpent     Int    @default(0) // TODO: remove default value after applying migration
 
-  /// [PrismaQuestionResponse]
+  /// [PrismaSingleQuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
