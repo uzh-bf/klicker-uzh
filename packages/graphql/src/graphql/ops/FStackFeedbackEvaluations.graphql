@@ -4,6 +4,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
 
     ... on ChoicesInstanceEvaluation {
       __typename
+      elementType
       instanceId
       pointsMultiplier
       explanation
@@ -16,6 +17,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
       choices
       numAnswers
       score
+      xp
       pointsAwarded
       percentile
       newPointsFrom
@@ -30,6 +32,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
 
     ... on NumericalInstanceEvaluation {
       __typename
+      elementType
       instanceId
       pointsMultiplier
       explanation
@@ -42,6 +45,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
       numAnswers
       answers
       score
+      xp
       pointsAwarded
       percentile
       newPointsFrom
@@ -61,6 +65,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
 
     ... on FreeTextInstanceEvaluation {
       instanceId
+      elementType
       pointsMultiplier
       explanation
       feedbacks {
@@ -72,6 +77,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
       numAnswers
       answers
       score
+      xp
       pointsAwarded
       percentile
       newPointsFrom
@@ -87,6 +93,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
 
     ... on FlashcardInstanceEvaluation {
       instanceId
+      elementType
       pointsMultiplier
       explanation
       feedbacks {
@@ -97,6 +104,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
       }
       numAnswers
       score
+      xp
       pointsAwarded
       percentile
       newPointsFrom
@@ -111,6 +119,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
 
     ... on ContentInstanceEvaluation {
       instanceId
+      elementType
       pointsMultiplier
       explanation
       feedbacks {
@@ -121,6 +130,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
       }
       numAnswers
       score
+      xp
       pointsAwarded
       percentile
       newPointsFrom

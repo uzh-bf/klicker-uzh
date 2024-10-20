@@ -127,7 +127,7 @@ type ChoicesInstanceEvaluation {
   pointsAwarded: Float
   pointsMultiplier: Int!
   score: Float!
-  xp: Int!
+  xp: Int
   xpAwarded: Int
 }
 
@@ -232,7 +232,7 @@ type ContentInstanceEvaluation {
   pointsAwarded: Float
   pointsMultiplier: Int!
   score: Float!
-  xp: Int!
+  xp: Int
   xpAwarded: Int
 }
 
@@ -509,7 +509,7 @@ type FlashcardInstanceEvaluation {
   pointsAwarded: Float
   pointsMultiplier: Int!
   score: Float!
-  xp: Int!
+  xp: Int
   xpAwarded: Int
 }
 
@@ -589,7 +589,7 @@ type FreeTextInstanceEvaluation {
   pointsMultiplier: Int!
   score: Float!
   solutions: [String!]
-  xp: Int!
+  xp: Int
   xpAwarded: Int
 }
 
@@ -1027,7 +1027,7 @@ type NumericalInstanceEvaluation {
   pointsMultiplier: Int!
   score: Float!
   solutionRanges: [NumericalSolutionRange!]
-  xp: Int!
+  xp: Int
   xpAwarded: Int
 }
 

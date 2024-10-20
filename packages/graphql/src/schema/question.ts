@@ -140,7 +140,7 @@ function sharedEvaluationProps(t) {
     elementType: t.expose('elementType', { type: ElementType }),
 
     score: t.exposeFloat('score'),
-    xp: t.exposeInt('xp'),
+    xp: t.exposeInt('xp', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     explanation: t.exposeString('explanation', { nullable: true }),
     feedbacks: t.expose('feedbacks', {
