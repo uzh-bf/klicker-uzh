@@ -1,0 +1,136 @@
+fragment StackFeedbackEvaluations on StackFeedback {
+  evaluations {
+    __typename
+
+    ... on ChoicesInstanceEvaluation {
+      __typename
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      choices
+      numAnswers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      correctness
+      lastResponse {
+        __typename
+        choices
+      }
+    }
+
+    ... on NumericalInstanceEvaluation {
+      __typename
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      answers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      solutionRanges {
+        __typename
+        min
+        max
+      }
+      lastResponse {
+        __typename
+        value
+      }
+      correctness
+    }
+
+    ... on FreeTextInstanceEvaluation {
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      answers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      solutions
+      lastResponse {
+        __typename
+        value
+      }
+      correctness
+    }
+
+    ... on FlashcardInstanceEvaluation {
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      lastResponse {
+        __typename
+        correctness
+      }
+      correctness
+    }
+
+    ... on ContentInstanceEvaluation {
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      lastResponse {
+        __typename
+        viewed
+      }
+      correctness
+    }
+  }
+}
