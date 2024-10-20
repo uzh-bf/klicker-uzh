@@ -120,10 +120,28 @@ export async function getSingleQuestion(
 
   if (!question) return null
 
+  let questionDataType: string
+  if (
+    question.type === DB.ElementType.SC ||
+    question.type === DB.ElementType.MC ||
+    question.type === DB.ElementType.KPRIM
+  ) {
+    questionDataType = 'ChoicesElementData'
+  } else if (question.type === DB.ElementType.NUMERICAL) {
+    questionDataType = 'NumericalElementData'
+  } else if (question.type === DB.ElementType.FREE_TEXT) {
+    questionDataType = 'FreeTextElementData'
+  } else if (question.type === DB.ElementType.FLASHCARD) {
+    questionDataType = 'FlashcardElementData'
+  } else {
+    questionDataType = 'ContentElementData'
+  }
+
   return {
     ...question,
     questionData: {
       ...question,
+      __typename: questionDataType,
       id: `${question.id}-v${question.version}`,
       questionId: question.id,
     },
