@@ -30,8 +30,27 @@ jobs:
           version: 9.10.0
           run_install: true
 
-      - name: Build all packages and apps
+      # - name: Build all packages and apps
+      #   run: |
+      #     pnpm run build
+
+      - name: Build relevant packages
         run: |
+          cd packages/markdown
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../util
+          pnpm run build
+          cd ../graphql
+          pnpm run build
+          cd ../shared-components
+          pnpm run build
+          cd ../../apps/backend-docker
           pnpm run build
 
       - name: Check prisma package typescript types
