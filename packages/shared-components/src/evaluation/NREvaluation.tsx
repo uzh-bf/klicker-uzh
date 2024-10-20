@@ -1,5 +1,5 @@
 import type {
-  InstanceEvaluation,
+  NumericalInstanceEvaluation,
   NumericalQuestionData,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -9,7 +9,7 @@ import Histogram from '../Histogram'
 
 interface Props {
   options: NumericalQuestionOptions
-  evaluation: InstanceEvaluation
+  evaluation: NumericalInstanceEvaluation
   reference?: string
 }
 

@@ -70,6 +70,8 @@ function StudentElement({
   hideReadButton = false,
   disabledInput = false,
 }: StudentElementProps) {
+  const evaluation = stackStorage?.[element.id]?.evaluation
+
   if (element.elementData.__typename === 'FlashcardElementData') {
     return (
       <Flashcard
@@ -122,7 +124,11 @@ function StudentElement({
         existingResponse={
           stackStorage?.[element.id]?.response as Record<number, boolean>
         }
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />
@@ -149,7 +155,11 @@ function StudentElement({
           })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'NumericalInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />
@@ -176,7 +186,11 @@ function StudentElement({
           })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'FreeTextInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />
