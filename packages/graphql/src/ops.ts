@@ -2315,11 +2315,6 @@ export type QuestionOrElementInstance = {
 
 export type QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse;
 
-export type QuestionResponseDetail = {
-  __typename?: 'QuestionResponseDetail';
-  id: Scalars['Int']['output'];
-};
-
 export enum ResponseCorrectness {
   Correct = 'CORRECT',
   Partial = 'PARTIAL',

@@ -428,15 +428,7 @@ export const QuestionResponse = builder.unionType('QuestionResponse', {
   },
 })
 
-// ----- QUESTION RESPONSE DETAIL INTERFACE -----
-export const QuestionResponseDetailRef =
-  builder.objectRef<DB.QuestionResponseDetail>('QuestionResponseDetail')
-export const QuestionResponseDetail = QuestionResponseDetailRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-  }),
-})
-
+// ----- EVALUATION VISUALIZATION TYPES -----
 export interface ITabData {
   id: string
   questionIx?: number | null

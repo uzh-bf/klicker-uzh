@@ -1310,10 +1310,6 @@ type QuestionOrElementInstance {
 
 union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
 
-type QuestionResponseDetail {
-  id: Int!
-}
-
 enum ResponseCorrectness {
   CORRECT
   PARTIAL
