@@ -142,6 +142,26 @@ export type ChoicesElementResults = {
   totalAnswers: Scalars['Int']['output'];
 };
 
+export type ChoicesInstanceEvaluation = {
+  __typename?: 'ChoicesInstanceEvaluation';
+  choices?: Maybe<Scalars['Json']['output']>;
+  correctness?: Maybe<Scalars['Float']['output']>;
+  elementType: ElementType;
+  explanation?: Maybe<Scalars['String']['output']>;
+  feedbacks?: Maybe<Array<QuestionFeedback>>;
+  instanceId: Scalars['Int']['output'];
+  lastResponse?: Maybe<SingleQuestionResponseChoices>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  numAnswers?: Maybe<Scalars['Int']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  xp: Scalars['Int']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
+};
+
 export type ChoicesQuestionData = {
   __typename?: 'ChoicesQuestionData';
   content: Scalars['String']['output'];
@@ -152,6 +172,31 @@ export type ChoicesQuestionData = {
   pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
+};
+
+export type ChoicesQuestionResponse = {
+  __typename?: 'ChoicesQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseChoices;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type ClassAchievementInstance = {
@@ -211,6 +256,50 @@ export type ContentElementResults = {
   __typename?: 'ContentElementResults';
   anonymousAnswers: Scalars['Int']['output'];
   totalAnswers: Scalars['Int']['output'];
+};
+
+export type ContentInstanceEvaluation = {
+  __typename?: 'ContentInstanceEvaluation';
+  correctness?: Maybe<Scalars['Float']['output']>;
+  elementType: ElementType;
+  explanation?: Maybe<Scalars['String']['output']>;
+  feedbacks?: Maybe<Array<QuestionFeedback>>;
+  instanceId: Scalars['Int']['output'];
+  lastResponse?: Maybe<SingleQuestionResponseContent>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  numAnswers?: Maybe<Scalars['Int']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  xp: Scalars['Int']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
+};
+
+export type ContentQuestionResponse = {
+  __typename?: 'ContentQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseContent;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type Course = {
@@ -458,6 +547,50 @@ export type FlashcardElementResults = {
   totalAnswers: Scalars['Int']['output'];
 };
 
+export type FlashcardInstanceEvaluation = {
+  __typename?: 'FlashcardInstanceEvaluation';
+  correctness?: Maybe<Scalars['Float']['output']>;
+  elementType: ElementType;
+  explanation?: Maybe<Scalars['String']['output']>;
+  feedbacks?: Maybe<Array<QuestionFeedback>>;
+  instanceId: Scalars['Int']['output'];
+  lastResponse?: Maybe<SingleQuestionResponseFlashcard>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  numAnswers?: Maybe<Scalars['Int']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  xp: Scalars['Int']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
+};
+
+export type FlashcardQuestionResponse = {
+  __typename?: 'FlashcardQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseFlashcard;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
+};
+
 export type FreeElementInstanceEvaluation = {
   __typename?: 'FreeElementInstanceEvaluation';
   content: Scalars['String']['output'];
@@ -496,6 +629,27 @@ export type FreeTextElementData = {
   options: FreeTextQuestionOptions;
   pointsMultiplier: Scalars['Int']['output'];
   type: ElementType;
+};
+
+export type FreeTextInstanceEvaluation = {
+  __typename?: 'FreeTextInstanceEvaluation';
+  answers?: Maybe<Scalars['Json']['output']>;
+  correctness?: Maybe<Scalars['Float']['output']>;
+  elementType: ElementType;
+  explanation?: Maybe<Scalars['String']['output']>;
+  feedbacks?: Maybe<Array<QuestionFeedback>>;
+  instanceId: Scalars['Int']['output'];
+  lastResponse?: Maybe<SingleQuestionResponseValue>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  numAnswers?: Maybe<Scalars['Int']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  solutions?: Maybe<Array<Scalars['String']['output']>>;
+  xp: Scalars['Int']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
 export type FreeTextQuestionData = {
@@ -703,26 +857,7 @@ export type GroupMessage = {
   updatedAt: Scalars['Date']['output'];
 };
 
-export type InstanceEvaluation = {
-  __typename?: 'InstanceEvaluation';
-  answers?: Maybe<Scalars['Json']['output']>;
-  choices?: Maybe<Scalars['Json']['output']>;
-  correctness?: Maybe<Scalars['Float']['output']>;
-  explanation?: Maybe<Scalars['String']['output']>;
-  feedbacks?: Maybe<Array<QuestionFeedback>>;
-  instanceId: Scalars['Int']['output'];
-  lastResponse?: Maybe<Scalars['Json']['output']>;
-  newPointsFrom?: Maybe<Scalars['Date']['output']>;
-  newXpFrom?: Maybe<Scalars['Date']['output']>;
-  numAnswers?: Maybe<Scalars['Int']['output']>;
-  percentile?: Maybe<Scalars['Float']['output']>;
-  pointsAwarded?: Maybe<Scalars['Float']['output']>;
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  score: Scalars['Float']['output'];
-  solutionRanges?: Maybe<Scalars['Json']['output']>;
-  solutions?: Maybe<Scalars['Json']['output']>;
-  xpAwarded?: Maybe<Scalars['Int']['output']>;
-};
+export type InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation;
 
 export type InstanceResult = {
   __typename?: 'InstanceResult';
@@ -1633,6 +1768,27 @@ export type NumericalElementSolutions = {
   min?: Maybe<Scalars['Float']['output']>;
 };
 
+export type NumericalInstanceEvaluation = {
+  __typename?: 'NumericalInstanceEvaluation';
+  answers?: Maybe<Scalars['Json']['output']>;
+  correctness?: Maybe<Scalars['Float']['output']>;
+  elementType: ElementType;
+  explanation?: Maybe<Scalars['String']['output']>;
+  feedbacks?: Maybe<Array<QuestionFeedback>>;
+  instanceId: Scalars['Int']['output'];
+  lastResponse?: Maybe<SingleQuestionResponseValue>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  numAnswers?: Maybe<Scalars['Int']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  solutionRanges?: Maybe<Array<NumericalSolutionRange>>;
+  xp: Scalars['Int']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
+};
+
 export type NumericalQuestionData = {
   __typename?: 'NumericalQuestionData';
   content: Scalars['String']['output'];
@@ -1673,6 +1829,31 @@ export type NumericalSolutionRange = {
   __typename?: 'NumericalSolutionRange';
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
+};
+
+export type OpenQuestionResponse = {
+  __typename?: 'OpenQuestionResponse';
+  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  correctCount: Scalars['Int']['output'];
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  elementType: ElementType;
+  id: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
+  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
+  lastResponse: SingleQuestionResponseValue;
+  lastWrongAt?: Maybe<Scalars['Date']['output']>;
+  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+  partialCorrectCount: Scalars['Int']['output'];
+  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  totalScore: Scalars['Float']['output'];
+  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
+  trialsCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type OptionsChoicesInput = {
@@ -2132,29 +2313,7 @@ export type QuestionOrElementInstance = {
   questionInstance?: Maybe<QuestionInstance>;
 };
 
-export type QuestionResponse = {
-  __typename?: 'QuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: Scalars['Json']['output'];
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
-};
+export type QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse;
 
 export type QuestionResponseDetail = {
   __typename?: 'QuestionResponseDetail';
@@ -2261,6 +2420,26 @@ export enum SessionStatus {
   Running = 'RUNNING',
   Scheduled = 'SCHEDULED'
 }
+
+export type SingleQuestionResponseChoices = {
+  __typename?: 'SingleQuestionResponseChoices';
+  choices: Array<Scalars['Int']['output']>;
+};
+
+export type SingleQuestionResponseContent = {
+  __typename?: 'SingleQuestionResponseContent';
+  viewed: Scalars['Boolean']['output'];
+};
+
+export type SingleQuestionResponseFlashcard = {
+  __typename?: 'SingleQuestionResponseFlashcard';
+  correctness: FlashcardCorrectness;
+};
+
+export type SingleQuestionResponseValue = {
+  __typename?: 'SingleQuestionResponseValue';
+  value: Scalars['String']['output'];
+};
 
 export type SolutionRangeInput = {
   max?: InputMaybe<Scalars['Float']['input']>;
@@ -3194,7 +3373,7 @@ export type RespondToElementStackMutationVariables = Exact<{
 }>;
 
 
-export type RespondToElementStackMutation = { __typename?: 'Mutation', respondToElementStack?: { __typename?: 'StackFeedback', id: number, status: StackFeedbackStatus, score?: number | null, evaluations?: Array<{ __typename?: 'InstanceEvaluation', instanceId: number, pointsMultiplier?: number | null, explanation?: string | null, choices?: any | null, numAnswers?: number | null, answers?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, xpAwarded?: number | null, newXpFrom?: any | null, solutions?: any | null, solutionRanges?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null }> | null } | null };
+export type RespondToElementStackMutation = { __typename?: 'Mutation', respondToElementStack?: { __typename?: 'StackFeedback', id: number, status: StackFeedbackStatus, score?: number | null } | null };
 
 export type RespondToFeedbackMutationVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -3613,7 +3792,7 @@ export type GetPreviousStackEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetPreviousStackEvaluationQuery = { __typename?: 'Query', getPreviousStackEvaluation?: { __typename?: 'StackFeedback', id: number, status: StackFeedbackStatus, score?: number | null, evaluations?: Array<{ __typename?: 'InstanceEvaluation', instanceId: number, pointsMultiplier?: number | null, explanation?: string | null, choices?: any | null, numAnswers?: number | null, answers?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, xpAwarded?: number | null, newXpFrom?: any | null, solutions?: any | null, solutionRanges?: any | null, lastResponse?: any | null, correctness?: number | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null }> | null } | null };
+export type GetPreviousStackEvaluationQuery = { __typename?: 'Query', getPreviousStackEvaluation?: { __typename?: 'StackFeedback', id: number, status: StackFeedbackStatus, score?: number | null } | null };
 
 export type GetPublicParticipantProfileQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3939,7 +4118,7 @@ export const RateElementDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const RenameParticipantGroupDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RenameParticipantGroup"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"renameParticipantGroup"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"groupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<RenameParticipantGroupMutation, RenameParticipantGroupMutationVariables>;
 export const RequestMigrationTokenDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RequestMigrationToken"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"email"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requestMigrationToken"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"email"},"value":{"kind":"Variable","name":{"kind":"Name","value":"email"}}}]}]}}]} as unknown as DocumentNode<RequestMigrationTokenMutation, RequestMigrationTokenMutationVariables>;
 export const ResolveFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ResolveFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isResolved"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"resolveFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"isResolved"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isResolved"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}}]}}]}}]} as unknown as DocumentNode<ResolveFeedbackMutation, ResolveFeedbackMutationVariables>;
-export const RespondToElementStackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RespondToElementStack"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"responses"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"StackResponseInput"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackAnswerTime"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"respondToElementStack"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"responses"},"value":{"kind":"Variable","name":{"kind":"Name","value":"responses"}}},{"kind":"Argument","name":{"kind":"Name","value":"stackAnswerTime"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackAnswerTime"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"evaluations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"feedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"choices"}},{"kind":"Field","name":{"kind":"Name","value":"numAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"answers"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"pointsAwarded"}},{"kind":"Field","name":{"kind":"Name","value":"percentile"}},{"kind":"Field","name":{"kind":"Name","value":"newPointsFrom"}},{"kind":"Field","name":{"kind":"Name","value":"xpAwarded"}},{"kind":"Field","name":{"kind":"Name","value":"newXpFrom"}},{"kind":"Field","name":{"kind":"Name","value":"solutions"}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"}}]}}]}}]}}]} as unknown as DocumentNode<RespondToElementStackMutation, RespondToElementStackMutationVariables>;
+export const RespondToElementStackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RespondToElementStack"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"responses"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"StackResponseInput"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackAnswerTime"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"respondToElementStack"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"responses"},"value":{"kind":"Variable","name":{"kind":"Name","value":"responses"}}},{"kind":"Argument","name":{"kind":"Name","value":"stackAnswerTime"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackAnswerTime"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"score"}}]}}]}}]} as unknown as DocumentNode<RespondToElementStackMutation, RespondToElementStackMutationVariables>;
 export const RespondToFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RespondToFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"responseContent"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"respondToFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"responseContent"},"value":{"kind":"Variable","name":{"kind":"Name","value":"responseContent"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}}]}}]} as unknown as DocumentNode<RespondToFeedbackMutation, RespondToFeedbackMutationVariables>;
 export const RunningRandomGroupAssignmentsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RunningRandomGroupAssignments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningRandomGroupAssignments"}}]}}]} as unknown as DocumentNode<RunningRandomGroupAssignmentsMutation, RunningRandomGroupAssignmentsMutationVariables>;
 export const SendMagicLinkDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SendMagicLink"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"usernameOrEmail"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sendMagicLink"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"usernameOrEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"usernameOrEmail"}}}]}]}}]} as unknown as DocumentNode<SendMagicLinkMutation, SendMagicLinkMutationVariables>;
@@ -3998,7 +4177,7 @@ export const GetPracticeQuizDocument = {"kind":"Document","definitions":[{"kind"
 export const GetPracticeQuizEvaluationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPracticeQuizEvaluation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPracticeQuizEvaluation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"EvaluationResults"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"EvaluationResults"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ActivityEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stackId"}},{"kind":"Field","name":{"kind":"Name","value":"stackName"}},{"kind":"Field","name":{"kind":"Name","value":"stackDescription"}},{"kind":"Field","name":{"kind":"Name","value":"stackOrder"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesElementInstanceEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"anonymousAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"count"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeElementInstanceEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"anonymousAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"maxLength"}},{"kind":"Field","name":{"kind":"Name","value":"solutions"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalElementInstanceEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"anonymousAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"maxValue"}},{"kind":"Field","name":{"kind":"Name","value":"minValue"}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}},{"kind":"Field","name":{"kind":"Name","value":"responseValues"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FlashcardElementInstanceEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"anonymousAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"correctCount"}},{"kind":"Field","name":{"kind":"Name","value":"partialCount"}},{"kind":"Field","name":{"kind":"Name","value":"incorrectCount"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ContentElementInstanceEvaluation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"totalAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"anonymousAnswers"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetPracticeQuizEvaluationQuery, GetPracticeQuizEvaluationQueryVariables>;
 export const GetPracticeQuizListDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPracticeQuizList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPracticeQuizList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"practiceQuizzes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]}}]} as unknown as DocumentNode<GetPracticeQuizListQuery, GetPracticeQuizListQueryVariables>;
 export const GetPracticeQuizSummaryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPracticeQuizSummary"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPracticeQuizSummary"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"numOfResponses"}},{"kind":"Field","name":{"kind":"Name","value":"numOfAnonymousResponses"}}]}}]}}]} as unknown as DocumentNode<GetPracticeQuizSummaryQuery, GetPracticeQuizSummaryQueryVariables>;
-export const GetPreviousStackEvaluationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPreviousStackEvaluation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPreviousStackEvaluation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"evaluations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"feedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"choices"}},{"kind":"Field","name":{"kind":"Name","value":"numAnswers"}},{"kind":"Field","name":{"kind":"Name","value":"answers"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"pointsAwarded"}},{"kind":"Field","name":{"kind":"Name","value":"percentile"}},{"kind":"Field","name":{"kind":"Name","value":"newPointsFrom"}},{"kind":"Field","name":{"kind":"Name","value":"xpAwarded"}},{"kind":"Field","name":{"kind":"Name","value":"newXpFrom"}},{"kind":"Field","name":{"kind":"Name","value":"solutions"}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"}},{"kind":"Field","name":{"kind":"Name","value":"lastResponse"}},{"kind":"Field","name":{"kind":"Name","value":"correctness"}}]}}]}}]}}]} as unknown as DocumentNode<GetPreviousStackEvaluationQuery, GetPreviousStackEvaluationQueryVariables>;
+export const GetPreviousStackEvaluationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPreviousStackEvaluation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPreviousStackEvaluation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"score"}}]}}]}}]} as unknown as DocumentNode<GetPreviousStackEvaluationQuery, GetPreviousStackEvaluationQueryVariables>;
 export const GetPublicParticipantProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPublicParticipantProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"publicParticipantProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"participantId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}},{"kind":"Field","name":{"kind":"Name","value":"isProfilePublic"}},{"kind":"Field","name":{"kind":"Name","value":"isSelf"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"levelData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"nextLevel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"xp"}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"achievedAt"}},{"kind":"Field","name":{"kind":"Name","value":"achievedCount"}},{"kind":"Field","name":{"kind":"Name","value":"achievement"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nameDE"}},{"kind":"Field","name":{"kind":"Name","value":"nameEN"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionDE"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionEN"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetPublicParticipantProfileQuery, GetPublicParticipantProfileQueryVariables>;
 export const GetRunningSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetRunningSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"session"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isLiveQAEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isModerationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"activeBlock"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"QuestionInstance"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"displayMode"}},{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unit"}},{"kind":"Field","name":{"kind":"Name","value":"accuracy"}},{"kind":"Field","name":{"kind":"Name","value":"placeholder"}},{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FlashcardElementQData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ContentElementQData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}}]}}]}}]} as unknown as DocumentNode<GetRunningSessionQuery, GetRunningSessionQueryVariables>;
 export const GetRunningSessionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetRunningSessions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningSessions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"shortname"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"linkTo"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]}}]} as unknown as DocumentNode<GetRunningSessionsQuery, GetRunningSessionsQueryVariables>;
@@ -4057,12 +4236,25 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       "FreeElementInstanceEvaluation",
       "NumericalElementInstanceEvaluation"
     ],
+    "InstanceEvaluation": [
+      "ChoicesInstanceEvaluation",
+      "ContentInstanceEvaluation",
+      "FlashcardInstanceEvaluation",
+      "FreeTextInstanceEvaluation",
+      "NumericalInstanceEvaluation"
+    ],
     "QuestionData": [
       "ChoicesQuestionData",
       "ContentElementQData",
       "FlashcardElementQData",
       "FreeTextQuestionData",
       "NumericalQuestionData"
+    ],
+    "QuestionResponse": [
+      "ChoicesQuestionResponse",
+      "ContentQuestionResponse",
+      "FlashcardQuestionResponse",
+      "OpenQuestionResponse"
     ]
   }
 };

@@ -112,6 +112,25 @@ type ChoicesElementResults {
   totalAnswers: Int!
 }
 
+type ChoicesInstanceEvaluation {
+  choices: Json
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseChoices
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  xp: Int!
+  xpAwarded: Int
+}
+
 type ChoicesQuestionData {
   content: String!
   explanation: String
@@ -121,6 +140,30 @@ type ChoicesQuestionData {
   pointsMultiplier: Int
   questionId: Int
   type: ElementType!
+}
+
+type ChoicesQuestionResponse {
+  aggregatedResponses: Json
+  correctCount: Int!
+  correctCountStreak: Int!
+  eFactor: Float!
+  elementType: ElementType!
+  id: Int!
+  interval: Int!
+  lastAnsweredAt: Date
+  lastAwardedAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastResponse: SingleQuestionResponseChoices!
+  lastWrongAt: Date
+  lastXpAwardedAt: Date
+  nextDueAt: Date
+  partialCorrectCount: Int!
+  totalPointsAwarded: Float
+  totalScore: Float!
+  totalXpAwarded: Float
+  trialsCount: Int!
+  wrongCount: Int!
 }
 
 type ClassAchievementInstance {
@@ -173,6 +216,48 @@ type ContentElementQData {
 type ContentElementResults {
   anonymousAnswers: Int!
   totalAnswers: Int!
+}
+
+type ContentInstanceEvaluation {
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseContent
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  xp: Int!
+  xpAwarded: Int
+}
+
+type ContentQuestionResponse {
+  aggregatedResponses: Json
+  correctCount: Int!
+  correctCountStreak: Int!
+  eFactor: Float!
+  elementType: ElementType!
+  id: Int!
+  interval: Int!
+  lastAnsweredAt: Date
+  lastAwardedAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastResponse: SingleQuestionResponseContent!
+  lastWrongAt: Date
+  lastXpAwardedAt: Date
+  nextDueAt: Date
+  partialCorrectCount: Int!
+  totalPointsAwarded: Float
+  totalScore: Float!
+  totalXpAwarded: Float
+  trialsCount: Int!
+  wrongCount: Int!
 }
 
 type Course {
@@ -410,6 +495,48 @@ type FlashcardElementResults {
   totalAnswers: Int!
 }
 
+type FlashcardInstanceEvaluation {
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseFlashcard
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  xp: Int!
+  xpAwarded: Int
+}
+
+type FlashcardQuestionResponse {
+  aggregatedResponses: Json
+  correctCount: Int!
+  correctCountStreak: Int!
+  eFactor: Float!
+  elementType: ElementType!
+  id: Int!
+  interval: Int!
+  lastAnsweredAt: Date
+  lastAwardedAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastResponse: SingleQuestionResponseFlashcard!
+  lastWrongAt: Date
+  lastXpAwardedAt: Date
+  nextDueAt: Date
+  partialCorrectCount: Int!
+  totalPointsAwarded: Float
+  totalScore: Float!
+  totalXpAwarded: Float
+  trialsCount: Int!
+  wrongCount: Int!
+}
+
 type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
@@ -444,6 +571,26 @@ type FreeTextElementData {
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
   type: ElementType!
+}
+
+type FreeTextInstanceEvaluation {
+  answers: Json
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseValue
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  solutions: [String!]
+  xp: Int!
+  xpAwarded: Int
 }
 
 type FreeTextQuestionData {
@@ -633,25 +780,7 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-type InstanceEvaluation {
-  answers: Json
-  choices: Json
-  correctness: Float
-  explanation: String
-  feedbacks: [QuestionFeedback!]
-  instanceId: Int!
-  lastResponse: Json
-  newPointsFrom: Date
-  newXpFrom: Date
-  numAnswers: Int
-  percentile: Float
-  pointsAwarded: Float
-  pointsMultiplier: Int
-  score: Float!
-  solutionRanges: Json
-  solutions: Json
-  xpAwarded: Int
-}
+union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
 
 type InstanceResult {
   blockIx: Int
@@ -882,6 +1011,26 @@ type NumericalElementSolutions {
   min: Float
 }
 
+type NumericalInstanceEvaluation {
+  answers: Json
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseValue
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  solutionRanges: [NumericalSolutionRange!]
+  xp: Int!
+  xpAwarded: Int
+}
+
 type NumericalQuestionData {
   content: String!
   explanation: String
@@ -918,6 +1067,30 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+type OpenQuestionResponse {
+  aggregatedResponses: Json
+  correctCount: Int!
+  correctCountStreak: Int!
+  eFactor: Float!
+  elementType: ElementType!
+  id: Int!
+  interval: Int!
+  lastAnsweredAt: Date
+  lastAwardedAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastResponse: SingleQuestionResponseValue!
+  lastWrongAt: Date
+  lastXpAwardedAt: Date
+  nextDueAt: Date
+  partialCorrectCount: Int!
+  totalPointsAwarded: Float
+  totalScore: Float!
+  totalXpAwarded: Float
+  trialsCount: Int!
+  wrongCount: Int!
 }
 
 input OptionsChoicesInput {
@@ -1135,28 +1308,7 @@ type QuestionOrElementInstance {
   questionInstance: QuestionInstance
 }
 
-type QuestionResponse {
-  aggregatedResponses: Json
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: Json!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
+union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
 
 type QuestionResponseDetail {
   id: Int!
@@ -1257,6 +1409,22 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type SingleQuestionResponseChoices {
+  choices: [Int!]!
+}
+
+type SingleQuestionResponseContent {
+  viewed: Boolean!
+}
+
+type SingleQuestionResponseFlashcard {
+  correctness: FlashcardCorrectness!
+}
+
+type SingleQuestionResponseValue {
+  value: String!
 }
 
 input SolutionRangeInput {
