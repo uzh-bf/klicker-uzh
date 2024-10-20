@@ -19,7 +19,13 @@ import {
 import { Tooltip } from '@uzh-bf/design-system'
 import isHotkey from 'is-hotkey'
 import { useTranslations } from 'next-intl'
-import React, { PropsWithChildren, useCallback, useMemo, useState } from 'react'
+import React, {
+  PropsWithChildren,
+  ReactNode,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
 import {
   BaseEditor,
   createEditor,
@@ -117,8 +123,11 @@ function ContentInput({
 
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
 
-  const renderElement = useCallback((props: any) => <Element {...props} />, [])
-  const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
+  const renderElement = useCallback(
+    (props: ElementProps) => <Element {...props} />,
+    []
+  )
+  const renderLeaf = useCallback((props: LeafProps) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   const editorValue = useMemo(() => {
@@ -135,7 +144,6 @@ function ContentInput({
         className?.root
       )}
     >
-      {/* eslint-disable-next-line react/no-children-prop */}
       <Slate
         editor={editor}
         initialValue={editorValue}
@@ -153,9 +161,8 @@ function ContentInput({
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             onKeyDown={(event) => {
-              // eslint-disable-next-line no-restricted-syntax
               for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event as any)) {
+                if (isHotkey(hotkey, event)) {
                   event.preventDefault()
                   const mark = HOTKEYS[hotkey]
                   toggleMark(editor, mark)
@@ -250,7 +257,7 @@ function ContentInput({
                 active={isImageDropzoneOpen}
                 editor={editor}
                 format="paragraph"
-                onClick={(e: any) => {
+                onClick={() => {
                   setIsImageDropzoneOpen((prev) => !prev)
                 }}
               >
@@ -428,7 +435,13 @@ const isMarkActive = (
   return marks ? marks[format] === true : false
 }
 
-const Element = ({ attributes, children, element }: any) => {
+interface ElementProps {
+  attributes: any
+  children: ReactNode
+  element: CustomElement
+}
+
+const Element = ({ attributes, children, element }: ElementProps) => {
   switch (element.type) {
     case 'block-quote':
       return (
@@ -438,10 +451,10 @@ const Element = ({ attributes, children, element }: any) => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
-    case 'heading-one':
-      return <h1 {...attributes}>{children}</h1>
-    case 'heading-two':
-      return <h2 {...attributes}>{children}</h2>
+    // case 'heading-one':
+    //   return <h1 {...attributes}>{children}</h1>
+    // case 'heading-two':
+    //   return <h2 {...attributes}>{children}</h2>
     case 'list-item':
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
@@ -451,7 +464,13 @@ const Element = ({ attributes, children, element }: any) => {
   }
 }
 
-const Leaf = ({ attributes, children, leaf }: any) => {
+interface LeafProps {
+  attributes: any
+  children: ReactNode
+  leaf: CustomText
+}
+
+const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   let formattedChildren = children
   if (leaf.bold) {
     formattedChildren = <strong>{formattedChildren}</strong>
