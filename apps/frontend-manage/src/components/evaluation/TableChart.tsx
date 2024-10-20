@@ -2,7 +2,6 @@ import { faCheck, faRepeat, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
-  ChoicesQuestionData,
   FreeTextQuestionData,
   InstanceResult,
   NumericalQuestionData,
@@ -33,10 +32,11 @@ function TableChart({
 }: TableChartProps): React.ReactElement {
   const t = useTranslations()
   const ref = useRef<{ reset: () => void }>(null)
+  const questionData = data.questionData
 
   const tableData = useMemo(() => {
-    if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
-      return (data.questionData as ChoicesQuestionData).options.choices.map(
+    if (questionData.__typename === 'ChoicesQuestionData') {
+      return questionData.options.choices.map(
         (choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
@@ -135,12 +135,12 @@ function TableChart({
           body: `${textSize}`,
         }}
         defaultSortField={
-          !QUESTION_GROUPS.CHOICES.includes(data.questionData.type)
+          !QUESTION_GROUPS.CHOICES.includes(questionData.type)
             ? 'count'
             : undefined
         }
         defaultSortOrder={
-          !QUESTION_GROUPS.CHOICES.includes(data.questionData.type)
+          !QUESTION_GROUPS.CHOICES.includes(questionData.type)
             ? 'desc'
             : undefined
         }

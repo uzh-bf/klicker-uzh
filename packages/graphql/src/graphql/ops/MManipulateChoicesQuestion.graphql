@@ -30,6 +30,7 @@ mutation ManipulateChoicesQuestion(
 
     questionData {
       ... on ChoicesQuestionData {
+        __typename
         options {
           displayMode
           hasSampleSolution

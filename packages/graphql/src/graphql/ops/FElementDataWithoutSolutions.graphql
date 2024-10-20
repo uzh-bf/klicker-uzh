@@ -1,6 +1,7 @@
 fragment ElementDataWithoutSolutions on ElementInstance {
   elementData {
     ... on ChoicesElementData {
+      __typename
       id
       elementId
       name
@@ -18,6 +19,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on NumericalElementData {
+      __typename
       id
       elementId
       name
@@ -37,6 +39,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on FreeTextElementData {
+      __typename
       id
       elementId
       name
@@ -62,6 +65,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on ContentElementData {
+      __typename
       id
       elementId
       name

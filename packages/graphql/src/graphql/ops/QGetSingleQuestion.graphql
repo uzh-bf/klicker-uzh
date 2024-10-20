@@ -10,6 +10,7 @@ query GetSingleQuestion($id: Int!) {
 
     questionData {
       ... on ChoicesQuestionData {
+        __typename
         id
         questionId
         name
@@ -32,6 +33,7 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on NumericalQuestionData {
+        __typename
         id
         questionId
         name
@@ -57,6 +59,7 @@ query GetSingleQuestion($id: Int!) {
       }
 
       ... on FreeTextQuestionData {
+        __typename
         id
         questionId
         name

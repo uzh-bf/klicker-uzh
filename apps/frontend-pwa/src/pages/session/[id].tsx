@@ -2,12 +2,9 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChoicesQuestionData,
   ElementType,
-  FreeTextQuestionData,
   GetFeedbacksDocument,
   GetRunningSessionDocument,
-  NumericalQuestionData,
   RunningSessionUpdatedDocument,
   SelfDocument,
   Session,
@@ -207,23 +204,37 @@ function Index({ id }: Props) {
                 activeBlock.instances
                   ?.map((question) => {
                     const questionData = question.questionData
-                    if (!questionData) return null
 
-                    if (questionData.type === ElementType.FreeText) {
+                    // filter out question data types that are not supported by live session
+                    if (
+                      !questionData ||
+                      questionData?.__typename === 'FlashcardElementQData' ||
+                      questionData?.__typename === 'ContentElementQData'
+                    ) {
+                      return null
+                    }
+
+                    if (questionData.__typename === 'FreeTextQuestionData') {
                       return {
-                        ...(questionData as FreeTextQuestionData),
+                        ...questionData,
                         instanceId: question.id,
                       }
-                    } else if (questionData.type === ElementType.Numerical) {
+                    } else if (
+                      questionData.__typename === 'NumericalQuestionData'
+                    ) {
                       return {
-                        ...(questionData as NumericalQuestionData),
+                        ...questionData,
+                        instanceId: question.id,
+                      }
+                    } else if (
+                      questionData.__typename === 'ChoicesQuestionData'
+                    ) {
+                      return {
+                        ...questionData,
                         instanceId: question.id,
                       }
                     } else {
-                      return {
-                        ...(questionData as ChoicesQuestionData),
-                        instanceId: question.id,
-                      }
+                      return null
                     }
                   })
                   .filter((q) => q !== null) ?? []

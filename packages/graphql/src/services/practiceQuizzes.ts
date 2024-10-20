@@ -25,14 +25,11 @@ import {
 import type {
   AllElementTypeData,
   Choice,
-  ChoicesElementData,
   ContentResults,
   ElementInstanceResults,
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardResults,
-  FreeTextElementData,
-  NumericalElementData,
   QuestionResponse,
   QuestionResponseChoices,
   QuestionResponseContent,
@@ -156,6 +153,7 @@ export function computeStackEvaluation(
       instances: stack.elements.flatMap((instance) => {
         let hasSampleSolution = false
         let hasAnswerFeedbacks = false
+        const elementData = instance.elementData
         const instanceType = instance.elementData.type
 
         if (
@@ -2260,11 +2258,14 @@ export async function getPreviousStackEvaluation(
             .lastResponse as QuestionResponseContent,
         }
       } else if (
-        element.elementType === ElementType.SC ||
-        element.elementType === ElementType.MC ||
-        element.elementType === ElementType.KPRIM
+        (element.elementData.type === ElementType.SC ||
+          element.elementData.type === ElementType.MC ||
+          element.elementData.type === ElementType.KPRIM) &&
+        (element.elementType === ElementType.SC ||
+          element.elementType === ElementType.MC ||
+          element.elementType === ElementType.KPRIM)
       ) {
-        const elementData = element.elementData as ChoicesElementData
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
           .lastResponse as QuestionResponseChoices
         const correctness = evaluateAnswerCorrectness({
@@ -2300,8 +2301,11 @@ export async function getPreviousStackEvaluation(
           correctness,
           lastResponse,
         } as IInstanceEvaluation
-      } else if (element.elementType === ElementType.NUMERICAL) {
-        const elementData = element.elementData as NumericalElementData
+      } else if (
+        element.elementData.type === ElementType.NUMERICAL &&
+        element.elementType === ElementType.NUMERICAL
+      ) {
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
           .lastResponse as QuestionResponseValue
         const correctness = evaluateAnswerCorrectness({
@@ -2340,8 +2344,11 @@ export async function getPreviousStackEvaluation(
           correctness,
           lastResponse,
         } as IInstanceEvaluation
-      } else if (element.elementType === ElementType.FREE_TEXT) {
-        const elementData = element.elementData as FreeTextElementData
+      } else if (
+        element.elementData.type === ElementType.FREE_TEXT &&
+        element.elementType === ElementType.FREE_TEXT
+      ) {
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
           .lastResponse as QuestionResponseValue
         const correctness = evaluateAnswerCorrectness({

@@ -1,16 +1,10 @@
 import {
-  ChoiceQuestionOptions,
   ChoicesQuestionData,
   ContentElementQData,
   Element,
-  ElementType,
   FlashcardElementQData,
-  FreeTextElementData,
   FreeTextQuestionData,
-  FreeTextQuestionOptions,
-  NumericalElementData,
   NumericalQuestionData,
-  NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useFakedInstance({
@@ -19,11 +13,11 @@ function useFakedInstance({
 }: {
   element?: Pick<Element, 'name' | 'content' | 'type'> | null
   questionData?:
-    | Pick<ChoicesQuestionData, 'options'>
-    | Pick<NumericalElementData, 'options'>
-    | Pick<FreeTextElementData, 'options'>
-    | Partial<FlashcardElementQData>
-    | Partial<ContentElementQData>
+    | Pick<ChoicesQuestionData, '__typename' | 'options'>
+    | Pick<NumericalQuestionData, '__typename' | 'options'>
+    | Pick<FreeTextQuestionData, '__typename' | 'options'>
+    | Pick<FlashcardElementQData, '__typename'>
+    | Pick<ContentElementQData, '__typename'>
     | null
 }): ChoicesQuestionData | NumericalQuestionData | FreeTextQuestionData | null {
   if (!element || !questionData) {
@@ -38,31 +32,20 @@ function useFakedInstance({
     type: element.type,
   }
 
-  if (
-    'options' in questionData &&
-    (element.type === ElementType.Sc ||
-      element.type === ElementType.Mc ||
-      element.type === ElementType.Kprim)
-  ) {
+  if (questionData.__typename === 'ChoicesQuestionData') {
     return {
       ...common,
-      options: questionData.options as ChoiceQuestionOptions,
+      options: questionData.options,
     }
-  } else if (
-    'options' in questionData &&
-    element.type === ElementType.Numerical
-  ) {
+  } else if (questionData.__typename === 'NumericalQuestionData') {
     return {
       ...common,
-      options: questionData.options as NumericalQuestionOptions,
+      options: questionData.options,
     }
-  } else if (
-    'options' in questionData &&
-    element.type === ElementType.FreeText
-  ) {
+  } else if (questionData.__typename === 'FreeTextQuestionData') {
     return {
       ...common,
-      options: questionData.options as FreeTextQuestionOptions,
+      options: questionData.options,
     }
   } else {
     return null

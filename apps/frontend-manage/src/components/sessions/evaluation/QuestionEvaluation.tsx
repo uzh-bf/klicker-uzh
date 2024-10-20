@@ -76,7 +76,7 @@ function QuestionEvaluation({
             textSize.text
           )}
         >
-          {'options' in questionData && 'choices' in questionData.options && (
+          {questionData.__typename === 'ChoicesQuestionData' && (
             <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2">
               <div
                 className={twMerge(
@@ -135,11 +135,8 @@ function QuestionEvaluation({
             </div>
           )}
 
-          {'options' in questionData &&
-            'restrictions' in questionData.options &&
-            questionData.options.restrictions &&
-            ('min' in questionData.options.restrictions ||
-              'max' in questionData.options.restrictions) && (
+          {questionData.__typename === 'NumericalQuestionData' &&
+            questionData.options.restrictions && (
               <div>
                 <div className="font-bold">
                   {t('manage.evaluation.validSolutionRange')}:
@@ -190,7 +187,7 @@ function QuestionEvaluation({
                   </UserNotification>
                 )}
                 {showSolution &&
-                  'solutionRanges' in questionData.options &&
+                  questionData.__typename === 'NumericalQuestionData' &&
                   questionData.options.solutionRanges && (
                     <div>
                       <div className="mt-4 font-bold">
@@ -207,8 +204,7 @@ function QuestionEvaluation({
                   )}
               </div>
             )}
-          {'options' in questionData &&
-            'solutions' in questionData.options &&
+          {questionData.__typename === 'FreeTextQuestionData' &&
             questionData.options.solutions &&
             showSolution && (
               <div>

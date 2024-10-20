@@ -7,6 +7,7 @@ fragment EvaluationResults on ActivityEvaluation {
 
     instances {
       ... on ChoicesElementInstanceEvaluation {
+        __typename
         id
         type
         name
@@ -29,6 +30,7 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on FreeElementInstanceEvaluation {
+        __typename
         id
         type
         name
@@ -52,6 +54,7 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on NumericalElementInstanceEvaluation {
+        __typename
         id
         type
         name
@@ -79,6 +82,7 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on FlashcardElementInstanceEvaluation {
+        __typename
         id
         type
         name
@@ -98,6 +102,7 @@ fragment EvaluationResults on ActivityEvaluation {
       }
 
       ... on ContentElementInstanceEvaluation {
+        __typename
         id
         type
         name

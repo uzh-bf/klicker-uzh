@@ -28,6 +28,7 @@ mutation ManipulateNumericalQuestion(
 
     questionData {
       ... on NumericalQuestionData {
+        __typename
         options {
           hasSampleSolution
           accuracy

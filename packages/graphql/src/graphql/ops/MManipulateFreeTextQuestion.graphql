@@ -28,6 +28,7 @@ mutation ManipulateFreeTextQuestion(
 
     questionData {
       ... on FreeTextQuestionData {
+        __typename
         options {
           hasSampleSolution
           restrictions {

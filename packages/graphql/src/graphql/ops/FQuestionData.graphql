@@ -1,6 +1,7 @@
 fragment QuestionData on QuestionInstance {
   questionData {
     ... on ChoicesQuestionData {
+      __typename
       id
       questionId
       name
@@ -23,6 +24,7 @@ fragment QuestionData on QuestionInstance {
     }
 
     ... on NumericalQuestionData {
+      __typename
       id
       questionId
       name
@@ -48,6 +50,7 @@ fragment QuestionData on QuestionInstance {
     }
 
     ... on FreeTextQuestionData {
+      __typename
       id
       questionId
       name

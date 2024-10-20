@@ -1,6 +1,7 @@
 fragment QuestionDataInfo on QuestionInstance {
   questionData {
     ... on ChoicesQuestionData {
+      __typename
       id
       questionId
       name
@@ -11,6 +12,7 @@ fragment QuestionDataInfo on QuestionInstance {
     }
 
     ... on NumericalQuestionData {
+      __typename
       id
       questionId
       name
@@ -21,6 +23,7 @@ fragment QuestionDataInfo on QuestionInstance {
     }
 
     ... on FreeTextQuestionData {
+      __typename
       id
       questionId
       name
@@ -31,6 +34,7 @@ fragment QuestionDataInfo on QuestionInstance {
     }
 
     ... on FlashcardElementQData {
+      __typename
       id
       questionId
       name
@@ -41,6 +45,7 @@ fragment QuestionDataInfo on QuestionInstance {
     }
 
     ... on ContentElementQData {
+      __typename
       id
       questionId
       name
