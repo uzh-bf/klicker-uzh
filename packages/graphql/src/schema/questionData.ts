@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
-import { type BaseQuestionData, DisplayMode } from '@klicker-uzh/types'
+import {
+  type BaseQuestionData,
+  type Choice as ChoiceType,
+  type NumericalSolutionRange as NumericalSolutionRangeType,
+  DisplayMode,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 
 export const ElementType = builder.enumType('ElementType', {
@@ -29,13 +34,7 @@ const sharedQuestionData = (t) => ({
   pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 })
 
-export interface IChoice {
-  ix: number
-  correct?: boolean
-  feedback?: string
-  value: string
-}
-export const Choice = builder.objectRef<IChoice>('Choice').implement({
+export const Choice = builder.objectRef<ChoiceType>('Choice').implement({
   fields: (t) => ({
     ix: t.exposeInt('ix'),
     correct: t.exposeBoolean('correct', { nullable: true }),
@@ -48,7 +47,7 @@ export interface IChoiceQuestionOptions {
   displayMode: DisplayMode
   hasSampleSolution?: boolean
   hasAnswerFeedbacks?: boolean
-  choices: IChoice[]
+  choices: ChoiceType[]
 }
 export const ChoiceQuestionOptions = builder
   .objectRef<IChoiceQuestionOptions>('ChoiceQuestionOptions')
@@ -91,12 +90,8 @@ export const NumericalRestrictions = builder
     }),
   })
 
-export interface INumericalSolutionRange {
-  min?: number
-  max?: number
-}
 export const NumericalSolutionRange = builder
-  .objectRef<INumericalSolutionRange>('NumericalSolutionRange')
+  .objectRef<NumericalSolutionRangeType>('NumericalSolutionRange')
   .implement({
     fields: (t) => ({
       min: t.exposeFloat('min', { nullable: true }),
@@ -111,7 +106,7 @@ export interface INumericalQuestionOptions {
   placeholder?: string | null
   unit?: string | null
   restrictions?: INumericalRestrictions | null
-  solutionRanges?: INumericalSolutionRange[] | null
+  solutionRanges?: NumericalSolutionRangeType[] | null
 }
 export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')

@@ -30,6 +30,10 @@ import type {
   ElementResultsChoices,
   ElementResultsOpen,
   FlashcardResults,
+  InstanceEvaluation,
+  InstanceEvaluationChoices,
+  InstanceEvaluationFreeText,
+  InstanceEvaluationNumerical,
   SingleQuestionResponse,
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,
@@ -56,7 +60,6 @@ import type {
   NumericalQuestionOptions,
   ResponseInput,
 } from '../ops.js'
-import type { IInstanceEvaluation } from '../schema/question.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -1295,24 +1298,39 @@ export function evaluateAnswerCorrectness({
   }
 }
 
-interface EvaluatedQuestionResponses {
-  feedbacks: any[]
-  numAnswers: number
-  choices?: Record<string, number>
-  answers?: Record<string, number>
-  score: number
-  xp: number
-  percentile: number
-  pointsMultiplier?: number
-  explanation?: string | null
-}
+type SharedEvaluationProps =
+  | 'elementType'
+  | 'feedbacks'
+  | 'numAnswers'
+  | 'score'
+  | 'xp'
+  | 'percentile'
+  | 'pointsMultiplier'
+  | 'explanation'
+
+type ChoicesEvaluationReturnType = Pick<
+  InstanceEvaluationChoices,
+  SharedEvaluationProps | 'choices'
+>
+type NumericalEvaluationReturnType = Pick<
+  InstanceEvaluationNumerical,
+  SharedEvaluationProps | 'solutionRanges' | 'answers'
+>
+type FreeTextEvaluationReturnType = Pick<
+  InstanceEvaluationFreeText,
+  SharedEvaluationProps | 'solutions' | 'answers'
+>
 
 function evaluateElementResponse(
   elementData: AllElementTypeData,
-  results: any,
+  results: any, // TODO: as soon as correctly typed element instance results are available, update this import and the type checking inside the function
   correctness: number | null,
   multiplier?: number
-): EvaluatedQuestionResponses | null {
+):
+  | ChoicesEvaluationReturnType
+  | NumericalEvaluationReturnType
+  | FreeTextEvaluationReturnType
+  | null {
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -1327,6 +1345,7 @@ function evaluateElementResponse(
 
       if (elementData.type === ElementType.SC) {
         return {
+          elementType: ElementType.SC,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1339,11 +1358,12 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
         return {
+          elementType: ElementType.MC,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1356,11 +1376,12 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       } else {
         return {
+          elementType: ElementType.KPRIM,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1373,7 +1394,7 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       }
@@ -1382,6 +1403,7 @@ function evaluateElementResponse(
     case ElementType.NUMERICAL: {
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
+        elementType: ElementType.NUMERICAL,
         feedbacks: [],
         numAnswers: results.total,
         answers: results?.responses ?? {},
@@ -1390,13 +1412,14 @@ function evaluateElementResponse(
           pointsPercentage: correctness,
         }),
         percentile: correctness ?? 0,
-        pointsMultiplier: multiplier,
+        pointsMultiplier: multiplier ?? 1,
         explanation: elementData.explanation,
       }
     }
 
     case ElementType.FREE_TEXT: {
       return {
+        elementType: ElementType.FREE_TEXT,
         feedbacks: [],
         numAnswers: results.total,
         answers: elementData.options.hasSampleSolution
@@ -1407,7 +1430,7 @@ function evaluateElementResponse(
           pointsPercentage: correctness,
         }),
         percentile: correctness ?? 0,
-        pointsMultiplier: multiplier,
+        pointsMultiplier: multiplier ?? 1,
         explanation: elementData.explanation,
       }
     }
@@ -2220,7 +2243,7 @@ export async function getPreviousStackEvaluation(
 
   // TODO: investigate if this logic can be combined with content of the respondToElementStack
   // function once it is refactored and split up into smaller functions
-  const evaluations: IInstanceEvaluation[] = stackEvaluation.elements.flatMap(
+  const evaluations: InstanceEvaluation[] = stackEvaluation.elements.flatMap(
     (element) => {
       if (!element.responses || element.responses.length === 0) {
         return []
@@ -2237,6 +2260,7 @@ export async function getPreviousStackEvaluation(
         return {
           ...element.elementData,
           instanceId: element.id,
+          elementType: ElementType.FLASHCARD,
           score: 0,
           correctness: null,
           lastResponse: element.responses[0]!
@@ -2251,6 +2275,7 @@ export async function getPreviousStackEvaluation(
         return {
           ...element.elementData,
           instanceId: element.id,
+          elementType: ElementType.CONTENT,
           score: 0,
           correctness: 1,
           lastResponse: element.responses[0]!
@@ -2299,7 +2324,7 @@ export async function getPreviousStackEvaluation(
           xpAwarded: evaluation?.xp,
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
+        } as InstanceEvaluation
       } else if (
         element.elementData.type === ElementType.NUMERICAL &&
         element.elementType === ElementType.NUMERICAL
@@ -2342,7 +2367,7 @@ export async function getPreviousStackEvaluation(
             : [],
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
+        } as InstanceEvaluation
       } else if (
         element.elementData.type === ElementType.FREE_TEXT &&
         element.elementType === ElementType.FREE_TEXT
@@ -2385,7 +2410,7 @@ export async function getPreviousStackEvaluation(
             : [],
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
+        } as InstanceEvaluation
       } else {
         throw new Error(
           'Evaluation of previous stack answers not implemented for type ' +
@@ -2451,7 +2476,7 @@ export async function respondToElementStack(
 
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
-  const evaluationsArr: IInstanceEvaluation[] = []
+  const evaluationsArr: InstanceEvaluation[] = []
 
   // compute average answer time per element / question by dividing the
   // answer time for the entire stack through the number of responses
@@ -2536,7 +2561,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else if (response.type === ElementType.NUMERICAL) {
       const result = await respondToQuestion(
@@ -2563,7 +2588,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else if (response.type === ElementType.FREE_TEXT) {
       const result = await respondToQuestion(
@@ -2590,7 +2615,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else {
       throw new Error(
