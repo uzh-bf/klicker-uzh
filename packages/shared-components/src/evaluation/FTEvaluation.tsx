@@ -5,12 +5,12 @@ import type {
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
-interface Props {
+interface FTEvaluationProps {
   options: FreeTextQuestionOptions
   evaluation: FreeTextInstanceEvaluation
 }
 
-function FTEvaluation({ options, evaluation }: Props) {
+function FTEvaluation({ options, evaluation }: FTEvaluationProps) {
   const t = useTranslations()
 
   const answers = Object.entries(

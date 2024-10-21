@@ -334,6 +334,8 @@ const sharedQuestionResponseProps = (t: any) => ({
   nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
   wrongCount: t.exposeInt('wrongCount'),
   lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
+
+  // TODO: introduce proper typing
   aggregatedResponses: t.expose('aggregatedResponses', {
     type: 'Json',
     nullable: true,

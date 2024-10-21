@@ -723,12 +723,12 @@ input GroupActivityGradingInput {
 
 type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
-  decisions: Json
+  decisions: [GroupActivityDecision!]
   decisionsSubmittedAt: Date
   groupActivityId: ID!
   groupName: String
   id: Int!
-  results: Json
+  results: GroupActivityResults
   resultsComputedAt: Date
 }
 

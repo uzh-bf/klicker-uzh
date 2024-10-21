@@ -26,8 +26,8 @@ interface GroupActivityStackProps {
   activityId: number
   activityEnded: boolean
   stack: ElementStack
-  decisions?: GroupActivityDecision[]
-  results: GroupActivityResults
+  decisions?: GroupActivityDecision[] | null
+  results?: GroupActivityResults | null
   submittedAt?: string
 }
 
