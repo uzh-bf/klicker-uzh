@@ -52,12 +52,14 @@ function QuestionList({
           type={question.type}
           content={question.content}
           hasAnswerFeedbacks={
-            ('options' in question && question.options.hasAnswerFeedbacks) ??
-            false
+            'options' in question
+              ? (question.options.hasAnswerFeedbacks ?? false)
+              : true
           }
           hasSampleSolution={
-            ('options' in question && question.options.hasSampleSolution) ??
-            false
+            'options' in question
+              ? (question.options.hasSampleSolution ?? false)
+              : true
           }
           onCheck={() => setSelectedQuestions(question.id, question)}
           unsetDeletedQuestion={unsetDeletedQuestion}

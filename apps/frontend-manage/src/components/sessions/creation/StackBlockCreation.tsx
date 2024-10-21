@@ -349,8 +349,9 @@ function StackBlockCreation({
               title: question.name,
               type: question.type,
               hasSampleSolution:
-                ('options' in question && question.options.hasSampleSolution) ??
-                false,
+                'options' in question
+                  ? (question.options.hasSampleSolution ?? false)
+                  : true,
             }))
             const stackElements = stack.elements.concat(newElements)
 
