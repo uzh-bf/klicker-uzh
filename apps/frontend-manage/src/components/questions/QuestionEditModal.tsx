@@ -501,14 +501,16 @@ function QuestionEditModal({
                         className={{ label: 'text-gray-600' }}
                       />
                     )}
-                    {QUESTION_GROUPS.CHOICES.includes(values.type) && (
+                    {(values.type === ElementType.Sc ||
+                      values.type === ElementType.Mc ||
+                      values.type === ElementType.Kprim) && (
                       <FormikSwitchField
                         name="options.hasAnswerFeedbacks"
                         label={t('manage.questionPool.answerFeedbacks')}
-                        disabled={!values.options?.hasSampleSolution}
+                        disabled={!values.options.hasSampleSolution}
                         className={{
                           root: twMerge(
-                            !values.options?.hasSampleSolution && 'opacity-50'
+                            !values.options.hasSampleSolution && 'opacity-50'
                           ),
                           label: 'text-gray-600',
                         }}
@@ -535,31 +537,25 @@ function QuestionEditModal({
                     )}
                   </div>
 
-                  {QUESTION_GROUPS.CHOICES.includes(values.type) && (
+                  {(values.type === ElementType.Sc ||
+                    values.type === ElementType.Mc ||
+                    values.type === ElementType.Kprim) && (
                     <FieldArray name="options.choices">
                       {({ push, remove, move }: FieldArrayRenderProps) => {
                         return (
                           <div className="flex w-full flex-col gap-2 pt-2">
-                            {values.options?.choices?.map(
-                              (
-                                choice: {
-                                  ix: number
-                                  value: string
-                                  correct?: boolean
-                                  feedback?: string
-                                },
-                                index: number
-                              ) => (
+                            {values.options.choices.map(
+                              (choice, index: number) => (
                                 <div
                                   key={index}
                                   className={twMerge(
                                     'border-uzh-grey-80 w-full rounded',
-                                    values.options?.hasSampleSolution && 'p-2',
+                                    values.options.hasSampleSolution && 'p-2',
                                     choice.correct &&
-                                      values.options?.hasSampleSolution &&
+                                      values.options.hasSampleSolution &&
                                       'border-green-300 bg-green-100',
                                     !choice.correct &&
-                                      values.options?.hasSampleSolution &&
+                                      values.options.hasSampleSolution &&
                                       'border-red-300 bg-red-100'
                                   )}
                                 >
@@ -581,7 +577,7 @@ function QuestionEditModal({
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
-                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}-${values.options.choices[index].ix}`}
+                                          key={`${values.type}-choice-${index}-${values.options.choices.length}-${values.options.choices[index].ix}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -604,7 +600,7 @@ function QuestionEditModal({
                                         />
                                       )}
                                     </FastField>
-                                    {values.options?.hasSampleSolution && (
+                                    {values.options.hasSampleSolution && (
                                       <div className="ml-2 flex flex-row items-center">
                                         <div className="mr-2">
                                           {t('shared.generic.correct')}?
@@ -653,7 +649,7 @@ function QuestionEditModal({
                                         className={{ root: 'px-auto py-0.5' }}
                                         disabled={
                                           index ===
-                                          values.options?.choices.length - 1
+                                          values.options.choices.length - 1
                                         }
                                         onClick={() => move(index, index + 1)}
                                         data={{
@@ -669,7 +665,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => {
                                         // decrement the choice.ix value of all answers after this one
-                                        values.options?.choices
+                                        values.options.choices
                                           .slice(index + 1)
                                           .forEach((choice) => {
                                             setFieldValue(
@@ -695,8 +691,8 @@ function QuestionEditModal({
                                     </Button>
                                   </div>
 
-                                  {values.options?.hasAnswerFeedbacks &&
-                                    values.options?.hasSampleSolution && (
+                                  {values.options.hasAnswerFeedbacks &&
+                                    values.options.hasSampleSolution && (
                                       <div className="">
                                         <div className="mt-2 text-sm font-bold">
                                           {t('shared.generic.feedback')}
@@ -755,21 +751,21 @@ function QuestionEditModal({
                                 root: twMerge(
                                   'border-uzh-grey-100 border border-solid font-bold',
                                   values.type === ElementType.Kprim &&
-                                    values.options?.choices.length >= 4 &&
+                                    values.options.choices.length >= 4 &&
                                     'cursor-not-allowed opacity-50'
                                 ),
                               }}
                               disabled={
                                 values.type === ElementType.Kprim &&
-                                values.options?.choices.length >= 4
+                                values.options.choices.length >= 4
                               }
                               onClick={() =>
                                 push({
-                                  ix: values.options?.choices[
-                                    values.options?.choices.length - 1
+                                  ix: values.options.choices[
+                                    values.options.choices.length - 1
                                   ]
-                                    ? values.options?.choices[
-                                        values.options?.choices.length - 1
+                                    ? values.options.choices[
+                                        values.options.choices.length - 1
                                       ].ix + 1
                                     : 0,
                                   value: '<br>',
@@ -820,7 +816,7 @@ function QuestionEditModal({
                           />
                         </div>
                       </div>
-                      {values.options?.hasSampleSolution && (
+                      {values.options.hasSampleSolution && (
                         <div className="mt-3">
                           <FormLabel
                             required
@@ -833,7 +829,7 @@ function QuestionEditModal({
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
                               <div className="flex w-max flex-col gap-1">
-                                {values.options?.solutionRanges
+                                {values.options.solutionRanges
                                   ? values.options.solutionRanges.map(
                                       (_range: any, index: number) => (
                                         <div
@@ -915,40 +911,44 @@ function QuestionEditModal({
                           hideError
                         />
                       </div>
-                      {values.options?.hasSampleSolution && (
+                      {values.options.hasSampleSolution && (
                         <FieldArray name="options.solutions">
                           {({ push, remove }: FieldArrayRenderProps) => (
                             <div className="flex w-max flex-col gap-1">
-                              {values.options?.solutions?.map(
-                                (_solution, index) => (
-                                  <div
-                                    className="flex flex-row items-end gap-2"
-                                    key={`${index}-${values.options?.solutions.length}`}
-                                  >
-                                    <FormikTextField
-                                      required
-                                      name={`options.solutions.${index}`}
-                                      label={t(
-                                        'manage.questionForms.possibleSolutionN',
-                                        { number: String(index + 1) }
-                                      )}
-                                      type="text"
-                                      placeholder={t('shared.generic.solution')}
-                                    />
-                                    <Button
-                                      onClick={() => remove(index)}
-                                      className={{
-                                        root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
-                                      }}
-                                      data={{
-                                        cy: `delete-solution-ix-${index}`,
-                                      }}
-                                    >
-                                      {t('shared.generic.delete')}
-                                    </Button>
-                                  </div>
-                                )
-                              )}
+                              {values.options.solutions
+                                ? values.options.solutions.map(
+                                    (_solution, index) => (
+                                      <div
+                                        className="flex flex-row items-end gap-2"
+                                        key={`${index}-${values.options.solutions!.length}`}
+                                      >
+                                        <FormikTextField
+                                          required
+                                          name={`options.solutions.${index}`}
+                                          label={t(
+                                            'manage.questionForms.possibleSolutionN',
+                                            { number: String(index + 1) }
+                                          )}
+                                          type="text"
+                                          placeholder={t(
+                                            'shared.generic.solution'
+                                          )}
+                                        />
+                                        <Button
+                                          onClick={() => remove(index)}
+                                          className={{
+                                            root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
+                                          }}
+                                          data={{
+                                            cy: `delete-solution-ix-${index}`,
+                                          }}
+                                        >
+                                          {t('shared.generic.delete')}
+                                        </Button>
+                                      </div>
+                                    )
+                                  )
+                                : null}
                               <Button
                                 fluid
                                 className={{
