@@ -66,7 +66,7 @@ function Histogram({
   }, [numBins])
 
   if (data.questionData?.__typename !== 'NumericalQuestionData') {
-    return <div>{t('manage.evaluation.histogramError')}</div>
+    return <div>{t('manage.evaluation.histogramNotSupported')}</div>
   }
 
   const questionData = data.questionData

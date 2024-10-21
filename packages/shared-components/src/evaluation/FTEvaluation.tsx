@@ -1,13 +1,13 @@
 import type {
+  FreeTextInstanceEvaluation,
   FreeTextQuestionOptions,
-  InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
 interface Props {
   options: FreeTextQuestionOptions
-  evaluation: InstanceEvaluation
+  evaluation: FreeTextInstanceEvaluation
 }
 
 function FTEvaluation({ options, evaluation }: Props) {

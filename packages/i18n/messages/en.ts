@@ -1464,6 +1464,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
       noContentEvaluation:
         'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
+      histogramNotSupported:
+        'Histograms are not supported for this question type.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

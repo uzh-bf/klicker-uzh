@@ -1,4 +1,7 @@
-import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import {
+  InstanceResult,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import Histogram from '@klicker-uzh/shared-components/src/Histogram'
 import { useTranslations } from 'next-intl'
 import React from 'react'
@@ -44,7 +47,13 @@ function Chart({
   } else if (chartType === 'histogram') {
     return (
       <Histogram
-        data={data}
+        data={{
+          ...data,
+          questionData: {
+            ...(data.questionData as NumericalQuestionData),
+            __typename: 'NumericalQuestionData',
+          },
+        }}
         showSolution={{ general: showSolution, ...statisticsShowSolution }}
         textSize={textSize.text}
       />

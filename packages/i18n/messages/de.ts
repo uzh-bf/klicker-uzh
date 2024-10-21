@@ -1477,6 +1477,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
       noContentEvaluation:
         'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
+      histogramNotSupported:
+        'Histogramme werden für diesen Fragetyp nicht unterstützt.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

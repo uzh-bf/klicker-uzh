@@ -1,11 +1,9 @@
 import type {
   ElementInstance,
+  FlashcardCorrectness,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  ElementType,
-  FlashcardCorrectnessType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import React from 'react'
 import ChoicesQuestion from './ChoicesQuestion'
@@ -23,7 +21,7 @@ export type StudentResponseType = Record<
   number,
   | {
       type: ElementType.Flashcard
-      response?: FlashcardCorrectnessType
+      response?: FlashcardCorrectness
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -72,15 +70,15 @@ function StudentElement({
   hideReadButton = false,
   disabledInput = false,
 }: StudentElementProps) {
+  const evaluation = stackStorage?.[element.id]?.evaluation
+
   if (element.elementData.__typename === 'FlashcardElementData') {
     return (
       <Flashcard
         key={element.id}
         content={element.elementData.content}
         explanation={element.elementData.explanation!}
-        response={
-          studentResponse[element.id]?.response as FlashcardCorrectnessType
-        }
+        response={studentResponse[element.id]?.response as FlashcardCorrectness}
         setResponse={(studentResponse) => {
           setStudentResponse((response) => {
             return {
@@ -95,7 +93,7 @@ function StudentElement({
           })
         }}
         existingResponse={
-          stackStorage?.[element.id]?.response as FlashcardCorrectnessType
+          stackStorage?.[element.id]?.response as FlashcardCorrectness
         }
         elementIx={elementIx}
       />
@@ -126,7 +124,11 @@ function StudentElement({
         existingResponse={
           stackStorage?.[element.id]?.response as Record<number, boolean>
         }
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />
@@ -153,7 +155,11 @@ function StudentElement({
           })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'NumericalInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />
@@ -180,7 +186,11 @@ function StudentElement({
           })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
-        evaluation={stackStorage?.[element.id]?.evaluation}
+        evaluation={
+          evaluation && evaluation.__typename === 'FreeTextInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
       />

@@ -1,5 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { BaseQuestionData } from '@klicker-uzh/types'
+import type {
+  BaseQuestionData,
+  IInstanceEvaluationChoices,
+  IInstanceEvaluationContent,
+  IInstanceEvaluationFlashcard,
+  IInstanceEvaluationFreeText,
+  IInstanceEvaluationNumerical,
+  IQuestionFeedback,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import { ElementData, ElementInstanceOptions } from './elementData.js'
@@ -8,8 +16,15 @@ import {
   ElementInstanceType,
   ElementStatus,
   ElementType,
+  NumericalSolutionRange,
   QuestionData,
 } from './questionData.js'
+import {
+  SingleQuestionResponseChoices,
+  SingleQuestionResponseContent,
+  SingleQuestionResponseFlashcard,
+  SingleQuestionResponseValue,
+} from './session.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -107,12 +122,7 @@ export const ResponseInput = builder.inputType('ResponseInput', {
   }),
 })
 
-export interface IQuestionFeedback {
-  ix: number
-  feedback?: string
-  correct?: boolean
-  value: string
-}
+// ----- INSTANCE EVALUATION INTERFACE -----
 export const QuestionFeedback = builder
   .objectRef<IQuestionFeedback>('QuestionFeedback')
   .implement({
@@ -124,63 +134,138 @@ export const QuestionFeedback = builder
     }),
   })
 
-export interface IInstanceEvaluation {
-  instanceId: number
-  pointsMultiplier?: number
-  explanation?: string | null
-  feedbacks?: IQuestionFeedback[]
-  choices?: object[]
-  numAnswers?: number
-  answers?: object[]
-  score: number
-  pointsAwarded?: number | null
-  percentile?: number
-  newPointsFrom?: Date
-  xpAwarded?: number
-  newXpFrom?: Date
-  solutions?: string[]
-  solutionRanges?: { min?: number | null; max?: number | null }[]
-  lastResponse?: object | null
-  correctness?: number | null
+function sharedEvaluationProps(t) {
+  return {
+    instanceId: t.exposeInt('instanceId'),
+    elementType: t.expose('elementType', { type: ElementType }),
+
+    score: t.exposeFloat('score'),
+    xp: t.exposeInt('xp', { nullable: true }),
+    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    explanation: t.exposeString('explanation', { nullable: true }),
+    feedbacks: t.expose('feedbacks', {
+      type: [QuestionFeedback],
+      nullable: true,
+    }),
+
+    numAnswers: t.exposeInt('numAnswers', { nullable: true }),
+    pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
+    percentile: t.exposeFloat('percentile', { nullable: true }),
+    newPointsFrom: t.expose('newPointsFrom', {
+      type: 'Date',
+      nullable: true,
+    }),
+    xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
+    newXpFrom: t.expose('newXpFrom', {
+      type: 'Date',
+      nullable: true,
+    }),
+    correctness: t.exposeFloat('correctness', { nullable: true }),
+  }
 }
-export const InstanceEvaluation = builder
-  .objectRef<IInstanceEvaluation>('InstanceEvaluation')
+
+export const ChoicesInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationChoices>('ChoicesInstanceEvaluation')
   .implement({
     fields: (t) => ({
-      instanceId: t.exposeInt('instanceId'),
-      pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-      explanation: t.exposeString('explanation', { nullable: true }),
-      feedbacks: t.expose('feedbacks', {
-        type: [QuestionFeedback],
+      ...sharedEvaluationProps(t),
+      // ? differing number of keys - no graphql representation available
+      choices: t.expose('choices', { type: 'Json', nullable: true }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseChoices,
         nullable: true,
       }),
-      choices: t.expose('choices', { type: 'Json', nullable: true }),
-      numAnswers: t.exposeInt('numAnswers', { nullable: true }),
+    }),
+  })
+
+export const NumericalInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationNumerical>('NumericalInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      // ? differing number of keys - no graphql representation available
       answers: t.expose('answers', {
         type: 'Json',
         nullable: true,
       }),
-      score: t.exposeFloat('score'),
-      pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
-      percentile: t.exposeFloat('percentile', { nullable: true }),
-      newPointsFrom: t.expose('newPointsFrom', {
-        type: 'Date',
-        nullable: true,
-      }),
-      xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
-      newXpFrom: t.expose('newXpFrom', {
-        type: 'Date',
-        nullable: true,
-      }),
-      solutions: t.expose('solutions', { type: 'Json', nullable: true }),
       solutionRanges: t.expose('solutionRanges', {
+        type: [NumericalSolutionRange],
+        nullable: true,
+      }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseValue,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const FreeTextInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationFreeText>('FreeTextInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      // ? differing number of keys - no graphql representation available
+      answers: t.expose('answers', {
         type: 'Json',
         nullable: true,
       }),
-      lastResponse: t.expose('lastResponse', { type: 'Json', nullable: true }),
-      correctness: t.exposeFloat('correctness', { nullable: true }),
+      solutions: t.exposeStringList('solutions', { nullable: true }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseValue,
+        nullable: true,
+      }),
     }),
   })
+
+export const FlashcardInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationFlashcard>('FlashcardInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseFlashcard,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const ContentInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationContent>('ContentInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseContent,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
+  types: [
+    ChoicesInstanceEvaluation,
+    NumericalInstanceEvaluation,
+    FreeTextInstanceEvaluation,
+    FlashcardInstanceEvaluation,
+    ContentInstanceEvaluation,
+  ],
+  resolveType: (element) => {
+    switch (element.elementType) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesInstanceEvaluation
+      case DB.ElementType.NUMERICAL:
+        return NumericalInstanceEvaluation
+      case DB.ElementType.FREE_TEXT:
+        return FreeTextInstanceEvaluation
+      case DB.ElementType.FLASHCARD:
+        return FlashcardInstanceEvaluation
+      case DB.ElementType.CONTENT:
+        return ContentInstanceEvaluation
+    }
+  },
+})
 
 export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
@@ -198,6 +283,7 @@ export const Element = ElementRef.implement({
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
 
+    // TODO: introduce proper typing
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 

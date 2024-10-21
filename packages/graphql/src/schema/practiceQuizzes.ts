@@ -1,15 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   FlashcardCorrectness,
+  type InstanceEvaluation as InstanceEvaluationType,
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { type ICourse, CourseRef } from './course.js'
-import {
-  type IInstanceEvaluation,
-  ElementInstanceRef,
-  InstanceEvaluation,
-} from './question.js'
+import { CourseRef, type ICourse } from './course.js'
+import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 import { ElementType } from './questionData.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -70,7 +67,7 @@ export interface IStackFeedback {
   id: number
   status: StackFeedbackStatusType
   score?: number
-  evaluations?: IInstanceEvaluation[]
+  evaluations?: InstanceEvaluationType[]
 }
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')

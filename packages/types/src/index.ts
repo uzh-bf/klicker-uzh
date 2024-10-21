@@ -49,11 +49,11 @@ export type AvatarSettings = {
 
 // ----- ELEMENT DATA AND INSTANCES -----
 // #region
-export type QuestionResponseChoices = {
+export type SingleQuestionResponseChoices = {
   choices: number[]
 }
 
-export type QuestionResponseValue = {
+export type SingleQuestionResponseValue = {
   value: string
 }
 
@@ -77,19 +77,19 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
-export type QuestionResponseFlashcard = {
+export type SingleQuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
 
-export type QuestionResponseContent = {
+export type SingleQuestionResponseContent = {
   viewed: boolean
 }
 
-export type QuestionResponse =
-  | QuestionResponseChoices
-  | QuestionResponseValue
-  | QuestionResponseFlashcard
-  | QuestionResponseContent
+export type SingleQuestionResponse =
+  | SingleQuestionResponseChoices
+  | SingleQuestionResponseValue
+  | SingleQuestionResponseFlashcard
+  | SingleQuestionResponseContent
 
 export type QuestionResultsChoices = {
   choices: Record<string, number>
@@ -148,6 +148,11 @@ export type Choice = {
   feedback?: string
 }
 
+export type NumericalSolutionRange = {
+  min?: number | null
+  max?: number | null
+}
+
 export type ChoicesInputType = {
   type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
   value: number[]
@@ -181,10 +186,7 @@ export interface ElementOptionsNumerical extends BaseQuestionOptions {
     min?: number
     max?: number
   }
-  solutionRanges?: {
-    min?: number | null
-    max?: number | null
-  }[]
+  solutionRanges?: NumericalSolutionRange[]
 }
 
 export interface ElementOptionsFreeText extends BaseQuestionOptions {
@@ -371,6 +373,70 @@ export type GroupActivityResults = {
     correctness?: ResponseCorrectness
   }[]
 }
+// #endregion
+
+// ----- INSTANCE EVALUATION -----
+// #region
+export interface IQuestionFeedback {
+  ix: number
+  feedback?: string
+  correct?: boolean
+  value: string
+}
+
+export interface IBaseInstanceEvaluation {
+  instanceId: number
+  elementType: ElementType
+  score: number
+  xp?: number | null
+  pointsMultiplier: number
+  explanation?: string | null
+  feedbacks?: IQuestionFeedback[]
+  numAnswers?: number
+  pointsAwarded?: number | null
+  percentile?: number
+  newPointsFrom?: Date
+  xpAwarded?: number
+  newXpFrom?: Date
+  correctness?: number | null
+}
+
+export interface IInstanceEvaluationChoices extends IBaseInstanceEvaluation {
+  choices: Record<string, number> // instance results type cannot be represented with exact keys
+  lastResponse?: SingleQuestionResponseChoices | null
+}
+export type InstanceEvaluationChoices = IInstanceEvaluationChoices
+
+export interface IInstanceEvaluationNumerical extends IBaseInstanceEvaluation {
+  answers?: Record<string, { count: number; value: string; correct?: boolean }> // instance results type cannot be represented with exact keys
+  solutionRanges?: NumericalSolutionRange[]
+  lastResponse?: SingleQuestionResponseValue | null
+}
+export type InstanceEvaluationNumerical = IInstanceEvaluationNumerical
+
+export interface IInstanceEvaluationFreeText extends IBaseInstanceEvaluation {
+  answers?: Record<string, { count: number; value: string; correct?: boolean }> // instance results type cannot be represented with exact keys
+  solutions: string[]
+  lastResponse?: SingleQuestionResponseValue | null
+}
+export type InstanceEvaluationFreeText = IInstanceEvaluationFreeText
+
+export interface IInstanceEvaluationFlashcard extends IBaseInstanceEvaluation {
+  lastResponse?: SingleQuestionResponseFlashcard | null
+}
+export type InstanceEvaluationFlashcard = IInstanceEvaluationFlashcard
+
+export interface IInstanceEvaluationContent extends IBaseInstanceEvaluation {
+  lastResponse?: SingleQuestionResponseContent | null
+}
+export type InstanceEvaluationContent = IInstanceEvaluationContent
+
+export type InstanceEvaluation =
+  | IInstanceEvaluationChoices
+  | IInstanceEvaluationNumerical
+  | IInstanceEvaluationFreeText
+  | IInstanceEvaluationFlashcard
+  | IInstanceEvaluationContent
 // #endregion
 
 // ----- ELEMENT STACKS -----
