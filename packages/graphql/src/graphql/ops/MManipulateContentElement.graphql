@@ -15,7 +15,7 @@ mutation ManipulateContentElement(
     tags: $tags
   ) {
     __typename
-    ... on FlashcardElement {
+    ... on ContentElement {
       id
       name
       status
