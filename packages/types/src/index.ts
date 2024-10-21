@@ -352,26 +352,29 @@ export type ElementInstanceResults =
   | FlashcardResults
   | ContentResults
 
-export type GroupActivityDecisions = {
+export type GroupActivityDecision = {
   instanceId: number
   type: ElementType
   freeTextResponse?: string | null
   choicesResponse?: number[] | null
   numericalResponse?: number | null
   contentResponse?: boolean | null
-}[]
+}
+export type GroupActivityDecisions = GroupActivityDecision[]
+
+export type GroupActivityGrading = {
+  instanceId: number
+  score: number
+  maxPoints: number
+  feedback?: string | null
+  correctness?: ResponseCorrectness
+}
 
 export type GroupActivityResults = {
   passed: boolean
   points: number
   comment?: string | null
-  grading: {
-    instanceId: number
-    score: number
-    maxPoints: number
-    feedback?: string | null
-    correctness?: ResponseCorrectness
-  }[]
+  grading: GroupActivityGrading[]
 }
 // #endregion
 

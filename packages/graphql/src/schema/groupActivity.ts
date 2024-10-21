@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ResponseCorrectness } from '@klicker-uzh/types'
+import {
+  type GroupActivityDecision as GroupActivityDecisionType,
+  type GroupActivityGrading as GroupActivityGradingType,
+  type GroupActivityResults as GroupActivityResultsType,
+  ResponseCorrectness,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
 import {
@@ -84,17 +89,8 @@ export const GroupActivity = GroupActivityRef.implement({
   }),
 })
 
-export interface IGroupActivityDecision {
-  instanceId: number
-  type: DB.ElementType
-  freeTextResponse?: string
-  choicesResponse?: number[]
-  numericalResponse?: number
-  contentResponse?: boolean
-}
 export const GroupActivityDecisionRef =
-  builder.objectRef<IGroupActivityDecision>('GroupActivityDecision')
-
+  builder.objectRef<GroupActivityDecisionType>('GroupActivityDecision')
 export const GroupActivityDecision = GroupActivityDecisionRef.implement({
   fields: (t) => ({
     instanceId: t.exposeInt('instanceId'),
@@ -106,16 +102,8 @@ export const GroupActivityDecision = GroupActivityDecisionRef.implement({
   }),
 })
 
-export interface IGroupActivityGrading {
-  instanceId: number
-  score: number
-  maxPoints: number
-  feedback?: string | null
-}
-export const GroupActivityGradingRef = builder.objectRef<IGroupActivityGrading>(
-  'GroupActivityGrading'
-)
-
+export const GroupActivityGradingRef =
+  builder.objectRef<GroupActivityGradingType>('GroupActivityGrading')
 export const GroupActivityGrading = GroupActivityGradingRef.implement({
   fields: (t) => ({
     instanceId: t.exposeInt('instanceId'),
@@ -125,16 +113,8 @@ export const GroupActivityGrading = GroupActivityGradingRef.implement({
   }),
 })
 
-export interface IGroupActivityResults {
-  passed: boolean
-  points: number
-  comment?: string | null
-  grading: IGroupActivityGrading[]
-}
-export const GroupActivityResultsRef = builder.objectRef<IGroupActivityResults>(
-  'GroupActivityResults'
-)
-
+export const GroupActivityResultsRef =
+  builder.objectRef<GroupActivityResultsType>('GroupActivityResults')
 export const GroupActivityResults = GroupActivityResultsRef.implement({
   fields: (t) => ({
     passed: t.exposeBoolean('passed'),
@@ -155,12 +135,18 @@ export const GroupActivityInstanceRef =
 export const GroupActivityInstance = GroupActivityInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    decisions: t.expose('decisions', { type: 'Json', nullable: true }),
+    decisions: t.expose('decisions', {
+      type: [GroupActivityDecision],
+      nullable: true,
+    }),
     decisionsSubmittedAt: t.expose('decisionsSubmittedAt', {
       type: 'Date',
       nullable: true,
     }),
-    results: t.expose('results', { type: 'Json', nullable: true }),
+    results: t.expose('results', {
+      type: GroupActivityResults,
+      nullable: true,
+    }),
     resultsComputedAt: t.expose('resultsComputedAt', {
       type: 'Date',
       nullable: true,
