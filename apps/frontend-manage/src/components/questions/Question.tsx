@@ -266,7 +266,6 @@ function Question({
                       },
                       optimisticResponse: {
                         deleteQuestion: {
-                          __typename: 'Element',
                           id,
                         },
                       },

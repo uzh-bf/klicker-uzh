@@ -51,8 +51,14 @@ function QuestionList({
           status={question.status}
           type={question.type}
           content={question.content}
-          hasAnswerFeedbacks={question.options.hasAnswerFeedbacks}
-          hasSampleSolution={question.options.hasSampleSolution}
+          hasAnswerFeedbacks={
+            ('options' in question && question.options.hasAnswerFeedbacks) ??
+            false
+          }
+          hasSampleSolution={
+            ('options' in question && question.options.hasSampleSolution) ??
+            false
+          }
           onCheck={() => setSelectedQuestions(question.id, question)}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}

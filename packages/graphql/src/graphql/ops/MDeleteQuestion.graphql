@@ -1,7 +1,5 @@
 mutation DeleteQuestion($id: Int!) {
   deleteQuestion(id: $id) {
-    __typename
-
     ... on ChoicesElement {
       id
     }
