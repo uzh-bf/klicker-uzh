@@ -27,16 +27,12 @@ mutation ManipulateFreeTextQuestion(
       content
       explanation
       pointsMultiplier
-
-      questionData {
-        __typename
-        options {
-          hasSampleSolution
-          restrictions {
-            maxLength
-          }
-          solutions
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
         }
+        solutions
       }
 
       tags {

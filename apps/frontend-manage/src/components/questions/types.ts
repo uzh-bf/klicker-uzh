@@ -9,7 +9,7 @@ interface SharedQuestionFormProps {
   name: string
   status: ElementStatus
   content: string
-  pointsMultiplier: number
+  pointsMultiplier: string
   tags?: string[] | null
 }
 
@@ -18,7 +18,7 @@ interface QuestionFormTypeChoices extends SharedQuestionFormProps {
   explanation?: string | null
   options: {
     choices: {
-      content: string
+      content?: string | null
       ix?: number | null
       correct?: boolean | null
       feedback?: string | null
@@ -39,11 +39,13 @@ interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
     restrictions?: {
       min?: number | null
       max?: number | null
-    }
-    solutionRanges?: {
-      min?: number | null
-      max?: number | null
-    }[]
+    } | null
+    solutionRanges?:
+      | {
+          min?: number | null
+          max?: number | null
+        }[]
+      | null
   }
 }
 
@@ -52,10 +54,10 @@ interface QuestionFormTypesFreeText extends SharedQuestionFormProps {
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
-    restrictions: {
+    restrictions?: {
       maxLength?: number | null
-    }
-    solutions: string[] | null
+    } | null
+    solutions?: string[] | null
   }
 }
 

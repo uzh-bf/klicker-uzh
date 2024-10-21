@@ -9,7 +9,6 @@ import {
   ElementDisplayMode,
   ElementInstance,
   ElementInstanceType,
-  ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -51,17 +50,18 @@ import {
   Formik,
 } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useMemo, useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import SuspendedTagInput from './tags/SuspendedTagInput'
+import useElementFormInitialValues from './useElementFormInitialValues'
 import useQuestionTypeOptions from './useQuestionTypeOptions'
 import useStatusOptions from './useStatusOptions'
 import useValidationSchema from './useValidationSchema'
 
-enum QuestionEditMode {
+export enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
   EDIT = 'EDIT',
   CREATE = 'CREATE',
@@ -120,83 +120,13 @@ function QuestionEditModal({
   const statusOptions = useStatusOptions()
   const questionTypeOptions = useQuestionTypeOptions()
 
-  const question = useMemo(() => {
-    if (mode === QuestionEditMode.CREATE) {
-      return {
-        status: ElementStatus.Ready,
-        type: ElementType.Sc,
-        name: '',
-        content: '',
-        explanation: '',
-        tags: [],
-        pointsMultiplier: '1',
-        options: {
-          hasSampleSolution: false,
-          hasAnswerFeedbacks: false,
-          displayMode: ElementDisplayMode.List,
-          choices: [
-            { ix: 0, value: undefined, correct: false, feedback: undefined },
-          ],
-        },
-      }
-    }
+  const initialValues = useElementFormInitialValues({
+    mode,
+    question: dataQuestion?.question,
+    isDuplication,
+  })
 
-    // const temp = dataQuestion?.question?.questionData?.options
-    const options =
-      dataQuestion?.question?.questionData?.__typename !==
-        'ContentQuestionData' &&
-      dataQuestion?.question?.questionData?.__typename !==
-        'FlashcardQuestionData'
-        ? dataQuestion?.question?.questionData?.options!
-        : null
-
-    return dataQuestion?.question?.questionData
-      ? {
-          ...dataQuestion.question,
-          name: isDuplication
-            ? `${dataQuestion.question.name} (Copy)`
-            : dataQuestion.question.name,
-          pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
-          explanation: dataQuestion.question.explanation ?? '',
-          tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
-          // TODO: improve this structure in new component - should not be manually defined! - figure out alternative way to convert all null values to undefined for form validation to work properly
-          options: options
-            ? {
-                hasSampleSolution: options.hasSampleSolution,
-                hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? undefined,
-                displayMode: options.displayMode ?? undefined,
-                unit: options.unit ?? undefined,
-                accuracy: options.accuracy ?? undefined,
-                placeholder: options.placeholder ?? undefined,
-                restrictions: options.restrictions
-                  ? {
-                      min: options.restrictions.min ?? undefined,
-                      max: options.restrictions.max ?? undefined,
-                      maxLength: options.restrictions.maxLength ?? undefined,
-                    }
-                  : undefined,
-                choices: options.choices
-                  ? options.choices.map((choice: any) => ({
-                      ix: choice.ix,
-                      value: choice.value,
-                      correct: choice.correct ?? undefined,
-                      feedback: choice.feedback ?? undefined,
-                    }))
-                  : undefined,
-                solutionRanges: options.solutionRanges
-                  ? options.solutionRanges.map((range: any) => ({
-                      min: range.min ?? undefined,
-                      max: range.max ?? undefined,
-                    }))
-                  : undefined,
-                solutions: options.solutions ?? undefined,
-              }
-            : undefined,
-        }
-      : {}
-  }, [dataQuestion?.question, mode])
-
-  if (!question || Object.keys(question).length === 0) {
+  if (!initialValues || Object.keys(initialValues).length === 0) {
     return <div />
   }
 
@@ -204,7 +134,7 @@ function QuestionEditModal({
     <Formik
       validateOnMount
       enableReinitialize
-      initialValues={question}
+      initialValues={initialValues}
       validationSchema={questionManipulationSchema}
       // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values, { setSubmitting }) => {

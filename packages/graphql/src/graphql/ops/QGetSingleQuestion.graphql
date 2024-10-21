@@ -4,6 +4,7 @@ query GetSingleQuestion($id: Int!) {
 
     ... on ChoicesElement {
       id
+      version
       name
       status
       type
@@ -11,38 +12,29 @@ query GetSingleQuestion($id: Int!) {
       explanation
       pointsMultiplier
 
-      questionData {
+      options {
         __typename
-        id
-        questionId
-        name
-        type
-        content
-        explanation
-        pointsMultiplier
-
-        options {
-          __typename
-          hasSampleSolution
-          hasAnswerFeedbacks
-          displayMode
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
+        hasSampleSolution
+        hasAnswerFeedbacks
+        displayMode
+        choices {
+          ix
+          correct
+          feedback
+          value
         }
       }
 
       tags {
         id
         name
+        order
       }
     }
 
     ... on NumericalElement {
       id
+      version
       name
       status
       type
@@ -50,40 +42,31 @@ query GetSingleQuestion($id: Int!) {
       explanation
       pointsMultiplier
 
-      questionData {
-        __typename
-        id
-        questionId
-        name
-        type
-        content
-        explanation
-        pointsMultiplier
-
-        options {
-          hasSampleSolution
-          accuracy
-          placeholder
-          unit
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
         }
       }
 
       tags {
         id
         name
+        order
       }
     }
 
     ... on FreeTextElement {
       id
+      version
       name
       status
       type
@@ -91,33 +74,24 @@ query GetSingleQuestion($id: Int!) {
       explanation
       pointsMultiplier
 
-      questionData {
-        __typename
-        id
-        questionId
-        name
-        type
-        content
-        explanation
-        pointsMultiplier
-
-        options {
-          hasSampleSolution
-          restrictions {
-            maxLength
-          }
-          solutions
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
         }
+        solutions
       }
 
       tags {
         id
         name
+        order
       }
     }
 
     ... on FlashcardElement {
       id
+      version
       name
       status
       type
@@ -125,18 +99,16 @@ query GetSingleQuestion($id: Int!) {
       explanation
       pointsMultiplier
 
-      questionData {
-        __typename
-      }
-
       tags {
         id
         name
+        order
       }
     }
 
     ... on ContentElement {
       id
+      version
       name
       status
       type
@@ -144,13 +116,10 @@ query GetSingleQuestion($id: Int!) {
       explanation
       pointsMultiplier
 
-      questionData {
-        __typename
-      }
-
       tags {
         id
         name
+        order
       }
     }
   }
