@@ -560,7 +560,6 @@ function QuestionEditModal({
                                   )}
                                 >
                                   <div className="focus:border-primary-40 flex w-full flex-row items-center">
-                                    {/* // TODO: define maximum height of editor if possible */}
                                     <FastField
                                       name={`options.choices.${index}.value`}
                                       questionType={values.type}
@@ -1007,10 +1006,15 @@ function QuestionEditModal({
                       {/* error messages specific to SC / MC / KP questions */}
                       {'options' in errors &&
                         errors.options &&
-                        errors.options.choices &&
+                        'choices' in errors.options &&
                         typeof errors.options.choices === 'object' &&
-                        errors.options.choices?.map(
-                          (choiceError: any, ix: number) =>
+                        (
+                          errors.options.choices as {
+                            value?: string
+                            feedback?: string
+                          }[]
+                        ).map(
+                          (choiceError, ix) =>
                             choiceError && (
                               <li key={`choice-${ix}`}>{`${t(
                                 'manage.questionForms.answerOption'
@@ -1061,33 +1065,46 @@ function QuestionEditModal({
                       {/* error messages specific to FT questions */}
                       {'options' in errors &&
                         errors.options &&
-                        errors.options.restrictions?.maxLength && (
+                        'restrictions' in errors.options &&
+                        errors.options.restrictions &&
+                        (errors.options.restrictions as { maxLength?: string })
+                          .maxLength && (
                           <li>{`${t('manage.questionForms.answerLength')}: ${
-                            errors.options.restrictions.maxLength
+                            (
+                              errors.options.restrictions as {
+                                maxLength?: string
+                              }
+                            ).maxLength
                           }`}</li>
                         )}
 
                       {/* error messages specific to NR questions */}
                       {'options' in errors &&
                         errors.options &&
-                        errors.options.restrictions?.min && (
+                        'restrictions' in errors.options &&
+                        (errors.options.restrictions as { min?: string })
+                          .min && (
                           <li>{`${t('manage.questionForms.restrictions')}: ${
-                            errors.options.restrictions.min
+                            (errors.options.restrictions as { min?: string })
+                              .min
                           }`}</li>
                         )}
                       {'options' in errors &&
                         errors.options &&
-                        errors.options.restrictions?.max && (
+                        'restrictions' in errors.options &&
+                        (errors.options.restrictions as { max?: string })
+                          .max && (
                           <li>{`${t('manage.questionForms.restrictions')}: ${
-                            errors.options.restrictions.max
+                            (errors.options.restrictions as { max?: string })
+                              .max
                           }`}</li>
                         )}
 
                       {'options' in errors &&
                         errors.options &&
-                        errors.options.solutions &&
+                        'solutions' in errors.options &&
                         typeof errors.options.solutions === 'object' &&
-                        errors.options.solutions?.map(
+                        (errors.options.solutions as any[]).map(
                           (solutionError: any, ix: number) =>
                             solutionError && (
                               <li key={`solution-${ix}`}>{`${t(
