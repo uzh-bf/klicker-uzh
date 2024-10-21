@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { AvatarSettings as AvatarSettingsType } from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import builder from '../builder.js'
 import {
@@ -79,6 +80,22 @@ export const Level = LevelRef.implement({
   }),
 })
 
+export const AvatarSettingsRef =
+  builder.objectRef<AvatarSettingsType>('AvatarSettings')
+export const AvatarSettings = AvatarSettingsRef.implement({
+  fields: (t) => ({
+    skinTone: t.exposeString('skinTone'),
+    eyes: t.exposeString('eyes'),
+    mouth: t.exposeString('mouth'),
+    hair: t.exposeString('hair'),
+    facialHair: t.exposeString('facialHair'),
+    accessory: t.exposeString('accessory'),
+    hairColor: t.exposeString('hairColor'),
+    clothing: t.exposeString('clothing'),
+    clothingColor: t.exposeString('clothingColor'),
+  }),
+})
+
 export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
@@ -101,7 +118,7 @@ export const Participant = ParticipantRef.implement({
     isProfilePublic: t.exposeBoolean('isProfilePublic', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     avatarSettings: t.expose('avatarSettings', {
-      type: 'Json',
+      type: AvatarSettings,
       nullable: true,
     }),
 

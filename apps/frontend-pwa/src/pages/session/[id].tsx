@@ -208,8 +208,8 @@ function Index({ id }: Props) {
                     // filter out question data types that are not supported by live session
                     if (
                       !questionData ||
-                      questionData?.__typename === 'FlashcardElementQData' ||
-                      questionData?.__typename === 'ContentElementQData'
+                      questionData?.__typename === 'FlashcardQuestionData' ||
+                      questionData?.__typename === 'ContentQuestionData'
                     ) {
                       return null
                     }

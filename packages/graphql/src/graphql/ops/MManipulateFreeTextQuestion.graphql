@@ -18,16 +18,17 @@ mutation ManipulateFreeTextQuestion(
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
+    __typename
+    ... on FreeTextElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
 
-    questionData {
-      ... on FreeTextQuestionData {
+      questionData {
         __typename
         options {
           hasSampleSolution
@@ -37,11 +38,11 @@ mutation ManipulateFreeTextQuestion(
           solutions
         }
       }
-    }
 
-    tags {
-      id
-      name
+      tags {
+        id
+        name
+      }
     }
   }
 }

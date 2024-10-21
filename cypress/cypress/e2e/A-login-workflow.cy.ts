@@ -1,5 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
-import { AVATAR_OPTIONS } from '../../../packages/shared-components/src/constants'
+import { AvatarOptions } from '../../../packages/shared-components/src/constants'
 
 describe('Login / Logout workflows for lecturer and students', () => {
   it('signs in into student account', () => {
@@ -46,96 +46,96 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="edit-profile"]').click()
 
     cy.get('[data-cy="avatar-hair-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['hair'][0]]
+      messages.pwa.avatar[AvatarOptions['hair'][0]]
     )
     cy.get('[data-cy="avatar-hair-select"]').click()
-    cy.get(`[data-cy="avatar-hair-${AVATAR_OPTIONS['hair'][1]}"]`).click()
+    cy.get(`[data-cy="avatar-hair-${AvatarOptions['hair'][1]}"]`).click()
     cy.get('[data-cy="avatar-hair-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['hair'][1]]
+      messages.pwa.avatar[AvatarOptions['hair'][1]]
     )
 
     cy.get('[data-cy="avatar-hairColor-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['hairColor'][0]]
+      messages.pwa.avatar[AvatarOptions['hairColor'][0]]
     )
     cy.get('[data-cy="avatar-hairColor-select"]').click()
     cy.get(
-      `[data-cy="avatar-hairColor-${AVATAR_OPTIONS['hairColor'][1]}"]`
+      `[data-cy="avatar-hairColor-${AvatarOptions['hairColor'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-hairColor-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['hairColor'][1]]
+      messages.pwa.avatar[AvatarOptions['hairColor'][1]]
     )
 
     cy.get('[data-cy="avatar-eyes-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['eyes'][0]]
+      messages.pwa.avatar[AvatarOptions['eyes'][0]]
     )
     cy.get('[data-cy="avatar-eyes-select"]').click()
-    cy.get(`[data-cy="avatar-eyes-${AVATAR_OPTIONS['eyes'][1]}"]`).click()
+    cy.get(`[data-cy="avatar-eyes-${AvatarOptions['eyes'][1]}"]`).click()
     cy.get('[data-cy="avatar-eyes-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['eyes'][1]]
+      messages.pwa.avatar[AvatarOptions['eyes'][1]]
     )
 
     cy.get('[data-cy="avatar-accessory-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['accessory'][0]]
+      messages.pwa.avatar[AvatarOptions['accessory'][0]]
     )
     cy.get('[data-cy="avatar-accessory-select"]').click()
     cy.get(
-      `[data-cy="avatar-accessory-${AVATAR_OPTIONS['accessory'][1]}"]`
+      `[data-cy="avatar-accessory-${AvatarOptions['accessory'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-accessory-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['accessory'][1]]
+      messages.pwa.avatar[AvatarOptions['accessory'][1]]
     )
 
     cy.get('[data-cy="avatar-mouth-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['mouth'][0]]
+      messages.pwa.avatar[AvatarOptions['mouth'][0]]
     )
     cy.get('[data-cy="avatar-mouth-select"]').click()
-    cy.get(`[data-cy="avatar-mouth-${AVATAR_OPTIONS['mouth'][1]}"]`).click()
+    cy.get(`[data-cy="avatar-mouth-${AvatarOptions['mouth'][1]}"]`).click()
     cy.get('[data-cy="avatar-mouth-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['mouth'][1]]
+      messages.pwa.avatar[AvatarOptions['mouth'][1]]
     )
 
     cy.get('[data-cy="avatar-facialHair-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['facialHair'][0]]
+      messages.pwa.avatar[AvatarOptions['facialHair'][0]]
     )
     cy.get('[data-cy="avatar-facialHair-select"]').click()
     cy.get(
-      `[data-cy="avatar-facialHair-${AVATAR_OPTIONS['facialHair'][1]}"]`
+      `[data-cy="avatar-facialHair-${AvatarOptions['facialHair'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-facialHair-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['facialHair'][1]]
+      messages.pwa.avatar[AvatarOptions['facialHair'][1]]
     )
 
     cy.get('[data-cy="avatar-clothing-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['clothing'][0]]
+      messages.pwa.avatar[AvatarOptions['clothing'][0]]
     )
     cy.get('[data-cy="avatar-clothing-select"]').click()
     cy.get(
-      `[data-cy="avatar-clothing-${AVATAR_OPTIONS['clothing'][1]}"]`
+      `[data-cy="avatar-clothing-${AvatarOptions['clothing'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-clothing-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['clothing'][1]]
+      messages.pwa.avatar[AvatarOptions['clothing'][1]]
     )
 
     cy.get('[data-cy="avatar-clothingColor-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['clothingColor'][0]]
+      messages.pwa.avatar[AvatarOptions['clothingColor'][0]]
     )
     cy.get('[data-cy="avatar-clothingColor-select"]').click()
     cy.get(
-      `[data-cy="avatar-clothingColor-${AVATAR_OPTIONS['clothingColor'][1]}"]`
+      `[data-cy="avatar-clothingColor-${AvatarOptions['clothingColor'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-clothingColor-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['clothingColor'][1]]
+      messages.pwa.avatar[AvatarOptions['clothingColor'][1]]
     )
 
     cy.get('[data-cy="avatar-skinTone-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['skinTone'][0]]
+      messages.pwa.avatar[AvatarOptions['skinTone'][0]]
     )
     cy.get('[data-cy="avatar-skinTone-select"]').click()
     cy.get(
-      `[data-cy="avatar-skinTone-${AVATAR_OPTIONS['skinTone'][1]}"]`
+      `[data-cy="avatar-skinTone-${AvatarOptions['skinTone'][1]}"]`
     ).click()
     cy.get('[data-cy="avatar-skinTone-select"]').contains(
-      messages.pwa.avatar[AVATAR_OPTIONS['skinTone'][1]]
+      messages.pwa.avatar[AvatarOptions['skinTone'][1]]
     )
   })
 

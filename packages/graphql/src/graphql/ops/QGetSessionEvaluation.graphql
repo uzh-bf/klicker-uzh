@@ -32,6 +32,7 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
           options {
             hasSampleSolution
             hasAnswerFeedbacks
+            displayMode
             choices {
               ix
               correct
@@ -75,6 +76,22 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
             }
             solutions
           }
+        }
+
+        ... on FlashcardQuestionData {
+          __typename
+          id
+          name
+          type
+          content
+        }
+
+        ... on ContentQuestionData {
+          __typename
+          id
+          name
+          type
+          content
         }
       }
 

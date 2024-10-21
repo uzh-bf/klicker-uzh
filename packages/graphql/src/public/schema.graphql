@@ -27,6 +27,18 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type AvatarSettings {
+  accessory: String!
+  clothing: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -82,6 +94,24 @@ type ChoiceQuestionOptions {
   displayMode: ElementDisplayMode!
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
+}
+
+type ChoicesElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: ChoiceQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: ChoicesQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
 }
 
 type ChoicesElementData {
@@ -143,7 +173,7 @@ type ChoicesQuestionData {
 }
 
 type ChoicesQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsChoices!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -182,6 +212,23 @@ type ConfusionTimestep {
   speed: Int!
 }
 
+type ContentElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  pointsMultiplier: Int!
+  questionData: ContentQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type ContentElementData {
   content: String!
   elementId: Int!
@@ -200,16 +247,6 @@ type ContentElementInstanceEvaluation {
   id: Int!
   name: String!
   results: ContentElementResults!
-  type: ElementType!
-}
-
-type ContentElementQData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
   type: ElementType!
 }
 
@@ -236,8 +273,18 @@ type ContentInstanceEvaluation {
   xpAwarded: Int
 }
 
+type ContentQuestionData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
+}
+
 type ContentQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsContent!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -311,23 +358,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
-type Element {
-  content: String!
-  createdAt: Date!
-  explanation: String
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: Json!
-  pointsMultiplier: Int!
-  questionData: QuestionData
-  status: ElementStatus!
-  tags: [Tag!]
-  type: ElementType!
-  updatedAt: Date!
-  version: Int!
-}
+union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
 
 union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
@@ -370,6 +401,27 @@ enum ElementInstanceType {
 enum ElementOrderType {
   SEQUENTIAL
   SPACED_REPETITION
+}
+
+type ElementResultsChoices {
+  choices: Json!
+  total: Int!
+}
+
+type ElementResultsContent {
+  total: Int!
+}
+
+type ElementResultsFlashcard {
+  CORRECT: Int!
+  INCORRECT: Int!
+  PARTIAL: Int!
+  total: Int!
+}
+
+type ElementResultsOpen {
+  responses: Json!
+  total: Int!
 }
 
 type ElementStack {
@@ -456,6 +508,23 @@ enum FlashcardCorrectnessType {
   PARTIAL
 }
 
+type FlashcardElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  pointsMultiplier: Int!
+  questionData: FlashcardQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type FlashcardElementData {
   content: String!
   elementId: Int!
@@ -474,16 +543,6 @@ type FlashcardElementInstanceEvaluation {
   id: Int!
   name: String!
   results: FlashcardElementResults!
-  type: ElementType!
-}
-
-type FlashcardElementQData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
   type: ElementType!
 }
 
@@ -513,8 +572,18 @@ type FlashcardInstanceEvaluation {
   xpAwarded: Int
 }
 
+type FlashcardQuestionData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
+}
+
 type FlashcardQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsFlashcard!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -560,6 +629,24 @@ type FreeElementResults {
   responses: [FreeElementResult!]!
   solutions: [String!]
   totalAnswers: Int!
+}
+
+type FreeTextElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: FreeTextQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
 }
 
 type FreeTextElementData {
@@ -969,6 +1056,24 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
+type NumericalElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: NumericalQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type NumericalElementData {
   content: String!
   elementId: Int!
@@ -1070,7 +1175,7 @@ type NumericalSolutionRange {
 }
 
 type OpenQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsOpen!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -1127,7 +1232,7 @@ enum ParameterType {
 type Participant {
   achievements: [ParticipantAchievementInstance!]
   avatar: String
-  avatarSettings: Json
+  avatarSettings: AvatarSettings
   email: String
   id: ID!
   isActive: Boolean!
@@ -1288,7 +1393,7 @@ type Query {
   userTags: [Tag!]
 }
 
-union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
+union QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean

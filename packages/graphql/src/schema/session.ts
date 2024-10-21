@@ -1,13 +1,18 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
+  ContentResults as ContentResultsType,
+  ElementResultsChoices as ElementResultsChoicesType,
+  ElementResultsOpen as ElementResultsOpenType,
+  FlashcardResults as FlashcardResultsType,
   QuestionResults,
   SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
   SingleQuestionResponseContent as SingleQuestionResponseContentType,
   SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
   SingleQuestionResponseValue as SingleQuestionResponseValueType,
 } from '@klicker-uzh/types'
+import { FlashcardCorrectness as FlashcardCorrectnessEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { type ICourse, CourseRef } from './course.js'
+import { CourseRef, type ICourse } from './course.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import { QuestionInstanceRef } from './question.js'
 import { ElementType, QuestionData } from './questionData.js'
@@ -36,6 +41,8 @@ export const BlockInput = builder.inputType('BlockInput', {
   }),
 })
 
+// ----- LIVE QUIZ INTERFACE -----
+// #region
 export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
@@ -147,7 +154,10 @@ export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
   }),
 })
+// #endregion
 
+// ----- AUDIENCE INTERACTION INTERFACE -----
+// #region
 export interface IFeedback extends DB.Feedback {
   responses?: DB.FeedbackResponse[]
 }
@@ -208,7 +218,9 @@ export const ConfusionSummary = builder
       }),
     }),
   })
+// #endregion
 
+// ----- LIVE QUIZ EVALUATION INTERFACE -----
 export interface IStatistics {
   max: number
   min: number
@@ -253,7 +265,7 @@ export const InstanceResult = InstanceResultRef.implement({
     instanceIx: t.exposeInt('instanceIx'),
     participants: t.exposeInt('participants'),
 
-    // TODO: introduce proper typing
+    // TODO: replace entire instance results type with union type and this with aggregated responses types defined below after migration of live quiz to element stacks
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
@@ -264,8 +276,10 @@ export const InstanceResult = InstanceResultRef.implement({
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),
 })
+// #endregion
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
+// #region
 export const SingleQuestionResponseChoices = builder
   .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
   .implement({
@@ -299,8 +313,53 @@ export const SingleQuestionResponseContent = builder
       viewed: t.exposeBoolean('viewed'),
     }),
   })
+// #endregion
+
+// ----- AGGREGATED RESPONSES / RESULTS INTERFACES -----
+// #region
+export const ElementResultsChoicesRef =
+  builder.objectRef<ElementResultsChoicesType>('ElementResultsChoices')
+export const ElementResultsChoices = ElementResultsChoicesRef.implement({
+  fields: (t) => ({
+    // ? differing number of keys - no graphql representation available
+    choices: t.expose('choices', { type: 'Json' }),
+    total: t.exposeInt('total'),
+  }),
+})
+
+export const ElementResultsOpenRef =
+  builder.objectRef<ElementResultsOpenType>('ElementResultsOpen')
+export const ElementResultsOpen = ElementResultsOpenRef.implement({
+  fields: (t) => ({
+    // ? differing number of keys - no graphql representation available
+    responses: t.expose('responses', { type: 'Json' }),
+    total: t.exposeInt('total'),
+  }),
+})
+
+export const ElementResultsFlashcardRef =
+  builder.objectRef<FlashcardResultsType>('ElementResultsFlashcard')
+export const ElementResultsFlashcard = ElementResultsFlashcardRef.implement({
+  fields: (t) => ({
+    CORRECT: t.exposeInt(FlashcardCorrectnessEnum.CORRECT),
+    PARTIAL: t.exposeInt(FlashcardCorrectnessEnum.PARTIAL),
+    INCORRECT: t.exposeInt(FlashcardCorrectnessEnum.INCORRECT),
+    total: t.exposeInt('total'),
+  }),
+})
+
+export const ElementResultsContentRef = builder.objectRef<ContentResultsType>(
+  'ElementResultsContent'
+)
+export const ElementResultsContent = ElementResultsContentRef.implement({
+  fields: (t) => ({
+    total: t.exposeInt('total'),
+  }),
+})
+// #endregion
 
 // ----- QUESTION RESPONSE INTERFACES -----
+// #region
 const sharedQuestionResponseProps = (t: any) => ({
   id: t.exposeInt('id'),
   elementType: t.expose('elementType', { type: ElementType }),
@@ -334,18 +393,13 @@ const sharedQuestionResponseProps = (t: any) => ({
   nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
   wrongCount: t.exposeInt('wrongCount'),
   lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
-
-  // TODO: introduce proper typing
-  aggregatedResponses: t.expose('aggregatedResponses', {
-    type: 'Json',
-    nullable: true,
-  }),
 })
 
 export interface IChoicesQuestionResponse
-  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseChoicesType
+  aggregatedResponses: ElementResultsChoicesType
 }
 export const ChoicesQuestionResponse = builder
   .objectRef<IChoicesQuestionResponse>('ChoicesQuestionResponse')
@@ -355,13 +409,17 @@ export const ChoicesQuestionResponse = builder
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseChoices,
       }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsChoices,
+      }),
     }),
   })
 
 export interface IOpenQuestionResponse
-  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseValueType
+  aggregatedResponses: ElementResultsOpenType
 }
 export const OpenQuestionResponse = builder
   .objectRef<IOpenQuestionResponse>('OpenQuestionResponse')
@@ -371,13 +429,17 @@ export const OpenQuestionResponse = builder
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
       }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsOpen,
+      }),
     }),
   })
 
 export interface IFlashcardQuestionResponse
-  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseFlashcardType
+  aggregatedResponses: FlashcardResultsType
 }
 export const FlashcardQuestionResponse = builder
   .objectRef<IFlashcardQuestionResponse>('FlashcardQuestionResponse')
@@ -387,13 +449,17 @@ export const FlashcardQuestionResponse = builder
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseFlashcard,
       }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsFlashcard,
+      }),
     }),
   })
 
 export interface IContentQuestionResponse
-  extends Omit<DB.QuestionResponse, 'lastResponse'> {
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseContentType
+  aggregatedResponses: ContentResultsType
 }
 export const ContentQuestionResponse = builder
   .objectRef<IContentQuestionResponse>('ContentQuestionResponse')
@@ -402,6 +468,9 @@ export const ContentQuestionResponse = builder
       ...sharedQuestionResponseProps(t),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseContent,
+      }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsContent,
       }),
     }),
   })
@@ -429,8 +498,10 @@ export const QuestionResponse = builder.unionType('QuestionResponse', {
     }
   },
 })
+// #endregion
 
 // ----- EVALUATION VISUALIZATION TYPES -----
+// #region
 export interface ITabData {
   id: string
   questionIx?: number | null
@@ -500,3 +571,4 @@ export const SessionEvaluation = SessionEvaluationRef.implement({
     }),
   }),
 })
+// #endregion

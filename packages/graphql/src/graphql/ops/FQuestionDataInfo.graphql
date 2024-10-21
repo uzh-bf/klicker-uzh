@@ -33,7 +33,7 @@ fragment QuestionDataInfo on QuestionInstance {
       pointsMultiplier
     }
 
-    ... on FlashcardElementQData {
+    ... on FlashcardQuestionData {
       __typename
       id
       questionId
@@ -44,7 +44,7 @@ fragment QuestionDataInfo on QuestionInstance {
       pointsMultiplier
     }
 
-    ... on ContentElementQData {
+    ... on ContentQuestionData {
       __typename
       id
       questionId

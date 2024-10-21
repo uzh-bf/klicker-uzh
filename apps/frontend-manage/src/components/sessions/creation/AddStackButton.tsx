@@ -63,7 +63,10 @@ function AddStackButton({
                   id: question.id,
                   title: question.name,
                   type: question.type,
-                  hasSampleSolution: question.options.hasSampleSolution,
+                  hasSampleSolution:
+                    'options' in question
+                      ? (question.options.hasSampleSolution ?? false)
+                      : true,
                 })
               )
 
@@ -101,7 +104,10 @@ function AddStackButton({
                       id: question.id,
                       title: question.name,
                       type: question.type,
-                      hasSampleSolution: question.options.hasSampleSolution,
+                      hasSampleSolution:
+                        'options' in question
+                          ? (question.options.hasSampleSolution ?? false)
+                          : true,
                     },
                   ],
                 })

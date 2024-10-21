@@ -57,7 +57,7 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
       }
     }
 
-    ... on FlashcardElementQData {
+    ... on FlashcardQuestionData {
       __typename
       id
       questionId
@@ -68,7 +68,7 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
       pointsMultiplier
     }
 
-    ... on ContentElementQData {
+    ... on ContentQuestionData {
       __typename
       id
       questionId

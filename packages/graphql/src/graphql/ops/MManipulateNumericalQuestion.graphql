@@ -18,16 +18,17 @@ mutation ManipulateNumericalQuestion(
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
+    __typename
+    ... on NumericalElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
 
-    questionData {
-      ... on NumericalQuestionData {
+      questionData {
         __typename
         options {
           hasSampleSolution
@@ -44,11 +45,11 @@ mutation ManipulateNumericalQuestion(
           }
         }
       }
-    }
 
-    tags {
-      id
-      name
+      tags {
+        id
+        name
+      }
     }
   }
 }

@@ -20,16 +20,17 @@ mutation ManipulateChoicesQuestion(
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
+    __typename
+    ... on ChoicesElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
 
-    questionData {
-      ... on ChoicesQuestionData {
+      questionData {
         __typename
         options {
           displayMode
@@ -43,11 +44,11 @@ mutation ManipulateChoicesQuestion(
           }
         }
       }
-    }
 
-    tags {
-      id
-      name
+      tags {
+        id
+        name
+      }
     }
   }
 }

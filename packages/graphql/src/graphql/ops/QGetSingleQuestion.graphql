@@ -1,15 +1,17 @@
 query GetSingleQuestion($id: Int!) {
   question(id: $id) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
+    __typename
 
-    questionData {
-      ... on ChoicesQuestionData {
+    ... on ChoicesElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      questionData {
         __typename
         id
         questionId
@@ -20,6 +22,7 @@ query GetSingleQuestion($id: Int!) {
         pointsMultiplier
 
         options {
+          __typename
           hasSampleSolution
           hasAnswerFeedbacks
           displayMode
@@ -32,7 +35,22 @@ query GetSingleQuestion($id: Int!) {
         }
       }
 
-      ... on NumericalQuestionData {
+      tags {
+        id
+        name
+      }
+    }
+
+    ... on NumericalElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      questionData {
         __typename
         id
         questionId
@@ -58,7 +76,22 @@ query GetSingleQuestion($id: Int!) {
         }
       }
 
-      ... on FreeTextQuestionData {
+      tags {
+        id
+        name
+      }
+    }
+
+    ... on FreeTextElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      questionData {
         __typename
         id
         questionId
@@ -76,11 +109,49 @@ query GetSingleQuestion($id: Int!) {
           solutions
         }
       }
+
+      tags {
+        id
+        name
+      }
     }
 
-    tags {
+    ... on FlashcardElement {
       id
       name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      questionData {
+        __typename
+      }
+
+      tags {
+        id
+        name
+      }
+    }
+
+    ... on ContentElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      questionData {
+        __typename
+      }
+
+      tags {
+        id
+        name
+      }
     }
   }
 }
