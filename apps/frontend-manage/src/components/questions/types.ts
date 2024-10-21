@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 interface SharedQuestionFormProps {
-  id?: number | null
   name: string
   status: ElementStatus
   content: string
@@ -13,13 +12,13 @@ interface SharedQuestionFormProps {
   tags?: string[] | null
 }
 
-interface QuestionFormTypeChoices extends SharedQuestionFormProps {
+export interface QuestionFormTypesChoices extends SharedQuestionFormProps {
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
   explanation?: string | null
   options: {
     choices: {
-      content?: string | null
-      ix?: number | null
+      ix: number
+      value?: string | null
       correct?: boolean | null
       feedback?: string | null
     }[]
@@ -29,7 +28,7 @@ interface QuestionFormTypeChoices extends SharedQuestionFormProps {
   }
 }
 
-interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
+export interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
   type: ElementType.Numerical
   explanation?: string | null
   options: {
@@ -37,41 +36,41 @@ interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
     accuracy?: number | null
     unit?: string | null
     restrictions?: {
-      min?: number | null
-      max?: number | null
+      min?: number | string | null
+      max?: number | string | null
     } | null
     solutionRanges?:
       | {
-          min?: number | null
-          max?: number | null
+          min?: number | string | null
+          max?: number | string | null
         }[]
       | null
   }
 }
 
-interface QuestionFormTypesFreeText extends SharedQuestionFormProps {
+export interface QuestionFormTypesFreeText extends SharedQuestionFormProps {
   type: ElementType.FreeText
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
     restrictions?: {
-      maxLength?: number | null
+      maxLength?: number | string | null
     } | null
     solutions?: string[] | null
   }
 }
 
-interface QuestionFormTypesFlashcard extends SharedQuestionFormProps {
+export interface QuestionFormTypesFlashcard extends SharedQuestionFormProps {
   type: ElementType.Flashcard
   explanation: string
 }
 
-interface QuestionFormTypesContent extends SharedQuestionFormProps {
+export interface QuestionFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
 }
 
 export type QuestionFormTypes =
-  | QuestionFormTypeChoices
+  | QuestionFormTypesChoices
   | QuestionFormTypesNumerical
   | QuestionFormTypesFreeText
   | QuestionFormTypesFlashcard

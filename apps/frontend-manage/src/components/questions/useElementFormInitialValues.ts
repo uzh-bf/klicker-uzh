@@ -34,14 +34,13 @@ function useElementFormInitialValues({
           hasAnswerFeedbacks: false,
           displayMode: ElementDisplayMode.List,
           choices: [
-            { ix: 0, content: undefined, correct: false, feedback: undefined },
+            { ix: 0, value: undefined, correct: false, feedback: undefined },
           ],
         },
       }
     }
 
     const sharedAttributes = {
-      id: question.id,
       status: question.status,
       name: isDuplication ? `${question.name} (Copy)` : question.name,
       content: question.content,

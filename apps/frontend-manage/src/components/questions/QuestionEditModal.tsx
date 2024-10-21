@@ -55,6 +55,13 @@ import { twMerge } from 'tailwind-merge'
 import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import ElementTypeMonitor from './ElementTypeMonitor'
+import {
+  prepareChoicesArgs,
+  prepareContentArgs,
+  prepareFlashcardArgs,
+  prepareFreeTextArgs,
+  prepareNumericalArgs,
+} from './helpers'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useQuestionTypeOptions from './useQuestionTypeOptions'
@@ -136,150 +143,107 @@ function QuestionEditModal({
       enableReinitialize
       initialValues={initialValues}
       validationSchema={questionManipulationSchema}
-      // TODO: extract this to useCallback hook once proper typing is available in question edit modal
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
-        const common = {
-          id: questionId,
-          name: values.name,
-          status: values.status,
-          content: values.content,
-          explanation:
-            !values.explanation?.match(/^(<br>(\n)*)$/g) &&
-            values.explanation !== ''
-              ? values.explanation
-              : null,
-          tags: values.tags,
-          pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
-        }
 
         switch (values.type) {
           case ElementType.Content: {
+            const args = prepareContentArgs({
+              questionId,
+              isDuplication,
+              values,
+            })
+
             const result = await manipulateContentElement({
-              variables: {
-                ...common,
-                id: isDuplication ? undefined : questionId,
-              },
+              variables: args,
               refetchQueries: [
                 { query: GetUserQuestionsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateContentElement?.id) return
+
+            const data = result.data?.manipulateContentElement
+            if (data?.__typename !== 'ContentElement' || !data.id) return
             break
           }
 
           case ElementType.Flashcard: {
+            const args = prepareFlashcardArgs({
+              questionId,
+              isDuplication,
+              values,
+            })
+
             const result = await manipulateFlashcardElement({
-              variables: {
-                ...common,
-                id: isDuplication ? undefined : questionId,
-              },
+              variables: args,
               refetchQueries: [
                 { query: GetUserQuestionsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateFlashcardElement?.id) return
+
+            const data = result.data?.manipulateFlashcardElement
+            if (data?.__typename !== 'FlashcardElement' || !data.id) return
             break
           }
 
           case ElementType.Sc:
           case ElementType.Mc:
           case ElementType.Kprim: {
+            const args = prepareChoicesArgs({
+              questionId,
+              isDuplication,
+              values,
+            })
+
             const result = await manipulateChoicesQuestion({
-              variables: {
-                ...common,
-                id: isDuplication ? undefined : questionId,
-                type: values.type,
-                options: {
-                  hasSampleSolution: values.options?.hasSampleSolution,
-                  hasAnswerFeedbacks: values.options?.hasAnswerFeedbacks,
-                  displayMode:
-                    values.options?.displayMode || ElementDisplayMode.List,
-                  choices: values.options?.choices.map((choice: any) => {
-                    return {
-                      ix: choice.ix,
-                      value: choice.value,
-                      correct: choice.correct,
-                      feedback: choice.feedback,
-                    }
-                  }),
-                },
-              },
+              variables: args,
               refetchQueries: [
                 { query: GetUserQuestionsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateChoicesQuestion?.id) return
+
+            const data = result.data?.manipulateChoicesQuestion
+            if (data?.__typename !== 'ChoicesElement' || !data.id) return
             break
           }
           case ElementType.Numerical: {
+            const args = prepareNumericalArgs({
+              questionId,
+              isDuplication,
+              values,
+            })
+
             const result = await manipulateNumericalQuestion({
-              variables: {
-                ...common,
-                id: isDuplication ? undefined : questionId,
-                options: {
-                  hasSampleSolution: values.options?.hasSampleSolution,
-                  accuracy: parseInt(values.options?.accuracy),
-                  unit: values.options?.unit,
-                  restrictions: {
-                    min:
-                      !values.options?.restrictions ||
-                      values.options?.restrictions?.min === ''
-                        ? undefined
-                        : parseFloat(values.options?.restrictions?.min),
-                    max:
-                      !values.options?.restrictions ||
-                      values.options?.restrictions?.max === ''
-                        ? undefined
-                        : parseFloat(values.options?.restrictions?.max),
-                  },
-                  solutionRanges: values.options?.solutionRanges?.map(
-                    (range: any) => {
-                      return {
-                        min:
-                          range.min === '' ? undefined : parseFloat(range.min),
-                        max:
-                          range.max === '' ? undefined : parseFloat(range.max),
-                      }
-                    }
-                  ),
-                },
-              },
+              variables: args,
               refetchQueries: [
                 { query: GetUserQuestionsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateNumericalQuestion?.id) return
+
+            const data = result.data?.manipulateNumericalQuestion
+            if (data?.__typename !== 'NumericalElement' || !data.id) return
             break
           }
           case ElementType.FreeText: {
+            const args = prepareFreeTextArgs({
+              questionId,
+              isDuplication,
+              values,
+            })
+
             const result = await manipulateFreeTextQuestion({
-              variables: {
-                ...common,
-                id: isDuplication ? undefined : questionId,
-                options: {
-                  hasSampleSolution: values.options?.hasSampleSolution,
-                  placeholder: values.options?.placeholder,
-                  restrictions: {
-                    maxLength:
-                      !values.options?.restrictions?.maxLength ||
-                      values.options?.restrictions?.maxLength === ''
-                        ? undefined
-                        : parseInt(values.options?.restrictions?.maxLength),
-                  },
-                  solutions: values.options?.solutions,
-                },
-              },
+              variables: args,
               refetchQueries: [
                 { query: GetUserQuestionsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateFreeTextQuestion?.id) return
+
+            const data = result.data?.manipulateFreeTextQuestion
+            if (data?.__typename !== 'FreeTextElement' || !data.id) return
             break
           }
 
@@ -289,7 +253,7 @@ function QuestionEditModal({
 
         if (mode === QuestionEditMode.EDIT && updateInstances) {
           if (questionId !== null && typeof questionId !== 'undefined') {
-            const { data: instanceResult } = await updateQuestionInstances({
+            await updateQuestionInstances({
               variables: { questionId: questionId },
             })
           }
