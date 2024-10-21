@@ -1,26 +1,16 @@
 import {
   ChoicesQuestionData,
-  ContentQuestionData,
   Element,
-  FlashcardQuestionData,
   FreeTextQuestionData,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useFakedInstance({
   element,
-  questionData,
 }: {
-  element?: Pick<Element, 'name' | 'content' | 'type'> | null
-  questionData?:
-    | Pick<ChoicesQuestionData, '__typename' | 'options'>
-    | Pick<NumericalQuestionData, '__typename' | 'options'>
-    | Pick<FreeTextQuestionData, '__typename' | 'options'>
-    | Pick<FlashcardQuestionData, '__typename'>
-    | Pick<ContentQuestionData, '__typename'>
-    | null
+  element?: Element | null
 }): ChoicesQuestionData | NumericalQuestionData | FreeTextQuestionData | null {
-  if (!element || !questionData) {
+  if (!element) {
     return null
   }
 
@@ -32,22 +22,23 @@ function useFakedInstance({
     type: element.type,
   }
 
-  if (questionData.__typename === 'ChoicesQuestionData') {
+  if (element.__typename === 'ChoicesElement') {
     return {
       ...common,
-      options: questionData.options,
+      options: element.options,
     }
-  } else if (questionData.__typename === 'NumericalQuestionData') {
+  } else if (element.__typename === 'NumericalElement') {
     return {
       ...common,
-      options: questionData.options,
+      options: element.options,
     }
-  } else if (questionData.__typename === 'FreeTextQuestionData') {
+  } else if (element.__typename === 'FreeTextElement') {
     return {
       ...common,
-      options: questionData.options,
+      options: element.options,
     }
   } else {
+    // TODO: extend this hook with flashcard and content element types (as soon as live quiz supports them)
     return null
   }
 }

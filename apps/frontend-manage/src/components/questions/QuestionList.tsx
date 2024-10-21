@@ -43,7 +43,7 @@ function QuestionList({
         <Question
           checked={!!selectedQuestions[question.id]}
           id={question.id}
-          isArchived={question.isArchived}
+          isArchived={question.isArchived ?? false}
           key={question.id}
           tags={question.tags || []}
           handleTagClick={handleTagClick}
