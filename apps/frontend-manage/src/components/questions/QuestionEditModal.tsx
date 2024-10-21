@@ -833,48 +833,50 @@ function QuestionEditModal({
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
                               <div className="flex w-max flex-col gap-1">
-                                {values.options?.solutionRanges?.map(
-                                  (_range: any, index: number) => (
-                                    <div
-                                      className="flex flex-row items-end gap-2"
-                                      key={`${index}-${values.options?.solutionRanges.length}`}
-                                    >
-                                      <FormikNumberField
-                                        required={index === 0}
-                                        name={`options.solutionRanges.${index}.min`}
-                                        label={t('shared.generic.min')}
-                                        placeholder={t(
-                                          'shared.generic.minLong'
-                                        )}
-                                        data={{
-                                          cy: `set-solution-range-min-${index}`,
-                                        }}
-                                      />
-                                      <FormikNumberField
-                                        required={index === 0}
-                                        name={`options.solutionRanges.${index}.max`}
-                                        label={t('shared.generic.max')}
-                                        placeholder={t(
-                                          'shared.generic.maxLong'
-                                        )}
-                                        data={{
-                                          cy: `set-solution-range-max-${index}`,
-                                        }}
-                                      />
-                                      <Button
-                                        onClick={() => remove(index)}
-                                        className={{
-                                          root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
-                                        }}
-                                        data={{
-                                          cy: `delete-solution-range-ix-${index}`,
-                                        }}
-                                      >
-                                        {t('shared.generic.delete')}
-                                      </Button>
-                                    </div>
-                                  )
-                                )}
+                                {values.options?.solutionRanges
+                                  ? values.options.solutionRanges.map(
+                                      (_range: any, index: number) => (
+                                        <div
+                                          className="flex flex-row items-end gap-2"
+                                          key={`${index}-${values.options.solutionRanges!.length}`}
+                                        >
+                                          <FormikNumberField
+                                            required={index === 0}
+                                            name={`options.solutionRanges.${index}.min`}
+                                            label={t('shared.generic.min')}
+                                            placeholder={t(
+                                              'shared.generic.minLong'
+                                            )}
+                                            data={{
+                                              cy: `set-solution-range-min-${index}`,
+                                            }}
+                                          />
+                                          <FormikNumberField
+                                            required={index === 0}
+                                            name={`options.solutionRanges.${index}.max`}
+                                            label={t('shared.generic.max')}
+                                            placeholder={t(
+                                              'shared.generic.maxLong'
+                                            )}
+                                            data={{
+                                              cy: `set-solution-range-max-${index}`,
+                                            }}
+                                          />
+                                          <Button
+                                            onClick={() => remove(index)}
+                                            className={{
+                                              root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
+                                            }}
+                                            data={{
+                                              cy: `delete-solution-range-ix-${index}`,
+                                            }}
+                                          >
+                                            {t('shared.generic.delete')}
+                                          </Button>
+                                        </div>
+                                      )
+                                    )
+                                  : null}
                                 <Button
                                   fluid
                                   className={{
@@ -996,14 +998,15 @@ function QuestionEditModal({
                           errors.content
                         }`}</li>
                       )}
-                      {errors.explanation && (
+                      {'explanation' in errors && errors.explanation && (
                         <li>{`${t('shared.generic.explanation')}: ${
                           errors.explanation
                         }`}</li>
                       )}
 
                       {/* error messages specific to SC / MC / KP questions */}
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
                         errors.options.choices &&
                         typeof errors.options.choices === 'object' &&
                         errors.options.choices?.map(
@@ -1018,7 +1021,9 @@ function QuestionEditModal({
                               }`}</li>
                             )
                         )}
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
+                        'choices' in errors.options &&
                         errors.options.choices &&
                         typeof errors.options.choices === 'string' && (
                           <li>{`${t('manage.questionForms.answerOptions')}: ${
@@ -1027,17 +1032,25 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to NR questions */}
-                      {errors.options && errors.options.accuracy && (
-                        <li>{`${t('shared.generic.precision')}: ${
-                          errors.options.accuracy
-                        }`}</li>
-                      )}
-                      {errors.options && errors.options.unit && (
-                        <li>{`${t('shared.generic.unit')}: ${
-                          errors.options.unit
-                        }`}</li>
-                      )}
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
+                        'accuracy' in errors.options &&
+                        errors.options.accuracy && (
+                          <li>{`${t('shared.generic.precision')}: ${
+                            errors.options.accuracy
+                          }`}</li>
+                        )}
+                      {'options' in errors &&
+                        errors.options &&
+                        'unit' in errors.options &&
+                        errors.options.unit && (
+                          <li>{`${t('shared.generic.unit')}: ${
+                            errors.options.unit
+                          }`}</li>
+                        )}
+                      {'options' in errors &&
+                        errors.options &&
+                        'solutionRanges' in errors.options &&
                         errors.options.solutionRanges &&
                         typeof errors.options.solutionRanges === 'string' && (
                           <li>{`${t('manage.questionForms.solutionRanges')}: ${
@@ -1046,7 +1059,8 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to FT questions */}
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
                         errors.options.restrictions?.maxLength && (
                           <li>{`${t('manage.questionForms.answerLength')}: ${
                             errors.options.restrictions.maxLength
@@ -1054,18 +1068,23 @@ function QuestionEditModal({
                         )}
 
                       {/* error messages specific to NR questions */}
-                      {errors.options && errors.options.restrictions?.min && (
-                        <li>{`${t('manage.questionForms.restrictions')}: ${
-                          errors.options.restrictions.min
-                        }`}</li>
-                      )}
-                      {errors.options && errors.options.restrictions?.max && (
-                        <li>{`${t('manage.questionForms.restrictions')}: ${
-                          errors.options.restrictions.max
-                        }`}</li>
-                      )}
+                      {'options' in errors &&
+                        errors.options &&
+                        errors.options.restrictions?.min && (
+                          <li>{`${t('manage.questionForms.restrictions')}: ${
+                            errors.options.restrictions.min
+                          }`}</li>
+                        )}
+                      {'options' in errors &&
+                        errors.options &&
+                        errors.options.restrictions?.max && (
+                          <li>{`${t('manage.questionForms.restrictions')}: ${
+                            errors.options.restrictions.max
+                          }`}</li>
+                        )}
 
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
                         errors.options.solutions &&
                         typeof errors.options.solutions === 'object' &&
                         errors.options.solutions?.map(
@@ -1077,7 +1096,9 @@ function QuestionEditModal({
                               )}: ${solutionError}`}</li>
                             )
                         )}
-                      {errors.options &&
+                      {'options' in errors &&
+                        errors.options &&
+                        'solutions' in errors.options &&
                         errors.options.solutions &&
                         typeof errors.options.solutions === 'string' && (
                           <li>{`${t(
@@ -1102,29 +1123,76 @@ function QuestionEditModal({
                           elementId: 0,
                           __typename: elementDataTypename,
                           content: values.content,
-                          explanation: values.explanation,
+                          explanation:
+                            'explanation' in values
+                              ? values.explanation
+                              : undefined,
                           name: values.name,
                           pointsMultiplier: parseInt(
                             values.pointsMultiplier || '1'
                           ),
                           type: values.type,
-                          options: {
-                            displayMode: values.options?.displayMode,
-                            choices: values.options?.choices,
-                            accuracy: parseInt(values.options?.accuracy),
-                            unit: values.options?.unit,
-                            restrictions: {
-                              min: parseFloat(
-                                values.options?.restrictions?.min
-                              ),
-                              max: parseFloat(
-                                values.options?.restrictions?.max
-                              ),
-                              maxLength: parseInt(
-                                values.options?.restrictions?.maxLength
-                              ),
-                            },
-                          },
+                          options:
+                            'options' in values
+                              ? {
+                                  displayMode:
+                                    'displayMode' in values.options
+                                      ? values.options.displayMode
+                                      : undefined,
+                                  choices:
+                                    'choices' in values.options
+                                      ? values.options.choices
+                                      : undefined,
+                                  accuracy:
+                                    'accuracy' in values.options &&
+                                    values.options.accuracy
+                                      ? parseInt(
+                                          String(values.options.accuracy)
+                                        )
+                                      : undefined,
+                                  unit:
+                                    'unit' in values.options
+                                      ? values.options.unit
+                                      : undefined,
+                                  restrictions: {
+                                    min:
+                                      'restrictions' in values.options &&
+                                      values.options.restrictions &&
+                                      'min' in values.options.restrictions &&
+                                      values.options.restrictions.min
+                                        ? parseFloat(
+                                            String(
+                                              values.options.restrictions.min
+                                            )
+                                          )
+                                        : undefined,
+                                    max:
+                                      'restrictions' in values.options &&
+                                      values.options.restrictions &&
+                                      'max' in values.options.restrictions &&
+                                      values.options.restrictions.max
+                                        ? parseFloat(
+                                            String(
+                                              values.options.restrictions.max
+                                            )
+                                          )
+                                        : undefined,
+                                    maxLength:
+                                      'restrictions' in values.options &&
+                                      values.options.restrictions &&
+                                      'maxLength' in
+                                        values.options.restrictions &&
+                                      values.options.restrictions.maxLength
+                                        ? parseFloat(
+                                            String(
+                                              values.options.restrictions
+                                                .maxLength
+                                            )
+                                          )
+                                        : undefined,
+                                  },
+                                }
+                              : undefined,
                         },
                       } as ElementInstance
                     }
@@ -1133,7 +1201,7 @@ function QuestionEditModal({
                     setStudentResponse={setStudentResponse}
                   />
                 </div>
-                {values.explanation && (
+                {'explanation' in values && values.explanation ? (
                   <div className="mt-4">
                     <H3>{t('shared.generic.explanation')}</H3>
                     <Markdown
@@ -1143,12 +1211,14 @@ function QuestionEditModal({
                       content={values.explanation}
                     />
                   </div>
-                )}
-                {QUESTION_GROUPS.CHOICES.includes(values.type) &&
-                  values.options?.hasAnswerFeedbacks && (
+                ) : null}
+                {(values.type === ElementType.Sc ||
+                  values.type === ElementType.Mc ||
+                  values.type === ElementType.Kprim) &&
+                  values.options.hasAnswerFeedbacks && (
                     <div className="mt-4">
                       <H3>{t('shared.generic.feedbacks')}</H3>
-                      {values.options?.choices?.map((choice, index) => (
+                      {values.options.choices.map((choice, index) => (
                         <div
                           key={index}
                           className="border-b pb-1 pt-1 last:border-b-0"

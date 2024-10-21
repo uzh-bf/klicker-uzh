@@ -133,7 +133,8 @@ function useOptionsSchemaNumerical() {
           .nullable()
           // we can only handle one case to avoid cyclic dependencies
           .when('max', {
-            is: (max?: number | null) => typeof max !== 'undefined',
+            is: (max?: number | null) =>
+              typeof max !== 'undefined' && max !== null,
             then: (schema) =>
               schema.lessThan(
                 yup.ref('max'),
@@ -161,7 +162,7 @@ function useOptionsSchemaNumerical() {
         .max(1e30, t('manage.formErrors.NROverflow'))
         .nullable()
         .when('max', {
-          is: (max?: number) => typeof max !== 'undefined',
+          is: (max?: number) => typeof max !== 'undefined' && max !== null,
           then: (schema) =>
             schema.lessThan(
               yup.ref('max'),
