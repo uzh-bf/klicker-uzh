@@ -57,6 +57,8 @@ import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import SuspendedTagInput from './tags/SuspendedTagInput'
+import useQuestionTypeOptions from './useQuestionTypeOptions'
+import useStatusOptions from './useStatusOptions'
 import useValidationSchema from './useValidationSchema'
 
 enum QuestionEditMode {
@@ -80,6 +82,7 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
+  const questionManipulationSchema = useValidationSchema()
 
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
@@ -88,8 +91,6 @@ function QuestionEditModal({
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
-
-  const questionManipulationSchema = useValidationSchema()
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -116,97 +117,8 @@ function QuestionEditModal({
   )
   const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
-  const STATUS_OPTIONS = [
-    {
-      value: ElementStatus.Draft,
-      label: t(`shared.${ElementStatus.Draft}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Draft}.statusLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementStatus.Review,
-      label: t(`shared.${ElementStatus.Review}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Review}.statusLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementStatus.Ready,
-      label: t(`shared.${ElementStatus.Ready}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Ready}.statusLabel`
-        )}`,
-      },
-    },
-  ]
-
-  const QUESTION_TYPE_OPTIONS = [
-    {
-      value: ElementType.Content,
-      label: t(`shared.${ElementType.Content}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Content}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Flashcard,
-      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Flashcard}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Sc,
-      label: t(`shared.${ElementType.Sc}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(`shared.${ElementType.Sc}.typeLabel`)}`,
-      },
-    },
-    {
-      value: ElementType.Mc,
-      label: t(`shared.${ElementType.Mc}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(`shared.${ElementType.Mc}.typeLabel`)}`,
-      },
-    },
-    {
-      value: ElementType.Kprim,
-      label: t(`shared.${ElementType.Kprim}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Kprim}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Numerical,
-      label: t(`shared.${ElementType.Numerical}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Numerical}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.FreeText,
-      label: t(`shared.${ElementType.FreeText}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.FreeText}.typeLabel`
-        )}`,
-      },
-    },
-  ]
+  const statusOptions = useStatusOptions()
+  const questionTypeOptions = useQuestionTypeOptions()
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
@@ -516,7 +428,7 @@ function QuestionEditModal({
                       disabled={mode === 'EDIT'}
                       label={t('manage.questionForms.questionType')}
                       placeholder={t('manage.questionForms.selectQuestionType')}
-                      items={QUESTION_TYPE_OPTIONS}
+                      items={questionTypeOptions}
                       data={{ cy: 'select-question-type' }}
                       className={{ select: { trigger: 'h-8 w-max' } }}
                     />
@@ -528,7 +440,7 @@ function QuestionEditModal({
                       placeholder={t(
                         'manage.questionForms.selectQuestionStatus'
                       )}
-                      items={STATUS_OPTIONS}
+                      items={statusOptions}
                       data={{ cy: 'select-question-status' }}
                       className={{ select: { trigger: 'h-8 w-32' } }}
                     />

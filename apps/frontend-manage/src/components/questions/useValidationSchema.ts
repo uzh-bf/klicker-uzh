@@ -122,10 +122,9 @@ function useOptionsSchemaKPRIM() {
   }
 }
 
-function useSolutionRangeSchema() {
+function useOptionsSchemaNumerical() {
   const t = useTranslations()
-
-  return yup
+  const baseSolutionRanges = yup
     .array()
     .of(
       yup.object().shape({
@@ -145,11 +144,6 @@ function useSolutionRangeSchema() {
       })
     )
     .nullable()
-}
-
-function useOptionsSchemaNumerical() {
-  const t = useTranslations()
-  const baseSolutionRanges = useSolutionRangeSchema()
 
   return {
     hasSampleSolution: yup.boolean(),
