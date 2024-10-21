@@ -57,6 +57,7 @@ import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import SuspendedTagInput from './tags/SuspendedTagInput'
+import useValidationSchema from './useValidationSchema'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
