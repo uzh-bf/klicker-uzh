@@ -193,9 +193,9 @@ export const FreeTextQuestionData = builder
   })
 
 // ----- CONTENT ELEMENTS -----
-export interface IContentElementQData extends BaseQuestionData {}
-export const ContentElementQData = builder
-  .objectRef<IContentElementQData>('ContentElementQData')
+export interface IContentQuestionData extends BaseQuestionData {}
+export const ContentQuestionData = builder
+  .objectRef<IContentQuestionData>('ContentQuestionData')
   .implement({
     fields: (t) => ({
       ...sharedQuestionData(t),
@@ -203,9 +203,9 @@ export const ContentElementQData = builder
   })
 
 // ----- FLASHCARD ELEMENTS -----
-export interface IFlashcardElementQData extends BaseQuestionData {}
-export const FlashcardElementQData = builder
-  .objectRef<IFlashcardElementQData>('FlashcardElementQData')
+export interface IFlashcardQuestionData extends BaseQuestionData {}
+export const FlashcardQuestionData = builder
+  .objectRef<IFlashcardQuestionData>('FlashcardQuestionData')
   .implement({
     fields: (t) => ({
       ...sharedQuestionData(t),
@@ -218,8 +218,8 @@ export const QuestionData = builder.unionType('QuestionData', {
     ChoicesQuestionData,
     NumericalQuestionData,
     FreeTextQuestionData,
-    FlashcardElementQData,
-    ContentElementQData,
+    FlashcardQuestionData,
+    ContentQuestionData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -232,9 +232,9 @@ export const QuestionData = builder.unionType('QuestionData', {
       case DB.ElementType.FREE_TEXT:
         return FreeTextQuestionData
       case DB.ElementType.FLASHCARD:
-        return FlashcardElementQData
+        return FlashcardQuestionData
       case DB.ElementType.CONTENT:
-        return ContentElementQData
+        return ContentQuestionData
     }
   },
 })

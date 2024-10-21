@@ -1,25 +1,6 @@
 query GetUserQuestions {
   userQuestions {
-    id
-    name
-    status
-    type
-    content
-
-    pointsMultiplier
-    version
-
-    isArchived
-    isDeleted
-    createdAt
-    updatedAt
-
-    options
-
-    tags {
-      id
-      name
-      order
-    }
+    __typename
+    ...ElementContent
   }
 }

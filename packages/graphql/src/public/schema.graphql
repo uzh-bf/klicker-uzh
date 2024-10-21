@@ -96,6 +96,24 @@ type ChoiceQuestionOptions {
   hasSampleSolution: Boolean
 }
 
+type ChoicesElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: ChoiceQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: ChoicesQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type ChoicesElementData {
   content: String!
   elementId: Int!
@@ -194,6 +212,23 @@ type ConfusionTimestep {
   speed: Int!
 }
 
+type ContentElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  pointsMultiplier: Int!
+  questionData: ContentQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type ContentElementData {
   content: String!
   elementId: Int!
@@ -212,16 +247,6 @@ type ContentElementInstanceEvaluation {
   id: Int!
   name: String!
   results: ContentElementResults!
-  type: ElementType!
-}
-
-type ContentElementQData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
   type: ElementType!
 }
 
@@ -246,6 +271,16 @@ type ContentInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
+}
+
+type ContentQuestionData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
 }
 
 type ContentQuestionResponse {
@@ -323,23 +358,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
-type Element {
-  content: String!
-  createdAt: Date!
-  explanation: String
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: Json!
-  pointsMultiplier: Int!
-  questionData: QuestionData
-  status: ElementStatus!
-  tags: [Tag!]
-  type: ElementType!
-  updatedAt: Date!
-  version: Int!
-}
+union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
 
 union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
@@ -468,6 +487,23 @@ enum FlashcardCorrectnessType {
   PARTIAL
 }
 
+type FlashcardElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  pointsMultiplier: Int!
+  questionData: FlashcardQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type FlashcardElementData {
   content: String!
   elementId: Int!
@@ -486,16 +522,6 @@ type FlashcardElementInstanceEvaluation {
   id: Int!
   name: String!
   results: FlashcardElementResults!
-  type: ElementType!
-}
-
-type FlashcardElementQData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
   type: ElementType!
 }
 
@@ -523,6 +549,16 @@ type FlashcardInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
+}
+
+type FlashcardQuestionData {
+  content: String!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
 }
 
 type FlashcardQuestionResponse {
@@ -572,6 +608,24 @@ type FreeElementResults {
   responses: [FreeElementResult!]!
   solutions: [String!]
   totalAnswers: Int!
+}
+
+type FreeTextElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: FreeTextQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
 }
 
 type FreeTextElementData {
@@ -981,6 +1035,24 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
+type NumericalElement {
+  content: String!
+  createdAt: Date!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
+  questionData: NumericalQuestionData
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date!
+  version: Int!
+}
+
 type NumericalElementData {
   content: String!
   elementId: Int!
@@ -1300,7 +1372,7 @@ type Query {
   userTags: [Tag!]
 }
 
-union QuestionData = ChoicesQuestionData | ContentElementQData | FlashcardElementQData | FreeTextQuestionData | NumericalQuestionData
+union QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean

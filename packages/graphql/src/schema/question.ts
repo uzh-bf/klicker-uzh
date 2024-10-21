@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
-  BaseQuestionData,
   IInstanceEvaluationChoices,
   IInstanceEvaluationContent,
   IInstanceEvaluationFlashcard,
@@ -12,12 +11,28 @@ import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
+  ChoiceQuestionOptions,
+  ChoicesQuestionData,
+  ContentQuestionData,
   ElementDisplayMode,
   ElementInstanceType,
   ElementStatus,
   ElementType,
+  FlashcardQuestionData,
+  FreeTextQuestionData,
+  FreeTextQuestionOptions,
+  NumericalQuestionData,
+  NumericalQuestionOptions,
   NumericalSolutionRange,
   QuestionData,
+  type IChoiceQuestionOptions,
+  type IChoicesQuestionData,
+  type IContentQuestionData,
+  type IFlashcardQuestionData,
+  type IFreeTextQuestionData,
+  type IFreeTextQuestionOptions,
+  type INumericalQuestionData,
+  type INumericalQuestionOptions,
 } from './questionData.js'
 import {
   SingleQuestionResponseChoices,
@@ -267,44 +282,148 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
   },
 })
 
-export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
-  tags?: ITag[] | null
-  questionData?: BaseQuestionData | null
-}
-export const ElementRef = builder.objectRef<IElement>('Element')
-export const Element = ElementRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
+// ----- ELEMENT INTERFACE -----
+// #region
+const sharedElementProps = (t: any) => ({
+  id: t.exposeInt('id'),
 
-    version: t.exposeInt('version'),
-    name: t.exposeString('name'),
-    status: t.expose('status', { type: ElementStatus }),
-    type: t.expose('type', { type: ElementType }),
-    content: t.exposeString('content'),
-    explanation: t.exposeString('explanation', { nullable: true }),
+  version: t.exposeInt('version'),
+  name: t.exposeString('name'),
+  status: t.expose('status', { type: ElementStatus }),
+  type: t.expose('type', { type: ElementType }),
+  content: t.exposeString('content'),
+  explanation: t.exposeString('explanation', { nullable: true }),
 
-    // TODO: introduce proper typing
-    options: t.expose('options', { type: 'Json' }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+  pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
-    questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q.questionData,
-      nullable: true,
-    }),
+  questionData: t.field({
+    type: QuestionData,
+    resolve: (q) => q.questionData,
+    nullable: true,
+  }),
 
-    isArchived: t.exposeBoolean('isArchived'),
-    isDeleted: t.exposeBoolean('isDeleted'),
+  isArchived: t.exposeBoolean('isArchived'),
+  isDeleted: t.exposeBoolean('isDeleted'),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  createdAt: t.expose('createdAt', { type: 'Date' }),
+  updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    tags: t.expose('tags', {
-      type: [TagRef],
-      nullable: true,
-    }),
+  tags: t.expose('tags', {
+    type: [TagRef],
+    nullable: true,
   }),
 })
+
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+  tags?: ITag[] | null
+}
+export interface IChoicesElement extends IBaseElementProps {
+  options: IChoiceQuestionOptions
+  questionData?: IChoicesQuestionData | null
+}
+export const ChoicesElement = builder
+  .objectRef<IChoicesElement>('ChoicesElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: ChoiceQuestionOptions }),
+      questionData: t.expose('questionData', {
+        type: ChoicesQuestionData,
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface INumericalElement extends IBaseElementProps {
+  options: INumericalQuestionOptions
+  questionData?: INumericalQuestionData | null
+}
+export const NumericalElement = builder
+  .objectRef<INumericalElement>('NumericalElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: NumericalQuestionOptions }),
+      questionData: t.expose('questionData', {
+        type: NumericalQuestionData,
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface IFreeTextElement extends IBaseElementProps {
+  options: IFreeTextQuestionOptions
+  questionData?: IFreeTextQuestionData | null
+}
+export const FreeTextElement = builder
+  .objectRef<IFreeTextElement>('FreeTextElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: FreeTextQuestionOptions }),
+      questionData: t.expose('questionData', {
+        type: FreeTextQuestionData,
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface IFlashcardElement extends IBaseElementProps {
+  questionData?: IFlashcardQuestionData | null
+}
+export const FlashcardElement = builder
+  .objectRef<IFlashcardElement>('FlashcardElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      questionData: t.expose('questionData', {
+        type: FlashcardQuestionData,
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface IContentElement extends IBaseElementProps {
+  questionData?: IContentQuestionData | null
+}
+export const ContentElement = builder
+  .objectRef<IContentElement>('ContentElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      questionData: t.expose('questionData', {
+        type: ContentQuestionData,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const Element = builder.unionType('Element', {
+  types: [
+    ChoicesElement,
+    NumericalElement,
+    FreeTextElement,
+    FlashcardElement,
+    ContentElement,
+  ],
+  resolveType: (element) => {
+    switch (element.type) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesElement
+      case DB.ElementType.NUMERICAL:
+        return NumericalElement
+      case DB.ElementType.FREE_TEXT:
+        return FreeTextElement
+      case DB.ElementType.FLASHCARD:
+        return FlashcardElement
+      case DB.ElementType.CONTENT:
+        return ContentElement
+    }
+  },
+})
+// #endregion
 
 export interface IQuestionOrElementInstance {
   questionInstance?: DB.QuestionInstance | null

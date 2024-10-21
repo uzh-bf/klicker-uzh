@@ -1,8 +1,8 @@
 import {
   ChoicesQuestionData,
-  ContentElementQData,
+  ContentQuestionData,
   Element,
-  FlashcardElementQData,
+  FlashcardQuestionData,
   FreeTextQuestionData,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,8 +16,8 @@ function useFakedInstance({
     | Pick<ChoicesQuestionData, '__typename' | 'options'>
     | Pick<NumericalQuestionData, '__typename' | 'options'>
     | Pick<FreeTextQuestionData, '__typename' | 'options'>
-    | Pick<FlashcardElementQData, '__typename'>
-    | Pick<ContentElementQData, '__typename'>
+    | Pick<FlashcardQuestionData, '__typename'>
+    | Pick<ContentQuestionData, '__typename'>
     | null
 }): ChoicesQuestionData | NumericalQuestionData | FreeTextQuestionData | null {
   if (!element || !questionData) {

@@ -14,16 +14,19 @@ mutation ManipulateContentElement(
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
-    id
-    name
-    status
-    type
-    content
-    pointsMultiplier
-
-    tags {
+    __typename
+    ... on FlashcardElement {
       id
       name
+      status
+      type
+      content
+      pointsMultiplier
+
+      tags {
+        id
+        name
+      }
     }
   }
 }

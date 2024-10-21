@@ -425,9 +425,9 @@ function QuestionEditModal({
     // const temp = dataQuestion?.question?.questionData?.options
     const options =
       dataQuestion?.question?.questionData?.__typename !==
-        'ContentElementQData' &&
+        'ContentQuestionData' &&
       dataQuestion?.question?.questionData?.__typename !==
-        'FlashcardElementQData'
+        'FlashcardQuestionData'
         ? dataQuestion?.question?.questionData?.options!
         : null
 
