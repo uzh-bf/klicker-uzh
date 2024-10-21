@@ -27,6 +27,18 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type AvatarSettings {
+  accessory: String!
+  clothing: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -1127,7 +1139,7 @@ enum ParameterType {
 type Participant {
   achievements: [ParticipantAchievementInstance!]
   avatar: String
-  avatarSettings: Json
+  avatarSettings: AvatarSettings
   email: String
   id: ID!
   isActive: Boolean!

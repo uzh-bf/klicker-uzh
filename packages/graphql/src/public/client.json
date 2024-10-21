@@ -140,7 +140,7 @@
    "GetPracticeQuizList": "7a5a039ecdd864a6e0cf0e18c5ad2a2c87ad610aa3cf286e746cac1ae444b85d",
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "abb7ccc21ebff16f5452a318787a4acca2838dceae717fb4b8fb27f5fa6f78d3",
-   "GetPublicParticipantProfile": "5732c91f4344a09b5a1e531f9a61a1584ccc529c26199f732ae9a15c21ba1af3",
+   "GetPublicParticipantProfile": "840169ba8a67902da899e1f08c92668228657ba5c6af024e42737081179bb343",
    "GetRunningSession": "0dd541f34360e961e2181ba4f77d9f14facbfa2c04c21369cbc0c9823b7100b7",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
    "GetRunningSessionsCourse": "dea0ffd684088b5fd57cb4b1a7a0fe6d7cfda1a8af50557696330aad05816c6e",
@@ -163,8 +163,8 @@
    "GetUserTags": "cfc63cede68a95d79f5fe5a79c7f6275abae9c47b25fcfc665cc8d3e00bac3db",
    "GroupActivityDetails": "dee9bd9c1cab609d09e9d6a51efe1e2cd70677af13c7f07dbddfc4ccc145e0b0",
    "Participations": "76ac5a5c539e57e395109b5836a055573e43fb4b2e4ba6ab3b1374da8580d5c6",
-   "Self": "05603b4fdfd68bbe0990c57cb9e59a5f71ef9705d23d928fd63589dd5364f945",
-   "SelfWithAchievements": "f161d562f384a81dbecd1baa222201522702925a82f859a1238038fbd35413fb",
+   "Self": "32235549b5559c21d740a8358f7bc4711326dc2be34bfa1c2471aa2677958fb0",
+   "SelfWithAchievements": "07ed90975e46d0b5a00efb45e844030ae6bf16653e39c53ecec5afddc72c62f2",
    "UserProfile": "d37d1882bef914e250cba85de86301e48ed8fca440cde15f3568320219b11e1c",
    "FeedbackAdded": "02891184d8c7323a61c3ae7dbff6604a94b2d56fada05b23ced42f4bd1ecdb41",
    "FeedbackCreated": "a93eca30b522af41e5ecb34b78cfeacbfb70e886447dd5199f4459a8c085d5a2",
@@ -175,5 +175,5 @@
    "MicroLearningEnded": "b296f5b68bb5cccea3da7f8947ee13a88ce78307e694e4caef561b3b5b8766cb",
    "RunningSessionUpdated": "c21d7063f22295a1301f18e8e4ac05b671b38445a3b8e820413698b6de0e1652",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
-   "UpdateParticipantAvatar": "ea07d0ab75a016dd988627fcd6de74bdba36de21c8c2c6b59e4a8a7488758519"
+   "UpdateParticipantAvatar": "9b52e4c15c3c5db55ae0521c9f74e815ead8a8c91ebfbdb6a488e648fe3d2514"
 }

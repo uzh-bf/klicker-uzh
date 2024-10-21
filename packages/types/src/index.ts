@@ -34,16 +34,59 @@ export type StackInput = {
 
 // ----- AVATAR SETTINGS -----
 // #region
+export type AvatarKeyTypes =
+  | 'skinTone'
+  | 'eyes'
+  | 'mouth'
+  | 'hair'
+  | 'accessory'
+  | 'hairColor'
+  | 'clothing'
+  | 'clothingColor'
+  | 'facialHair'
+
+export type AvatarHairTypes = 'long' | 'bun' | 'short' | 'buzz' | 'afro'
+export type AvatarHairColorTypes = 'blonde' | 'black' | 'brown'
+export type AvatarEyesTypes =
+  | 'normal'
+  | 'happy'
+  | 'content'
+  | 'squint'
+  | 'heart'
+  | 'wink'
+export type AvatarAccessoryTypes =
+  | 'none'
+  | 'roundGlasses'
+  | 'tinyGlasses'
+  | 'shades'
+export type AvatarMouthTypes = 'grin' | 'openSmile' | 'serious'
+export type AvatarFacialHairTypes = 'none' | 'stubble' | 'mediumBeard'
+export type AvatarClothingTypes = 'shirt' | 'dress' | 'dressShirt'
+export type AvatarClothingColorTypes = 'blue' | 'green' | 'red'
+export type AvatarSkinToneTypes = 'light' | 'dark'
+
+export type AvatarOptions = {
+  skinTone: AvatarSkinToneTypes[]
+  eyes: AvatarEyesTypes[]
+  mouth: AvatarMouthTypes[]
+  hair: AvatarHairTypes[]
+  accessory: AvatarAccessoryTypes[]
+  hairColor: AvatarHairColorTypes[]
+  clothing: AvatarClothingTypes[]
+  clothingColor: AvatarClothingColorTypes[]
+  facialHair: AvatarFacialHairTypes[]
+}
+
 export type AvatarSettings = {
-  skinTone: string
-  eyes: string
-  mouth: string
-  hair: string
-  accessory: string
-  hairColor: string
-  clothing: string
-  clothingColor: string
-  facialHair: string
+  skinTone: AvatarSkinToneTypes
+  eyes: AvatarEyesTypes
+  mouth: AvatarMouthTypes
+  hair: AvatarHairTypes
+  accessory: AvatarAccessoryTypes
+  hairColor: AvatarHairColorTypes
+  clothing: AvatarClothingTypes
+  clothingColor: AvatarClothingColorTypes
+  facialHair: AvatarFacialHairTypes
 }
 // #endregion
 
