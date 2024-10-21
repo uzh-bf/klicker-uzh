@@ -28,7 +28,6 @@
     "p-map": "~7.0.2",
     "prisma": "~5.21.0",
     "prisma-json-types-generator": "~3.1.1",
-    "tsup": "~8.3.0",
     "tsx": "~4.19.1",
     "turndown": "~7.2.0",
     "typescript": "~5.6.3",
@@ -36,6 +35,7 @@
     "xml2js": "~0.6.2"
   },
   "peerDependencies": {
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*"
   },
   "scripts": {

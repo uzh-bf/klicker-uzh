@@ -1,8 +1,6 @@
 import {
   ElementInstanceEvaluation,
   ElementType,
-  FreeElementInstanceEvaluation,
-  NumericalElementInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,10 +21,13 @@ function ElementWordcloud({
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
 
   const processedData =
-    instance.type === ElementType.Numerical
-      ? (instance as NumericalElementInstanceEvaluation).results.responseValues
-      : instance.type === ElementType.FreeText
-        ? (instance as FreeElementInstanceEvaluation).results.responses
+    instance.__typename === 'NumericalElementInstanceEvaluation'
+      ? instance.results.responseValues.map((response) => ({
+          value: String(response.value),
+          count: response.count,
+        }))
+      : instance.__typename === 'FreeElementInstanceEvaluation'
+        ? instance.results.responses
         : []
 
   if (!supportedElementTypes.includes(instance.type)) {

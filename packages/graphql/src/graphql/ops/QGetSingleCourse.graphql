@@ -30,6 +30,7 @@ query GetSingleCourse($courseId: String!) {
       pinCode
       accessMode
       status
+      pointsMultiplier
       createdAt
       numOfBlocks
       numOfQuestions
@@ -40,6 +41,9 @@ query GetSingleCourse($courseId: String!) {
       displayName
       status
       availableFrom
+      orderType
+      pointsMultiplier
+      resetTimeDays
       numOfStacks
     }
     groupActivities {
@@ -58,6 +62,7 @@ query GetSingleCourse($courseId: String!) {
       status
       scheduledStartAt
       scheduledEndAt
+      pointsMultiplier
       numOfStacks
     }
     leaderboard {

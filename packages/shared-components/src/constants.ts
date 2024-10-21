@@ -1,4 +1,5 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { AvatarOptions as AvatarOptionsType } from '@klicker-uzh/types'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
@@ -63,54 +64,7 @@ export const QUESTION_GROUPS: Record<string, ElementType[]> = {
   WITH_STATISTICS: [ElementType.Numerical],
 }
 
-export type AVATAR_OPTIONS_KEY =
-  | 'hair'
-  | 'hairColor'
-  | 'eyes'
-  | 'accessory'
-  | 'mouth'
-  | 'facialHair'
-  | 'clothing'
-  | 'clothingColor'
-  | 'skinTone'
-
-export type AVATAR_OPTIONS_VALUE =
-  | 'long'
-  | 'bun'
-  | 'short'
-  | 'buzz'
-  | 'afro'
-  | 'blonde'
-  | 'black'
-  | 'brown'
-  | 'normal'
-  | 'happy'
-  | 'content'
-  | 'squint'
-  | 'heart'
-  | 'wink'
-  | 'none'
-  | 'roundGlasses'
-  | 'tinyGlasses'
-  | 'shades'
-  | 'grin'
-  | 'openSmile'
-  | 'serious'
-  | 'stubble'
-  | 'mediumBeard'
-  | 'shirt'
-  | 'dress'
-  | 'dressShirt'
-  | 'blue'
-  | 'green'
-  | 'red'
-  | 'light'
-  | 'dark'
-
-export const AVATAR_OPTIONS: Record<
-  AVATAR_OPTIONS_KEY,
-  AVATAR_OPTIONS_VALUE[]
-> = {
+export const AvatarOptions: AvatarOptionsType = {
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   hairColor: ['blonde', 'black', 'brown'],
   eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],
@@ -120,10 +74,6 @@ export const AVATAR_OPTIONS: Record<
   clothing: ['shirt', 'dress', 'dressShirt'],
   clothingColor: ['blue', 'green', 'red'],
   skinTone: ['light', 'dark'],
-  // eyebrows: ['raised'],
-  // graphic: ['none'],
-  // hat: ['none'],
-  // body: ['breasts', 'chest'],
 }
 
 export enum ChartType {

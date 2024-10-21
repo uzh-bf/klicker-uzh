@@ -22,15 +22,17 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
       status
 
       questionData {
-        id
-        name
-        type
-        content
-
         ... on ChoicesQuestionData {
+          __typename
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             hasAnswerFeedbacks
+            displayMode
             choices {
               ix
               correct
@@ -41,6 +43,12 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         }
 
         ... on NumericalQuestionData {
+          __typename
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             restrictions {
@@ -55,6 +63,12 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         }
 
         ... on FreeTextQuestionData {
+          __typename
+          id
+          name
+          type
+          content
+
           options {
             hasSampleSolution
             restrictions {
@@ -62,6 +76,22 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
             }
             solutions
           }
+        }
+
+        ... on FlashcardQuestionData {
+          __typename
+          id
+          name
+          type
+          content
+        }
+
+        ... on ContentQuestionData {
+          __typename
+          id
+          name
+          type
+          content
         }
       }
 

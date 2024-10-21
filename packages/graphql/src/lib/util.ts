@@ -1,4 +1,4 @@
-import {
+import type {
   ElementInstance,
   ElementStack,
   QuestionResponse,
@@ -10,7 +10,7 @@ import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import { sort } from 'remeda'
-import { Context } from './context.js'
+import type { Context } from './context.js'
 
 dayjs.extend(utc)
 dayjs.extend(minMax)

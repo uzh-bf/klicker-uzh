@@ -1,5 +1,3 @@
-# import "./FQuestionDataWithoutSolutions.graphql"
-
 query GetRunningSession($id: String!) {
   session(id: $id) {
     id

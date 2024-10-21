@@ -65,7 +65,7 @@ interface EmbeddingModalProps {
   open: boolean
   onClose: () => void
   sessionId: string
-  questions?: QuestionInstance[]
+  questions?: Omit<QuestionInstance, 'questionData'>[]
 }
 
 function EmbeddingModal({

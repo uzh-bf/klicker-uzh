@@ -20,6 +20,7 @@
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@radix-ui/react-collapsible": "1.1.1",
     "@radix-ui/react-tabs": "1.1.1",

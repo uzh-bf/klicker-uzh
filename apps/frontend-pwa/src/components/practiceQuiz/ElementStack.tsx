@@ -2,13 +2,13 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
+  FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  ElementChoicesType,
   StudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -132,57 +132,98 @@ function ElementStack({
           const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
           )
+          const commonAttributes = {
+            valid: true,
+            evaluation,
+          }
 
-          if (!foundElement) {
+          if (!foundElement || !evaluation.lastResponse) {
             // Handle the error, log a warning, or skip this evaluation
             console.warn(`Element with ID ${evaluation.instanceId} not found.`)
             return acc
           } else {
             const elementType = foundElement.elementType
-            let response: StudentResponseType[0]['response']
-
-            if (elementType === ElementType.Flashcard) {
-              response = evaluation.lastResponse
-                .correctness as FlashcardCorrectnessType
-            } else if (elementType === ElementType.Content) {
-              response = evaluation.lastResponse.viewed as boolean
-            } else if (
-              elementType === ElementType.Sc ||
-              elementType === ElementType.Mc
+            if (
+              elementType === ElementType.Flashcard &&
+              evaluation.__typename === 'FlashcardInstanceEvaluation'
             ) {
-              const storedChoices = evaluation.lastResponse.choices as number[]
-              response = storedChoices.reduce(
-                (acc, choice) => {
-                  return {
-                    ...acc,
-                    [choice]: true,
-                  }
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.correctness,
                 },
-                {} as Record<number, boolean>
-              )
-            } else if (elementType === ElementType.Kprim) {
-              const storedChoices = evaluation.lastResponse.choices as number[]
-              response = { 0: false, 1: false, 2: false, 3: false }
-              storedChoices.forEach((choice) => {
-                response[choice] = true
-              })
+              }
             } else if (
-              elementType === ElementType.Numerical ||
-              elementType === ElementType.FreeText
+              elementType === ElementType.Content &&
+              evaluation.__typename === 'ContentInstanceEvaluation'
             ) {
-              response = evaluation.lastResponse.value
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.viewed,
+                },
+              }
+            } else if (
+              (elementType === ElementType.Sc ||
+                elementType === ElementType.Mc) &&
+              evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ) {
+              const storedChoices = evaluation.lastResponse.choices
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: storedChoices.reduce<Record<number, boolean>>(
+                    (acc, choice) => {
+                      return {
+                        ...acc,
+                        [choice]: true,
+                      }
+                    },
+                    {}
+                  ),
+                },
+              }
+            } else if (
+              elementType === ElementType.Kprim &&
+              evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ) {
+              const storedChoices = evaluation.lastResponse.choices
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: {
+                    0: storedChoices.includes(0),
+                    1: storedChoices.includes(1),
+                    2: storedChoices.includes(2),
+                    3: storedChoices.includes(3),
+                  },
+                },
+              }
+            } else if (
+              (elementType === ElementType.Numerical ||
+                elementType === ElementType.FreeText) &&
+              (evaluation.__typename === 'FreeTextInstanceEvaluation' ||
+                evaluation.__typename === 'NumericalInstanceEvaluation')
+            ) {
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.value,
+                },
+              }
             }
 
-            return {
-              ...acc,
-              [evaluation.instanceId]: {
-                type: elementType,
-                response,
-                correct: evaluation.correctness,
-                valid: true,
-                evaluation,
-              },
-            }
+            return acc
           }
         }, {} as StudentResponseType)
       )
@@ -343,17 +384,27 @@ function ElementStack({
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
+                      let responseValue: FlashcardCorrectnessType
+                      if (value.response === FlashcardCorrectness.Correct) {
+                        responseValue = FlashcardCorrectnessType.Correct
+                      } else if (
+                        value.response === FlashcardCorrectness.Partial
+                      ) {
+                        responseValue = FlashcardCorrectnessType.Partial
+                      } else {
+                        responseValue = FlashcardCorrectnessType.Incorrect
+                      }
+
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Flashcard,
-                        flashcardResponse:
-                          value.response as FlashcardCorrectnessType,
+                        flashcardResponse: responseValue,
                       }
                     } else if (value.type === ElementType.Content) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Content,
-                        contentReponse: value.response as boolean,
+                        contentReponse: value.response,
                       }
                     } else if (
                       value.type === ElementType.Sc ||
@@ -369,7 +420,7 @@ function ElementStack({
 
                       return {
                         instanceId: parseInt(instanceId),
-                        type: value.type as ElementChoicesType,
+                        type: value.type,
                         choicesResponse: responseList,
                       }
                     }

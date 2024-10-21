@@ -1,7 +1,18 @@
-#import "./FFeedbackData.graphql"
-
 subscription FeedbackAdded($sessionId: String!) {
   feedbackAdded(sessionId: $sessionId) {
-    ...FeedbackData
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+    resolvedAt
+    createdAt
+    responses {
+      id
+      content
+      positiveReactions
+      negativeReactions
+    }
   }
 }

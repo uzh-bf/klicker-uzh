@@ -1,5 +1,5 @@
 import type {
-  InstanceEvaluation,
+  NumericalInstanceEvaluation,
   NumericalQuestionData,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -7,13 +7,13 @@ import { useTranslations } from 'next-intl'
 import React from 'react'
 import Histogram from '../Histogram'
 
-interface Props {
+interface NREvaluationProps {
   options: NumericalQuestionOptions
-  evaluation: InstanceEvaluation
+  evaluation: NumericalInstanceEvaluation
   reference?: string
 }
 
-function NREvaluation({ options, evaluation, reference }: Props) {
+function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
   const t = useTranslations()
 
   const results = Object.entries(
@@ -35,7 +35,10 @@ function NREvaluation({ options, evaluation, reference }: Props) {
       <Histogram
         data={{
           results: results,
-          questionData: { options } as NumericalQuestionData,
+          questionData: {
+            options,
+            __typename: 'NumericalQuestionData',
+          } as NumericalQuestionData,
         }}
         showSolution={{ general: true }}
         textSize="md"

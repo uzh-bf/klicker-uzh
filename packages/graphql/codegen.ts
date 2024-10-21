@@ -17,6 +17,7 @@ const config: CodegenConfig = {
       ],
       config: {
         avoidOptionals: false,
+        useTypeImports: true,
       },
     },
     './src/ops.schema.json': {

@@ -38,10 +38,7 @@ mutation EditSession(
       timeLimit
       instances {
         id
-        questionData {
-          id
-          name
-        }
+        ...QuestionDataInfo
       }
     }
     course {

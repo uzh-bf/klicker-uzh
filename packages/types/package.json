@@ -1,0 +1,41 @@
+{
+  "name": "@klicker-uzh/types",
+  "version": "3.1.0",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.1",
+    "@types/node": "^20.16.1",
+    "cross-env": "~7.0.3",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.24.0",
+    "typescript": "~5.6.3"
+  },
+  "peerDependencies": {
+    "remeda": "^2.15.0"
+  },
+  "scripts": {
+    "build": "run-s build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "check": "tsc --noEmit",
+    "dev": "run-p dev:ts",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}

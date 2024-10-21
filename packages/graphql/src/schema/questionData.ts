@@ -1,6 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
+import {
+  type BaseQuestionData,
+  type Choice as ChoiceType,
+  type NumericalSolutionRange as NumericalSolutionRangeType,
+  DisplayMode,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { BaseElementData, DisplayMode } from '../types/app.js'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
@@ -18,48 +23,18 @@ export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DisplayMode),
 })
 
-// ----- QUESTION DATA INTERFACE -----
-export const QuestionDataRef =
-  builder.interfaceRef<BaseElementData>('QuestionData')
-export const QuestionData = QuestionDataRef.implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    elementId: t.exposeInt('elementId', { nullable: true }),
-    questionId: t.exposeInt('questionId', { nullable: true }),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: ElementType }),
-    content: t.exposeString('content'),
-    explanation: t.exposeString('explanation', { nullable: true }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-  }),
-  resolveType(value) {
-    switch (value.type) {
-      case DB.ElementType.SC:
-      case DB.ElementType.MC:
-      case DB.ElementType.KPRIM:
-        return 'ChoicesQuestionData'
-      case DB.ElementType.NUMERICAL:
-        return 'NumericalQuestionData'
-      case DB.ElementType.FREE_TEXT:
-        return 'FreeTextQuestionData'
-      case DB.ElementType.CONTENT:
-        return 'ContentElementQData'
-      case DB.ElementType.FLASHCARD:
-        return 'FlashcardElementQData'
-      default:
-        return null
-    }
-  },
+// ----- CHOICE QUESTIONS -----
+const sharedQuestionData = (t) => ({
+  id: t.exposeID('id'),
+  questionId: t.exposeInt('questionId', { nullable: true }),
+  name: t.exposeString('name'),
+  type: t.expose('type', { type: ElementType }),
+  content: t.exposeString('content'),
+  explanation: t.exposeString('explanation', { nullable: true }),
+  pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
 })
 
-// ----- CHOICE QUESTIONS -----
-export interface IChoice {
-  ix: number
-  correct?: boolean
-  feedback?: string
-  value: string
-}
-export const Choice = builder.objectRef<IChoice>('Choice').implement({
+export const Choice = builder.objectRef<ChoiceType>('Choice').implement({
   fields: (t) => ({
     ix: t.exposeInt('ix'),
     correct: t.exposeBoolean('correct', { nullable: true }),
@@ -70,29 +45,33 @@ export const Choice = builder.objectRef<IChoice>('Choice').implement({
 
 export interface IChoiceQuestionOptions {
   displayMode: DisplayMode
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
-  choices: IChoice[]
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
+  choices: ChoiceType[]
 }
 export const ChoiceQuestionOptions = builder
   .objectRef<IChoiceQuestionOptions>('ChoiceQuestionOptions')
   .implement({
     fields: (t) => ({
       displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       choices: t.expose('choices', { type: [Choice] }),
     }),
   })
 
-export interface IChoicesQuestionData extends BaseElementData {
+export interface IChoicesQuestionData extends BaseQuestionData {
   options: IChoiceQuestionOptions
 }
 export const ChoicesQuestionData = builder
   .objectRef<IChoicesQuestionData>('ChoicesQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: ChoiceQuestionOptions }),
     }),
   })
@@ -111,12 +90,8 @@ export const NumericalRestrictions = builder
     }),
   })
 
-export interface INumericalSolutionRange {
-  min?: number
-  max?: number
-}
 export const NumericalSolutionRange = builder
-  .objectRef<INumericalSolutionRange>('NumericalSolutionRange')
+  .objectRef<NumericalSolutionRangeType>('NumericalSolutionRange')
   .implement({
     fields: (t) => ({
       min: t.exposeFloat('min', { nullable: true }),
@@ -125,19 +100,21 @@ export const NumericalSolutionRange = builder
   })
 
 export interface INumericalQuestionOptions {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   accuracy?: number | null
   placeholder?: string | null
   unit?: string | null
   restrictions?: INumericalRestrictions | null
-  solutionRanges?: INumericalSolutionRange[] | null
+  solutionRanges?: NumericalSolutionRangeType[] | null
 }
 export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
   .implement({
     fields: (t) => ({
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
       hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
         nullable: true,
       }),
@@ -155,14 +132,14 @@ export const NumericalQuestionOptions = builder
     }),
   })
 
-export interface INumericalQuestionData extends BaseElementData {
+export interface INumericalQuestionData extends BaseQuestionData {
   options: INumericalQuestionOptions
 }
 export const NumericalQuestionData = builder
   .objectRef<INumericalQuestionData>('NumericalQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: NumericalQuestionOptions }),
     }),
   })
@@ -180,8 +157,8 @@ export const FreeTextRestrictions = builder
   })
 
 export interface IFreeTextQuestionOptions {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   restrictions?: IFreeTextRestrictions | null
   solutions?: string[] | null
 }
@@ -189,7 +166,9 @@ export const FreeTextQuestionOptions = builder
   .objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
   .implement({
     fields: (t) => ({
-      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
       hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
         nullable: true,
       }),
@@ -201,32 +180,61 @@ export const FreeTextQuestionOptions = builder
     }),
   })
 
-export interface IFreeTextQuestionData extends BaseElementData {
+export interface IFreeTextQuestionData extends BaseQuestionData {
   options: IFreeTextQuestionOptions
 }
 export const FreeTextQuestionData = builder
   .objectRef<IFreeTextQuestionData>('FreeTextQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
     fields: (t) => ({
+      ...sharedQuestionData(t),
       options: t.expose('options', { type: FreeTextQuestionOptions }),
     }),
   })
 
 // ----- CONTENT ELEMENTS -----
-export interface IContentElementQData extends BaseElementData {}
-export const ContentElementQData = builder
-  .objectRef<IContentElementQData>('ContentElementQData')
+export interface IContentQuestionData extends BaseQuestionData {}
+export const ContentQuestionData = builder
+  .objectRef<IContentQuestionData>('ContentQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
-    fields: (t) => ({}),
+    fields: (t) => ({
+      ...sharedQuestionData(t),
+    }),
   })
 
 // ----- FLASHCARD ELEMENTS -----
-export interface IFlashcardElementQData extends BaseElementData {}
-export const FlashcardElementQData = builder
-  .objectRef<IFlashcardElementQData>('FlashcardElementQData')
+export interface IFlashcardQuestionData extends BaseQuestionData {}
+export const FlashcardQuestionData = builder
+  .objectRef<IFlashcardQuestionData>('FlashcardQuestionData')
   .implement({
-    interfaces: [QuestionDataRef],
-    fields: (t) => ({}),
+    fields: (t) => ({
+      ...sharedQuestionData(t),
+    }),
   })
+
+// ----- QUESTION DATA INTERFACE -----
+export const QuestionData = builder.unionType('QuestionData', {
+  types: [
+    ChoicesQuestionData,
+    NumericalQuestionData,
+    FreeTextQuestionData,
+    FlashcardQuestionData,
+    ContentQuestionData,
+  ],
+  resolveType: (element) => {
+    switch (element.type) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesQuestionData
+      case DB.ElementType.NUMERICAL:
+        return NumericalQuestionData
+      case DB.ElementType.FREE_TEXT:
+        return FreeTextQuestionData
+      case DB.ElementType.FLASHCARD:
+        return FlashcardQuestionData
+      case DB.ElementType.CONTENT:
+        return ContentQuestionData
+    }
+  },
+})

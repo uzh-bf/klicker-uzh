@@ -8,11 +8,10 @@ import {
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useRouter } from 'next/router'
-import { useState } from 'react'
-
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import Layout from '../../../components/Layout'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
@@ -90,7 +89,6 @@ function Cockpit() {
     feedbacks,
   } = cockpitData.cockpitSession
 
-  // TODO: add gamification leaderboard button
   return (
     <Layout>
       <div className="mb-8 print:hidden">

@@ -1,8 +1,7 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function GroupsLeaderboard({ course }: { course: Course }) {
+function GroupsLeaderboard() {
   const t = useTranslations()
 
   return (

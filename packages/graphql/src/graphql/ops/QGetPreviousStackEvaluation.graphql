@@ -3,29 +3,6 @@ query GetPreviousStackEvaluation($stackId: Int!) {
     id
     status
     score
-    evaluations {
-      instanceId
-      pointsMultiplier
-      explanation
-      feedbacks {
-        ix
-        feedback
-        correct
-        value
-      }
-      choices
-      numAnswers
-      answers
-      score
-      pointsAwarded
-      percentile
-      newPointsFrom
-      xpAwarded
-      newXpFrom
-      solutions
-      solutionRanges
-      lastResponse
-      correctness
-    }
+    ...StackFeedbackEvaluations
   }
 }

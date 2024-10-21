@@ -1,9 +1,9 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { FlashcardElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface FCEvaluationProps {
-  evaluation: ElementInstanceEvaluation
+  evaluation: FlashcardElementInstanceEvaluation
 }
 
 function FCEvaluation({ evaluation }: FCEvaluationProps) {

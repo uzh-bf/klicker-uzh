@@ -57,14 +57,16 @@ export function filterQuestions(
   // if a sample solution filter was selected, only show questions with a sample solution
   if (filters.sampleSolution) {
     results = results.filter(
-      ({ options }) => options.hasSampleSolution === true
+      (element) =>
+        'options' in element && element.options.hasSampleSolution === true
     )
   }
 
   // if an answer feedback filter was selected, only show questions with answer feedbacks
   if (filters.answerFeedbacks) {
     results = results.filter(
-      ({ options }) => options.hasAnswerFeedbacks === true
+      (element) =>
+        'options' in element && element.options.hasAnswerFeedbacks === true
     )
   }
 

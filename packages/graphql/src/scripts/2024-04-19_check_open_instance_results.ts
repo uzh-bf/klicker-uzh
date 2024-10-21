@@ -3,10 +3,10 @@ import {
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { AllElementTypeData, QuestionResultsOpen } from '@klicker-uzh/types'
 import { error } from 'console'
 import { createHash } from 'node:crypto'
 import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops.js'
-import { AllElementTypeData, QuestionResultsOpen } from 'src/types/app.js'
 
 async function run() {
   const prisma = new PrismaClient()

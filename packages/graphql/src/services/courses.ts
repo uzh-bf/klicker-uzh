@@ -2,14 +2,15 @@ import {
   ElementOrderType,
   GroupActivityStatus,
   LeaderboardType,
-  ParticipantGroup,
+  type Participant,
+  type ParticipantGroup,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import { prop, sortBy } from 'remeda'
-import { ILeaderboardEntry } from 'src/schema/course.js'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { ILeaderboardEntry } from 'src/schema/course.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 
 export async function getBasicCourseInformation(
@@ -365,7 +366,7 @@ export async function getCourseOverviewData(
 
   if (!course) return null
 
-  let participant = null
+  let participant: Participant | null = null
   if (ctx.user?.sub) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },

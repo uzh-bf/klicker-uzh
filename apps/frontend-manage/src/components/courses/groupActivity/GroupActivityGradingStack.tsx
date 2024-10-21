@@ -9,7 +9,9 @@ import {
   GroupActivityGrading,
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
+import StudentElement, {
+  StudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
   FormLabel,
@@ -65,9 +67,13 @@ function GroupActivityGradingStack({
   const results = submission?.results
   const findResponse = useCallback(
     (elementId: number, type: ElementType) => {
-      const decision = submission?.decisions.find(
+      const decision = submission?.decisions?.find(
         (decision: GroupActivityDecision) => decision.instanceId === elementId
       )
+
+      if (!decision) {
+        return
+      }
 
       if (type === ElementType.FreeText) {
         return {
@@ -92,10 +98,9 @@ function GroupActivityGradingStack({
           },
         }
       } else if (type === ElementType.Kprim) {
-        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
-          (acc, choice) => ({ ...acc, [choice]: false }),
-          {} as Record<number, boolean>
-        )
+        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce<
+          Record<number, boolean>
+        >((acc, choice) => ({ ...acc, [choice]: false }), {})
 
         return {
           [elementId]: {
@@ -105,7 +110,7 @@ function GroupActivityGradingStack({
                 ...acc,
                 [choice]: true,
               }),
-              responseObj as Record<number, boolean>
+              responseObj
             ),
             valid: true,
           },
@@ -172,19 +177,13 @@ function GroupActivityGradingStack({
           variables: {
             id: submission.id,
             gradingDecisions: {
-              passed: values.passed,
+              passed: values.passed!,
               comment: values.comment,
-              grading: values.grading.map(
-                (res: {
-                  instanceId: number
-                  score: number
-                  feedback?: string
-                }) => ({
-                  instanceId: res.instanceId,
-                  score: parseFloat(String(res.score)),
-                  feedback: res.feedback,
-                })
-              ),
+              grading: values.grading.map((res) => ({
+                instanceId: res.instanceId,
+                score: parseFloat(String(res.score!)),
+                feedback: res.feedback,
+              })),
             },
           },
         })
@@ -225,7 +224,10 @@ function GroupActivityGradingStack({
                   element={element}
                   elementIx={ix}
                   studentResponse={
-                    findResponse(element.id, element.elementType) ?? []
+                    (findResponse(
+                      element.id,
+                      element.elementType
+                    ) as StudentResponseType) ?? []
                   }
                   setStudentResponse={() => null}
                   hideReadButton
@@ -295,24 +297,14 @@ function GroupActivityGradingStack({
             ))}
             <div className="self-end border-t border-black pt-2 text-lg font-bold">
               {t('manage.groupActivity.totalAchievedPoints', {
-                achieved: values.grading.reduce(
-                  (
-                    acc: number,
-                    result: {
-                      instanceId: number
-                      score: number
-                      feedback?: string
-                    }
-                  ) => {
-                    return (
-                      acc +
-                      (String(result.score) === ''
-                        ? 0
-                        : parseFloat(String(result.score ?? 0)))
-                    )
-                  },
-                  0
-                ),
+                achieved: values.grading.reduce((acc: number, result) => {
+                  return (
+                    acc +
+                    (String(result.score) === ''
+                      ? 0
+                      : parseFloat(String(result.score ?? 0)))
+                  )
+                }, 0),
                 total: maxPoints,
               })}
             </div>

@@ -1,5 +1,3 @@
-# import "./FQuestionDataWithoutSolutions.graphql"
-
 query GetCockpitSession($id: String!) {
   cockpitSession(id: $id) {
     id
@@ -27,14 +25,7 @@ query GetCockpitSession($id: String!) {
       execution
       instances {
         id
-        questionData {
-          id
-          questionId
-          pointsMultiplier
-          name
-          type
-          content
-        }
+        ...QuestionDataInfo
       }
     }
     activeBlock {

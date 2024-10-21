@@ -4,18 +4,18 @@ import React from 'react'
 import RDS from 'react-dom/server'
 
 import { BigHead } from '@bigheads/core'
-import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
+import { AvatarOptions } from '@klicker-uzh/shared-components/src/constants'
 
 async function main() {
-  AVATAR_OPTIONS.skinTone.forEach((skinTone) => {
-    AVATAR_OPTIONS.eyes.forEach((eyes) => {
-      AVATAR_OPTIONS.mouth.forEach((mouth) => {
-        AVATAR_OPTIONS.hair.forEach((hair) => {
-          AVATAR_OPTIONS.facialHair.forEach((facialHair) => {
+  AvatarOptions.skinTone.forEach((skinTone) => {
+    AvatarOptions.eyes.forEach((eyes) => {
+      AvatarOptions.mouth.forEach((mouth) => {
+        AvatarOptions.hair.forEach((hair) => {
+          AvatarOptions.facialHair.forEach((facialHair) => {
             ;['dress', 'shirt', 'dressShirt'].forEach((clothing) => {
-              AVATAR_OPTIONS.accessory.forEach((accessory) => {
-                AVATAR_OPTIONS.hairColor.forEach((hairColor) => {
-                  AVATAR_OPTIONS.clothingColor.forEach((clothingColor) => {
+              AvatarOptions.accessory.forEach((accessory) => {
+                AvatarOptions.hairColor.forEach((hairColor) => {
+                  AvatarOptions.clothingColor.forEach((clothingColor) => {
                     const definition = {
                       skinTone,
                       eyes,

@@ -4,7 +4,17 @@ query Self {
     email
     username
     avatar
-    avatarSettings
+    avatarSettings {
+      skinTone
+      eyes
+      mouth
+      hair
+      facialHair
+      accessory
+      hairColor
+      clothing
+      clothingColor
+    }
     isActive
     isProfilePublic
     xp

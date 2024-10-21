@@ -1,11 +1,5 @@
-import {
-  ChoicesElementInstanceEvaluation,
-  ElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import {
-  QUESTION_GROUPS,
-  SMALL_BAR_THRESHOLD,
-} from '@klicker-uzh/shared-components/src/constants'
+import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { SMALL_BAR_THRESHOLD } from '@klicker-uzh/shared-components/src/constants'
 import { useMemo } from 'react'
 
 interface UseEvaluationBarChartDataProps {
@@ -16,8 +10,8 @@ function useEvaluationBarChartData({
   instance,
 }: UseEvaluationBarChartDataProps) {
   const labeledData = useMemo(() => {
-    if (QUESTION_GROUPS.CHOICES.includes(instance.type)) {
-      const results = (instance as ChoicesElementInstanceEvaluation).results
+    if (instance.__typename === 'ChoicesElementInstanceEvaluation') {
+      const results = instance.results
       return results.choices.map((choice, idx) => ({
         count: choice.count,
         labelIn:

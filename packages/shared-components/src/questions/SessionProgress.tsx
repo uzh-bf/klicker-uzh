@@ -5,6 +5,7 @@ import React from 'react'
 export interface SessionProgressProps {
   activeIndex: number
   isSubmitDisabled?: boolean
+  isSubmitHidden?: boolean
   numItems: number
   expiresAt?: Date
   timeLimit?: number
@@ -15,6 +16,7 @@ export interface SessionProgressProps {
 export function SessionProgress({
   activeIndex,
   isSubmitDisabled = false,
+  isSubmitHidden = false,
   numItems,
   expiresAt,
   timeLimit,
@@ -49,19 +51,21 @@ export function SessionProgress({
         isMaxVisible={true}
       />
 
-      <div className="my-auto">
-        <Button
-          fluid
-          className={{
-            root: 'bg-primary-80 !mr-0 h-10 w-32 font-bold text-white disabled:opacity-50',
-          }}
-          disabled={isSubmitDisabled}
-          onClick={onSubmit}
-          data={{ cy: 'student-submit-answer' }}
-        >
-          <Button.Label>{t('shared.generic.send')}</Button.Label>
-        </Button>
-      </div>
+      {!isSubmitHidden && (
+        <div className="my-auto">
+          <Button
+            fluid
+            className={{
+              root: 'bg-primary-80 !mr-0 h-10 w-32 font-bold text-white disabled:opacity-50',
+            }}
+            disabled={isSubmitDisabled}
+            onClick={onSubmit}
+            data={{ cy: 'student-submit-answer' }}
+          >
+            <Button.Label>{t('shared.generic.send')}</Button.Label>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

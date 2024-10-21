@@ -340,16 +340,17 @@ function LiveQuizCreationBlock({
           </Button.Label>
         </Button>
       )}
-      <div
-        ref={drop}
-        className={twMerge(
-          'w-full rounded border border-solid p-0.5 text-center',
-          isOver && 'bg-primary-20'
-        )}
-        data-cy={`drop-questions-here-${index}`}
-      >
-        <FontAwesomeIcon icon={faPlus} size="lg" />
-      </div>
+      {drop(
+        <div
+          className={twMerge(
+            'w-full rounded border border-solid p-0.5 text-center',
+            isOver && 'bg-primary-20'
+          )}
+          data-cy={`drop-questions-here-${index}`}
+        >
+          <FontAwesomeIcon icon={faPlus} size="lg" />
+        </div>
+      )}
       <Modal
         open={openSettings}
         onClose={() => setOpenSettings(false)}

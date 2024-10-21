@@ -33,6 +33,7 @@ function QuestionEvaluation({
   className,
 }: QuestionEvaluationProps) {
   const t = useTranslations()
+  const questionData = currentInstance.questionData
   const [statisticStates, setStatisticStates] = useState<{
     [key: string]: boolean
   }>({
@@ -75,9 +76,7 @@ function QuestionEvaluation({
             textSize.text
           )}
         >
-          {(currentInstance.questionData.type === 'SC' ||
-            currentInstance.questionData.type === 'MC' ||
-            currentInstance.questionData.type === 'KPRIM') && (
+          {questionData.__typename === 'ChoicesQuestionData' && (
             <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2">
               <div
                 className={twMerge(
@@ -85,140 +84,137 @@ function QuestionEvaluation({
                   textSize.text
                 )}
               >
-                {currentInstance.questionData.options.choices.map(
-                  (choice, innerIndex) => {
-                    const correctFraction =
-                      parseInt(currentInstance.results[innerIndex].count) /
-                      totalParticipants
+                {questionData.options.choices.map((choice, innerIndex) => {
+                  const correctFraction =
+                    parseInt(currentInstance.results[innerIndex].count) /
+                    totalParticipants
 
-                    return (
-                      <div key={`${currentInstance.blockIx}-${innerIndex}`}>
-                        <div className="flex flex-row items-center justify-between leading-5">
-                          <div
-                            // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                            style={{
-                              backgroundColor: showSolution
-                                ? choice.correct
-                                  ? '#00de0d'
-                                  : '#ff0000'
-                                : CHART_COLORS[innerIndex % 12],
-                              minWidth: '1.75rem',
-                              width: `calc(${correctFraction * 100}%)`,
-                            }}
-                            className={twMerge(
-                              'mr-2 flex h-5 items-center justify-center rounded-md font-bold text-white',
-                              choice.correct && showSolution && 'text-black'
-                            )}
-                          >
-                            {String.fromCharCode(65 + innerIndex)}
-                          </div>
-                          <div className="whitespace-nowrap text-right">
-                            {Math.round(100 * correctFraction)} %
-                          </div>
+                  return (
+                    <div key={`${currentInstance.blockIx}-${innerIndex}`}>
+                      <div className="flex flex-row items-center justify-between leading-5">
+                        <div
+                          // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                          style={{
+                            backgroundColor: showSolution
+                              ? choice.correct
+                                ? '#00de0d'
+                                : '#ff0000'
+                              : CHART_COLORS[innerIndex % 12],
+                            minWidth: '1.75rem',
+                            width: `calc(${correctFraction * 100}%)`,
+                          }}
+                          className={twMerge(
+                            'mr-2 flex h-5 items-center justify-center rounded-md font-bold text-white',
+                            choice.correct && showSolution && 'text-black'
+                          )}
+                        >
+                          {String.fromCharCode(65 + innerIndex)}
                         </div>
-
-                        <div className="line-clamp-3 w-full">
-                          <Ellipsis
-                            // maxLines={3}
-                            maxLength={60}
-                            className={{
-                              tooltip:
-                                'z-20 float-right min-w-[25rem] !text-white',
-                              markdown: textSize.text,
-                            }}
-                          >
-                            {choice.value}
-                          </Ellipsis>
+                        <div className="whitespace-nowrap text-right">
+                          {Math.round(100 * correctFraction)} %
                         </div>
                       </div>
-                    )
-                  }
-                )}
+
+                      <div className="line-clamp-3 w-full">
+                        <Ellipsis
+                          // maxLines={3}
+                          maxLength={60}
+                          className={{
+                            tooltip:
+                              'z-20 float-right min-w-[25rem] !text-white',
+                            markdown: textSize.text,
+                          }}
+                        >
+                          {choice.value}
+                        </Ellipsis>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {currentInstance.questionData.type === 'NUMERICAL' && (
-            <div>
-              <div className="font-bold">
-                {t('manage.evaluation.validSolutionRange')}:
-              </div>
+          {questionData.__typename === 'NumericalQuestionData' &&
+            questionData.options.restrictions && (
               <div>
-                [
-                {currentInstance.questionData.options.restrictions?.min ?? '-∞'}
-                ,
-                {currentInstance.questionData.options.restrictions?.max ?? '+∞'}
-                ]
-              </div>
-              <div className="mt-4 font-bold">
-                {t('manage.evaluation.statistics')}:
-              </div>
-              {currentInstance.statistics ? (
-                Object.entries(currentInstance.statistics)
-                  .slice(1)
-                  .sort(
-                    (a, b) =>
-                      STATISTICS_ORDER.indexOf(a[0]) -
-                      STATISTICS_ORDER.indexOf(b[0])
-                  )
-                  .map((statistic) => {
-                    const statisticName = statistic[0]
-                    const statisticValue = statistic[1] as number
-                    return (
-                      <Statistic
-                        key={statisticName}
-                        statisticName={statisticName}
-                        value={statisticValue}
-                        hasCheckbox={
-                          !(statisticName === 'min' || statisticName === 'max')
-                        }
-                        chartType={chartType}
-                        checked={statisticStates[statisticName]}
-                        onCheck={() => {
-                          setStatisticStates({
-                            ...statisticStates,
-                            [statisticName]: !statisticStates[statisticName],
-                          })
-                        }}
-                        size={textSize.size}
-                      />
+                <div className="font-bold">
+                  {t('manage.evaluation.validSolutionRange')}:
+                </div>
+                <div>
+                  [{questionData.options.restrictions?.min ?? '-∞'},
+                  {questionData.options.restrictions?.max ?? '+∞'}]
+                </div>
+                <div className="mt-4 font-bold">
+                  {t('manage.evaluation.statistics')}:
+                </div>
+                {currentInstance.statistics ? (
+                  Object.entries(currentInstance.statistics)
+                    .slice(1)
+                    .sort(
+                      (a, b) =>
+                        STATISTICS_ORDER.indexOf(a[0]) -
+                        STATISTICS_ORDER.indexOf(b[0])
                     )
-                  })
-              ) : (
-                <UserNotification type="info">
-                  {t('manage.evaluation.noStatistics')}
-                </UserNotification>
-              )}
-              {showSolution &&
-                currentInstance.questionData.options.solutionRanges && (
-                  <div>
-                    <div className="mt-4 font-bold">
-                      {t('manage.evaluation.correctSolutionRanges')}:
-                    </div>
-                    {currentInstance.questionData.options.solutionRanges.map(
-                      (range, innerIndex) => (
-                        <div key={innerIndex}>
-                          [{range?.min || '-∞'},{range?.max || '+∞'}]
-                        </div>
+                    .map((statistic) => {
+                      const statisticName = statistic[0]
+                      const statisticValue = statistic[1] as number
+                      return (
+                        <Statistic
+                          key={statisticName}
+                          statisticName={statisticName}
+                          value={statisticValue}
+                          hasCheckbox={
+                            !(
+                              statisticName === 'min' || statisticName === 'max'
+                            )
+                          }
+                          chartType={chartType}
+                          checked={statisticStates[statisticName]}
+                          onCheck={() => {
+                            setStatisticStates({
+                              ...statisticStates,
+                              [statisticName]: !statisticStates[statisticName],
+                            })
+                          }}
+                          size={textSize.size}
+                        />
                       )
-                    )}
-                  </div>
+                    })
+                ) : (
+                  <UserNotification type="info">
+                    {t('manage.evaluation.noStatistics')}
+                  </UserNotification>
                 )}
-            </div>
-          )}
-          {currentInstance.questionData.type === 'FREE_TEXT' &&
-            currentInstance.questionData.options.solutions &&
+                {showSolution &&
+                  questionData.__typename === 'NumericalQuestionData' &&
+                  questionData.options.solutionRanges && (
+                    <div>
+                      <div className="mt-4 font-bold">
+                        {t('manage.evaluation.correctSolutionRanges')}:
+                      </div>
+                      {questionData.options.solutionRanges.map(
+                        (range, innerIndex) => (
+                          <div key={innerIndex}>
+                            [{range?.min || '-∞'},{range?.max || '+∞'}]
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+              </div>
+            )}
+          {questionData.__typename === 'FreeTextQuestionData' &&
+            questionData.options.solutions &&
             showSolution && (
               <div>
                 <div className="font-bold">
                   {t('manage.evaluation.keywordsSolution')}:
                 </div>
                 <ul>
-                  {currentInstance.questionData.options.solutions.map(
-                    (keyword, innerIndex) => (
-                      <li key={innerIndex}>{`- ${keyword}`}</li>
-                    )
-                  )}
+                  {questionData.options.solutions.map((keyword, innerIndex) => (
+                    <li key={innerIndex}>{`- ${keyword}`}</li>
+                  ))}
                 </ul>
               </div>
             )}

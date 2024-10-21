@@ -77,7 +77,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           )
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
-        secretOrKey: process.env.APP_SECRET,
+        secretOrKey: process.env.APP_SECRET as string,
         // issuer: 'abcd',
         // audience: 'localhost',
       },

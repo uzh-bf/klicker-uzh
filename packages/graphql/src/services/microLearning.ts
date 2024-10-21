@@ -1,9 +1,10 @@
 import {
-  Element,
+  type Element,
   ElementInstanceType,
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
+import type { StackInput } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -11,9 +12,8 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { StackInput } from 'src/types/app.js'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeStackEvaluation } from './practiceQuizzes.js'
 
 interface GetMicroLearningArgs {
@@ -167,7 +167,7 @@ interface ManipulateMicroLearningArgs {
   displayName: string
   description?: string | null
   stacks: StackInput[]
-  courseId?: string | null
+  courseId: string
   multiplier: number
   startDate: Date
   endDate: Date
@@ -265,8 +265,7 @@ export async function manipulateMicroLearning(
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
               const processedElementData = processElementData(element)
-              const initialResults =
-                getInitialElementResults(processedElementData)
+              const initialResults = getInitialElementResults(element)
 
               return {
                 elementType: element.type,

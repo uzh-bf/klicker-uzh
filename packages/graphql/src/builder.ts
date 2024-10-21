@@ -7,9 +7,9 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ZodPlugin from '@pothos/plugin-zod'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
-import './types/app'
+import './types/app.js'
 
-import { Context, ContextWithUser } from './lib/context.js'
+import type { Context, ContextWithUser } from './lib/context.js'
 
 const prisma = new PrismaClient({})
 
