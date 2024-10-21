@@ -112,8 +112,6 @@ function Index() {
     return null
   }, [dataQuestions?.userQuestions])
 
-  console.log(dataQuestions?.userQuestions)
-
   const processedQuestions = useMemo(() => {
     if (dataQuestions?.userQuestions) {
       const items = processItems(
@@ -122,8 +120,6 @@ function Index() {
         sort,
         index
       )
-      console.log('PROCESSED')
-      console.log(items)
       return items
     }
   }, [dataQuestions?.userQuestions, filters, index, sort])
