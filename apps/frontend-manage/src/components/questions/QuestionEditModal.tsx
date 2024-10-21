@@ -53,11 +53,13 @@ import {
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
 import MultiplierSelector from '../sessions/creation/MultiplierSelector'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import SuspendedTagInput from './tags/SuspendedTagInput'
+import useQuestionTypeOptions from './useQuestionTypeOptions'
+import useStatusOptions from './useStatusOptions'
+import useValidationSchema from './useValidationSchema'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
@@ -72,199 +74,6 @@ interface QuestionEditModalProps {
   mode: QuestionEditMode
 }
 
-function useValidationSchema() {
-  const t = useTranslations()
-
-  return Yup.object().shape({
-    status: Yup.string().oneOf(Object.values(ElementStatus)),
-    name: Yup.string().required(t('manage.formErrors.questionName')),
-    tags: Yup.array().of(Yup.string()),
-    type: Yup.string().oneOf(Object.values(ElementType)).required(),
-
-    content: Yup.string()
-      .required(t('manage.formErrors.questionContent'))
-      .test({
-        message: t('manage.formErrors.questionContent'),
-        test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-      }),
-
-    explanation: Yup.string().when(['type'], ([type], schema) => {
-      if (type === ElementType.Flashcard)
-        return schema.required(t('manage.formErrors.explanationRequired'))
-      return schema.nullable()
-    }),
-
-    options: Yup.object().when(['type'], ([type], schema) => {
-      const baseChoicesSchema = Yup.array().of(
-        Yup.object().shape({
-          ix: Yup.number(),
-          value: Yup.string()
-            .required(t('manage.formErrors.answerContent'))
-            .test({
-              message: t('manage.formErrors.answerContent'),
-              test: (content) =>
-                !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-            }),
-          correct: Yup.boolean().nullable(),
-          feedback: Yup.string().when('hasAnswerFeedbacks', {
-            is: true,
-            then: (schema) =>
-              schema.test({
-                message: t('manage.formErrors.feedbackContent'),
-                test: (content) =>
-                  !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-              }),
-            otherwise: (schema) => schema.nullable(),
-          }),
-        })
-      )
-
-      switch (type) {
-        case ElementType.Sc:
-        case ElementType.Mc: {
-          let choicesSchema = baseChoicesSchema.min(
-            1,
-            t('manage.formErrors.NumberQuestionsRequired')
-          )
-
-          if (type === 'SC')
-            return schema.shape({
-              displayMode: Yup.string().oneOf(
-                Object.values(ElementDisplayMode)
-              ),
-              hasAnswerFeedbacks: Yup.boolean(),
-              hasSampleSolution: Yup.boolean(),
-              choices: choicesSchema.when('hasSampleSolution', {
-                is: true,
-                then: (schema) =>
-                  schema.test({
-                    message: t('manage.formErrors.SCAnswersCorrect'),
-                    test: (choices) => {
-                      return (
-                        choices.filter((choice) => choice.correct).length === 1
-                      )
-                    },
-                  }),
-              }),
-            })
-
-          return schema.shape({
-            displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
-            hasAnswerFeedbacks: Yup.boolean(),
-            hasSampleSolution: Yup.boolean(),
-            choices: choicesSchema.when('hasSampleSolution', {
-              is: true,
-              then: (schema) =>
-                schema.test({
-                  message: t('manage.formErrors.MCAnswersCorrect'),
-                  test: (choices) => {
-                    return (
-                      choices.filter((choice) => choice.correct).length >= 1
-                    )
-                  },
-                }),
-            }),
-          })
-        }
-
-        case ElementType.Kprim: {
-          const choicesSchema = baseChoicesSchema.length(
-            4,
-            t('manage.formErrors.NumberQuestionsRequiredKPRIM')
-          )
-
-          return schema.shape({
-            hasAnswerFeedbacks: Yup.boolean(),
-            hasSampleSolution: Yup.boolean(),
-            choices: choicesSchema,
-          })
-        }
-
-        case ElementType.Numerical: {
-          const baseSolutionRanges = Yup.array()
-            .of(
-              Yup.object().shape({
-                min: Yup.number()
-                  .nullable()
-                  // we can only handle one case to avoid cyclic dependencies
-                  .when('max', {
-                    is: (max?: number | null) => typeof max !== 'undefined',
-                    then: (schema) =>
-                      schema.lessThan(
-                        Yup.ref('max'),
-                        t('manage.formErrors.NRMinLessThanMaxSol')
-                      ),
-                  }),
-                max: Yup.number().nullable(),
-              })
-            )
-            .nullable()
-
-          return schema.shape({
-            hasSampleSolution: Yup.boolean(),
-
-            accuracy: Yup.number()
-              .nullable()
-              .min(0, t('manage.formErrors.NRPrecision')),
-            unit: Yup.string().nullable(),
-
-            restrictions: Yup.object().shape({
-              min: Yup.number()
-                .min(-1e30, t('manage.formErrors.NRUnderflow'))
-                .max(1e30, t('manage.formErrors.NROverflow'))
-                .nullable()
-                .when('max', {
-                  is: (max?: number) => typeof max !== 'undefined',
-                  then: (schema) =>
-                    schema.lessThan(
-                      Yup.ref('max'),
-                      t('manage.formErrors.NRMinLessThanMax')
-                    ),
-                }),
-              max: Yup.number()
-                .min(-1e30, t('manage.formErrors.NRUnderflow'))
-                .max(1e30, t('manage.formErrors.NROverflow'))
-                .nullable(),
-            }),
-
-            solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
-              is: true,
-              then: (schema) =>
-                schema
-                  .required(t('manage.formErrors.solutionRequired'))
-                  .min(1, t('manage.formErrors.solutionRangeRequired')),
-            }),
-          })
-        }
-
-        case ElementType.FreeText: {
-          const baseSolutions = Yup.array().of(
-            Yup.string()
-              .required(t('manage.formErrors.enterSolution'))
-              .min(1, t('manage.formErrors.enterSolution'))
-          )
-
-          return schema.shape({
-            hasSampleSolution: Yup.boolean(),
-            restrictions: Yup.object().shape({
-              maxLength: Yup.number()
-                .min(1, t('manage.formErrors.FTMaxLength'))
-                .nullable(),
-            }),
-            solutions: baseSolutions.when('hasSampleSolution', {
-              is: true,
-              then: (schema) =>
-                schema
-                  .required(t('manage.formErrors.solutionRequired'))
-                  .min(1, t('manage.formErrors.solutionRequired')),
-            }),
-          })
-        }
-      }
-    }),
-  })
-}
-
 function QuestionEditModal({
   isOpen,
   handleSetIsOpen,
@@ -273,6 +82,7 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
+  const questionManipulationSchema = useValidationSchema()
 
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
@@ -281,8 +91,6 @@ function QuestionEditModal({
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
-
-  const questionManipulationSchema = useValidationSchema()
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -309,97 +117,8 @@ function QuestionEditModal({
   )
   const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
-  const STATUS_OPTIONS = [
-    {
-      value: ElementStatus.Draft,
-      label: t(`shared.${ElementStatus.Draft}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Draft}.statusLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementStatus.Review,
-      label: t(`shared.${ElementStatus.Review}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Review}.statusLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementStatus.Ready,
-      label: t(`shared.${ElementStatus.Ready}.statusLabel`),
-      data: {
-        cy: `select-question-status-${t(
-          `shared.${ElementStatus.Ready}.statusLabel`
-        )}`,
-      },
-    },
-  ]
-
-  const QUESTION_TYPE_OPTIONS = [
-    {
-      value: ElementType.Content,
-      label: t(`shared.${ElementType.Content}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Content}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Flashcard,
-      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Flashcard}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Sc,
-      label: t(`shared.${ElementType.Sc}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(`shared.${ElementType.Sc}.typeLabel`)}`,
-      },
-    },
-    {
-      value: ElementType.Mc,
-      label: t(`shared.${ElementType.Mc}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(`shared.${ElementType.Mc}.typeLabel`)}`,
-      },
-    },
-    {
-      value: ElementType.Kprim,
-      label: t(`shared.${ElementType.Kprim}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Kprim}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Numerical,
-      label: t(`shared.${ElementType.Numerical}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Numerical}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.FreeText,
-      label: t(`shared.${ElementType.FreeText}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.FreeText}.typeLabel`
-        )}`,
-      },
-    },
-  ]
+  const statusOptions = useStatusOptions()
+  const questionTypeOptions = useQuestionTypeOptions()
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
@@ -709,7 +428,7 @@ function QuestionEditModal({
                       disabled={mode === 'EDIT'}
                       label={t('manage.questionForms.questionType')}
                       placeholder={t('manage.questionForms.selectQuestionType')}
-                      items={QUESTION_TYPE_OPTIONS}
+                      items={questionTypeOptions}
                       data={{ cy: 'select-question-type' }}
                       className={{ select: { trigger: 'h-8 w-max' } }}
                     />
@@ -721,7 +440,7 @@ function QuestionEditModal({
                       placeholder={t(
                         'manage.questionForms.selectQuestionStatus'
                       )}
-                      items={STATUS_OPTIONS}
+                      items={statusOptions}
                       data={{ cy: 'select-question-status' }}
                       className={{ select: { trigger: 'h-8 w-32' } }}
                     />
