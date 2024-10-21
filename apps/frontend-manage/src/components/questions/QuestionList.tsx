@@ -39,7 +39,7 @@ function QuestionList({
 
   return (
     <div className="space-y-1 md:space-y-2">
-      {questions.map((question): any => (
+      {questions.map((question) => (
         <Question
           checked={!!selectedQuestions[question.id]}
           id={question.id}
