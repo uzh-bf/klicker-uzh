@@ -173,7 +173,7 @@ type ChoicesQuestionData {
 }
 
 type ChoicesQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsChoices!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -284,7 +284,7 @@ type ContentQuestionData {
 }
 
 type ContentQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsContent!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -401,6 +401,27 @@ enum ElementInstanceType {
 enum ElementOrderType {
   SEQUENTIAL
   SPACED_REPETITION
+}
+
+type ElementResultsChoices {
+  choices: Json!
+  total: Int!
+}
+
+type ElementResultsContent {
+  total: Int!
+}
+
+type ElementResultsFlashcard {
+  CORRECT: Int!
+  INCORRECT: Int!
+  PARTIAL: Int!
+  total: Int!
+}
+
+type ElementResultsOpen {
+  responses: Json!
+  total: Int!
 }
 
 type ElementStack {
@@ -562,7 +583,7 @@ type FlashcardQuestionData {
 }
 
 type FlashcardQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsFlashcard!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!
@@ -1154,7 +1175,7 @@ type NumericalSolutionRange {
 }
 
 type OpenQuestionResponse {
-  aggregatedResponses: Json
+  aggregatedResponses: ElementResultsOpen!
   correctCount: Int!
   correctCountStreak: Int!
   eFactor: Float!

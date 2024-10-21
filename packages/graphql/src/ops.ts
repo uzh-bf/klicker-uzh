@@ -208,7 +208,7 @@ export type ChoicesQuestionData = {
 
 export type ChoicesQuestionResponse = {
   __typename?: 'ChoicesQuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  aggregatedResponses: ElementResultsChoices;
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
@@ -329,7 +329,7 @@ export type ContentQuestionData = {
 
 export type ContentQuestionResponse = {
   __typename?: 'ContentQuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  aggregatedResponses: ElementResultsContent;
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
@@ -447,6 +447,31 @@ export enum ElementOrderType {
   Sequential = 'SEQUENTIAL',
   SpacedRepetition = 'SPACED_REPETITION'
 }
+
+export type ElementResultsChoices = {
+  __typename?: 'ElementResultsChoices';
+  choices: Scalars['Json']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type ElementResultsContent = {
+  __typename?: 'ElementResultsContent';
+  total: Scalars['Int']['output'];
+};
+
+export type ElementResultsFlashcard = {
+  __typename?: 'ElementResultsFlashcard';
+  CORRECT: Scalars['Int']['output'];
+  INCORRECT: Scalars['Int']['output'];
+  PARTIAL: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type ElementResultsOpen = {
+  __typename?: 'ElementResultsOpen';
+  responses: Scalars['Json']['output'];
+  total: Scalars['Int']['output'];
+};
 
 export type ElementStack = {
   __typename?: 'ElementStack';
@@ -619,7 +644,7 @@ export type FlashcardQuestionData = {
 
 export type FlashcardQuestionResponse = {
   __typename?: 'FlashcardQuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  aggregatedResponses: ElementResultsFlashcard;
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
@@ -1922,7 +1947,7 @@ export type NumericalSolutionRange = {
 
 export type OpenQuestionResponse = {
   __typename?: 'OpenQuestionResponse';
-  aggregatedResponses?: Maybe<Scalars['Json']['output']>;
+  aggregatedResponses: ElementResultsOpen;
   correctCount: Scalars['Int']['output'];
   correctCountStreak: Scalars['Int']['output'];
   eFactor: Scalars['Float']['output'];
