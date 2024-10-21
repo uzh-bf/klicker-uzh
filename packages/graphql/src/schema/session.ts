@@ -321,6 +321,7 @@ export const ElementResultsChoicesRef =
   builder.objectRef<ElementResultsChoicesType>('ElementResultsChoices')
 export const ElementResultsChoices = ElementResultsChoicesRef.implement({
   fields: (t) => ({
+    // ? differing number of keys - no graphql representation available
     choices: t.expose('choices', { type: 'Json' }),
     total: t.exposeInt('total'),
   }),
@@ -330,6 +331,7 @@ export const ElementResultsOpenRef =
   builder.objectRef<ElementResultsOpenType>('ElementResultsOpen')
 export const ElementResultsOpen = ElementResultsOpenRef.implement({
   fields: (t) => ({
+    // ? differing number of keys - no graphql representation available
     responses: t.expose('responses', { type: 'Json' }),
     total: t.exposeInt('total'),
   }),
