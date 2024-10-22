@@ -29,19 +29,15 @@ mutation ManipulateChoicesQuestion(
       content
       explanation
       pointsMultiplier
-
-      questionData {
-        __typename
-        options {
-          displayMode
-          hasSampleSolution
-          hasAnswerFeedbacks
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
+      options {
+        displayMode
+        hasSampleSolution
+        hasAnswerFeedbacks
+        choices {
+          ix
+          correct
+          feedback
+          value
         }
       }
 

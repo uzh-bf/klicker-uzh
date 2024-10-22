@@ -27,25 +27,20 @@ mutation ManipulateNumericalQuestion(
       content
       explanation
       pointsMultiplier
-
-      questionData {
-        __typename
-        options {
-          hasSampleSolution
-          accuracy
-          placeholder
-          unit
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
         }
       }
-
       tags {
         id
         name

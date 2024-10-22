@@ -98,19 +98,18 @@ type ChoiceQuestionOptions {
 
 type ChoicesElement {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   explanation: String
   id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
+  isArchived: Boolean
+  isDeleted: Boolean
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionData: ChoicesQuestionData
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
-  updatedAt: Date!
+  updatedAt: Date
   version: Int!
 }
 
@@ -214,18 +213,17 @@ type ConfusionTimestep {
 
 type ContentElement {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   explanation: String
   id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
+  isArchived: Boolean
+  isDeleted: Boolean
   name: String!
   pointsMultiplier: Int!
-  questionData: ContentQuestionData
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
-  updatedAt: Date!
+  updatedAt: Date
   version: Int!
 }
 
@@ -510,18 +508,17 @@ enum FlashcardCorrectnessType {
 
 type FlashcardElement {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   explanation: String
   id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
+  isArchived: Boolean
+  isDeleted: Boolean
   name: String!
   pointsMultiplier: Int!
-  questionData: FlashcardQuestionData
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
-  updatedAt: Date!
+  updatedAt: Date
   version: Int!
 }
 
@@ -633,19 +630,18 @@ type FreeElementResults {
 
 type FreeTextElement {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   explanation: String
   id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
+  isArchived: Boolean
+  isDeleted: Boolean
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionData: FreeTextQuestionData
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
-  updatedAt: Date!
+  updatedAt: Date
   version: Int!
 }
 
@@ -1058,19 +1054,18 @@ type Mutation {
 
 type NumericalElement {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   explanation: String
   id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
+  isArchived: Boolean
+  isDeleted: Boolean
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionData: NumericalQuestionData
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
-  updatedAt: Date!
+  updatedAt: Date
   version: Int!
 }
 

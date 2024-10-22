@@ -1,9 +1,9 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useEffect } from 'react'
 
 interface ElementTypeMonitorProps {
   elementType: ElementType
-  setElementDataTypename: (typename: string) => void
+  setElementDataTypename: (typename: ElementData['__typename']) => void
 }
 
 function ElementTypeMonitor({

@@ -20,7 +20,6 @@ function QuestionDetails() {
 
   const fakedInstance = useFakedInstance({
     element: data?.question,
-    questionData: data?.question?.questionData,
   })
 
   if (!fakedInstance) {

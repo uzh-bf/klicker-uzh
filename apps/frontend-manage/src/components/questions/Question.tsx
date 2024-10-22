@@ -26,7 +26,9 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import QuestionEditModal from './QuestionEditModal'
+import ElementEditModal, {
+  ElementEditMode,
+} from './manipulation/ElementEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
 
@@ -202,11 +204,11 @@ function Question({
               <Button.Label>{t('shared.generic.edit')}</Button.Label>
             </Button>
             {isModificationModalOpen && (
-              <QuestionEditModal
+              <ElementEditModal
                 handleSetIsOpen={setIsModificationModalOpen}
                 isOpen={isModificationModalOpen}
                 questionId={id}
-                mode={QuestionEditModal.Mode.EDIT}
+                mode={ElementEditMode.EDIT}
               />
             )}
             <Button
@@ -222,11 +224,11 @@ function Question({
               <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
             </Button>
             {isDuplicationModalOpen && (
-              <QuestionEditModal
+              <ElementEditModal
                 handleSetIsOpen={setIsDuplicationModalOpen}
                 isOpen={isDuplicationModalOpen}
                 questionId={id}
-                mode={QuestionEditModal.Mode.DUPLICATE}
+                mode={ElementEditMode.DUPLICATE}
               />
             )}
             <Button
