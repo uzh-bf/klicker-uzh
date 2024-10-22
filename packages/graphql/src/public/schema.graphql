@@ -888,20 +888,16 @@ scalar Json
 
 type LeaderboardEntry {
   avatar: String
-  courseId: String
   email: String
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int
   level: Int!
-  liveQuizId: String
   participant: Participant
-  participantId: String
+  participantId: String!
   participation: Participation
   rank: Int!
   score: Float!
-  sessionId: String
-  type: String
   username: String!
 }
 

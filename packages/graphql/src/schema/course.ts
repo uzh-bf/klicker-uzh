@@ -215,8 +215,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
       type: ParticipantRef,
       nullable: true,
     }),
-    participantId: t.exposeString('participantId', { nullable: true }),
-
+    participantId: t.exposeString('participantId'),
     participation: t.expose('participation', {
       type: ParticipationRef,
       nullable: true,
