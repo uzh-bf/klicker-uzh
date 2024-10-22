@@ -155,7 +155,7 @@ function Markdown({
                     )
                   }
                 : 'a',
-              ...(components as any),
+              ...components,
             },
           })
           .processSync(contentUnescaped).result

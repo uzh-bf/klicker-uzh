@@ -174,7 +174,11 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
   }),
 })
 
-export interface ILeaderboardEntry extends DB.LeaderboardEntry {
+export interface ILeaderboardEntry
+  extends Omit<
+    DB.LeaderboardEntry,
+    'courseId' | 'sessionId' | 'liveQuizId' | 'type' | 'sessionParticipationId'
+  > {
   username: string
   email?: string | null
   avatar?: string | null
@@ -182,8 +186,13 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   lastBlockOrder?: number
   isSelf?: boolean
   level: number
-  participant: IParticipant
-  participation: IParticipation
+  participant?: IParticipant
+  participation?: IParticipation
+  courseId?: string | null
+  sessionId?: string | null
+  liveQuizId?: string | null
+  sessionParticipationId?: string | null
+  type?: string | null // TODO: specify custom leaderboard type enum here
 }
 export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
@@ -207,9 +216,9 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
       nullable: true,
     }),
     participantId: t.exposeString('participantId'),
-
     participation: t.expose('participation', {
       type: ParticipationRef,
+      nullable: true,
     }),
   }),
 })

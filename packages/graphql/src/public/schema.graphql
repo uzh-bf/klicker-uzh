@@ -27,6 +27,11 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type ArchivedElement {
+  id: Int!
+  isArchived: Boolean!
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -481,7 +486,7 @@ type Feedback {
 
 type FeedbackResponse {
   content: String!
-  createdAt: Date!
+  createdAt: Date
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
@@ -890,7 +895,7 @@ type LeaderboardEntry {
   level: Int!
   participant: Participant
   participantId: String!
-  participation: Participation!
+  participation: Participation
   rank: Int!
   score: Float!
   username: String!
@@ -1036,7 +1041,7 @@ type Mutation {
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
-  toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
+  toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [ArchivedElement!]
   triggerMigration(token: String!): Boolean
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning

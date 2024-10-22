@@ -10,6 +10,7 @@ import {
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
+  PublicationStatus,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -163,17 +164,36 @@ function ElementCreation({
   }
 
   // initialize practice quiz data from microlearning
-  let initialDataPracticeQuiz: PracticeQuiz | undefined = undefined
-  if (conversionMode === 'microLearningToPracticeQuiz' && dataMicroLearning) {
+  let initialDataPracticeQuiz:
+    | (Pick<
+        PracticeQuiz,
+        | 'name'
+        | 'displayName'
+        | 'description'
+        | 'stacks'
+        | 'pointsMultiplier'
+        | 'course'
+      > & {
+        id?: string
+        orderType?: string
+        status?: PublicationStatus
+        resetTimeDays?: number
+      })
+    | undefined = undefined
+  if (
+    conversionMode === 'microLearningToPracticeQuiz' &&
+    dataMicroLearning?.getSingleMicroLearning
+  ) {
+    const microData = dataMicroLearning.getSingleMicroLearning
+
     initialDataPracticeQuiz = {
-      name: `${dataMicroLearning.getSingleMicroLearning?.name} (converted)`,
-      displayName: dataMicroLearning.getSingleMicroLearning?.displayName,
-      description: dataMicroLearning.getSingleMicroLearning?.description,
-      stacks: dataMicroLearning.getSingleMicroLearning?.stacks,
-      pointsMultiplier:
-        dataMicroLearning.getSingleMicroLearning?.pointsMultiplier,
-      course: dataMicroLearning.getSingleMicroLearning?.course,
-    } as PracticeQuiz
+      name: `${microData.name} (converted)`,
+      displayName: microData.displayName,
+      description: microData.description,
+      stacks: microData.stacks,
+      pointsMultiplier: microData.pointsMultiplier,
+      course: microData.course as Course,
+    }
   }
 
   return (

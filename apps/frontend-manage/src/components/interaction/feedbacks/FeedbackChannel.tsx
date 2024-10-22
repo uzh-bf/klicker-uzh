@@ -2,10 +2,7 @@
 
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  FeedbackResponse,
-  Feedback as FeedbackType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
@@ -136,7 +133,7 @@ function FeedbackChannel({
                   pinned={isPinned}
                   resolved={isResolved}
                   resolvedAt={resolvedAt}
-                  responses={responses as FeedbackResponse[]}
+                  responses={responses ?? []}
                   votes={votes}
                   onDeleteFeedback={() => handleDeleteFeedback(id)}
                   onDeleteResponse={(responseId) =>

@@ -301,8 +301,8 @@ export const Query = builder.queryType({
         args: {
           id: t.arg.string({ required: true }),
         },
+        // TODO: fix type errors after migration to live quiz
         resolve(_, args, ctx) {
-          // FIXME: subsetting
           return SessionService.getCockpitSession(args, ctx) as any
         },
       }),
@@ -403,7 +403,7 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
-          // FIXME: subsetting
+          // TODO: fix type issues after migration to live quiz
           return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
@@ -503,8 +503,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: seems to not respect nullable property correctly here?
-          return SessionService.getLeaderboard(args, ctx) as any
+          return SessionService.getLeaderboard(args, ctx)
         },
       }),
 
@@ -545,7 +544,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return CourseService.getCourseOverviewData(args, ctx) as any
+          return CourseService.getCourseOverviewData(args, ctx)
         },
       }),
 

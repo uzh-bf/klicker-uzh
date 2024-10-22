@@ -274,7 +274,7 @@ export const PushSubscription = PushSubscriptionRef.implement({
 export interface IParticipantLearningData {
   id: string
   participantToken?: string
-  participant?: IParticipant
+  participant?: IParticipant | null
   participation?: IParticipation | null
   course?: ICourse | null
   leaderboard?: ILeaderboardEntry[]

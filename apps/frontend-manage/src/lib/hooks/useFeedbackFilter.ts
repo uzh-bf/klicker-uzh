@@ -53,7 +53,7 @@ function useFeedbackFilter(
       search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
       search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
       search.addIndex('content')
-      search.addDocuments(feedbacks as Object[])
+      search.addDocuments(feedbacks ?? [])
       setSearchIndex(search)
     }
   }, [feedbacks, withSearch])

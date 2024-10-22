@@ -41,6 +41,7 @@ import {
   StackResponseInput,
 } from './practiceQuizzes.js'
 import {
+  ArchivedElement,
   Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
@@ -1039,14 +1040,13 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [Element],
+        type: [ArchivedElement],
         args: {
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: figure out how to return only a partial element or create a new pothos type only for this?
-          return QuestionService.toggleIsArchived(args, ctx) as any
+          return QuestionService.toggleIsArchived(args, ctx)
         },
       }),
 

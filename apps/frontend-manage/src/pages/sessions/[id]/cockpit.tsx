@@ -3,7 +3,6 @@ import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
-  Feedback,
   GetCockpitSessionDocument,
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
@@ -123,7 +122,7 @@ function Cockpit() {
       <AudienceInteraction
         subscribeToMore={subscribeToMore}
         confusionValues={confusionSummary ?? undefined}
-        feedbacks={feedbacks as Feedback[]}
+        feedbacks={feedbacks ?? []}
         isLiveQAEnabled={isLiveQAEnabled}
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}

@@ -379,6 +379,19 @@ export const Element = builder.unionType('Element', {
     }
   },
 })
+
+interface IArchivedElement {
+  id: number
+  isArchived: boolean
+}
+export const ArchivedElement = builder
+  .objectRef<IArchivedElement>('ArchivedElement')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      isArchived: t.exposeBoolean('isArchived'),
+    }),
+  })
 // #endregion
 
 export interface IQuestionOrElementInstance {

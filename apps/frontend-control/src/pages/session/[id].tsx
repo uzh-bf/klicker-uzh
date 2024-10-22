@@ -8,7 +8,6 @@ import {
   GetControlSessionDocument,
   GetUserRunningSessionsDocument,
   SessionBlockStatus,
-  SessionBlock as SessionBlockType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -119,11 +118,7 @@ function RunningSession() {
             <H3>{t('control.session.activeBlock')}</H3>
 
             <SessionBlock
-              block={
-                blocks.find(
-                  (block) => block.order === currentBlockOrder
-                ) as SessionBlockType
-              }
+              block={blocks.find((block) => block.order === currentBlockOrder)}
               active
             />
             {typeof currentBlockOrder !== 'undefined' &&
@@ -137,11 +132,9 @@ function RunningSession() {
                   />
 
                   <SessionBlock
-                    block={
-                      blocks.find(
-                        (block) => block.order === nextBlockOrder
-                      ) as SessionBlockType
-                    }
+                    block={blocks.find(
+                      (block) => block.order === nextBlockOrder
+                    )}
                   />
                 </div>
               )}
@@ -177,11 +170,7 @@ function RunningSession() {
               />
             )}
             <SessionBlock
-              block={
-                blocks.find(
-                  (block) => block.order === nextBlockOrder
-                ) as SessionBlockType
-              }
+              block={blocks.find((block) => block.order === nextBlockOrder)}
             />
             {nextBlockOrder < blocks.length - 1 && (
               <FontAwesomeIcon

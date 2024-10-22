@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import {
-  ElementStack as ElementStackType,
   GetMicroLearningDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -78,7 +77,7 @@ function MicrolearningInstance() {
             key={currentStack.id}
             parentId={microLearning.id}
             courseId={microLearning.course!.id}
-            stack={currentStack as ElementStackType}
+            stack={currentStack}
             currentStep={ix + 1}
             totalSteps={microLearning.stacks?.length ?? 0}
             handleNextElement={() =>
