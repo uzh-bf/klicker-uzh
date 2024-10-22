@@ -81,6 +81,7 @@
     "eslint-config-next": "~15.0.0",
     "postcss": "~8.4.47",
     "postcss-import": "~16.1.0",
+    "swc-loader": "~0.2.6",
     "tailwindcss": "~3.4.14",
     "tailwindcss-radix": "~3.0.5",
     "typescript": "~5.6.3"
