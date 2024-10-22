@@ -72,7 +72,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
     )
 
   return (
-    <div>
+    <>
       <TextField
         placeholder={t('manage.general.searchPlaceholder')}
         value={searchInput}
@@ -135,7 +135,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
           isStatic
         />
       </ul>
-    </div>
+    </>
   )
 }
 
