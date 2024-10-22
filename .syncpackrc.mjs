@@ -41,6 +41,14 @@ export default {
       packages: ['**'],
     },
   ],
+  versionGroups: [
+    {
+      // FIXME: update when consistent versions are possible (e.g., do other remark updates in apps)
+      label: 'remark-math can be inconsistent between docs and apps',
+      dependencies: ['remark-math'],
+      isIgnored: true,
+    },
+  ],
   sortAz: [
     'dependencies',
     'devDependencies',
