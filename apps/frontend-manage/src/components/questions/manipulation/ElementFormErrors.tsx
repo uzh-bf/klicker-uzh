@@ -1,15 +1,15 @@
 import { UserNotification } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
-import { QuestionFormTypes } from './types'
+import { ElementFormTypes } from './types'
 
-interface QuestionFormErrorsProps {
-  errors: FormikErrors<QuestionFormTypes>
+interface ElementFormErrorsProps {
+  errors: FormikErrors<ElementFormTypes>
 }
 
-function QuestionFormErrors({
+function ElementFormErrors({
   errors,
-}: QuestionFormErrorsProps): React.ReactElement {
+}: ElementFormErrorsProps): React.ReactElement {
   const t = useTranslations()
 
   return (
@@ -160,4 +160,4 @@ function QuestionFormErrors({
   )
 }
 
-export default QuestionFormErrors
+export default ElementFormErrors

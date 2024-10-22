@@ -1,15 +1,15 @@
 import {
-  QuestionFormTypesChoices,
-  QuestionFormTypesContent,
-  QuestionFormTypesFlashcard,
-  QuestionFormTypesFreeText,
-  QuestionFormTypesNumerical,
+  ElementFormTypesChoices,
+  ElementFormTypesContent,
+  ElementFormTypesFlashcard,
+  ElementFormTypesFreeText,
+  ElementFormTypesNumerical,
 } from './types'
 
 interface PrepareContentArgsProps {
   questionId?: number
   isDuplication: boolean
-  values: QuestionFormTypesContent
+  values: ElementFormTypesContent
 }
 export function prepareContentArgs({
   questionId,
@@ -29,7 +29,7 @@ export function prepareContentArgs({
 interface PrepareFlashcardArgsProps {
   questionId?: number
   isDuplication: boolean
-  values: QuestionFormTypesFlashcard
+  values: ElementFormTypesFlashcard
 }
 export function prepareFlashcardArgs({
   questionId,
@@ -50,7 +50,7 @@ export function prepareFlashcardArgs({
 interface PrepareChoicesArgsProps {
   questionId?: number
   isDuplication: boolean
-  values: QuestionFormTypesChoices
+  values: ElementFormTypesChoices
 }
 export function prepareChoicesArgs({
   questionId,
@@ -89,7 +89,7 @@ export function prepareChoicesArgs({
 interface PrepareNumericalArgsProps {
   questionId?: number
   isDuplication: boolean
-  values: QuestionFormTypesNumerical
+  values: ElementFormTypesNumerical
 }
 export function prepareNumericalArgs({
   questionId,
@@ -139,7 +139,7 @@ export function prepareNumericalArgs({
 interface PrepareFreeTextArgsProps {
   questionId?: number
   isDuplication: boolean
-  values: QuestionFormTypesFreeText
+  values: ElementFormTypesFreeText
 }
 export function prepareFreeTextArgs({
   questionId,

@@ -11,10 +11,10 @@ import StudentElement, {
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
-import { QuestionFormTypes } from './types'
+import { ElementFormTypes } from './types'
 
 interface StudentElementPreviewProps {
-  values: QuestionFormTypes
+  values: ElementFormTypes
   elementDataTypename: ElementData['__typename']
 }
 

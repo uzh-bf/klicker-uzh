@@ -1,7 +1,7 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
-function useQuestionTypeOptions() {
+function useElementTypeOptions() {
   const t = useTranslations()
 
   return [
@@ -67,4 +67,4 @@ function useQuestionTypeOptions() {
   ]
 }
 
-export default useQuestionTypeOptions
+export default useElementTypeOptions

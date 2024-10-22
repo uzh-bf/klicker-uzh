@@ -2,18 +2,21 @@ import { FormLabel } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
 import ContentInput from '../../common/ContentInput'
-import { QuestionFormTypes } from './types'
+import { ElementFormTypes } from './types'
 
-interface QuestionInputProps {
-  values: QuestionFormTypes
+interface ElementContentInputProps {
+  values: ElementFormTypes
   setFieldValue: (
     field: string,
     value: any,
     shouldValidate?: boolean
-  ) => Promise<void | FormikErrors<QuestionFormTypes>>
+  ) => Promise<void | FormikErrors<ElementFormTypes>>
 }
 
-function QuestionInput({ values, setFieldValue }: QuestionInputProps) {
+function ElementContentInput({
+  values,
+  setFieldValue,
+}: ElementContentInputProps) {
   const t = useTranslations()
 
   return (
@@ -22,8 +25,8 @@ function QuestionInput({ values, setFieldValue }: QuestionInputProps) {
         name="content"
         questionType={values.type}
         shouldUpdate={(
-          next?: { formik: { values: QuestionFormTypes } },
-          prev?: { formik: { values: QuestionFormTypes } }
+          next?: { formik: { values: ElementFormTypes } },
+          prev?: { formik: { values: ElementFormTypes } }
         ) =>
           next?.formik.values.content !== prev?.formik.values.content ||
           next?.formik.values.type !== prev?.formik.values.type
@@ -58,4 +61,4 @@ function QuestionInput({ values, setFieldValue }: QuestionInputProps) {
   )
 }
 
-export default QuestionInput
+export default ElementContentInput

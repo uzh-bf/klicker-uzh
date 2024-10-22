@@ -6,10 +6,10 @@ import {
 } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { QuestionFormTypesNumerical } from '../types'
+import { ElementFormTypesNumerical } from '../types'
 
 interface NumericalOptionsProps {
-  values: QuestionFormTypesNumerical
+  values: ElementFormTypesNumerical
 }
 
 function NumericalOptions({ values }: NumericalOptionsProps) {

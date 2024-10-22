@@ -9,34 +9,34 @@ import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
 import MultiplierSelector from '../../sessions/creation/MultiplierSelector'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
-import { QuestionEditMode } from './QuestionEditModal'
-import { QuestionFormTypes } from './types'
-import useQuestionTypeOptions from './useQuestionTypeOptions'
+import { ElementEditMode } from './ElementEditModal'
+import { ElementFormTypes } from './types'
+import useElementTypeOptions from './useElementTypeOptions'
 import useStatusOptions from './useStatusOptions'
 
-interface QuestionInformationFieldsProps {
-  mode: QuestionEditMode
-  values: QuestionFormTypes
+interface ElementInformationFieldsProps {
+  mode: ElementEditMode
+  values: ElementFormTypes
   isSubmitting: boolean
 }
 
-function QuestionInformationFields({
+function ElementInformationFields({
   mode,
   values,
   isSubmitting,
-}: QuestionInformationFieldsProps) {
+}: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
-  const questionTypeOptions = useQuestionTypeOptions()
+  const questionTypeOptions = useElementTypeOptions()
 
   return (
     <>
       <div className="z-0 flex flex-row justify-between">
         <FormikSelectField
           name="type"
-          required={mode === QuestionEditMode.CREATE}
+          required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
-          disabled={mode === QuestionEditMode.EDIT}
+          disabled={mode === ElementEditMode.EDIT}
           label={t('manage.questionForms.questionType')}
           placeholder={t('manage.questionForms.selectQuestionType')}
           items={questionTypeOptions}
@@ -94,4 +94,4 @@ function QuestionInformationFields({
   )
 }
 
-export default QuestionInformationFields
+export default ElementInformationFields

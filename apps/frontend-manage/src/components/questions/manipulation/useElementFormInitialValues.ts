@@ -5,11 +5,11 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
-import { QuestionEditMode } from './QuestionEditModal'
-import { QuestionFormTypes } from './types'
+import { ElementEditMode } from './ElementEditModal'
+import { ElementFormTypes } from './types'
 
 interface UseElementFormInitialValuesProps {
-  mode: QuestionEditMode
+  mode: ElementEditMode
   question?: Element | null
   isDuplication: boolean
 }
@@ -19,8 +19,8 @@ function useElementFormInitialValues({
   question,
   isDuplication,
 }: UseElementFormInitialValuesProps) {
-  return useMemo((): QuestionFormTypes | undefined => {
-    if (mode === QuestionEditMode.CREATE || !question) {
+  return useMemo((): ElementFormTypes | undefined => {
+    if (mode === ElementEditMode.CREATE || !question) {
       return {
         status: ElementStatus.Ready,
         type: ElementType.Sc,

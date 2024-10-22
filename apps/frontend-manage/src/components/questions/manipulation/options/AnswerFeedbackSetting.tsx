@@ -2,10 +2,10 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSwitchField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import { QuestionFormTypes } from '../types'
+import { ElementFormTypes } from '../types'
 
 interface AnswerFeedbackSettingProps {
-  values: QuestionFormTypes
+  values: ElementFormTypes
 }
 
 function AnswerFeedbackSetting({ values }: AnswerFeedbackSettingProps) {

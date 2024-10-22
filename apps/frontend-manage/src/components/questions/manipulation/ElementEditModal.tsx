@@ -17,12 +17,12 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ElementContentInput from './ElementContentInput'
+import ElementExplanationField from './ElementExplanationField'
+import ElementFormErrors from './ElementFormErrors'
+import ElementInformationFields from './ElementInformationFields'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
-import QuestionExplanationField from './QuestionExplanationField'
-import QuestionFormErrors from './QuestionFormErrors'
-import QuestionInformationFields from './QuestionInformationFields'
-import QuestionInput from './QuestionInput'
 import StudentElementPreview from './StudentElementPreview'
 import {
   prepareChoicesArgs,
@@ -41,30 +41,30 @@ import SampleSolutionSetting from './options/SampleSolutionSetting'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useValidationSchema from './useValidationSchema'
 
-export enum QuestionEditMode {
+export enum ElementEditMode {
   DUPLICATE = 'DUPLICATE',
   EDIT = 'EDIT',
   CREATE = 'CREATE',
 }
 
-interface QuestionEditModalProps {
+interface ElementEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
   questionId?: number
-  mode: QuestionEditMode
+  mode: ElementEditMode
 }
 
-function QuestionEditModal({
+function ElementEditModal({
   isOpen,
   handleSetIsOpen,
   questionId,
   mode,
-}: QuestionEditModalProps): React.ReactElement {
+}: ElementEditModalProps): React.ReactElement {
   // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
   const questionManipulationSchema = useValidationSchema()
 
-  const isDuplication = mode === QuestionEditMode.DUPLICATE
+  const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
   const [elementDataTypename, setElementDataTypename] =
     useState<ElementData['__typename']>('ChoicesElementData')
@@ -218,7 +218,7 @@ function QuestionEditModal({
             break
         }
 
-        if (mode === QuestionEditMode.EDIT && updateInstances) {
+        if (mode === ElementEditMode.EDIT && updateInstances) {
           if (questionId !== null && typeof questionId !== 'undefined') {
             await updateQuestionInstances({
               variables: { questionId: questionId },
@@ -281,16 +281,16 @@ function QuestionEditModal({
             <div className="flex flex-row gap-12">
               <div className="max-w-5xl flex-1">
                 <Form className="w-full" id="question-manipulation-form">
-                  <QuestionInformationFields
+                  <ElementInformationFields
                     mode={mode}
                     values={values}
                     isSubmitting={isSubmitting}
                   />
-                  <QuestionInput
+                  <ElementContentInput
                     values={values}
                     setFieldValue={setFieldValue}
                   />
-                  <QuestionExplanationField
+                  <ElementExplanationField
                     values={values}
                     setFieldValue={setFieldValue}
                   />
@@ -321,7 +321,7 @@ function QuestionEditModal({
                 </Form>
 
                 {Object.keys(errors).length !== 0 && (
-                  <QuestionFormErrors errors={errors} />
+                  <ElementFormErrors errors={errors} />
                 )}
               </div>
 
@@ -331,7 +331,7 @@ function QuestionEditModal({
               />
             </div>
 
-            {mode === QuestionEditMode.EDIT && (
+            {mode === ElementEditMode.EDIT && (
               <InstanceUpdateSwitch
                 updateInstances={updateInstances}
                 setUpdateInstances={setUpdateInstances}
@@ -344,6 +344,4 @@ function QuestionEditModal({
   )
 }
 
-QuestionEditModal.Mode = QuestionEditMode
-
-export default QuestionEditModal
+export default ElementEditModal

@@ -5,10 +5,10 @@ import {
 } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { QuestionFormTypesFreeText } from '../types'
+import { ElementFormTypesFreeText } from '../types'
 
 interface FreeTextOptionsProps {
-  values: QuestionFormTypesFreeText
+  values: ElementFormTypesFreeText
 }
 
 function FreeTextOptions({ values }: FreeTextOptionsProps) {

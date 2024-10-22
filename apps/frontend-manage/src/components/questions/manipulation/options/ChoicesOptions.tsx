@@ -17,15 +17,15 @@ import {
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../../common/ContentInput'
-import { QuestionFormTypes, QuestionFormTypesChoices } from '../types'
+import { ElementFormTypes, ElementFormTypesChoices } from '../types'
 
 interface ChoicesOptionsProps {
-  values: QuestionFormTypesChoices
+  values: ElementFormTypesChoices
   setFieldValue: (
     field: string,
     value: any,
     shouldValidate?: boolean
-  ) => Promise<void | FormikErrors<QuestionFormTypes>>
+  ) => Promise<void | FormikErrors<ElementFormTypes>>
 }
 
 function ChoicesOptions({
@@ -59,10 +59,10 @@ function ChoicesOptions({
                     questionType={values.type}
                     shouldUpdate={(
                       next?: {
-                        formik: { values: QuestionFormTypes }
+                        formik: { values: ElementFormTypes }
                       },
                       prev?: {
-                        formik: { values: QuestionFormTypes }
+                        formik: { values: ElementFormTypes }
                       }
                     ) =>
                       (next &&
@@ -191,12 +191,12 @@ function ChoicesOptions({
                         shouldUpdate={(
                           next?: {
                             formik: {
-                              values: QuestionFormTypes
+                              values: ElementFormTypes
                             }
                           },
                           prev?: {
                             formik: {
-                              values: QuestionFormTypes
+                              values: ElementFormTypes
                             }
                           }
                         ) =>

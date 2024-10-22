@@ -12,7 +12,7 @@ interface SharedQuestionFormProps {
   tags?: string[] | null
 }
 
-export interface QuestionFormTypesChoices extends SharedQuestionFormProps {
+export interface ElementFormTypesChoices extends SharedQuestionFormProps {
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
   explanation?: string | null
   options: {
@@ -28,7 +28,7 @@ export interface QuestionFormTypesChoices extends SharedQuestionFormProps {
   }
 }
 
-export interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
+export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
   type: ElementType.Numerical
   explanation?: string | null
   options: {
@@ -48,7 +48,7 @@ export interface QuestionFormTypesNumerical extends SharedQuestionFormProps {
   }
 }
 
-export interface QuestionFormTypesFreeText extends SharedQuestionFormProps {
+export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
   type: ElementType.FreeText
   explanation?: string | null
   options: {
@@ -60,18 +60,18 @@ export interface QuestionFormTypesFreeText extends SharedQuestionFormProps {
   }
 }
 
-export interface QuestionFormTypesFlashcard extends SharedQuestionFormProps {
+export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
   type: ElementType.Flashcard
   explanation: string
 }
 
-export interface QuestionFormTypesContent extends SharedQuestionFormProps {
+export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
 }
 
-export type QuestionFormTypes =
-  | QuestionFormTypesChoices
-  | QuestionFormTypesNumerical
-  | QuestionFormTypesFreeText
-  | QuestionFormTypesFlashcard
-  | QuestionFormTypesContent
+export type ElementFormTypes =
+  | ElementFormTypesChoices
+  | ElementFormTypesNumerical
+  | ElementFormTypesFreeText
+  | ElementFormTypesFlashcard
+  | ElementFormTypesContent

@@ -3,21 +3,21 @@ import { FormLabel } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
 import ContentInput from '../../common/ContentInput'
-import { QuestionFormTypes } from './types'
+import { ElementFormTypes } from './types'
 
-interface QuestionEditModalProps {
-  values: QuestionFormTypes
+interface ElementExplanationFieldProps {
+  values: ElementFormTypes
   setFieldValue: (
     field: string,
     value: any,
     shouldValidate?: boolean
-  ) => Promise<void | FormikErrors<QuestionFormTypes>>
+  ) => Promise<void | FormikErrors<ElementFormTypes>>
 }
 
-function QuestionExplanationField({
+function ElementExplanationField({
   values,
   setFieldValue,
-}: QuestionEditModalProps) {
+}: ElementExplanationFieldProps) {
   const t = useTranslations()
 
   return values.type !== ElementType.Content ? (
@@ -26,8 +26,8 @@ function QuestionExplanationField({
         name="explanation"
         questionType={values.type}
         shouldUpdate={(
-          next?: { formik: { values: QuestionFormTypes } },
-          prev?: { formik: { values: QuestionFormTypes } }
+          next?: { formik: { values: ElementFormTypes } },
+          prev?: { formik: { values: ElementFormTypes } }
         ) =>
           (next &&
             prev &&
@@ -64,4 +64,4 @@ function QuestionExplanationField({
   ) : null
 }
 
-export default QuestionExplanationField
+export default ElementExplanationField
