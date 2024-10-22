@@ -102,7 +102,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               }
               active={activeTags.includes(tag.name)}
               onMoveDown={
-                ix < data.userTags!.length - 1
+                searchInput === '' && ix < data.userTags!.length - 1
                   ? () =>
                       updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix + 1 },
@@ -110,7 +110,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
                   : undefined
               }
               onMoveUp={
-                ix > 0
+                searchInput === '' && ix > 0
                   ? () =>
                       updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix - 1 },
