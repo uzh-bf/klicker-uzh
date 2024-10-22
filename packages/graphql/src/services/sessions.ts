@@ -15,6 +15,7 @@ import type {
   QuestionResultsOpen,
 } from '@klicker-uzh/types'
 import { processQuestionData } from '@klicker-uzh/util'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -1342,7 +1343,7 @@ export async function getLeaderboard(
     },
   })
 
-  if (!session) return null
+  if (!session) return []
 
   const participant = ctx.user?.sub
     ? await ctx.prisma.participant.findUnique({
@@ -1384,6 +1385,7 @@ export async function getLeaderboard(
           ? entry.participant.avatar
           : null,
       score: entry.score,
+      level: levelFromXp(entry.participant.xp),
       // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
     }
