@@ -63,6 +63,7 @@ import {
   prepareNumericalArgs,
 } from './helpers'
 import SuspendedTagInput from './tags/SuspendedTagInput'
+import { QuestionFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useQuestionTypeOptions from './useQuestionTypeOptions'
 import useStatusOptions from './useStatusOptions'
@@ -381,7 +382,10 @@ function QuestionEditModal({
                       <FastField
                         name="content"
                         questionType={values.type}
-                        shouldUpdate={(next, prev) =>
+                        shouldUpdate={(
+                          next?: { formik: { values: QuestionFormTypes } },
+                          prev?: { formik: { values: QuestionFormTypes } }
+                        ) =>
                           next?.formik.values.content !==
                             prev?.formik.values.content ||
                           next?.formik.values.type !== prev?.formik.values.type
@@ -425,9 +429,16 @@ function QuestionEditModal({
                         <FastField
                           name="explanation"
                           questionType={values.type}
-                          shouldUpdate={(next, prev) =>
-                            next?.formik.values.explanation !==
-                              prev?.formik.values.explanation ||
+                          shouldUpdate={(
+                            next?: { formik: { values: QuestionFormTypes } },
+                            prev?: { formik: { values: QuestionFormTypes } }
+                          ) =>
+                            (next &&
+                              prev &&
+                              'explanation' in next.formik.values &&
+                              'explanation' in prev.formik.values &&
+                              next.formik.values.explanation !==
+                                prev?.formik.values.explanation) ||
                             next?.formik.values.type !==
                               prev?.formik.values.type
                           }
@@ -563,15 +574,32 @@ function QuestionEditModal({
                                     <FastField
                                       name={`options.choices.${index}.value`}
                                       questionType={values.type}
-                                      shouldUpdate={(next, prev) =>
-                                        next?.formik.values.options.choices[
-                                          index
-                                        ].value !==
-                                          prev?.formik.values.options.choices[
+                                      shouldUpdate={(
+                                        next?: {
+                                          formik: { values: QuestionFormTypes }
+                                        },
+                                        prev?: {
+                                          formik: { values: QuestionFormTypes }
+                                        }
+                                      ) =>
+                                        (next &&
+                                          prev &&
+                                          'options' in next.formik.values &&
+                                          'options' in prev.formik.values &&
+                                          next.formik.values.options &&
+                                          prev.formik.values.options &&
+                                          'choices' in
+                                            next.formik.values.options &&
+                                          'choices' in
+                                            prev.formik.values.options &&
+                                          next.formik.values.options.choices[
                                             index
-                                          ].value ||
-                                        next.formik.values.type !==
-                                          prev.formik.values.type
+                                          ].value !==
+                                            prev.formik.values.options.choices[
+                                              index
+                                            ].value) ||
+                                        next?.formik.values.type !==
+                                          prev?.formik.values.type
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
@@ -699,12 +727,32 @@ function QuestionEditModal({
                                         <FastField
                                           name={`options.choices.${index}.feedback`}
                                           questionType={values.type}
-                                          shouldUpdate={(next, prev) =>
-                                            next?.formik.values.options.choices[
-                                              index
-                                            ].feedback !==
-                                              prev?.formik.values.options
-                                                .choices[index].feedback ||
+                                          shouldUpdate={(
+                                            next?: {
+                                              formik: {
+                                                values: QuestionFormTypes
+                                              }
+                                            },
+                                            prev?: {
+                                              formik: {
+                                                values: QuestionFormTypes
+                                              }
+                                            }
+                                          ) =>
+                                            (next &&
+                                              prev &&
+                                              'options' in next.formik.values &&
+                                              'options' in prev.formik.values &&
+                                              next.formik.values.options &&
+                                              prev.formik.values.options &&
+                                              'choices' in
+                                                next.formik.values.options &&
+                                              'choices' in
+                                                prev.formik.values.options &&
+                                              next?.formik.values.options
+                                                .choices[index].feedback !==
+                                                prev?.formik.values.options
+                                                  .choices[index].feedback) ||
                                             next?.formik.values.type !==
                                               prev?.formik.values.type
                                           }
