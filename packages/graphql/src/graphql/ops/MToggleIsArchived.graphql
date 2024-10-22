@@ -1,25 +1,7 @@
 mutation ToggleIsArchived($questionIds: [Int!]!, $isArchived: Boolean!) {
   toggleIsArchived(questionIds: $questionIds, isArchived: $isArchived) {
     __typename
-    ... on ChoicesElement {
-      id
-      isArchived
-    }
-    ... on NumericalElement {
-      id
-      isArchived
-    }
-    ... on FreeTextElement {
-      id
-      isArchived
-    }
-    ... on FlashcardElement {
-      id
-      isArchived
-    }
-    ... on ContentElement {
-      id
-      isArchived
-    }
+    id
+    isArchived
   }
 }

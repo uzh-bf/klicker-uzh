@@ -241,7 +241,7 @@ function Index({ id }: Props) {
               }
               handleNewResponse={handleNewResponse}
               sessionId={id}
-              timeLimit={activeBlock?.timeLimit as number}
+              timeLimit={activeBlock?.timeLimit ?? undefined}
               execution={activeBlock?.execution ?? 0}
             />
           )}

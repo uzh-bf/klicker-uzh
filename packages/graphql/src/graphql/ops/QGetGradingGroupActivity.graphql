@@ -35,6 +35,7 @@ query GetGradingGroupActivity($id: String!) {
 
     activityInstances {
       id
+      groupActivityId
 
       decisionsSubmittedAt
       decisions {

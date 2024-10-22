@@ -128,7 +128,7 @@ function ElementStack({
       const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
 
       setStackStorage(
-        evaluations.reduce((acc, evaluation) => {
+        evaluations.reduce<StudentResponseType>((acc, evaluation) => {
           const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
           )
@@ -225,7 +225,7 @@ function ElementStack({
 
             return acc
           }
-        }, {} as StudentResponseType)
+        }, {})
       )
 
       // set status and score according to returned correctness
@@ -343,7 +343,7 @@ function ElementStack({
           onClick={() => {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
-              Object.entries(currentResponses).reduce(
+              Object.entries(currentResponses).reduce<StudentResponseType>(
                 (acc, [instanceId, value]) => {
                   if (value.type === ElementType.Content) {
                     return {
@@ -357,7 +357,7 @@ function ElementStack({
                     return { ...acc, [instanceId]: value }
                   }
                 },
-                {} as StudentResponseType
+                {}
               )
             )
           }}
@@ -412,9 +412,7 @@ function ElementStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(
-                        value.response as Record<number, boolean>
-                      )
+                      const responseList = Object.entries(value.response!)
                         .filter(([, value]) => value)
                         .map(([key]) => parseInt(key))
 
@@ -429,13 +427,13 @@ function ElementStack({
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response as string),
+                        numericalResponse: parseFloat(value.response!),
                       }
                     } else if (value.type === ElementType.FreeText) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
-                        freeTextResponse: value.response as string,
+                        freeTextResponse: value.response,
                       }
                     } else {
                       return {
@@ -455,18 +453,22 @@ function ElementStack({
             }
 
             setStackStorage(
-              Object.entries(studentResponse).reduce((acc, [key, value]) => {
-                return {
-                  ...acc,
-                  [key]: {
-                    ...value,
-                    evaluation:
-                      result.data!.respondToElementStack!.evaluations?.find(
-                        (evaluation) => evaluation.instanceId === parseInt(key)
-                      ),
-                  },
-                }
-              }, {} as StudentResponseType)
+              Object.entries(studentResponse).reduce<StudentResponseType>(
+                (acc, [key, value]) => {
+                  return {
+                    ...acc,
+                    [key]: {
+                      ...value,
+                      evaluation:
+                        result.data!.respondToElementStack!.evaluations?.find(
+                          (evaluation) =>
+                            evaluation.instanceId === parseInt(key)
+                        ),
+                    },
+                  }
+                },
+                {}
+              )
             )
 
             // set status and score according to returned correctness

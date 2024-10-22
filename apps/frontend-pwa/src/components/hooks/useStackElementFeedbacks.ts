@@ -31,13 +31,12 @@ function useStackElementFeedbacks({
       return {}
     }
 
-    return elementFeedbackData.getStackElementFeedbacks.reduce(
-      (acc, feedback) => {
-        acc[feedback.elementInstanceId] = feedback
-        return acc
-      },
-      {} as Record<number, ElementFeedback>
-    )
+    return elementFeedbackData.getStackElementFeedbacks.reduce<
+      Record<number, ElementFeedback>
+    >((acc, feedback) => {
+      acc[feedback.elementInstanceId] = feedback
+      return acc
+    }, {})
   }, [elementFeedbackData, withParticipant])
 
   return mappedElementFeedbacks

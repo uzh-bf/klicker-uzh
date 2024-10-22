@@ -188,7 +188,7 @@ export const FeedbackResponse = FeedbackResponseRef.implement({
     positiveReactions: t.exposeInt('positiveReactions'),
     negativeReactions: t.exposeInt('negativeReactions'),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
   }),
 })
 

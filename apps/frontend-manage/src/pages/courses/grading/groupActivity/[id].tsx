@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
-  GroupActivityInstance,
   GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -106,7 +105,7 @@ function GroupActivityGrading() {
                   <GroupActivitySubmission
                     key={submission.id}
                     activityIndex={ix}
-                    submission={submission as GroupActivityInstance}
+                    submission={submission}
                     selectedSubmission={selectedSubmission}
                     selectSubmission={(submissionId: number) => {
                       if (
@@ -161,11 +160,9 @@ function GroupActivityGrading() {
                   element.elementType !== ElementType.Content &&
                   element.elementType !== ElementType.Flashcard
               )}
-              submission={
-                submissions.find(
-                  (submission) => submission.id === selectedSubmission
-                ) as GroupActivityInstance
-              }
+              submission={submissions.find(
+                (submission) => submission.id === selectedSubmission
+              )}
               gradingCompleted={
                 groupActivity.status === GroupActivityStatus.Graded
               }

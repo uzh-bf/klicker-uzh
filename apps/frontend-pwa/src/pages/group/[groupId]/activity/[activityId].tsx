@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementStack,
   GroupActivityDetailsDocument,
   GroupActivityGrading,
   GroupActivityStatus,
@@ -248,7 +247,7 @@ function GroupActivityDetails() {
                 activityEnded={
                   groupActivity.status === GroupActivityStatus.Ended
                 }
-                stack={groupActivity.stacks[0] as ElementStack}
+                stack={groupActivity.stacks[0]}
                 decisions={instance.decisions}
                 results={instance.results}
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
