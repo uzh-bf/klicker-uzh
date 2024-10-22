@@ -52,8 +52,9 @@ import {
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ContentInput from '../common/ContentInput'
-import MultiplierSelector from '../sessions/creation/MultiplierSelector'
+import ContentInput from '../../common/ContentInput'
+import MultiplierSelector from '../../sessions/creation/MultiplierSelector'
+import SuspendedTagInput from '../tags/SuspendedTagInput'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import {
   prepareChoicesArgs,
@@ -62,7 +63,6 @@ import {
   prepareFreeTextArgs,
   prepareNumericalArgs,
 } from './helpers'
-import SuspendedTagInput from './tags/SuspendedTagInput'
 import { QuestionFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useQuestionTypeOptions from './useQuestionTypeOptions'

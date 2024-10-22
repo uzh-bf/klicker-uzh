@@ -26,7 +26,7 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import QuestionEditModal from './QuestionEditModal'
+import QuestionEditModal from './manipulation/QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
 
