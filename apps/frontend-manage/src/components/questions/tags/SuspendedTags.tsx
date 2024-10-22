@@ -83,7 +83,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
         icon={faMagnifyingGlass}
         className={{
           input: 'h-8 pl-8 text-sm',
-          field: 'rounded-md pr-3',
+          field: 'rounded-md',
         }}
       />
       <ul className="flex min-h-[4.7rem] list-none flex-col overflow-y-auto">
