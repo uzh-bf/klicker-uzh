@@ -67,12 +67,12 @@ function ChoicesOptions({
                     ) =>
                       (next &&
                         prev &&
-                        'options' in next.formik.values &&
-                        'options' in prev.formik.values &&
-                        next.formik.values.options &&
-                        prev.formik.values.options &&
-                        'choices' in next.formik.values.options &&
-                        'choices' in prev.formik.values.options &&
+                        (next.formik.values.type === ElementType.Sc ||
+                          next.formik.values.type === ElementType.Mc ||
+                          next.formik.values.type === ElementType.Kprim) &&
+                        (prev.formik.values.type === ElementType.Sc ||
+                          prev.formik.values.type === ElementType.Mc ||
+                          prev.formik.values.type === ElementType.Kprim) &&
                         next.formik.values.options.choices[index].value !==
                           prev.formik.values.options.choices[index].value) ||
                       next?.formik.values.type !== prev?.formik.values.type
@@ -202,12 +202,12 @@ function ChoicesOptions({
                         ) =>
                           (next &&
                             prev &&
-                            'options' in next.formik.values &&
-                            'options' in prev.formik.values &&
-                            next.formik.values.options &&
-                            prev.formik.values.options &&
-                            'choices' in next.formik.values.options &&
-                            'choices' in prev.formik.values.options &&
+                            (next.formik.values.type === ElementType.Sc ||
+                              next.formik.values.type === ElementType.Mc ||
+                              next.formik.values.type === ElementType.Kprim) &&
+                            (prev.formik.values.type === ElementType.Sc ||
+                              prev.formik.values.type === ElementType.Mc ||
+                              prev.formik.values.type === ElementType.Kprim) &&
                             next?.formik.values.options.choices[index]
                               .feedback !==
                               prev?.formik.values.options.choices[index]
