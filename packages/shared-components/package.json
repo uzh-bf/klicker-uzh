@@ -40,7 +40,7 @@
     "formik": "^2.4.6",
     "js-cookie": "^3.0.5",
     "localforage": "^1.10.0",
-    "next": "^14.2.15",
+    "next": "^15.0.0",
     "next-intl": "^3.21.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
