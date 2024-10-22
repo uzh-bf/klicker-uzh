@@ -97,7 +97,9 @@ function Question({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
-  const [deleteQuestion] = useMutation(DeleteQuestionDocument)
+  const [deleteQuestion, { loading: deleting }] = useMutation(
+    DeleteQuestionDocument
+  )
 
   const [collectedProps, drag] = useDrag({
     item: {
@@ -243,6 +245,7 @@ function Question({
             hideCloseButton
             onPrimaryAction={
               <Button
+                loading={deleting}
                 onClick={async () => {
                   await deleteQuestion({
                     variables: {

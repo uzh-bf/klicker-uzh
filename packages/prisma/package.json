@@ -1,53 +1,44 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.2.0",
+  "version": "3.3.0-alpha.2",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "peerDependencies": {
-    "@klicker-uzh/util": "workspace:*"
-  },
   "dependencies": {
-    "@prisma/client": "5.18.0"
+    "@prisma/client": "5.21.0"
   },
   "devDependencies": {
     "@klicker-uzh/transactional": "workspace:*",
-    "@pothos/plugin-prisma": "3.60.0",
-    "@size-limit/preset-small-lib": "8.2.4",
-    "@types/bcryptjs": "^2.4.2",
+    "@pothos/plugin-prisma": "~4.2.1",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.16.1",
-    "@types/ramda": "^0.29.3",
-    "@types/turndown": "^5.0.4",
-    "@types/uuid": "^9.0.8",
-    "@types/xml-js": "^1.0.0",
+    "@types/turndown": "^5.0.5",
+    "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
-    "bcryptjs": "2.4.3",
-    "cross-env": "7.0.3",
-    "dotenv": "16.4.5",
-    "dotenv-cli": "7.2.1",
-    "eslint": "8.45.0",
-    "fs-extra": "11.1.1",
-    "npm-run-all": "4.1.5",
-    "p-map": "7.0.2",
-    "prisma": "5.18.0",
-    "prisma-json-types-generator": "3.0.4",
-    "ramda": "0.29.0",
-    "size-limit": "8.2.4",
-    "ts-node": "10.9.1",
-    "tsup": "7.2.0",
-    "tsx": "4.9.1",
-    "turndown": "7.1.2",
-    "typescript": "5.4.5",
-    "uuid": "9.0.1",
-    "uuidv4": "6.2.13",
-    "xml2js": "0.6.2"
+    "bcryptjs": "~2.4.3",
+    "cross-env": "~7.0.3",
+    "dotenv": "~16.4.5",
+    "dotenv-cli": "~7.4.2",
+    "eslint": "~8.45.0",
+    "fs-extra": "~11.2.0",
+    "npm-run-all": "~4.1.5",
+    "p-map": "~7.0.2",
+    "prisma": "~5.21.0",
+    "prisma-json-types-generator": "~3.1.1",
+    "tsup": "~8.3.0",
+    "tsx": "~4.19.1",
+    "turndown": "~7.2.0",
+    "typescript": "~5.6.3",
+    "uuid": "~10.0.0",
+    "xml2js": "~0.6.2"
+  },
+  "peerDependencies": {
+    "@klicker-uzh/util": "workspace:*"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "run-s generate build:copy",
     "build:copy": "node src/copy.cjs",
     "build:test": "pnpm run build",
@@ -64,10 +55,10 @@
     "prisma:push:qa": "doppler run --config stg -- pnpm run prisma:push:raw",
     "prisma:push:raw": "prisma db push --schema=src/prisma/schema",
     "prisma:reset": "doppler run --config dev -- pnpm run prisma:reset:raw",
-    "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
     "prisma:reset:qa": "doppler run --config stg -- pnpm run prisma:reset:raw",
     "prisma:reset:raw": "prisma migrate reset --schema=src/prisma/schema --skip-seed",
     "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema",
+    "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
     "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema",
     "prisma:setup": "run-s prisma:reset prisma:push seed",
@@ -77,17 +68,16 @@
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema",
     "script": "ENV=development doppler run --config dev -- tsx",
-    "script:qa": "ENV=development doppler run --config stg -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
+    "script:qa": "ENV=development doppler run --config stg -- tsx",
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev tsx src/data/seedAchievements.ts",
-    "seed:prod:achievements": "ENV=production doppler run --config prd -- tsx src/data/seedAchievements.ts",
     "seed:flashcards": "ENV=development doppler run --config dev tsx src/data/seedFlashcards.ts",
+    "seed:prod:achievements": "ENV=production doppler run --config prd -- tsx src/data/seedAchievements.ts",
     "seed:prod:flashcards": "ENV=development doppler run --config prd -- tsx src/data/seedFlashcards.ts",
     "seed:prod:repetitionPool": "ENV=development doppler run --config prd -- tsx src/data/seedRepetitionPool.ts",
     "seed:qa": "ENV=development doppler run --config stg -- tsx src/data/seedTEST.ts",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts",
-    "size": "size-limit"
+    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
   },
   "engines": {
     "node": "=20"
@@ -98,10 +88,5 @@
   "prisma": {
     "seed": "pnpm run seed"
   },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ]
+  "type": "module"
 }

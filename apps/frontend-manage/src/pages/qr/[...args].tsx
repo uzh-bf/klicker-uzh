@@ -1,11 +1,10 @@
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
-import { toPng } from 'html-to-image'
 import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useCallback, useRef } from 'react'
+import React, { MutableRefObject, useCallback, useRef } from 'react'
 import { QRCode } from 'react-qrcode-logo'
 import { twMerge } from 'tailwind-merge'
 
@@ -25,24 +24,15 @@ export function QR({
 }: Props): React.ReactElement {
   const t = useTranslations()
 
-  const canvasRef = useRef<HTMLDivElement>(null)
+  const ref = useRef<QRCode>()
 
   const onButtonClick = useCallback(() => {
-    if (canvasRef.current === null) {
+    if (ref.current === null) {
       return
     }
 
-    toPng(canvasRef.current)
-      .then((dataUrl) => {
-        const link = document.createElement('a')
-        link.download = `${path}.png`
-        link.href = dataUrl
-        link.click()
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  }, [canvasRef, path])
+    ref.current?.download('png', `klickeruzh-${path}.png`)
+  }, [ref, path])
 
   return (
     <div className="space-y-2">
@@ -52,8 +42,9 @@ export function QR({
           {path}
         </div>
       </Link>
-      <div ref={canvasRef} className={className?.canvas}>
+      <div className={className?.canvas}>
         <QRCode
+          ref={ref as MutableRefObject<QRCode>}
           logoHeight={width / 3.34}
           logoImage="/img/KlickerLogo.png"
           logoWidth={width}

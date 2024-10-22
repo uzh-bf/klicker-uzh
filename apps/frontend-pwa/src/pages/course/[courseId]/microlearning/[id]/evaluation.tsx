@@ -31,9 +31,8 @@ function MicrolearningEvaluation() {
     skip: !data?.microLearning?.course?.id,
   })
 
-  const [markMicrolearningCompleted] = useMutation(
-    MarkMicroLearningCompletedDocument
-  )
+  const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
+    useMutation(MarkMicroLearningCompletedDocument)
 
   const microlearning = data?.microLearning
   const aggregatedResults = useStackEvaluationAggregation({
@@ -117,6 +116,7 @@ function MicrolearningEvaluation() {
         {participation?.getParticipation && (
           <div className="text-right">
             <Button
+              loading={markingAsCompleted}
               onClick={async () => {
                 await markMicrolearningCompleted({
                   variables: {

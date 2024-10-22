@@ -100,16 +100,34 @@ function MicroLearningWizard({
   })
 
   const settingsValidationSchema = yup.object().shape({
-    startDate: yup.date().required(t('manage.sessionForms.startDate')),
+    startDate: yup
+      .date()
+      .required(t('manage.sessionForms.startDate'))
+      .test(
+        'afterCourseStart',
+        t('manage.sessionForms.microlearningStartAfterCourseStart'),
+        (value, context) =>
+          context.parent.courseStartDate
+            ? dayjs(value) > dayjs(context.parent.courseStartDate)
+            : true
+      ),
     endDate: yup
       .date()
-      .test('checkDateInPast', t('manage.sessionForms.endInFuture'), (d) => {
-        return !!(d && d > new Date())
+      .required(t('manage.sessionForms.endDate'))
+      .test('checkDateInPast', t('manage.sessionForms.endInFuture'), (date) => {
+        return !!(date && date > new Date())
       })
       .when('startDate', (startDate, schema) =>
         schema.min(startDate, t('manage.sessionForms.endAfterStart'))
       )
-      .required(t('manage.sessionForms.endDate')),
+      .test(
+        'beforeCourseEnd',
+        t('manage.sessionForms.microlearningEndBeforeCourseEnd'),
+        (value, context) =>
+          context.parent.courseEndDate
+            ? dayjs(value) < dayjs(context.parent.courseEndDate)
+            : true
+      ),
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
@@ -163,6 +181,8 @@ function MicroLearningWizard({
     ],
     startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
     endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    courseStartDate: undefined,
+    courseEndDate: undefined,
     multiplier: '1',
     courseId: undefined,
   }
@@ -218,6 +238,8 @@ function MicroLearningWizard({
     endDate: initialValues?.scheduledEndAt
       ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
       : formDefaultValues.endDate,
+    courseStartDate: formDefaultValues.courseStartDate,
+    courseEndDate: formDefaultValues.courseEndDate,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,

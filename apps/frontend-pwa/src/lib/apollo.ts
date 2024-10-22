@@ -19,8 +19,8 @@ import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/a
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
-import { equals } from 'ramda'
 import { useMemo } from 'react'
+import { isDeepEqual } from 'remeda'
 import util from 'util'
 
 interface PageProps {
@@ -187,7 +187,7 @@ export function initializeApollo(
       arrayMerge: (destinationArray, sourceArray) => [
         ...sourceArray,
         ...destinationArray.filter((d) =>
-          sourceArray.every((s) => !equals(d, s))
+          sourceArray.every((s) => !isDeepEqual(d, s))
         ),
       ],
     })

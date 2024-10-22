@@ -1,6 +1,6 @@
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
-import { sign } from 'jsonwebtoken'
+import * as jose from 'jose'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
@@ -18,23 +18,34 @@ import messages from '../../../packages/i18n/messages/en'
 // -- This is a parent command --
 // Cypress.Commands.add('login', (email, password) => { ... })
 
-const loginFactory = (tokenData) => () => {
-  cy.clearAllCookies()
-  cy.clearAllLocalStorage()
+const loginFactory = (tokenData) => {
+  return () => {
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
 
-  cy.viewport('macbook-16')
+    cy.viewport('macbook-16')
 
-  const token = sign(tokenData, 'abcd') // sign token with app secret
+    const secret = new TextEncoder().encode('abcd')
+    const alg = 'HS256'
 
-  cy.setCookie('next-auth.session-token', token, {
-    domain: '127.0.0.1',
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-  })
+    cy.wrap(null).then(async () => {
+      const token = await new jose.SignJWT(tokenData)
+        .setProtectedHeader({ alg })
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(secret)
 
-  cy.visit(Cypress.env('URL_MANAGE'))
+      cy.setCookie('next-auth.session-token', token, {
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      })
+    })
+
+    cy.visit(Cypress.env('URL_MANAGE'))
+  }
 }
 
 Cypress.Commands.add(
@@ -143,13 +154,16 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choices[0].content)
 
     choices.slice(1).forEach((choice, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="add-new-answer"]').click()
+      cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .click()
+        .realClick()
         .type(choice.content)
     })
 
@@ -186,8 +200,10 @@ Cypress.Commands.add(
       .contains(messages.shared.MC.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choices[0].content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choices[0].content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -199,9 +215,10 @@ Cypress.Commands.add(
     }
 
     choices.slice(1).forEach((choice, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="add-new-answer"]').click()
+      cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .click()
+        .realClick()
         .type(choice.content)
     })
 
@@ -257,17 +274,28 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1.content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(choice1.content)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .type(choice2.content)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .type(choice3.content)
     cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3.content)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4.content)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-3"]')
+      .realClick()
+      .type(choice4.content)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4.content)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -316,7 +344,7 @@ Cypress.Commands.add(
       .contains(messages.shared.NUMERICAL.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -378,7 +406,7 @@ Cypress.Commands.add(
       .contains(messages.shared.FREE_TEXT.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -417,8 +445,10 @@ Cypress.Commands.add(
       .contains(messages.shared.FLASHCARD.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
-    cy.get('[data-cy="insert-question-explanation"]').click().type(explanation)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(explanation)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
   }
@@ -442,7 +472,7 @@ Cypress.Commands.add(
       .contains(messages.shared.CONTENT.typeLabel)
 
     cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').click().type(content)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
   }
@@ -576,7 +606,7 @@ Cypress.Commands.add(
 
     if (typeof description !== 'undefined') {
       cy.get('[data-cy="insert-practice-quiz-description"]')
-        .click()
+        .realClick()
         .type(description)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -636,7 +666,7 @@ Cypress.Commands.add(
       .type(displayName)
     if (description) {
       cy.get('[data-cy="insert-microlearning-description"]')
-        .click()
+        .realClick()
         .type(description)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -662,18 +692,101 @@ Cypress.Commands.add(
   }
 )
 
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
+interface CreateGroupActivityArgs {
+  name: string
+  displayName: string
+  task: string
+  courseName: string
+  multiplier?: string
+  scheduledStartDate: string
+  scheduledEndDate: string
+  clues: {
+    type: 'text' | 'number'
+    name: string
+    displayName: string
+    content: string
+    unit?: string
+  }[]
+  stack: StackType
+}
+
+Cypress.Commands.add(
+  'createGroupActivity',
+  ({
+    name,
+    displayName,
+    task,
+    courseName,
+    multiplier,
+    scheduledStartDate,
+    scheduledEndDate,
+    clues,
+    stack,
+  }: CreateGroupActivityArgs) => {
+    // Step 1: Name
+    cy.get('[data-cy="create-group-activity"]').click()
+    cy.get('[data-cy="insert-groupactivity-name"]').click().type(name)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 2: Display name and description
+    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-groupactivity-display-name"]')
+      .click()
+      .type(displayName)
+    cy.get('[data-cy="insert-groupactivity-description"]')
+      .realClick()
+      .type(task)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 3: Settings
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+
+    if (multiplier) {
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
+    cy.get('[data-cy="select-start-date"]').click().type(scheduledStartDate)
+    cy.get('[data-cy="select-end-date"]').click().type(scheduledEndDate)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 4: Clues
+    clues.forEach((clue) => {
+      cy.get('[data-cy="add-group-activity-clue"]').click()
+      cy.get('[data-cy="group-activity-clue-type"]').click()
+      cy.get(
+        `[data-cy="group-activity-clue-type-${clue.type === 'text' ? 'string' : 'number'}"]`
+      ).click()
+      cy.get('[data-cy="group-activity-clue-name"]').click().type(clue.name)
+      cy.get('[data-cy="group-activity-clue-display-name"]')
+        .click()
+        .type(clue.displayName)
+      cy.get(
+        `[data-cy="group-activity-${clue.type === 'text' ? 'string' : 'number'}-clue-value"]`
+      )
+        .click()
+        .type(clue.content)
+
+      if (clue.type === 'number' && clue.unit) {
+        cy.get('[data-cy="group-activity-number-clue-unit"]')
+          .click()
+          .type(clue.unit)
+      }
+
+      cy.get('[data-cy="group-activity-clue-save"]').click()
+      cy.findByText(clue.name).should('exist')
+    })
+
+    // Step 4: Questions / Elements
+    cy.createStacks({ stacks: [stack] })
+    cy.get('[data-cy="next-or-submit"]').click()
+  }
+)
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -730,6 +843,7 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
+      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,
@@ -747,10 +861,17 @@ declare global {
         endDate,
         stacks,
       }: CreateMicrolearningArgs): Chainable<void>
-      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
-      // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-      // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-      // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
+      createGroupActivity({
+        name,
+        displayName,
+        task,
+        courseName,
+        multiplier,
+        scheduledStartDate,
+        scheduledEndDate,
+        clues,
+        stack,
+      }: CreateGroupActivityArgs): Chainable<void>
     }
   }
 }

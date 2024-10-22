@@ -3,7 +3,7 @@ import {
   faArrowsRotate,
   faCheck,
   faClock,
-  faClockRotateLeft,
+  faFlagCheckered,
   faHourglassEnd,
   faHourglassStart,
   faPencil,
@@ -28,23 +28,29 @@ import GroupActivityGradingLink from './groupActivity/GroupActivityGradingLink'
 import GroupActivityUnpublishButton from './groupActivity/GroupActivityUnpublishButton'
 import GroupActivityDeletionModal from './modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from './modals/GroupActivityEndingModal'
+import GroupActivityStartingModal from './modals/GroupActivityStartingModal'
 
 interface GroupActivityElementProps {
   groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
+  groupDeadlineDate: string
+  numOfParticipantGroups: number
   courseId: string
+  courseStartDate: string
 }
 
 function GroupActivityElement({
   groupActivity,
+  groupDeadlineDate,
+  numOfParticipantGroups,
   courseId,
+  courseStartDate,
 }: GroupActivityElementProps) {
   const t = useTranslations()
   const router = useRouter()
 
   const [deletionModal, setDeletionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
-  const isFuture = dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())
-  const isPast = dayjs(groupActivity.scheduledEndAt).isBefore(dayjs())
+  const [startingModal, setStartingModal] = useState(false)
 
   const statusMap: Record<GroupActivityStatus, React.ReactElement> = {
     [GroupActivityStatus.Draft]: (
@@ -112,7 +118,7 @@ function GroupActivityElement({
   const DeletionItem = {
     label: (
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-        <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.2rem]" />
         <div>{t('manage.course.deleteGroupActivity')}</div>
       </div>
     ),
@@ -151,8 +157,8 @@ function GroupActivityElement({
           })}
         </div>
         <div className="flex flex-row gap-4 text-sm">
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faHourglassStart} />
+          <div className="flex flex-row items-center gap-1">
+            <FontAwesomeIcon icon={faHourglassStart} className="w-[1.2rem]" />
             <div>
               {t('manage.course.startAt', {
                 time: dayjs(groupActivity.scheduledStartAt)
@@ -161,8 +167,8 @@ function GroupActivityElement({
               })}
             </div>
           </div>
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faHourglassEnd} />
+          <div className="flex flex-row items-center gap-1">
+            <FontAwesomeIcon icon={faHourglassEnd} className="w-[1.2rem]" />
             <div>
               {t('manage.course.endAt', {
                 time: dayjs(groupActivity.scheduledEndAt)
@@ -189,8 +195,11 @@ function GroupActivityElement({
                 items={[
                   {
                     label: (
-                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
-                        <FontAwesomeIcon icon={faPencil} />
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                        <FontAwesomeIcon
+                          icon={faPencil}
+                          className="w-[1.2rem]"
+                        />
                         <div>{t('manage.course.editGroupActivity')}</div>
                       </div>
                     ),
@@ -218,7 +227,40 @@ function GroupActivityElement({
                 activityName={groupActivity.name}
                 courseId={courseId}
               />
-              {DeletionDropdown}
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[
+                  ...(dayjs(courseStartDate).isBefore(dayjs()) &&
+                  dayjs(groupDeadlineDate).isBefore(dayjs())
+                    ? [
+                        {
+                          label: (
+                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faPlay}
+                                className="w-[1.2rem]"
+                              />
+                              <div>
+                                {t('manage.course.startGroupActivityNow')}
+                              </div>
+                            </div>
+                          ),
+                          onClick: () => setStartingModal(true),
+                          data: {
+                            cy: `start-group-activity-${groupActivity.name}-now`,
+                          },
+                        },
+                      ]
+                    : []),
+                  DeletionItem,
+                ]}
+                triggerIcon={faHandPointer}
+              />
             </>
           )}
 
@@ -240,13 +282,16 @@ function GroupActivityElement({
                 items={[
                   {
                     label: (
-                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
-                        <FontAwesomeIcon icon={faClockRotateLeft} />
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                        <FontAwesomeIcon
+                          icon={faFlagCheckered}
+                          className="w-[1.2rem]"
+                        />
                         <div>{t('manage.course.endGroupActivity')}</div>
                       </div>
                     ),
                     onClick: () => setEndingModal(true),
-                    data: { cy: `end-groupActivity-${groupActivity.name}` },
+                    data: { cy: `end-group-activity-${groupActivity.name}` },
                   },
                   DeletionItem,
                 ]}
@@ -290,6 +335,15 @@ function GroupActivityElement({
         open={endingModal}
         setOpen={setEndingModal}
         activityId={groupActivity.id}
+        courseId={courseId}
+      />
+      <GroupActivityStartingModal
+        open={startingModal}
+        setOpen={setStartingModal}
+        activityId={groupActivity.id}
+        activityEndDate={groupActivity.scheduledEndAt}
+        groupDeadlineDate={groupDeadlineDate}
+        numOfParticipantGroups={numOfParticipantGroups}
         courseId={courseId}
       />
     </div>

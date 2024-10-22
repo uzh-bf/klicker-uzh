@@ -20,8 +20,8 @@ import {
 } from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { indexBy } from 'ramda'
 import { useMemo } from 'react'
+import { indexBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 
 interface ChoiceOptionsProps {
@@ -402,7 +402,7 @@ function OptionsDisplay({
   const t = useTranslations()
   const feedbacks = useMemo(() => {
     if (evaluation) {
-      return indexBy((feedback: any) => feedback.ix, evaluation.feedbacks)
+      return indexBy(evaluation.feedbacks, (feedback) => feedback.ix)
     }
   }, [evaluation])
 

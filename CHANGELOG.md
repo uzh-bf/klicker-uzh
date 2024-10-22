@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2024-10-17)
+
+
+### Features
+
+* add possibility to end microlearnings immediately including student-side subscriptions ([#4315](https://github.com/uzh-bf/klicker-uzh/issues/4315)) ([1a19b59](https://github.com/uzh-bf/klicker-uzh/commit/1a19b5941a70b3059e714578da43bb2cb82fec33))
+
+
+### Bug Fixes
+
+* add loading states where required and update live quiz deletion logic ([#4314](https://github.com/uzh-bf/klicker-uzh/issues/4314)) ([3ab1a1a](https://github.com/uzh-bf/klicker-uzh/commit/3ab1a1ab32aba83e42e92d7e37adf923900b0114))
+* enforce in backend that no responses to past microlearning are accepted ([#4316](https://github.com/uzh-bf/klicker-uzh/issues/4316)) ([723350d](https://github.com/uzh-bf/klicker-uzh/commit/723350d989d11d8f2270045a1e39d84002a1985c))
+* **packages/graphql:** allow moving course start date into the past ([#4311](https://github.com/uzh-bf/klicker-uzh/issues/4311)) ([e402d7e](https://github.com/uzh-bf/klicker-uzh/commit/e402d7ec44ccbc5ceb5078b8cfcdc5f9b270d144))
+
+
+### Other
+
+* **apps/frontend-manage:** display notification if course description is missing ([#4313](https://github.com/uzh-bf/klicker-uzh/issues/4313)) ([e1a27ac](https://github.com/uzh-bf/klicker-uzh/commit/e1a27ac924b60ee6e94c8912a96b5993cfdc5e08))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** enforce that activity dates are consistent with course dates ([#4310](https://github.com/uzh-bf/klicker-uzh/issues/4310)) ([24e1bb9](https://github.com/uzh-bf/klicker-uzh/commit/24e1bb99210c57dd6d58ea4257cbf56d6821f62d))
+* **apps/frontend-manage:** ensure that group activity can only be started after course start and group formation ([#4312](https://github.com/uzh-bf/klicker-uzh/issues/4312)) ([8fae5d7](https://github.com/uzh-bf/klicker-uzh/commit/8fae5d76bf5c3de83a6dbe9518cc3e01a229e8a3))
+
+## [3.3.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.0...v3.3.0-alpha.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* ensure that feedback and response interactions return correct mutation content and trigger subscriptions ([#4309](https://github.com/uzh-bf/klicker-uzh/issues/4309)) ([140cabd](https://github.com/uzh-bf/klicker-uzh/commit/140cabd1636f2cbb49606aca30390ae8933ab85d))
+
+## [3.3.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0...v3.3.0-alpha.0) (2024-10-16)
+
+
+### Features
+
+* add possibility to end group activity manually and introduce additional ended status ([#4303](https://github.com/uzh-bf/klicker-uzh/issues/4303)) ([fa6c196](https://github.com/uzh-bf/klicker-uzh/commit/fa6c196f8225e976b2d9ea656ed8b9f6a585dcc6))
+* add possibility to start group activity synchronously before scheduled start date ([#4306](https://github.com/uzh-bf/klicker-uzh/issues/4306)) ([3e9b53e](https://github.com/uzh-bf/klicker-uzh/commit/3e9b53e93d0eb1f183f2aa81a0e65f4ad9cc3718))
+
+
+### Refactors
+
+* **cypress:** improve structure of test suite and separate deletion steps ([#4307](https://github.com/uzh-bf/klicker-uzh/issues/4307)) ([ef4e2d4](https://github.com/uzh-bf/klicker-uzh/commit/ef4e2d4611acf27667e3b3ed529106352addaacc))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show scheduled activities on group activity list ([#4308](https://github.com/uzh-bf/klicker-uzh/issues/4308)) ([77fdd39](https://github.com/uzh-bf/klicker-uzh/commit/77fdd39682109149324e115ba77dcac193973d21))
+* resolve seed-dependency of group activity through extended test suite ([#4305](https://github.com/uzh-bf/klicker-uzh/issues/4305)) ([dd00908](https://github.com/uzh-bf/klicker-uzh/commit/dd00908932eb6dc18201d9811636765d795dbf4e))
+
 ## [3.2.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.5...v3.2.0) (2024-10-09)
 
 ## [3.2.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-rc.4...v3.2.0-rc.5) (2024-10-09)

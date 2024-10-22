@@ -24,9 +24,6 @@ function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
       defaultLocale: 'en',
     },
     modularizeImports: {
-      ramda: {
-        transform: 'ramda/es/{{member}}',
-      },
       lodash: {
         transform: 'lodash/{{member}}',
       },

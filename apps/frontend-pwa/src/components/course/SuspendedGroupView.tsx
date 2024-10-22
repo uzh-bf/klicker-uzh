@@ -1,16 +1,25 @@
-import { useMutation } from '@apollo/client'
+import {
+  QueryRef,
+  useMutation,
+  useReadQuery,
+  useSuspenseQuery,
+} from '@apollo/client'
+import { SubscribeToMoreFunction } from '@apollo/client/react/hooks/useSuspenseQuery'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddMessageToGroupDocument,
+  Exact,
+  GetCourseGroupActivitiesQuery,
   GetCourseOverviewDataDocument,
-  GroupActivity,
+  GetGroupActivityInstancesDocument,
   GroupActivityInstance,
   GroupMessage,
   LeaveParticipantGroupDocument,
   Participant,
   ParticipantGroup,
   Participation,
+  Scalars,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
@@ -18,6 +27,7 @@ import {
   FormikTextareaField,
   H3,
   Tabs,
+  Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -27,47 +37,85 @@ import Image from 'next/image'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import GroupActivityList from '../groupActivity/GroupActivityList'
+import GroupActivityListSubscriber from '../groupActivity/GroupActivityListSubscriber'
 import GroupVisualization from '../participant/groups/GroupVisualization'
 import EditableGroupName from './EditableGroupName'
 
-interface GroupViewProps {
+interface SuspendedGroupViewProps {
   group: Omit<ParticipantGroup, 'participants' | 'messages'> & {
     participants?: Omit<Participant, 'isActive' | 'locale' | 'xp'>[] | null
     messages?: Omit<GroupMessage, 'group'>[] | null
   }
   participation: Omit<Participation, 'completedMicroLearnings'>
   participant: Omit<Participant, 'isActive' | 'locale' | 'participantGroups'>
-  groupActivities: Omit<GroupActivity, 'name' | 'status'>[]
-  groupActivityInstances: Record<string, GroupActivityInstance>
   courseId: string
   maxGroupSize: number
   groupDeadlineDate: string
   isGroupDeadlinePassed: boolean
+  groupActivityQueryRef: QueryRef<GetCourseGroupActivitiesQuery>
   setSelectedTab: (value: string) => void
+  subscribeActivityList: SubscribeToMoreFunction<
+    GetCourseGroupActivitiesQuery,
+    Exact<{
+      courseId: Scalars['String']['input']
+    }>
+  >
 }
 
-function GroupView({
+function SuspendedGroupView({
   group,
   participation,
   participant,
-  groupActivities,
-  groupActivityInstances,
   courseId,
   maxGroupSize,
   groupDeadlineDate,
   isGroupDeadlinePassed,
+  groupActivityQueryRef,
   setSelectedTab,
-}: GroupViewProps) {
+  subscribeActivityList,
+}: SuspendedGroupViewProps) {
   const t = useTranslations()
-  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
+  const [endedGroupActivity, setEndedGroupActivity] = useState<
+    string | undefined
+  >(undefined)
+  const [startedGroupActivity, setStartedGroupActivity] = useState<
+    string | undefined
+  >(undefined)
 
+  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
   const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
+
+  const { data: groupActivitiesData } = useReadQuery(groupActivityQueryRef)
+  const { data: rawActivityInstances } = useSuspenseQuery(
+    GetGroupActivityInstancesDocument,
+    {
+      variables: { courseId, groupId: group.id },
+    }
+  )
+
+  const groupActivities = groupActivitiesData?.groupActivities ?? []
+  const groupActivityInstances =
+    rawActivityInstances.groupActivityInstances?.reduce<
+      Record<string, GroupActivityInstance>
+    >((acc, groupActivityInstance) => {
+      return {
+        ...acc,
+        [groupActivityInstance.groupActivityId]: groupActivityInstance,
+      }
+    }, {}) ?? {}
 
   return (
     <Tabs.TabContent key={group.id} value={group.id}>
+      <GroupActivityListSubscriber
+        courseId={courseId}
+        subscribeToMore={subscribeActivityList}
+        setEndedGroupActivity={setEndedGroupActivity}
+        setStartedGroupActivity={setStartedGroupActivity}
+      />
       <div className="flex flex-col gap-2">
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
@@ -265,6 +313,7 @@ function GroupView({
                 content: Yup.string().required(t('pwa.groups.messageRequired')),
               })}
               onSubmit={async (values, { resetForm, setSubmitting }) => {
+                setSubmitting(true)
                 await addMessageToGroup({
                   variables: { groupId: group.id, content: values.content },
                   refetchQueries: [
@@ -298,7 +347,6 @@ function GroupView({
                       cy: 'group-message-submit',
                     }}
                     disabled={!isValid || isSubmitting}
-                    loading={isSubmitting}
                   >
                     <FontAwesomeIcon icon={faPaperPlane} className="mr-0.5" />
                   </Button>
@@ -308,8 +356,32 @@ function GroupView({
           </div>
         </div>
       </div>
+      <Toast
+        type="warning"
+        openExternal={typeof endedGroupActivity !== 'undefined'}
+        onCloseExternal={() => setEndedGroupActivity(undefined)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityEndedToast', {
+          activityName: endedGroupActivity,
+        })}
+      </Toast>
+      <Toast
+        type="success"
+        openExternal={typeof startedGroupActivity !== 'undefined'}
+        onCloseExternal={() => setStartedGroupActivity(undefined)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.groupActivityStartedToast', {
+          activityName: startedGroupActivity,
+        })}
+      </Toast>
     </Tabs.TabContent>
   )
 }
 
-export default GroupView
+export default SuspendedGroupView

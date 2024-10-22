@@ -202,6 +202,7 @@ type Course {
   name: String!
   notificationEmail: String
   numOfActiveParticipants: Int
+  numOfParticipantGroups: Int
   numOfParticipants: Int
   owner: User
   participantGroups: [ParticipantGroup!]
@@ -783,11 +784,11 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
+  deleteLiveQuiz(id: String!): Session
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
-  deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -797,6 +798,7 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endGroupActivity(id: String!): GroupActivity
+  endMicroLearning(id: String!): MicroLearning
   endSession(id: String!): Session
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
@@ -826,6 +828,7 @@ type Mutation {
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -841,7 +844,6 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  softDeleteLiveSession(id: String!): Session
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1107,8 +1109,10 @@ type Query {
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
+  groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
+  groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveSession(id: String!): Session
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
@@ -1359,6 +1363,8 @@ type Subscription {
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
+  groupActivityStarted(courseId: String!): GroupActivity!
+  microLearningEnded(activityId: String!): MicroLearning!
   runningSessionUpdated(sessionId: String!): SessionBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }

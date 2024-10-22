@@ -505,8 +505,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
-      groupActivityEnded:
-        'Gruppenaktivität "{activityName}" beendet, keine weiteren Einreichungen möglich.',
+      groupActivityEndedToast:
+        'Gruppenaktivität "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
+      groupActivityStartedToast:
+        'Die Gruppenaktivität "{activityName}" hat begonnen. Startet sie jetzt!',
+      microLearningEndedToast:
+        'Microlearning "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
       coursePracticeArea:
         'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
@@ -587,6 +591,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableFrom: 'Verfügbar ab {date}',
       availableUntil: 'Verfügbar bis {date}',
       questionSetN: 'Frageset {number}',
+      activityExpired:
+        'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',
@@ -1063,6 +1069,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie das Startdatum des Microlearnings aus. Es wird den Teilnehmenden nach Publikation ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:
         'Wählen Sie das Enddatum des Microlearnings aus. Es wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+      microlearningStartAfterCourseStart:
+        'Das Startdatum des Microlearnings muss nach dem Startdatum des Kurses liegen.',
+      microlearningEndBeforeCourseEnd:
+        'Das Enddatum des Microlearnings muss vor dem Enddatum des Kurses liegen.',
       microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
@@ -1153,6 +1163,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
         'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
+      practiceQuizStartAfterCourseStart:
+        'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1236,6 +1248,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
       groupActivityEndDate:
         'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityStartAfterCourseStart:
+        'Das Startdatum der Gruppenaktivität muss nach dem Startdatum des Kurses liegen.',
+      groupActivityStartAfterGroupDeadline:
+        'Das Startdatum der Gruppenaktivität muss nach dem Enddatum der Gruppenbildung liegen.',
+      groupActivityEndBeforeCourseEnd:
+        'Das Enddatum der Gruppenaktivität muss vor dem Enddatum des Kurses liegen.',
       groupActivityMultiplier:
         'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
       groupActivityUseCase:
@@ -1478,6 +1496,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.',
       courseEndReq:
         'Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.',
+      courseStartBeforeEarliestActivityStart:
+        'Das Kursstartdatum muss vor dem Startdatum der ersten Aktivität ({date}) liegen.',
+      endBeforeEarliestActivityEnd:
+        'Das Kursenddatum muss nach dem Enddatum der letzten Aktivität ({date}) liegen.',
+      groupDeadlineBeforeFirstGroupActivity:
+        'Die Deadline für die Gruppenbildung muss vor dem Start der ersten Gruppenaktivität ({date}) liegen.',
       endDateFuture: 'Das Enddatum muss in der Zukunft liegen.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
       courseName: 'Kursname',
@@ -1583,6 +1607,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
+      noDescriptionNotification: 'Keine Beschreibung vorhanden',
       changedDate: 'Datum wurde erfolgreich angepasst.',
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
@@ -1660,6 +1685,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endGroupActivity: 'Gruppenaktivität beenden',
       endGroupActivityMessage:
         'Bitte bestätigen Sie, dass Sie diese Gruppenaktivität beenden möchten. Beachten Sie, dass nach dem Beenden der Gruppenaktivität keine weiteren Abgaben mehr akzeptiert werden.',
+      endMicroLearning: 'Microlearning beenden',
+      endMicroLearningMessage:
+        'Bitte bestätigen Sie, dass Sie dieses Microlearning beenden möchten. Beachten Sie, dass nach dem Beenden des Microlearnings keine weiteren Abgaben mehr akzeptiert werden.',
       noStartedInstancesLoosingAccess:
         'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
       startedInstancesLoosingAccess:
@@ -1668,6 +1696,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
       unaffectedSubmissions:
         '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
+      startGroupActivityNow: 'Gruppenaktivität jetzt starten',
+      startGroupActivityNowMessage:
+        'Bitte bestätigen Sie, dass Sie die Gruppenaktivität jetzt starten möchten. Beachten Sie, dass eine Gruppenaktivität nach dem Starten nicht mehr bearbeitet werden kann.',
+      noParticipantGroupsAvailable:
+        'In diesem Kurs wurden bisher keine Teilnehmergruppen gebildet, welche eine Gruppenaktivität lösen könnten. Bitte warten Sie die Gruppenbildung ab oder verschieben Sie die entsprechende Deadline über die Kurseinstellungen in die Zukunft.',
+      groupFormationNotCompleted:
+        'Die Gruppenbildung wurde noch nicht abgeschlossen. Bitte warten Sie das eingestellte Enddatum ab oder wählen sie die sofortige Gruppenzuteilung.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} Teilnehmergruppe(n) erhalten nach dem Start der Gruppenaktivität sofort Zugriff auf den entsprechenden Inhalt.',
+      groupActivityAvailableUntil:
+        'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',

@@ -26,6 +26,9 @@ interface CourseOverviewHeaderProps {
   name: string
   pinCode: number
   numOfParticipants: number
+  earliestGroupDeadline?: string
+  earliestStartDate?: string
+  latestEndDate?: string
 }
 
 function CourseOverviewHeader({
@@ -33,6 +36,9 @@ function CourseOverviewHeader({
   name,
   pinCode,
   numOfParticipants,
+  earliestGroupDeadline,
+  earliestStartDate,
+  latestEndDate,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
@@ -126,6 +132,9 @@ function CourseOverviewHeader({
       <CourseManipulationModal
         initialValues={course}
         modalOpen={courseSettingsModal}
+        earliestGroupDeadline={earliestGroupDeadline}
+        earliestStartDate={earliestStartDate}
+        latestEndDate={latestEndDate}
         onModalClose={() => setCourseSettingsModal(false)}
         onSubmit={async (
           values: CourseManipulationFormData,

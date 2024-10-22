@@ -9,7 +9,7 @@ import minMax from 'dayjs/plugin/minMax.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
-import * as R from 'ramda'
+import { sort } from 'remeda'
 import { Context } from './context.js'
 
 dayjs.extend(utc)
@@ -65,15 +65,12 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-export const orderStacks = R.sort(
-  (
-    stackA: ElementStack & {
-      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
-    },
-    stackB: ElementStack & {
-      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
-    }
-  ) => {
+export const orderStacks = (
+  stacks: (ElementStack & {
+    elements: (ElementInstance & { responses?: QuestionResponse[] })[]
+  })[]
+) =>
+  sort(stacks, (stackA, stackB) => {
     const stackAResponses = stackA.elements
       .flatMap((e) => e.responses)
       .filter((response) => !!response)
@@ -116,8 +113,7 @@ export const orderStacks = R.sort(
     if (aResponse.lastCorrectAt > bResponse.lastCorrectAt) return 1
 
     return 0
-  }
-)
+  })
 
 const findEarliestDueDate = (
   stackResponses: (QuestionResponse | undefined)[]

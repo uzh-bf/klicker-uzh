@@ -17,8 +17,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { pickRandom } from 'mathjs'
-import * as R from 'ramda'
+import { omitBy, pick, prop, sortBy } from 'remeda'
 import { ElementInstanceOptions } from 'src/ops.js'
 import {
   adjectives,
@@ -898,13 +897,14 @@ export async function getParticipantGroups(
   return participant.participantGroups.map((group) => ({
     ...group,
     score: group.averageMemberScore + group.groupActivityScore,
-    participants: R.sortWith(
-      [R.descend(R.prop('score')), R.ascend(R.prop('username'))],
+    participants: sortBy(
       group.participants.map((participant) => ({
         ...participant,
         score: participant.leaderboards[0]?.score ?? 0,
         isSelf: participant.id === ctx.user.sub,
-      }))
+      })),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
     ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
   }))
 }
@@ -1267,9 +1267,9 @@ export async function getGroupActivityDetails(
               return {
                 ...(groupActivity.status === GroupActivityStatus.GRADED
                   ? clueAssignment.groupActivityClueInstance
-                  : R.dissoc(
-                      'value',
-                      clueAssignment.groupActivityClueInstance
+                  : omitBy(
+                      clueAssignment.groupActivityClueInstance,
+                      (_, key) => key === 'value'
                     )),
                 participant: {
                   ...clueAssignment.participant,
@@ -1305,7 +1305,7 @@ export async function startGroupActivity(
           },
         },
       },
-      parameters: true,
+      // parameters: true, // TODO: reintroduce as soon as these are used
     },
   })
 
@@ -1337,12 +1337,8 @@ export async function startGroupActivity(
   if (groupMemberCount < 2) return null
 
   const allClues = [
-    ...groupActivity.clues.map(
-      R.pick(['name', 'displayName', 'type', 'unit', 'value'])
-    ),
-    ...groupActivity.parameters.map((parameter) => ({
-      ...R.pick(['name', 'displayName', 'type', 'unit'], parameter),
-      value: pickRandom(parameter.options),
+    ...groupActivity.clues.map((clue) => ({
+      ...pick(clue, ['name', 'displayName', 'type', 'unit', 'value']),
     })),
   ]
 
@@ -1632,6 +1628,35 @@ export async function unpublishGroupActivity(
   return updatedGroupActivity
 }
 
+export async function openGroupActivity(
+  { id }: GetGroupActivityArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+      status: GroupActivityStatus.SCHEDULED,
+      isDeleted: false,
+    },
+  })
+
+  if (!groupActivity) return null
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+    },
+  })
+
+  // trigger subscription to immediately update student frontend
+  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
+
+  return updatedGroupActivity
+}
+
 export async function endGroupActivity(
   { id }: GetGroupActivityArgs,
   ctx: ContextWithUser
@@ -1708,6 +1733,59 @@ export async function deleteGroupActivity(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedGroupActivity
   }
+}
+
+export async function getCourseGroupActivities(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      groupActivities: {
+        where: {
+          status: {
+            in: [
+              GroupActivityStatus.SCHEDULED,
+              GroupActivityStatus.PUBLISHED,
+              GroupActivityStatus.ENDED,
+              GroupActivityStatus.GRADED,
+            ],
+          },
+          isDeleted: false,
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return course?.groupActivities
+}
+
+export async function getGroupActivityInstances(
+  { groupId, courseId }: { groupId: string; courseId: string },
+  ctx: ContextWithUser
+) {
+  const instances = await ctx.prisma.groupActivityInstance.findMany({
+    where: {
+      groupActivity: {
+        course: {
+          id: courseId,
+        },
+      },
+      group: {
+        id: groupId,
+      },
+    },
+  })
+
+  return instances
 }
 
 export async function getGroupActivitySummary(

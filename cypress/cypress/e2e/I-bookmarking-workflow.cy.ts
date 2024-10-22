@@ -23,6 +23,7 @@ const flagML1 = `Test flagging question on microlearning ${microlearningName}`
 const flagML2 = `Test flagging question on microlearning ${microlearningName} new`
 
 describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', () => {
+  // ! Part 0: Preparation - Question Creation
   it('Creates the questions that should be bookmarked and/or flagged', () => {
     cy.loginLecturer()
     cy.createQuestionSC({
@@ -46,6 +47,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     })
   })
 
+  // ! Part 1: Activity Creation
   it('Create a practice quiz with the created questions', () => {
     cy.loginLecturer()
     cy.createPracticeQuiz({
@@ -69,6 +71,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     })
   })
 
+  // ! Part 2: Flagging and Voting on Practice Quiz
   it('Publish the practice quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -80,21 +83,6 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
-      messages.shared.generic.published
-    )
-  })
-
-  it('Publish the microlearning', () => {
-    cy.loginLecturer()
-    cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
-    cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
-      messages.shared.generic.draft
-    )
-    cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
       messages.shared.generic.published
     )
   })
@@ -159,6 +147,48 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.findByText(messages.pwa.courses.noBookmarksSet).should('exist')
   })
 
+  it('Cleanup: Delete the created practice quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it("Verify that the practice quiz is no longer visible on the student's view", () => {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  // ! Part 3: Flagging and Voting on Microlearning
+  it('Publish the microlearning', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
+      messages.shared.generic.draft
+    )
+    cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`).click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
+      messages.shared.generic.published
+    )
+  })
+
   it('Test flagging and student feedback functionalities on microlearning', () => {
     cy.loginStudent()
     cy.get(`[data-cy="microlearning-${microlearningDisplayName}"]`).click()
@@ -195,12 +225,11 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="finish-microlearning"]').click()
   })
 
-  it('Cleanup: Delete the created practice quiz and microlearning', () => {
+  it('Cleanup: Delete the created microlearning', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
 
-    // delete the microlearning
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${microlearningName}"]`).click()
@@ -212,17 +241,11 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="microlearning-actions-${microlearningName}"]`).should(
       'not.exist'
     )
+  })
 
-    // delete the practice quiz
-    cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).click()
-    cy.get(`[data-cy="delete-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName}"]`).should(
+  it("Verify that the microlearning is no longer visible on the student's view", () => {
+    cy.loginStudent()
+    cy.get(`[data-cy="microlearning-${microlearningDisplayName}"]`).should(
       'not.exist'
     )
   })

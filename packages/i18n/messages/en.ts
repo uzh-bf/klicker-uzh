@@ -504,8 +504,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
-      groupActivityEnded:
+      groupActivityEndedToast:
         'Group activity "{activityName}" ended, no more submissions are possible.',
+      groupActivityStartedToast:
+        'Group activity "{activityName}" has just opened, start it now!',
+      microLearningEndedToast:
+        'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
         'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
     },
@@ -587,6 +591,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       availableFrom: 'Available from {date}',
       availableUntil: 'Available until {date}',
       questionSetN: 'Question set {number}',
+      activityExpired:
+        'This microlearning has expired and no new answers can be submitted anymore.',
     },
     session: {
       noActiveQuestion: 'No question active.',
@@ -1061,6 +1067,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the microlearning. Once published, it will be displayed to the participants from this point in time.',
       microlearningEndDate:
         'Please choose the end date of the microlearning. It will no longer be displayed to the participants after this point in time.',
+      microlearningStartAfterCourseStart:
+        'The start date of the microlearning must be after the start date of the course.',
+      microlearningEndBeforeCourseEnd:
+        'The end date of the microlearning must be before the end date of the course.',
       microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
@@ -1147,6 +1157,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizAvailableFrom:
         'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
+      practiceQuizStartAfterCourseStart:
+        'The start date of the practice quiz must be after the start date of the course.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1226,6 +1238,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
       groupActivityEndDate:
         'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+      groupActivityStartAfterCourseStart:
+        'The start date of the group activity must be after the start date of the course.',
+      groupActivityStartAfterGroupDeadline:
+        'The start date of the group activity must be after the group formation deadline.',
+      groupActivityEndBeforeCourseEnd:
+        'The end date of the group activity must be before the end date of the course.',
       groupActivityMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
       groupActivityUseCase:
@@ -1464,6 +1482,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a start date for your course. The dates can be changed after creating the course.',
       courseEndReq:
         'Please enter an end date for your course. The dates can be changed after creating the course.',
+      courseStartBeforeEarliestActivityStart:
+        'The course start date must be before the start date of the earliest activity ({date}).',
+      endBeforeEarliestActivityEnd:
+        'The course end date must be after the end date of the last activity ({date}).',
+      groupDeadlineBeforeFirstGroupActivity:
+        'The group creation deadline must be before the start of the first group activity ({date}).',
       endDateFuture: 'The end date must be in the future.',
       endAfterStart: 'The end date must be after the start date.',
       courseName: 'Course name',
@@ -1563,6 +1587,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
+      noDescriptionNotification: 'No description available.',
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
@@ -1640,6 +1665,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endGroupActivity: 'End group activity',
       endGroupActivityMessage:
         'Please confirm that you want to end this group activity. Note that no further submissions will be accepted after triggering this action.',
+      endMicroLearning: 'End microlearning',
+      endMicroLearningMessage:
+        'Please confirm that you want to end this microlearning. Note that no further submissions will be accepted after triggering this action.',
+      noResponsesToMicroLearning:
+        'No logged in participants have submitted answers for elements in this microlearning yet.',
+      responsesToMicroLearning:
+        '{number} response(s) have been submitted for elements in this microlearning by logged in participants.',
+      noAnonResponsesToMicroLearning:
+        'No anonymous responses have been submitted for elements in this microlearning yet.',
+      anonResponsesToMicroLearning:
+        '{number} anonymous response(s) have been submitted for elements in this microlearning.',
       noStartedInstancesLoosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
       startedInstancesLoosingAccess:
@@ -1648,6 +1684,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
         '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
+      startGroupActivityNow: 'Start group activity now',
+      startGroupActivityNowMessage:
+        'Please confirm that you want to start the group activity now. Note that a group activity cannot be edited after starting.',
+      noParticipantGroupsAvailable:
+        'No participant groups have been formed in this course yet. Please wait for the group formation to be completed or move the corresponding deadline to the future in the course settings.',
+      groupFormationNotCompleted:
+        'Group formation has not been completed yet. Please wait for the set deadline or choose immediate group assignment.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} group(s) will get immediate access to the corresponding content after the group activity is started.',
+      groupActivityAvailableUntil:
+        'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
       deleteGroupActivity: 'Delete group activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',

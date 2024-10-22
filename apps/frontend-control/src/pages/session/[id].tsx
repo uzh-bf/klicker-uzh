@@ -15,8 +15,8 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import * as R from 'ramda'
 import { useEffect, useState } from 'react'
+import { sort } from 'remeda'
 import Layout from '../../components/Layout'
 import SessionBlock from '../../components/sessions/SessionBlock'
 
@@ -27,11 +27,18 @@ function RunningSession() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-  const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
-  const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
-  const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [{ query: GetUserRunningSessionsDocument }],
-  })
+  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
+    ActivateSessionBlockDocument
+  )
+  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateSessionBlockDocument
+  )
+  const [endSession, { loading: endingLiveQuiz }] = useMutation(
+    EndSessionDocument,
+    {
+      refetchQueries: [{ query: GetUserRunningSessionsDocument }],
+    }
+  )
 
   const {
     loading: sessionLoading,
@@ -55,9 +62,9 @@ function RunningSession() {
   useEffect(() => {
     if (!sessionData?.controlSession?.blocks) return
 
-    const sortedBlocks = R.sort(
-      (a, b) => a.order - b.order,
-      sessionData?.controlSession?.blocks
+    const sortedBlocks = sort(
+      sessionData?.controlSession?.blocks,
+      (a, b) => a.order - b.order
     )
 
     if (!sortedBlocks) return
@@ -139,6 +146,7 @@ function RunningSession() {
                 </div>
               )}
             <Button
+              loading={deactivatingBlock}
               onClick={async () => {
                 await deactivateSessionBlock({
                   variables: {
@@ -183,6 +191,7 @@ function RunningSession() {
               />
             )}
             <Button
+              loading={activatingBlock}
               onClick={async () => {
                 {
                   await activateSessionBlock({
@@ -215,6 +224,7 @@ function RunningSession() {
               className={{ root: 'mb-2' }}
             />
             <Button
+              loading={endingLiveQuiz}
               onClick={async () => {
                 await endSession({ variables: { id: id } })
                 router.push(

@@ -32,8 +32,12 @@ function Migration({ query }) {
   const [isStep3Completed, setIsStep3Completed] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
 
-  const [requestMigrationToken] = useMutation(RequestMigrationTokenDocument)
-  const [triggerMigration] = useMutation(TriggerMigrationDocument)
+  const [requestMigrationToken, { loading: requestingToken }] = useMutation(
+    RequestMigrationTokenDocument
+  )
+  const [triggerMigration, { loading: triggeringMigration }] = useMutation(
+    TriggerMigrationDocument
+  )
 
   const { data } = useQuery(UserProfileDocument)
 
@@ -106,12 +110,13 @@ function Migration({ query }) {
                 }}
               />
               <Button
+                loading={requestingToken}
                 className={{
                   root: twMerge('bg-uzh-blue-80 mb-5 mt-8 self-end text-white'),
                 }}
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    requestMigrationToken({
+                    await requestMigrationToken({
                       variables: { email: email },
                     })
                     setIsStep1Completed(true)
@@ -188,14 +193,15 @@ function Migration({ query }) {
                 })}
               </p>
               <Button
+                loading={triggeringMigration}
                 className={{
                   root: twMerge(
                     'bg-uzh-blue-80 mb-5 mt-8 self-center text-white'
                   ),
                 }}
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    triggerMigration({
+                    await triggerMigration({
                       variables: { token: query.token },
                     })
                     setIsStep3Completed(true)

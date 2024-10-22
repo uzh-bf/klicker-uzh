@@ -6,7 +6,7 @@ describe('Create questions', () => {
     cy.loginLecturer()
   })
 
-  it('creates a content element', () => {
+  it('Create a content element', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Content ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -27,7 +27,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -39,7 +39,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
-  it('creates a flashcard element', () => {
+  it('Create a flashcard element', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Flashcard ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -60,8 +60,8 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-question-explanation"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-question-explanation"]').realClick().type(question)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -73,7 +73,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
-  it('creates a single choice question', () => {
+  it('Create a single choice question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -87,11 +87,12 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -121,7 +122,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
   })
 
-  it('creates a multiple choice question', () => {
+  it('Create a multiple choice question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -145,11 +146,12 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -179,7 +181,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
   })
 
-  it('creates a KPRIM question', () => {
+  it('Create a KPRIM question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A KPRIM ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -205,17 +207,20 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type(choice1)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type(choice1)
     cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type(choice2)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(choice2)
     cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-2"]').click().type(choice3)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-2"]').realClick().type(choice3)
     cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3)
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-3"]').click().type(choice4)
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-3"]').realClick().type(choice4)
     cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
@@ -264,7 +269,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
 
-  it('creates a Numeric question', () => {
+  it('Create a Numeric question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Numeric ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -285,7 +290,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="set-numerical-minimum"]').click().type('0')
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
     cy.get('[data-cy="set-numerical-unit"]').click().type('%')
@@ -305,7 +310,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="input-numerical-unit"]').contains('%')
   })
 
-  it('creates a Free Text question', () => {
+  it('Create a Free Text question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Free Text ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
@@ -326,7 +331,7 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
@@ -340,7 +345,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="free-text-input-1"]').should('exist')
   })
 
-  it('creates a new question, duplicates it and then deletes the duplicate again', () => {
+  it('Create a new question, duplicates it and then deletes the duplicate again', () => {
     const randomNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
@@ -351,10 +356,11 @@ describe('Create questions', () => {
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
     ).click()
-    cy.get('[data-cy="insert-question-text"]').click().type(question)
-    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
-    cy.get('[data-cy="add-new-answer"]').click({ force: true })
-    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
+    cy.get('[data-cy="insert-question-text"]').realClick().type(question)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 

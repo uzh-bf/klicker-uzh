@@ -1,17 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  Element,
-  GetUserQuestionsDocument,
-  ToggleIsArchivedDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useRouter } from 'next/router'
-import * as R from 'ramda'
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import useSortingAndFiltering, {
-  SortyByType,
-} from '../lib/hooks/useSortingAndFiltering'
-
-import {
   faArchive,
   faInbox,
   faMagnifyingGlass,
@@ -20,6 +8,11 @@ import {
   faSortDesc,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  Element,
+  GetUserQuestionsDocument,
+  ToggleIsArchivedDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
@@ -30,6 +23,9 @@ import {
 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -40,12 +36,17 @@ import ElementCreation, {
 } from '../components/sessions/creation/ElementCreation'
 import SuspendedCreationButtons from '../components/sessions/creation/SuspendedCreationButtons'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
+import useSortingAndFiltering, {
+  SortyByType,
+} from '../lib/hooks/useSortingAndFiltering'
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
 
-  const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
+  const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
+    ToggleIsArchivedDocument
+  )
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
@@ -60,7 +61,11 @@ function Index() {
   >({})
 
   const selectedQuestionData: Record<number, Element> = useMemo(
-    () => R.pickBy((value) => typeof value !== 'undefined', selectedQuestions),
+    () =>
+      pickBy(
+        selectedQuestions,
+        (value) => typeof value !== 'undefined'
+      ) as Record<number, Element>,
     [selectedQuestions]
   )
 
@@ -226,7 +231,7 @@ function Index() {
                           let allQuestions = {}
 
                           if (processedQuestions) {
-                            if (!R.isEmpty(selectedQuestionData)) {
+                            if (!isEmpty(selectedQuestionData)) {
                               // set questions after filtering to undefined
                               // do not uncheck questions that are selected but not in the filtered set
                               allQuestions = processedQuestions.reduce(
@@ -325,6 +330,7 @@ function Index() {
                     <>
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
+                          disabled={toggelingArchive}
                           className={{
                             root: 'ml-1 h-10',
                           }}
@@ -347,6 +353,7 @@ function Index() {
                         tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
                         <Button
+                          loading={toggelingArchive}
                           className={{
                             root: 'ml-1 h-10',
                           }}

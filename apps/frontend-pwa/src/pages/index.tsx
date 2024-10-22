@@ -18,12 +18,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, Toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import MicroLearningListSubscriber from '~/components/microLearning/MicroLearningListSubscriber'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
@@ -40,13 +40,15 @@ type LocalCourseType = {
 
 type LocalLiveSessionType = Partial<Session> & { courseName: string }
 
-type LocalMicroLearningType = Partial<MicroLearning> & {
+type LocalMicroLearningType = Pick<
+  MicroLearning,
+  'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
+> & {
   courseName: string
   isCompleted: boolean
 }
 
 const Index = function () {
-  const router = useRouter()
   const t = useTranslations()
 
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
@@ -54,6 +56,9 @@ const Index = function () {
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
+  const [endedMicroLearning, setEndedMicroLearning] = useState<
+    string | undefined
+  >()
 
   async function subscribeUser(
     subscriptionObject: PushSubscription,
@@ -109,7 +114,7 @@ const Index = function () {
     unsubscribeFromPush: unsubscribeUser,
   })
 
-  const { data, loading } = useQuery(ParticipationsDocument, {
+  const { data, loading, subscribeToMore } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
@@ -316,6 +321,11 @@ const Index = function () {
                   }}
                   data={{ cy: `microlearning-${micro.displayName}` }}
                 >
+                  <MicroLearningListSubscriber
+                    activityId={micro.id}
+                    setEndedMicroLearning={setEndedMicroLearning}
+                    subscribeToMore={subscribeToMore}
+                  />
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between text-xs">
                     <div>
@@ -356,6 +366,18 @@ const Index = function () {
         {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
+      <Toast
+        type="warning"
+        openExternal={typeof endedMicroLearning !== 'undefined'}
+        onCloseExternal={() => setEndedMicroLearning(undefined)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.microLearningEndedToast', {
+          activityName: endedMicroLearning,
+        })}
+      </Toast>
     </Layout>
   )
 }

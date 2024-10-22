@@ -12,8 +12,8 @@ import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
-import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
+import { isDeepEqual } from 'remeda'
 
 // TODO: notifications
 
@@ -109,7 +109,9 @@ function QuestionArea({
     await updateStoredResponses(instanceId, sessionId, execution)
 
     // calculate the new indices of remaining questions
-    const newRemaining = without([activeQuestion], remainingQuestions)
+    const newRemaining = remainingQuestions.filter(
+      (question) => !isDeepEqual(activeQuestion, question)
+    )
 
     setActiveQuestion(newRemaining[0] || 0)
     setInputState({

@@ -15,7 +15,9 @@ import ProfileData from '../components/participant/ProfileData'
 const Profile = () => {
   const t = useTranslations()
   const { data, loading } = useQuery(SelfWithAchievementsDocument)
-  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  const [logoutParticipant, { loading: loggingOut }] = useMutation(
+    LogoutParticipantDocument
+  )
   const router = useRouter()
 
   if (loading || !data?.selfWithAchievements)
@@ -59,6 +61,7 @@ const Profile = () => {
 
           {!pageInFrame && (
             <Button
+              loading={loggingOut}
               onClick={async () => {
                 await logoutParticipant()
                 router.push('/login')

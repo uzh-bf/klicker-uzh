@@ -12,12 +12,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteSessionDocument,
+  DeleteLiveQuizDocument,
   GetSingleCourseDocument,
   Session,
   SessionAccessMode,
   SessionStatus,
-  SoftDeleteLiveSessionDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -60,23 +59,41 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   const router = useRouter()
 
   const [copyToast, setCopyToast] = useState(false)
+  const [deletionModal, setDeletionModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
 
-  const [deletionModal, setDeletionModal] = useState(false)
-  const [softDeletionModal, setSoftDeletionModal] = useState(false)
-
-  // TODO: implement update and optimistic response
-  const [deleteSession] = useMutation(DeleteSessionDocument, {
+  const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
     variables: { id: session.id },
-    refetchQueries: [GetSingleCourseDocument],
-  })
+    update(cache, res) {
+      const data = cache.readQuery({
+        query: GetSingleCourseDocument,
+      })
 
-  // TODO: implement update and optimistic response
-  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
-    variables: { id: session.id },
+      if (!data?.course || !res.data?.deleteLiveQuiz) {
+        return null
+      }
+
+      cache.writeQuery({
+        query: GetSingleCourseDocument,
+        data: {
+          course: {
+            ...data.course,
+            sessions: data.course.sessions?.filter(
+              (session) => session.id !== res.data!.deleteLiveQuiz!.id
+            ),
+          },
+        },
+      })
+    },
+    optimisticResponse: {
+      deleteLiveQuiz: {
+        __typename: 'Session',
+        id: session.id,
+      },
+    },
     refetchQueries: [GetSingleCourseDocument],
   })
 
@@ -228,8 +245,8 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                         <div>{t('manage.sessions.deleteSession')}</div>
                       </div>
                     ),
-                    onClick: () => setSoftDeletionModal(true),
-                    data: { cy: `delete-past-live-quiz-${session.name}` },
+                    onClick: () => setDeletionModal(true),
+                    data: { cy: `delete-live-quiz-${session.name}` },
                   },
                   getActivityDuplicationAction({
                     id: session.id,
@@ -275,20 +292,9 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         description={t('manage.sessions.confirmLiveQuizDeletion')}
         elementName={session.name}
         message={t('manage.sessions.liveQuizDeletionHint')}
-        deleteElement={deleteSession}
+        deleteElement={deleteLiveQuiz}
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-live-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
-      />
-      <DeletionModal
-        title={t('manage.sessions.deleteLiveQuiz')}
-        description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name}
-        message={t('manage.sessions.pastLiveQuizDeletionHint')}
-        deleteElement={softDeleteLiveSession}
-        open={softDeletionModal}
-        setOpen={setSoftDeletionModal}
         primaryData={{ cy: 'confirm-delete-live-quiz' }}
         secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />

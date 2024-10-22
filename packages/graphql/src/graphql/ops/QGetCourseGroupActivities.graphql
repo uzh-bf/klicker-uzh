@@ -1,0 +1,10 @@
+query GetCourseGroupActivities($courseId: String!) {
+  groupActivities(courseId: $courseId) {
+    id
+    displayName
+    status
+    description
+    scheduledStartAt
+    scheduledEndAt
+  }
+}

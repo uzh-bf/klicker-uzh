@@ -16,19 +16,23 @@ function UnpublishMicroLearningButton({
   microLearning,
 }: UnpublishMicroLearningButtonProps) {
   const t = useTranslations()
-  const [unpublishMicrolearning] = useMutation(UnpublishMicroLearningDocument, {
-    variables: { id: microLearning.id },
-  })
+  const [unpublishMicrolearning, { loading: unpublishing }] = useMutation(
+    UnpublishMicroLearningDocument,
+    {
+      variables: { id: microLearning.id },
+    }
+  )
 
   return (
     <Button
       basic
+      disabled={unpublishing}
       className={{ root: 'text-primary-100' }}
       onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >
       <Button.Icon>
-        <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
       </Button.Icon>
       <Button.Label>{t('manage.course.unpublishMicrolearning')}</Button.Label>
     </Button>

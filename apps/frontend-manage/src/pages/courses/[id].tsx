@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client'
 import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCrown,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
@@ -8,6 +11,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
 import { Button, Prose, Tabs } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -34,6 +38,13 @@ function CourseOverviewPage() {
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
+
+  const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
+    useEarliestLatestCourseDates({
+      groupActivities: data?.course?.groupActivities ?? undefined,
+      microLearnings: data?.course?.microLearnings ?? undefined,
+      practiceQuizzes: data?.course?.practiceQuizzes ?? undefined,
+    })
 
   useEffect(() => {
     if (data && !data.course) {
@@ -80,6 +91,9 @@ function CourseOverviewPage() {
           name={course.name}
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}
+          earliestGroupDeadline={earliestGroupDeadline}
+          earliestStartDate={earliestStartDate}
+          latestEndDate={latestEndDate}
         />
       </div>
 
@@ -92,7 +106,17 @@ function CourseOverviewPage() {
         <div>
           <div className="font-bold">{t('shared.generic.description')}</div>
           <Prose className={{ root: 'prose-p:m-0 prose-img:m-0' }}>
-            <Ellipsis maxLines={3}>{course.description}</Ellipsis>
+            {course.description ? (
+              <Ellipsis maxLines={3}>{course.description}</Ellipsis>
+            ) : (
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon
+                  icon={faTriangleExclamation}
+                  className="text-orange-600"
+                />
+                <div>{t('manage.course.noDescriptionNotification')}</div>
+              </div>
+            )}
           </Prose>
         </div>
         <div className="grid grid-cols-2">
@@ -242,7 +266,10 @@ function CourseOverviewPage() {
           >
             <GroupActivityList
               groupActivities={course.groupActivities ?? []}
+              groupDeadlineDate={course.groupDeadlineDate}
+              numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
               courseId={course.id}
+              courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
             />
           </Tabs.TabContent>

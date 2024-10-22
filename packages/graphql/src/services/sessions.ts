@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import {
   AccessMode,
   ConfusionTimestep,
@@ -10,15 +8,13 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { processQuestionData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import * as R from 'ramda'
-import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
+import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
 import { ISession } from 'src/schema/session.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { prepareInitialInstanceResults } from '../lib/questions.js'
@@ -536,10 +532,16 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       // only award achievements, if the session did contain questions with sample solutions and at least three participants collected points
       const awardAchievements = session.blocks.some(
         (block) =>
-          block.instances.some(
-            (instance) =>
-              instance.questionData.options.hasSampleSolution ?? false
-          ) &&
+          block.instances.some((instance) => {
+            if (
+              instance.questionData.type === ElementType.CONTENT ||
+              instance.questionData.type === ElementType.FLASHCARD
+            ) {
+              return false
+            }
+
+            return instance.questionData.options.hasSampleSolution ?? false
+          }) &&
           existingParticipants.filter(
             ({ score }) => typeof score !== 'undefined'
           ).length >= 3
@@ -562,9 +564,9 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           where: { id: THIRD_ACHIEVEMENT_ID },
         })
 
-        const goldScore = topScores[0].score
-        const silverScore = topScores[1].score
-        const bronzeScore = topScores[2].score
+        const goldScore = topScores[0]?.score
+        const silverScore = topScores[1]?.score
+        const bronzeScore = topScores[2]?.score
 
         // awarding logic (including point and xp updates):
         // award gold to every participant with gold score
@@ -999,7 +1001,8 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed(
+        const results = mapValues(
+          omitBy(cacheObj, (_, key) => key === 'participants'),
           (count: number, responseHash: string) => {
             return {
               count: +count,
@@ -1007,8 +1010,7 @@ async function processCachedData({
                 acc[instance.id]['responseHashes'][responseHash] ??
                 responseHash,
             }
-          },
-          dissoc('participants', cacheObj)
+          }
         )
 
         return {
@@ -1116,7 +1118,7 @@ export async function deactivateSessionBlock(
 
           if (!participant) return null
 
-          return [id, score]
+          return [id, score] as [string, string]
         })
       )
     ).flatMap((result) => {
@@ -1186,47 +1188,49 @@ export async function deactivateSessionBlock(
         },
         leaderboard: session.isGamificationEnabled
           ? {
-              upsert: existingParticipantsLB.map(([id, score]) => ({
-                where: {
-                  type_participantId_sessionId: {
+              upsert: existingParticipantsLB.map(
+                ([id, score]: [string, string]) => ({
+                  where: {
+                    type_participantId_sessionId: {
+                      type: 'SESSION',
+                      participantId: id,
+                      sessionId,
+                    },
+                  },
+                  create: {
                     type: 'SESSION',
-                    participantId: id,
-                    sessionId,
-                  },
-                },
-                create: {
-                  type: 'SESSION',
-                  participant: {
-                    connect: { id },
-                  },
-                  score: parseInt(score),
-                  sessionParticipation: {
-                    connectOrCreate: {
-                      where: {
-                        courseId_participantId: {
-                          courseId: session.courseId as string,
-                          participantId: id,
-                        },
-                      },
-                      create: {
-                        course: {
-                          connect: {
-                            id: session.courseId!,
+                    participant: {
+                      connect: { id },
+                    },
+                    score: parseInt(score),
+                    sessionParticipation: {
+                      connectOrCreate: {
+                        where: {
+                          courseId_participantId: {
+                            courseId: session.courseId as string,
+                            participantId: id,
                           },
                         },
-                        participant: {
-                          connect: {
-                            id,
+                        create: {
+                          course: {
+                            connect: {
+                              id: session.courseId!,
+                            },
+                          },
+                          participant: {
+                            connect: {
+                              id,
+                            },
                           },
                         },
                       },
                     },
                   },
-                },
-                update: {
-                  score: parseInt(score),
-                },
-              })),
+                  update: {
+                    score: parseInt(score),
+                  },
+                })
+              ),
             }
           : undefined,
       },
@@ -1317,9 +1321,9 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
                   ...questionData,
                   options: {
                     ...questionData.options,
-                    choices: questionData.options.choices.map(
-                      pick(['ix', 'value'])
-                    ),
+                    choices: questionData.options.choices.map((choice) => ({
+                      ...pick(choice, ['ix', 'value']),
+                    })),
                   },
                 },
               }
@@ -1415,13 +1419,11 @@ export async function getLeaderboard(
     }
   })
 
-  const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop('score')),
-    R.ascend(R.prop('username')),
-  ])
-
-  const sortedEntries: typeof preparedEntries =
-    sortByScoreAndUsername(preparedEntries)
+  const sortedEntries = sortBy(
+    preparedEntries,
+    [prop('score'), 'desc'],
+    [prop('username'), 'asc']
+  )
 
   const filteredEntries = sortedEntries.flatMap((entry, ix) => {
     return { ...entry, rank: ix + 1 }
@@ -1511,17 +1513,14 @@ export async function getRunningSessionsCourse(
         where: {
           status: SessionStatus.RUNNING,
         },
+        include: {
+          course: true,
+        },
       },
     },
   })
 
-  const sessionList =
-    course?.sessions.map((session) => {
-      session.course = { id: course.id, displayName: course.displayName }
-      return session
-    }) ?? []
-
-  return sessionList
+  return course?.sessions ?? []
 }
 
 export async function getUserRunningSessions(ctx: ContextWithUser) {
@@ -1706,20 +1705,26 @@ export async function getCockpitSession(
   )
 
   if (session.activeBlock && session.activeBlock.id) {
-    // TODO: improve typing
     const activeInstanceIds = session.activeBlock?.instances.map(
-      (instance) => instance.id as number
+      (instance) => instance.id
     )
     const redisMulti = ctx.redisExec.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
     })
-    const cacheContent = await redisMulti.exec()
+    const cacheContent = (await redisMulti.exec()) as
+      | [
+          Error | null,
+          {
+            // TODO: types for the result
+          },
+        ][]
+      | null
     const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants as string))
+      ?.map(([_, result]) => parseInt(result?.participants))
       .reduce((acc, val) => min(acc, val), 100000)
     blockParticipants[session.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[session.activeBlock.id]
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id] ?? 0
   }
 
   // recude session to only contain what is required for the lecturer cockpit
@@ -2045,9 +2050,10 @@ export async function getSessionEvaluation(
       }
     )
 
-    activeInstanceResults = sortWith(
-      [ascend(prop('blockIx')), ascend(prop('instanceIx'))],
-      activeInstanceResults
+    activeInstanceResults = sortBy(
+      activeInstanceResults,
+      [prop('blockIx'), 'asc'],
+      [prop('instanceIx'), 'asc']
     )
   }
 
@@ -2216,12 +2222,46 @@ export async function cancelSession(
   }
 }
 
-export async function deleteSession(
+export async function deleteLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  try {
-    const deletedItem = await ctx.prisma.liveSession.delete({
+  // fetch live quiz to check its status
+  const liveQuiz = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    select: {
+      status: true,
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  if (liveQuiz.status === SessionStatus.RUNNING) {
+    // running live quizzes cannot be deleted
+    return null
+  } else if (liveQuiz.status === SessionStatus.COMPLETED) {
+    const deletedLiveQuiz = await ctx.prisma.liveSession.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: SessionStatus.COMPLETED,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'Session',
+      id,
+    })
+
+    return deletedLiveQuiz
+  } else {
+    const deletedLiveQuiz = await ctx.prisma.liveSession.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
@@ -2236,16 +2276,7 @@ export async function deleteSession(
       id,
     })
 
-    return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
-      console.log(
-        'The practice quiz is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
-
-    throw e
+    return deletedLiveQuiz
   }
 }
 
@@ -2290,29 +2321,6 @@ export async function getLiveQuizSummary(
     numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
     numOfLeaderboardEntries: liveQuiz._count.leaderboard,
   }
-}
-
-export async function softDeleteLiveSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const deletedLiveSession = await ctx.prisma.liveSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: SessionStatus.COMPLETED,
-    },
-    data: {
-      isDeleted: true,
-    },
-  })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id,
-  })
-
-  return deletedLiveSession
 }
 
 export async function changeLiveQuizName(

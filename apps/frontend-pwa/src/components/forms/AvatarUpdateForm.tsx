@@ -14,7 +14,7 @@ import { Button, FormikSelectField, H3 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import hash from 'object-hash'
-import { pick } from 'ramda'
+import { pick } from 'remeda'
 
 interface AvatarUpdateFormProps {
   user: Partial<Participant>
@@ -75,20 +75,17 @@ function AvatarUpdateForm({
         const result = await updateParticipantAvatar({
           variables: {
             avatar: avatarHash,
-            avatarSettings: pick(
-              [
-                'skinTone',
-                'eyes',
-                'mouth',
-                'hair',
-                'clothingColor',
-                'clothing',
-                'accessory',
-                'hairColor',
-                'facialHair',
-              ],
-              definition
-            ),
+            avatarSettings: pick(definition, [
+              'skinTone',
+              'eyes',
+              'mouth',
+              'hair',
+              'clothingColor',
+              'clothing',
+              'accessory',
+              'hairColor',
+              'facialHair',
+            ]),
           },
         })
 
@@ -163,7 +160,8 @@ function AvatarUpdateForm({
                   <Button
                     fluid
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    loading={isSubmitting}
+                    disabled={!isValid}
                     data={{ cy: 'save-avatar-update' }}
                   >
                     <Button.Icon>

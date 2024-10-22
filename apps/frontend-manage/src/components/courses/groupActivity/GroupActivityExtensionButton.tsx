@@ -31,7 +31,7 @@ function GroupActivityExtensionButton({
         basic
       >
         <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-          <FontAwesomeIcon icon={faCalendar} className="w-[1.1rem]" />
+          <FontAwesomeIcon icon={faCalendar} className="w-[1.2rem]" />
           <div>{t('manage.course.extendGroupActivity')}</div>
         </div>
       </Button>

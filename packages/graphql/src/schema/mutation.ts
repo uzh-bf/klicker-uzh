@@ -1062,25 +1062,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteSession: t.withAuth(asUserFullAccess).field({
+      deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteSession(args, ctx)
-        },
-      }),
-
-      softDeleteLiveSession: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.softDeleteLiveSession(args, ctx)
+          return SessionService.deleteLiveQuiz(args, ctx)
         },
       }),
 
@@ -1257,6 +1246,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      endMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.endMicroLearning(args, ctx)
+          },
+        }),
+
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1415,6 +1417,19 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.unpublishGroupActivity(args, ctx)
+          },
+        }),
+
+      openGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.openGroupActivity(args, ctx)
           },
         }),
 

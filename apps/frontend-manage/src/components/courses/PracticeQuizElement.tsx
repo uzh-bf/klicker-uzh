@@ -158,7 +158,7 @@ function PracticeQuizElement({
   const deletionItem = {
     label: (
       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-        <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.2rem]" />
         <div>{t('manage.course.deletePracticeQuiz')}</div>
       </div>
     ),
@@ -299,7 +299,7 @@ function PracticeQuizElement({
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+                        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
 
                         <div>{t('manage.course.unpublishPracticeQuiz')}</div>
                       </div>

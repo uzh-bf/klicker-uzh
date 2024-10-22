@@ -103,16 +103,16 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               active={activeTags.includes(tag.name)}
               onMoveDown={
                 searchInput === '' && ix < data.userTags!.length - 1
-                  ? () =>
-                      updateTagOrdering({
+                  ? async () =>
+                      await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix + 1 },
                       })
                   : undefined
               }
               onMoveUp={
                 searchInput === '' && ix > 0
-                  ? () =>
-                      updateTagOrdering({
+                  ? async () =>
+                      await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix - 1 },
                       })
                   : undefined

@@ -9,34 +9,74 @@ import {
   faRotateLeft,
   faRotateRight,
   faSuperscript,
+  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  convertToMd,
+  convertToSlate,
+} from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
 import { Tooltip } from '@uzh-bf/design-system'
 import isHotkey from 'is-hotkey'
 import { useTranslations } from 'next-intl'
 import React, {
   PropsWithChildren,
-  Ref,
+  ReactNode,
   useCallback,
   useMemo,
   useState,
 } from 'react'
 import {
   BaseEditor,
+  createEditor,
+  Descendant,
   Editor,
   Element as SlateElement,
   Transforms,
-  createEditor,
 } from 'slate'
 import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
-
-import {
-  convertToMd,
-  convertToSlate,
-} from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
 import MediaLibrary from './MediaLibrary'
+
+// ! START SLATE TYPE DEFINITIONS
+type CustomEditor = BaseEditor & ReactEditor & HistoryEditor
+
+type ParagraphElement = {
+  type: 'paragraph'
+  children: CustomText[]
+}
+
+type ListItemElement = {
+  type: 'list-item'
+  children: CustomText[]
+}
+
+type BlockType = 'block-quote' | 'bulleted-list' | 'numbered-list'
+type BlockElement = {
+  type: BlockType
+  children: CustomElement[]
+}
+
+type FormatType = 'bold' | 'italic' | 'code'
+type CustomText = {
+  text: string
+  bold?: boolean
+  italic?: boolean
+  code?: boolean
+}
+
+type CustomElement = ParagraphElement | ListItemElement | BlockElement
+type CustomElementTypes = CustomElement['type']
+
+declare module 'slate' {
+  interface CustomTypes {
+    Editor: CustomEditor
+    Element: CustomElement
+    Text: CustomText
+  }
+}
+// ! END SLATE TYPE DEFINITIONS
 
 export interface ContentInputClassName {
   root?: string
@@ -61,12 +101,11 @@ interface Props {
   }
 }
 
-const HOTKEYS: Record<string, string> = {
+const HOTKEYS: Record<string, FormatType> = {
   'mod+b': 'bold',
   'mod+i': 'italic',
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
-type OrNull<T> = T | null
 
 function ContentInput({
   content,
@@ -84,12 +123,15 @@ function ContentInput({
 
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
 
-  const renderElement = useCallback((props: any) => <Element {...props} />, [])
-  const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
+  const renderElement = useCallback(
+    (props: ElementProps) => <Element {...props} />,
+    []
+  )
+  const renderLeaf = useCallback((props: LeafProps) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   const editorValue = useMemo(() => {
-    return convertToSlate(content)
+    return convertToSlate(content) as Descendant[]
   }, [content])
 
   return (
@@ -102,10 +144,9 @@ function ContentInput({
         className?.root
       )}
     >
-      {/* eslint-disable-next-line react/no-children-prop */}
       <Slate
         editor={editor}
-        value={editorValue}
+        initialValue={editorValue}
         onChange={(newValue) => onChange(convertToMd(newValue))}
       >
         <div className={twMerge('p-3', className?.content)}>
@@ -120,9 +161,8 @@ function ContentInput({
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             onKeyDown={(event) => {
-              // eslint-disable-next-line no-restricted-syntax
               for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event as any)) {
+                if (isHotkey(hotkey, event)) {
                   event.preventDefault()
                   const mark = HOTKEYS[hotkey]
                   toggleMark(editor, mark)
@@ -217,7 +257,7 @@ function ContentInput({
                 active={isImageDropzoneOpen}
                 editor={editor}
                 format="paragraph"
-                onClick={(e: any) => {
+                onClick={() => {
                   setIsImageDropzoneOpen((prev) => !prev)
                 }}
               >
@@ -333,20 +373,19 @@ function ContentInput({
 
 const toggleBlock = (
   editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: string
+  format: BlockType
 ) => {
   const isActive = isBlockActive(editor, format)
   const isList = LIST_TYPES.includes(format)
 
   Transforms.unwrapNodes(editor, {
-    match: (n) =>
-      !Editor.isEditor(n) &&
-      SlateElement.isElement(n) &&
-      LIST_TYPES.includes(n.type),
+    match: (node) =>
+      !Editor.isEditor(node) &&
+      SlateElement.isElement(node) &&
+      LIST_TYPES.includes(node.type),
     split: true,
   })
-  const newProperties: Partial<SlateElement> = {
-    // eslint-disable-next-line no-nested-ternary
+  const newProperties: { type: CustomElementTypes } = {
     type: isActive ? 'paragraph' : isList ? 'list-item' : format,
   }
   Transforms.setNodes<SlateElement>(editor, newProperties)
@@ -359,7 +398,7 @@ const toggleBlock = (
 
 const toggleMark = (
   editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: string
+  format: FormatType
 ) => {
   const isActive = isMarkActive(editor, format)
 
@@ -390,13 +429,19 @@ const isBlockActive = (
 
 const isMarkActive = (
   editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: string
+  format: FormatType
 ) => {
   const marks = Editor.marks(editor)
   return marks ? marks[format] === true : false
 }
 
-const Element = ({ attributes, children, element }: any) => {
+interface ElementProps {
+  attributes: any
+  children: ReactNode
+  element: CustomElement
+}
+
+const Element = ({ attributes, children, element }: ElementProps) => {
   switch (element.type) {
     case 'block-quote':
       return (
@@ -406,10 +451,10 @@ const Element = ({ attributes, children, element }: any) => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
-    case 'heading-one':
-      return <h1 {...attributes}>{children}</h1>
-    case 'heading-two':
-      return <h2 {...attributes}>{children}</h2>
+    // case 'heading-one':
+    //   return <h1 {...attributes}>{children}</h1>
+    // case 'heading-two':
+    //   return <h2 {...attributes}>{children}</h2>
     case 'list-item':
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
@@ -419,7 +464,13 @@ const Element = ({ attributes, children, element }: any) => {
   }
 }
 
-const Leaf = ({ attributes, children, leaf }: any) => {
+interface LeafProps {
+  attributes: any
+  children: ReactNode
+  leaf: CustomText
+}
+
+const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   let formattedChildren = children
   if (leaf.bold) {
     formattedChildren = <strong>{formattedChildren}</strong>
@@ -438,7 +489,15 @@ const Leaf = ({ attributes, children, leaf }: any) => {
   return <span {...attributes}>{formattedChildren}</span>
 }
 
-const BlockButton = ({ format, icon, className }: any) => {
+const BlockButton = ({
+  format,
+  icon,
+  className,
+}: {
+  format: BlockType
+  icon: IconDefinition
+  className?: string
+}) => {
   const editor = useSlate()
   return (
     <SlateButton
@@ -460,7 +519,15 @@ const BlockButton = ({ format, icon, className }: any) => {
   )
 }
 
-const MarkButton = ({ format, icon, className }: any) => {
+const MarkButton = ({
+  format,
+  icon,
+  className,
+}: {
+  format: FormatType
+  icon: IconDefinition
+  className?: string
+}) => {
   const editor = useSlate()
   return (
     <SlateButton
@@ -480,33 +547,26 @@ const MarkButton = ({ format, icon, className }: any) => {
   )
 }
 
-export const SlateButton = React.forwardRef(
-  (
-    {
+export const SlateButton = React.forwardRef<
+  HTMLSpanElement,
+  PropsWithChildren<{
+    active: boolean
+    reversed: boolean
+    className: string
+    [key: string]: any
+  }>
+>(({ className, active, reversed, ...props }, ref) => (
+  <span
+    {...props}
+    className={twMerge(
       className,
-      active,
-      reversed,
-      ...props
-    }: PropsWithChildren<{
-      active: boolean
-      reversed: boolean
-      className: string
-      [key: string]: unknown
-    }>,
-    ref: Ref<OrNull<HTMLSpanElement>>
-  ) => (
-    <span
-      {...props}
-      className={twMerge(
-        className,
-        'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-        active && !reversed && 'bg-uzh-grey-40',
-        !active && reversed && 'bg-uzh-grey-40'
-      )}
-      ref={ref}
-    />
-  )
-)
+      'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+      active && !reversed && 'bg-uzh-grey-40',
+      !active && reversed && 'bg-uzh-grey-40'
+    )}
+    ref={ref}
+  />
+))
 SlateButton.displayName = 'Button'
 
 export default ContentInput

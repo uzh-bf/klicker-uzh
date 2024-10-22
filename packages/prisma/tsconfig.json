@@ -28,5 +28,5 @@
     "lib": ["es2022"],
     "rootDir": "."
   },
-  "exclude": ["src/client", "src/scripts", "dist"]
+  "exclude": ["src/prisma/client", "src/scripts", "dist"]
 }

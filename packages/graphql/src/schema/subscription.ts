@@ -2,6 +2,7 @@ import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder.js'
 import { GroupActivityRef } from './groupActivity.js'
+import { MicroLearningRef } from './microLearning.js'
 import { FeedbackRef, SessionBlockRef } from './session.js'
 
 export const Subscription = builder.subscriptionType({
@@ -99,6 +100,19 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload,
       }),
 
+      groupActivityStarted: t.field({
+        type: GroupActivityRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('groupActivityStarted'),
+            filter((data) => data.courseId === args.courseId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
       singleGroupActivityEnded: t.field({
         type: GroupActivityRef,
         args: {
@@ -107,6 +121,19 @@ export const Subscription = builder.subscriptionType({
         subscribe: (_, args, ctx) =>
           pipe(
             ctx.pubSub.subscribe('singleGroupActivityEnded'),
+            filter((data) => data.id === args.activityId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
+      microLearningEnded: t.field({
+        type: MicroLearningRef,
+        args: {
+          activityId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('microLearningEnded'),
             filter((data) => data.id === args.activityId)
           ),
         resolve: (payload) => payload,

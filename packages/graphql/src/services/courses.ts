@@ -1,14 +1,13 @@
 import {
   ElementOrderType,
   GroupActivityStatus,
-  LeaderboardEntry,
   LeaderboardType,
+  ParticipantGroup,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
-import * as R from 'ramda'
-import { GroupLeaderboardEntry } from 'src/ops.js'
+import { prop, sortBy } from 'remeda'
 import { ILeaderboardEntry } from 'src/schema/course.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
@@ -196,21 +195,6 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
-            groupActivities: {
-              where: {
-                status: {
-                  in: [
-                    GroupActivityStatus.PUBLISHED,
-                    GroupActivityStatus.ENDED,
-                    GroupActivityStatus.GRADED,
-                  ],
-                },
-                isDeleted: false,
-              },
-              orderBy: {
-                scheduledStartAt: 'asc',
-              },
-            },
           },
         },
         participant: {
@@ -226,15 +210,6 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
-    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
-      where: {
-        groupId: {
-          in:
-            participation?.participant.participantGroups.map((g) => g.id) ?? [],
-        },
-      },
-    })
-
     const lbEntries =
       (await course.participations({
         where: {
@@ -248,7 +223,15 @@ export async function getCourseOverviewData(
 
     if (participation) {
       const allEntries = lbEntries.reduce<{
-        mapped: Partial<LeaderboardEntry>[]
+        mapped: {
+          id: number
+          score: number
+          username: string
+          avatar: string | null
+          participantId: string
+          level: number
+          isSelf: boolean
+        }[]
         sum: number
         count: number
       }>(
@@ -286,7 +269,7 @@ export async function getCourseOverviewData(
       )
 
       const allGroupEntries = participation.course.participantGroups.reduce<{
-        mapped: Partial<GroupLeaderboardEntry>[]
+        mapped: (ParticipantGroup & { score: number; isMember: boolean })[]
         sum: number
         count: number
       }>(
@@ -314,16 +297,16 @@ export async function getCourseOverviewData(
         }
       )
 
-      const sortByScoreAndUsername = R.curry(R.sortWith)([
-        R.descend(R.prop('score')),
-        R.ascend(R.prop('username')),
-      ])
-
-      const sortedEntries: typeof allEntries.mapped = sortByScoreAndUsername(
-        allEntries.mapped
+      const sortedEntries = sortBy(
+        allEntries.mapped,
+        [prop('score'), 'desc'],
+        [prop('username'), 'asc']
       )
-      const sortedGroupEntries: typeof allGroupEntries.mapped =
-        sortByScoreAndUsername(allGroupEntries.mapped)
+      const sortedGroupEntries = sortBy(
+        allGroupEntries.mapped,
+        [prop('score'), 'desc'],
+        [prop('name'), 'asc']
+      )
 
       const filteredEntries = sortedEntries.flatMap((entry, ix) => {
         if (ix < 10 || entry.participantId === ctx.user?.sub)
@@ -363,7 +346,6 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
-        groupActivityInstances,
         inRandomGroupPool: groupCreationPoolEntry !== null,
       }
     }
@@ -531,7 +513,6 @@ export async function updateCourseSettings(
   if (!course) return null
 
   const currentStartDatePast = course.startDate < new Date()
-  const newStartDatePast = startDate ? startDate < new Date() : false
   const newGroupDeadlinePast = groupDeadlineDate
     ? groupDeadlineDate < new Date()
     : false
@@ -545,10 +526,7 @@ export async function updateCourseSettings(
       displayName: displayName ?? undefined,
       description: description ?? undefined,
       color: color ?? undefined,
-      startDate:
-        currentStartDatePast || newStartDatePast || !startDate
-          ? undefined
-          : startDate,
+      startDate: currentStartDatePast || !startDate ? undefined : startDate,
       endDate: endDate ?? undefined,
       isGroupCreationEnabled:
         course.isGroupCreationEnabled || !isGroupCreationEnabled
@@ -728,6 +706,9 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
+      _count: {
+        select: { participantGroups: true },
+      },
       sessions: {
         where: {
           isDeleted: false,
@@ -827,32 +808,27 @@ export async function getCourseData(
       activeCount: number
     }>(
       (acc, entry) => {
-        return {
-          ...acc,
-          activeLBEntries: [
-            ...acc.activeLBEntries,
-            {
-              id: entry.id,
-              score: entry.score,
-              rank: acc.activeCount + 1,
-              courseId: entry.courseId,
-              level: levelFromXp(entry.participation!.participant.xp),
-              email: entry.participation!.participant.email,
-              username: entry.participation!.participant.username,
-              avatar: entry.participation!.participant.avatar,
-              participation: entry.participation!,
-              type: LeaderboardType.COURSE,
-              participantId: entry.participantId,
-              participant: entry.participation!.participant,
-              sessionParticipationId: null,
-              sessionBlockId: null,
-              sessionId: null,
-              liveQuizId: null,
-            },
-          ],
-          activeSum: acc.activeSum + entry.score,
-          activeCount: acc.activeCount + 1,
-        }
+        acc.activeSum += entry.score
+        acc.activeCount += 1
+        acc.activeLBEntries.push({
+          id: entry.id,
+          score: entry.score,
+          rank: acc.activeCount,
+          courseId: entry.courseId,
+          level: levelFromXp(entry.participation!.participant.xp),
+          email: entry.participation!.participant.email,
+          username: entry.participation!.participant.username,
+          avatar: entry.participation!.participant.avatar,
+          participation: entry.participation!,
+          type: LeaderboardType.COURSE,
+          participantId: entry.participantId,
+          participant: entry.participation!.participant,
+          sessionParticipationId: null,
+          sessionId: null,
+          liveQuizId: null,
+        })
+
+        return acc
       },
       {
         activeLBEntries: [] as ILeaderboardEntry[],
@@ -894,6 +870,7 @@ export async function getCourseData(
     microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
+    numOfParticipantGroups: course._count.participantGroups,
     leaderboard: activeLBEntries,
     averageActiveScore,
   }

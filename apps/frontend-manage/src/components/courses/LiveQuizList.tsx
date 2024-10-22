@@ -1,6 +1,6 @@
 import { Session, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { sort } from 'ramda'
+import { sort } from 'remeda'
 import LiveQuizElement from './LiveQuizElement'
 
 const sortingOrderSessions: Record<string, number> = {
@@ -30,13 +30,13 @@ function LiveQuizList({ sessions }: LiveQuizListProps) {
     <div className="">
       {sessions && sessions.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {sort((a, b) => {
+          {sort(sessions, (a, b) => {
             if (!a.status || !b.status) return 0
 
             return (
               sortingOrderSessions[a.status] - sortingOrderSessions[b.status]
             )
-          }, sessions).map((session) => (
+          }).map((session) => (
             <LiveQuizElement session={session} key={session.id} />
           ))}
         </div>
