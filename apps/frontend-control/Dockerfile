@@ -54,7 +54,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
 
-COPY --from=installer /app/apps/frontend-control/next.config.js .
+COPY --from=installer /app/apps/frontend-control/next.config.mjs .
 COPY --from=installer /app/apps/frontend-control/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/.next/standalone ./
