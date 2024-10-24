@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2024-10-24)
+
+
+### Features
+
+* **apps/frontend-manage:** add search option for tags list ([#4290](https://github.com/uzh-bf/klicker-uzh/issues/4290)) ([21bb92f](https://github.com/uzh-bf/klicker-uzh/commit/21bb92fd23ca07ce860f8da999b27c5b4699deb7))
+
+
+### Enhancements
+
+* add possibility to check for single exact solution on numerical questions ([#4333](https://github.com/uzh-bf/klicker-uzh/issues/4333)) ([b5f558c](https://github.com/uzh-bf/klicker-uzh/commit/b5f558ca2315a4c526639c928c1f40926b0fdbd2))
+* **apps/frontend-manage:** configure slate editor correctly and introduce typing ([#4324](https://github.com/uzh-bf/klicker-uzh/issues/4324)) ([53bf3cc](https://github.com/uzh-bf/klicker-uzh/commit/53bf3ccd8ebc2c029b944431b052d414baba0b19))
+
 ## [3.3.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2024-10-17)
 
 

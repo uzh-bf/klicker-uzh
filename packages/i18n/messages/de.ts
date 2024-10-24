@@ -1431,6 +1431,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
       correctSolutionRanges: 'Korrekte Lösungsbereiche',
+      correctExactSolutions: 'Korrekte Lösungen',
       statistics: 'Statistik',
       keywordsSolution: 'Schlüsselwörter Lösung',
       noChartsAvailable: 'There exists no chart for this question type yet',

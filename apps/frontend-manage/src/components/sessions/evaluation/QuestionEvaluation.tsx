@@ -188,7 +188,24 @@ function QuestionEvaluation({
                 )}
                 {showSolution &&
                   questionData.__typename === 'NumericalQuestionData' &&
-                  questionData.options.solutionRanges && (
+                  questionData.options.solutionRanges &&
+                  (questionData.options.solutionRanges.every(
+                    (range) =>
+                      range.min &&
+                      range.max &&
+                      range.min > range.max - 2 * Number.EPSILON
+                  ) ? (
+                    <div>
+                      <div className="mt-4 font-bold">
+                        {t('manage.evaluation.correctExactSolutions')}:
+                      </div>
+                      {questionData.options.solutionRanges.map(
+                        (range, innerIndex) => (
+                          <div key={innerIndex}>{range.min}</div>
+                        )
+                      )}
+                    </div>
+                  ) : (
                     <div>
                       <div className="mt-4 font-bold">
                         {t('manage.evaluation.correctSolutionRanges')}:
@@ -196,12 +213,12 @@ function QuestionEvaluation({
                       {questionData.options.solutionRanges.map(
                         (range, innerIndex) => (
                           <div key={innerIndex}>
-                            [{range?.min || '-∞'},{range?.max || '+∞'}]
+                            [{range.min || '-∞'},{range.max || '+∞'}]
                           </div>
                         )
                       )}
                     </div>
-                  )}
+                  ))}
               </div>
             )}
           {questionData.__typename === 'FreeTextQuestionData' &&

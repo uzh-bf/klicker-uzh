@@ -136,10 +136,11 @@ function useOptionsSchemaNumerical() {
             is: (max?: number | null) =>
               typeof max !== 'undefined' && max !== null,
             then: (schema) =>
-              schema.lessThan(
-                yup.ref('max'),
-                t('manage.formErrors.NRMinLessThanMaxSol')
-              ),
+              schema.test({
+                message: t('manage.formErrors.NRMinLessThanMaxSol'),
+                test: (value, context) =>
+                  value ? value <= context.parent.max : true,
+              }),
           }),
         max: yup.number().nullable(),
       })
