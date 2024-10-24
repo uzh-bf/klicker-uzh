@@ -37,7 +37,13 @@ function useEarliestLatestCourseDates({
       const startDates = [
         ...groupActivityStartDates,
         ...(microLearnings?.map((ml) => Date.parse(ml.scheduledStartAt)) ?? []),
-        ...(practiceQuizzes?.map((pq) => Date.parse(pq.availableFrom)) ?? []),
+        ...(practiceQuizzes
+          ?.filter(
+            (pq) =>
+              pq.availableFrom !== null &&
+              typeof pq.availableFrom !== 'undefined'
+          )
+          .map((pq) => Date.parse(pq.availableFrom)) ?? []),
       ]
       const endDates = [
         ...(groupActivities?.map((ga) => Date.parse(ga.scheduledEndAt)) ?? []),
@@ -45,11 +51,18 @@ function useEarliestLatestCourseDates({
       ]
 
       return {
-        earliestGroupDeadline: dayjs(
-          Math.min.apply(null, startDates)
-        ).toString(),
-        earliestStartDate: dayjs(Math.min.apply(null, startDates)).toString(),
-        latestEndDate: dayjs(Math.max.apply(null, endDates)).toString(),
+        earliestGroupDeadline:
+          groupActivityStartDates.length === 0
+            ? undefined
+            : dayjs(Math.min.apply(null, groupActivityStartDates)).toString(),
+        earliestStartDate:
+          startDates.length === 0
+            ? undefined
+            : dayjs(Math.min.apply(null, startDates)).toString(),
+        latestEndDate:
+          endDates.length === 0
+            ? undefined
+            : dayjs(Math.max.apply(null, endDates)).toString(),
       }
     }
 
