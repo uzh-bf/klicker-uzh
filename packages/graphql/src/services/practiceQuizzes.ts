@@ -2168,7 +2168,7 @@ export async function respondToQuestion(
   }
 }
 
-function combineStackStatus({
+export function combineStackStatus({
   prevStatus,
   newStatus,
 }: {
