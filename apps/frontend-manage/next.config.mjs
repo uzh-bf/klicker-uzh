@@ -1,20 +1,18 @@
-const {
-  getNextBaseConfig,
-  getNextPWAConfig,
-} = require('@klicker-uzh/next-config')
+import withPWAInit from '@ducanh2912/next-pwa'
+import { getNextBaseConfig, getNextPWAConfig } from '@klicker-uzh/next-config'
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+let nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
   }),
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  const withPWA = require('next-pwa')(
+  const withPWA = withPWAInit(
     getNextPWAConfig({ NODE_ENV: process.env.NODE_ENV })
   )
-  module.exports = withPWA(nextConfig)
-} else {
-  module.exports = nextConfig
+  nextConfig = withPWA(nextConfig)
 }
+
+export default nextConfig

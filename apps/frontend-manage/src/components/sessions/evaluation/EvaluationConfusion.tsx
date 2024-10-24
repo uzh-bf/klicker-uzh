@@ -229,7 +229,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-
       <div className="flex-initial p-3 lg:w-1/2">
         <div className="mb-2 font-bold">
           {t('manage.evaluation.graphSettings')}

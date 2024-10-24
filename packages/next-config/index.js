@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
   return {
-    experimental: {
-      esmExternals: 'loose',
-    },
+    // not supported with turbopack -> do we need it?
+    // experimental: {
+    //   esmExternals: 'loose',
+    // },
     compress: true,
     output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,
-    swcMinify: true,
     transpilePackages: [
       '@klicker-uzh/shared-components',
       '@klicker-uzh/i18n',
