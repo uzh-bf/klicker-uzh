@@ -1,5 +1,5 @@
 import { StackFeedbackStatus } from '@klicker-uzh/types'
-import { combineStackStatus } from 'src/services/practiceQuizzes.js'
+import { combineStackStatus } from '../src/services/practiceQuizzes.js'
 
 describe('Test the response logic for element stacks', () => {
   it('Test the combination of different element responses', () => {

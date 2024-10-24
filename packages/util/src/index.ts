@@ -8,6 +8,9 @@ import {
   type AllQuestionTypeData,
   type ElementInstanceResults,
   type ElementKeys,
+  type ElementOptionsChoices,
+  type ElementOptionsFreeText,
+  type ElementOptionsNumerical,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
 
@@ -50,7 +53,6 @@ const FLASHCARD_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
-  'type',
   'pointsMultiplier',
 ]
 const QUESTION_KEYS: ElementKeys[] = [
@@ -58,7 +60,6 @@ const QUESTION_KEYS: ElementKeys[] = [
   'content',
   'explanation',
   'pointsMultiplier',
-  'type',
   'options',
 ]
 
@@ -66,24 +67,42 @@ export function processElementData(element: Element): AllElementTypeData {
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
       ...pick(element, FLASHCARD_KEYS),
+      type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (
     element.type === PrismaElementType.SC ||
     element.type === PrismaElementType.MC ||
-    element.type === PrismaElementType.KPRIM ||
-    element.type === PrismaElementType.NUMERICAL ||
-    element.type === PrismaElementType.FREE_TEXT
+    element.type === PrismaElementType.KPRIM
   ) {
     return {
       ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsChoices,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else if (element.type === PrismaElementType.NUMERICAL) {
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsNumerical,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else if (element.type === PrismaElementType.FREE_TEXT) {
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsFreeText,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (element.type === PrismaElementType.CONTENT) {
     return {
       ...pick(element, CONTENT_KEYS),
+      type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
@@ -109,8 +128,10 @@ export function getInitialElementResults(
     element.type === PrismaElementType.MC ||
     element.type === PrismaElementType.KPRIM
   ) {
-    const choices = element.options.choices.reduce(
-      (acc: Record<string, number>, _: any, ix: number) => ({
+    const choices = (element.options as ElementOptionsChoices).choices.reduce<
+      Record<string, number>
+    >(
+      (acc, _, ix: number) => ({
         ...acc,
         [ix]: 0,
       }),
