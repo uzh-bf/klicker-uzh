@@ -181,17 +181,19 @@ function createValidationSchema(t: ReturnType<typeof useTranslations>) {
           const baseSolutionRanges = Yup.array()
             .of(
               Yup.object().shape({
-                min: Yup.number().nullable(),
-                // TODO: include this validation step again, once exact solutions can be handled through a separate input
-                // we can only handle one case to avoid cyclic dependencies
-                // .when('max', {
-                //   is: (max?: number | null) => typeof max !== 'undefined',
-                //   then: (schema) =>
-                //     schema.lessThan(
-                //       Yup.ref('max'),
-                //       t('manage.formErrors.NRMinLessThanMaxSol')
-                //     ),
-                // }),
+                min: Yup.number()
+                  .nullable()
+                  // TODO: include this validation step again, once exact solutions can be handled through a separate input
+                  // we can only handle one case to avoid cyclic dependencies
+                  .when('max', {
+                    is: (max?: number | null) => typeof max !== 'undefined',
+                    then: (schema) =>
+                      schema.test({
+                        message: t('manage.formErrors.NRMinLessThanMaxSol'),
+                        test: (value, context) =>
+                          value ? value <= context.parent.max : true,
+                      }),
+                  }),
                 max: Yup.number().nullable(),
               })
             )
