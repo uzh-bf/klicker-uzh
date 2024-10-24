@@ -856,9 +856,9 @@ async function respondToFlashcard(
           ? ResponseCorrectness.WRONG
           : ResponseCorrectness.PARTIAL
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
       grade: correctness,
     })
 
@@ -1111,9 +1111,9 @@ async function respondToContent(
       }
 
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + 1,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + 1,
       grade: 1,
     })
 
@@ -1747,7 +1747,7 @@ export async function respondToQuestion(
     correctness,
     updatedInstance.options.pointsMultiplier
   )
-  const score = evaluation?.score || 0
+  const score = evaluation?.score ?? 0
 
   let xp: number | null
   if (
@@ -1923,9 +1923,9 @@ export async function respondToQuestion(
 
     const streakIncrement = correctness === 1 ? 1 : 0
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
       grade: correctness,
     })
 

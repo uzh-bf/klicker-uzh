@@ -278,7 +278,7 @@ function GroupActivityGradingStack({
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
                     min={0}
                     max={
-                      (element.options?.pointsMultiplier || 1) *
+                      (element.options?.pointsMultiplier ?? 1) *
                       pointsPerInstance
                     }
                     data={{ cy: `groupActivity-grading-score-${ix}` }}
@@ -288,7 +288,7 @@ function GroupActivityGradingStack({
                     'manage.groupActivity.nPoints',
                     {
                       number:
-                        (element.options?.pointsMultiplier || 1) *
+                        (element.options?.pointsMultiplier ?? 1) *
                         pointsPerInstance,
                     }
                   )}`}</div>

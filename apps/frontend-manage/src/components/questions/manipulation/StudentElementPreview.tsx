@@ -45,7 +45,7 @@ function StudentElementPreview({
                 explanation:
                   'explanation' in values ? values.explanation : undefined,
                 name: values.name,
-                pointsMultiplier: parseInt(values.pointsMultiplier || '1'),
+                pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
                 type: values.type,
                 options:
                   'options' in values

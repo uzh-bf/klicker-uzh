@@ -86,14 +86,14 @@ function AdvancedLiveQuizSettings({
                 {
                   time: 0,
                   points:
-                    SUMMED_CORRECT_PTS + (parseInt(maxBonusValue, 10) || 0),
+                    SUMMED_CORRECT_PTS + (parseInt(maxBonusValue, 10) ?? 0),
                 },
                 {
-                  time: parseInt(timeToZeroValue, 10) || 0,
+                  time: parseInt(timeToZeroValue, 10) ?? 0,
                   points: SUMMED_CORRECT_PTS,
                 },
                 {
-                  time: 2 * (parseInt(timeToZeroValue, 10) || 0),
+                  time: 2 * (parseInt(timeToZeroValue, 10) ?? 0),
                   points: SUMMED_CORRECT_PTS,
                 },
               ]}

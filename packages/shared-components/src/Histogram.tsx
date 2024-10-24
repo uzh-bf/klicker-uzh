@@ -82,12 +82,12 @@ function Histogram({
       questionData.options.restrictions &&
       typeof questionData.options.restrictions['min'] === 'number'
         ? questionData.options.restrictions['min']
-        : (minBy(mappedData, 'value')?.value || 0) - 10
+        : (minBy(mappedData, 'value')?.value ?? 0) - 10
     const max: number =
       questionData.options.restrictions &&
       typeof questionData.options.restrictions['max'] === 'number'
         ? questionData.options.restrictions['max']
-        : (maxBy(mappedData, 'value')?.value || 0) + 10
+        : (maxBy(mappedData, 'value')?.value ?? 0) + 10
 
     let dataArray = Array.from({ length: binCount }, (_, i) => ({
       value: min + (max - min) * (i / binCount) + (max - min) / (2 * binCount),

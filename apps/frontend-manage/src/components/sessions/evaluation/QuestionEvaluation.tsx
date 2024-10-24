@@ -215,7 +215,7 @@ function QuestionEvaluation({
                       {questionData.options.solutionRanges.map(
                         (range, innerIndex) => (
                           <div key={innerIndex}>
-                            [{range.min || '-∞'},{range.max || '+∞'}]
+                            [{range.min ?? '-∞'},{range.max ?? '+∞'}]
                           </div>
                         )
                       )}

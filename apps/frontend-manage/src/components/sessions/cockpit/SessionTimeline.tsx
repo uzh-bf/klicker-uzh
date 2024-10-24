@@ -93,7 +93,7 @@ function SessionTimeline({
   useEffect(() => {
     if (blocks && blocks.length > 0) {
       setActiveBlockId(
-        blocks.find((block) => block.status === 'ACTIVE')?.id || -1
+        blocks.find((block) => block.status === 'ACTIVE')?.id ?? -1
       )
       if (blocks.every((block) => block.status === 'EXECUTED')) {
         setLastActiveBlockId(blocks[blocks.length - 1].id)
