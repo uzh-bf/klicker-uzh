@@ -191,8 +191,10 @@ function QuestionEvaluation({
                   questionData.options.solutionRanges &&
                   (questionData.options.solutionRanges.every(
                     (range) =>
-                      range.min &&
-                      range.max &&
+                      typeof range.min !== 'undefined' &&
+                      range.min !== null &&
+                      typeof range.max !== 'undefined' &&
+                      range.max !== null &&
                       range.min > range.max - 2 * Number.EPSILON
                   ) ? (
                     <div>
