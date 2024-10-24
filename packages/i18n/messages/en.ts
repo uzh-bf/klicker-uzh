@@ -1416,6 +1416,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
+      correctExactSolution: 'Correct solution: {value}',
       statistics: 'Statistics',
       keywordsSolution: 'Solution keywords',
       noChartsAvailable: 'There exists no chart for this question type yet',

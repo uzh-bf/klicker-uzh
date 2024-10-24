@@ -190,7 +190,22 @@ function QuestionEvaluation({
                 </UserNotification>
               )}
               {showSolution &&
-                currentInstance.questionData.options.solutionRanges && (
+                currentInstance.questionData.options.solutionRanges &&
+                (currentInstance.questionData.options.solutionRanges.length ===
+                  1 &&
+                currentInstance.questionData.options.solutionRanges[0].min &&
+                currentInstance.questionData.options.solutionRanges[0].max &&
+                currentInstance.questionData.options.solutionRanges[0].min >
+                  currentInstance.questionData.options.solutionRanges[0].max -
+                    2 * Number.EPSILON ? (
+                  <div className="mt-4 font-bold">
+                    {t('manage.evaluation.correctExactSolution', {
+                      value:
+                        currentInstance.questionData.options.solutionRanges[0]
+                          .min,
+                    })}
+                  </div>
+                ) : (
                   <div>
                     <div className="mt-4 font-bold">
                       {t('manage.evaluation.correctSolutionRanges')}:
@@ -198,12 +213,12 @@ function QuestionEvaluation({
                     {currentInstance.questionData.options.solutionRanges.map(
                       (range, innerIndex) => (
                         <div key={innerIndex}>
-                          [{range?.min || '-∞'},{range?.max || '+∞'}]
+                          [{range.min ?? '-∞'},{range.max ?? '+∞'}]
                         </div>
                       )
                     )}
                   </div>
-                )}
+                ))}
             </div>
           )}
           {currentInstance.questionData.type === 'FREE_TEXT' &&
