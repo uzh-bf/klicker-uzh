@@ -50,7 +50,7 @@ function GroupActivityGrading() {
         .reduce((acc, element) => {
           return (
             acc +
-            (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+            (element.options?.pointsMultiplier ?? 1) * MAX_POINTS_PER_QUESTION
           )
         }, 0)
     }, [groupActivity]) ?? 0

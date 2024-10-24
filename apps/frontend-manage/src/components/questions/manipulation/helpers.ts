@@ -116,13 +116,15 @@ export function prepareNumericalArgs({
       restrictions: {
         min:
           !values.options.restrictions ||
-          !values.options.restrictions.min ||
+          values.options.restrictions.min === null ||
+          typeof values.options.restrictions.min === 'undefined' ||
           values.options.restrictions.min === ''
             ? undefined
             : parseFloat(String(values.options.restrictions.min)),
         max:
           !values.options.restrictions ||
-          !values.options.restrictions.max ||
+          values.options.restrictions.max === null ||
+          typeof values.options.restrictions.max === 'undefined' ||
           values.options.restrictions.max === ''
             ? undefined
             : parseFloat(String(values.options.restrictions.max)),

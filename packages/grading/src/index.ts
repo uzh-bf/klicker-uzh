@@ -162,12 +162,12 @@ export function computeAwardedPoints({
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
     const additionalPoints =
-      pointsPercentage * (defaultCorrectPoints || 0) +
+      pointsPercentage * (defaultCorrectPoints ?? 0) +
       Math.max(pointsPercentage * (maxBonus - slope * responseTiming), 0)
     awardedPoints += additionalPoints
   } else if (getsMaxPoints) {
     const additionalPoints =
-      (defaultCorrectPoints || 0) +
+      (defaultCorrectPoints ?? 0) +
       Math.max(maxBonus - slope * responseTiming, 0)
     awardedPoints += additionalPoints
   }
@@ -176,7 +176,7 @@ export function computeAwardedPoints({
     awardedPoints *= Number(pointsMultiplier)
   }
 
-  awardedPoints += defaultPoints || 0
+  awardedPoints += defaultPoints ?? 0
 
   return Math.round(awardedPoints)
 }

@@ -45,8 +45,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
 
   //     return {
   //       totalPointsAwarded:
-  //         acc.totalPointsAwarded + (temp?.totalPointsAwarded || 0),
-  //       totalXpAwarded: acc.totalXpAwarded + (temp?.totalXpAwarded || 0),
+  //         acc.totalPointsAwarded + (temp?.totalPointsAwarded ?? 0),
+  //       totalXpAwarded: acc.totalXpAwarded + (temp?.totalXpAwarded ?? 0),
   //     }
   //   },
   //   { totalPointsAwarded: 0, totalXpAwarded: 0 }

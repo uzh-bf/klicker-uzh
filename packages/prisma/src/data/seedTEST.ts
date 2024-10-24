@@ -977,7 +977,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     >((acc, element) => {
       if (element.elementType === Prisma.ElementType.CONTENT) return acc
 
-      const maxPoints = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
+      const maxPoints = (element.options.pointsMultiplier ?? 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
       ] as 'INCORRECT' | 'PARTIAL' | 'CORRECT'
@@ -1021,7 +1021,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     >((acc, element) => {
       if (element.elementType === Prisma.ElementType.CONTENT) return acc
 
-      const maxPoints = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
+      const maxPoints = (element.options.pointsMultiplier ?? 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
       ] as 'INCORRECT' | 'PARTIAL' | 'CORRECT'
