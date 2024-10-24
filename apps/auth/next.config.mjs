@@ -1,5 +1,5 @@
-const { getNextBaseConfig } = require('@klicker-uzh/next-config')
-const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin')
+import { getNextBaseConfig } from '@klicker-uzh/next-config'
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,4 +12,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+export default nextConfig

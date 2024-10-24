@@ -1,15 +1,15 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
 import { processQuestionData } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
-import { CookieOptions } from 'express'
+import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialInstanceResults } from '../lib/questions.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
+import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { DisplayMode } from '../types/app.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1276,8 +1276,10 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
                 order: ix,
                 type: DB.QuestionInstanceType.SESSION,
                 pointsMultiplier: 2 * question.pointsMultiplier,
-                questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
+                questionData: processedQuestionData!,
+                results: prepareInitialQuestionInstanceResults(
+                  processedQuestionData!
+                ),
                 question: {
                   connect: { id: question.id },
                 },

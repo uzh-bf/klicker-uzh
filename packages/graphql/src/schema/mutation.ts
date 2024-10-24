@@ -41,6 +41,7 @@ import {
   StackResponseInput,
 } from './practiceQuizzes.js'
 import {
+  ArchivedElement,
   Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
@@ -1039,14 +1040,13 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [Element],
+        type: [ArchivedElement],
         args: {
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: figure out how to return only a partial element or create a new pothos type only for this?
-          return QuestionService.toggleIsArchived(args, ctx) as any
+          return QuestionService.toggleIsArchived(args, ctx)
         },
       }),
 
@@ -1201,7 +1201,7 @@ export const Mutation = builder.mutationType({
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
             stacks: t.arg({ required: true, type: [ElementStackInput] }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
@@ -1222,7 +1222,7 @@ export const Mutation = builder.mutationType({
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
             stacks: t.arg({ required: true, type: [ElementStackInput] }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),

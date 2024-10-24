@@ -6,6 +6,7 @@ import {
   ElementOrderType,
   ElementType,
   PracticeQuiz,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import dayjs from 'dayjs'
@@ -56,7 +57,15 @@ interface PracticeQuizWizardProps {
   title: string
   courses: ElementSelectCourse[]
   closeWizard: () => void
-  initialValues?: PracticeQuiz
+  initialValues?: Omit<
+    PracticeQuiz,
+    'id' | 'orderType' | 'resetTimeDays' | 'status'
+  > & {
+    id?: string
+    orderType?: string
+    resetTimeDays?: number
+    status?: PublicationStatus
+  }
   selection: Record<number, Element>
   resetSelection: () => void
   editMode: boolean
@@ -220,7 +229,9 @@ function PracticeQuizWizard({
                 title: element.elementData.name,
                 type: element.elementData.type,
                 hasSampleSolution:
-                  element.elementData.options?.hasSampleSolution ?? true,
+                  'options' in element.elementData
+                    ? (element.elementData.options.hasSampleSolution ?? false)
+                    : true,
               }
             }),
           }
@@ -230,7 +241,8 @@ function PracticeQuizWizard({
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
-    order: initialValues?.orderType || formDefaultValues.order,
+    order:
+      (initialValues?.orderType as ElementOrderType) || formDefaultValues.order,
     availableFrom: initialValues?.availableFrom
       ? dayjs(initialValues?.availableFrom).local().format('YYYY-MM-DDTHH:mm')
       : formDefaultValues.availableFrom,

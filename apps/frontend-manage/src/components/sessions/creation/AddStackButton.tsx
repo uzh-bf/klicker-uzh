@@ -63,7 +63,10 @@ function AddStackButton({
                   id: question.id,
                   title: question.name,
                   type: question.type,
-                  hasSampleSolution: question.options.hasSampleSolution,
+                  hasSampleSolution:
+                    'options' in question
+                      ? (question.options.hasSampleSolution ?? false)
+                      : true,
                 })
               )
 
@@ -101,7 +104,10 @@ function AddStackButton({
                       id: question.id,
                       title: question.name,
                       type: question.type,
-                      hasSampleSolution: question.options.hasSampleSolution,
+                      hasSampleSolution:
+                        'options' in question
+                          ? (question.options.hasSampleSolution ?? false)
+                          : true,
                     },
                   ],
                 })
@@ -124,24 +130,25 @@ function AddStackButton({
           </Button>
         </div>
       )}
-      <div
-        className={twMerge(
-          'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
-          isOver && 'bg-primary-20'
-        )}
-        onClick={() =>
-          push({
-            displayName: '',
-            description: '',
-            elements: [],
-          })
-        }
-        data-cy="drop-elements-add-stack"
-        ref={drop}
-      >
-        <FontAwesomeIcon icon={faPlus} size="lg" />
-        <div>{t('manage.sessionForms.newStack')}</div>
-      </div>
+      {drop(
+        <div
+          className={twMerge(
+            'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
+            isOver && 'bg-primary-20'
+          )}
+          onClick={() =>
+            push({
+              displayName: '',
+              description: '',
+              elements: [],
+            })
+          }
+          data-cy="drop-elements-add-stack"
+        >
+          <FontAwesomeIcon icon={faPlus} size="lg" />
+          <div>{t('manage.sessionForms.newStack')}</div>
+        </div>
+      )}
     </div>
   )
 }

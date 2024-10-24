@@ -1,10 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import type { ICourse } from './course.js'
-import { CourseRef } from './course.js'
+import { type ICourse, CourseRef } from './course.js'
 import {
+  type IElementStack,
   ElementStackRef,
-  IElementStack,
   PublicationStatus,
 } from './practiceQuizzes.js'
 
@@ -28,7 +27,9 @@ export const MicroLearning = MicroLearningRef.implement({
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
-    arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent'),
+    arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent', {
+      nullable: true,
+    }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     course: t.expose('course', {

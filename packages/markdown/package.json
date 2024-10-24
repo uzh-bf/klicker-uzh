@@ -19,6 +19,8 @@
     "unified": "10.1.2"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.1",
     "@types/node": "^20.16.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
@@ -27,9 +29,10 @@
     "eslint": "~8.45.0",
     "npm-run-all": "~4.1.5",
     "postcss-import": "~16.1.0",
+    "rollup": "~4.24.0",
+    "rollup-plugin-copy": "~3.5.0",
     "tailwindcss": "~3.4.14",
     "tailwindcss-radix": "~3.0.5",
-    "tsup": "~8.3.0",
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
@@ -38,7 +41,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
-    "next": "^14.2.15",
+    "next": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.4",
@@ -47,7 +50,7 @@
   "scripts": {
     "build": "run-s build:tw build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production tsup",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
     "build:tw": "run-p build:tw:*",
     "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
     "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
@@ -55,7 +58,7 @@
     "dev": "run-p dev:tw:* dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development tsup --watch",
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",
     "dev:tw:utilities": "tailwindcss -w -i src/utilities.css -o src/public/utilities.css"
   },

@@ -1,12 +1,10 @@
 import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import { getInitialElementResults } from '@klicker-uzh/util'
 import {
-  ContentInstanceResults,
   FlashcardCorrectness,
-  FlashcardInstanceResults,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-} from 'src/types/app.js'
+  SingleQuestionResponseContent,
+  SingleQuestionResponseFlashcard,
+} from '@klicker-uzh/types'
+import { getInitialElementResults } from '@klicker-uzh/util'
 
 async function run() {
   const prisma = new PrismaClient()
@@ -90,7 +88,7 @@ async function run() {
         // loop over the detail responses and update the aggregated responses
         for (const detailResponse of detailResponses) {
           const flashcardResponse =
-            detailResponse.response as QuestionResponseFlashcard
+            detailResponse.response as SingleQuestionResponseFlashcard
           if (flashcardResponse.correctness === FlashcardCorrectness.CORRECT) {
             aggregatedResponses[FlashcardCorrectness.CORRECT] =
               aggregatedResponses[FlashcardCorrectness.CORRECT] + 1
@@ -169,7 +167,7 @@ async function run() {
         // loop over the detail responses and update the aggregated responses
         for (const detailResponse of detailResponses) {
           const contentResponse =
-            detailResponse.response as QuestionResponseContent
+            detailResponse.response as SingleQuestionResponseContent
 
           if (contentResponse.viewed) {
             aggregatedResponses.total = aggregatedResponses.total + 1

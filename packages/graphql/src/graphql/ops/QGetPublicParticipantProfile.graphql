@@ -3,7 +3,17 @@ query GetPublicParticipantProfile($id: String!) {
     id
     username
     avatar
-    avatarSettings
+    avatarSettings {
+      skinTone
+      eyes
+      mouth
+      hair
+      facialHair
+      accessory
+      hairColor
+      clothing
+      clothingColor
+    }
     isProfilePublic
     isSelf
     level

@@ -1,5 +1,6 @@
 mutation ToggleIsArchived($questionIds: [Int!]!, $isArchived: Boolean!) {
   toggleIsArchived(questionIds: $questionIds, isArchived: $isArchived) {
+    __typename
     id
     isArchived
   }

@@ -1,11 +1,21 @@
 import * as DB from '@klicker-uzh/prisma'
-
+import type {
+  ContentResults as ContentResultsType,
+  ElementResultsChoices as ElementResultsChoicesType,
+  ElementResultsOpen as ElementResultsOpenType,
+  FlashcardResults as FlashcardResultsType,
+  QuestionResults,
+  SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
+  SingleQuestionResponseContent as SingleQuestionResponseContentType,
+  SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  SingleQuestionResponseValue as SingleQuestionResponseValueType,
+} from '@klicker-uzh/types'
+import { FlashcardCorrectness as FlashcardCorrectnessEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { AllElementTypeData, QuestionResults } from '../types/app.js'
-import type { ICourse } from './course.js'
-import { CourseRef } from './course.js'
+import { CourseRef, type ICourse } from './course.js'
+import { FlashcardCorrectness } from './evaluation.js'
 import { QuestionInstanceRef } from './question.js'
-import { QuestionDataRef } from './questionData.js'
+import { ElementType, QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -31,6 +41,8 @@ export const BlockInput = builder.inputType('BlockInput', {
   }),
 })
 
+// ----- LIVE QUIZ INTERFACE -----
+// #region
 export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
@@ -142,7 +154,10 @@ export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
   }),
 })
+// #endregion
 
+// ----- AUDIENCE INTERACTION INTERFACE -----
+// #region
 export interface IFeedback extends DB.Feedback {
   responses?: DB.FeedbackResponse[]
 }
@@ -173,7 +188,7 @@ export const FeedbackResponse = FeedbackResponseRef.implement({
     positiveReactions: t.exposeInt('positiveReactions'),
     negativeReactions: t.exposeInt('negativeReactions'),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
   }),
 })
 
@@ -203,7 +218,9 @@ export const ConfusionSummary = builder
       }),
     }),
   })
+// #endregion
 
+// ----- LIVE QUIZ EVALUATION INTERFACE -----
 export interface IStatistics {
   max: number
   min: number
@@ -227,16 +244,15 @@ export const Statistics = builder
     }),
   })
 
+// ----- INSTANCE RESULT INTERFACE -----
 export interface IInstanceResult {
   id: string
-
   blockIx?: number
   instanceIx: number
   participants: number
   results: QuestionResults
   status: DB.SessionBlockStatus
-
-  questionData: AllElementTypeData
+  questionData: DB.QuestionInstance['questionData']
   statistics?: IStatistics
 }
 export const InstanceResultRef =
@@ -248,72 +264,244 @@ export const InstanceResult = InstanceResultRef.implement({
     blockIx: t.exposeInt('blockIx', { nullable: true }),
     instanceIx: t.exposeInt('instanceIx'),
     participants: t.exposeInt('participants'),
+
+    // TODO: replace entire instance results type with union type and this with aggregated responses types defined below after migration of live quiz to element stacks
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
     questionData: t.field({
-      type: QuestionDataRef,
+      type: QuestionData,
       resolve: (q) => q.questionData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),
 })
+// #endregion
 
-export const QuestionResponseRef =
-  builder.objectRef<DB.QuestionResponse>('QuestionResponse')
-export const QuestionResponse = QuestionResponseRef.implement({
+// ----- SINGLE QUESTION RESPONSE INTERFACES -----
+// #region
+export const SingleQuestionResponseChoices = builder
+  .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
+  .implement({
+    fields: (t) => ({
+      choices: t.exposeIntList('choices'),
+    }),
+  })
+
+export const SingleQuestionResponseValue = builder
+  .objectRef<SingleQuestionResponseValueType>('SingleQuestionResponseValue')
+  .implement({
+    fields: (t) => ({
+      value: t.exposeString('value'),
+    }),
+  })
+
+export const SingleQuestionResponseFlashcard = builder
+  .objectRef<SingleQuestionResponseFlashcardType>(
+    'SingleQuestionResponseFlashcard'
+  )
+  .implement({
+    fields: (t) => ({
+      correctness: t.expose('correctness', { type: FlashcardCorrectness }),
+    }),
+  })
+
+export const SingleQuestionResponseContent = builder
+  .objectRef<SingleQuestionResponseContentType>('SingleQuestionResponseContent')
+  .implement({
+    fields: (t) => ({
+      viewed: t.exposeBoolean('viewed'),
+    }),
+  })
+// #endregion
+
+// ----- AGGREGATED RESPONSES / RESULTS INTERFACES -----
+// #region
+export const ElementResultsChoicesRef =
+  builder.objectRef<ElementResultsChoicesType>('ElementResultsChoices')
+export const ElementResultsChoices = ElementResultsChoicesRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id'),
-
-    trialsCount: t.exposeInt('trialsCount'),
-
-    totalScore: t.exposeFloat('totalScore'),
-    totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
-    totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
-    lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
-    lastXpAwardedAt: t.expose('lastXpAwardedAt', {
-      type: 'Date',
-      nullable: true,
-    }),
-    lastAnsweredAt: t.expose('lastAnsweredAt', {
-      type: 'Date',
-      nullable: true,
-    }),
-
-    correctCount: t.exposeInt('correctCount'),
-    correctCountStreak: t.exposeInt('correctCountStreak'),
-    lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
-
-    partialCorrectCount: t.exposeInt('partialCorrectCount'),
-    lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
-      type: 'Date',
-      nullable: true,
-    }),
-
-    eFactor: t.exposeFloat('eFactor'),
-    interval: t.exposeInt('interval'),
-    nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
-
-    wrongCount: t.exposeInt('wrongCount'),
-    lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
-
-    lastResponse: t.expose('lastResponse', { type: 'Json' }),
-
-    aggregatedResponses: t.expose('aggregatedResponses', {
-      type: 'Json',
-      nullable: true,
-    }),
+    // ? differing number of keys - no graphql representation available
+    choices: t.expose('choices', { type: 'Json' }),
+    total: t.exposeInt('total'),
   }),
 })
 
-export const QuestionResponseDetailRef =
-  builder.objectRef<DB.QuestionResponseDetail>('QuestionResponseDetail')
-export const QuestionResponseDetail = QuestionResponseDetailRef.implement({
+export const ElementResultsOpenRef =
+  builder.objectRef<ElementResultsOpenType>('ElementResultsOpen')
+export const ElementResultsOpen = ElementResultsOpenRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id'),
+    // ? differing number of keys - no graphql representation available
+    responses: t.expose('responses', { type: 'Json' }),
+    total: t.exposeInt('total'),
   }),
 })
 
+export const ElementResultsFlashcardRef =
+  builder.objectRef<FlashcardResultsType>('ElementResultsFlashcard')
+export const ElementResultsFlashcard = ElementResultsFlashcardRef.implement({
+  fields: (t) => ({
+    CORRECT: t.exposeInt(FlashcardCorrectnessEnum.CORRECT),
+    PARTIAL: t.exposeInt(FlashcardCorrectnessEnum.PARTIAL),
+    INCORRECT: t.exposeInt(FlashcardCorrectnessEnum.INCORRECT),
+    total: t.exposeInt('total'),
+  }),
+})
+
+export const ElementResultsContentRef = builder.objectRef<ContentResultsType>(
+  'ElementResultsContent'
+)
+export const ElementResultsContent = ElementResultsContentRef.implement({
+  fields: (t) => ({
+    total: t.exposeInt('total'),
+  }),
+})
+// #endregion
+
+// ----- QUESTION RESPONSE INTERFACES -----
+// #region
+const sharedQuestionResponseProps = (t: any) => ({
+  id: t.exposeInt('id'),
+  elementType: t.expose('elementType', { type: ElementType }),
+
+  trialsCount: t.exposeInt('trialsCount'),
+  totalScore: t.exposeFloat('totalScore'),
+  totalPointsAwarded: t.exposeFloat('totalPointsAwarded', { nullable: true }),
+  totalXpAwarded: t.exposeFloat('totalXpAwarded', { nullable: true }),
+
+  lastAwardedAt: t.expose('lastAwardedAt', { type: 'Date', nullable: true }),
+  lastXpAwardedAt: t.expose('lastXpAwardedAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+  lastAnsweredAt: t.expose('lastAnsweredAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+
+  correctCount: t.exposeInt('correctCount'),
+  correctCountStreak: t.exposeInt('correctCountStreak'),
+  lastCorrectAt: t.expose('lastCorrectAt', { type: 'Date', nullable: true }),
+  partialCorrectCount: t.exposeInt('partialCorrectCount'),
+  lastPartialCorrectAt: t.expose('lastPartialCorrectAt', {
+    type: 'Date',
+    nullable: true,
+  }),
+
+  eFactor: t.exposeFloat('eFactor'),
+  interval: t.exposeInt('interval'),
+  nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
+  wrongCount: t.exposeInt('wrongCount'),
+  lastWrongAt: t.expose('lastWrongAt', { type: 'Date', nullable: true }),
+})
+
+export interface IChoicesQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseChoicesType
+  aggregatedResponses: ElementResultsChoicesType
+}
+export const ChoicesQuestionResponse = builder
+  .objectRef<IChoicesQuestionResponse>('ChoicesQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseChoices,
+      }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsChoices,
+      }),
+    }),
+  })
+
+export interface IOpenQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseValueType
+  aggregatedResponses: ElementResultsOpenType
+}
+export const OpenQuestionResponse = builder
+  .objectRef<IOpenQuestionResponse>('OpenQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseValue,
+      }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsOpen,
+      }),
+    }),
+  })
+
+export interface IFlashcardQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseFlashcardType
+  aggregatedResponses: FlashcardResultsType
+}
+export const FlashcardQuestionResponse = builder
+  .objectRef<IFlashcardQuestionResponse>('FlashcardQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseFlashcard,
+      }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsFlashcard,
+      }),
+    }),
+  })
+
+export interface IContentQuestionResponse
+  extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
+  elementType: DB.ElementType
+  lastResponse: SingleQuestionResponseContentType
+  aggregatedResponses: ContentResultsType
+}
+export const ContentQuestionResponse = builder
+  .objectRef<IContentQuestionResponse>('ContentQuestionResponse')
+  .implement({
+    fields: (t) => ({
+      ...sharedQuestionResponseProps(t),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseContent,
+      }),
+      aggregatedResponses: t.expose('aggregatedResponses', {
+        type: ElementResultsContent,
+      }),
+    }),
+  })
+
+export const QuestionResponse = builder.unionType('QuestionResponse', {
+  types: [
+    ChoicesQuestionResponse,
+    OpenQuestionResponse,
+    FlashcardQuestionResponse,
+    ContentQuestionResponse,
+  ],
+  resolveType: (response) => {
+    switch (response.elementType) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return ChoicesQuestionResponse
+      case DB.ElementType.NUMERICAL:
+      case DB.ElementType.FREE_TEXT:
+        return OpenQuestionResponse
+      case DB.ElementType.FLASHCARD:
+        return FlashcardQuestionResponse
+      case DB.ElementType.CONTENT:
+        return ContentQuestionResponse
+    }
+  },
+})
+// #endregion
+
+// ----- EVALUATION VISUALIZATION TYPES -----
+// #region
 export interface ITabData {
   id: string
   questionIx?: number | null
@@ -383,3 +571,4 @@ export const SessionEvaluation = SessionEvaluationRef.implement({
     }),
   }),
 })
+// #endregion

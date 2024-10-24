@@ -52,6 +52,7 @@ export function getAccessLink({
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
         <div>
+          {/* @ts-expect-error next-intl dictionary is not correctly typed */}
           {t('manage.course.copyAccessLink')}
           {typeof label == 'string' && ` (${label})`}
         </div>
@@ -81,6 +82,7 @@ export function getLTIAccessLink({
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>
+          {/* @ts-expect-error next-intl dictionary is not correctly typed */}
           {t('manage.course.copyLTIAccessLink')}
           {typeof label == 'string' && ` (${label})`}
         </div>

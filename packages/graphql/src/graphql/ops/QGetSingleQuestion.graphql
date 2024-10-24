@@ -1,62 +1,126 @@
 query GetSingleQuestion($id: Int!) {
   question(id: $id) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
+    __typename
 
-    questionData {
+    ... on ChoicesElement {
       id
-      questionId
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
 
-      ... on ChoicesQuestionData {
-        options {
-          displayMode
-          hasSampleSolution
-          hasAnswerFeedbacks
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
+      options {
+        __typename
+        hasSampleSolution
+        hasAnswerFeedbacks
+        displayMode
+        choices {
+          ix
+          correct
+          feedback
+          value
         }
       }
 
-      ... on NumericalQuestionData {
-        options {
-          hasSampleSolution
-          unit
-          accuracy
-          placeholder
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
-        }
-      }
-
-      ... on FreeTextQuestionData {
-        options {
-          hasSampleSolution
-          restrictions {
-            maxLength
-          }
-          solutions
-        }
+      tags {
+        id
+        name
+        order
       }
     }
 
-    tags {
+    ... on NumericalElement {
       id
+      version
       name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
+        }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on FreeTextElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
+        }
+        solutions
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on FlashcardElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on ContentElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      tags {
+        id
+        name
+        order
+      }
     }
   }
 }

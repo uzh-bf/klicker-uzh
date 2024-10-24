@@ -28,7 +28,9 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
-import QuestionEditModal from '../components/questions/QuestionEditModal'
+import ElementEditModal, {
+  ElementEditMode,
+} from '../components/questions/manipulation/ElementEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import ElementCreation, {
@@ -60,7 +62,7 @@ function Index() {
     Record<number, Element | undefined>
   >({})
 
-  const selectedQuestionData: Record<number, Element> = useMemo(
+  const selectedQuestionData = useMemo(
     () =>
       pickBy(
         selectedQuestions,
@@ -93,17 +95,17 @@ function Index() {
     router.prefetch('/sessions')
 
     if (router.query.elementId && router.query.editMode) {
-      setCreationMode(router.query.editMode as any)
+      setCreationMode(router.query.editMode as WizardMode)
     } else if (router.query.elementId && router.query.duplicationMode) {
-      setCreationMode(router.query.duplicationMode as any)
+      setCreationMode(router.query.duplicationMode as WizardMode)
     } else if (router.query.elementId && router.query.conversionMode) {
-      setCreationMode(router.query.conversionMode as any)
+      setCreationMode(router.query.conversionMode as WizardMode)
     }
   }, [router])
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return buildIndex('questions', dataQuestions.userQuestions as Element[], [
+      return buildIndex('questions', dataQuestions.userQuestions, [
         'name',
         'createdAt',
         'updatedAt',
@@ -424,10 +426,10 @@ function Index() {
       </div>
 
       {isQuestionCreationModalOpen && (
-        <QuestionEditModal
+        <ElementEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
           isOpen={isQuestionCreationModalOpen}
-          mode={QuestionEditModal.Mode.CREATE}
+          mode={ElementEditMode.CREATE}
         />
       )}
       <Suspense fallback={<div />}>

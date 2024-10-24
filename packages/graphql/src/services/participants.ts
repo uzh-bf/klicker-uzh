@@ -1,7 +1,12 @@
-import { PublicationStatus, SessionStatus, UserRole } from '@klicker-uzh/prisma'
+import {
+  PublicationStatus,
+  SessionStatus,
+  UserRole,
+  type ElementFeedback,
+} from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import isEmail from 'validator/lib/isEmail.js'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -21,7 +26,7 @@ export async function updateParticipantProfile(
   }
 
   if (typeof email === 'string') {
-    if (!isEmail(email)) {
+    if (!isEmail.default(email)) {
       return null
     }
   }
@@ -571,7 +576,7 @@ export async function rateElement(
     return null
   }
 
-  let elementFeedback = null
+  let elementFeedback: ElementFeedback | null = null
   await ctx.prisma.$transaction(async (prisma) => {
     // fetch previous element feedback
     const prevFeedback = await ctx.prisma.elementFeedback.findUnique({

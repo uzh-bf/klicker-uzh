@@ -1,10 +1,7 @@
-import type {
-  ChoicesElementData,
-  ElementStack,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ElementStack } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
-import type { StudentResponseType } from '../StudentElement'
+import type { ElementChoicesType, StudentResponseType } from '../StudentElement'
 
 interface UseStudentResponseProps {
   stack: ElementStack
@@ -22,18 +19,12 @@ function useStudentResponse({
   useEffect(() => {
     const newStudentResponse =
       stack.elements?.reduce((acc, element) => {
-        if (
-          element.elementData.type === ElementType.Kprim ||
-          element.elementData.type === ElementType.Mc ||
-          element.elementData.type === ElementType.Sc
-        ) {
+        if (element.elementData.__typename === 'ChoicesElementData') {
           return {
             ...acc,
             [element.id]: {
-              type: element.elementData.type,
-              response: (
-                element.elementData as ChoicesElementData
-              ).options.choices.reduce(
+              type: element.elementData.type as ElementChoicesType,
+              response: element.elementData.options.choices.reduce(
                 (acc, _, ix) => {
                   return { ...acc, [ix]: undefined }
                 },

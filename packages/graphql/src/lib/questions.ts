@@ -1,12 +1,8 @@
 import { ElementType } from '@klicker-uzh/prisma'
-import {
-  AllElementTypeData,
-  QuestionResults,
-  QuestionResultsChoices,
-} from '../types/app.js'
+import type { AllQuestionTypeData, QuestionResults } from '@klicker-uzh/types'
 
-export function prepareInitialInstanceResults(
-  questionData: AllElementTypeData
+export function prepareInitialQuestionInstanceResults(
+  questionData: AllQuestionTypeData
 ): QuestionResults {
   switch (questionData.type) {
     case ElementType.SC:
@@ -16,7 +12,7 @@ export function prepareInitialInstanceResults(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
       )
-      return { choices, total: 0 } as QuestionResultsChoices
+      return { choices, total: 0 }
     }
 
     case ElementType.NUMERICAL:

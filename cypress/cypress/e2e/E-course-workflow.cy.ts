@@ -231,6 +231,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="student-course-create-group"]').click()
     cy.get('[data-cy="group-creation-name-input"]').type(groupName11)
     cy.get('[data-cy="create-new-participant-group"]').click()
+    cy.wait(1000)
 
     // student 12 joins course and creates a group by himself
     const groupName12 = 'Group Student 12'
@@ -244,6 +245,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="student-course-create-group"]').click()
     cy.get('[data-cy="group-creation-name-input"]').type(groupName12)
     cy.get('[data-cy="create-new-participant-group"]').click()
+    cy.wait(1000)
   })
 
   it('Trigger the random group assignment for the gamified course', () => {

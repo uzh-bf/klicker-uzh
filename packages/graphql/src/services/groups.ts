@@ -1,15 +1,16 @@
 import {
-  Course,
-  Element,
+  type Course,
+  type Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
   GroupActivityStatus,
   LeaderboardType,
   ParameterType,
-  Participant,
-  ParticipantGroup,
+  type Participant,
+  type ParticipantGroup,
 } from '@klicker-uzh/prisma'
+import { ResponseCorrectness, type StackInput } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -18,7 +19,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import { ElementInstanceOptions } from 'src/ops.js'
+import type { ElementInstanceOptions } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -26,16 +27,15 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   splitGroupsFinal,
   splitGroupsRunning,
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { ResponseCorrectness, StackInput } from '../types/app.js'
 import {
-  RespondToElementStackInput,
+  type RespondToElementStackInput,
   updateQuestionResults,
 } from './practiceQuizzes.js'
 
@@ -1047,8 +1047,7 @@ export async function manipulateGroupActivity(
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
             const processedElementData = processElementData(element)
-            const initialResults =
-              getInitialElementResults(processedElementData)
+            const initialResults = getInitialElementResults(element)
 
             return {
               elementType: element.type,

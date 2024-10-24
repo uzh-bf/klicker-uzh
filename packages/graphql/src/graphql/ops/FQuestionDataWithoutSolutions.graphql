@@ -1,14 +1,15 @@
 fragment QuestionDataWithoutSolutions on QuestionInstance {
   questionData {
-    id
-    questionId
-    name
-    type
-    content
-    explanation
-    pointsMultiplier
-
     ... on ChoicesQuestionData {
+      __typename
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         displayMode
         choices {
@@ -19,6 +20,15 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     }
 
     ... on NumericalQuestionData {
+      __typename
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         unit
         accuracy
@@ -31,11 +41,42 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     }
 
     ... on FreeTextQuestionData {
+      __typename
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+
       options {
         restrictions {
           maxLength
         }
       }
+    }
+
+    ... on FlashcardQuestionData {
+      __typename
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
+
+    ... on ContentQuestionData {
+      __typename
+      id
+      questionId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
     }
   }
 }

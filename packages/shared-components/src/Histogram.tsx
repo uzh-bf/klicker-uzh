@@ -1,7 +1,4 @@
-import type {
-  InstanceResult,
-  NumericalQuestionData,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { NumberField } from '@uzh-bf/design-system'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useTranslations } from 'next-intl'
@@ -68,8 +65,11 @@ function Histogram({
     return binCount
   }, [numBins])
 
-  const questionData = data.questionData as NumericalQuestionData
+  if (data.questionData?.__typename !== 'NumericalQuestionData') {
+    return <div>{t('manage.evaluation.histogramNotSupported')}</div>
+  }
 
+  const questionData = data.questionData
   const processedData = useMemo(() => {
     const mappedData = Object.values(
       data.results as Record<string, { count: number; value: string }>
@@ -259,6 +259,14 @@ function Histogram({
 
           {showSolution.general &&
             questionData.options.solutionRanges &&
+            !questionData.options.solutionRanges.every(
+              (range) =>
+                typeof range.min !== 'undefined' &&
+                range.min !== null &&
+                typeof range.max !== 'undefined' &&
+                range.max !== null &&
+                range.min > range.max - 2 * Number.EPSILON
+            ) &&
             questionData.options.solutionRanges.map(
               (
                 solutionRange: { min?: number | null; max?: number | null },
@@ -266,8 +274,39 @@ function Histogram({
               ) => (
                 <ReferenceArea
                   key={index}
-                  x1={solutionRange.min ?? undefined}
-                  x2={solutionRange.max ?? undefined}
+                  x={solutionRange.min ?? undefined}
+                  stroke={CHART_SOLUTION_COLORS.correct}
+                  label={
+                    !basic && {
+                      fill: CHART_SOLUTION_COLORS.correct,
+                      position: 'top',
+                      value: 'Korrekt',
+                    }
+                  }
+                  className={textSize}
+                />
+              )
+            )}
+
+          {/* // TODO: when migrating to exact solutions support on numerical questions, replace this */}
+          {showSolution.general &&
+            questionData.options.solutionRanges &&
+            questionData.options.solutionRanges.every(
+              (range) =>
+                typeof range.min !== 'undefined' &&
+                range.min !== null &&
+                typeof range.max !== 'undefined' &&
+                range.max !== null &&
+                range.min > range.max - 2 * Number.EPSILON
+            ) &&
+            questionData.options.solutionRanges.map(
+              (
+                solutionRange: { min?: number | null; max?: number | null },
+                index: number
+              ) => (
+                <ReferenceLine
+                  key={index}
+                  x={solutionRange.min ?? undefined}
                   stroke={CHART_SOLUTION_COLORS.correct}
                   fill={CHART_SOLUTION_COLORS.correct}
                   enableBackground="#FFFFFF"

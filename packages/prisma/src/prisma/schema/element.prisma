@@ -219,7 +219,7 @@ model QuestionInstance {
   maxBonusPoints   Int?
   timeToZeroBonus  Int?
 
-  /// [PrismaElementData]
+  /// [PrismaQuestionData]
   questionData Json
 
   /// [PrismaQuestionResults]

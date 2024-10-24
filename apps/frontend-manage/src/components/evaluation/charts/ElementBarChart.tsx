@@ -1,12 +1,10 @@
 import {
-  ChoicesElementInstanceEvaluation,
   ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   CHART_COLORS,
   CHART_SOLUTION_COLORS,
-  QUESTION_GROUPS,
 } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -114,21 +112,19 @@ function ElementBarChart({
             className={textSize.text3Xl}
             id="bar-chart-block"
           />
-          {QUESTION_GROUPS.CHOICES.includes(instance.type) &&
-            (instance as ChoicesElementInstanceEvaluation).results.choices.map(
-              (choice, index) => (
-                <Cell
-                  fill={
-                    showSolution
-                      ? choice.correct
-                        ? CHART_SOLUTION_COLORS.correct
-                        : CHART_SOLUTION_COLORS.incorrect
-                      : CHART_COLORS[index % 12]
-                  }
-                  key={index}
-                />
-              )
-            )}
+          {instance.__typename === 'ChoicesElementInstanceEvaluation' &&
+            instance.results.choices.map((choice, index) => (
+              <Cell
+                fill={
+                  showSolution
+                    ? choice.correct
+                      ? CHART_SOLUTION_COLORS.correct
+                      : CHART_SOLUTION_COLORS.incorrect
+                    : CHART_COLORS[index % 12]
+                }
+                key={index}
+              />
+            ))}
         </Bar>
       </BarChartRecharts>
     </ResponsiveContainer>

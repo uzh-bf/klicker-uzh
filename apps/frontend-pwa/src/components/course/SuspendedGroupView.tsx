@@ -47,8 +47,14 @@ import EditableGroupName from './EditableGroupName'
 
 interface SuspendedGroupViewProps {
   group: Omit<ParticipantGroup, 'participants' | 'messages'> & {
-    participants?: Omit<Participant, 'isActive' | 'locale' | 'xp'>[] | null
-    messages?: Omit<GroupMessage, 'group'>[] | null
+    participants?:
+      | Pick<Participant, 'id' | 'username' | 'score' | 'rank' | 'level'>[]
+      | null
+    messages?:
+      | (Pick<GroupMessage, 'id' | 'content' | 'createdAt'> & {
+          participant: Pick<Participant, 'id' | 'username' | 'avatar'>
+        })[]
+      | null
   }
   participation: Omit<Participation, 'completedMicroLearnings'>
   participant: Omit<Participant, 'isActive' | 'locale' | 'participantGroups'>
@@ -238,11 +244,11 @@ function SuspendedGroupView({
               data-cy="group-messages"
             >
               {group.messages?.map((message, ix) => {
-                const ownMessage = message.participant?.id === participant.id
+                const ownMessage = message.participant.id === participant.id
                 const nextMessageSameUser =
                   ix + 1 < group.messages!.length &&
-                  group.messages![ix + 1]?.participant?.id ===
-                    message.participant?.id
+                  group.messages![ix + 1]?.participant.id ===
+                    message.participant.id
 
                 return (
                   <div
@@ -259,7 +265,7 @@ function SuspendedGroupView({
                           ownMessage && 'justify-end'
                         )}
                       >
-                        {message.participant?.avatar && (
+                        {message.participant.avatar && (
                           <Image
                             key={message.participant.avatar}
                             src={
@@ -282,7 +288,7 @@ function SuspendedGroupView({
                             ownMessage && 'order-1'
                           )}
                         >
-                          {message.participant?.username}
+                          {message.participant.username}
                         </div>
                       </div>
                     )}

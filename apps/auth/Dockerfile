@@ -48,7 +48,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
 
-COPY --from=installer /app/apps/auth/next.config.js .
+COPY --from=installer /app/apps/auth/next.config.mjs .
 COPY --from=installer /app/apps/auth/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/standalone ./

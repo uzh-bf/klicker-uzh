@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
   GetPracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -96,7 +95,7 @@ function PracticeQuizPage({
     >
       <PracticeQuiz
         quiz={{
-          ...(data.practiceQuiz as PracticeQuizType),
+          ...data.practiceQuiz,
           course: data.practiceQuiz.course!,
         }}
         currentIx={currentIx}

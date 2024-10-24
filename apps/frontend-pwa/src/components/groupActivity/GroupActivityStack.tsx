@@ -9,7 +9,6 @@ import {
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  ElementChoicesType,
   StudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -26,8 +25,8 @@ interface GroupActivityStackProps {
   activityId: number
   activityEnded: boolean
   stack: ElementStack
-  decisions?: GroupActivityDecision[]
-  results: GroupActivityResults
+  decisions?: GroupActivityDecision[] | null
+  results?: GroupActivityResults | null
   submittedAt?: string
 }
 
@@ -71,74 +70,74 @@ function GroupActivityStack({
   })
 
   useEffect(() => {
-    const loadedResponses = decisions?.reduce((acc, decision) => {
-      if (!decision) return acc
+    const loadedResponses = decisions?.reduce<StudentResponseType>(
+      (acc, decision) => {
+        if (!decision) return acc
 
-      if (
-        decision.type === ElementType.Sc ||
-        decision.type === ElementType.Mc
-      ) {
-        return {
-          ...acc,
-          [decision.instanceId]: {
-            type: decision.type,
-            response: decision.choicesResponse?.reduce(
-              (acc, choice) => ({ ...acc, [choice]: true }),
-              {} as Record<number, boolean>
-            ),
-            valid: true,
-          },
-        }
-      } else if (decision.type === ElementType.Kprim) {
-        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
-          (acc, choice) => ({ ...acc, [choice]: false }),
-          {} as Record<number, boolean>
-        )
+        if (
+          decision.type === ElementType.Sc ||
+          decision.type === ElementType.Mc
+        ) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.choicesResponse?.reduce<
+                Record<number, boolean>
+              >((acc, choice) => ({ ...acc, [choice]: true }), {}),
+              valid: true,
+            },
+          }
+        } else if (decision.type === ElementType.Kprim) {
+          const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce<
+            Record<number, boolean>
+          >((acc, choice) => ({ ...acc, [choice]: false }), {})
 
-        return {
-          ...acc,
-          [decision.instanceId]: {
-            type: decision.type,
-            response: decision.choicesResponse?.reduce(
-              (acc, choice) => ({ ...acc, [choice]: true }),
-              responseObj as Record<number, boolean>
-            ),
-            valid: true,
-          },
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.choicesResponse?.reduce<
+                Record<number, boolean>
+              >((acc, choice) => ({ ...acc, [choice]: true }), responseObj),
+              valid: true,
+            },
+          }
+        } else if (decision.type === ElementType.Numerical) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.numericalResponse
+                ? String(decision.numericalResponse)
+                : undefined,
+              valid: true,
+            },
+          }
+        } else if (decision.type === ElementType.FreeText) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.freeTextResponse ?? undefined,
+              valid: true,
+            },
+          }
+        } else if (decision.type === ElementType.Content) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.contentResponse ?? undefined,
+              valid: true,
+            },
+          }
+        } else {
+          return acc
         }
-      } else if (decision.type === ElementType.Numerical) {
-        return {
-          ...acc,
-          [decision.instanceId]: {
-            type: decision.type,
-            response: decision.numericalResponse
-              ? String(decision.numericalResponse)
-              : undefined,
-            valid: true,
-          },
-        }
-      } else if (decision.type === ElementType.FreeText) {
-        return {
-          ...acc,
-          [decision.instanceId]: {
-            type: decision.type,
-            response: decision.freeTextResponse ?? undefined,
-            valid: true,
-          },
-        }
-      } else if (decision.type === ElementType.Content) {
-        return {
-          ...acc,
-          [decision.instanceId]: {
-            type: decision.type,
-            response: decision.contentResponse ?? undefined,
-            valid: true,
-          },
-        }
-      } else {
-        return acc
-      }
-    }, {} as StudentResponseType)
+      },
+      {}
+    )
 
     setStudentResponse((prev) => loadedResponses || prev)
   }, [decisions])
@@ -247,34 +246,32 @@ function GroupActivityStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(
-                        value.response as Record<number, boolean>
-                      )
+                      const responseList = Object.entries(value.response!)
                         .filter(([, value]) => value)
                         .map(([key]) => parseInt(key))
 
                       return {
                         instanceId: parseInt(instanceId),
-                        type: value.type as ElementChoicesType,
+                        type: value.type,
                         choicesResponse: responseList,
                       }
                     } else if (value.type === ElementType.Numerical) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response as string),
+                        numericalResponse: parseFloat(value.response!),
                       }
                     } else if (value.type === ElementType.FreeText) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
-                        freeTextResponse: value.response as string,
+                        freeTextResponse: value.response,
                       }
                     } else if (value.type === ElementType.Content) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Content,
-                        contentReponse: value.response as boolean,
+                        contentReponse: value.response,
                       }
                     } else {
                       return {
