@@ -32,27 +32,27 @@ releases:
           clientSecret: '{{ requiredEnv "EDUID_CLIENT_SECRET" }}'
 
         auth:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendPWA:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendManage:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendControl:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
         backendGraphql:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
 
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
@@ -93,7 +93,7 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
-          replicaCount: {{ requiredEnv "APP_REPLICAS" }}
+          replicaCount: { { requiredEnv "APP_REPLICAS" } }
 
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
