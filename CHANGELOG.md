@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2024-10-24)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** add types package in docker build ([7953cdd](https://github.com/uzh-bf/klicker-uzh/commit/7953cdd5049113dadf426758e8efa6e0f87c6103))
+* **apps/frontend-manage:** ensure that course dates can be modified independent of stored activities ([#4336](https://github.com/uzh-bf/klicker-uzh/issues/4336)) ([2a12e2c](https://github.com/uzh-bf/klicker-uzh/commit/2a12e2c60d75548fb63efc7345f0e50c75f341b8))
+* ensure remark-math does not break the syncpack check ([86cbe69](https://github.com/uzh-bf/klicker-uzh/commit/86cbe6947a88d67ead8bb7270cfd57a14b714a46))
+* **packages/shared-components:** automatically show back side of flashcard when previous solution exists ([47d2ca7](https://github.com/uzh-bf/klicker-uzh/commit/47d2ca73d70fd3a087dd42d0462984f5de44c750))
+* resolve scrolling issues on asynchronous activity evaluation ([21c8c94](https://github.com/uzh-bf/klicker-uzh/commit/21c8c9415fa1f0c32b0b114755db06e85ec0910c))
+
+
+### Enhancements
+
+* add possibility to specify multiple exact correct solutions to numerical questions ([#4334](https://github.com/uzh-bf/klicker-uzh/issues/4334)) ([b6b3a32](https://github.com/uzh-bf/klicker-uzh/commit/b6b3a321c4ecbf3e78dfd8f4df86abea7f59406c))
+
+
+### Refactors
+
+* extend graphql typing, resolve type errors, refactor legacy logic ([#4326](https://github.com/uzh-bf/klicker-uzh/issues/4326)) ([3d6d722](https://github.com/uzh-bf/klicker-uzh/commit/3d6d7229be71a606149ee697f83412afc28f5456))
+* introduce proper element-dependent typing for question response and instance evaluation ([#4327](https://github.com/uzh-bf/klicker-uzh/issues/4327)) ([4d1421d](https://github.com/uzh-bf/klicker-uzh/commit/4d1421d58feabac2c518ba6567bed639989006a8))
+* restructure question edit modal and resolve type errors ([#4330](https://github.com/uzh-bf/klicker-uzh/issues/4330)) ([b9c7807](https://github.com/uzh-bf/klicker-uzh/commit/b9c7807a3f47713f0b4485d762cbd1ecb935e20f))
+
 ## [3.3.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2024-10-24)
 
 
