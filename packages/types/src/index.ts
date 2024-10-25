@@ -378,22 +378,22 @@ export type ElementResultsOpen = {
   total: number
 }
 
-export type FlashcardResults = {
+export type ElementResultsFlashcard = {
   [FlashcardCorrectness.INCORRECT]: number
   [FlashcardCorrectness.PARTIAL]: number
   [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
-export type ContentResults = {
+export type ElementResultsContent = {
   total: number
 }
 
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
-  | FlashcardResults
-  | ContentResults
+  | ElementResultsFlashcard
+  | ElementResultsContent
 
 export type GroupActivityDecision = {
   instanceId: number

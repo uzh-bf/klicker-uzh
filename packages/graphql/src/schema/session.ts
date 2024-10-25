@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
-  ContentResults as ContentResultsType,
   ElementResultsChoices as ElementResultsChoicesType,
+  ElementResultsContent as ElementResultsContentType,
+  ElementResultsFlashcard as ElementResultsFlashcardType,
   ElementResultsOpen as ElementResultsOpenType,
-  FlashcardResults as FlashcardResultsType,
   QuestionResults,
   SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
   SingleQuestionResponseContent as SingleQuestionResponseContentType,
@@ -338,7 +338,7 @@ export const ElementResultsOpen = ElementResultsOpenRef.implement({
 })
 
 export const ElementResultsFlashcardRef =
-  builder.objectRef<FlashcardResultsType>('ElementResultsFlashcard')
+  builder.objectRef<ElementResultsFlashcardType>('ElementResultsFlashcard')
 export const ElementResultsFlashcard = ElementResultsFlashcardRef.implement({
   fields: (t) => ({
     CORRECT: t.exposeInt(FlashcardCorrectnessEnum.CORRECT),
@@ -348,9 +348,8 @@ export const ElementResultsFlashcard = ElementResultsFlashcardRef.implement({
   }),
 })
 
-export const ElementResultsContentRef = builder.objectRef<ContentResultsType>(
-  'ElementResultsContent'
-)
+export const ElementResultsContentRef =
+  builder.objectRef<ElementResultsContentType>('ElementResultsContent')
 export const ElementResultsContent = ElementResultsContentRef.implement({
   fields: (t) => ({
     total: t.exposeInt('total'),
@@ -439,7 +438,7 @@ export interface IFlashcardQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseFlashcardType
-  aggregatedResponses: FlashcardResultsType
+  aggregatedResponses: ElementResultsFlashcardType
 }
 export const FlashcardQuestionResponse = builder
   .objectRef<IFlashcardQuestionResponse>('FlashcardQuestionResponse')
@@ -459,7 +458,7 @@ export interface IContentQuestionResponse
   extends Omit<DB.QuestionResponse, 'lastResponse' | 'aggregatedResponses'> {
   elementType: DB.ElementType
   lastResponse: SingleQuestionResponseContentType
-  aggregatedResponses: ContentResultsType
+  aggregatedResponses: ElementResultsContentType
 }
 export const ContentQuestionResponse = builder
   .objectRef<IContentQuestionResponse>('ContentQuestionResponse')
