@@ -2649,8 +2649,6 @@ export async function respondToElementStack(
 
 // ! Functions for Evaluation Fetching & Computation
 // #region
-// TODO: split up these function parts
-
 type CommonEvaluationProps = {
   id: number
   type: ElementType
