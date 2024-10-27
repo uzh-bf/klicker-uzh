@@ -691,7 +691,9 @@ async function respondToFlashcard(
     }
 
     const existingResponse =
-      existingInstance.responses.length > 0 && existingInstance.responses[0]
+      existingInstance.responses &&
+      existingInstance.responses.length > 0 &&
+      existingInstance.responses[0]
         ? existingInstance.responses[0]
         : null
 
@@ -1022,7 +1024,9 @@ async function respondToContent(
     }
 
     const existingResponse =
-      existingInstance.responses.length > 0 && existingInstance.responses[0]
+      existingInstance.responses &&
+      existingInstance.responses.length > 0 &&
+      existingInstance.responses[0]
         ? existingInstance.responses[0]
         : null
 
@@ -2157,7 +2161,9 @@ export async function respondToQuestion(
     }
 
     const existingResponse =
-      existingInstance.responses.length > 0 && existingInstance.responses[0]
+      existingInstance.responses &&
+      existingInstance.responses.length > 0 &&
+      existingInstance.responses[0]
         ? existingInstance.responses[0]
         : null
 
