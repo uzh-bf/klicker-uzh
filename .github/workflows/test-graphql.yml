@@ -30,5 +30,7 @@ jobs:
       - name: Test functions
         shell: bash
         run: |
-          cd packages/graphql
+          cd packages/types
+          pnpm run build
+          cd ../graphql
           pnpm run test
