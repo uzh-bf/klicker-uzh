@@ -24,13 +24,17 @@ import {
 } from '@klicker-uzh/prisma'
 import type {
   AllElementTypeData,
-  Choice,
   ChoicesElementData,
+  ContentElementData,
   ElementInstanceResults,
+  ElementOptionsChoices,
+  ElementOptionsFreeText,
+  ElementOptionsNumerical,
   ElementResultsChoices,
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
+  FlashcardElementData,
   FreeTextElementData,
   InstanceEvaluation,
   InstanceEvaluationChoices,
@@ -50,11 +54,7 @@ import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import type { Context } from '../lib/context.js'
-import type {
-  FreeTextQuestionOptions,
-  NumericalQuestionOptions,
-  ResponseInput,
-} from '../ops.js'
+import type { ResponseInput } from '../ops.js'
 
 type PrismaTransactionClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
@@ -2630,6 +2630,282 @@ export async function respondToElementStack(
 
 // ! Functions for Evaluation Fetching & Computation
 // #region
+// TODO: split up these function parts
+
+type CommonEvaluationProps = {
+  id: number
+  type: ElementType
+  name: string
+  content: string
+  explanation: string | null
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
+}
+
+function computeChoicesEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsChoices
+  results: ElementResultsChoices
+  anonymousResults: ElementResultsChoices
+  common: CommonEvaluationProps
+}) {
+  const choiceResults = results.choices
+  const anonymousChoiceResults = anonymousResults.choices
+  const availableChoices = options.choices
+
+  // combine anonymous and participant results into new format
+  const choices = availableChoices.map((choice) => {
+    return {
+      value: choice.value,
+      count:
+        (choiceResults[choice.ix] ?? 0) +
+        (anonymousChoiceResults[choice.ix] ?? 0),
+      correct: choice.correct,
+      feedback: choice.feedback,
+    }
+  })
+
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      choices,
+    },
+  }
+}
+
+function computeNumericalEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsNumerical
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  common: CommonEvaluationProps
+}) {
+  // combine anonymous and participant results into new format
+  const nrResponses = [
+    ...Object.values(results.responses),
+    ...Object.values(anonymousResults.responses),
+  ].reduce<{ value: number; count: number; correct?: boolean | null }[]>(
+    (acc, response) => {
+      const responseValue = parseFloat(response.value)
+      const ix = acc.findIndex(
+        (r) => Math.abs(r.value - responseValue) < Number.EPSILON
+      )
+      if (ix === -1) {
+        acc.push({
+          value: responseValue,
+          count: response.count,
+          correct: response.correct,
+        })
+      } else {
+        acc[ix] = {
+          ...acc[ix]!,
+          count: acc[ix]!.count + response.count,
+        }
+      }
+      return acc
+    },
+    []
+  )
+
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      maxValue: options.restrictions?.max,
+      minValue: options.restrictions?.min,
+      solutionRanges: options.solutionRanges,
+      responseValues: nrResponses,
+      // TODO: extend with statistics
+    },
+  }
+}
+
+function computeFreeTextEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsFreeText
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  common: CommonEvaluationProps
+}) {
+  // combine anonymous and participant results into new format
+  const ftResponses = [
+    ...Object.values(results.responses),
+    ...Object.values(anonymousResults.responses),
+  ].reduce<{ value: string; count: number; correct?: boolean | null }[]>(
+    (acc, response) => {
+      const ix = acc.findIndex((r) => r.value === response.value)
+      if (ix === -1) {
+        acc.push({
+          value: response.value,
+          count: response.count,
+          correct: response.correct,
+        })
+      } else {
+        acc[ix] = {
+          ...acc[ix]!,
+          count: acc[ix]!.count + response.count,
+        }
+      }
+      return acc
+    },
+    []
+  )
+
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      maxLength: options.restrictions?.maxLength,
+      solutions: options.solutions,
+      responses: ftResponses,
+    },
+  }
+}
+
+function computeFlashcardEvaluation({
+  results,
+  anonymousResults,
+  common,
+}: {
+  results: ElementResultsFlashcard
+  anonymousResults: ElementResultsFlashcard
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      correctCount:
+        results[FlashcardCorrectness.CORRECT] +
+        anonymousResults[FlashcardCorrectness.CORRECT],
+      partialCount:
+        results[FlashcardCorrectness.PARTIAL] +
+        anonymousResults[FlashcardCorrectness.PARTIAL],
+      incorrectCount:
+        results[FlashcardCorrectness.INCORRECT] +
+        anonymousResults[FlashcardCorrectness.INCORRECT],
+    },
+  }
+}
+
+function computeContentEvaluation({
+  results,
+  anonymousResults,
+  common,
+}: {
+  results: ElementResultsContent
+  anonymousResults: ElementResultsContent
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+    },
+  }
+}
+
+function computeInstanceEvaluation({
+  instance,
+}: {
+  instance: ElementInstance
+}) {
+  const hasSampleSolution =
+    'options' in instance.elementData &&
+    'hasSampleSolution' in instance.elementData.options
+      ? (instance.elementData.options.hasSampleSolution ?? false)
+      : false
+  const hasAnswerFeedbacks =
+    'options' in instance.elementData &&
+    'hasAnswerFeedbacks' in instance.elementData.options
+      ? (instance.elementData.options.hasAnswerFeedbacks ?? false)
+      : false
+
+  const instanceType = instance.elementData.type
+  const commonInstanceData = {
+    id: instance.id,
+    type: instanceType,
+    name: instance.elementData.name,
+    content: instance.elementData.content,
+    explanation: instance.elementData.explanation,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
+  }
+
+  if (
+    (instanceType === ElementType.SC ||
+      instanceType === ElementType.MC ||
+      instanceType === ElementType.KPRIM) &&
+    'choices' in instance.results &&
+    'choices' in instance.anonymousResults
+  ) {
+    return computeChoicesEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === ElementType.NUMERICAL &&
+    'responses' in instance.results &&
+    'responses' in instance.anonymousResults
+  ) {
+    return computeNumericalEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === ElementType.FREE_TEXT &&
+    'responses' in instance.results &&
+    'responses' in instance.anonymousResults
+  ) {
+    return computeFreeTextEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === ElementType.FLASHCARD &&
+    FlashcardCorrectness.CORRECT in instance.results &&
+    FlashcardCorrectness.CORRECT in instance.anonymousResults
+  ) {
+    return computeFlashcardEvaluation({
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (instanceType === ElementType.CONTENT) {
+    return computeContentEvaluation({
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  }
+
+  return undefined
+}
+
 export function computeStackEvaluation(
   stacks: (ElementStack & { elements: ElementInstance[] })[]
 ) {
@@ -2639,197 +2915,233 @@ export function computeStackEvaluation(
     stackDescription: stack.description,
     stackOrder: stack.order,
 
-    instances: stack.elements.flatMap((instance) => {
-      let hasSampleSolution = false
-      let hasAnswerFeedbacks = false
-      const instanceType = instance.elementData.type
-
-      if (
-        instanceType !== ElementType.FLASHCARD &&
-        instanceType !== ElementType.CONTENT
-      ) {
-        hasSampleSolution =
-          instance.elementData.options.hasSampleSolution ?? false
-        hasAnswerFeedbacks =
-          instance.elementData.options.hasAnswerFeedbacks ?? false
-      }
-
-      const commonInstanceData = {
-        id: instance.id,
-        type: instanceType,
-        name: instance.elementData.name,
-        content: instance.elementData.content,
-        explanation: instance.elementData.explanation,
-        hasSampleSolution,
-        hasAnswerFeedbacks,
-      }
-
-      switch (instanceType) {
-        case ElementType.SC:
-        case ElementType.MC:
-        case ElementType.KPRIM: {
-          const instanceResults = instance.results as ElementResultsChoices
-          const anonymousInstanceResults =
-            instance.anonymousResults as ElementResultsChoices
-          const choiceResults = instanceResults.choices
-          const anonymousChoiceResults = anonymousInstanceResults.choices
-          const availableChoices = instance.elementData.options
-            .choices as Choice[]
-
-          // combine anonymous and participant results into new format
-          const choices = availableChoices.map((choice) => {
-            return {
-              value: choice.value,
-              count:
-                (choiceResults[choice.ix] ?? 0) +
-                (anonymousChoiceResults[choice.ix] ?? 0),
-              correct: choice.correct,
-              feedback: choice.feedback,
-            }
-          })
-
-          return {
-            ...commonInstanceData,
-            results: {
-              totalAnswers:
-                instanceResults.total + anonymousInstanceResults.total,
-              anonymousAnswers: anonymousInstanceResults.total,
-              choices,
-            },
-          }
-        }
-
-        case ElementType.NUMERICAL: {
-          const instanceResults = instance.results as ElementResultsOpen
-          const anonymousInstanceResults =
-            instance.anonymousResults as ElementResultsOpen
-          const options = instance.elementData
-            .options as NumericalQuestionOptions
-
-          // combine anonymous and participant results into new format
-          const nrResponses = [
-            ...Object.values(instanceResults.responses),
-            ...Object.values(anonymousInstanceResults.responses),
-          ].reduce<
-            { value: number; count: number; correct?: boolean | null }[]
-          >((acc, response) => {
-            const responseValue = parseFloat(response.value)
-            const ix = acc.findIndex(
-              (r) => Math.abs(r.value - responseValue) < Number.EPSILON
-            )
-            if (ix === -1) {
-              acc.push({
-                value: responseValue,
-                count: response.count,
-                correct: response.correct,
-              })
-            } else {
-              acc[ix] = {
-                ...acc[ix]!,
-                count: acc[ix]!.count + response.count,
-              }
-            }
-            return acc
-          }, [])
-
-          return {
-            ...commonInstanceData,
-            results: {
-              totalAnswers:
-                instanceResults.total + anonymousInstanceResults.total,
-              anonymousAnswers: anonymousInstanceResults.total,
-              maxValue: options.restrictions?.max,
-              minValue: options.restrictions?.min,
-              solutionRanges: options.solutionRanges,
-              responseValues: nrResponses,
-              // TODO: extend with statistics
-            },
-          }
-        }
-
-        case ElementType.FREE_TEXT: {
-          const instanceResults = instance.results as ElementResultsOpen
-          const anonymousInstanceResults =
-            instance.anonymousResults as ElementResultsOpen
-          const options = instance.elementData
-            .options as FreeTextQuestionOptions
-
-          // combine anonymous and participant results into new format
-          const ftResponses = [
-            ...Object.values(instanceResults.responses),
-            ...Object.values(anonymousInstanceResults.responses),
-          ].reduce<
-            { value: string; count: number; correct?: boolean | null }[]
-          >((acc, response) => {
-            const ix = acc.findIndex((r) => r.value === response.value)
-            if (ix === -1) {
-              acc.push({
-                value: response.value,
-                count: response.count,
-                correct: response.correct,
-              })
-            } else {
-              acc[ix] = {
-                ...acc[ix]!,
-                count: acc[ix]!.count + response.count,
-              }
-            }
-            return acc
-          }, [])
-
-          return {
-            ...commonInstanceData,
-            results: {
-              totalAnswers:
-                instanceResults.total + anonymousInstanceResults.total,
-              anonymousAnswers: anonymousInstanceResults.total,
-              maxLength: options.restrictions?.maxLength,
-              solutions: options.solutions,
-              responses: ftResponses,
-            },
-          }
-        }
-
-        case ElementType.FLASHCARD: {
-          const instanceResults = instance.results as ElementResultsFlashcard
-          const anonymousInstanceResults =
-            instance.anonymousResults as ElementResultsFlashcard
-
-          return {
-            ...commonInstanceData,
-            results: {
-              totalAnswers:
-                instanceResults.total + anonymousInstanceResults.total,
-              anonymousAnswers: anonymousInstanceResults.total,
-              correctCount:
-                instanceResults[FlashcardCorrectness.CORRECT] +
-                anonymousInstanceResults[FlashcardCorrectness.CORRECT],
-              partialCount:
-                instanceResults[FlashcardCorrectness.PARTIAL] +
-                anonymousInstanceResults[FlashcardCorrectness.PARTIAL],
-              incorrectCount:
-                instanceResults[FlashcardCorrectness.INCORRECT] +
-                anonymousInstanceResults[FlashcardCorrectness.INCORRECT],
-            },
-          }
-        }
-
-        case ElementType.CONTENT: {
-          return {
-            ...commonInstanceData,
-            results: {
-              totalAnswers:
-                instance.results.total + instance.anonymousResults.total,
-              anonymousAnswers: instance.anonymousResults.total,
-            },
-          }
-        }
-
-        default:
-          return []
-      }
-    }),
+    instances: stack.elements
+      .map((instance) => computeInstanceEvaluation({ instance }))
+      .filter((instance) => typeof instance !== 'undefined'),
   }))
+}
+
+type EvaluationAggregationReturn = {
+  evaluation: InstanceEvaluation | undefined
+  newStatus: StackFeedbackStatus
+  stackScore: number | undefined
+}
+
+function getPreviousEvaluationFlashcard({
+  instanceId,
+  elementData,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: FlashcardElementData
+  lastResponse: SingleQuestionResponseFlashcard
+}): EvaluationAggregationReturn {
+  return {
+    evaluation: {
+      ...elementData,
+      instanceId,
+      elementType: ElementType.FLASHCARD,
+      score: 0,
+      correctness: null,
+      lastResponse,
+    },
+    newStatus: flashcardResultMap[lastResponse.correctness],
+    stackScore: undefined,
+  }
+}
+
+function getPreviousEvaluationContent({
+  instanceId,
+  elementData,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: ContentElementData
+  lastResponse: SingleQuestionResponseContent
+}): EvaluationAggregationReturn {
+  return {
+    evaluation: {
+      ...elementData,
+      instanceId,
+      elementType: ElementType.CONTENT,
+      score: 0,
+      correctness: 1,
+      lastResponse,
+    },
+    newStatus: StackFeedbackStatus.CORRECT,
+    stackScore: undefined,
+  }
+}
+
+function getPreviousEvaluationChoices({
+  instanceId,
+  elementData,
+  multiplier,
+  results,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: ChoicesElementData
+  multiplier: number | undefined
+  results: ElementResultsChoices
+  lastResponse: SingleQuestionResponseChoices
+}): EvaluationAggregationReturn {
+  const correctness = evaluateChoicesAnswerCorrectness({
+    elementData,
+    response: lastResponse,
+  })
+
+  const instanceEvaluation = evaluateChoicesElementResponse(
+    elementData,
+    results,
+    correctness,
+    multiplier
+  )
+
+  // if evaluation cannot be computed, return early
+  if (!instanceEvaluation) {
+    return {
+      evaluation: undefined,
+      newStatus: StackFeedbackStatus.UNANSWERED,
+      stackScore: undefined,
+    }
+  }
+
+  return {
+    evaluation: {
+      ...instanceEvaluation,
+      ...elementData,
+      instanceId,
+      pointsAwarded: instanceEvaluation.score,
+      xpAwarded: instanceEvaluation.xp ?? undefined,
+      correctness,
+      lastResponse,
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: instanceEvaluation.score,
+  }
+}
+
+function getPreviousEvaluationNumerical({
+  instanceId,
+  elementData,
+  multiplier,
+  results,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: NumericalElementData
+  multiplier: number | undefined
+  results: ElementResultsOpen
+  lastResponse: SingleQuestionResponseValue
+}) {
+  const correctness = evaluateNumericalAnswerCorrectness({
+    elementData,
+    response: lastResponse,
+  })
+
+  const instanceEvaluation = evaluateNumericalElementResponse(
+    elementData,
+    results,
+    correctness,
+    multiplier
+  )
+
+  // if evaluation cannot be computed, return early
+  if (!instanceEvaluation) {
+    return {
+      evaluation: undefined,
+      newStatus: StackFeedbackStatus.UNANSWERED,
+      stackScore: undefined,
+    }
+  }
+
+  return {
+    evaluation: {
+      ...instanceEvaluation,
+      ...elementData,
+      instanceId,
+      pointsAwarded: instanceEvaluation.score,
+      xpAwarded: instanceEvaluation.xp ?? undefined,
+      solutionRanges:
+        elementData.options.hasSampleSolution &&
+        elementData.options.solutionRanges
+          ? elementData.options.solutionRanges
+          : [],
+      correctness,
+      lastResponse,
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: instanceEvaluation.score,
+  }
+}
+
+function getPreviousEvaluationFreeText({
+  instanceId,
+  elementData,
+  multiplier,
+  results,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: FreeTextElementData
+  multiplier: number | undefined
+  results: ElementResultsOpen
+  lastResponse: SingleQuestionResponseValue
+}) {
+  const correctness = evaluateFreeTextAnswerCorrectness({
+    elementData,
+    response: lastResponse,
+  })
+
+  const instanceEvaluation = evaluateFreeTextElementResponse(
+    elementData,
+    results,
+    correctness,
+    multiplier
+  )
+
+  // if evaluation cannot be computed, return early
+  if (!instanceEvaluation) {
+    return {
+      evaluation: undefined,
+      newStatus: StackFeedbackStatus.UNANSWERED,
+      stackScore: undefined,
+    }
+  }
+
+  return {
+    evaluation: {
+      ...instanceEvaluation,
+      ...elementData,
+      instanceId,
+      pointsAwarded: instanceEvaluation.score,
+      xpAwarded: instanceEvaluation.xp ?? undefined,
+      solutions:
+        elementData.options.hasSampleSolution && elementData.options.solutions
+          ? elementData.options.solutions
+          : [],
+      correctness,
+      lastResponse,
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: instanceEvaluation.score,
+  }
 }
 
 export async function getPreviousStackEvaluation(
@@ -2867,183 +3179,131 @@ export async function getPreviousStackEvaluation(
   }
 
   // aggregate the evaluation content from the responses
-  let stackScore: number | undefined = undefined
-  let stackFeedback = StackFeedbackStatus.UNANSWERED
-
-  const evaluations: InstanceEvaluation[] = stack.elements.flatMap(
-    (element) => {
-      if (!element.responses || element.responses.length === 0) {
-        return []
+  const { evaluations, stackScore, stackFeedback } = stack.elements.reduce<{
+    evaluations: InstanceEvaluation[]
+    stackScore: number | undefined
+    stackFeedback: StackFeedbackStatus
+  }>(
+    (acc, element) => {
+      if (
+        !element.responses ||
+        element.responses.length === 0 ||
+        element.responses[0] === null ||
+        typeof element.responses[0] === 'undefined'
+      ) {
+        return acc
       }
 
-      if (element.elementType === ElementType.FLASHCARD) {
-        const lastResponse = element.responses[0]!
-          .lastResponse as SingleQuestionResponseFlashcard
-        stackFeedback = combineStackStatus({
-          prevStatus: stackFeedback,
-          newStatus: flashcardResultMap[lastResponse.correctness],
-        })
-
-        return {
-          ...element.elementData,
+      if (element.elementData.type === ElementType.FLASHCARD) {
+        const { evaluation, newStatus } = getPreviousEvaluationFlashcard({
           instanceId: element.id,
-          elementType: ElementType.FLASHCARD,
-          score: 0,
-          correctness: null,
-          lastResponse: element.responses[0]!
+          elementData: element.elementData as FlashcardElementData,
+          lastResponse: element.responses[0]
             .lastResponse as SingleQuestionResponseFlashcard,
-        }
-      } else if (element.elementType === ElementType.CONTENT) {
-        stackFeedback = combineStackStatus({
-          prevStatus: stackFeedback,
-          newStatus: StackFeedbackStatus.CORRECT,
         })
 
-        return {
-          ...element.elementData,
+        if (typeof evaluation !== 'undefined') {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+        }
+      } else if (element.elementData.type === ElementType.CONTENT) {
+        const { evaluation, newStatus } = getPreviousEvaluationContent({
           instanceId: element.id,
-          elementType: ElementType.CONTENT,
-          score: 0,
-          correctness: 1,
-          lastResponse: element.responses[0]!
+          elementData: element.elementData,
+          lastResponse: element.responses[0]
             .lastResponse as SingleQuestionResponseContent,
+        })
+
+        if (typeof evaluation !== 'undefined') {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
         }
       } else if (
         (element.elementData.type === ElementType.SC ||
           element.elementData.type === ElementType.MC ||
           element.elementData.type === ElementType.KPRIM) &&
-        (element.elementType === ElementType.SC ||
-          element.elementType === ElementType.MC ||
-          element.elementType === ElementType.KPRIM)
+        'choices' in element.results
       ) {
-        const elementData = element.elementData
-        const lastResponse = element.responses[0]!
-          .lastResponse as SingleQuestionResponseChoices
-        const correctness = evaluateChoicesAnswerCorrectness({
-          elementData,
-          response: lastResponse,
-        })
+        const { evaluation, newStatus, stackScore } =
+          getPreviousEvaluationChoices({
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            results: element.results,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseChoices,
+          })
 
-        const evaluation = evaluateChoicesElementResponse(
-          elementData,
-          element.results as ElementResultsChoices,
-          correctness,
-          element.options.pointsMultiplier
-        )
-
-        // update stack aggregates
-        stackFeedback = combineStackStatus({
-          prevStatus: stackFeedback,
-          newStatus:
-            correctness === 1
-              ? StackFeedbackStatus.CORRECT
-              : correctness === 0
-                ? StackFeedbackStatus.INCORRECT
-                : StackFeedbackStatus.PARTIAL,
-        })
-        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
-
-        return {
-          ...evaluation,
-          ...element.elementData,
-          instanceId: element.id,
-          pointsAwarded: evaluation?.score,
-          xpAwarded: evaluation?.xp,
-          correctness,
-          lastResponse,
-        } as InstanceEvaluation
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
       } else if (
         element.elementData.type === ElementType.NUMERICAL &&
-        element.elementType === ElementType.NUMERICAL
+        'responses' in element.results
       ) {
-        const elementData = element.elementData
-        const lastResponse = element.responses[0]!
-          .lastResponse as SingleQuestionResponseValue
-        const correctness = evaluateNumericalAnswerCorrectness({
-          elementData,
-          response: lastResponse,
-        })
+        const { evaluation, newStatus, stackScore } =
+          getPreviousEvaluationNumerical({
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            results: element.results,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseValue,
+          })
 
-        const evaluation = evaluateNumericalElementResponse(
-          elementData,
-          element.results as ElementResultsOpen,
-          correctness,
-          element.options.pointsMultiplier
-        )
-
-        // update stack aggregates
-        stackFeedback = combineStackStatus({
-          prevStatus: stackFeedback,
-          newStatus:
-            correctness === 1
-              ? StackFeedbackStatus.CORRECT
-              : correctness === 0
-                ? StackFeedbackStatus.INCORRECT
-                : StackFeedbackStatus.PARTIAL,
-        })
-        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
-
-        return {
-          ...evaluation,
-          ...element.elementData,
-          instanceId: element.id,
-          pointsAwarded: evaluation?.score,
-          xpAwarded: evaluation?.xp,
-          solutionRanges: elementData.options.hasSampleSolution
-            ? elementData.options.solutionRanges
-            : [],
-          correctness,
-          lastResponse,
-        } as InstanceEvaluation
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
       } else if (
         element.elementData.type === ElementType.FREE_TEXT &&
-        element.elementType === ElementType.FREE_TEXT
+        'responses' in element.results
       ) {
-        const elementData = element.elementData
-        const lastResponse = element.responses[0]!
-          .lastResponse as SingleQuestionResponseValue
-        const correctness = evaluateFreeTextAnswerCorrectness({
-          elementData,
-          response: lastResponse,
-        })
+        const { evaluation, newStatus, stackScore } =
+          getPreviousEvaluationFreeText({
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            results: element.results,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseValue,
+          })
 
-        const evaluation = evaluateFreeTextElementResponse(
-          elementData,
-          element.results as ElementResultsOpen,
-          correctness,
-          element.options.pointsMultiplier
-        )
-
-        // update stack aggregates
-        stackFeedback = combineStackStatus({
-          prevStatus: stackFeedback,
-          newStatus:
-            correctness === 1
-              ? StackFeedbackStatus.CORRECT
-              : correctness === 0
-                ? StackFeedbackStatus.INCORRECT
-                : StackFeedbackStatus.PARTIAL,
-        })
-        stackScore = (stackScore ?? 0) + (evaluation?.score ?? 0)
-
-        return {
-          ...evaluation,
-          ...element.elementData,
-          instanceId: element.id,
-          pointsAwarded: evaluation?.score,
-          xpAwarded: evaluation?.xp,
-          solutions: elementData.options.hasSampleSolution
-            ? elementData.options.solutions
-            : [],
-          correctness,
-          lastResponse,
-        } as InstanceEvaluation
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
       } else {
         throw new Error(
-          'Evaluation of previous stack answers not implemented for type ' +
-            element.elementType
+          `Evaluation aggregation for element type ${element.elementData.type} not implemented`
         )
       }
+
+      return acc
+    },
+    {
+      evaluations: [],
+      stackScore: undefined,
+      stackFeedback: StackFeedbackStatus.UNANSWERED,
     }
   )
 
