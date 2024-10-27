@@ -429,13 +429,16 @@ function computeFlashcardResponseContent({
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
 } {
+  const prevResponses = existingResponse?.aggregatedResponses
   const aggregatedResponses =
-    (existingResponse?.aggregatedResponses as ElementResultsFlashcard) ?? {
-      [FlashcardCorrectness.INCORRECT]: 0,
-      [FlashcardCorrectness.PARTIAL]: 0,
-      [FlashcardCorrectness.CORRECT]: 0,
-      total: 0,
-    }
+    prevResponses && FlashcardCorrectness.CORRECT in prevResponses
+      ? prevResponses
+      : {
+          [FlashcardCorrectness.INCORRECT]: 0,
+          [FlashcardCorrectness.PARTIAL]: 0,
+          [FlashcardCorrectness.CORRECT]: 0,
+          total: 0,
+        }
 
   const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
   const correctness =
@@ -679,7 +682,11 @@ async function respondToFlashcard(
       response,
     })
 
-    if (!existingInstance) {
+    if (
+      !existingInstance ||
+      !(FlashcardCorrectness.CORRECT in existingInstance.results) ||
+      !(FlashcardCorrectness.PARTIAL in existingInstance.anonymousResults)
+    ) {
       return null
     }
 
@@ -691,8 +698,8 @@ async function respondToFlashcard(
     // compute new aggregated results on element instance
     const newResults = updateFlashcardResults({
       previousResults: participation
-        ? (existingInstance.results as ElementResultsFlashcard)
-        : (existingInstance.anonymousResults as ElementResultsFlashcard),
+        ? existingInstance.results
+        : existingInstance.anonymousResults,
       response,
     })
 
@@ -1071,10 +1078,9 @@ async function respondToContent(
       participantId: ctx.user.sub,
     })
 
-    const aggregatedResponses =
-      (existingResponse?.aggregatedResponses as ElementResultsContent) ?? {
-        total: 0,
-      }
+    const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
+      total: 0,
+    }
 
     const resultSpacedRepetition = updateSpacedRepetition({
       eFactor: existingResponse?.eFactor ?? 2.5,
@@ -1280,27 +1286,34 @@ function computeQuestionEvaluation({
   multiplier?: number
 }) {
   if (
-    elementData.type === ElementType.SC ||
-    elementData.type === ElementType.MC ||
-    elementData.type === ElementType.KPRIM
+    (elementData.type === ElementType.SC ||
+      elementData.type === ElementType.MC ||
+      elementData.type === ElementType.KPRIM) &&
+    'choices' in results
   ) {
     return evaluateChoicesElementResponse(
       elementData,
-      results as ElementResultsChoices,
+      results,
       correctness,
       multiplier
     )
-  } else if (elementData.type === ElementType.NUMERICAL) {
+  } else if (
+    elementData.type === ElementType.NUMERICAL &&
+    'responses' in results
+  ) {
     return evaluateNumericalElementResponse(
       elementData,
-      results as ElementResultsOpen,
+      results,
       correctness,
       multiplier
     )
-  } else if (elementData.type === ElementType.FREE_TEXT) {
+  } else if (
+    elementData.type === ElementType.FREE_TEXT &&
+    'responses' in results
+  ) {
     return evaluateFreeTextElementResponse(
       elementData,
-      results as ElementResultsOpen,
+      results,
       correctness,
       multiplier
     )
@@ -1567,23 +1580,23 @@ function updateQuestionResults({
   modified: boolean
 } {
   let correctness: number | null
-  let updatedResults: ElementInstanceResults
   const elementData = existingInstance.elementData
   const previousResults = participation
     ? existingInstance.results
     : existingInstance.anonymousResults
 
   if (
-    elementData.type === ElementType.SC ||
-    elementData.type === ElementType.MC ||
-    elementData.type === ElementType.KPRIM
+    (elementData.type === ElementType.SC ||
+      elementData.type === ElementType.MC ||
+      elementData.type === ElementType.KPRIM) &&
+    'choices' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
       ? evaluateChoicesAnswerCorrectness({ elementData, response })
       : 1
 
     const res = updateChoicesResults({
-      previousResults: previousResults as ElementResultsChoices,
+      previousResults: previousResults,
       response,
     })
 
@@ -1591,13 +1604,16 @@ function updateQuestionResults({
       ...res,
       correctness,
     }
-  } else if (elementData.type === ElementType.NUMERICAL) {
+  } else if (
+    elementData.type === ElementType.NUMERICAL &&
+    'responses' in previousResults
+  ) {
     correctness = elementData.options.hasSampleSolution
       ? evaluateNumericalAnswerCorrectness({ elementData, response })
       : 1
 
     const res = updateNumericalResults({
-      previousResults: previousResults as ElementResultsOpen,
+      previousResults: previousResults,
       elementData,
       response,
       correct: correctness === 1,
@@ -1607,13 +1623,16 @@ function updateQuestionResults({
       ...res,
       correctness,
     }
-  } else if (elementData.type === ElementType.FREE_TEXT) {
+  } else if (
+    elementData.type === ElementType.FREE_TEXT &&
+    'responses' in previousResults
+  ) {
     correctness = elementData.options.hasSampleSolution
       ? evaluateFreeTextAnswerCorrectness({ elementData, response })
       : 1
 
     const res = updateFreeTextResults({
-      previousResults: previousResults as ElementResultsOpen,
+      previousResults: previousResults,
       elementData,
       response,
       correct: correctness === 1,

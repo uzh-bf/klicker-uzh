@@ -12,8 +12,6 @@ import {
 } from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
-  ElementResultsChoices,
-  ElementResultsOpen,
   ResponseCorrectness,
   type StackInput,
 } from '@klicker-uzh/types'
@@ -1508,26 +1506,33 @@ export async function submitGroupActivityDecisions(
           modified: boolean
         }
         if (
-          inputResponse.type === ElementType.SC ||
-          inputResponse.type === ElementType.MC ||
-          inputResponse.type === ElementType.KPRIM
+          (inputResponse.type === ElementType.SC ||
+            inputResponse.type === ElementType.MC ||
+            inputResponse.type === ElementType.KPRIM) &&
+          'choices' in instance.results
         ) {
           response = { choices: inputResponse.choicesResponse }
           updatedResults = updateChoicesResults({
-            previousResults: instance.results as ElementResultsChoices,
+            previousResults: instance.results,
             response: response,
           })
-        } else if (inputResponse.type === ElementType.NUMERICAL) {
+        } else if (
+          inputResponse.type === ElementType.NUMERICAL &&
+          'responses' in instance.results
+        ) {
           response = { value: String(inputResponse.numericalResponse) }
           updatedResults = updateNumericalResults({
-            previousResults: instance.results as ElementResultsOpen,
+            previousResults: instance.results,
             elementData: instance.elementData,
             response: response,
           })
-        } else if (inputResponse.type === ElementType.FREE_TEXT) {
+        } else if (
+          inputResponse.type === ElementType.FREE_TEXT &&
+          'responses' in instance.results
+        ) {
           response = { value: inputResponse.freeTextResponse }
           updatedResults = updateFreeTextResults({
-            previousResults: instance.results as ElementResultsOpen,
+            previousResults: instance.results,
             elementData: instance.elementData,
             response: response,
           })
