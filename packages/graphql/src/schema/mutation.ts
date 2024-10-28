@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
@@ -234,7 +235,7 @@ export const Mutation = builder.mutationType({
           stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToElementStack(args, ctx)
+          return StacksService.respondToElementStack(args, ctx)
         },
       }),
 

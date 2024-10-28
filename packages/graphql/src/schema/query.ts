@@ -9,6 +9,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as SessionService from '../services/sessions.js'
+import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import {
   Course,
@@ -336,7 +337,7 @@ export const Query = builder.queryType({
           stackId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
+          return StacksService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 

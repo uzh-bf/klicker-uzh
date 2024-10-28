@@ -10,7 +10,11 @@ import {
   type Participant,
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
-import { ResponseCorrectness, type StackInput } from '@klicker-uzh/types'
+import {
+  ElementInstanceResults,
+  ResponseCorrectness,
+  type StackInput,
+} from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -19,7 +23,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import type { ElementInstanceOptions } from 'src/ops.js'
+import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -36,8 +40,10 @@ import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
   type RespondToElementStackInput,
-  updateQuestionResults,
-} from './practiceQuizzes.js'
+  updateChoicesResults,
+  updateFreeTextResults,
+  updateNumericalResults,
+} from './stacks.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
@@ -1493,30 +1499,49 @@ export async function submitGroupActivityDecisions(
         })
         if (!instance || !instance.elementData) return []
 
-        let response
+        // compute the updated results
+        let response: ResponseInput
+        let updatedResults: {
+          results: ElementInstanceResults
+          modified: boolean
+        }
         if (
-          inputResponse.type === ElementType.SC ||
-          inputResponse.type === ElementType.MC ||
-          inputResponse.type === ElementType.KPRIM
+          (inputResponse.type === ElementType.SC ||
+            inputResponse.type === ElementType.MC ||
+            inputResponse.type === ElementType.KPRIM) &&
+          'choices' in instance.results
         ) {
           response = { choices: inputResponse.choicesResponse }
-        } else if (inputResponse.type === ElementType.NUMERICAL) {
+          updatedResults = updateChoicesResults({
+            previousResults: instance.results,
+            response: response,
+          })
+        } else if (
+          inputResponse.type === ElementType.NUMERICAL &&
+          'responses' in instance.results
+        ) {
           response = { value: String(inputResponse.numericalResponse) }
-        } else if (inputResponse.type === ElementType.FREE_TEXT) {
+          updatedResults = updateNumericalResults({
+            previousResults: instance.results,
+            elementData: instance.elementData,
+            response: response,
+          })
+        } else if (
+          inputResponse.type === ElementType.FREE_TEXT &&
+          'responses' in instance.results
+        ) {
           response = { value: inputResponse.freeTextResponse }
+          updatedResults = updateFreeTextResults({
+            previousResults: instance.results,
+            elementData: instance.elementData,
+            response: response,
+          })
         } else {
           console.log('Element type not supported for group activity')
           return
         }
 
-        // compute the updated results
-        const updatedResults = updateQuestionResults({
-          previousResults: instance.results,
-          elementData: instance.elementData,
-          response: response,
-        })
-
-        if (!updatedResults.results) return
+        if (!updatedResults.modified) return
 
         // update the instance with the new results
         await prisma.elementInstance.update({

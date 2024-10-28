@@ -3,7 +3,7 @@ import {
   splitGroupsRunning,
 } from '../src/lib/randomizedGroups.js'
 
-describe('@klicker-uzh/graphql', () => {
+describe('Test the random group assignment', () => {
   it('Test the random group assignment on a running basis', () => {
     const participantIds = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
