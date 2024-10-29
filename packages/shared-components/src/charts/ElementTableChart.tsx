@@ -6,9 +6,9 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationTableColumns from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationTableColumns'
-import useEvaluationTableData from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationTableData'
 import DataTable from '../DataTable'
+import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
+import useEvaluationTableData from '../hooks/useEvaluationTableData'
 
 export type EvaluationTableRowType = {
   count: number

@@ -15,7 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationHistogramData from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationHistogramData'
+import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
 
 interface ElementHistogramProps {
   type: ElementType

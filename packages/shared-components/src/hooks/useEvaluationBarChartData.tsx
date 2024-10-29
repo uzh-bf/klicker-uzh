@@ -1,4 +1,4 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import type { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { SMALL_BAR_THRESHOLD } from '@klicker-uzh/shared-components/src/constants'
 import { useMemo } from 'react'
 

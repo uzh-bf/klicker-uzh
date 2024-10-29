@@ -1,5 +1,5 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { EvaluationTableRowType } from '../charts/ElementTableChart'
+import { type ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { type EvaluationTableRowType } from '../charts/ElementTableChart'
 
 interface UseEvaluationTableColumnsProps {
   instance: ElementInstanceEvaluation

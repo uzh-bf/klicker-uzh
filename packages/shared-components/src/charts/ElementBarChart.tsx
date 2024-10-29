@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import useEvaluationBarChartData from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationBarChartData'
+import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
 
 interface ElementBarChartProps {
   instance: ElementInstanceEvaluation
