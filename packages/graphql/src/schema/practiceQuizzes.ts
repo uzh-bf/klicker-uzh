@@ -1,11 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   FlashcardCorrectness,
-  type InstanceEvaluation as InstanceEvaluationType,
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
+import { IStackFeedback } from './evaluation.js'
 import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 import { ElementType } from './questionData.js'
 
@@ -63,12 +63,6 @@ export const StackResponseInput = builder.inputType('StackResponseInput', {
   }),
 })
 
-export interface IStackFeedback {
-  id: number
-  status: StackFeedbackStatusType
-  score?: number
-  evaluations?: InstanceEvaluationType[]
-}
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
   .implement({

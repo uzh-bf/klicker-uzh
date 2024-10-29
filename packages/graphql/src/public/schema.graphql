@@ -662,7 +662,7 @@ type FreeTextElementData {
 }
 
 type FreeTextInstanceEvaluation {
-  answers: Json
+  answers: [SingleFreeTextResponse!]
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -1117,7 +1117,6 @@ type NumericalElementSolutions {
 }
 
 type NumericalInstanceEvaluation {
-  answers: Json
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -1130,6 +1129,7 @@ type NumericalInstanceEvaluation {
   percentile: Float
   pointsAwarded: Float
   pointsMultiplier: Int!
+  responses: [SingleNumericalResponse!]
   score: Float!
   solutionRanges: [NumericalSolutionRange!]
   xp: Int
@@ -1510,6 +1510,16 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type SingleFreeTextResponse {
+  count: Int!
+  value: String!
+}
+
+type SingleNumericalResponse {
+  count: Int!
+  value: Float!
 }
 
 type SingleQuestionResponseChoices {

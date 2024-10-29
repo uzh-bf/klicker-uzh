@@ -1,15 +1,26 @@
 import * as DB from '@klicker-uzh/prisma'
-import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/types'
+import {
+  FlashcardCorrectness as FlashcardCorrectnessType,
+  InstanceEvaluation as IInstanceEvaluation,
+  StackFeedbackStatus as StackFeedbackStatusType,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementType } from './questionData.js'
 
-// TODO: move types to separate file with type definitions?
+// TODO: move types to separate file with type definitions in types directory (if no graphql types are used)
 export interface IActivityEvaluation {
   id: string
   name: string
   displayName?: string | null
   description?: string | null
   results: IStackEvaluation[]
+}
+
+export interface IStackFeedback {
+  id: number
+  status: StackFeedbackStatusType
+  score?: number
+  evaluations?: IInstanceEvaluation[]
 }
 
 export interface IStackEvaluation {

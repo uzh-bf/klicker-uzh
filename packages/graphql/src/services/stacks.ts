@@ -24,6 +24,7 @@ import {
 } from '@klicker-uzh/prisma'
 import type {
   AllElementTypeData,
+  Choice,
   ChoicesElementData,
   ContentElementData,
   ElementInstanceResults,
@@ -1130,7 +1131,7 @@ type ChoicesEvaluationReturnType = Pick<
 >
 type NumericalEvaluationReturnType = Pick<
   InstanceEvaluationNumerical,
-  SharedEvaluationProps | 'solutionRanges' | 'answers'
+  SharedEvaluationProps | 'solutionRanges' | 'responses'
 >
 type FreeTextEvaluationReturnType = Pick<
   InstanceEvaluationFreeText,
@@ -1166,83 +1167,74 @@ async function getValidateQuestionInstance({
   return existingInstance
 }
 
-function evaluateChoicesElementResponse(
-  elementData: ChoicesElementData,
-  results: ElementResultsChoices,
-  correctness: number | null,
+function evaluateChoicesElementResponse({
+  elementData,
+  results,
+  anonymousResults,
+  correctness,
+  multiplier,
+}: {
+  elementData: ChoicesElementData
+  results: ElementResultsChoices
+  anonymousResults: ElementResultsChoices
+  correctness: number | null
   multiplier?: number
-): ChoicesEvaluationReturnType | null {
+}): ChoicesEvaluationReturnType | null {
   const elementOptions = elementData.options
   const feedbacks = elementOptions.choices
+  const combinedResults = combineChoicesResults({
+    choices: elementData.options.choices,
+    results: results.choices,
+    anonymousResults: anonymousResults.choices,
+  })
+  const combinedChoices = combinedResults.reduce<Record<string, number>>(
+    (acc, choice) => {
+      acc[String(choice.ix)] = choice.count
+      return acc
+    },
+    {}
+  )
 
-  if (elementData.type === ElementType.SC) {
-    return {
-      elementType: ElementType.SC,
-      feedbacks,
-      numAnswers: results.total,
-      choices: results.choices,
-      score: computeSimpleAwardedPoints({
-        points: POINTS_PER_INSTANCE,
-        pointsPercentage: correctness,
-        pointsMultiplier: multiplier,
-      }),
-      xp: computeAwardedXp({
-        pointsPercentage: correctness,
-      }),
-      percentile: correctness ?? 0,
-      pointsMultiplier: multiplier ?? 1,
-      explanation: elementData.explanation,
-    }
-  } else if (elementData.type === ElementType.MC) {
-    return {
-      elementType: ElementType.MC,
-      feedbacks,
-      numAnswers: results.total,
-      choices: results.choices,
-      score: computeSimpleAwardedPoints({
-        points: POINTS_PER_INSTANCE,
-        pointsPercentage: correctness,
-        pointsMultiplier: multiplier,
-      }),
-      xp: computeAwardedXp({
-        pointsPercentage: correctness,
-      }),
-      percentile: correctness ?? 0,
-      pointsMultiplier: multiplier ?? 1,
-      explanation: elementData.explanation,
-    }
-  } else {
-    return {
-      elementType: ElementType.KPRIM,
-      feedbacks,
-      numAnswers: results.total,
-      choices: results.choices,
-      score: computeSimpleAwardedPoints({
-        points: POINTS_PER_INSTANCE,
-        pointsPercentage: correctness,
-        pointsMultiplier: multiplier,
-      }),
-      xp: computeAwardedXp({
-        pointsPercentage: correctness,
-      }),
-      percentile: correctness ?? 0,
-      pointsMultiplier: multiplier ?? 1,
-      explanation: elementData.explanation,
-    }
+  return {
+    elementType: elementData.type,
+    feedbacks,
+    numAnswers: results.total + anonymousResults.total,
+    choices: combinedChoices,
+    score: computeSimpleAwardedPoints({
+      points: POINTS_PER_INSTANCE,
+      pointsPercentage: correctness,
+      pointsMultiplier: multiplier,
+    }),
+    xp: computeAwardedXp({
+      pointsPercentage: correctness,
+    }),
+    percentile: correctness ?? 0,
+    pointsMultiplier: multiplier ?? 1,
+    explanation: elementData.explanation,
   }
 }
 
-function evaluateNumericalElementResponse(
-  elementData: NumericalElementData,
-  results: ElementResultsOpen,
-  correctness: number | null,
+function evaluateNumericalElementResponse({
+  elementData,
+  results,
+  anonymousResults,
+  correctness,
+  multiplier,
+}: {
+  elementData: NumericalElementData
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  correctness: number | null
   multiplier?: number
-): NumericalEvaluationReturnType | null {
+}): NumericalEvaluationReturnType | null {
   return {
     elementType: ElementType.NUMERICAL,
     feedbacks: [],
-    numAnswers: results.total,
-    answers: results?.responses ?? {},
+    numAnswers: results.total + anonymousResults.total,
+    responses: combineNumericalResults({
+      results,
+      anonymousResults,
+    }),
     score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
     xp: computeAwardedXp({
       pointsPercentage: correctness,
@@ -1254,19 +1246,27 @@ function evaluateNumericalElementResponse(
   }
 }
 
-function evaluateFreeTextElementResponse(
-  elementData: FreeTextElementData,
-  results: ElementResultsOpen,
-  correctness: number | null,
+function evaluateFreeTextElementResponse({
+  elementData,
+  results,
+  anonymousResults,
+  correctness,
+  multiplier,
+}: {
+  elementData: FreeTextElementData
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  correctness: number | null
   multiplier?: number
-): FreeTextEvaluationReturnType | null {
+}): FreeTextEvaluationReturnType | null {
   return {
     elementType: ElementType.FREE_TEXT,
     feedbacks: [],
-    numAnswers: results.total,
-    answers: elementData.options.hasSampleSolution
-      ? (results.responses ?? {})
-      : {},
+    numAnswers: results.total + anonymousResults.total,
+    answers: combineFreeTextResults({
+      results,
+      anonymousResults,
+    }),
     score: correctness ? correctness * 10 * (multiplier ?? 1) : 0,
     xp: computeAwardedXp({
       pointsPercentage: correctness,
@@ -1281,11 +1281,13 @@ function evaluateFreeTextElementResponse(
 function computeQuestionEvaluation({
   elementData,
   results,
+  anonymousResults,
   correctness,
   multiplier,
 }: {
   elementData: AllElementTypeData
   results: ElementInstanceResults
+  anonymousResults: ElementInstanceResults
   correctness: number | null
   multiplier?: number
 }) {
@@ -1293,34 +1295,40 @@ function computeQuestionEvaluation({
     (elementData.type === ElementType.SC ||
       elementData.type === ElementType.MC ||
       elementData.type === ElementType.KPRIM) &&
-    'choices' in results
+    'choices' in results &&
+    'choices' in anonymousResults
   ) {
-    return evaluateChoicesElementResponse(
+    return evaluateChoicesElementResponse({
       elementData,
       results,
+      anonymousResults,
       correctness,
-      multiplier
-    )
+      multiplier,
+    })
   } else if (
     elementData.type === ElementType.NUMERICAL &&
-    'responses' in results
+    'responses' in results &&
+    'responses' in anonymousResults
   ) {
-    return evaluateNumericalElementResponse(
+    return evaluateNumericalElementResponse({
       elementData,
       results,
+      anonymousResults,
       correctness,
-      multiplier
-    )
+      multiplier,
+    })
   } else if (
     elementData.type === ElementType.FREE_TEXT &&
-    'responses' in results
+    'responses' in results &&
+    'responses' in anonymousResults
   ) {
-    return evaluateFreeTextElementResponse(
+    return evaluateFreeTextElementResponse({
       elementData,
       results,
+      anonymousResults,
       correctness,
-      multiplier
-    )
+      multiplier,
+    })
   } else {
     return null
   }
@@ -2217,9 +2225,11 @@ export async function respondToQuestion(
     })
 
     // compute question evaluation
+    // TODO: call computeChoicesEvaluation, computeNumericalEvaluation and computeFreeTextEvaluation for consistent feedback
     const questionEval = computeQuestionEvaluation({
       elementData: existingInstance.elementData,
-      results,
+      results: updatedInstance.results,
+      anonymousResults: updatedInstance.anonymousResults,
       correctness,
       multiplier: updatedInstance.options.pointsMultiplier,
     })
@@ -2665,56 +2675,32 @@ type CommonEvaluationProps = {
   hasAnswerFeedbacks: boolean
 }
 
-function computeChoicesEvaluation({
-  options,
+function combineChoicesResults({
+  choices,
   results,
   anonymousResults,
-  common,
 }: {
-  options: ElementOptionsChoices
-  results: ElementResultsChoices
-  anonymousResults: ElementResultsChoices
-  common: CommonEvaluationProps
+  choices: Choice[]
+  results: ElementResultsChoices['choices']
+  anonymousResults: ElementResultsChoices['choices']
 }) {
-  const choiceResults = results.choices
-  const anonymousChoiceResults = anonymousResults.choices
-  const availableChoices = options.choices
-
-  // combine anonymous and participant results into new format
-  const choices = availableChoices.map((choice) => {
-    return {
-      value: choice.value,
-      count:
-        (choiceResults[choice.ix] ?? 0) +
-        (anonymousChoiceResults[choice.ix] ?? 0),
-      correct: choice.correct,
-      feedback: choice.feedback,
-    }
-  })
-
-  return {
-    ...common,
-    results: {
-      totalAnswers: results.total + anonymousResults.total,
-      anonymousAnswers: anonymousResults.total,
-      choices,
-    },
-  }
+  return choices.map((choice) => ({
+    ix: choice.ix,
+    value: choice.value,
+    count: (results[choice.ix] ?? 0) + (anonymousResults[choice.ix] ?? 0),
+    correct: choice.correct,
+    feedback: choice.feedback,
+  }))
 }
 
-function computeNumericalEvaluation({
-  options,
+function combineNumericalResults({
   results,
   anonymousResults,
-  common,
 }: {
-  options: ElementOptionsNumerical
   results: ElementResultsOpen
   anonymousResults: ElementResultsOpen
-  common: CommonEvaluationProps
 }) {
-  // combine anonymous and participant results into new format
-  const nrResponses = [
+  return [
     ...Object.values(results.responses),
     ...Object.values(anonymousResults.responses),
   ].reduce<{ value: number; count: number; correct?: boolean | null }[]>(
@@ -2739,34 +2725,16 @@ function computeNumericalEvaluation({
     },
     []
   )
-
-  return {
-    ...common,
-    results: {
-      totalAnswers: results.total + anonymousResults.total,
-      anonymousAnswers: anonymousResults.total,
-      maxValue: options.restrictions?.max,
-      minValue: options.restrictions?.min,
-      solutionRanges: options.solutionRanges,
-      responseValues: nrResponses,
-      // TODO: extend with statistics
-    },
-  }
 }
 
-function computeFreeTextEvaluation({
-  options,
+function combineFreeTextResults({
   results,
   anonymousResults,
-  common,
 }: {
-  options: ElementOptionsFreeText
   results: ElementResultsOpen
   anonymousResults: ElementResultsOpen
-  common: CommonEvaluationProps
 }) {
-  // combine anonymous and participant results into new format
-  const ftResponses = [
+  return [
     ...Object.values(results.responses),
     ...Object.values(anonymousResults.responses),
   ].reduce<{ value: string; count: number; correct?: boolean | null }[]>(
@@ -2788,7 +2756,75 @@ function computeFreeTextEvaluation({
     },
     []
   )
+}
 
+function computeChoicesEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsChoices
+  results: ElementResultsChoices
+  anonymousResults: ElementResultsChoices
+  common: CommonEvaluationProps
+}) {
+  // combine anonymous and participant results into new format
+  const choices = combineChoicesResults({
+    choices: options.choices,
+    results: results.choices,
+    anonymousResults: anonymousResults.choices,
+  })
+
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      choices,
+    },
+  }
+}
+
+function computeNumericalEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsNumerical
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      maxValue: options.restrictions?.max,
+      minValue: options.restrictions?.min,
+      solutionRanges: options.solutionRanges,
+      responseValues: combineNumericalResults({
+        results,
+        anonymousResults,
+      }),
+      // TODO: extend with statistics
+    },
+  }
+}
+
+function computeFreeTextEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsFreeText
+  results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
+  common: CommonEvaluationProps
+}) {
   return {
     ...common,
     results: {
@@ -2796,7 +2832,10 @@ function computeFreeTextEvaluation({
       anonymousAnswers: anonymousResults.total,
       maxLength: options.restrictions?.maxLength,
       solutions: options.solutions,
-      responses: ftResponses,
+      responses: combineFreeTextResults({
+        results,
+        anonymousResults,
+      }),
     },
   }
 }
@@ -3001,12 +3040,14 @@ function getPreviousEvaluationChoices({
   elementData,
   multiplier,
   results,
+  anonymousResults,
   lastResponse,
 }: {
   instanceId: number
   elementData: ChoicesElementData
   multiplier: number | undefined
   results: ElementResultsChoices
+  anonymousResults: ElementResultsChoices
   lastResponse: SingleQuestionResponseChoices
 }): EvaluationAggregationReturn {
   const correctness = evaluateChoicesAnswerCorrectness({
@@ -3014,12 +3055,13 @@ function getPreviousEvaluationChoices({
     response: lastResponse,
   })
 
-  const instanceEvaluation = evaluateChoicesElementResponse(
+  const instanceEvaluation = evaluateChoicesElementResponse({
     elementData,
     results,
+    anonymousResults,
     correctness,
-    multiplier
-  )
+    multiplier,
+  })
 
   // if evaluation cannot be computed, return early
   if (!instanceEvaluation) {
@@ -3055,12 +3097,14 @@ function getPreviousEvaluationNumerical({
   elementData,
   multiplier,
   results,
+  anonymousResults,
   lastResponse,
 }: {
   instanceId: number
   elementData: NumericalElementData
   multiplier: number | undefined
   results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
   lastResponse: SingleQuestionResponseValue
 }) {
   const correctness = evaluateNumericalAnswerCorrectness({
@@ -3068,12 +3112,13 @@ function getPreviousEvaluationNumerical({
     response: lastResponse,
   })
 
-  const instanceEvaluation = evaluateNumericalElementResponse(
+  const instanceEvaluation = evaluateNumericalElementResponse({
     elementData,
     results,
+    anonymousResults,
     correctness,
-    multiplier
-  )
+    multiplier,
+  })
 
   // if evaluation cannot be computed, return early
   if (!instanceEvaluation) {
@@ -3114,12 +3159,14 @@ function getPreviousEvaluationFreeText({
   elementData,
   multiplier,
   results,
+  anonymousResults,
   lastResponse,
 }: {
   instanceId: number
   elementData: FreeTextElementData
   multiplier: number | undefined
   results: ElementResultsOpen
+  anonymousResults: ElementResultsOpen
   lastResponse: SingleQuestionResponseValue
 }) {
   const correctness = evaluateFreeTextAnswerCorrectness({
@@ -3127,12 +3174,13 @@ function getPreviousEvaluationFreeText({
     response: lastResponse,
   })
 
-  const instanceEvaluation = evaluateFreeTextElementResponse(
+  const instanceEvaluation = evaluateFreeTextElementResponse({
     elementData,
     results,
+    anonymousResults,
     correctness,
-    multiplier
-  )
+    multiplier,
+  })
 
   // if evaluation cannot be computed, return early
   if (!instanceEvaluation) {
@@ -3251,7 +3299,8 @@ export async function getPreviousStackEvaluation(
         (element.elementData.type === ElementType.SC ||
           element.elementData.type === ElementType.MC ||
           element.elementData.type === ElementType.KPRIM) &&
-        'choices' in element.results
+        'choices' in element.results &&
+        'choices' in element.anonymousResults
       ) {
         const { evaluation, newStatus, stackScore } =
           getPreviousEvaluationChoices({
@@ -3259,6 +3308,7 @@ export async function getPreviousStackEvaluation(
             elementData: element.elementData,
             multiplier: element.options.pointsMultiplier,
             results: element.results,
+            anonymousResults: element.anonymousResults,
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseChoices,
           })
@@ -3273,7 +3323,8 @@ export async function getPreviousStackEvaluation(
         }
       } else if (
         element.elementData.type === ElementType.NUMERICAL &&
-        'responses' in element.results
+        'responses' in element.results &&
+        'responses' in element.anonymousResults
       ) {
         const { evaluation, newStatus, stackScore } =
           getPreviousEvaluationNumerical({
@@ -3281,6 +3332,7 @@ export async function getPreviousStackEvaluation(
             elementData: element.elementData,
             multiplier: element.options.pointsMultiplier,
             results: element.results,
+            anonymousResults: element.anonymousResults,
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseValue,
           })
@@ -3295,7 +3347,8 @@ export async function getPreviousStackEvaluation(
         }
       } else if (
         element.elementData.type === ElementType.FREE_TEXT &&
-        'responses' in element.results
+        'responses' in element.results &&
+        'responses' in element.anonymousResults
       ) {
         const { evaluation, newStatus, stackScore } =
           getPreviousEvaluationFreeText({
@@ -3303,6 +3356,7 @@ export async function getPreviousStackEvaluation(
             elementData: element.elementData,
             multiplier: element.options.pointsMultiplier,
             results: element.results,
+            anonymousResults: element.anonymousResults,
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseValue,
           })

@@ -6,6 +6,8 @@ import type {
   IInstanceEvaluationFreeText,
   IInstanceEvaluationNumerical,
   IQuestionFeedback,
+  SingleFreeTextResponse as SingleFreeTextResponseType,
+  SingleNumericalResponse as SingleNumericalRepsonseType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
@@ -183,14 +185,22 @@ export const ChoicesInstanceEvaluation = builder
     }),
   })
 
+export const SingleNumericalRepsonse = builder
+  .objectRef<SingleNumericalRepsonseType>('SingleNumericalResponse')
+  .implement({
+    fields: (t) => ({
+      value: t.exposeFloat('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const NumericalInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationNumerical>('NumericalInstanceEvaluation')
   .implement({
     fields: (t) => ({
       ...sharedEvaluationProps(t),
-      // ? differing number of keys - no graphql representation available
-      answers: t.expose('answers', {
-        type: 'Json',
+      responses: t.expose('responses', {
+        type: [SingleNumericalRepsonse],
         nullable: true,
       }),
       solutionRanges: t.expose('solutionRanges', {
@@ -204,14 +214,22 @@ export const NumericalInstanceEvaluation = builder
     }),
   })
 
+export const SingleFreeTextResponse = builder
+  .objectRef<SingleFreeTextResponseType>('SingleFreeTextResponse')
+  .implement({
+    fields: (t) => ({
+      value: t.exposeString('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const FreeTextInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationFreeText>('FreeTextInstanceEvaluation')
   .implement({
     fields: (t) => ({
       ...sharedEvaluationProps(t),
-      // ? differing number of keys - no graphql representation available
       answers: t.expose('answers', {
-        type: 'Json',
+        type: [SingleFreeTextResponse],
         nullable: true,
       }),
       solutions: t.exposeStringList('solutions', { nullable: true }),
