@@ -82,7 +82,7 @@ function ChoicesOptions({
                   >
                     {({ field, meta }: FastFieldProps) => (
                       <ContentInput
-                        key={`${values.type}-choice-${index}-${values.options.choices.length}-${values.options.choices[index].ix}`}
+                        key={`${values.type}-choice-${values.options.choices[index].ix}`}
                         error={meta.error}
                         touched={meta.touched}
                         content={field.value}
@@ -242,7 +242,7 @@ function ChoicesOptions({
                       >
                         {({ field, meta }: FastFieldProps) => (
                           <ContentInput
-                            key={`${values.type}-feedback-${index}-${values.options.choices[index].ix}`}
+                            key={`${values.type}-feedback-${values.options.choices[index].ix}`}
                             error={meta.error}
                             touched={meta.touched}
                             content={field.value || '<br>'}
