@@ -1,8 +1,8 @@
 import { faDownload, faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ColumnDef,
-  SortingState,
+  type ColumnDef,
+  type SortingState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -21,7 +21,7 @@ import {
 } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import CsvDownloader from 'react-csv-downloader'
 import { twMerge } from 'tailwind-merge'
 

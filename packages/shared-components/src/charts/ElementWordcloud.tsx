@@ -1,15 +1,19 @@
 import {
-  ElementInstanceEvaluation,
+  type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 import { TagCloud } from 'react-tagcloud'
 
 interface ElementWordcloudProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
-  textSize: Record<string, number>
+  textSize: {
+    min: number
+    max: number
+  }
 }
 
 function ElementWordcloud({

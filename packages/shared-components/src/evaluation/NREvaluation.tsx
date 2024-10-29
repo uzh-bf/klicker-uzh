@@ -1,11 +1,11 @@
-import type {
-  NumericalInstanceEvaluation,
-  NumericalQuestionData,
-  NumericalQuestionOptions,
+import {
+  ElementType,
+  type NumericalInstanceEvaluation,
+  type NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import React from 'react'
-import Histogram from '../Histogram'
+import ElementHistogram from '../charts/ElementHistogram'
 
 interface NREvaluationProps {
   options: NumericalQuestionOptions
@@ -16,30 +16,24 @@ interface NREvaluationProps {
 function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
   const t = useTranslations()
 
-  const results = Object.entries(
-    evaluation.answers as Record<
-      string,
-      { value: string; count: number; correct: boolean }
-    >
-  ).reduce(
-    (acc, [_, answer]) => ({
-      ...acc,
-      [answer.value]: { value: answer.value, count: answer.count },
-    }),
-    {}
-  )
+  const answers = evaluation.answers as Record<
+    string,
+    { value: string; count: number; correct: boolean }
+  >
+  const responses = Object.entries(answers).map(([_, answer]) => ({
+    value: parseFloat(answer.value),
+    count: answer.count,
+  }))
 
   return (
     <div className="h-40 space-y-2">
       <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
-      <Histogram
-        data={{
-          results: results,
-          questionData: {
-            options,
-            __typename: 'NumericalQuestionData',
-          } as NumericalQuestionData,
-        }}
+      <ElementHistogram
+        type={ElementType.Numerical}
+        responses={responses}
+        solutionRanges={options.solutionRanges ?? undefined}
+        minValue={options.restrictions?.min}
+        maxValue={options.restrictions?.max}
         showSolution={{ general: true }}
         textSize="md"
         className={{ root: 'h-40' }}

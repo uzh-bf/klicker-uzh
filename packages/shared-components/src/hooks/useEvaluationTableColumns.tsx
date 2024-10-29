@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface UseEvaluationTableColumnsProps {

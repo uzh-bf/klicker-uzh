@@ -60,7 +60,8 @@ function StudentElementPreview({
                             : undefined,
                         accuracy:
                           'accuracy' in values.options &&
-                          values.options.accuracy
+                          typeof values.options.accuracy !== 'undefined' &&
+                          values.options.accuracy !== null
                             ? parseInt(String(values.options.accuracy))
                             : undefined,
                         unit:
@@ -72,7 +73,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'min' in values.options.restrictions &&
-                            values.options.restrictions.min
+                            typeof values.options.restrictions.min !==
+                              'undefined' &&
+                            values.options.restrictions.min !== null
                               ? parseFloat(
                                   String(values.options.restrictions.min)
                                 )
@@ -81,7 +84,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'max' in values.options.restrictions &&
-                            values.options.restrictions.max
+                            typeof values.options.restrictions.max !==
+                              'undefined' &&
+                            values.options.restrictions.max !== null
                               ? parseFloat(
                                   String(values.options.restrictions.max)
                                 )
@@ -90,7 +95,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'maxLength' in values.options.restrictions &&
-                            values.options.restrictions.maxLength
+                            typeof values.options.restrictions.maxLength !==
+                              'undefined' &&
+                            values.options.restrictions.maxLength !== null
                               ? parseFloat(
                                   String(values.options.restrictions.maxLength)
                                 )

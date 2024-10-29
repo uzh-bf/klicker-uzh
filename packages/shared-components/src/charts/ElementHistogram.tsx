@@ -1,16 +1,14 @@
-import {
-  ElementType,
-  NumericalElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_SOLUTION_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { NumberField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,7 +18,11 @@ import { twMerge } from 'tailwind-merge'
 import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
 
 interface ElementHistogramProps {
-  instance: NumericalElementInstanceEvaluation
+  type: ElementType
+  responses: { value: number; count: number }[]
+  solutionRanges?: { min?: number | null; max?: number | null }[]
+  minValue?: number | null
+  maxValue?: number | null
   showSolution: {
     general: boolean
     mean?: boolean
@@ -30,13 +32,23 @@ interface ElementHistogramProps {
     sd?: boolean
   }
   textSize: string
-  className?: string
+  reference?: number
+  hideBins?: boolean
+  basic?: boolean
+  className?: { root?: string }
 }
 
 function ElementHistogram({
-  instance,
+  type,
+  responses,
+  solutionRanges,
+  minValue,
+  maxValue,
   showSolution,
   textSize,
+  reference,
+  hideBins = false,
+  basic = false,
   className,
 }: ElementHistogramProps) {
   const t = useTranslations()
@@ -44,11 +56,14 @@ function ElementHistogram({
   const [numBins, setNumBins] = useState('20')
 
   const processedData = useEvaluationHistogramData({
-    instance,
+    type,
+    responses,
+    minValue,
+    maxValue,
     binCount: parseInt(numBins),
   })
 
-  if (!supportedElementTypes.includes(instance.type) || !processedData) {
+  if (!supportedElementTypes.includes(type) || !processedData) {
     return (
       <UserNotification type="warning">
         {t('manage.evaluation.chartTypeNotSupported')}
@@ -57,7 +72,7 @@ function ElementHistogram({
   }
 
   return (
-    <div className={twMerge('mt-1 h-[calc(100%-4rem)]', className)}>
+    <div className={twMerge('mt-1 h-[calc(100%-4rem)]', className?.root)}>
       <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={processedData.data}
@@ -106,6 +121,15 @@ function ElementHistogram({
             }}
           />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
+          {reference && (
+            <ReferenceLine
+              isFront
+              className={textSize}
+              key="reference"
+              stroke="red"
+              x={reference}
+            />
+          )}
 
           {/* // TODO: reintroduce these elements as soon as statistics are available for asynchronous elements */}
           {/* {data.statistics && showSolution.mean && (
@@ -187,8 +211,8 @@ function ElementHistogram({
           )} */}
 
           {showSolution.general &&
-            instance.results.solutionRanges &&
-            instance.results.solutionRanges.map(
+            solutionRanges &&
+            solutionRanges.map(
               (
                 solutionRange: { min?: number | null; max?: number | null },
                 index: number
@@ -201,11 +225,15 @@ function ElementHistogram({
                   fill={CHART_SOLUTION_COLORS.correct}
                   enableBackground="#FFFFFF"
                   opacity={1}
-                  label={{
-                    fill: CHART_SOLUTION_COLORS.correct,
-                    position: 'top',
-                    value: 'Korrekt',
-                  }}
+                  label={
+                    !basic
+                      ? {
+                          fill: CHART_SOLUTION_COLORS.correct,
+                          position: 'top',
+                          value: 'Korrekt',
+                        }
+                      : undefined
+                  }
                   className={textSize}
                 />
               )
@@ -213,15 +241,17 @@ function ElementHistogram({
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="float-right mr-4 flex flex-row items-center gap-2">
-        <NumberField
-          precision={0}
-          id="histogramBins"
-          label={t('manage.evaluation.histogramBins')}
-          value={numBins}
-          onChange={(value) => setNumBins(value)}
-        />
-      </div>
+      {hideBins ? null : (
+        <div className="float-right mr-4 flex flex-row items-center gap-2">
+          <NumberField
+            precision={0}
+            id="histogramBins"
+            label={t('manage.evaluation.histogramBins')}
+            value={numBins}
+            onChange={(value) => setNumBins(value)}
+          />
+        </div>
+      )}
     </div>
   )
 }
