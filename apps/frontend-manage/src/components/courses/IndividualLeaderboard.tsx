@@ -1,5 +1,5 @@
-import DataTable from '@components/common/DataTable'
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
+import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import { Tabs } from '@uzh-bf/design-system'
 import { TableCell } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'

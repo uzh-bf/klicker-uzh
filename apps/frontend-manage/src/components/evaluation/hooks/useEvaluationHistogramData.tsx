@@ -1,36 +1,34 @@
-import {
-  ElementType,
-  NumericalElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import { useMemo } from 'react'
 
 interface UseEvaluationHistogramDataProps {
-  instance: NumericalElementInstanceEvaluation
+  type: ElementType
+  responses: { value: number; count: number }[]
+  minValue?: number | null
+  maxValue?: number | null
   binCount: number
 }
 
 function useEvaluationHistogramData({
-  instance,
+  type,
+  responses,
+  minValue,
+  maxValue,
   binCount,
 }: UseEvaluationHistogramDataProps) {
   const histogramData = useMemo(() => {
-    if (instance.type !== ElementType.Numerical) {
+    if (type !== ElementType.Numerical) {
       return null
     }
 
-    const responses = instance.results.responseValues.map((response) => ({
-      value: response.value,
-      count: response.count,
-    }))
-
     const min: number =
-      instance.results.minValue && typeof instance.results.minValue === 'number'
-        ? instance.results.minValue
+      minValue !== null && typeof minValue === 'number'
+        ? minValue
         : (minBy(responses, 'value')?.value ?? 0) - 10
     const max: number =
-      instance.results.maxValue && typeof instance.results.maxValue === 'number'
-        ? instance.results.maxValue
+      maxValue !== null && typeof maxValue === 'number'
+        ? maxValue
         : (maxBy(responses, 'value')?.value ?? 0) + 10
 
     let dataArray = Array.from({ length: binCount }, (_, i) => ({
@@ -61,7 +59,7 @@ function useEvaluationHistogramData({
     })
 
     return { data: dataArray, domain: { min: min, max: max } }
-  }, [instance, binCount])
+  }, [type, responses, minValue, maxValue, binCount])
 
   return histogramData
 }

@@ -1,12 +1,12 @@
 import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import ElementBarChart from '@klicker-uzh/shared-components/src/charts/ElementBarChart'
+import ElementHistogram from '@klicker-uzh/shared-components/src/charts/ElementHistogram'
+import ElementTableChart from '@klicker-uzh/shared-components/src/charts/ElementTableChart'
+import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { TextSizeType } from '../sessions/evaluation/constants'
-import ElementBarChart from './charts/ElementBarChart'
-import ElementHistogram from './charts/ElementHistogram'
-import ElementTableChart from './charts/ElementTableChart'
-import ElementWordcloud from './charts/ElementWordcloud'
 
 interface ElementChartProps {
   chartType: string
@@ -35,9 +35,20 @@ function ElementChart({
     chartType === ChartType.HISTOGRAM &&
     instanceEvaluation.__typename === 'NumericalElementInstanceEvaluation'
   ) {
+    const responses = instanceEvaluation.results.responseValues.map(
+      (response) => ({
+        value: response.value,
+        count: response.count,
+      })
+    )
+
     return (
       <ElementHistogram
-        instance={instanceEvaluation}
+        type={instanceEvaluation.type}
+        responses={responses}
+        solutionRanges={instanceEvaluation.results.solutionRanges}
+        minValue={instanceEvaluation.results.minValue}
+        maxValue={instanceEvaluation.results.maxValue}
         showSolution={{ general: showSolution }}
         textSize={textSize.text}
       />

@@ -1,14 +1,14 @@
-import DataTable from '@components/common/DataTable'
 import {
-  ElementInstanceEvaluation,
+  type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRef } from 'react'
+import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
-import useEvaluationTableData from '../hooks/useEvaluationTableData'
+import useEvaluationTableColumns from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationTableColumns'
+import useEvaluationTableData from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationTableData'
+import DataTable from '../DataTable'
 
 export type EvaluationTableRowType = {
   count: number

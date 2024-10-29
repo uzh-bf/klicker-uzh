@@ -1,5 +1,5 @@
 import {
-  ElementInstanceEvaluation,
+  type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 import {
   Bar,
   BarChart as BarChartRecharts,
@@ -18,13 +19,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
-import { TextSizeType } from '../textSizes'
+import useEvaluationBarChartData from '../../../../apps/frontend-manage/src/components/evaluation/hooks/useEvaluationBarChartData'
 
 interface ElementBarChartProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
-  textSize: TextSizeType
+  textSize: {
+    legend: string
+    textXl: string
+    text3Xl: string
+  }
 }
 
 function ElementBarChart({
