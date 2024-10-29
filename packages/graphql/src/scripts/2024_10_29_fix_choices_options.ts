@@ -18,6 +18,7 @@ async function run() {
 
   // loop over all elements, filter for choices questions and check if choices are in order
   let e_errors = 0
+  let e_updates = 0
   for (const e of es) {
     if (
       (e.type === ElementType.SC ||
@@ -51,6 +52,7 @@ async function run() {
         console.log(choices)
         console.log('NEW CHOICES:')
         console.log(newChoices)
+        e_updates += 1
 
         // TODO: uncomment to trigger element updates
         // await prisma.element.update({
@@ -68,6 +70,7 @@ async function run() {
 
   // loop over all element instances, filter for choices instances, check if choices are in order
   let ei_errors = 0
+  let ei_updates = 0
   for (const ei of eis) {
     if (
       (ei.elementType === ElementType.SC ||
@@ -104,6 +107,7 @@ async function run() {
           console.log(choices)
           console.log('NEW CHOICES:')
           console.log(newChoices)
+          ei_updates += 1
 
           // TODO: uncomment to trigger element instance updates
           // await prisma.elementInstance.update({
@@ -124,6 +128,7 @@ async function run() {
   }
 
   let qi_errors = 0
+  let qi_updates = 0
   for (const qi of qis) {
     if (
       qi.questionData.type === ElementType.SC ||
@@ -155,6 +160,7 @@ async function run() {
           console.log(choices)
           console.log('NEW CHOICES:')
           console.log(newChoices)
+          qi_updates += 1
 
           // TODO: uncomment to trigger question instance updates
           // await prisma.questionInstance.update({
@@ -182,6 +188,10 @@ async function run() {
     qi_errors,
     'question instances with out of order choices'
   )
+
+  console.log('Updated', e_updates, 'elements')
+  console.log('Updated', ei_updates, 'element instances')
+  console.log('Updated', qi_updates, 'question instances')
 }
 
 await run()
