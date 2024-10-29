@@ -41,7 +41,7 @@ function ChoicesOptions({
           <div className="flex w-full flex-col gap-2 pt-2">
             {values.options.choices.map((choice, index: number) => (
               <div
-                key={`choice-${choice.value}-${index}`}
+                key={choice.value}
                 className={twMerge(
                   'border-uzh-grey-80 w-full rounded',
                   values.options.hasSampleSolution && 'p-2',
@@ -73,10 +73,10 @@ function ChoicesOptions({
                         (prev.formik.values.type === ElementType.Sc ||
                           prev.formik.values.type === ElementType.Mc ||
                           prev.formik.values.type === ElementType.Kprim) &&
-                        (next.formik.values.options.choices[index].value !==
-                          prev.formik.values.options.choices[index].value ||
-                          next.formik.values.options.choices[index].ix !==
-                            prev.formik.values.options.choices[index].ix)) ||
+                        (next.formik.values.options.choices[index]?.value !==
+                          prev.formik.values.options.choices[index]?.value ||
+                          next.formik.values.options.choices[index]?.ix !==
+                            prev.formik.values.options.choices[index]?.ix)) ||
                       next?.formik.values.type !== prev?.formik.values.type
                     }
                   >
@@ -231,12 +231,12 @@ function ChoicesOptions({
                               prev.formik.values.type === ElementType.Mc ||
                               prev.formik.values.type === ElementType.Kprim) &&
                             (next?.formik.values.options.choices[index]
-                              .feedback !==
+                              ?.feedback !==
                               prev?.formik.values.options.choices[index]
-                                .feedback ||
-                              next?.formik.values.options.choices[index].ix !==
+                                ?.feedback ||
+                              next?.formik.values.options.choices[index]?.ix !==
                                 prev?.formik.values.options.choices[index]
-                                  .ix)) ||
+                                  ?.ix)) ||
                           next?.formik.values.type !== prev?.formik.values.type
                         }
                       >
