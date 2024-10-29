@@ -447,8 +447,9 @@ export interface IBaseInstanceEvaluation {
   correctness?: number | null
 }
 
+export type SingleChoiceResponse = { ix: number; count: number }
 export interface IInstanceEvaluationChoices extends IBaseInstanceEvaluation {
-  choices: Record<string, number> // instance results type cannot be represented with exact keys
+  choices: SingleChoiceResponse[]
   lastResponse?: SingleQuestionResponseChoices | null
 }
 export type InstanceEvaluationChoices = IInstanceEvaluationChoices

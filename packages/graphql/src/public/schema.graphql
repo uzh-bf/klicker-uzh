@@ -147,7 +147,7 @@ type ChoicesElementResults {
 }
 
 type ChoicesInstanceEvaluation {
-  choices: Json
+  choices: [SingleChoiceResponse!]
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -1510,6 +1510,11 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type SingleChoiceResponse {
+  count: Int!
+  ix: Int!
 }
 
 type SingleFreeTextResponse {

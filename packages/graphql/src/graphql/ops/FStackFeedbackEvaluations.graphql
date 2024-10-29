@@ -14,7 +14,10 @@ fragment StackFeedbackEvaluations on StackFeedback {
         correct
         value
       }
-      choices
+      choices {
+        ix
+        count
+      }
       numAnswers
       score
       xp

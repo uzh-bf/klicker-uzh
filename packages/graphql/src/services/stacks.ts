@@ -1180,26 +1180,15 @@ function evaluateChoicesElementResponse({
   correctness: number | null
   multiplier?: number
 }): ChoicesEvaluationReturnType | null {
-  const elementOptions = elementData.options
-  const feedbacks = elementOptions.choices
-  const combinedResults = combineChoicesResults({
-    choices: elementData.options.choices,
-    results: results.choices,
-    anonymousResults: anonymousResults.choices,
-  })
-  const combinedChoices = combinedResults.reduce<Record<string, number>>(
-    (acc, choice) => {
-      acc[String(choice.ix)] = choice.count
-      return acc
-    },
-    {}
-  )
-
   return {
     elementType: elementData.type,
-    feedbacks,
+    feedbacks: elementData.options.choices,
     numAnswers: results.total + anonymousResults.total,
-    choices: combinedChoices,
+    choices: combineChoicesResults({
+      choices: elementData.options.choices,
+      results: results.choices,
+      anonymousResults: anonymousResults.choices,
+    }),
     score: computeSimpleAwardedPoints({
       points: POINTS_PER_INSTANCE,
       pointsPercentage: correctness,
