@@ -72,7 +72,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'min' in values.options.restrictions &&
-                            values.options.restrictions.min
+                            typeof values.options.restrictions.min !==
+                              'undefined' &&
+                            values.options.restrictions.min !== null
                               ? parseFloat(
                                   String(values.options.restrictions.min)
                                 )
@@ -81,7 +83,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'max' in values.options.restrictions &&
-                            values.options.restrictions.max
+                            typeof values.options.restrictions.max !==
+                              'undefined' &&
+                            values.options.restrictions.max !== null
                               ? parseFloat(
                                   String(values.options.restrictions.max)
                                 )
