@@ -41,7 +41,7 @@ function ChoicesOptions({
           <div className="flex w-full flex-col gap-2 pt-2">
             {values.options.choices.map((choice, index: number) => (
               <div
-                key={index}
+                key={`choice-${choice.value}-${index}`}
                 className={twMerge(
                   'border-uzh-grey-80 w-full rounded',
                   values.options.hasSampleSolution && 'p-2',
@@ -73,8 +73,10 @@ function ChoicesOptions({
                         (prev.formik.values.type === ElementType.Sc ||
                           prev.formik.values.type === ElementType.Mc ||
                           prev.formik.values.type === ElementType.Kprim) &&
-                        next.formik.values.options.choices[index].value !==
-                          prev.formik.values.options.choices[index].value) ||
+                        (next.formik.values.options.choices[index].value !==
+                          prev.formik.values.options.choices[index].value ||
+                          next.formik.values.options.choices[index].ix !==
+                            prev.formik.values.options.choices[index].ix)) ||
                       next?.formik.values.type !== prev?.formik.values.type
                     }
                   >
@@ -132,7 +134,17 @@ function ChoicesOptions({
                     <Button
                       className={{ root: 'px-auto py-0.5' }}
                       disabled={index === 0}
-                      onClick={() => move(index, index - 1)}
+                      onClick={async () => {
+                        move(index, index - 1)
+                        await setFieldValue(
+                          `options.choices.${index - 1}.ix`,
+                          index - 1
+                        )
+                        await setFieldValue(
+                          `options.choices.${index}.ix`,
+                          index
+                        )
+                      }}
                       data={{
                         cy: `move-answer-option-ix-${index}-up`,
                       }}
@@ -142,7 +154,17 @@ function ChoicesOptions({
                     <Button
                       className={{ root: 'px-auto py-0.5' }}
                       disabled={index === values.options.choices.length - 1}
-                      onClick={() => move(index, index + 1)}
+                      onClick={async () => {
+                        move(index, index + 1)
+                        await setFieldValue(
+                          `options.choices.${index + 1}.ix`,
+                          index + 1
+                        )
+                        await setFieldValue(
+                          `options.choices.${index}.ix`,
+                          index
+                        )
+                      }}
                       data={{
                         cy: `move-answer-option-ix-${index}-down`,
                       }}
@@ -208,10 +230,13 @@ function ChoicesOptions({
                             (prev.formik.values.type === ElementType.Sc ||
                               prev.formik.values.type === ElementType.Mc ||
                               prev.formik.values.type === ElementType.Kprim) &&
-                            next?.formik.values.options.choices[index]
+                            (next?.formik.values.options.choices[index]
                               .feedback !==
                               prev?.formik.values.options.choices[index]
-                                .feedback) ||
+                                .feedback ||
+                              next?.formik.values.options.choices[index].ix !==
+                                prev?.formik.values.options.choices[index]
+                                  .ix)) ||
                           next?.formik.values.type !== prev?.formik.values.type
                         }
                       >
