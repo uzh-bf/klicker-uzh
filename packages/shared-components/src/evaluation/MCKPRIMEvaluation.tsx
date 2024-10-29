@@ -17,24 +17,29 @@ function MCKPRIMEvaluation({ evaluation }: Props) {
   return (
     <div className="space-y-2">
       <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
-      {Object.entries(evaluation.choices as Record<string, number>).map(
-        ([ix, value]) => (
-          <Progress
-            key={`kp-statistic-${ix}-${value}`}
-            isMaxVisible={false}
-            className={{
-              root: twMerge('h-8', correctIx?.includes(+ix) && 'font-bold'),
-              indicator: twMerge(
-                'h-8',
-                correctIx?.includes(+ix) ? 'bg-green-600' : 'bg-red-400'
-              ),
-            }}
-            value={value ? (value / (evaluation.numAnswers ?? 1)) * 100 : 0}
-            max={100}
-            formatter={(v) => v.toFixed() + '%'}
-          />
-        )
-      )}
+      {evaluation.choices?.map((choice) => (
+        <Progress
+          key={`kp-statistic-${choice.ix}-${choice.count}`}
+          isMaxVisible={false}
+          className={{
+            root: twMerge(
+              'h-8',
+              correctIx?.includes(+choice.ix) && 'font-bold'
+            ),
+            indicator: twMerge(
+              'h-8',
+              correctIx?.includes(+choice.ix) ? 'bg-green-600' : 'bg-red-400'
+            ),
+          }}
+          value={
+            choice.count
+              ? (choice.count / (evaluation.numAnswers ?? 1)) * 100
+              : 0
+          }
+          max={100}
+          formatter={(v) => v.toFixed() + '%'}
+        />
+      ))}
     </div>
   )
 }
