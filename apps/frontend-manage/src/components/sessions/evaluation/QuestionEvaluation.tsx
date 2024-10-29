@@ -84,53 +84,55 @@ function QuestionEvaluation({
                   textSize.text
                 )}
               >
-                {questionData.options.choices.map((choice, innerIndex) => {
-                  const correctFraction =
-                    parseInt(currentInstance.results[innerIndex].count) /
-                    totalParticipants
+                {questionData.options.choices
+                  .sort((a, b) => (a.ix > b.ix ? 1 : -1))
+                  .map((choice, innerIndex) => {
+                    const correctFraction =
+                      parseInt(currentInstance.results[innerIndex].count) /
+                      totalParticipants
 
-                  return (
-                    <div key={`${currentInstance.blockIx}-${innerIndex}`}>
-                      <div className="flex flex-row items-center justify-between leading-5">
-                        <div
-                          // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                          style={{
-                            backgroundColor: showSolution
-                              ? choice.correct
-                                ? '#00de0d'
-                                : '#ff0000'
-                              : CHART_COLORS[innerIndex % 12],
-                            minWidth: '1.75rem',
-                            width: `calc(${correctFraction * 100}%)`,
-                          }}
-                          className={twMerge(
-                            'mr-2 flex h-5 items-center justify-center rounded-md font-bold text-white',
-                            choice.correct && showSolution && 'text-black'
-                          )}
-                        >
-                          {String.fromCharCode(65 + innerIndex)}
+                    return (
+                      <div key={`${currentInstance.blockIx}-${innerIndex}`}>
+                        <div className="flex flex-row items-center justify-between leading-5">
+                          <div
+                            // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                            style={{
+                              backgroundColor: showSolution
+                                ? choice.correct
+                                  ? '#00de0d'
+                                  : '#ff0000'
+                                : CHART_COLORS[innerIndex % 12],
+                              minWidth: '1.75rem',
+                              width: `calc(${correctFraction * 100}%)`,
+                            }}
+                            className={twMerge(
+                              'mr-2 flex h-5 items-center justify-center rounded-md font-bold text-white',
+                              choice.correct && showSolution && 'text-black'
+                            )}
+                          >
+                            {String.fromCharCode(65 + innerIndex)}
+                          </div>
+                          <div className="whitespace-nowrap text-right">
+                            {Math.round(100 * correctFraction)} %
+                          </div>
                         </div>
-                        <div className="whitespace-nowrap text-right">
-                          {Math.round(100 * correctFraction)} %
+
+                        <div className="line-clamp-3 w-full">
+                          <Ellipsis
+                            // maxLines={3}
+                            maxLength={60}
+                            className={{
+                              tooltip:
+                                'z-20 float-right min-w-[25rem] !text-white',
+                              markdown: textSize.text,
+                            }}
+                          >
+                            {choice.value}
+                          </Ellipsis>
                         </div>
                       </div>
-
-                      <div className="line-clamp-3 w-full">
-                        <Ellipsis
-                          // maxLines={3}
-                          maxLength={60}
-                          className={{
-                            tooltip:
-                              'z-20 float-right min-w-[25rem] !text-white',
-                            markdown: textSize.text,
-                          }}
-                        >
-                          {choice.value}
-                        </Ellipsis>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             </div>
           )}

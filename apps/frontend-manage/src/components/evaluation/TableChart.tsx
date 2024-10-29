@@ -36,8 +36,9 @@ function TableChart({
 
   const tableData = useMemo(() => {
     if (questionData.__typename === 'ChoicesQuestionData') {
-      return questionData.options.choices.map(
-        (choice: Choice, index: number) => {
+      return questionData.options.choices
+        .sort((a, b) => (a.ix > b.ix ? 1 : -1))
+        .map((choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
             value: choice.value,
@@ -46,8 +47,7 @@ function TableChart({
               ? data.results[index].count / data.participants
               : 0,
           }
-        }
-      )
+        })
     } else {
       return Object.values(
         data.results as FreeTextQuestionData | NumericalQuestionData

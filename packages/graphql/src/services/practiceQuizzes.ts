@@ -1341,7 +1341,9 @@ function evaluateElementResponse(
       // )
 
       const elementOptions = elementData.options
-      const feedbacks = elementOptions.choices
+      const feedbacks = elementOptions.choices.sort((a, b) =>
+        a.ix > b.ix ? 1 : -1
+      )
 
       if (elementData.type === ElementType.SC) {
         return {

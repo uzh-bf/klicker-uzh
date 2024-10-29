@@ -62,12 +62,14 @@ function useElementFormInitialValues({
           hasSampleSolution: options.hasSampleSolution ?? false,
           hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
           displayMode: options.displayMode,
-          choices: options.choices.map((choice) => ({
-            ix: choice.ix,
-            value: choice.value,
-            correct: choice.correct,
-            feedback: choice.feedback,
-          })),
+          choices: options.choices
+            .map((choice) => ({
+              ix: choice.ix,
+              value: choice.value,
+              correct: choice.correct,
+              feedback: choice.feedback,
+            }))
+            .sort((a, b) => (a.ix > b.ix ? 1 : -1)),
         },
       }
     } else if (question.__typename === 'NumericalElement') {

@@ -11,7 +11,7 @@ import ChoiceFeedback from '../evaluation/ChoiceFeedback'
 export interface KPAnswerOptionsProps {
   displayMode?: ElementDisplayMode
   type: ElementType
-  choices: Partial<Choice>[]
+  choices: Choice[]
   feedbacks?: QuestionFeedback[] | null
   value?: Record<number, boolean>
   onChange: (newValue: Record<number, boolean>) => void
@@ -40,71 +40,73 @@ export function KPAnswerOptions({
           : 'flex flex-col'
       )}
     >
-      {choices.map((choice, index) => (
-        <div key={`kp-choice-${index}-${choice.value}`}>
-          <div
-            className={twMerge(
-              'flex flex-row items-center justify-between gap-4 rounded border p-2',
-              !hideFeedbacks &&
-                feedbacks &&
-                feedbacks[index] &&
-                '!rounded-b-none'
+      {choices
+        .sort((a, b) => (a.ix > b.ix ? 1 : -1))
+        .map((choice) => (
+          <div key={`kp-choice-${choice.ix}-${choice.value}`}>
+            <div
+              className={twMerge(
+                'flex flex-row items-center justify-between gap-4 rounded border p-2',
+                !hideFeedbacks &&
+                  feedbacks &&
+                  feedbacks[choice.ix] &&
+                  '!rounded-b-none'
+              )}
+              data-cy="kp-answer-options"
+            >
+              <div>
+                <Markdown
+                  withProse
+                  content={choice.value}
+                  className={{
+                    root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
+                  }}
+                />
+              </div>
+              <div className="flex flex-row gap-2">
+                <Button
+                  className={{
+                    root: twMerge(
+                      'hover:bg-unset min-h-[2.5rem] border-slate-400'
+                    ),
+                  }}
+                  active={value?.[choice.ix] === true}
+                  onClick={() => onChange({ ...value, [choice.ix]: true })}
+                  data={{
+                    cy: `toggle-kp-${elementIx + 1}-answer-${choice.ix + 1}-correct`,
+                  }}
+                  disabled={disabled}
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faCheck} />
+                  </Button.Icon>
+                </Button>
+                <Button
+                  className={{
+                    root: twMerge(
+                      'hover:bg-unset min-h-[2.5rem] border-slate-400'
+                    ),
+                  }}
+                  active={value?.[choice.ix] === false}
+                  onClick={() => onChange({ ...value, [choice.ix]: false })}
+                  data={{
+                    cy: `toggle-kp-${elementIx + 1}-answer-${
+                      choice.ix + 1
+                    }-incorrect`,
+                  }}
+                  disabled={disabled}
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faX} />
+                  </Button.Icon>
+                </Button>
+              </div>
+            </div>
+            {!hideFeedbacks && feedbacks && feedbacks[choice.ix] && (
+              <ChoiceFeedback feedback={feedbacks[choice.ix]!} />
             )}
-            data-cy="kp-answer-options"
-          >
-            <div>
-              <Markdown
-                withProse
-                content={choice.value}
-                className={{
-                  root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
-                }}
-              />
-            </div>
-            <div className="flex flex-row gap-2">
-              <Button
-                className={{
-                  root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400'
-                  ),
-                }}
-                active={value?.[index] === true}
-                onClick={() => onChange({ ...value, [index]: true })}
-                data={{
-                  cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-correct`,
-                }}
-                disabled={disabled}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faCheck} />
-                </Button.Icon>
-              </Button>
-              <Button
-                className={{
-                  root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400'
-                  ),
-                }}
-                active={value?.[index] === false}
-                onClick={() => onChange({ ...value, [index]: false })}
-                data={{
-                  cy: `toggle-kp-${elementIx + 1}-answer-${
-                    index + 1
-                  }-incorrect`,
-                }}
-                disabled={disabled}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faX} />
-                </Button.Icon>
-              </Button>
-            </div>
           </div>
-          {!hideFeedbacks && feedbacks && feedbacks[index] && (
-            <ChoiceFeedback feedback={feedbacks[index]!} />
-          )}
-        </div>
-      ))}
+        ))}
     </div>
   )
 }
