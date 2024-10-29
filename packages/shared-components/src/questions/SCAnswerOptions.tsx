@@ -45,51 +45,49 @@ export function SCAnswerOptions({
           b: (text) => <span className="font-bold">{text}</span>,
         })}
       </div>
-      {choices
-        .sort((a, b) => (a.ix > b.ix ? 1 : -1))
-        .map((choice) => {
-          return (
-            <div key={`sc-choice-${choice.ix}-${choice.value}`}>
-              <Button
-                fluid
-                className={{
-                  root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400',
-                    !hideFeedbacks &&
-                      feedbacks &&
-                      feedbacks[choice.ix] &&
-                      'rounded-b-none'
-                  ),
-                }}
-                onClick={() =>
-                  onChange(
-                    Object.fromEntries(
-                      choices.map((_, i) => [i, i === choice.ix])
-                    )
+      {choices.map((choice) => {
+        return (
+          <div key={`sc-choice-${choice.ix}-${choice.value}`}>
+            <Button
+              fluid
+              className={{
+                root: twMerge(
+                  'hover:bg-unset min-h-[2.5rem] border-slate-400',
+                  !hideFeedbacks &&
+                    feedbacks &&
+                    feedbacks[choice.ix] &&
+                    'rounded-b-none'
+                ),
+              }}
+              onClick={() =>
+                onChange(
+                  Object.fromEntries(
+                    choices.map((_, i) => [i, i === choice.ix])
                   )
-                }
-                active={value?.[choice.ix]}
-                data={{
-                  cy: `sc-${elementIx + 1}-answer-option-${choice.ix + 1}`,
-                }}
-                disabled={disabled}
-              >
-                <Button.Label>
-                  <Markdown
-                    withProse
-                    content={choice.value}
-                    className={{
-                      root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
-                    }}
-                  />
-                </Button.Label>
-              </Button>
-              {!hideFeedbacks && feedbacks && feedbacks[choice.ix] && (
-                <ChoiceFeedback feedback={feedbacks[choice.ix]!} />
-              )}
-            </div>
-          )
-        })}
+                )
+              }
+              active={value?.[choice.ix]}
+              data={{
+                cy: `sc-${elementIx + 1}-answer-option-${choice.ix + 1}`,
+              }}
+              disabled={disabled}
+            >
+              <Button.Label>
+                <Markdown
+                  withProse
+                  content={choice.value}
+                  className={{
+                    root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
+                  }}
+                />
+              </Button.Label>
+            </Button>
+            {!hideFeedbacks && feedbacks && feedbacks[choice.ix] && (
+              <ChoiceFeedback feedback={feedbacks[choice.ix]!} />
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

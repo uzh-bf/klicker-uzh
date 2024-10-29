@@ -36,18 +36,16 @@ function TableChart({
 
   const tableData = useMemo(() => {
     if (questionData.__typename === 'ChoicesQuestionData') {
-      return questionData.options.choices
-        .sort((a, b) => (a.ix > b.ix ? 1 : -1))
-        .map((choice: Choice, index: number) => {
-          return {
-            count: data.results[index].count,
-            value: choice.value,
-            correct: choice.correct,
-            percentage: data.participants
-              ? data.results[index].count / data.participants
-              : 0,
-          }
-        })
+      return questionData.options.choices.map((choice: Choice) => {
+        return {
+          count: data.results[choice.ix].count,
+          value: choice.value,
+          correct: choice.correct,
+          percentage: data.participants
+            ? data.results[choice.ix].count / data.participants
+            : 0,
+        }
+      })
     } else {
       return Object.values(
         data.results as FreeTextQuestionData | NumericalQuestionData

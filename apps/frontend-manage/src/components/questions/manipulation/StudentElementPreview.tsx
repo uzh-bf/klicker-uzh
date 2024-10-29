@@ -123,22 +123,23 @@ function StudentElementPreview({
         values.options.hasAnswerFeedbacks && (
           <div className="mt-4">
             <H3>{t('shared.generic.feedbacks')}</H3>
-            {values.options.choices
-              .sort((a, b) => (a.ix > b.ix ? 1 : -1))
-              .map((choice, index) => (
-                <div key={index} className="border-b pb-1 pt-1 last:border-b-0">
-                  {choice.feedback ? (
-                    <Markdown
-                      className={{
-                        root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
-                      }}
-                      content={choice.feedback}
-                    />
-                  ) : (
-                    t('manage.questionForms.noFeedbackDefined')
-                  )}
-                </div>
-              ))}
+            {values.options.choices.map((choice) => (
+              <div
+                key={`choice-${choice.ix}`}
+                className="border-b pb-1 pt-1 last:border-b-0"
+              >
+                {choice.feedback ? (
+                  <Markdown
+                    className={{
+                      root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                    }}
+                    content={choice.feedback}
+                  />
+                ) : (
+                  t('manage.questionForms.noFeedbackDefined')
+                )}
+              </div>
+            ))}
           </div>
         )}
     </div>

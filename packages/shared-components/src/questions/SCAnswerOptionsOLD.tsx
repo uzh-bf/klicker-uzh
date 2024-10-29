@@ -28,32 +28,30 @@ export function SCAnswerOptionsOLD({
           : 'flex flex-col'
       )}
     >
-      {choices
-        .sort((a, b) => (a.ix > b.ix ? 1 : -1))
-        .map((choice) => {
-          return (
-            <Button
-              fluid
-              className={{
-                root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
-              }}
-              onClick={onChange(choice.ix)}
-              key={`${choice.value}-${choice.ix}`}
-              active={value?.includes(choice.ix)}
-              data={{ cy: `sc-answer-option-${choice.ix}` }}
-            >
-              <Button.Label>
-                <Markdown
-                  withProse
-                  content={choice.value}
-                  className={{
-                    root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
-                  }}
-                />
-              </Button.Label>
-            </Button>
-          )
-        })}
+      {choices.map((choice) => {
+        return (
+          <Button
+            fluid
+            className={{
+              root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
+            }}
+            onClick={onChange(choice.ix)}
+            key={`${choice.value}-${choice.ix}`}
+            active={value?.includes(choice.ix)}
+            data={{ cy: `sc-answer-option-${choice.ix}` }}
+          >
+            <Button.Label>
+              <Markdown
+                withProse
+                content={choice.value}
+                className={{
+                  root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
+                }}
+              />
+            </Button.Label>
+          </Button>
+        )
+      })}
     </div>
   )
 }

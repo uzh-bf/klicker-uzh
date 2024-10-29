@@ -5,6 +5,7 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+import { sort } from 'remeda'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
 
@@ -62,14 +63,15 @@ function useElementFormInitialValues({
           hasSampleSolution: options.hasSampleSolution ?? false,
           hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
           displayMode: options.displayMode,
-          choices: options.choices
-            .map((choice) => ({
+          choices: sort(
+            options.choices.map((choice) => ({
               ix: choice.ix,
               value: choice.value,
               correct: choice.correct,
               feedback: choice.feedback,
-            }))
-            .sort((a, b) => (a.ix > b.ix ? 1 : -1)),
+            })),
+            (a, b) => (a.ix > b.ix ? 1 : -1)
+          ),
         },
       }
     } else if (question.__typename === 'NumericalElement') {

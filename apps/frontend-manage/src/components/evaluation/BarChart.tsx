@@ -126,22 +126,20 @@ function BarChart({
             id="bar-chart-block"
           />
           {questionData.__typename === 'ChoicesQuestionData' &&
-            questionData.options.choices
-              .sort((a, b) => (a.ix > b.ix ? 1 : -1))
-              .map(
-                (choice: Choice, index: number): React.ReactElement => (
-                  <Cell
-                    fill={
-                      showSolution
-                        ? choice.correct
-                          ? CHART_SOLUTION_COLORS.correct
-                          : CHART_SOLUTION_COLORS.incorrect
-                        : CHART_COLORS[index % 12]
-                    }
-                    key={index}
-                  />
-                )
-              )}
+            questionData.options.choices.map(
+              (choice: Choice): React.ReactElement => (
+                <Cell
+                  fill={
+                    showSolution
+                      ? choice.correct
+                        ? CHART_SOLUTION_COLORS.correct
+                        : CHART_SOLUTION_COLORS.incorrect
+                      : CHART_COLORS[choice.ix % 12]
+                  }
+                  key={`choice-${choice.ix}`}
+                />
+              )
+            )}
         </Bar>
       </BarChartRecharts>
     </ResponsiveContainer>
