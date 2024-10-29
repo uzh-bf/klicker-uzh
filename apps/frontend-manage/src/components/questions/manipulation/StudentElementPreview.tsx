@@ -60,7 +60,8 @@ function StudentElementPreview({
                             : undefined,
                         accuracy:
                           'accuracy' in values.options &&
-                          values.options.accuracy
+                          typeof values.options.accuracy !== 'undefined' &&
+                          values.options.accuracy !== null
                             ? parseInt(String(values.options.accuracy))
                             : undefined,
                         unit:
@@ -94,7 +95,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'maxLength' in values.options.restrictions &&
-                            values.options.restrictions.maxLength
+                            typeof values.options.restrictions.maxLength !==
+                              'undefined' &&
+                            values.options.restrictions.maxLength !== null
                               ? parseFloat(
                                   String(values.options.restrictions.maxLength)
                                 )
