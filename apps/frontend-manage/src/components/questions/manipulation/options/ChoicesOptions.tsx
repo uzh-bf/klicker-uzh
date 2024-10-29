@@ -41,7 +41,7 @@ function ChoicesOptions({
           <div className="flex w-full flex-col gap-2 pt-2">
             {values.options.choices.map((choice, index: number) => (
               <div
-                key={choice.value}
+                key={index}
                 className={twMerge(
                   'border-uzh-grey-80 w-full rounded',
                   values.options.hasSampleSolution && 'p-2',
@@ -135,15 +135,15 @@ function ChoicesOptions({
                       className={{ root: 'px-auto py-0.5' }}
                       disabled={index === 0}
                       onClick={async () => {
-                        move(index, index - 1)
                         await setFieldValue(
-                          `options.choices.${index - 1}.ix`,
+                          `options.choices.${index}.ix`,
                           index - 1
                         )
                         await setFieldValue(
-                          `options.choices.${index}.ix`,
+                          `options.choices.${index - 1}.ix`,
                           index
                         )
+                        move(index, index - 1)
                       }}
                       data={{
                         cy: `move-answer-option-ix-${index}-up`,
@@ -155,15 +155,15 @@ function ChoicesOptions({
                       className={{ root: 'px-auto py-0.5' }}
                       disabled={index === values.options.choices.length - 1}
                       onClick={async () => {
-                        move(index, index + 1)
                         await setFieldValue(
-                          `options.choices.${index + 1}.ix`,
+                          `options.choices.${index}.ix`,
                           index + 1
                         )
                         await setFieldValue(
-                          `options.choices.${index}.ix`,
+                          `options.choices.${index + 1}.ix`,
                           index
                         )
+                        move(index, index + 1)
                       }}
                       data={{
                         cy: `move-answer-option-ix-${index}-down`,
