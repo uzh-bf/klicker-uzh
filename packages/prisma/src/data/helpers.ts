@@ -427,7 +427,6 @@ export function prepareGroupActivityStack({
     description: 'Stack description for group activity.',
     order: 0,
     type: Prisma.ElementStackType.GROUP_ACTIVITY,
-    options: {},
     elements: {
       create: [
         ...questions
@@ -510,7 +509,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *flashcard*.',
       order: ix,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -544,7 +542,6 @@ export function prepareStackVariety({
       description: 'This stack contains all the *flashcards*.',
       order: flashcards.length,
       type: stackType,
-      options: {},
       elements: {
         create: flashcards.map((el, ix) => ({
           migrationId: String(migrationIdOffset + flashcards.length + ix),
@@ -576,7 +573,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *question*.',
       order: flashcards.length + ix + 1,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -610,7 +606,6 @@ export function prepareStackVariety({
       description: 'This stack contains all the *questions*.',
       order: flashcards.length + questions.length + 1,
       type: stackType,
-      options: {},
       elements: {
         create: questions.map((el, ix) => ({
           migrationId: String(
@@ -644,7 +639,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *content element*.',
       order: flashcards.length + questions.length + ix + 2,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -688,7 +682,6 @@ export function prepareStackVariety({
         2 +
         outer_ix,
       type: stackType,
-      options: {},
       elements: {
         create: contentElements.map((el, ix) => ({
           migrationId: String(
@@ -729,7 +722,6 @@ export function prepareStackVariety({
       order:
         flashcards.length + questions.length + contentElements.length + 4 + ix,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {

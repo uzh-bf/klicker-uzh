@@ -1,9 +1,7 @@
 import type {
   Element,
-  ElementStackType,
   ElementType,
   QuestionInstance,
-  SessionBlockStatus,
 } from '@klicker-uzh/prisma'
 
 export type ElementKeys = keyof Element
@@ -486,41 +484,4 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFreeText
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
-// #endregion
-
-// ----- ELEMENT STACKS -----
-// #region
-export type LiveQuizStackOptions = {
-  timeLimit?: number
-  expiresAt?: Date
-  randomSelection?: number
-  // TODO: by moving it here, we lose the default value, so ensure it is set in backend code correctly
-  execution: number
-  // TODO: rename the enum for consistency
-  status: SessionBlockStatus
-}
-
-export type MicrolearningStackOptions = {}
-
-export type PracticeQuizStackOptions = {}
-
-export type GroupActivityStackOptions = {}
-
-export type ElementStackOptions =
-  | LiveQuizStackOptions
-  | MicrolearningStackOptions
-  | PracticeQuizStackOptions
-  | GroupActivityStackOptions
-
-interface IElementStackOptions<
-  Type extends ElementStackType,
-  Options extends ElementStackOptions | null,
-> {}
-
-export type AllElementStackOptions =
-  | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
-  | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
-  | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
-  | IElementStackOptions<'GROUP_ACTIVITY', GroupActivityStackOptions>
-
 // #endregion

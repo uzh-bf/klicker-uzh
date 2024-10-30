@@ -2,6 +2,8 @@ enum PublicationStatus {
   DRAFT
   SCHEDULED
   PUBLISHED
+  ENDED
+  GRADED
 }
 
 // ----- PRACTICE QUIZZES -----
@@ -45,14 +47,16 @@ model PracticeQuiz {
 
 // #endregion
 
-// ----- SESSIONS -----
+// ----- LIVE QUIZZES -----
 // #region
+// TODO: delete after migration
 enum SessionBlockStatus {
   SCHEDULED
   ACTIVE
   EXECUTED
 }
 
+// TODO: delete after migration
 model SessionBlock {
   id Int @id @default(autoincrement())
 
@@ -142,13 +146,6 @@ model LiveSession {
   @@unique([ownerId, originalId])
 }
 
-enum LiveQuizStatus {
-  PREPARED
-  SCHEDULED
-  RUNNING
-  COMPLETED
-}
-
 model LiveQuiz {
   id String @id @default(uuid()) @db.Uuid
 
@@ -166,18 +163,17 @@ model LiveQuiz {
   description      String?
   startedAt        DateTime?
   finishedAt       DateTime?
-  // linkTo           String? // TODO: drop this functionality/field?
   pointsMultiplier Int       @default(1)
   maxBonusPoints   Int       @default(45)
   timeToZeroBonus  Int       @default(20)
 
-  accessMode AccessMode     @default(PUBLIC)
-  status     LiveQuizStatus @default(PREPARED)
+  accessMode AccessMode        @default(PUBLIC)
+  status     PublicationStatus @default(DRAFT)
 
-  activeStack   ElementStack? @relation(name: "ActiveElementStack", fields: [activeStackId], references: [id])
-  activeStackId Int?
+  activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
+  activeBlockId Int?
 
-  stacks      ElementStack[]
+  blocks      ElementBlock[]
   leaderboard LeaderboardEntry[]
 
   feedbacks Feedback[]
@@ -288,20 +284,12 @@ model GroupActivityClueInstance {
   @@unique([groupActivityInstanceId, name])
 }
 
-enum GroupActivityStatus {
-  DRAFT
-  SCHEDULED
-  PUBLISHED
-  ENDED
-  GRADED
-}
-
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
   name        String
   displayName String
-  status      GroupActivityStatus @default(DRAFT)
+  status      PublicationStatus @default(DRAFT)
 
   pointsMultiplier Int @default(1)
 

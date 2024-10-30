@@ -100,18 +100,21 @@ model ElementInstance {
   feedbacks          ElementFeedback[]
   instanceStatistics InstanceStatistics?
 
-  element        Element      @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
-  elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  elementStackId Int
-  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId        String       @db.Uuid
+  elementStack   ElementStack? @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementStackId Int?
+  elementBlock   ElementBlock? @relation(fields: [elementBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementBlockId Int?
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId        String        @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([type, migrationId])
   @@unique([type, elementStackId, order])
+  @@unique([type, elementBlockId, order])
   @@unique([ownerId, originalId])
 }
 
@@ -147,7 +150,6 @@ model InstanceStatistics {
 }
 
 enum ElementStackType {
-  LIVE_QUIZ
   PRACTICE_QUIZ
   MICROLEARNING
   GROUP_ACTIVITY
@@ -156,17 +158,11 @@ enum ElementStackType {
 model ElementStack {
   id Int @id @default(autoincrement())
 
-  // element stacks need to have an originalId to enable migration from v2 session blocks
-  originalId String? @unique
-
   type  ElementStackType
   order Int
 
   displayName String?
   description String?
-
-  /// [PrismaElementStackOptions]
-  options Json
 
   elements     ElementInstance[]
   bookmarkedBy Participation[]
@@ -177,10 +173,6 @@ model ElementStack {
   microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   microLearningId String?        @db.Uuid
 
-  liveQuiz         LiveQuiz?  @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  liveQuizId       String?    @db.Uuid
-  activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementStack")
-
   groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupActivityId String?        @unique @db.Uuid
 
@@ -189,8 +181,32 @@ model ElementStack {
 
   @@unique([type, practiceQuizId, order])
   @@unique([type, microLearningId, order])
-  @@unique([type, liveQuizId, order])
   @@unique([type, groupActivityId, order])
+}
+
+enum ElementBlockStatus {
+  SCHEDULED
+  ACTIVE
+  EXECUTED
+}
+
+model ElementBlock {
+  id    Int @id @default(autoincrement())
+  order Int
+
+  timeLimit       Int?
+  expiresAt       DateTime?
+  randomSelection Int?
+  execution       Int                @default(0)
+  status          ElementBlockStatus @default(SCHEDULED)
+
+  elements ElementInstance[]
+
+  liveQuiz         LiveQuiz   @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId       String     @db.Uuid
+  activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementBlock")
+
+  @@unique([liveQuizId, order])
 }
 
 // #endregion

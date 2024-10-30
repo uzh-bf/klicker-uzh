@@ -6,7 +6,6 @@ import type {
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
-  ElementStackOptions,
   GroupActivityDecisions,
   GroupActivityResults,
   QuestionResults,
@@ -41,15 +40,6 @@ declare global {
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
-  }
-}
-// #endregion
-
-// ----- ELEMENT STACKS -----
-// #region
-declare global {
-  namespace PrismaJson {
-    type PrismaElementStackOptions = ElementStackOptions
   }
 }
 // #endregion
