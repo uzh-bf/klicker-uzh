@@ -1,9 +1,8 @@
-import { Element } from '@klicker-uzh/graphql/dist/ops'
-import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
+import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { FieldArray, Form, Formik } from 'formik'
+import AddStackButton from '../AddStackButton'
 import CreationFormValidator from '../CreationFormValidator'
-import { LiveQuizBlockFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
-import LiveQuizAddBlockButton from './LiveQuizAddBlockButton'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
 import { LiveQuizWizardStepProps } from './LiveSessionWizard'
 
@@ -11,6 +10,17 @@ interface LiveQuizQuestionsStepProps extends LiveQuizWizardStepProps {
   selection: Record<number, Element>
   resetSelection: () => void
 }
+
+// TODO: update accepted types in live quiz to include flashcards and content elements
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.FreeText,
+  // ElementType.Flashcard,
+  // ElementType.Content,
+]
 
 function LiveQuizQuestionsStep({
   editMode,
@@ -45,28 +55,29 @@ function LiveQuizQuestionsStep({
           <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="mt-1 md:mt-0 md:overflow-x-auto">
               <FieldArray name="blocks">
-                {({ push, remove, move, replace }: FieldArrayRenderProps) => (
+                {({ push, remove, move, replace }) => (
                   <div className="flex w-fit flex-row gap-4 overflow-x-auto">
-                    {values.blocks.map(
-                      (block: LiveQuizBlockFormValues, index: number) => (
-                        <LiveQuizCreationBlock
-                          key={`${index}-${block.questionIds.join('')}`}
-                          index={index}
-                          block={block}
-                          numOfBlocks={values.blocks.length}
-                          remove={remove}
-                          move={move}
-                          replace={replace}
-                          selection={selection}
-                          resetSelection={resetSelection}
-                          error={errors.blocks as any}
-                        />
-                      )
-                    )}
-                    <LiveQuizAddBlockButton
+                    {values.blocks.map((block, index) => (
+                      <LiveQuizCreationBlock
+                        key={`stack-${index}-${block.elements.map((e) => e.id).join('-')}`}
+                        blockIx={index}
+                        block={block}
+                        numOfBlocks={values.blocks.length}
+                        acceptedTypes={acceptedTypes}
+                        remove={remove}
+                        move={move}
+                        replace={replace}
+                        selection={selection}
+                        resetSelection={resetSelection}
+                        error={errors.blocks as any}
+                      />
+                    ))}
+                    <AddStackButton
+                      type="block"
                       push={push}
                       selection={selection}
                       resetSelection={resetSelection}
+                      acceptedTypes={acceptedTypes}
                     />
                   </div>
                 )}

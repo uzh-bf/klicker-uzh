@@ -2,14 +2,14 @@ import {
   GetSingleCourseDocument,
   GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { LiveSessionFormValues } from '../WizardLayout'
+import { LiveQuizFormValues } from '../WizardLayout'
 
 interface LiveSessionFormProps {
   id?: string
   editMode: boolean
-  values: LiveSessionFormValues
-  createLiveSession: any
-  editLiveSession: any
+  values: LiveQuizFormValues
+  createLiveQuiz: any
+  editLiveQuiz: any
   setIsWizardCompleted: (isCompleted: boolean) => void
   setErrorToastOpen: (isOpen: boolean) => void
 }
@@ -18,8 +18,8 @@ async function submitLiveSessionForm({
   id,
   editMode,
   values,
-  createLiveSession,
-  editLiveSession,
+  createLiveQuiz,
+  editLiveQuiz,
   setIsWizardCompleted,
   setErrorToastOpen,
 }: LiveSessionFormProps) {
@@ -36,7 +36,7 @@ async function submitLiveSessionForm({
     let success = false
 
     if (editMode && id) {
-      const session = await editLiveSession({
+      const session = await editLiveQuiz({
         variables: {
           id: id,
           name: values.name,
@@ -71,7 +71,7 @@ async function submitLiveSessionForm({
       })
       success = Boolean(session.data?.editSession)
     } else {
-      const session = await createLiveSession({
+      const session = await createLiveQuiz({
         variables: {
           name: values.name,
           displayName: values.displayName,

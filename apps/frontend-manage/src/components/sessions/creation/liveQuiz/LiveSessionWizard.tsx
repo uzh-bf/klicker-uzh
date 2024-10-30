@@ -2,8 +2,8 @@ import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CreateSessionDocument,
-  EditSessionDocument,
+  CreateLiveQuizDocument,
+  EditLiveQuizDocument,
   Element,
   ElementType,
   Session,
@@ -24,7 +24,7 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import CompletionStep from '../CompletionStep'
 import { ElementSelectCourse } from '../ElementCreation'
-import WizardLayout, { LiveSessionFormValues } from '../WizardLayout'
+import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
@@ -34,17 +34,17 @@ import submitLiveSessionForm from './submitLiveSessionForm'
 export interface LiveQuizWizardStepProps {
   editMode: boolean
   formRef: any
-  formData: LiveSessionFormValues
+  formData: LiveQuizFormValues
   continueDisabled: boolean
   activeStep: number
   stepValidity: boolean[]
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: LiveSessionFormValues) => void
+  onSubmit?: (newValues: LiveQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
-  onNextStep?: (newValues: LiveSessionFormValues) => void
-  onPrevStep?: (newValues: LiveSessionFormValues) => void
+  onNextStep?: (newValues: LiveQuizFormValues) => void
+  onPrevStep?: (newValues: LiveQuizFormValues) => void
   closeWizard: () => void
 }
 
@@ -76,7 +76,7 @@ function LiveSessionWizard({
   const [stepValidity, setStepValidity] = useState(
     Array(4).fill(!!initialValues)
   )
-  const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
+  const formRef = useRef<FormikProps<LiveQuizFormValues>>(null)
 
   const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
     courseSelection: courses,
@@ -143,7 +143,7 @@ function LiveSessionWizard({
     name: '',
     displayName: '',
     description: '',
-    blocks: [{ questionIds: [], titles: [], types: [], timeLimit: undefined }],
+    blocks: [{ timeLimit: undefined, elements: [] }],
     courseId: '',
     multiplier: '1',
     maxBonusPoints: LQ_MAX_BONUS_POINTS,
@@ -176,7 +176,7 @@ function LiveSessionWizard({
     },
   ]
 
-  const [formData, setFormData] = useState<LiveSessionFormValues>({
+  const [formData, setFormData] = useState<LiveQuizFormValues>({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
@@ -217,22 +217,22 @@ function LiveSessionWizard({
       formDefaultValues.isModerationEnabled,
   })
 
-  const [editSession] = useMutation(EditSessionDocument)
-  const [createSession, { data }] = useMutation(CreateSessionDocument)
+  const [editLiveQuiz] = useMutation(EditLiveQuizDocument)
+  const [createLiveQuiz, { data }] = useMutation(CreateLiveQuizDocument)
   const [startSession] = useMutation(StartSessionDocument)
   const handleSubmit = useCallback(
-    async (values: LiveSessionFormValues) => {
+    async (values: LiveQuizFormValues) => {
       submitLiveSessionForm({
         id: initialValues?.id,
         editMode,
         values,
-        createLiveSession: createSession,
-        editLiveSession: editSession,
+        createLiveQuiz,
+        editLiveQuiz,
         setIsWizardCompleted,
         setErrorToastOpen,
       })
     },
-    [createSession, editMode, editSession, initialValues?.id]
+    [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
 
   return (
@@ -273,16 +273,16 @@ function LiveSessionWizard({
             setStepNumber={setActiveStep}
             onCloseWizard={closeWizard}
           >
-            {!editMode && data?.createSession?.id && (
+            {!editMode && data?.createLiveQuiz?.id ? (
               <Button
                 data={{ cy: 'quick-start' }}
                 onClick={async () => {
                   await startSession({
                     variables: {
-                      id: data?.createSession?.id!,
+                      id: data.createLiveQuiz!.id,
                     },
                   })
-                  router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+                  router.push(`/sessions/${data.createLiveQuiz!.id}/cockpit`)
                 }}
                 className={{ root: 'space-x-1' }}
               >
@@ -293,7 +293,7 @@ function LiveSessionWizard({
                   {t('manage.sessionForms.liveQuizStartNow')}
                 </Button.Label>
               </Button>
-            )}
+            ) : null}
           </CompletionStep>
         }
         steps={[
@@ -307,7 +307,7 @@ function LiveSessionWizard({
             stepValidity={stepValidity}
             validationSchema={nameValidationSchema}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
@@ -323,11 +323,11 @@ function LiveSessionWizard({
             stepValidity={stepValidity}
             validationSchema={descriptionValidationSchema}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
-            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep - 1)
             }}
@@ -345,11 +345,11 @@ function LiveSessionWizard({
             gamifiedCourses={gamifiedCourses}
             nonGamifiedCourses={nonGamifiedCourses}
             setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep + 1)
             }}
-            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep - 1)
             }}
@@ -367,10 +367,10 @@ function LiveSessionWizard({
             stepValidity={stepValidity}
             validationSchema={questionsValidationSchema}
             setStepValidity={setStepValidity}
-            onSubmit={(newValues: LiveSessionFormValues) =>
+            onSubmit={(newValues: LiveQuizFormValues) =>
               handleSubmit({ ...formData, ...newValues })
             }
-            onPrevStep={(newValues: Partial<LiveSessionFormValues>) => {
+            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
               setFormData((prev) => ({ ...prev, ...newValues }))
               setActiveStep((currentStep) => currentStep - 1)
             }}

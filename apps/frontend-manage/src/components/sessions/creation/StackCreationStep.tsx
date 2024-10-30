@@ -1,5 +1,5 @@
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
+import { FieldArray, Form, Formik } from 'formik'
 import AddStackButton from './AddStackButton'
 import CreationFormValidator from './CreationFormValidator'
 import StackBlockCreation from './StackBlockCreation'
@@ -56,13 +56,13 @@ function StackCreationStep({
           <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="mt-1 md:mt-0 md:overflow-x-auto">
               <FieldArray name="stacks">
-                {({ push, remove, move, replace }: FieldArrayRenderProps) => (
+                {({ push, remove, move, replace }) => (
                   <div className="flex w-fit flex-row gap-4 overflow-x-auto">
                     {values.stacks.map(
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
                           key={`stack-${index}-${stack.elements.map((e) => e.id).join('-')}`}
-                          index={index}
+                          stackIx={index}
                           stack={stack}
                           numOfStacks={values.stacks.length}
                           acceptedTypes={acceptedTypes}
@@ -77,6 +77,7 @@ function StackCreationStep({
                       )
                     )}
                     <AddStackButton
+                      type="stack"
                       push={push}
                       selection={selection}
                       resetSelection={resetSelection}
