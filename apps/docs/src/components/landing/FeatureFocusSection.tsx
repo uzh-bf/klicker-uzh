@@ -27,7 +27,7 @@ export function FeatureFocusSection({ title, description, features, imgSrc }) {
         <dl className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 text-base leading-7 text-gray-600 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
           {features.map((feature) => (
             <div key={feature.title} className="relative pl-9">
-              <dt className="inline font-semibold text-gray-900">
+              <dt className=" inline font-semibold text-gray-900">
                 <FontAwesomeIcon
                   aria-hidden="true"
                   icon={feature.icon}
@@ -35,7 +35,7 @@ export function FeatureFocusSection({ title, description, features, imgSrc }) {
                 />
                 {feature.title}
               </dt>{' '}
-              <dd className="inline">{feature.text}</dd>
+              <p>{feature.text}</p>
             </div>
           ))}
         </dl>
