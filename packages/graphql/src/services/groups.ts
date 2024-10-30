@@ -1048,7 +1048,6 @@ export async function manipulateGroupActivity(
         order: 0,
         displayName: stack.displayName,
         description: stack.description,
-        options: {},
         elements: {
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!

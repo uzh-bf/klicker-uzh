@@ -271,7 +271,6 @@ export async function manipulatePracticeQuiz(
           order: stack.order,
           displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
-          options: {},
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
