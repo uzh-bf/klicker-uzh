@@ -133,7 +133,7 @@ function PracticeQuizElement({
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
-  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+  const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
@@ -155,6 +155,8 @@ function PracticeQuizElement({
         icon={faUserGroup}
       />
     ),
+    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Graded]: null,
   }
 
   const deletionItem = {

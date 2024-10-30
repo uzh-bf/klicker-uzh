@@ -10,10 +10,7 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GroupActivity,
-  GroupActivityStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GroupActivity, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -52,62 +49,61 @@ function GroupActivityElement({
   const [endingModal, setEndingModal] = useState(false)
   const [startingModal, setStartingModal] = useState(false)
 
-  const statusMap: Record<GroupActivityStatus, React.ReactElement> = {
-    [GroupActivityStatus.Draft]: (
+  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+    [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
         status={t('shared.generic.draft')}
         icon={faPencil}
       />
     ),
-    [GroupActivityStatus.Scheduled]: (
+    [PublicationStatus.Scheduled]: (
       <StatusTag
         color="bg-orange-200"
         status={t('shared.generic.scheduled')}
         icon={faClock}
       />
     ),
-    [GroupActivityStatus.Published]: (
+    [PublicationStatus.Published]: (
       <StatusTag
         color="bg-green-300"
         status={t('shared.generic.running')}
         icon={faPlay}
       />
     ),
-    [GroupActivityStatus.Ended]: (
+    [PublicationStatus.Ended]: (
       <StatusTag
         color={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? 'bg-green-300'
             : 'bg-orange-300'
         }
         status={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? t('shared.generic.completed')
             : t('shared.generic.grading')
         }
         icon={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? faCheck
             : faArrowsRotate
         }
       />
     ),
-
-    [GroupActivityStatus.Graded]: (
+    [PublicationStatus.Graded]: (
       <StatusTag
         color={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? 'bg-green-300'
             : 'bg-orange-300'
         }
         status={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? t('shared.generic.completed')
             : t('shared.generic.grading')
         }
         icon={
-          groupActivity.status === GroupActivityStatus.Graded
+          groupActivity.status === PublicationStatus.Graded
             ? faCheck
             : faArrowsRotate
         }
@@ -182,7 +178,7 @@ function GroupActivityElement({
 
       <div className="flex flex-col items-end justify-between gap-4">
         <div className="flex flex-row items-center gap-3 text-sm">
-          {groupActivity.status === GroupActivityStatus.Draft && (
+          {groupActivity.status === PublicationStatus.Draft && (
             <>
               <PublishGroupActivityButton groupActivity={groupActivity} />
               <Dropdown
@@ -220,7 +216,7 @@ function GroupActivityElement({
             </>
           )}
 
-          {groupActivity.status === GroupActivityStatus.Scheduled && (
+          {groupActivity.status === PublicationStatus.Scheduled && (
             <>
               <GroupActivityUnpublishButton
                 activityId={groupActivity.id}
@@ -264,7 +260,7 @@ function GroupActivityElement({
             </>
           )}
 
-          {groupActivity.status === GroupActivityStatus.Published && (
+          {groupActivity.status === PublicationStatus.Published && (
             <>
               <GroupActivityExtensionButton
                 activityId={groupActivity.id}
@@ -300,7 +296,7 @@ function GroupActivityElement({
             </>
           )}
 
-          {groupActivity.status === GroupActivityStatus.Ended && (
+          {groupActivity.status === PublicationStatus.Ended && (
             <>
               <GroupActivityGradingLink
                 activityId={groupActivity.id}
@@ -310,7 +306,7 @@ function GroupActivityElement({
             </>
           )}
 
-          {groupActivity.status === GroupActivityStatus.Graded && (
+          {groupActivity.status === PublicationStatus.Graded && (
             <>
               <GroupActivityGradingLink
                 activityId={groupActivity.id}
@@ -321,9 +317,7 @@ function GroupActivityElement({
           )}
         </div>
 
-        <div>
-          {statusMap[groupActivity.status ?? GroupActivityStatus.Draft]}
-        </div>
+        <div>{statusMap[groupActivity.status ?? PublicationStatus.Draft]}</div>
       </div>
       <GroupActivityDeletionModal
         open={deletionModal}
