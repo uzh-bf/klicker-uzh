@@ -11,34 +11,17 @@ function Home() {
   return (
     <Layout>
       <TitleImage />
-      <FeatureSection
-        title="Gamified Learning"
-        description=""
-        features={[
-          {
-            title: 'Progress Tracking',
+        <FeatureSection title={"Synchronous Interaction"} description={"Interact with your students during class and drive engagement with your materials."} features={[{
+            title: 'Live Quizzes',
             icon: faArrowRight,
-            text: 'Students',
+            text: "You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.",
             hoverImage: '/img_v3/06_live_quiz.png',
-            shadow: false,
-          },
-          {
-            title: 'Leaderboards',
-            icon: faArrowRight,
-            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or by the date of the last response, allowing for a simple way of spaced repetition.',
-            hoverImage: '/img_v3/quiz_evaluation.png',
-            shadow: true,
-          },
-          {
-            title: 'Group Activities',
-            icon: faArrowRight,
-            text: 'You can create Group Activities to encourage collaboration on a task. Questions and clues that are distributed within each group and the group needs to communicate to find the solutions.',
-            hoverImage:
-              'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Filmaspectratios.svg/290px-Filmaspectratios.svg.png',
-            shadow: false,
-          },
-        ]}
-      />
+        },
+            {title: 'Live Q&A',
+                icon: faArrowRight,
+        text:"You can launch a Live Q&A session during your lecture. Students can ask questions and upvote questions from other students. You can answer questions live or at the end of the session.",
+        hoverImage:"/img_v3/06_live_qa.png"}]}
+        />
 
       <FeatureSection
         title="Asynchronous Interaction"
@@ -56,21 +39,36 @@ function Home() {
             text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or by the date of the last response, allowing for a simple way of spaced repetition.',
             hoverImage: '/img_v3/quiz_evaluation.png',
           },
-          {
-            title: 'Group Activities',
-            icon: faArrowRight,
-            text: 'You can create Group Activities to encourage collaboration on a task. Questions and clues that are distributed within each group and the group needs to communicate to find the solutions.',
-            hoverImage: '',
-          },
         ]}
       />
-        <FeatureSection title={"Integration"} description={"Integrate Klicker into your existing workflows"} features={[
-            {title: 'Powerpoint'
-                , icon: faArrowRight,
-            text:"You can integrate Klicker into your Powerpoint presentations. This allows you to create interactive slides that can be used during your lecture. The integration is done via a Powerpoint Add-In that can be installed on your computer.",
-            hoverImage:""}
-        ]}>
-        </FeatureSection>
+        <FeatureSection
+            title="Gamified Learning"
+            description=""
+            features={[
+                {
+                    title: 'Reward-Based Scoring',
+                    icon: faArrowRight,
+                    text: 'Points are granted for correct answers, providing incentives and making participation more engaging.',
+                    hoverImage: '/img_v3/10_group_overview.png',
+                    shadow: false,
+                },
+                {
+                    title: 'Group Activities',
+                    icon: faArrowRight,
+                    text: 'Students engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
+                    hoverImage:
+                        '/img_v3/landing_page/groups.png',
+                    shadow: false,
+                },
+                {
+                    title: 'Leaderboards',
+                    icon: faArrowRight,
+                    text: 'Individual and group leaderboards display rankings, inspiring a sense of friendly competition and prompting students to stay engaged.',
+                    hoverImage: '/img_v3/08_gamification.png',
+                    shadow: false,
+                },
+            ]}
+        />
         <FeatureSection title={"AI Learning Analytics"} description={"Enhancing Learning Through Insightful Tracking for Lecturers and Personalized Progress Overviews for Students"} isComingSoon={true} features={[
             {
                 title: 'For Lecturers',
