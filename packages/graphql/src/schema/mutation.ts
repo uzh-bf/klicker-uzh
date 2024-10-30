@@ -55,7 +55,6 @@ import {
 } from './question.js'
 import { ElementStatus, ElementType } from './questionData.js'
 import {
-  BlockInput,
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
@@ -864,57 +863,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return LiveQuizService.manipulateLiveQuiz(args, ctx)
-        },
-      }),
-
-      createSession: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Session,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          blocks: t.arg({
-            type: [BlockInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
-          isGamificationEnabled: t.arg.boolean({ required: true }),
-          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
-          isLiveQAEnabled: t.arg.boolean({ required: true }),
-          isModerationEnabled: t.arg.boolean({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.createSession(args, ctx)
-        },
-      }),
-
-      editSession: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          blocks: t.arg({
-            type: [BlockInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
-          isGamificationEnabled: t.arg.boolean({ required: true }),
-          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
-          isLiveQAEnabled: t.arg.boolean({ required: true }),
-          isModerationEnabled: t.arg.boolean({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.editSession(args, ctx)
         },
       }),
 

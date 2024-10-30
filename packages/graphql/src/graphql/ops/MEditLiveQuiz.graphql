@@ -1,9 +1,9 @@
-mutation EditSession(
+mutation EditLiveQuiz(
   $id: String!
   $name: String!
   $displayName: String!
   $description: String
-  $blocks: [BlockInput!]!
+  $blocks: [ElementBlockInput!]!
   $courseId: String
   $multiplier: Int!
   $maxBonusPoints: Int!
@@ -13,7 +13,7 @@ mutation EditSession(
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
 ) {
-  editSession(
+  editLiveQuiz(
     id: $id
     name: $name
     displayName: $displayName
@@ -36,9 +36,9 @@ mutation EditSession(
       id
       status
       timeLimit
-      instances {
+      elements {
         id
-        ...QuestionDataInfo
+        ...ElementDataInfo
       }
     }
     course {
