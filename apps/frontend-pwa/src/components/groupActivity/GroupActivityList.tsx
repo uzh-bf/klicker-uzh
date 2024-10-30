@@ -15,7 +15,7 @@ import {
 import {
   GroupActivity,
   GroupActivityInstance,
-  GroupActivityStatus,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -76,14 +76,14 @@ function GroupActivityList({
                 </div>
               </div>
 
-              {activity.status === GroupActivityStatus.Scheduled && (
+              {activity.status === PublicationStatus.Scheduled && (
                 <div className="flex h-max w-max flex-row items-center gap-2 rounded bg-orange-300 px-2 py-0.5 text-sm">
                   <FontAwesomeIcon icon={faClock} />
                   <div>{t('shared.generic.scheduled')}</div>
                 </div>
               )}
 
-              {activity.status === GroupActivityStatus.Published && (
+              {activity.status === PublicationStatus.Published && (
                 <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
@@ -106,7 +106,7 @@ function GroupActivityList({
                 </div>
               )}
 
-              {activity.status === GroupActivityStatus.Ended && (
+              {activity.status === PublicationStatus.Ended && (
                 <div className="flex h-max flex-row items-center gap-1.5">
                   <ActivityInstanceLink
                     groupId={groupId}
@@ -143,7 +143,7 @@ function GroupActivityList({
                 </div>
               )}
 
-              {activity.status === GroupActivityStatus.Graded &&
+              {activity.status === PublicationStatus.Graded &&
                 (existingResults ? (
                   <div className="flex h-max flex-row items-center gap-1.5">
                     <ActivityInstanceLink

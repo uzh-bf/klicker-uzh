@@ -1,6 +1,5 @@
 import {
   ElementOrderType,
-  GroupActivityStatus,
   LeaderboardType,
   type Participant,
   type ParticipantGroup,
@@ -1129,7 +1128,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Set group activity status to ended for all published group activities that have ended
   const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: GroupActivityStatus.PUBLISHED,
+      status: PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -1143,7 +1142,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: GroupActivityStatus.ENDED,
+          status: PublicationStatus.ENDED,
         },
       })
     )

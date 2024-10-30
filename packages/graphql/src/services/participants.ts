@@ -534,8 +534,8 @@ export async function flagElement(
   })
 
   if (
-    !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
-    !elementInstance?.elementStack.microLearning?.course?.notificationEmail
+    !elementInstance?.elementStack!.practiceQuiz?.course?.notificationEmail &&
+    !elementInstance?.elementStack!.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
     return elementFeedback

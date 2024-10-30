@@ -78,7 +78,7 @@ function MicroLearningElement({
     variables: { id: microLearning.id },
   })
 
-  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+  const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
@@ -102,6 +102,8 @@ function MicroLearningElement({
         icon={faClock}
       />
     ),
+    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Graded]: null,
   }
 
   const deletionElement = {

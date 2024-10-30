@@ -445,7 +445,6 @@ input ElementStackInput {
 
 enum ElementStackType {
   GROUP_ACTIVITY
-  LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
 }
@@ -726,7 +725,7 @@ type GroupActivity {
   scheduledEndAt: Date!
   scheduledStartAt: Date!
   stacks: [ElementStack!]
-  status: GroupActivityStatus!
+  status: PublicationStatus!
 }
 
 type GroupActivityClue {
@@ -787,7 +786,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
-  status: GroupActivityStatus!
+  status: PublicationStatus!
 }
 
 type GroupActivityGrading {
@@ -829,14 +828,6 @@ type GroupActivityResults {
   grading: [GroupActivityGrading!]!
   passed: Boolean!
   points: Float!
-}
-
-enum GroupActivityStatus {
-  DRAFT
-  ENDED
-  GRADED
-  PUBLISHED
-  SCHEDULED
 }
 
 type GroupActivitySummary {
@@ -1318,6 +1309,8 @@ type PracticeQuiz {
 
 enum PublicationStatus {
   DRAFT
+  ENDED
+  GRADED
   PUBLISHED
   SCHEDULED
 }

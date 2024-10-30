@@ -62,10 +62,10 @@ type PrismaTransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 type ExistingInstanceType = ElementInstance & {
-  elementStack: {
+  elementStack?: {
     practiceQuizId?: string | null
     microLearningId?: string | null
-  }
+  } | null
 }
 
 const POINTS_PER_INSTANCE = 10
@@ -498,17 +498,17 @@ async function createFlashcardResponseDetail({
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
+      practiceQuiz: existingInstance.elementStack?.practiceQuizId
         ? {
             connect: {
-              id: existingInstance.elementStack.practiceQuizId,
+              id: existingInstance.elementStack?.practiceQuizId,
             },
           }
         : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
+      microLearning: existingInstance.elementStack?.microLearningId
         ? {
             connect: {
-              id: existingInstance.elementStack.microLearningId,
+              id: existingInstance.elementStack?.microLearningId,
             },
           }
         : undefined,
@@ -564,17 +564,17 @@ async function upsertFlashcardResponse({
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
+      practiceQuiz: existingInstance.elementStack?.practiceQuizId
         ? {
             connect: {
-              id: existingInstance.elementStack.practiceQuizId,
+              id: existingInstance.elementStack?.practiceQuizId,
             },
           }
         : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
+      microLearning: existingInstance.elementStack?.microLearningId
         ? {
             connect: {
-              id: existingInstance.elementStack.microLearningId,
+              id: existingInstance.elementStack?.microLearningId,
             },
           }
         : undefined,
@@ -717,7 +717,7 @@ async function respondToFlashcard(
 
     // compute updated instance statistics
     const instanceInPracticeQuiz =
-      !!existingInstance.elementStack.practiceQuizId
+      !!existingInstance.elementStack?.practiceQuizId
     const statisticsUpdate = computeUpdatedInstanceStatistics({
       participation,
       existingResponse,
@@ -844,17 +844,17 @@ async function createContentResponseDetail({
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
+      practiceQuiz: existingInstance.elementStack?.practiceQuizId
         ? {
             connect: {
-              id: existingInstance.elementStack.practiceQuizId,
+              id: existingInstance.elementStack?.practiceQuizId,
             },
           }
         : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
+      microLearning: existingInstance.elementStack?.microLearningId
         ? {
             connect: {
-              id: existingInstance.elementStack.microLearningId,
+              id: existingInstance.elementStack?.microLearningId,
             },
           }
         : undefined,
@@ -904,17 +904,17 @@ async function upsertContentResponse({
       elementInstance: {
         connect: { id },
       },
-      practiceQuiz: existingInstance.elementStack.practiceQuizId
+      practiceQuiz: existingInstance.elementStack?.practiceQuizId
         ? {
             connect: {
-              id: existingInstance.elementStack.practiceQuizId,
+              id: existingInstance.elementStack?.practiceQuizId,
             },
           }
         : undefined,
-      microLearning: existingInstance.elementStack.microLearningId
+      microLearning: existingInstance.elementStack?.microLearningId
         ? {
             connect: {
-              id: existingInstance.elementStack.microLearningId,
+              id: existingInstance.elementStack?.microLearningId,
             },
           }
         : undefined,
@@ -1042,7 +1042,7 @@ async function respondToContent(
 
     // compute updated instance statistics
     const instanceInPracticeQuiz =
-      !!existingInstance.elementStack.practiceQuizId
+      !!existingInstance.elementStack?.practiceQuizId
     const statisticsUpdate = computeUpdatedInstanceStatistics({
       participation,
       existingResponse,
@@ -2189,7 +2189,7 @@ export async function respondToQuestion(
 
     // compute updated instance statistics
     const instanceInPracticeQuiz =
-      !!existingInstance.elementStack.practiceQuizId
+      !!existingInstance.elementStack?.practiceQuizId
     const statisticsUpdate = computeUpdatedInstanceStatistics({
       participation,
       existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
@@ -2303,9 +2303,9 @@ export async function respondToQuestion(
       pointsAwarded,
       xpAwarded,
       answerTime,
-      practiceQuizId: updatedInstance.elementStack.practiceQuizId ?? undefined,
+      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
       microLearningId:
-        updatedInstance.elementStack.microLearningId ?? undefined,
+        updatedInstance.elementStack?.microLearningId ?? undefined,
     })
 
     // upsert the question response
@@ -2324,9 +2324,9 @@ export async function respondToQuestion(
       newAverageResponseTime,
       existingResponse,
       newAggResponses,
-      practiceQuizId: updatedInstance.elementStack.practiceQuizId ?? undefined,
+      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
       microLearningId:
-        updatedInstance.elementStack.microLearningId ?? undefined,
+        updatedInstance.elementStack?.microLearningId ?? undefined,
       resultSpacedRepetition,
     })
 
