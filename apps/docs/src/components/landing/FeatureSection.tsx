@@ -31,18 +31,22 @@ function FeatureSection({ title, description, features, isComingSoon = false}: F
   return (
       <div className="relative overflow-hidden bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+            {isComingSoon && (
+                <div
+                    className="bg-uzh-red-100 w-32 text-lg  text-white font-bold px-2 py-1 my-0  rounded-3xl top-0"
+                >
+                    Coming Soon
+                </div>
+            )}
+
           <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
 
             <div className="lg:max-w-lg">
 
+
             <div className="lg:pr-8 lg:pt-4">
-              {isComingSoon && (
-                  <div
-                      className="bg-uzh-red-100 w-32 text-lg  text-white font-bold px-2 mb-4 rounded-3xl left-0 top-0"
-                  >
-                    Coming Soon
-                  </div>
-              )}
+
 
 
 

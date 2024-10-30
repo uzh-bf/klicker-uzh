@@ -12,7 +12,7 @@ function Home() {
     <Layout>
       <TitleImage />
       <FeatureSection
-        title="Gamified Learning is what it is"
+        title="Gamified Learning"
         description=""
         features={[
           {
@@ -64,6 +64,30 @@ function Home() {
           },
         ]}
       />
+        <FeatureSection title={"Integration"} description={"Integrate Klicker into your existing workflows"} features={[
+            {title: 'Powerpoint'
+                , icon: faArrowRight,
+            text:"You can integrate Klicker into your Powerpoint presentations. This allows you to create interactive slides that can be used during your lecture. The integration is done via a Powerpoint Add-In that can be installed on your computer.",
+            hoverImage:""}
+        ]}>
+        </FeatureSection>
+        <FeatureSection title={"AI Learning Analytics"} description={"Enhancing Learning Through Insightful Tracking for Lecturers and Personalized Progress Overviews for Students"} isComingSoon={true} features={[
+            {
+                title: 'For Lecturers',
+                icon: faArrowRight,
+                text: 'Track student activity, behavior, performance, and quiz results via aggregated, anonymized analytics.',
+                hoverImage: '/img_v3/landing_page/feature/learning_analytics_lecturer.png',
+            },
+            {
+                title: 'For Students',
+                icon: faArrowRight,
+                text: 'View insights into personal learning behavior and track completed course elements.\n' +
+                    'Access an overview of strengths and weaknesses within predefined competency frameworks (if provided by lecturers).',
+                hoverImage: '/img_v3/landing_page/feature/learning_analytics_students.png',
+            },
+        ]}>
+
+        </FeatureSection>
       <FeatureFocusSection
         title="Question Pool and Activity Management"
         description="Manage everything in one place."
