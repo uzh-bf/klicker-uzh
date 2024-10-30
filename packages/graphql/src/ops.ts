@@ -496,7 +496,6 @@ export type ElementStackInput = {
 
 export enum ElementStackType {
   GroupActivity = 'GROUP_ACTIVITY',
-  LiveQuiz = 'LIVE_QUIZ',
   Microlearning = 'MICROLEARNING',
   PracticeQuiz = 'PRACTICE_QUIZ'
 }
@@ -799,7 +798,7 @@ export type GroupActivity = {
   scheduledEndAt: Scalars['Date']['output'];
   scheduledStartAt: Scalars['Date']['output'];
   stacks?: Maybe<Array<ElementStack>>;
-  status: GroupActivityStatus;
+  status: PublicationStatus;
 };
 
 export type GroupActivityClue = {
@@ -865,7 +864,7 @@ export type GroupActivityDetails = {
   scheduledEndAt?: Maybe<Scalars['Date']['output']>;
   scheduledStartAt?: Maybe<Scalars['Date']['output']>;
   stacks: Array<ElementStack>;
-  status: GroupActivityStatus;
+  status: PublicationStatus;
 };
 
 export type GroupActivityGrading = {
@@ -912,14 +911,6 @@ export type GroupActivityResults = {
   passed: Scalars['Boolean']['output'];
   points: Scalars['Float']['output'];
 };
-
-export enum GroupActivityStatus {
-  Draft = 'DRAFT',
-  Ended = 'ENDED',
-  Graded = 'GRADED',
-  Published = 'PUBLISHED',
-  Scheduled = 'SCHEDULED'
-}
 
 export type GroupActivitySummary = {
   __typename?: 'GroupActivitySummary';
@@ -2099,6 +2090,8 @@ export type PracticeQuiz = {
 
 export enum PublicationStatus {
   Draft = 'DRAFT',
+  Ended = 'ENDED',
+  Graded = 'GRADED',
   Published = 'PUBLISHED',
   Scheduled = 'SCHEDULED'
 }
@@ -3170,7 +3163,7 @@ export type EndGroupActivityMutationVariables = Exact<{
 }>;
 
 
-export type EndGroupActivityMutation = { __typename?: 'Mutation', endGroupActivity?: { __typename?: 'GroupActivity', id: string, status: GroupActivityStatus, scheduledEndAt: any } | null };
+export type EndGroupActivityMutation = { __typename?: 'Mutation', endGroupActivity?: { __typename?: 'GroupActivity', id: string, status: PublicationStatus, scheduledEndAt: any } | null };
 
 export type EndMicroLearningMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3212,7 +3205,7 @@ export type FinalizeGroupActivityGradingMutationVariables = Exact<{
 }>;
 
 
-export type FinalizeGroupActivityGradingMutation = { __typename?: 'Mutation', finalizeGroupActivityGrading?: { __typename?: 'GroupActivity', id: string, status: GroupActivityStatus } | null };
+export type FinalizeGroupActivityGradingMutation = { __typename?: 'Mutation', finalizeGroupActivityGrading?: { __typename?: 'GroupActivity', id: string, status: PublicationStatus } | null };
 
 export type FlagElementMutationVariables = Exact<{
   elementInstanceId: Scalars['Int']['input'];
@@ -3424,7 +3417,7 @@ export type OpenGroupActivityMutationVariables = Exact<{
 }>;
 
 
-export type OpenGroupActivityMutation = { __typename?: 'Mutation', openGroupActivity?: { __typename?: 'GroupActivity', id: string, status: GroupActivityStatus, scheduledStartAt: any } | null };
+export type OpenGroupActivityMutation = { __typename?: 'Mutation', openGroupActivity?: { __typename?: 'GroupActivity', id: string, status: PublicationStatus, scheduledStartAt: any } | null };
 
 export type PinFeedbackMutationVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -3447,7 +3440,7 @@ export type PublishGroupActivityMutationVariables = Exact<{
 }>;
 
 
-export type PublishGroupActivityMutation = { __typename?: 'Mutation', publishGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: GroupActivityStatus } | null };
+export type PublishGroupActivityMutation = { __typename?: 'Mutation', publishGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: PublicationStatus } | null };
 
 export type PublishMicroLearningMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3589,7 +3582,7 @@ export type UnpublishGroupActivityMutationVariables = Exact<{
 }>;
 
 
-export type UnpublishGroupActivityMutation = { __typename?: 'Mutation', unpublishGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: GroupActivityStatus } | null };
+export type UnpublishGroupActivityMutation = { __typename?: 'Mutation', unpublishGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: PublicationStatus } | null };
 
 export type UnpublishMicroLearningMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3761,7 +3754,7 @@ export type GetCourseGroupActivitiesQueryVariables = Exact<{
 }>;
 
 
-export type GetCourseGroupActivitiesQuery = { __typename?: 'Query', groupActivities?: Array<{ __typename?: 'GroupActivity', id: string, displayName: string, status: GroupActivityStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any }> | null };
+export type GetCourseGroupActivitiesQuery = { __typename?: 'Query', groupActivities?: Array<{ __typename?: 'GroupActivity', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any }> | null };
 
 export type GetCourseGroupsQueryVariables = Exact<{
   courseId: Scalars['String']['input'];
@@ -3803,7 +3796,7 @@ export type GetGradingGroupActivityQueryVariables = Exact<{
 }>;
 
 
-export type GetGradingGroupActivityQuery = { __typename?: 'Query', getGradingGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, description?: string | null, status: GroupActivityStatus, pointsMultiplier?: number | null, scheduledStartAt: any, scheduledEndAt: any, clues?: Array<{ __typename?: 'GroupActivityClue', id: number, type: ParameterType, name: string, displayName: string, value: string, unit?: string | null }> | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, displayName?: string | null, description?: string | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, options?: { __typename?: 'ElementInstanceOptions', pointsMultiplier?: number | null } | null, elementData: { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', hasSampleSolution?: boolean | null, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', hasSampleSolution?: boolean | null, solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', hasSampleSolution?: boolean | null, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null, activityInstances?: Array<{ __typename?: 'GroupActivityInstance', id: number, groupActivityId: string, decisionsSubmittedAt?: any | null, resultsComputedAt?: any | null, groupName?: string | null, decisions?: Array<{ __typename?: 'GroupActivityDecision', instanceId: number, type: ElementType, freeTextResponse?: string | null, choicesResponse?: Array<number> | null, numericalResponse?: number | null, contentResponse?: boolean | null }> | null, results?: { __typename?: 'GroupActivityResults', passed: boolean, points: number, comment?: string | null, grading: Array<{ __typename?: 'GroupActivityGrading', instanceId: number, score: number, maxPoints: number, feedback?: string | null }> } | null }> | null } | null };
+export type GetGradingGroupActivityQuery = { __typename?: 'Query', getGradingGroupActivity?: { __typename?: 'GroupActivity', id: string, name: string, displayName: string, description?: string | null, status: PublicationStatus, pointsMultiplier?: number | null, scheduledStartAt: any, scheduledEndAt: any, clues?: Array<{ __typename?: 'GroupActivityClue', id: number, type: ParameterType, name: string, displayName: string, value: string, unit?: string | null }> | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, displayName?: string | null, description?: string | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, options?: { __typename?: 'ElementInstanceOptions', pointsMultiplier?: number | null } | null, elementData: { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', hasSampleSolution?: boolean | null, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', hasSampleSolution?: boolean | null, solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', hasSampleSolution?: boolean | null, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null, activityInstances?: Array<{ __typename?: 'GroupActivityInstance', id: number, groupActivityId: string, decisionsSubmittedAt?: any | null, resultsComputedAt?: any | null, groupName?: string | null, decisions?: Array<{ __typename?: 'GroupActivityDecision', instanceId: number, type: ElementType, freeTextResponse?: string | null, choicesResponse?: Array<number> | null, numericalResponse?: number | null, contentResponse?: boolean | null }> | null, results?: { __typename?: 'GroupActivityResults', passed: boolean, points: number, comment?: string | null, grading: Array<{ __typename?: 'GroupActivityGrading', instanceId: number, score: number, maxPoints: number, feedback?: string | null }> } | null }> | null } | null };
 
 export type GetGroupActivityQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3979,7 +3972,7 @@ export type GetSingleCourseQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleCourseQuery = { __typename?: 'Query', course?: { __typename?: 'Course', id: string, isArchived: boolean, isGamificationEnabled: boolean, pinCode?: number | null, name: string, displayName: string, description?: string | null, color: string, numOfParticipants?: number | null, numOfActiveParticipants?: number | null, numOfParticipantGroups?: number | null, averageScore?: number | null, averageActiveScore?: number | null, startDate: any, endDate: any, isGroupCreationEnabled: boolean, groupDeadlineDate?: any | null, maxGroupSize: number, preferredGroupSize: number, randomAssignmentFinalized: boolean, sessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, isGamificationEnabled: boolean, pinCode?: number | null, accessMode: SessionAccessMode, status: SessionStatus, pointsMultiplier: number, createdAt: any, numOfBlocks?: number | null, numOfQuestions?: number | null }> | null, practiceQuizzes?: Array<{ __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, status: PublicationStatus, availableFrom?: any | null, orderType: ElementOrderType, pointsMultiplier: number, resetTimeDays: number, numOfStacks?: number | null }> | null, groupActivities?: Array<{ __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: GroupActivityStatus, scheduledStartAt: any, scheduledEndAt: any, numOfQuestions?: number | null }> | null, microLearnings?: Array<{ __typename?: 'MicroLearning', id: string, name: string, displayName: string, status: PublicationStatus, scheduledStartAt: any, scheduledEndAt: any, pointsMultiplier: number, numOfStacks?: number | null }> | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, score: number, rank: number, username: string, email?: string | null, avatar?: string | null }> | null } | null };
+export type GetSingleCourseQuery = { __typename?: 'Query', course?: { __typename?: 'Course', id: string, isArchived: boolean, isGamificationEnabled: boolean, pinCode?: number | null, name: string, displayName: string, description?: string | null, color: string, numOfParticipants?: number | null, numOfActiveParticipants?: number | null, numOfParticipantGroups?: number | null, averageScore?: number | null, averageActiveScore?: number | null, startDate: any, endDate: any, isGroupCreationEnabled: boolean, groupDeadlineDate?: any | null, maxGroupSize: number, preferredGroupSize: number, randomAssignmentFinalized: boolean, sessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, isGamificationEnabled: boolean, pinCode?: number | null, accessMode: SessionAccessMode, status: SessionStatus, pointsMultiplier: number, createdAt: any, numOfBlocks?: number | null, numOfQuestions?: number | null }> | null, practiceQuizzes?: Array<{ __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, status: PublicationStatus, availableFrom?: any | null, orderType: ElementOrderType, pointsMultiplier: number, resetTimeDays: number, numOfStacks?: number | null }> | null, groupActivities?: Array<{ __typename?: 'GroupActivity', id: string, name: string, displayName: string, status: PublicationStatus, scheduledStartAt: any, scheduledEndAt: any, numOfQuestions?: number | null }> | null, microLearnings?: Array<{ __typename?: 'MicroLearning', id: string, name: string, displayName: string, status: PublicationStatus, scheduledStartAt: any, scheduledEndAt: any, pointsMultiplier: number, numOfStacks?: number | null }> | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, score: number, rank: number, username: string, email?: string | null, avatar?: string | null }> | null } | null };
 
 export type GetSingleLiveSessionQueryVariables = Exact<{
   sessionId: Scalars['String']['input'];
@@ -4062,7 +4055,7 @@ export type GroupActivityDetailsQueryVariables = Exact<{
 }>;
 
 
-export type GroupActivityDetailsQuery = { __typename?: 'Query', groupActivityDetails?: { __typename?: 'GroupActivityDetails', id: string, displayName: string, status: GroupActivityStatus, description?: string | null, scheduledStartAt?: any | null, scheduledEndAt?: any | null, clues: Array<{ __typename?: 'GroupActivityClue', id: number, displayName: string }>, stacks: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } }> | null }>, course: { __typename?: 'Course', id: string, displayName: string, color: string }, group: { __typename?: 'ParticipantGroup', id: string, name: string, participants?: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null }> | null }, activityInstance?: { __typename?: 'GroupActivityInstance', id: number, decisionsSubmittedAt?: any | null, resultsComputedAt?: any | null, clues?: Array<{ __typename?: 'GroupActivityClueInstance', id: number, displayName: string, type: ParameterType, unit?: string | null, value?: string | null, participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null } }> | null, decisions?: Array<{ __typename?: 'GroupActivityDecision', instanceId: number, type: ElementType, freeTextResponse?: string | null, choicesResponse?: Array<number> | null, numericalResponse?: number | null, contentResponse?: boolean | null }> | null, results?: { __typename?: 'GroupActivityResults', passed: boolean, points: number, comment?: string | null, grading: Array<{ __typename?: 'GroupActivityGrading', instanceId: number, score: number, maxPoints: number, feedback?: string | null }> } | null } | null } | null };
+export type GroupActivityDetailsQuery = { __typename?: 'Query', groupActivityDetails?: { __typename?: 'GroupActivityDetails', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt?: any | null, scheduledEndAt?: any | null, clues: Array<{ __typename?: 'GroupActivityClue', id: number, displayName: string }>, stacks: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } }> | null }>, course: { __typename?: 'Course', id: string, displayName: string, color: string }, group: { __typename?: 'ParticipantGroup', id: string, name: string, participants?: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null }> | null }, activityInstance?: { __typename?: 'GroupActivityInstance', id: number, decisionsSubmittedAt?: any | null, resultsComputedAt?: any | null, clues?: Array<{ __typename?: 'GroupActivityClueInstance', id: number, displayName: string, type: ParameterType, unit?: string | null, value?: string | null, participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null } }> | null, decisions?: Array<{ __typename?: 'GroupActivityDecision', instanceId: number, type: ElementType, freeTextResponse?: string | null, choicesResponse?: Array<number> | null, numericalResponse?: number | null, contentResponse?: boolean | null }> | null, results?: { __typename?: 'GroupActivityResults', passed: boolean, points: number, comment?: string | null, grading: Array<{ __typename?: 'GroupActivityGrading', instanceId: number, score: number, maxPoints: number, feedback?: string | null }> } | null } | null } | null };
 
 export type ParticipationsQueryVariables = Exact<{
   endpoint?: InputMaybe<Scalars['String']['input']>;
@@ -4119,14 +4112,14 @@ export type GroupActivityEndedSubscriptionVariables = Exact<{
 }>;
 
 
-export type GroupActivityEndedSubscription = { __typename?: 'Subscription', groupActivityEnded: { __typename?: 'GroupActivity', id: string, displayName: string, status: GroupActivityStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
+export type GroupActivityEndedSubscription = { __typename?: 'Subscription', groupActivityEnded: { __typename?: 'GroupActivity', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
 
 export type GroupActivityStartedSubscriptionVariables = Exact<{
   courseId: Scalars['String']['input'];
 }>;
 
 
-export type GroupActivityStartedSubscription = { __typename?: 'Subscription', groupActivityStarted: { __typename?: 'GroupActivity', id: string, displayName: string, status: GroupActivityStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
+export type GroupActivityStartedSubscription = { __typename?: 'Subscription', groupActivityStarted: { __typename?: 'GroupActivity', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
 
 export type MicroLearningEndedSubscriptionVariables = Exact<{
   activityId: Scalars['String']['input'];
@@ -4147,7 +4140,7 @@ export type SingleGroupActivityEndedSubscriptionVariables = Exact<{
 }>;
 
 
-export type SingleGroupActivityEndedSubscription = { __typename?: 'Subscription', singleGroupActivityEnded: { __typename?: 'GroupActivity', id: string, displayName: string, status: GroupActivityStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
+export type SingleGroupActivityEndedSubscription = { __typename?: 'Subscription', singleGroupActivityEnded: { __typename?: 'GroupActivity', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt: any, scheduledEndAt: any } };
 
 export type UpdateParticipantAvatarMutationVariables = Exact<{
   avatar: Scalars['String']['input'];

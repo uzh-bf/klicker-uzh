@@ -5079,12 +5079,6 @@
             "deprecationReason": null
           },
           {
-            "name": "LIVE_QUIZ",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "MICROLEARNING",
             "description": null,
             "isDeprecated": false,
@@ -8237,7 +8231,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "GroupActivityStatus",
+                "name": "PublicationStatus",
                 "ofType": null
               }
             },
@@ -8937,7 +8931,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "GroupActivityStatus",
+                "name": "PublicationStatus",
                 "ofType": null
               }
             },
@@ -9380,48 +9374,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "GroupActivityStatus",
-        "description": null,
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "DRAFT",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ENDED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "GRADED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "PUBLISHED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SCHEDULED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -19418,6 +19370,18 @@
         "enumValues": [
           {
             "name": "DRAFT",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ENDED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "GRADED",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

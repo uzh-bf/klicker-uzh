@@ -13,15 +13,15 @@ import {
   ParticipantGroupRef,
   ParticipantRef,
 } from './participant.js'
-import { type IElementStack, ElementStackRef } from './practiceQuizzes.js'
+import {
+  type IElementStack,
+  ElementStackRef,
+  PublicationStatus,
+} from './practiceQuizzes.js'
 import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
-})
-
-export const GroupActivityStatus = builder.enumType('GroupActivityStatus', {
-  values: Object.values(DB.GroupActivityStatus),
 })
 
 export const ResponseCorrectnessType = builder.enumType(
@@ -59,7 +59,7 @@ export const GroupActivity = GroupActivityRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
-    status: t.expose('status', { type: GroupActivityStatus }),
+    status: t.expose('status', { type: PublicationStatus }),
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
@@ -220,7 +220,7 @@ export interface IGroupActivityDetails {
   id: string
   name: string
   displayName: string
-  status: DB.GroupActivityStatus
+  status: DB.PublicationStatus
   description?: string | null
   scheduledStartAt?: Date
   scheduledEndAt?: Date
@@ -240,7 +240,7 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     name: t.exposeString('name', { nullable: false }),
     displayName: t.exposeString('displayName', { nullable: false }),
     description: t.exposeString('description', { nullable: true }),
-    status: t.expose('status', { type: GroupActivityStatus }),
+    status: t.expose('status', { type: PublicationStatus }),
 
     scheduledStartAt: t.expose('scheduledStartAt', {
       type: 'Date',
