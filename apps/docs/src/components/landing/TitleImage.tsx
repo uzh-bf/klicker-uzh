@@ -79,4 +79,4 @@ export function TitleImage() {
     </div>
   )
 }
-export default TitleImage;
+export default TitleImage
