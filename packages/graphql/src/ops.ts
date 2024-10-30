@@ -406,6 +406,31 @@ export type CourseSummary = {
 
 export type Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement;
 
+export type ElementBlock = {
+  __typename?: 'ElementBlock';
+  elements?: Maybe<Array<ElementInstance>>;
+  execution?: Maybe<Scalars['Int']['output']>;
+  expiresAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['Int']['output'];
+  numOfParticipants?: Maybe<Scalars['Int']['output']>;
+  order: Scalars['Int']['output'];
+  randomSelection?: Maybe<Scalars['Int']['output']>;
+  status: ElementBlockStatus;
+  timeLimit?: Maybe<Scalars['Int']['output']>;
+};
+
+export type ElementBlockInput = {
+  elements: Array<ElementInstanceInput>;
+  order: Scalars['Int']['input'];
+  timeLimit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export enum ElementBlockStatus {
+  Active = 'ACTIVE',
+  Executed = 'EXECUTED',
+  Scheduled = 'SCHEDULED'
+}
+
 export type ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData;
 
 export enum ElementDisplayMode {
@@ -433,6 +458,11 @@ export type ElementInstance = {
 };
 
 export type ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation;
+
+export type ElementInstanceInput = {
+  elementId: Scalars['Int']['input'];
+  order: Scalars['Int']['input'];
+};
 
 export type ElementInstanceOptions = {
   __typename?: 'ElementInstanceOptions';
@@ -490,7 +520,7 @@ export type ElementStack = {
 export type ElementStackInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   displayName?: InputMaybe<Scalars['String']['input']>;
-  elements: Array<StackElementsInput>;
+  elements: Array<ElementInstanceInput>;
   order: Scalars['Int']['input'];
 };
 
@@ -997,6 +1027,36 @@ export type Level = {
   requiredXp: Scalars['Int']['output'];
 };
 
+export type LiveQuiz = {
+  __typename?: 'LiveQuiz';
+  accessMode: LiveQuizAccessMode;
+  blocks?: Maybe<Array<ElementBlock>>;
+  course?: Maybe<Course>;
+  createdAt: Scalars['Date']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  finishedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  isConfusionFeedbackEnabled: Scalars['Boolean']['output'];
+  isGamificationEnabled: Scalars['Boolean']['output'];
+  isLiveQAEnabled: Scalars['Boolean']['output'];
+  isModerationEnabled: Scalars['Boolean']['output'];
+  maxBonusPoints: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  namespace: Scalars['String']['output'];
+  pinCode?: Maybe<Scalars['Int']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  startedAt?: Maybe<Scalars['Date']['output']>;
+  status: PublicationStatus;
+  timeToZeroBonus: Scalars['Int']['output'];
+  updatedAt?: Maybe<Scalars['Date']['output']>;
+};
+
+export enum LiveQuizAccessMode {
+  Public = 'PUBLIC',
+  Restricted = 'RESTRICTED'
+}
+
 export enum LocaleType {
   De = 'de',
   En = 'en'
@@ -1045,6 +1105,7 @@ export type Mutation = {
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
   createGroupActivity?: Maybe<GroupActivity>;
+  createLiveQuiz?: Maybe<LiveQuiz>;
   createMicroLearning?: Maybe<MicroLearning>;
   createParticipantAccount?: Maybe<ParticipantTokenData>;
   createParticipantGroup?: Maybe<ParticipantGroup>;
@@ -1064,6 +1125,7 @@ export type Mutation = {
   deleteTag?: Maybe<Tag>;
   deleteUserLogin?: Maybe<UserLogin>;
   editGroupActivity?: Maybe<GroupActivity>;
+  editLiveQuiz?: Maybe<LiveQuiz>;
   editMicroLearning?: Maybe<MicroLearning>;
   editPracticeQuiz?: Maybe<PracticeQuiz>;
   editSession?: Maybe<Session>;
@@ -1252,6 +1314,22 @@ export type MutationCreateGroupActivityArgs = {
 };
 
 
+export type MutationCreateLiveQuizArgs = {
+  blocks: Array<ElementBlockInput>;
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  isConfusionFeedbackEnabled: Scalars['Boolean']['input'];
+  isGamificationEnabled: Scalars['Boolean']['input'];
+  isLiveQAEnabled: Scalars['Boolean']['input'];
+  isModerationEnabled: Scalars['Boolean']['input'];
+  maxBonusPoints?: InputMaybe<Scalars['Int']['input']>;
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  timeToZeroBonus?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type MutationCreateMicroLearningArgs = {
   courseId: Scalars['String']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1383,6 +1461,23 @@ export type MutationEditGroupActivityArgs = {
   name: Scalars['String']['input'];
   stack: ElementStackInput;
   startDate: Scalars['Date']['input'];
+};
+
+
+export type MutationEditLiveQuizArgs = {
+  blocks: Array<ElementBlockInput>;
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  isConfusionFeedbackEnabled: Scalars['Boolean']['input'];
+  isGamificationEnabled: Scalars['Boolean']['input'];
+  isLiveQAEnabled: Scalars['Boolean']['input'];
+  isModerationEnabled: Scalars['Boolean']['input'];
+  maxBonusPoints?: InputMaybe<Scalars['Int']['input']>;
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  timeToZeroBonus?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2565,11 +2660,6 @@ export type SingleQuestionResponseValue = {
 export type SolutionRangeInput = {
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
-};
-
-export type StackElementsInput = {
-  elementId: Scalars['Int']['input'];
-  order: Scalars['Int']['input'];
 };
 
 export type StackEvaluation = {

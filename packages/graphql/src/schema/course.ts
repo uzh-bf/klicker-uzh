@@ -13,7 +13,7 @@ import {
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
-import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
+import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
 import { type ISession, SessionRef } from './session.js'
 import { type IUser, UserRef } from './user.js'
 

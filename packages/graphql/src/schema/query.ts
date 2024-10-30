@@ -37,7 +37,7 @@ import {
   ElementStack,
   PracticeQuiz,
   StackFeedback,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import { Element, Tag } from './question.js'
 import {
   Feedback,

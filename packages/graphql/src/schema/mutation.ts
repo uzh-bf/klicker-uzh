@@ -5,6 +5,7 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as MigrationService from '../services/migration.js'
 import * as NotificationService from '../services/notifications.js'
@@ -22,6 +23,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import { LiveQuiz } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -35,12 +37,13 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
   StackFeedback,
   StackResponseInput,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import {
   ArchivedElement,
   Element,
@@ -808,6 +811,59 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SessionService.activateSessionBlock(args, ctx)
+        },
+      }),
+
+      createLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: LiveQuiz,
+        args: {
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          blocks: t.arg({
+            type: [ElementBlockInput],
+            required: true,
+          }),
+          courseId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
+          isLiveQAEnabled: t.arg.boolean({ required: true }),
+          isModerationEnabled: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
+        },
+      }),
+
+      editLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: LiveQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          blocks: t.arg({
+            type: [ElementBlockInput],
+            required: true,
+          }),
+          courseId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
+          isLiveQAEnabled: t.arg.boolean({ required: true }),
+          isModerationEnabled: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 

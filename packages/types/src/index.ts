@@ -30,6 +30,15 @@ export type StackInput = {
   }[]
 }
 
+export type BlockInput = {
+  timeLimit?: number | null
+  order: number
+  elements: {
+    elementId: number
+    order: number
+  }[]
+}
+
 // ----- AVATAR SETTINGS -----
 // #region
 export type AvatarKeyTypes =
