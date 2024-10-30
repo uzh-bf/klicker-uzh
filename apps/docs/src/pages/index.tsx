@@ -6,6 +6,7 @@ import { FeatureFocusSection } from '../components/landing/FeatureFocusSection'
 import FeatureSection from '../components/landing/FeatureSection'
 import { TitleImage } from '../components/landing/TitleImage'
 import { UseCaseOverview } from '../components/landing/UseCaseOverview'
+import Team from "@site/src/components/teampage/team";
 
 function Home() {
   return (
@@ -108,6 +109,11 @@ function Home() {
           },
         ]}
       />
+        <Team
+        teamMembers={[{imgSrc:"https://www.df.uzh.ch/contacts/df/student-assistants/jschlapbach/photo/20220504_Schlapbach-Julius-019.jpg.jpg", name:"Julius Schlapbach", position:"123"},
+            {imgSrc:"https://www.df.uzh.ch/contacts/df/admin/teaching-center/rschl%C3%A4fli/photo/Schl%C3%A4fli-Roland.jpg.jpg", name:"Roland Schläfli", position:"123"}]}>
+
+        </Team>
       <div className="mx-auto max-w-7xl space-y-8 p-4">
         <UseCaseOverview />
 
