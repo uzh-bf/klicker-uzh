@@ -73,7 +73,7 @@ describe('Create questions', () => {
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
   })
 
-  it.only('Create a single choice question', () => {
+  it('Create a single choice question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
