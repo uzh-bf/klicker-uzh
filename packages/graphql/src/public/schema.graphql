@@ -971,6 +971,11 @@ enum LiveQuizAccessMode {
   RESTRICTED
 }
 
+type LiveQuizInfo {
+  id: ID!
+  name: String!
+}
+
 enum LocaleType {
   de
   en
@@ -1441,6 +1446,7 @@ type Query {
   userMediaFiles: [MediaFile!]
   userProfile: User
   userQuestions: [Element!]
+  userRunningLiveQuizzes: [LiveQuizInfo!]
   userRunningSessions: [Session!]
   userScope: UserLoginScope
   userTags: [Tag!]

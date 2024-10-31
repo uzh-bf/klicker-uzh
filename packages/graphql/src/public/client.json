@@ -159,7 +159,7 @@
    "GetUserLogins": "7b289235e4ea8e3fb2073ae175b1b900a77cb6c1aae9b12580cc08be825ad1aa",
    "GetUserMediaFiles": "af5513e8c56c1805060f0e2854a4ada90c4484d09481f2ba2a59136cb731cd63",
    "GetUserQuestions": "6e504d60b10554619252bc914a1b5194a322a186b0ffce146ff9ccb27bd078f6",
-   "GetUserRunningSessions": "ead3fc3a2dea6e39187b31df5fc85beeb2a51a824c4a305b061112a1730cdcc3",
+   "GetUserRunningLiveQuizzes": "756ada2de676dfd25fd4f9dd38e1255725a557ad945b379ea7e0a191df9135d0",
    "GetUserTags": "cfc63cede68a95d79f5fe5a79c7f6275abae9c47b25fcfc665cc8d3e00bac3db",
    "GroupActivityDetails": "dee9bd9c1cab609d09e9d6a51efe1e2cd70677af13c7f07dbddfc4ccc145e0b0",
    "Participations": "76ac5a5c539e57e395109b5836a055573e43fb4b2e4ba6ab3b1374da8580d5c6",

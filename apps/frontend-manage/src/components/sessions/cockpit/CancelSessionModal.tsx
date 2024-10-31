@@ -3,7 +3,7 @@ import {
   CancelSessionDocument,
   GetLiveQuizSummaryDocument,
   GetUserLiveQuizzesDocument,
-  GetUserRunningSessionsDocument,
+  GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -60,14 +60,21 @@ function CancelSessionModal({
     CancelSessionDocument,
     {
       variables: { id: sessionId },
-      refetchQueries: [
-        {
-          query: GetUserRunningSessionsDocument,
-        },
-        {
-          query: GetUserLiveQuizzesDocument,
-        },
-      ],
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes:
+              data?.userRunningLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.cancelSession?.id
+              ) ?? [],
+          },
+        })
+      },
+      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
     }
   )
 

@@ -25,7 +25,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
-import { LiveQuiz } from './liveQuiz.js'
+import { LiveQuiz, LiveQuizInfo } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -274,11 +274,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userRunningSessions: asUser.field({
+      userRunningLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuizInfo],
         resolve(_, __, ctx) {
-          return SessionService.getUserRunningSessions(ctx)
+          return LiveQuizService.getUserRunningLiveQuizzes(ctx)
         },
       }),
 

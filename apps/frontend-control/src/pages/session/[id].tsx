@@ -6,7 +6,7 @@ import {
   DeactivateSessionBlockDocument,
   EndSessionDocument,
   GetControlSessionDocument,
-  GetUserRunningSessionsDocument,
+  GetUserRunningLiveQuizzesDocument,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -35,7 +35,20 @@ function RunningSession() {
   const [endSession, { loading: endingLiveQuiz }] = useMutation(
     EndSessionDocument,
     {
-      refetchQueries: [{ query: GetUserRunningSessionsDocument }],
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes:
+              data?.userRunningLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.endSession?.id
+              ) ?? [],
+          },
+        })
+      },
     }
   )
 

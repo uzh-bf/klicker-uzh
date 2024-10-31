@@ -283,3 +283,23 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
     ),
   }))
 }
+
+export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return user?.liveQuizzes ?? []
+}

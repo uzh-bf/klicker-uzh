@@ -78,6 +78,19 @@ export const LiveQuiz = LiveQuizRef.implement({
   }),
 })
 
+interface ILiveQuizInfo {
+  id: string
+  name: string
+}
+
+export const LiveQuizInfoRef = builder.objectRef<ILiveQuizInfo>('LiveQuizInfo')
+export const LiveQuizInfo = LiveQuizInfoRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+  }),
+})
+
 export interface IElementBlock extends DB.ElementBlock {
   numOfParticipants?: number
   elements?: DB.ElementInstance[] | null

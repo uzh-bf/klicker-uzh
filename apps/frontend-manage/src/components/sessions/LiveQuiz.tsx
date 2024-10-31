@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteLiveQuizDocument,
   GetUserLiveQuizzesDocument,
-  GetUserRunningSessionsDocument,
+  GetUserRunningLiveQuizzesDocument,
   LiveQuiz as LiveQuizType,
   PublicationStatus,
   StartSessionDocument,
@@ -55,11 +55,20 @@ function LiveQuiz({
     StartSessionDocument,
     {
       variables: { id: quiz.id },
-      refetchQueries: [
-        {
-          query: GetUserRunningSessionsDocument,
-        },
-      ],
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes: [
+              ...(data?.userRunningLiveQuizzes ?? []),
+              { id: quiz.id, name: quiz.name },
+            ],
+          },
+        })
+      },
     }
   )
 
