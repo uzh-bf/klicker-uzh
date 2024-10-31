@@ -96,7 +96,7 @@ function LiveQuiz({
     },
     optimisticResponse: {
       deleteLiveQuiz: {
-        __typename: 'Session',
+        __typename: 'LiveQuiz',
         id: quiz.id,
       },
     },

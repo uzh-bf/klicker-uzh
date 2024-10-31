@@ -90,7 +90,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     },
     optimisticResponse: {
       deleteLiveQuiz: {
-        __typename: 'Session',
+        __typename: 'LiveQuiz',
         id: session.id,
       },
     },
