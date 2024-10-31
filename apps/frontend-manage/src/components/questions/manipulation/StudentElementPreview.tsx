@@ -60,7 +60,8 @@ function StudentElementPreview({
                             : undefined,
                         accuracy:
                           'accuracy' in values.options &&
-                          values.options.accuracy
+                          typeof values.options.accuracy !== 'undefined' &&
+                          values.options.accuracy !== null
                             ? parseInt(String(values.options.accuracy))
                             : undefined,
                         unit:
@@ -72,7 +73,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'min' in values.options.restrictions &&
-                            values.options.restrictions.min
+                            typeof values.options.restrictions.min !==
+                              'undefined' &&
+                            values.options.restrictions.min !== null
                               ? parseFloat(
                                   String(values.options.restrictions.min)
                                 )
@@ -81,7 +84,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'max' in values.options.restrictions &&
-                            values.options.restrictions.max
+                            typeof values.options.restrictions.max !==
+                              'undefined' &&
+                            values.options.restrictions.max !== null
                               ? parseFloat(
                                   String(values.options.restrictions.max)
                                 )
@@ -123,8 +128,11 @@ function StudentElementPreview({
         values.options.hasAnswerFeedbacks && (
           <div className="mt-4">
             <H3>{t('shared.generic.feedbacks')}</H3>
-            {values.options.choices.map((choice, index) => (
-              <div key={index} className="border-b pb-1 pt-1 last:border-b-0">
+            {values.options.choices.map((choice) => (
+              <div
+                key={`choice-${choice.id}`}
+                className="border-b pb-1 pt-1 last:border-b-0"
+              >
                 {choice.feedback ? (
                   <Markdown
                     className={{

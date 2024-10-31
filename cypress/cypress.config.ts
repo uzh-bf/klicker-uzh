@@ -1,6 +1,8 @@
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
+  // TODO: no watch mode in CI
+  watchForFileChanges: true,
   projectId: 'y436dx',
   env: {
     URL_STUDENT: 'http://127.0.0.1:3001/login',

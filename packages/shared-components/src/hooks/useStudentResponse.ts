@@ -25,8 +25,8 @@ function useStudentResponse({
             [element.id]: {
               type: element.elementData.type as ElementChoicesType,
               response: element.elementData.options.choices.reduce(
-                (acc, _, ix) => {
-                  return { ...acc, [ix]: undefined }
+                (acc, choice) => {
+                  return { ...acc, [choice.ix]: undefined }
                 },
                 {} as Record<number, boolean | undefined>
               ),
