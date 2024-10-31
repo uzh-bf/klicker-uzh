@@ -2,6 +2,7 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import type { Choice } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -9,7 +10,7 @@ import { twMerge } from 'tailwind-merge'
 export interface KPAnswerOptionsOLDProps {
   displayMode?: ElementDisplayMode
   type: ElementType
-  choices: { value: string; correct: boolean; feedback: string }[]
+  choices: Choice[]
   value?: { [key: number]: boolean }
   onChange: (answer: any, selectedValue: boolean) => any
   id?: string
@@ -30,7 +31,7 @@ export function KPAnswerOptionsOLD({
           : 'flex flex-col'
       )}
     >
-      {choices.map((choice, index) => (
+      {choices.map((choice) => (
         <div
           className="flex flex-row items-center justify-between gap-4 border p-2"
           data-cy="kp-answer-options"
@@ -49,9 +50,9 @@ export function KPAnswerOptionsOLD({
               className={{
                 root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
               }}
-              active={value?.[index] === true}
-              onClick={onChange(index, true)}
-              data={{ cy: `toggle-kp-answer-${index}-correct` }}
+              active={value?.[choice.ix] === true}
+              onClick={onChange(choice.ix, true)}
+              data={{ cy: `toggle-kp-answer-${choice.ix}-correct` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -61,9 +62,9 @@ export function KPAnswerOptionsOLD({
               className={{
                 root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
               }}
-              active={value?.[index] === false}
-              onClick={onChange(index, false)}
-              data={{ cy: `toggle-kp-answer-${index}-incorrect` }}
+              active={value?.[choice.ix] === false}
+              onClick={onChange(choice.ix, false)}
+              data={{ cy: `toggle-kp-answer-${choice.ix}-incorrect` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faX} />

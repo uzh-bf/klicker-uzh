@@ -127,16 +127,16 @@ function BarChart({
           />
           {questionData.__typename === 'ChoicesQuestionData' &&
             questionData.options.choices.map(
-              (choice: Choice, index: number): React.ReactElement => (
+              (choice: Choice): React.ReactElement => (
                 <Cell
                   fill={
                     showSolution
                       ? choice.correct
                         ? CHART_SOLUTION_COLORS.correct
                         : CHART_SOLUTION_COLORS.incorrect
-                      : CHART_COLORS[index % 12]
+                      : CHART_COLORS[choice.ix % 12]
                   }
-                  key={index}
+                  key={`choice-${choice.ix}`}
                 />
               )
             )}

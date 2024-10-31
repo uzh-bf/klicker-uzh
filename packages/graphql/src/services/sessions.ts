@@ -881,7 +881,6 @@ export async function activateSessionBlock(
           choiceCount: questionData.options.choices.length,
           solutions: JSON.stringify(
             questionData.options.choices
-              .map((choice, ix) => ({ ix, correct: choice.correct }))
               .filter((choice) => choice.correct)
               .map((choice) => choice.ix)
           ),
