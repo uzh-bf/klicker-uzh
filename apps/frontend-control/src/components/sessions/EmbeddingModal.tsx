@@ -3,7 +3,7 @@ import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSessionHmacDocument,
-  GetSingleLiveSessionDocument,
+  GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,7 +13,7 @@ import { useMemo } from 'react'
 interface EmbeddingModalProps {
   open: boolean
   setOpen: (newValue: boolean) => void
-  sessionId: string
+  quizId: string
 }
 
 function LazyHMACLink({
@@ -53,19 +53,18 @@ function LazyHMACLink({
   )
 }
 
-function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
+function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
   const t = useTranslations()
-  const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
-    variables: { sessionId: sessionId || '' },
-    skip: !sessionId,
+  const { data: dataLiveSession } = useQuery(GetSingleLiveQuizDocument, {
+    variables: { quizId: quizId || '' },
+    skip: !quizId,
   })
 
   const questions = useMemo(
     () =>
-      dataLiveSession?.liveSession?.blocks?.flatMap(
-        (block) => block.instances
-      ) || [],
-    [dataLiveSession?.liveSession?.blocks]
+      dataLiveSession?.liveQuiz?.blocks?.flatMap((block) => block.elements) ||
+      [],
+    [dataLiveSession?.liveQuiz?.blocks]
   )
 
   return (
@@ -97,10 +96,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
                 question.questionData.name
               }`}</div>
               <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
-                <LazyHMACLink
-                  sessionId={sessionId}
-                  params={`questionIx=${ix}`}
-                />
+                <LazyHMACLink sessionId={quizId} params={`questionIx=${ix}`} />
               </div>
             </div>
           )
@@ -108,7 +104,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
       </div>
       <div className="mt-3">
         <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <LazyHMACLink sessionId={sessionId} params={`leaderboard=true`} />
+        <LazyHMACLink sessionId={quizId} params={`leaderboard=true`} />
       </div>
     </Modal>
   )

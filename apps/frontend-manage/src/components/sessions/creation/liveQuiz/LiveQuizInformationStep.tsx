@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl'
 import CreationFormValidator from '../CreationFormValidator'
 import PropertyList from '../PropertyList'
 import WizardNavigation from '../WizardNavigation'
-import { LiveQuizWizardStepProps } from './LiveSessionWizard'
+import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 function LiveQuizInformationStep({
   editMode,

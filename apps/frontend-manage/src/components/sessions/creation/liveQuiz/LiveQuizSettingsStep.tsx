@@ -14,7 +14,7 @@ import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
 import AdvancedLiveQuizSettings from './AdvancedLiveQuizSettings'
 import LiveQuizCourseMonitor from './LiveQuizCourseMonitor'
-import { LiveQuizWizardStepProps } from './LiveSessionWizard'
+import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 function LiveQuizSettingsStep({
   editMode,

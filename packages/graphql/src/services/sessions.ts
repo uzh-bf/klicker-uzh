@@ -63,38 +63,6 @@ interface BlockArgs {
   timeLimit?: number | null
 }
 
-interface GetLiveSessionDataArgs {
-  id: string
-}
-
-export async function getLiveSessionData(
-  { id }: GetLiveSessionDataArgs,
-  ctx: ContextWithUser
-) {
-  if (!id) {
-    return null
-  }
-
-  // TODO: only return data that is required for the live quiz update
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      blocks: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      course: true,
-    },
-  })
-
-  return session
-}
-
 interface StartSessionArgs {
   id: string
 }

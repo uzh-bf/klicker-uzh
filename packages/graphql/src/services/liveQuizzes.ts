@@ -193,3 +193,37 @@ export async function manipulateLiveQuiz(
 
   return element
 }
+
+export async function getLiveQuizData(
+  {
+    id,
+  }: {
+    id: string
+  },
+  ctx: ContextWithUser
+) {
+  if (!id) {
+    return null
+  }
+
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+      course: true,
+    },
+  })
+
+  return session
+}

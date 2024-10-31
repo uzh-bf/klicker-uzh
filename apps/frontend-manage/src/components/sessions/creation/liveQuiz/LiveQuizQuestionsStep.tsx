@@ -4,7 +4,7 @@ import AddStackButton from '../AddStackButton'
 import CreationFormValidator from '../CreationFormValidator'
 import WizardNavigation from '../WizardNavigation'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
-import { LiveQuizWizardStepProps } from './LiveSessionWizard'
+import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 interface LiveQuizQuestionsStepProps extends LiveQuizWizardStepProps {
   selection: Record<number, Element>

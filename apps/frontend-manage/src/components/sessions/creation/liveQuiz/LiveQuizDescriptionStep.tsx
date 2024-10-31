@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl'
 import DescriptionStep from '../DescriptionStep'
-import { LiveQuizWizardStepProps } from './LiveSessionWizard'
+import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 function LiveQuizDescriptionStep({
   editMode,

@@ -4,6 +4,7 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -24,6 +25,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import { LiveQuiz } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -475,14 +477,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      liveSession: asUser.field({
+      liveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveSessionData(args, ctx)
+          return LiveQuizService.getLiveQuizData(args, ctx)
         },
       }),
 

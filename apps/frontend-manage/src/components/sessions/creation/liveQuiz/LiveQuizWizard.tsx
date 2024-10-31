@@ -6,7 +6,7 @@ import {
   EditLiveQuizDocument,
   Element,
   ElementType,
-  Session,
+  LiveQuiz,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -48,17 +48,31 @@ export interface LiveQuizWizardStepProps {
   closeWizard: () => void
 }
 
-interface LiveSessionWizardProps {
+interface LiveQuizWizardProps {
   title: string
   courses: ElementSelectCourse[]
-  initialValues?: Partial<Session>
+  initialValues?: Pick<
+    LiveQuiz,
+    | 'id'
+    | 'name'
+    | 'displayName'
+    | 'description'
+    | 'pointsMultiplier'
+    | 'maxBonusPoints'
+    | 'timeToZeroBonus'
+    | 'isConfusionFeedbackEnabled'
+    | 'isGamificationEnabled'
+    | 'isLiveQAEnabled'
+    | 'isModerationEnabled'
+    | 'blocks'
+  > & { course?: { id: string } | null }
   selection: Record<number, Element>
   resetSelection: () => void
   closeWizard: () => void
   editMode: boolean
 }
 
-function LiveSessionWizard({
+function LiveQuizWizard({
   title,
   courses,
   initialValues,
@@ -66,7 +80,7 @@ function LiveSessionWizard({
   resetSelection,
   closeWizard,
   editMode,
-}: LiveSessionWizardProps) {
+}: LiveQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -180,22 +194,24 @@ function LiveSessionWizard({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
-    blocks:
-      initialValues?.blocks?.map((block) => {
-        return {
-          questionIds:
-            block.instances?.map(
-              (instance) => instance.questionData!.questionId!
-            ) ?? [],
-          titles:
-            block.instances?.map((instance) => instance.questionData!.name!) ??
-            [],
-          types:
-            block.instances?.map((instance) => instance.questionData!.type) ??
-            [],
-          timeLimit: block.timeLimit ?? undefined,
-        }
-      }) || formDefaultValues.blocks,
+    blocks: initialValues?.blocks
+      ? initialValues.blocks.map((block) => {
+          return {
+            timeLimit: block.timeLimit ?? undefined,
+            elements: block.elements!.map((element) => {
+              return {
+                id: parseInt(element.elementData.id),
+                title: element.elementData.name,
+                type: element.elementData.type,
+                hasSampleSolution:
+                  'options' in element.elementData
+                    ? (element.elementData.options.hasSampleSolution ?? false)
+                    : true,
+              }
+            }),
+          }
+        })
+      : formDefaultValues.blocks,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
@@ -394,4 +410,4 @@ function LiveSessionWizard({
   )
 }
 
-export default LiveSessionWizard
+export default LiveQuizWizard
