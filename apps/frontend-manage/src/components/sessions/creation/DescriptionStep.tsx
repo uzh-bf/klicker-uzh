@@ -6,7 +6,7 @@ import CreationFormValidator from './CreationFormValidator'
 import EditorField from './EditorField'
 import WizardNavigation from './WizardNavigation'
 import { GroupActivityWizardStepProps } from './groupActivity/GroupActivityWizard'
-import { LiveQuizWizardStepProps } from './liveQuiz/LiveSessionWizard'
+import { LiveQuizWizardStepProps } from './liveQuiz/LiveQuizWizard'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
 import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
 

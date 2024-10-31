@@ -4,6 +4,7 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -24,6 +25,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import { LiveQuiz, LiveQuizInfo } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -37,7 +39,7 @@ import {
   ElementStack,
   PracticeQuiz,
   StackFeedback,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import { Element, Tag } from './question.js'
 import {
   Feedback,
@@ -272,11 +274,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userRunningSessions: asUser.field({
+      userRunningLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuizInfo],
         resolve(_, __, ctx) {
-          return SessionService.getUserRunningSessions(ctx)
+          return LiveQuizService.getUserRunningLiveQuizzes(ctx)
         },
       }),
 
@@ -288,11 +290,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userSessions: asUser.field({
+      userLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         resolve(_, __, ctx) {
-          return SessionService.getUserSessions(ctx)
+          return LiveQuizService.getUserLiveQuizzes(ctx)
         },
       }),
 
@@ -442,14 +444,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionHMAC: asUser.field({
+      liveQuizHMAC: asUser.field({
         nullable: true,
         type: 'String',
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionHMAC(args, ctx)
+          return LiveQuizService.getLiveQuizHMAC(args, ctx)
         },
       }),
 
@@ -475,14 +477,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      liveSession: asUser.field({
+      liveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveSessionData(args, ctx)
+          return LiveQuizService.getLiveQuizData(args, ctx)
         },
       }),
 

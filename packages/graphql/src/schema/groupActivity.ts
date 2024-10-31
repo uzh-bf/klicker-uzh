@@ -17,7 +17,7 @@ import {
   type IElementStack,
   ElementStackRef,
   PublicationStatus,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {

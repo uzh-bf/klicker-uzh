@@ -1,0 +1,6 @@
+query GetUserRunningLiveQuizzes {
+  userRunningLiveQuizzes {
+    id
+    name
+  }
+}

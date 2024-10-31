@@ -519,7 +519,7 @@ Cypress.Commands.add(
           .trigger('dragstart', {
             dataTransfer,
           })
-        cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
+        cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
           dataTransfer,
         })
         cy.get(`[data-cy="question-${ix}-block-0"]`)

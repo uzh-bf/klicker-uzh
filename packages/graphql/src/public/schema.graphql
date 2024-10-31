@@ -363,6 +363,30 @@ scalar Date
 
 union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
 
+type ElementBlock {
+  elements: [ElementInstance!]
+  execution: Int
+  expiresAt: Date
+  id: Int!
+  numOfParticipants: Int
+  order: Int!
+  randomSelection: Int
+  status: ElementBlockStatus!
+  timeLimit: Int
+}
+
+input ElementBlockInput {
+  elements: [ElementInstanceInput!]!
+  order: Int!
+  timeLimit: Int
+}
+
+enum ElementBlockStatus {
+  ACTIVE
+  EXECUTED
+  SCHEDULED
+}
+
 union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
 enum ElementDisplayMode {
@@ -388,6 +412,11 @@ type ElementInstance {
 }
 
 union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
+
+input ElementInstanceInput {
+  elementId: Int!
+  order: Int!
+}
 
 type ElementInstanceOptions {
   pointsMultiplier: Int
@@ -439,7 +468,7 @@ type ElementStack {
 input ElementStackInput {
   description: String
   displayName: String
-  elements: [StackElementsInput!]!
+  elements: [ElementInstanceInput!]!
   order: Int!
 }
 
@@ -911,6 +940,48 @@ type Level {
   requiredXp: Int!
 }
 
+type LiveQuiz {
+  accessMode: LiveQuizAccessMode!
+  blocks: [ElementBlock!]
+  course: Course
+  createdAt: Date!
+  description: String
+  displayName: String!
+  finishedAt: Date
+  id: ID!
+  isConfusionFeedbackEnabled: Boolean!
+  isGamificationEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
+  isModerationEnabled: Boolean!
+  maxBonusPoints: Int!
+  name: String!
+  namespace: String!
+  numOfBlocks: Int
+  numOfInstances: Int
+  pinCode: Int
+  pointsMultiplier: Int!
+  startedAt: Date
+  status: PublicationStatus!
+  timeToZeroBonus: Int!
+  updatedAt: Date
+}
+
+enum LiveQuizAccessMode {
+  PUBLIC
+  RESTRICTED
+}
+
+type LiveQuizInfo {
+  id: ID!
+  name: String!
+}
+
+type LiveQuizMeta {
+  id: ID!
+  name: String!
+  status: PublicationStatus!
+}
+
 enum LocaleType {
   de
   en
@@ -956,18 +1027,18 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
+  createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
-  deleteLiveQuiz(id: String!): Session
+  deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
@@ -975,9 +1046,9 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
+  editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(availableFrom: Date, courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endGroupActivity(id: String!): GroupActivity
@@ -1028,7 +1099,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
-  startSession(id: String!): Session
+  startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -1357,7 +1428,8 @@ type Query {
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
-  liveSession(id: String!): Session
+  liveQuiz(id: String!): LiveQuiz
+  liveQuizHMAC(id: String!): String
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -1372,17 +1444,16 @@ type Query {
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
-  sessionHMAC(id: String!): String
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   unassignedSessions: [Session!]
   userCourses: [Course!]
+  userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
   userQuestions: [Element!]
-  userRunningSessions: [Session!]
+  userRunningLiveQuizzes: [LiveQuizInfo!]
   userScope: UserLoginScope
-  userSessions: [Session!]
   userTags: [Tag!]
 }
 
@@ -1539,11 +1610,6 @@ type SingleQuestionResponseValue {
 input SolutionRangeInput {
   max: Float
   min: Float
-}
-
-input StackElementsInput {
-  elementId: Int!
-  order: Int!
 }
 
 type StackEvaluation {

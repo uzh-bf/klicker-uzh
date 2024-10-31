@@ -5,6 +5,7 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as MigrationService from '../services/migration.js'
 import * as NotificationService from '../services/notifications.js'
@@ -22,6 +23,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import { LiveQuiz, LiveQuizMeta } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -35,12 +37,13 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
   StackFeedback,
   StackResponseInput,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import {
   ArchivedElement,
   Element,
@@ -52,7 +55,6 @@ import {
 } from './question.js'
 import { ElementStatus, ElementType } from './questionData.js'
 import {
-  BlockInput,
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
@@ -698,14 +700,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      startSession: t.withAuth(asUserSessionExec).field({
+      startLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuizMeta,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.startSession(args, ctx)
+          return LiveQuizService.startLiveQuiz(args, ctx)
         },
       }),
 
@@ -811,54 +813,56 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createSession: t.withAuth(asUserFullAccess).field({
+      createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
           blocks: t.arg({
-            type: [BlockInput],
+            type: [ElementBlockInput],
             required: true,
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.createSession(args, ctx)
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
-      editSession: t.withAuth(asUserFullAccess).field({
+      editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
           blocks: t.arg({
-            type: [BlockInput],
+            type: [ElementBlockInput],
             required: true,
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.editSession(args, ctx)
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
@@ -1065,12 +1069,12 @@ export const Mutation = builder.mutationType({
 
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteLiveQuiz(args, ctx)
+          return LiveQuizService.deleteLiveQuiz(args, ctx)
         },
       }),
 

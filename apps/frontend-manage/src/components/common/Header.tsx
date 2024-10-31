@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetUserRunningSessionsDocument,
+  GetUserRunningLiveQuizzesDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation } from '@uzh-bf/design-system'
@@ -25,7 +25,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data } = useQuery(GetUserRunningSessionsDocument)
+  const { data } = useQuery(GetUserRunningLiveQuizzesDocument)
+  const quizzes = data?.userRunningLiveQuizzes
 
   const navigationItems = [
     {
@@ -99,16 +100,15 @@ function Header({ user }: HeaderProps): React.ReactElement {
               root: 'group h-10 w-2',
               icon: twMerge(
                 'text-uzh-grey-80',
-                data?.userRunningSessions?.length !== 0 && 'text-green-600'
+                quizzes?.length !== 0 && 'text-green-600'
               ),
               disabled: '!text-gray-400',
               dropdown: 'gap-0 p-1.5',
             }}
-            disabled={data?.userRunningSessions?.length === 0}
+            disabled={quizzes?.length === 0}
           >
-            {data?.userRunningSessions &&
-            data?.userRunningSessions.length > 0 ? (
-              data?.userRunningSessions.map((session) => {
+            {quizzes && quizzes.length > 0 ? (
+              quizzes.map((session) => {
                 return (
                   <Navigation.DropdownItem
                     key={session.id}

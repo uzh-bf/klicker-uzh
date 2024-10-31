@@ -106,7 +106,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
       <EmbeddingModal
         open={embedOpen}
         setOpen={(newValue: boolean) => setEmbedOpen(newValue)}
-        sessionId={sessionId}
+        quizId={sessionId}
       />
       <StartModal
         startId={startId}

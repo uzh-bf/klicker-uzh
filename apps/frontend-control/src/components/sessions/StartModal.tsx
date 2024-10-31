@@ -1,5 +1,8 @@
 import { useMutation } from '@apollo/client'
-import { StartSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  PublicationStatus,
+  StartLiveQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -21,8 +24,19 @@ function StartModal({
 }: StartModalProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [startSession, { loading: startingSession }] =
-    useMutation(StartSessionDocument)
+  const [startLiveQuiz, { loading: startingSession }] = useMutation(
+    StartLiveQuizDocument,
+    {
+      optimisticResponse: {
+        startLiveQuiz: {
+          __typename: 'LiveQuizMeta',
+          id: startId,
+          name: startName,
+          status: PublicationStatus.Published,
+        },
+      },
+    }
+  )
 
   return (
     <Modal
@@ -33,7 +47,7 @@ function StartModal({
           loading={startingSession}
           onClick={async () => {
             try {
-              await startSession({
+              await startLiveQuiz({
                 variables: { id: startId },
               })
               router.push(`/session/${startId}`)
@@ -63,13 +77,13 @@ function StartModal({
       className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton
     >
-      <H3>{t('control.course.startSession')}</H3>
+      <H3>{t('control.course.startLiveQuiz')}</H3>
       <div className="border-uzh-grey-100 bg-uzh-grey-20 rounded border border-solid p-2">
-        {t('control.course.confirmStartSession')}
+        {t('control.course.confirmStartLiveQuiz')}
         <div className="font-bold">{startName}</div>
       </div>
       <div className="mt-4 text-sm italic">
-        {t('control.course.explanationStartSession')}
+        {t('control.course.explanationStartLiveQuiz')}
       </div>
     </Modal>
   )

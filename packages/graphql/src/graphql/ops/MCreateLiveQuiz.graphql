@@ -1,8 +1,8 @@
-mutation CreateSession(
+mutation CreateLiveQuiz(
   $name: String!
   $displayName: String!
   $description: String
-  $blocks: [BlockInput!]!
+  $blocks: [ElementBlockInput!]!
   $courseId: String
   $multiplier: Int!
   $maxBonusPoints: Int!
@@ -12,7 +12,7 @@ mutation CreateSession(
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
 ) {
-  createSession(
+  createLiveQuiz(
     name: $name
     displayName: $displayName
     description: $description
@@ -34,9 +34,9 @@ mutation CreateSession(
       id
       status
       timeLimit
-      instances {
+      elements {
         id
-        ...QuestionDataInfo
+        ...ElementDataInfo
       }
     }
     course {

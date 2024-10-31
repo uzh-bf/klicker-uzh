@@ -55,7 +55,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
-    cy.get('[data-cy="add-block"]').click()
+    cy.get('[data-cy="drop-elements-add-stack"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 2)
     cy.get('[data-cy="delete-block-1"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
@@ -200,7 +200,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
     cy.get(`[data-cy="question-item-${questionTitle2}"]`)
@@ -208,29 +208,29 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="add-block"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
 
     // test sorting of blocks
     cy.get('[data-cy="move-block-1-left"]').click()
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="move-block-0-right"]').click()
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
 
@@ -388,10 +388,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check questions and modify them
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
@@ -410,10 +410,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-time-limit"]').should('have.value', '25')
     cy.get('[data-cy="close-block-settings"]').click()
     cy.get('[data-cy="move-block-1-left"]').click()
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
@@ -473,10 +473,10 @@ describe('Different live-quiz workflows', () => {
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
@@ -510,10 +510,10 @@ describe('Different live-quiz workflows', () => {
       .contains(sessionDescription1New)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="question-0-block-0"]')
+    cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
       .should('contain', questionTitle2.substring(0, 20))
-    cy.get('[data-cy="question-0-block-1"]')
+    cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
@@ -630,12 +630,12 @@ describe('Different live-quiz workflows', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
+      cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
         dataTransfer,
       })
     }
 
-    cy.get('[data-cy="add-block"]').click()
+    cy.get('[data-cy="drop-elements-add-stack"]').click()
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
       cy.get(`[data-cy="question-item-${questionTitle2}"]`)
@@ -643,7 +643,7 @@ describe('Different live-quiz workflows', () => {
         .trigger('dragstart', {
           dataTransfer,
         })
-      cy.get('[data-cy="drop-questions-here-1"]').trigger('drop', {
+      cy.get('[data-cy="drop-elements-block-1"]').trigger('drop', {
         dataTransfer,
       })
     }

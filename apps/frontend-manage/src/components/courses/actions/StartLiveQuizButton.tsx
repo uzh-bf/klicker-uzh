@@ -1,7 +1,11 @@
 import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session, StartSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserRunningLiveQuizzesDocument,
+  Session,
+  StartLiveQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -13,16 +17,36 @@ interface StartLiveQuizButtonProps {
 function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [startSession, { loading: startingSession }] =
-    useMutation(StartSessionDocument)
+  const [startLiveQuiz, { loading: startingQuiz }] = useMutation(
+    StartLiveQuizDocument,
+    {
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes:
+              liveQuiz.id && liveQuiz.name
+                ? [
+                    ...(data?.userRunningLiveQuizzes ?? []),
+                    { id: liveQuiz.id, name: liveQuiz.name },
+                  ]
+                : (data?.userRunningLiveQuizzes ?? []),
+          },
+        })
+      },
+    }
+  )
 
   return (
     <Button
       basic
-      disabled={startingSession}
+      disabled={startingQuiz}
       onClick={async () => {
         try {
-          await startSession({
+          await startLiveQuiz({
             variables: { id: liveQuiz.id || '' },
           })
           router.push(`/sessions/${liveQuiz.id}/cockpit`)
@@ -36,7 +60,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
       <Button.Icon>
         <FontAwesomeIcon icon={faPlay} />
       </Button.Icon>
-      <Button.Label>{t('manage.sessions.startSession')}</Button.Label>
+      <Button.Label>{t('manage.sessions.startLiveQuiz')}</Button.Label>
     </Button>
   )
 }

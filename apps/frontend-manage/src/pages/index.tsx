@@ -158,7 +158,7 @@ function Index() {
               router.push('/')
               setCreationMode(() => undefined)
             }}
-            elementId={router.query.elementId as string}
+            activityId={router.query.elementId as string}
             editMode={router.query.editMode as string}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as WizardMode}

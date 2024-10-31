@@ -8,38 +8,57 @@ import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
-import { ElementStackFormValues } from './WizardLayout'
+import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
 
 interface AddStackButtonProps {
+  type: 'stack'
   push: (value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
   acceptedTypes: ElementType[]
 }
 
+interface AddBlockButtonProps {
+  type: 'block'
+  push: (value: ElementBlockFormValues) => void
+  selection?: Record<number, Element>
+  resetSelection?: () => void
+  acceptedTypes: ElementType[]
+}
+
 function AddStackButton({
+  type,
   push,
   selection,
   resetSelection,
   acceptedTypes,
-}: AddStackButtonProps) {
+}: AddStackButtonProps | AddBlockButtonProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
       drop: (item: QuestionDragDropTypes) => {
-        push({
-          displayName: '',
-          description: '',
-          elements: [
-            {
-              id: item.id,
-              title: item.title,
-              type: item.questionType,
-              hasSampleSolution: item.hasSampleSolution,
-            },
-          ],
-        })
+        const initialElements = [
+          {
+            id: item.id,
+            title: item.title,
+            type: item.questionType,
+            hasSampleSolution: item.hasSampleSolution,
+          },
+        ]
+
+        if (type === 'block') {
+          push({
+            timeLimit: undefined,
+            elements: initialElements,
+          })
+        } else {
+          push({
+            displayName: '',
+            description: '',
+            elements: initialElements,
+          })
+        }
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
@@ -58,23 +77,28 @@ function AddStackButton({
               root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              const stackElements = Object.values(selection).map(
-                (question) => ({
-                  id: question.id,
-                  title: question.name,
-                  type: question.type,
-                  hasSampleSolution:
-                    'options' in question
-                      ? (question.options.hasSampleSolution ?? false)
-                      : true,
-                })
-              )
+              const elements = Object.values(selection).map((question) => ({
+                id: question.id,
+                title: question.name,
+                type: question.type,
+                hasSampleSolution:
+                  'options' in question
+                    ? (question.options.hasSampleSolution ?? false)
+                    : true,
+              }))
 
-              push({
-                displayName: '',
-                description: '',
-                elements: stackElements,
-              })
+              if (type === 'block') {
+                push({
+                  timeLimit: undefined,
+                  elements,
+                })
+              } else {
+                push({
+                  displayName: '',
+                  description: '',
+                  elements,
+                })
+              }
               resetSelection?.()
             }}
             data={{ cy: 'add-stack-with-selected' }}
@@ -84,9 +108,13 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.newStackSelected', {
-                count: Object.keys(selection).length,
-              })}
+              {type === 'block'
+                ? t('manage.sessionForms.newStackSelected', {
+                    count: Object.keys(selection).length,
+                  })
+                : t('manage.sessionForms.newBlockSelected', {
+                    count: Object.keys(selection).length,
+                  })}
             </Button.Label>
           </Button>
           <Button
@@ -96,21 +124,30 @@ function AddStackButton({
             }}
             onClick={() => {
               Object.values(selection).forEach((question) => {
-                push({
-                  displayName: '',
-                  description: '',
-                  elements: [
-                    {
-                      id: question.id,
-                      title: question.name,
-                      type: question.type,
-                      hasSampleSolution:
-                        'options' in question
-                          ? (question.options.hasSampleSolution ?? false)
-                          : true,
-                    },
-                  ],
-                })
+                const elements = [
+                  {
+                    id: question.id,
+                    title: question.name,
+                    type: question.type,
+                    hasSampleSolution:
+                      'options' in question
+                        ? (question.options.hasSampleSolution ?? false)
+                        : true,
+                  },
+                ]
+
+                if (type === 'block') {
+                  push({
+                    timeLimit: undefined,
+                    elements,
+                  })
+                } else {
+                  push({
+                    displayName: '',
+                    description: '',
+                    elements,
+                  })
+                }
               })
               resetSelection?.()
             }}
@@ -123,9 +160,14 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.pasteSingleElementsStack', {
-                count: Object.keys(selection).length,
-              })}
+              {t(
+                type === 'block'
+                  ? 'manage.sessionForms.pasteSingleElementsBlock'
+                  : 'manage.sessionForms.pasteSingleElementsStack',
+                {
+                  count: Object.keys(selection).length,
+                }
+              )}
             </div>
           </Button>
         </div>
@@ -136,17 +178,28 @@ function AddStackButton({
             'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
             isOver && 'bg-primary-20'
           )}
-          onClick={() =>
-            push({
-              displayName: '',
-              description: '',
-              elements: [],
-            })
-          }
+          onClick={() => {
+            if (type === 'block') {
+              push({
+                timeLimit: undefined,
+                elements: [],
+              })
+            } else {
+              push({
+                displayName: '',
+                description: '',
+                elements: [],
+              })
+            }
+          }}
           data-cy="drop-elements-add-stack"
         >
           <FontAwesomeIcon icon={faPlus} size="lg" />
-          <div>{t('manage.sessionForms.newStack')}</div>
+          <div>
+            {type === 'block'
+              ? t('manage.sessionForms.newBlock')
+              : t('manage.sessionForms.newStack')}
+          </div>
         </div>
       )}
     </div>

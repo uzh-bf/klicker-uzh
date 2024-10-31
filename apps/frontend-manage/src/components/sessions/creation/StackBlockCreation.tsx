@@ -1,34 +1,32 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
-  faArrowDown,
   faArrowLeft,
   faArrowRight,
-  faArrowUp,
-  faBars,
   faCircleExclamation,
-  faPlus,
   faTrash,
   faWarning,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { isEmpty, swapIndices } from 'remeda'
+import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
+import DropElementsStack from './DropElementsStack'
+import PasteSelectionButton from './PasteSelectionButton'
 import StackCreationErrors from './StackCreationErrors'
 import StackDescriptionModal from './StackDescriptionModal'
+import WizardElementList from './WizardElementList'
 import { ElementStackErrorValues, ElementStackFormValues } from './WizardLayout'
 
 interface StackBlockCreationProps {
-  index: number
+  stackIx: number
   stack: ElementStackFormValues
   acceptedTypes: ElementType[]
-  replace: (index: number, value: ElementStackFormValues) => void
+  replace: (stackIx: number, value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
   singleStackMode?: boolean
@@ -37,7 +35,7 @@ interface StackBlockCreationProps {
 
 interface StackBlockCreationMultipleProps extends StackBlockCreationProps {
   numOfStacks: number
-  remove: (index: number) => void
+  remove: (stackIx: number) => void
   move: (from: number, to: number) => void
   highlightFTNoSL?: boolean
   error?: ElementStackErrorValues[]
@@ -52,7 +50,7 @@ interface StackBlockCreationSingleProps extends StackBlockCreationProps {
 }
 
 function StackBlockCreation({
-  index,
+  stackIx,
   stack,
   numOfStacks = 1,
   acceptedTypes,
@@ -75,7 +73,7 @@ function StackBlockCreation({
     () => ({
       accept: acceptedTypes,
       drop: (item: QuestionDragDropTypes) => {
-        replace(index, {
+        replace(stackIx, {
           ...stack,
           elements: [
             ...stack.elements,
@@ -106,16 +104,16 @@ function StackBlockCreation({
 
   return (
     <div
-      key={index}
+      key={stackIx}
       className={twMerge('flex w-56 flex-col', className)}
-      data-cy={`stack-${index}`}
+      data-cy={`stack-${stackIx}`}
     >
       <div className="flex flex-row items-center justify-between rounded bg-slate-200 px-2 py-1 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="stack-container-header">
             {singleStackMode
               ? t('shared.generic.questions')
-              : t('shared.generic.stackN', { number: index + 1 })}
+              : t('shared.generic.stackN', { number: stackIx + 1 })}
           </div>
           {highlightFTNoSL && FTQuestionNoSLCount > 0 && (
             <Tooltip
@@ -132,10 +130,10 @@ function StackBlockCreation({
           {error &&
             !singleStackMode &&
             Array.isArray(error) &&
-            error.length > index &&
-            typeof error[index] !== 'undefined' && (
+            error.length > stackIx &&
+            typeof error[stackIx] !== 'undefined' && (
               <Tooltip
-                tooltip={<StackCreationErrors errors={error[index]} />}
+                tooltip={<StackCreationErrors errors={error[stackIx]} />}
                 delay={0}
                 className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
               >
@@ -166,8 +164,10 @@ function StackBlockCreation({
                 root: 'hover:bg-primary-20 px-1 disabled:hidden',
               }}
               disabled={numOfStacks === 1}
-              onClick={() => move(index, index !== 0 ? index - 1 : index)}
-              data={{ cy: `move-stack-${index}-left` }}
+              onClick={() =>
+                move(stackIx, stackIx !== 0 ? stackIx - 1 : stackIx)
+              }
+              data={{ cy: `move-stack-${stackIx}-left` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faArrowLeft} />
@@ -182,9 +182,9 @@ function StackBlockCreation({
               }}
               disabled={numOfStacks === 1}
               onClick={() =>
-                move(index, index !== numOfStacks ? index + 1 : index)
+                move(stackIx, stackIx !== numOfStacks ? stackIx + 1 : stackIx)
               }
-              data={{ cy: `move-stack-${index}-right` }}
+              data={{ cy: `move-stack-${stackIx}-right` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faArrowRight} />
@@ -198,7 +198,7 @@ function StackBlockCreation({
               className={{
                 root: 'hover:text-primary-100 px-1',
               }}
-              data={{ cy: `open-stack-${index}-description` }}
+              data={{ cy: `open-stack-${stackIx}-description` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCommentDots} size="lg" />
@@ -208,7 +208,7 @@ function StackBlockCreation({
           {!singleStackMode && typeof remove !== 'undefined' && (
             <Button
               basic
-              onClick={() => remove(index)}
+              onClick={() => remove(stackIx)}
               className={{
                 root: 'px-1 hover:text-red-600',
               }}
@@ -221,172 +221,33 @@ function StackBlockCreation({
           )}
         </div>
       </div>
-      <div className="my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto">
-        {stack.elements.map((element, questionIdx) => {
-          const errors =
-            error && Array.isArray(error)
-              ? error.length > index
-                ? error[index]?.elements
-                : undefined
-              : error?.elements
 
-          return (
-            <div
-              key={`${questionIdx}-${element.title}`}
-              className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
-              data-cy={`question-${questionIdx}-stack-${index}`}
-            >
-              <div className="flex-1">
-                <Ellipsis
-                  // maxLines={2}
-                  maxLength={40}
-                  className={{ content: 'text-xs' }}
-                >
-                  {element.title}
-                </Ellipsis>
-              </div>
-              <div className="flex flex-row">
-                {errors?.[questionIdx] && (
-                  <FontAwesomeIcon
-                    icon={faCircleExclamation}
-                    className="mr-1 text-red-600"
-                  />
-                )}
-                {highlightFTNoSL &&
-                  element.type === ElementType.FreeText &&
-                  !element.hasSampleSolution && (
-                    <FontAwesomeIcon
-                      icon={faWarning}
-                      className="mr-1 text-orange-500"
-                    />
-                  )}
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
-                  }}
-                  disabled={stack.elements.length === 1}
-                  onClick={() => {
-                    if (!(questionIdx === 0 || stack.elements.length === 1)) {
-                      replace(index, {
-                        ...stack,
-                        elements: swapIndices(
-                          stack.elements,
-                          questionIdx,
-                          questionIdx - 1
-                        ),
-                      })
-                    }
-                  }}
-                  data={{
-                    cy: `move-question-${questionIdx}-stack-${index}-up`,
-                  }}
-                >
-                  <FontAwesomeIcon icon={faArrowUp} />
-                </Button>
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
-                  }}
-                  disabled={stack.elements.length === 1}
-                  onClick={() => {
-                    if (
-                      !(
-                        stack.elements.length === questionIdx - 1 ||
-                        stack.elements.length === 1
-                      )
-                    ) {
-                      replace(index, {
-                        ...stack,
-                        elements: swapIndices(
-                          stack.elements,
-                          questionIdx,
-                          questionIdx + 1
-                        ),
-                      })
-                    }
-                  }}
-                  data={{
-                    cy: `move-question-${questionIdx}-stack-${index}-down`,
-                  }}
-                >
-                  <FontAwesomeIcon icon={faArrowDown} />
-                </Button>
-              </div>
-              <Button
-                basic
-                className={{
-                  root: `px-1 hover:text-red-600`,
-                }}
-                onClick={() => {
-                  replace(index, {
-                    ...stack,
-                    elements: stack.elements
-                      .slice(0, questionIdx)
-                      .concat(stack.elements.slice(questionIdx + 1)),
-                  })
-                }}
-                data={{ cy: `delete-question-${questionIdx}-stack-${index}` }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faTrash} />
-                </Button.Icon>
-              </Button>
-            </div>
-          )
-        })}
-      </div>
+      <WizardElementList
+        stack={stack}
+        stackIx={stackIx}
+        replace={replace}
+        error={error}
+        highlightFTNoSL={highlightFTNoSL}
+      />
+
       {selection && !isEmpty(selection) && (
-        <Button
-          fluid
-          className={{
-            root: 'mb-2 justify-center gap-3 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
-          }}
-          onClick={() => {
-            const newElements = Object.values(selection).map((question) => ({
-              id: question.id,
-              title: question.name,
-              type: question.type,
-              hasSampleSolution:
-                'options' in question
-                  ? (question.options.hasSampleSolution ?? false)
-                  : true,
-            }))
-            const stackElements = stack.elements.concat(newElements)
-
-            replace(index, {
-              ...stack,
-              elements: stackElements,
-            })
-            resetSelection?.()
-          }}
-          data={{ cy: 'paste-selected-questions' }}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faBars} />
-          </Button.Icon>
-          <Button.Label>
-            {t('manage.sessionForms.pasteSelectionElements', {
-              count: Object.keys(selection).length,
-            })}
-          </Button.Label>
-        </Button>
-      )}
-      {drop(
-        <div
-          className={twMerge(
-            'w-full rounded border border-solid p-0.5 text-center',
-            isOver && 'bg-primary-20'
-          )}
-          data-cy={`drop-elements-stack-${index}`}
-        >
-          <FontAwesomeIcon icon={faPlus} size="lg" />
-        </div>
+        <PasteSelectionButton
+          index={stackIx}
+          selection={selection}
+          resetSelection={resetSelection}
+          stack={stack}
+          replace={replace}
+        />
       )}
 
+      <DropElementsStack
+        type="stack"
+        drop={drop}
+        isOver={isOver}
+        index={stackIx}
+      />
       <StackDescriptionModal
-        stackIx={index}
+        stackIx={stackIx}
         modalOpen={stackDescriptionModal}
         setModalOpen={setStackDescriptionModal}
       />

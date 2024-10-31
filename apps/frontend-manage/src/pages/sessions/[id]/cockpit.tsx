@@ -4,8 +4,8 @@ import {
   DeactivateSessionBlockDocument,
   EndSessionDocument,
   GetCockpitSessionDocument,
-  GetUserRunningSessionsDocument,
-  GetUserSessionsDocument,
+  GetUserLiveQuizzesDocument,
+  GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
@@ -28,12 +28,23 @@ function Cockpit() {
   const [endSession, { loading: endingLiveQuiz }] = useMutation(
     EndSessionDocument,
     {
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes:
+              data?.userRunningLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.endSession?.id
+              ) ?? [],
+          },
+        })
+      },
       refetchQueries: [
         {
-          query: GetUserRunningSessionsDocument,
-        },
-        {
-          query: GetUserSessionsDocument,
+          query: GetUserLiveQuizzesDocument,
         },
       ],
     }

@@ -1,10 +1,9 @@
 import { useQuery } from '@apollo/client'
 import {
-  GetUserSessionsDocument,
-  SessionStatus,
-  Session as SessionType,
+  GetUserLiveQuizzesDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import Session from '../../components/sessions/Session'
+import Session from '../../components/sessions/LiveQuiz'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -18,37 +17,33 @@ import Layout from '../../components/Layout'
 function SessionList() {
   const t = useTranslations()
 
-  const {
-    loading: loadingSessions,
-    error: errorSessions,
-    data: dataSessions,
-  } = useQuery(GetUserSessionsDocument)
+  const { loading, data } = useQuery(GetUserLiveQuizzesDocument)
 
   const runningSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session.status === SessionStatus.Running)
+    return data?.userLiveQuizzes
+      ?.filter((session) => session.status === PublicationStatus.Published)
       .sort((a, b) => (dayjs(a.startedAt) > dayjs(b.startedAt) ? 1 : -1))
-  }, [dataSessions])
+  }, [data])
 
   const scheduledSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SessionStatus.Scheduled)
+    return data?.userLiveQuizzes
+      ?.filter((session) => session?.status === PublicationStatus.Scheduled)
       .sort((a, b) => (dayjs(b.createdAt) > dayjs(a.createdAt) ? 1 : -1))
-  }, [dataSessions])
+  }, [data])
 
   const preparedSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SessionStatus.Prepared)
+    return data?.userLiveQuizzes
+      ?.filter((session) => session?.status === PublicationStatus.Draft)
       .sort((a, b) => (dayjs(b.createdAt) > dayjs(a.createdAt) ? 1 : -1))
-  }, [dataSessions])
+  }, [data])
 
   const completedSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SessionStatus.Completed)
+    return data?.userLiveQuizzes
+      ?.filter((session) => session?.status === PublicationStatus.Ended)
       .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
-  }, [dataSessions])
+  }, [data])
 
-  if (!dataSessions || loadingSessions) {
+  if (!data || loading) {
     return (
       <Layout displayName="Sessions">
         <Loader />
@@ -64,7 +59,7 @@ function SessionList() {
             <H2>{t('manage.sessions.runningSessions')}</H2>
             <div className="flex flex-col gap-2">
               {runningSessions.map((session) => (
-                <Session key={session.id} session={session as SessionType} />
+                <Session key={session.id} quiz={session} />
               ))}
             </div>
           </div>
@@ -74,7 +69,7 @@ function SessionList() {
             <H2>{t('manage.sessions.plannedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledSessions.map((session) => (
-                <Session key={session.id} session={session as SessionType} />
+                <Session key={session.id} quiz={session} />
               ))}
             </div>
           </div>
@@ -84,7 +79,7 @@ function SessionList() {
             <H2>{t('manage.sessions.preparedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {preparedSessions.map((session) => (
-                <Session key={session.id} session={session as SessionType} />
+                <Session key={session.id} quiz={session} />
               ))}
             </div>
           </div>
@@ -94,7 +89,7 @@ function SessionList() {
             <H2>{t('manage.sessions.completedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {completedSessions.map((session) => (
-                <Session key={session.id} session={session as SessionType} />
+                <Session key={session.id} quiz={session} />
               ))}
             </div>
           </div>

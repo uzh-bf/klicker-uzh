@@ -65,7 +65,7 @@ function GroupActivityStackClues({
             <div className="flex flex-row gap-3">
               <StackBlockCreation
                 singleStackMode
-                index={0}
+                stackIx={0}
                 key={`stack-${values.stack.elements.map((e) => e.id).join('-')}`}
                 stack={values.stack}
                 acceptedTypes={acceptedTypes}

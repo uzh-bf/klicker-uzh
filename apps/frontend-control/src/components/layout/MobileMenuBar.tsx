@@ -50,7 +50,7 @@ function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
         <EmbeddingModal
           open={embedModalOpen}
           setOpen={setEmbedModalOpen}
-          sessionId={sessionId}
+          quizId={sessionId}
         />
       )}
     </div>

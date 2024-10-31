@@ -1,6 +1,0 @@
-mutation StartSession($id: String!) {
-  startSession(id: $id) {
-    id
-    status
-  }
-}

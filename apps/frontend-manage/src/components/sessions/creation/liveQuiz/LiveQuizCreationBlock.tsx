@@ -1,46 +1,46 @@
 import {
-  faArrowDown,
   faArrowLeft,
   faArrowRight,
-  faArrowUp,
-  faBars,
   faCircleExclamation,
   faGears,
-  faPlus,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Modal, NumberField, Tooltip } from '@uzh-bf/design-system'
+import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { isEmpty, swapIndices } from 'remeda'
-import { twMerge } from 'tailwind-merge'
+import { isEmpty } from 'remeda'
 import { QuestionDragDropTypes } from '../../../questions/Question'
+import DropElementsStack from '../DropElementsStack'
+import PasteSelectionButton from '../PasteSelectionButton'
+import WizardElementList from '../WizardElementList'
 import {
-  LiveQuizBlockErrorValues,
-  LiveQuizBlockFormValues,
+  ElememntBlockErrorValues,
+  ElementBlockFormValues,
 } from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
+import LiveQuizBlockSettingsModal from './LiveQuizBlockSettingsModal'
 
 interface LiveQuizCreationBlockProps {
-  index: number
-  block: LiveQuizBlockFormValues
+  blockIx: number
+  block: ElementBlockFormValues
   numOfBlocks: number
-  remove: (index: number) => void
+  acceptedTypes: ElementType[]
+  remove: (blockIx: number) => void
   move: (from: number, to: number) => void
-  replace: (index: number, value: LiveQuizBlockFormValues) => void
+  replace: (blockIx: number, value: ElementBlockFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
-  error?: LiveQuizBlockErrorValues[]
+  error?: ElememntBlockErrorValues[]
 }
 
 function LiveQuizCreationBlock({
-  index,
+  blockIx,
   block,
-  numOfBlocks,
+  numOfBlocks = 1,
+  acceptedTypes,
   remove,
   move,
   replace,
@@ -53,19 +53,19 @@ function LiveQuizCreationBlock({
 
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: [
-        ElementType.Sc,
-        ElementType.Mc,
-        ElementType.Kprim,
-        ElementType.FreeText,
-        ElementType.Numerical,
-      ],
+      accept: acceptedTypes,
       drop: (item: QuestionDragDropTypes) => {
-        replace(index, {
+        replace(blockIx, {
           ...block,
-          questionIds: [...block.questionIds, item.id],
-          titles: [...block.titles, item.title],
-          types: [...block.types, item.questionType],
+          elements: [
+            ...block.elements,
+            {
+              id: item.id,
+              title: item.title,
+              type: item.questionType,
+              hasSampleSolution: item.hasSampleSolution,
+            },
+          ],
         })
       },
       collect: (monitor) => ({
@@ -76,17 +76,22 @@ function LiveQuizCreationBlock({
   )
 
   return (
-    <div key={index} className="flex w-56 flex-col" data-cy={`block-${index}`}>
+    <div
+      key={blockIx}
+      className="flex w-56 flex-col"
+      data-cy={`block-${blockIx}`}
+    >
       <div className="flex flex-row items-center justify-between rounded bg-slate-200 px-2 py-1 text-slate-700">
         <div className="flex flex-row items-center gap-2">
           <div data-cy="block-container-header">
-            {t('shared.generic.blockN', { number: index + 1 })}
+            {t('shared.generic.blockN', { number: blockIx + 1 })}
           </div>
           {error &&
-            error.length > index &&
-            typeof error[index] !== 'undefined' && (
+            Array.isArray(error) &&
+            error.length > blockIx &&
+            typeof error[blockIx] !== 'undefined' && (
               <Tooltip
-                tooltip={<LiveQuizBlocksError errors={error[index]} />}
+                tooltip={<LiveQuizBlocksError errors={error[blockIx]} />}
                 delay={0}
                 className={{ tooltip: 'z-20 text-sm' }}
               >
@@ -104,8 +109,8 @@ function LiveQuizCreationBlock({
               root: 'hover:bg-primary-20 px-1 disabled:hidden',
             }}
             disabled={numOfBlocks === 1}
-            onClick={() => move(index, index !== 0 ? index - 1 : index)}
-            data={{ cy: `move-block-${index}-left` }}
+            onClick={() => move(blockIx, blockIx !== 0 ? blockIx - 1 : blockIx)}
+            data={{ cy: `move-block-${blockIx}-left` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowLeft} />
@@ -118,9 +123,9 @@ function LiveQuizCreationBlock({
             }}
             disabled={numOfBlocks === 1}
             onClick={() =>
-              move(index, index !== numOfBlocks ? index + 1 : index)
+              move(blockIx, blockIx !== numOfBlocks ? blockIx + 1 : blockIx)
             }
-            data={{ cy: `move-block-${index}-right` }}
+            data={{ cy: `move-block-${blockIx}-right` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowRight} />
@@ -133,7 +138,7 @@ function LiveQuizCreationBlock({
             className={{
               root: 'hover:text-primary-100 px-1',
             }}
-            data={{ cy: `open-block-${index}-settings` }}
+            data={{ cy: `open-block-${blockIx}-settings` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faGears} />
@@ -141,11 +146,11 @@ function LiveQuizCreationBlock({
           </Button>
           <Button
             basic
-            onClick={() => remove(index)}
+            onClick={() => remove(blockIx)}
             className={{
               root: 'px-1 hover:text-red-600',
             }}
-            data={{ cy: `delete-block-${index}` }}
+            data={{ cy: `delete-block-${blockIx}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
@@ -153,238 +158,36 @@ function LiveQuizCreationBlock({
           </Button>
         </div>
       </div>
-      <div className="my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto">
-        {block.titles.map((title, questionIdx) => {
-          const errors =
-            error && Array.isArray(error)
-              ? error.length > index && error[index]
-              : error
 
-          const isInvalid =
-            errors &&
-            (
-              ['questionIds', 'titles', 'types'] as (
-                | 'questionIds'
-                | 'titles'
-                | 'types'
-              )[]
-            ).some((key) => errors[key] && errors[key][questionIdx])
+      <WizardElementList
+        stack={block}
+        stackIx={blockIx}
+        replace={replace}
+        error={error}
+      />
 
-          return (
-            <div
-              key={`${questionIdx}-${title}`}
-              className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
-              data-cy={`question-${questionIdx}-block-${index}`}
-            >
-              <div className="flex-1">
-                <Ellipsis
-                  // maxLines={2}
-                  maxLength={40}
-                  className={{ content: 'text-xs' }}
-                >
-                  {title}
-                </Ellipsis>
-              </div>
-              <div className="flex flex-row">
-                {isInvalid && (
-                  <FontAwesomeIcon
-                    icon={faCircleExclamation}
-                    className="mr-1 text-red-600"
-                  />
-                )}
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
-                  }}
-                  disabled={block.questionIds.length === 1}
-                  onClick={() => {
-                    if (
-                      !(questionIdx === 0 || block.questionIds.length === 1)
-                    ) {
-                      replace(index, {
-                        ...block,
-                        questionIds: swapIndices(
-                          block.questionIds,
-                          questionIdx,
-                          questionIdx - 1
-                        ),
-                        titles: swapIndices(
-                          block.titles,
-                          questionIdx,
-                          questionIdx - 1
-                        ),
-                        types: swapIndices(
-                          block.types,
-                          questionIdx,
-                          questionIdx - 1
-                        ),
-                      })
-                    }
-                  }}
-                  data={{
-                    cy: `move-question-${questionIdx}-block-${index}-up`,
-                  }}
-                >
-                  <FontAwesomeIcon icon={faArrowUp} />
-                </Button>
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
-                  }}
-                  disabled={block.questionIds.length === 1}
-                  onClick={() => {
-                    if (
-                      !(
-                        block.questionIds.length === questionIdx - 1 ||
-                        block.questionIds.length === 1
-                      )
-                    ) {
-                      replace(index, {
-                        ...block,
-                        questionIds: swapIndices(
-                          block.questionIds,
-                          questionIdx,
-                          questionIdx + 1
-                        ),
-                        titles: swapIndices(
-                          block.titles,
-                          questionIdx,
-                          questionIdx + 1
-                        ),
-                        types: swapIndices(
-                          block.types,
-                          questionIdx,
-                          questionIdx + 1
-                        ),
-                      })
-                    }
-                  }}
-                  data={{
-                    cy: `move-question-${questionIdx}-block-${index}-down`,
-                  }}
-                >
-                  <FontAwesomeIcon icon={faArrowDown} />
-                </Button>
-              </div>
-              <Button
-                basic
-                className={{
-                  root: `px-1 hover:text-red-600`,
-                }}
-                onClick={() => {
-                  replace(index, {
-                    ...block,
-                    questionIds: block.questionIds
-                      .slice(0, questionIdx)
-                      .concat(block.questionIds.slice(questionIdx + 1)),
-                    titles: block.titles
-                      .slice(0, questionIdx)
-                      .concat(block.titles.slice(questionIdx + 1)),
-                    types: block.types
-                      .slice(0, questionIdx)
-                      .concat(block.types.slice(questionIdx + 1)),
-                  })
-                }}
-                data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faTrash} />
-                </Button.Icon>
-              </Button>
-            </div>
-          )
-        })}
-      </div>
       {selection && !isEmpty(selection) && (
-        <Button
-          fluid
-          className={{
-            root: 'mb-2 justify-center gap-3 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
-          }}
-          onClick={() => {
-            const { questionIds, titles, types } = Object.values(
-              selection
-            ).reduce<{
-              questionIds: number[]
-              titles: string[]
-              types: ElementType[]
-            }>(
-              (acc, question) => {
-                acc.questionIds.push(question.id)
-                acc.titles.push(question.name)
-                acc.types.push(question.type)
-                return acc
-              },
-              { questionIds: [], titles: [], types: [] }
-            )
-
-            replace(index, {
-              ...block,
-              questionIds: [...block.questionIds, ...questionIds],
-              titles: [...block.titles, ...titles],
-              types: [...block.types, ...types],
-            })
-            resetSelection?.()
-          }}
-          data={{ cy: 'paste-selected-questions' }}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faBars} />
-          </Button.Icon>
-          <Button.Label>
-            {t('manage.sessionForms.pasteSelection', {
-              count: Object.keys(selection).length,
-            })}
-          </Button.Label>
-        </Button>
-      )}
-      {drop(
-        <div
-          className={twMerge(
-            'w-full rounded border border-solid p-0.5 text-center',
-            isOver && 'bg-primary-20'
-          )}
-          data-cy={`drop-questions-here-${index}`}
-        >
-          <FontAwesomeIcon icon={faPlus} size="lg" />
-        </div>
-      )}
-      <Modal
-        open={openSettings}
-        onClose={() => setOpenSettings(false)}
-        title={t('manage.sessionForms.blockSettingsTitle', {
-          blockIx: index + 1,
-        })}
-        className={{
-          content: 'sm:w-3/4 md:w-1/2',
-        }}
-      >
-        <NumberField
-          label={t('manage.sessionForms.timeLimit')}
-          tooltip={t('manage.sessionForms.timeLimitTooltip', {
-            blockIx: index + 1,
-          })}
-          id={`timeLimits.${index}`}
-          value={block.timeLimit || ''}
-          onChange={(newValue: string) => {
-            replace(index, {
-              ...block,
-              timeLimit: newValue === '' ? undefined : parseInt(newValue),
-            })
-          }}
-          placeholder={t('manage.sessionForms.optionalTimeLimit')}
-          data={{ cy: 'block-time-limit' }}
+        <PasteSelectionButton
+          index={blockIx}
+          selection={selection}
+          resetSelection={resetSelection}
+          stack={block}
+          replace={replace}
         />
-        <Button
-          className={{ root: 'bg-uzh-blue-100 float-right mt-3 text-white' }}
-          onClick={() => setOpenSettings(false)}
-          data={{ cy: 'close-block-settings' }}
-        >
-          {t('shared.generic.ok')}
-        </Button>
-      </Modal>
+      )}
+      <DropElementsStack
+        type="block"
+        drop={drop}
+        isOver={isOver}
+        index={blockIx}
+      />
+      <LiveQuizBlockSettingsModal
+        openSettings={openSettings}
+        setOpenSettings={setOpenSettings}
+        block={block}
+        index={blockIx}
+        replace={replace}
+      />
     </div>
   )
 }

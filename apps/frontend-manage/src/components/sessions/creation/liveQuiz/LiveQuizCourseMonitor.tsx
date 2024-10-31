@@ -1,7 +1,7 @@
 import { FormikErrors } from 'formik'
 import { useEffect } from 'react'
 import { ElementSelectCourse } from '../ElementCreation'
-import { LiveSessionFormValues } from '../WizardLayout'
+import { LiveQuizFormValues } from '../WizardLayout'
 
 function LiveQuizCourseMonitor({
   values,
@@ -9,11 +9,11 @@ function LiveQuizCourseMonitor({
   gamifiedCourses,
   nonGamifiedCourses,
 }: {
-  values: LiveSessionFormValues
+  values: LiveQuizFormValues
   setFieldValue: (
     field: string,
     value: any
-  ) => Promise<void | FormikErrors<LiveSessionFormValues>>
+  ) => Promise<void | FormikErrors<LiveQuizFormValues>>
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
 }) {

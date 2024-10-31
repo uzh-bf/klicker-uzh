@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetSessionHmacDocument,
-  GetSingleLiveSessionDocument,
+  GetLiveQuizHmacDocument,
+  GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,29 +13,23 @@ import { useMemo } from 'react'
 interface EmbeddingModalProps {
   open: boolean
   setOpen: (newValue: boolean) => void
-  sessionId: string
+  quizId: string
 }
 
-function LazyHMACLink({
-  sessionId,
-  params,
-}: {
-  sessionId: string
-  params: string
-}) {
-  const sessionHMAC = useQuery(GetSessionHmacDocument, {
+function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
+  const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
     variables: {
-      id: sessionId,
+      id: quizId,
     },
   })
 
-  if (sessionHMAC.loading || !sessionHMAC.data?.sessionHMAC) {
+  if (quizHMAC.loading || !quizHMAC.data?.liveQuizHMAC) {
     return <></>
   }
 
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/sessions/${sessionId}/evaluation?hmac=${sessionHMAC.data?.sessionHMAC}${
+  }/sessions/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
     params ? `&${params}` : ''
   }`
 
@@ -47,25 +41,24 @@ function LazyHMACLink({
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
       <Link href={link} target="_blank" legacyBehavior passHref>
-        <a data-cy={`open-embedding-link-session-${sessionId}`}>{link}</a>
+        <a data-cy={`open-embedding-link-session-${quizId}`}>{link}</a>
       </Link>
     </div>
   )
 }
 
-function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
+function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
   const t = useTranslations()
-  const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
-    variables: { sessionId: sessionId || '' },
-    skip: !sessionId,
+  const { data: dataLiveSession } = useQuery(GetSingleLiveQuizDocument, {
+    variables: { quizId: quizId || '' },
+    skip: !quizId,
   })
 
   const questions = useMemo(
     () =>
-      dataLiveSession?.liveSession?.blocks?.flatMap(
-        (block) => block.instances
-      ) || [],
-    [dataLiveSession?.liveSession?.blocks]
+      dataLiveSession?.liveQuiz?.blocks?.flatMap((block) => block.elements) ||
+      [],
+    [dataLiveSession?.liveQuiz?.blocks]
   )
 
   return (
@@ -97,10 +90,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
                 question.questionData.name
               }`}</div>
               <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
-                <LazyHMACLink
-                  sessionId={sessionId}
-                  params={`questionIx=${ix}`}
-                />
+                <LazyHMACLink quizId={quizId} params={`questionIx=${ix}`} />
               </div>
             </div>
           )
@@ -108,7 +98,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
       </div>
       <div className="mt-3">
         <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <LazyHMACLink sessionId={sessionId} params={`leaderboard=true`} />
+        <LazyHMACLink quizId={quizId} params={`leaderboard=true`} />
       </div>
     </Modal>
   )

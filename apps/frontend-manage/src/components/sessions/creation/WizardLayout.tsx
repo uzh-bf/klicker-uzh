@@ -25,18 +25,26 @@ interface CommonFormValues {
   multiplier: string
 }
 
-export interface LiveQuizBlockFormValues {
-  questionIds: number[]
-  titles: string[]
-  types: ElementType[]
+export interface ElementBlockFormValues {
   timeLimit?: number
+  elements: {
+    id: number
+    title: string
+    type: ElementType
+    hasSampleSolution: boolean
+  }[]
 }
 
-export interface LiveQuizBlockErrorValues {
-  questionIds?: string[]
-  titles?: string[]
-  types?: string[]
+export interface ElememntBlockErrorValues {
   timeLimit?: string
+  elements?:
+    | string
+    | {
+        id: string
+        title: string
+        type: string
+        hasSampleSolution: string
+      }[]
 }
 
 export interface ElementStackFormValues {
@@ -63,8 +71,8 @@ export interface ElementStackErrorValues {
       }[]
 }
 
-export interface LiveSessionFormValues extends CommonFormValues {
-  blocks: LiveQuizBlockFormValues[]
+export interface LiveQuizFormValues extends CommonFormValues {
+  blocks: ElementBlockFormValues[]
   isGamificationEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
@@ -94,7 +102,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
 }
 
 export type CreationFormValues =
-  | LiveSessionFormValues
+  | LiveQuizFormValues
   | MicroLearningFormValues
   | PracticeQuizFormValues
   | GroupActivityFormValues
