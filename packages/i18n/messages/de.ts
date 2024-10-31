@@ -1322,8 +1322,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       embeddingEvaluation: 'Einbettung Evaluation',
       lecturerCockpit: 'Dozierenden Cockpit',
       sessionEvaluation: 'Session Evaluation',
-      startSession: 'Start Session',
-      editSession: 'Session bearbeiten',
+      startLiveQuiz: 'Start Live Quiz',
+      editLiveQuiz: 'Live Quiz bearbeiten',
       duplicateSession: 'Session duplizieren',
       deleteSession: 'Session löschen',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
@@ -1833,10 +1833,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sessionStartFailed:
         'Leider konnte Ihre Session aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
       pptEmbedding: 'PPT-Einbettung Evaluation',
-      startSession: 'Session starten',
-      confirmStartSession:
-        'Sind Sie sich sicher, dass sie die folgende Session starten möchten?',
-      explanationStartSession:
+      startLiveQuiz: 'Live Quiz starten',
+      confirmStartLiveQuiz:
+        'Sind Sie sich sicher, dass sie das folgende Live Quiz starten möchten?',
+      explanationStartLiveQuiz:
         'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
     },
     session: {

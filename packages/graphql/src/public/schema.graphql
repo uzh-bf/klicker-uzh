@@ -976,6 +976,12 @@ type LiveQuizInfo {
   name: String!
 }
 
+type LiveQuizMeta {
+  id: ID!
+  name: String!
+  status: PublicationStatus!
+}
+
 enum LocaleType {
   de
   en
@@ -1093,7 +1099,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
-  startSession(id: String!): Session
+  startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -1447,7 +1453,6 @@ type Query {
   userProfile: User
   userQuestions: [Element!]
   userRunningLiveQuizzes: [LiveQuizInfo!]
-  userRunningSessions: [Session!]
   userScope: UserLoginScope
   userTags: [Tag!]
 }

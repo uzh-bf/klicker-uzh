@@ -18,7 +18,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz as LiveQuizType,
   PublicationStatus,
-  StartSessionDocument,
+  StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -51,8 +51,8 @@ function LiveQuiz({
   const t = useTranslations()
   const router = useRouter()
 
-  const [startSession, { loading: startingQuiz }] = useMutation(
-    StartSessionDocument,
+  const [startLiveQuiz, { loading: startingQuiz }] = useMutation(
+    StartLiveQuizDocument,
     {
       variables: { id: quiz.id },
       update(cache) {
@@ -214,14 +214,14 @@ function LiveQuiz({
                     basic
                     disabled={startingQuiz}
                     onClick={async () => {
-                      await startSession()
+                      await startLiveQuiz()
                       router.push(`sessions/${quiz.id}/cockpit`)
                     }}
                     data={{ cy: `start-session-${quiz.name}` }}
                   >
                     <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
-                      <div>{t('manage.sessions.startSession')}</div>
+                      <div>{t('manage.sessions.startLiveQuiz')}</div>
                     </div>
                   </Button>
                 )}
@@ -284,7 +284,7 @@ function LiveQuiz({
                     <FontAwesomeIcon icon={faPencil} />
                   </Button.Icon>
                   <Button.Label>
-                    {t('manage.sessions.editSession')}
+                    {t('manage.sessions.editLiveQuiz')}
                   </Button.Label>
                 </Button>
               )}

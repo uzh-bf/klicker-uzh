@@ -1,5 +1,4 @@
 import {
-  AccessMode,
   type ConfusionTimestep,
   type Element,
   ElementType,
@@ -61,89 +60,6 @@ interface BlockArgs {
   questionIds: number[]
   randomSelection?: number | null
   timeLimit?: number | null
-}
-
-interface StartSessionArgs {
-  id: string
-}
-
-export async function startSession(
-  { id }: StartSessionArgs,
-  ctx: ContextWithUser
-) {
-  try {
-    const session = await ctx.prisma.liveSession.findFirst({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-      include: {
-        blocks: {
-          orderBy: {
-            id: 'asc',
-          },
-        },
-      },
-    })
-
-    // if there is no session matching the current user and session id, exit early
-    if (!session) {
-      return null
-    }
-
-    switch (session.status) {
-      case SessionStatus.COMPLETED:
-        return null
-
-      case SessionStatus.RUNNING:
-        return session
-
-      case SessionStatus.PREPARED:
-      case SessionStatus.SCHEDULED: {
-        try {
-          await ctx.redisExec
-            .pipeline()
-            .hmset(`s:${session.id}:meta`, {
-              // TODO: remove the namespace entirely, as the session id is also a uuid
-              namespace: session.namespace,
-              // execution: session.execution,
-              startedAt: Number(new Date()),
-            })
-            .exec()
-        } catch (e) {
-          console.error(e)
-        }
-
-        // generate a random pin code
-        const pinCode = 100000 + Math.floor(Math.random() * 900000)
-
-        const startedSession = await ctx.prisma.liveSession.update({
-          where: {
-            id,
-          },
-          data: {
-            status: SessionStatus.RUNNING,
-            startedAt: new Date(),
-            pinCode:
-              session.accessMode === AccessMode.RESTRICTED ? pinCode : null,
-          },
-        })
-
-        await sendTeamsNotifications(
-          'graphql/startSession',
-          `START Session ${session.name} with id ${session.id}.`
-        )
-
-        return startedSession
-      }
-    }
-  } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/startSession',
-      `ERROR - failed to start session: ${error}`
-    )
-    throw error
-  }
 }
 
 interface EndSessionArgs {

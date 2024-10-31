@@ -1,4 +1,5 @@
 import {
+  AccessMode,
   type Element,
   ElementInstanceType,
   PublicationStatus,
@@ -12,6 +13,7 @@ import {
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 
 interface ManipulateLiveQuizArgs {
   id?: string
@@ -266,18 +268,18 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
     },
   })
 
-  return user?.liveQuizzes.map((session) => ({
-    ...session,
-    blocks: session.blocks.map((block) => ({
+  return user?.liveQuizzes.map((quiz) => ({
+    ...quiz,
+    blocks: quiz.blocks.map((block) => ({
       ...block,
       numOfParticipants: block.elements[0]
         ? block.elements[0].results.total +
           block.elements[0].anonymousResults.total
         : 0,
     })),
-    course: session.course ? session.course : undefined,
-    numOfBlocks: session._count?.blocks,
-    numOfInstances: session.blocks.reduce(
+    course: quiz.course ? quiz.course : undefined,
+    numOfBlocks: quiz._count?.blocks,
+    numOfInstances: quiz.blocks.reduce(
       (acc, block) => acc + block._count?.elements,
       0
     ),
@@ -302,4 +304,83 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   })
 
   return user?.liveQuizzes ?? []
+}
+
+export async function startLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  try {
+    const quiz = await ctx.prisma.liveQuiz.findFirst({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: {
+          in: [
+            PublicationStatus.DRAFT,
+            PublicationStatus.SCHEDULED,
+            PublicationStatus.PUBLISHED,
+          ],
+        },
+      },
+      include: {
+        blocks: {
+          orderBy: {
+            id: 'asc',
+          },
+        },
+      },
+    })
+
+    // if there is no session matching the current user and session id, exit early
+    if (!quiz) {
+      return null
+    }
+
+    switch (quiz.status) {
+      case PublicationStatus.PUBLISHED:
+        return quiz
+
+      case PublicationStatus.DRAFT:
+      case PublicationStatus.SCHEDULED: {
+        try {
+          await ctx.redisExec
+            .pipeline()
+            .hmset(`s:${quiz.id}:meta`, {
+              namespace: quiz.namespace,
+              startedAt: Number(new Date()),
+            })
+            .exec()
+        } catch (e) {
+          console.error(e)
+        }
+
+        // generate a random pin code
+        const pinCode = 100000 + Math.floor(Math.random() * 900000)
+        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
+          where: {
+            id,
+          },
+          data: {
+            status: PublicationStatus.PUBLISHED,
+            startedAt: new Date(),
+            pinCode: quiz.accessMode === AccessMode.RESTRICTED ? pinCode : null,
+          },
+        })
+
+        await sendTeamsNotifications(
+          'graphql/startLiveQuiz',
+          `START Live quiz ${quiz.name} with id ${quiz.id}.`
+        )
+
+        return startedLiveQuiz
+      }
+    }
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/startLiveQuiz',
+      `ERROR - failed to start live quiz: ${error}`
+    )
+    throw error
+  }
 }

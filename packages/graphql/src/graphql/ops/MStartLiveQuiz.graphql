@@ -1,0 +1,7 @@
+mutation StartLiveQuiz($id: String!) {
+  startLiveQuiz(id: $id) {
+    id
+    name
+    status
+  }
+}

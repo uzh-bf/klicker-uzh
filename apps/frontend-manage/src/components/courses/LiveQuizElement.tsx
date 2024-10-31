@@ -155,7 +155,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
                         <FontAwesomeIcon icon={faPencil} />
-                        <div>{t('manage.sessions.editSession')}</div>
+                        <div>{t('manage.sessions.editLiveQuiz')}</div>
                       </div>
                     ),
                     onClick: () =>

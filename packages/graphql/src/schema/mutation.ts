@@ -23,7 +23,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
-import { LiveQuiz } from './liveQuiz.js'
+import { LiveQuiz, LiveQuizMeta } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -700,14 +700,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      startSession: t.withAuth(asUserSessionExec).field({
+      startLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuizMeta,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.startSession(args, ctx)
+          return LiveQuizService.startLiveQuiz(args, ctx)
         },
       }),
 

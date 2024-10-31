@@ -86,7 +86,7 @@
    "SendMagicLink": "42b3b78e15609209fbf353cefd8f38d2e456234f5dfa815a4f8935e058733aed",
    "SendPushNotifications": "d0a02157dafcbc7c4df31ea01934d39ca72f9e71eb2ae75cf37298898db99416",
    "StartGroupActivity": "bcb2a2dcaa54c5dfb990f99f48816ad6e39bd9ba9b8284a8822776dcbcf5733f",
-   "StartSession": "fd46b22a457fa619dcd24663113b1bd29b0a74d0fc6693d83d8e1234b963a417",
+   "StartLiveQuiz": "98a4afe83460254fb8ed6763bf83cad14ef9e3be3798952aee9f6b0677cc0bbb",
    "SubmitGroupActivityDecisions": "6cb29556353c724b7db036d976a182d26c8b381f7cc1f23c1af6f5fdaca29a35",
    "SubscribeToPush": "c87b8f1775dd85c77a6a7a774c8e4885093f02fc4404a12783521d9e2fb77add",
    "ToggleArchiveCourse": "924d889c64995d6da7a84bf1971251ac39b6ba53bd6c6e7de2a54050ecf949b2",

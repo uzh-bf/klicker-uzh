@@ -6,8 +6,9 @@ import {
   EditLiveQuizDocument,
   Element,
   ElementType,
+  GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
-  StartSessionDocument,
+  StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_MAX_BONUS_POINTS,
@@ -235,7 +236,28 @@ function LiveQuizWizard({
 
   const [editLiveQuiz] = useMutation(EditLiveQuizDocument)
   const [createLiveQuiz, { data }] = useMutation(CreateLiveQuizDocument)
-  const [startSession] = useMutation(StartSessionDocument)
+  const [startLiveQuiz] = useMutation(StartLiveQuizDocument, {
+    update(cache, res) {
+      const data = cache.readQuery({
+        query: GetUserRunningLiveQuizzesDocument,
+      })
+      cache.writeQuery({
+        query: GetUserRunningLiveQuizzesDocument,
+        data: {
+          userRunningLiveQuizzes: res.data?.startLiveQuiz
+            ? [
+                ...(data?.userRunningLiveQuizzes ?? []),
+                {
+                  id: res.data?.startLiveQuiz?.id,
+                  name: res.data.startLiveQuiz.name ?? '',
+                },
+              ]
+            : (data?.userRunningLiveQuizzes ?? []),
+        },
+      })
+    },
+  })
+
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
       submitLiveQuizForm({
@@ -293,7 +315,7 @@ function LiveQuizWizard({
               <Button
                 data={{ cy: 'quick-start' }}
                 onClick={async () => {
-                  await startSession({
+                  await startLiveQuiz({
                     variables: {
                       id: data.createLiveQuiz!.id,
                     },
