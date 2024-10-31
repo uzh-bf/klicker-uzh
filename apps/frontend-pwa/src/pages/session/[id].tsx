@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementType,
   GetFeedbacksDocument,
-  GetRunningSessionDocument,
+  GetRunningLiveQuizDocument,
   RunningSessionUpdatedDocument,
   SelfDocument,
   Session,
@@ -24,12 +24,14 @@ import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
-interface SubscriberProps {
+function Subscriber({
+  id,
+  subscribeToMore,
+}: {
   id: string
   subscribeToMore: any
-}
-
-function Subscriber({ id, subscribeToMore }: SubscriberProps) {
+}) {
+  // TODO: udpate this to the new live quiz approach with corresponding types
   useEffect(() => {
     subscribeToMore({
       document: RunningSessionUpdatedDocument,
@@ -55,24 +57,20 @@ function Subscriber({ id, subscribeToMore }: SubscriberProps) {
     })
   }, [id, subscribeToMore])
 
-  return <div></div>
+  return <div />
 }
 
-interface Props {
-  id: string
-}
-
-function Index({ id }: Props) {
+function Index({ id }: { id: string }) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
   const t = useTranslations()
 
-  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
+  const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
     variables: { id },
   })
 
   const { data: selfData } = useQuery(SelfDocument)
 
-  if (!data?.session) {
+  if (!data?.studentLiveQuiz) {
     return (
       <Layout>
         <Loader />
@@ -90,7 +88,7 @@ function Index({ id }: Props) {
     namespace,
     status,
     course,
-  } = data.session
+  } = data.studentLiveQuiz
 
   const handleNewResponse = async (
     type: ElementType,
@@ -147,7 +145,7 @@ function Index({ id }: Props) {
       value: 'questions',
       label: t('shared.generic.questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
-      unseenItems: activeBlock?.instances?.length,
+      unseenItems: activeBlock?.elements?.length,
       data: { cy: 'mobile-menu-questions' },
     },
   ]
@@ -201,37 +199,37 @@ function Index({ id }: Props) {
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
               questions={
-                activeBlock.instances
-                  ?.map((question) => {
-                    const questionData = question.questionData
+                activeBlock.elements
+                  ?.map((instance) => {
+                    const elementData = instance.elementData
 
                     // filter out question data types that are not supported by live session
                     if (
-                      !questionData ||
-                      questionData?.__typename === 'FlashcardQuestionData' ||
-                      questionData?.__typename === 'ContentQuestionData'
+                      !elementData ||
+                      elementData?.__typename === 'FlashcardElementData' ||
+                      elementData?.__typename === 'ContentElementData'
                     ) {
                       return null
                     }
 
-                    if (questionData.__typename === 'FreeTextQuestionData') {
+                    if (elementData.__typename === 'FreeTextElementData') {
                       return {
-                        ...questionData,
-                        instanceId: question.id,
+                        ...elementData,
+                        instanceId: instance.id,
                       }
                     } else if (
-                      questionData.__typename === 'NumericalQuestionData'
+                      elementData.__typename === 'NumericalElementData'
                     ) {
                       return {
-                        ...questionData,
-                        instanceId: question.id,
+                        ...elementData,
+                        instanceId: instance.id,
                       }
                     } else if (
-                      questionData.__typename === 'ChoicesQuestionData'
+                      elementData.__typename === 'ChoicesElementData'
                     ) {
                       return {
-                        ...questionData,
-                        instanceId: question.id,
+                        ...elementData,
+                        instanceId: instance.id,
                       }
                     } else {
                       return null
@@ -291,7 +289,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   await Promise.all([
     apolloClient.query({
-      query: GetRunningSessionDocument,
+      query: GetRunningLiveQuizDocument,
       variables: {
         id: ctx.query?.id as string,
       },

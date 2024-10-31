@@ -3,6 +3,7 @@ import {
   ConfusionTimestep,
   type Element,
   ElementInstanceType,
+  ElementType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import type { BlockInput } from '@klicker-uzh/types'
@@ -15,8 +16,9 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { min } from 'mathjs'
 import { createHmac } from 'node:crypto'
+import { pick } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
-import type { ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 
 interface ManipulateLiveQuizArgs {
@@ -611,4 +613,75 @@ export async function getCockpitQuiz(
   }
 
   return reducedSession
+}
+
+export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      activeBlock: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      course: true,
+    },
+  })
+
+  // extract solution from instances in active block
+  let quizWithoutSolutions: any
+  if (quiz && quiz.activeBlock) {
+    quizWithoutSolutions = {
+      ...quiz,
+      activeBlock: {
+        ...quiz.activeBlock,
+        elements: quiz.activeBlock.elements.map((instance) => {
+          const elementData = instance.elementData
+          if (
+            !elementData ||
+            typeof elementData !== 'object' ||
+            Array.isArray(elementData)
+          )
+            return instance
+
+          switch (elementData.type) {
+            case ElementType.SC:
+            case ElementType.MC:
+              return {
+                ...instance,
+                elementData: {
+                  ...elementData,
+                  options: {
+                    ...elementData.options,
+                    choices: elementData.options.choices.map((choice) => ({
+                      ...pick(choice, ['ix', 'value']),
+                    })),
+                  },
+                },
+              }
+
+            case ElementType.NUMERICAL:
+            case ElementType.FREE_TEXT:
+              return {
+                ...instance,
+                elementData,
+              }
+
+            default:
+              return instance
+          }
+        }),
+      },
+    }
+  }
+
+  if (quiz?.status === PublicationStatus.PUBLISHED) {
+    return quizWithoutSolutions ?? quiz
+  }
+
+  return null
 }

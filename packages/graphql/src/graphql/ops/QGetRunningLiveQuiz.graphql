@@ -1,5 +1,5 @@
-query GetRunningSession($id: String!) {
-  session(id: $id) {
+query GetRunningLiveQuiz($id: String!) {
+  studentLiveQuiz(id: $id) {
     id
     isLiveQAEnabled
     isConfusionFeedbackEnabled
@@ -20,9 +20,9 @@ query GetRunningSession($id: String!) {
       timeLimit
       randomSelection
       execution
-      instances {
+      elements {
         id
-        ...QuestionDataWithoutSolutions
+        ...ElementDataWithoutSolutions
       }
     }
   }

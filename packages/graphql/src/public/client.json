@@ -142,7 +142,7 @@
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "82270825f35e0db353ed832b782b9ae676ee451ec3c4afd482f5b7c30d36952e",
    "GetPublicParticipantProfile": "840169ba8a67902da899e1f08c92668228657ba5c6af024e42737081179bb343",
-   "GetRunningSession": "10776966d7f6def1452224335abc28112790559e73cd877cff8a7f654cb85371",
+   "GetRunningLiveQuiz": "9af1dd4fed50d38a65db1746806b82a978b1f6c6e7c8ebec1f09384001ace31f",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
    "GetRunningSessionsCourse": "dea0ffd684088b5fd57cb4b1a7a0fe6d7cfda1a8af50557696330aad05816c6e",
    "GetSessionEvaluation": "3781c9e476d64a0f39d7222a509eaf7e62e237a7a8093519262a3eff2c9204ec",

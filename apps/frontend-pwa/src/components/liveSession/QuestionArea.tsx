@@ -1,9 +1,9 @@
 import {
   ChoiceQuestionOptions,
-  ChoicesQuestionData,
+  ChoicesElementData,
   ElementType,
-  FreeTextQuestionData,
-  NumericalQuestionData,
+  FreeTextElementData,
+  NumericalElementData,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
@@ -20,9 +20,9 @@ import { isDeepEqual } from 'remeda'
 interface QuestionAreaProps {
   expiresAt?: Date
   questions: ((
-    | ChoicesQuestionData
-    | NumericalQuestionData
-    | FreeTextQuestionData
+    | ChoicesElementData
+    | NumericalElementData
+    | FreeTextElementData
   ) & { instanceId: number })[]
   handleNewResponse: (
     type: ElementType,

@@ -1446,9 +1446,9 @@ type Query {
   runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
-  session(id: String!): Session
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
+  studentLiveQuiz(id: String!): LiveQuiz
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userLiveQuizzes: [LiveQuiz!]

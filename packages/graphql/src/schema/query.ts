@@ -409,14 +409,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      session: t.field({
+      studentLiveQuiz: t.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSession(args, ctx)
+          return LiveQuizService.getRunningLiveQuiz(args, ctx)
         },
       }),
 
