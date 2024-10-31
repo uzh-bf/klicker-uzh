@@ -1,5 +1,6 @@
 import {
   AccessMode,
+  ConfusionTimestep,
   type Element,
   ElementInstanceType,
   PublicationStatus,
@@ -10,7 +11,9 @@ import {
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
+import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import { min } from 'mathjs'
 import { createHmac } from 'node:crypto'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
@@ -461,4 +464,151 @@ export async function getLiveQuizHMAC(
   const quizHmac = hmacEncoder.digest('hex')
 
   return quizHmac
+}
+
+// compute the average of all feedbacks that were given within the last 10 minutes
+const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+  // TODO: for improved efficiency, try to use descending feedback ordering
+  // and break early once first is not within the filtering requirements anymore
+  const recentFeedbacks = feedbacks.filter(
+    (feedback) =>
+      dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
+      dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
+  )
+
+  if (recentFeedbacks.length > 0) {
+    const summedFeedbacks = recentFeedbacks.reduce(
+      (previousValue, feedback) => {
+        return {
+          speed: previousValue.speed + feedback.speed,
+          difficulty: previousValue.difficulty + feedback.difficulty,
+          numberOfParticipants: previousValue.numberOfParticipants + 1,
+        }
+      },
+      { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+    )
+    return {
+      ...summedFeedbacks,
+      speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
+      difficulty:
+        summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
+    }
+  }
+  return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+}
+
+export async function getCockpitQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      activeBlock: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      course: true,
+      confusionFeedbacks: true,
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+      },
+    },
+  })
+
+  if (!session || session?.status !== PublicationStatus.PUBLISHED) {
+    return null
+  }
+
+  // number of participants per block
+  const blockParticipants = session.blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.elements.reduce(
+        (instanceAcc, instance) =>
+          min(
+            instanceAcc,
+            instance.results.total + instance.anonymousResults.total
+          ),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  if (session.activeBlock && session.activeBlock.id) {
+    const activeInstanceIds = session.activeBlock?.elements.map(
+      (instance) => instance.id
+    )
+    const redisMulti = ctx.redisExec.pipeline()
+    activeInstanceIds?.forEach((instanceId) => {
+      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
+    })
+    const cacheContent = (await redisMulti.exec()) as
+      | [
+          Error | null,
+          {
+            // TODO: extend type with more content of cache (as needed)
+            participants: string
+          },
+        ][]
+      | null
+    const activeBlockParticipants = cacheContent
+      ?.map(([_, result]) => parseInt(result?.participants))
+      .reduce((acc, val) => min(acc, val), 100000)
+    blockParticipants[session.activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[session.activeBlock.id] ?? 0
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
+    activeBlock: session.activeBlock,
+    blocks: session.blocks.map((block) => {
+      return {
+        ...block,
+        numOfParticipants: blockParticipants[block.id],
+        elements: block.elements.map((instance) => {
+          const elementData = instance.elementData
+          if (
+            !elementData ||
+            typeof elementData !== 'object' ||
+            Array.isArray(elementData)
+          ) {
+            return instance
+          } else {
+            return {
+              ...instance,
+              elementData: {
+                ...elementData,
+                options: null,
+              },
+            }
+          }
+        }),
+      }
+    }),
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
+  }
+
+  return reducedSession
 }

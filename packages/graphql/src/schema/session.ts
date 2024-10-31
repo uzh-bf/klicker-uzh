@@ -14,6 +14,13 @@ import { FlashcardCorrectness as FlashcardCorrectnessEnum } from '@klicker-uzh/t
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
 import { FlashcardCorrectness } from './evaluation.js'
+import {
+  ConfusionSummary,
+  ConfusionTimestepRef,
+  FeedbackRef,
+  IConfusionSummary,
+  IFeedback,
+} from './liveQuiz.js'
 import { QuestionInstanceRef } from './question.js'
 import { ElementType, QuestionData } from './questionData.js'
 
@@ -154,70 +161,6 @@ export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
   }),
 })
-// #endregion
-
-// ----- AUDIENCE INTERACTION INTERFACE -----
-// #region
-export interface IFeedback extends DB.Feedback {
-  responses?: DB.FeedbackResponse[]
-}
-export const FeedbackRef = builder.objectRef<IFeedback>('Feedback')
-export const Feedback = FeedbackRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    isPublished: t.exposeBoolean('isPublished'),
-    isPinned: t.exposeBoolean('isPinned'),
-    isResolved: t.exposeBoolean('isResolved'),
-    content: t.exposeString('content'),
-    votes: t.exposeInt('votes'),
-    responses: t.expose('responses', {
-      type: [FeedbackResponseRef],
-      nullable: true,
-    }),
-    resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-  }),
-})
-
-export const FeedbackResponseRef =
-  builder.objectRef<DB.FeedbackResponse>('FeedbackResponse')
-export const FeedbackResponse = FeedbackResponseRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    content: t.exposeString('content'),
-    positiveReactions: t.exposeInt('positiveReactions'),
-    negativeReactions: t.exposeInt('negativeReactions'),
-
-    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
-  }),
-})
-
-export const ConfusionTimestepRef =
-  builder.objectRef<DB.ConfusionTimestep>('ConfusionTimestep')
-export const ConfusionTimestep = ConfusionTimestepRef.implement({
-  fields: (t) => ({
-    speed: t.exposeInt('speed'),
-    difficulty: t.exposeInt('difficulty'),
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-  }),
-})
-
-export interface IConfusionSummary {
-  speed: number
-  difficulty: number
-  numberOfParticipants: number
-}
-export const ConfusionSummary = builder
-  .objectRef<IConfusionSummary>('ConfusionSummary')
-  .implement({
-    fields: (t) => ({
-      speed: t.exposeFloat('speed'),
-      difficulty: t.exposeFloat('difficulty'),
-      numberOfParticipants: t.exposeInt('numberOfParticipants', {
-        nullable: true,
-      }),
-    }),
-  })
 // #endregion
 
 // ----- LIVE QUIZ EVALUATION INTERFACE -----

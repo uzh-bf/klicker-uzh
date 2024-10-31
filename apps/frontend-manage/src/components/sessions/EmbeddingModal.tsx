@@ -59,7 +59,7 @@ interface EmbeddingModalProps {
   open: boolean
   onClose: () => void
   quizId: string
-  elements?: ElementInstance[]
+  elements?: (Pick<ElementInstance, 'id'> & { elementData: { name: string } })[]
 }
 
 function EmbeddingModal({
