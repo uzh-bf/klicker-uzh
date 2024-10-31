@@ -1,5 +1,8 @@
 import { useMutation } from '@apollo/client'
-import { StartLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  PublicationStatus,
+  StartLiveQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -22,7 +25,17 @@ function StartModal({
   const t = useTranslations()
   const router = useRouter()
   const [startLiveQuiz, { loading: startingSession }] = useMutation(
-    StartLiveQuizDocument
+    StartLiveQuizDocument,
+    {
+      optimisticResponse: {
+        startLiveQuiz: {
+          __typename: 'LiveQuizMeta',
+          id: startId,
+          name: startName,
+          status: PublicationStatus.Published,
+        },
+      },
+    }
   )
 
   return (

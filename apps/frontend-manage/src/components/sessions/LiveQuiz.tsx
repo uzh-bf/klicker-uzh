@@ -69,6 +69,14 @@ function LiveQuiz({
           },
         })
       },
+      optimisticResponse: {
+        startLiveQuiz: {
+          __typename: 'LiveQuizMeta',
+          id: quiz.id,
+          name: quiz.name,
+          status: PublicationStatus.Published,
+        },
+      },
     }
   )
 
