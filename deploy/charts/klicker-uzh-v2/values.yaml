@@ -32,22 +32,6 @@ blobStorage:
   accountName: ''
   accessKey: ''
 
-migration:
-  secret: ''
-  mongo:
-    connectionString: ''
-  serviceBus:
-    connectionString: ''
-    queueName: ''
-
-listmonk:
-  url: ''
-  username: ''
-  password: ''
-  templates:
-    migrationRequest: -1
-    emailNotFound: -1
-
 vapid:
   publicKey: ''
   privateKey: ''
