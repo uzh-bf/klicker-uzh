@@ -1310,8 +1310,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
       sessionEvaluation: 'Quiz Evaluation',
-      startLiveQuiz: 'Start Live Quiz',
-      editLiveQuiz: 'Edit Live Quiz',
+      startLiveQuiz: 'Start Quiz',
+      editLiveQuiz: 'Edit Quiz',
       duplicateSession: 'Duplicate Quiz',
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
@@ -1820,7 +1820,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sessionStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
-      startLiveQuiz: 'Start live quiz',
+      startLiveQuiz: 'Start quiz',
       confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',
       explanationStartLiveQuiz:
