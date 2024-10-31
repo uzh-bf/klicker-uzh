@@ -4,6 +4,7 @@ import {
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
 import { ElementEditMode } from './ElementEditModal'
@@ -35,7 +36,12 @@ function useElementFormInitialValues({
           hasAnswerFeedbacks: false,
           displayMode: ElementDisplayMode.List,
           choices: [
-            { ix: 0, value: undefined, correct: false, feedback: undefined },
+            {
+              id: nanoid(),
+              value: undefined,
+              correct: false,
+              feedback: undefined,
+            },
           ],
         },
       }
@@ -65,10 +71,8 @@ function useElementFormInitialValues({
           displayMode: options.displayMode,
           choices: sort(
             options.choices.map((choice) => ({
-              ix: choice.ix,
-              value: choice.value,
-              correct: choice.correct,
-              feedback: choice.feedback,
+              ...choice,
+              id: nanoid(),
             })),
             (a, b) => (a.ix > b.ix ? 1 : -1)
           ),

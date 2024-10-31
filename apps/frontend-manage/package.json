@@ -35,6 +35,7 @@
     "js-search": "2.0.1",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
+    "nanoid": "5.0.8",
     "next": "15.0.0",
     "next-intl": "3.21.1",
     "nookies": "2.5.2",
