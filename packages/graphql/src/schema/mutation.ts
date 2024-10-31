@@ -1069,12 +1069,12 @@ export const Mutation = builder.mutationType({
 
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteLiveQuiz(args, ctx)
+          return LiveQuizService.deleteLiveQuiz(args, ctx)
         },
       }),
 

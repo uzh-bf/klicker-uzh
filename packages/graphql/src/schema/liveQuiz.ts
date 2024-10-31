@@ -13,7 +13,7 @@ export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
 })
 
 interface ILiveQuiz extends DB.LiveQuiz {
-  blocks: DB.ElementBlock[]
+  blocks?: DB.ElementBlock[] | null
   course?: DB.Course | null
   numOfBlocks?: number
   numOfInstances?: number

@@ -1754,64 +1754,6 @@ export async function cancelSession(
   }
 }
 
-export async function deleteLiveQuiz(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  // fetch live quiz to check its status
-  const liveQuiz = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    select: {
-      status: true,
-    },
-  })
-
-  if (!liveQuiz) return null
-
-  if (liveQuiz.status === SessionStatus.RUNNING) {
-    // running live quizzes cannot be deleted
-    return null
-  } else if (liveQuiz.status === SessionStatus.COMPLETED) {
-    const deletedLiveQuiz = await ctx.prisma.liveSession.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: SessionStatus.COMPLETED,
-      },
-      data: {
-        isDeleted: true,
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'Session',
-      id,
-    })
-
-    return deletedLiveQuiz
-  } else {
-    const deletedLiveQuiz = await ctx.prisma.liveSession.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: {
-          in: [SessionStatus.PREPARED, SessionStatus.SCHEDULED],
-        },
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'Session',
-      id,
-    })
-
-    return deletedLiveQuiz
-  }
-}
-
 export async function getLiveQuizSummary(
   { quizId }: { quizId: string },
   ctx: ContextWithUser
