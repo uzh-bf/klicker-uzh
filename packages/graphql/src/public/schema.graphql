@@ -956,6 +956,8 @@ type LiveQuiz {
   maxBonusPoints: Int!
   name: String!
   namespace: String!
+  numOfBlocks: Int
+  numOfInstances: Int
   pinCode: Int
   pointsMultiplier: Int!
   startedAt: Date
@@ -1434,13 +1436,13 @@ type Query {
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   unassignedSessions: [Session!]
   userCourses: [Course!]
+  userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
   userQuestions: [Element!]
   userRunningSessions: [Session!]
   userScope: UserLoginScope
-  userSessions: [Session!]
   userTags: [Tag!]
 }
 

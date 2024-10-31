@@ -1228,59 +1228,6 @@ export async function getUserRunningSessions(ctx: ContextWithUser) {
   return userWithSessions.sessions
 }
 
-export async function getUserSessions(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      sessions: {
-        where: {
-          isDeleted: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          course: true,
-          blocks: {
-            orderBy: {
-              order: 'asc',
-            },
-            include: {
-              instances: {
-                orderBy: {
-                  order: 'asc',
-                },
-              },
-              _count: {
-                select: { instances: true },
-              },
-            },
-          },
-          _count: {
-            select: { blocks: true },
-          },
-        },
-      },
-    },
-  })
-
-  return user?.sessions.map((session) => ({
-    ...session,
-    blocks: session.blocks.map((block) => ({
-      ...block,
-      numOfParticipants: block.instances[0]?.participants,
-    })),
-    course: session.course ? session.course : undefined,
-    numOfBlocks: session._count?.blocks,
-    numOfQuestions: session.blocks.reduce(
-      (acc, block) => acc + block._count?.instances,
-      0
-    ),
-  }))
-}
-
 export async function getUnassignedSessions(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {

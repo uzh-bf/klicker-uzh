@@ -14,11 +14,10 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteLiveQuizDocument,
+  GetUserLiveQuizzesDocument,
   GetUserRunningSessionsDocument,
-  GetUserSessionsDocument,
-  SessionBlock,
-  SessionStatus,
-  Session as SessionType,
+  LiveQuiz as LiveQuizType,
+  PublicationStatus,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
@@ -32,18 +31,30 @@ import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import { WizardMode } from './creation/ElementCreation'
 
-interface SessionProps {
-  session: SessionType
-}
-
-function Session({ session }: SessionProps) {
+function LiveQuiz({
+  quiz,
+}: {
+  quiz: Pick<
+    LiveQuizType,
+    | 'id'
+    | 'name'
+    | 'displayName'
+    | 'status'
+    | 'numOfBlocks'
+    | 'numOfInstances'
+    | 'createdAt'
+    | 'startedAt'
+    | 'finishedAt'
+    | 'blocks'
+  >
+}) {
   const t = useTranslations()
   const router = useRouter()
 
   const [startSession, { loading: startingQuiz }] = useMutation(
     StartSessionDocument,
     {
-      variables: { id: session.id },
+      variables: { id: quiz.id },
       refetchQueries: [
         {
           query: GetUserRunningSessionsDocument,
@@ -53,23 +64,23 @@ function Session({ session }: SessionProps) {
   )
 
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
-    variables: { id: session.id },
+    variables: { id: quiz.id },
     update(cache) {
       const data = cache.readQuery({
-        query: GetUserSessionsDocument,
+        query: GetUserLiveQuizzesDocument,
       })
       cache.writeQuery({
-        query: GetUserSessionsDocument,
+        query: GetUserLiveQuizzesDocument,
         data: {
-          userSessions:
-            data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
+          userLiveQuizzes:
+            data?.userLiveQuizzes?.filter((q) => q.id !== quiz.id) ?? [],
         },
       })
     },
     optimisticResponse: {
       deleteLiveQuiz: {
         __typename: 'Session',
-        id: session.id,
+        id: quiz.id,
       },
     },
   })
@@ -80,34 +91,36 @@ function Session({ session }: SessionProps) {
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
 
-  const timeIcon: Record<SessionStatus, IconDefinition> = {
-    [SessionStatus.Prepared]: faCalendarDays,
-    [SessionStatus.Scheduled]: faClock,
-    [SessionStatus.Running]: faPlay,
-    [SessionStatus.Completed]: faCheck,
+  const timeIcon: Record<PublicationStatus, IconDefinition> = {
+    [PublicationStatus.Draft]: faCalendarDays,
+    [PublicationStatus.Scheduled]: faClock,
+    [PublicationStatus.Published]: faPlay,
+    [PublicationStatus.Ended]: faCheck,
+    [PublicationStatus.Graded]: faCheck,
   }
-  const timeStamp: Record<SessionStatus, string> = {
-    [SessionStatus.Prepared]: session.createdAt,
-    [SessionStatus.Scheduled]: session.createdAt,
-    [SessionStatus.Running]: session.startedAt,
-    [SessionStatus.Completed]: session.finishedAt,
+  const timeStamp: Record<PublicationStatus, string | null> = {
+    [PublicationStatus.Draft]: quiz.createdAt,
+    [PublicationStatus.Scheduled]: quiz.createdAt,
+    [PublicationStatus.Published]: quiz.startedAt,
+    [PublicationStatus.Ended]: quiz.finishedAt,
+    [PublicationStatus.Graded]: quiz.finishedAt,
   }
 
   return (
     <>
-      <div key={session.id} className="rounded border p-1" data-cy="session">
+      <div key={quiz.id} className="rounded border p-1" data-cy="session">
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
           className={{ root: 'border-0 !py-0.5' }}
-          key={session.id}
-          open={showDetails && session.id === selectedSession}
+          key={quiz.id}
+          open={showDetails && quiz.id === selectedSession}
           onChange={() => {
-            if (session.id === selectedSession) {
+            if (quiz.id === selectedSession) {
               setShowDetails(!showDetails)
             } else {
               setShowDetails(true)
-              setSelectedSession(session.id)
+              setSelectedSession(quiz.id)
             }
           }}
           staticContent={
@@ -116,17 +129,17 @@ function Session({ session }: SessionProps) {
               data-cy="session-block"
             >
               <div className="flex flex-row items-center gap-3">
-                <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
+                <H3 className={{ root: 'mb-0' }}>{quiz.name}</H3>
                 <FontAwesomeIcon
                   icon={faPencil}
                   size="sm"
                   onClick={() => setChangeName(true)}
                   className="hover:cursor-pointer"
-                  data-cy={`change-liveQuiz-name-${session.name}`}
+                  data-cy={`change-liveQuiz-name-${quiz.name}`}
                 />
               </div>
               <div className="flex flex-row gap-5">
-                {session.blocks?.length !== 0 && (
+                {quiz.blocks?.length !== 0 && (
                   <>
                     <Button
                       basic
@@ -134,18 +147,18 @@ function Session({ session }: SessionProps) {
                       className={{
                         root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
                       }}
-                      data={{ cy: `show-embedding-modal-${session.name}` }}
+                      data={{ cy: `show-embedding-modal-${quiz.name}` }}
                     >
                       <FontAwesomeIcon icon={faCode} size="sm" />
                       {t('manage.sessions.embeddingEvaluation')}
                     </Button>
                     <EmbeddingModal
-                      key={session.id}
+                      key={quiz.id}
                       open={embedModalOpen}
                       onClose={() => setEmbedModalOpen(false)}
-                      sessionId={session.id}
-                      questions={session.blocks
-                        ?.flatMap((block: SessionBlock) => block.instances)
+                      sessionId={quiz.id}
+                      elements={quiz.blocks
+                        ?.flatMap((block) => block.elements)
                         .filter(
                           (instance) =>
                             typeof instance !== 'undefined' && instance !== null
@@ -154,30 +167,30 @@ function Session({ session }: SessionProps) {
                   </>
                 )}
 
-                {SessionStatus.Running === session.status && (
+                {PublicationStatus.Published === quiz.status && (
                   <Link
-                    href={`/sessions/${session.id}/cockpit`}
+                    href={`/sessions/${quiz.id}/cockpit`}
                     legacyBehavior
                     passHref
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-cockpit-${session.name}`}
+                      data-cy={`session-cockpit-${quiz.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.lecturerCockpit')}</div>
                     </a>
                   </Link>
                 )}
-                {SessionStatus.Completed === session.status && (
+                {PublicationStatus.Ended === quiz.status && (
                   <Link
-                    href={`/sessions/${session.id}/evaluation`}
+                    href={`/sessions/${quiz.id}/evaluation`}
                     legacyBehavior
                     passHref
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-evaluation-${session.name}`}
+                      data-cy={`session-evaluation-${quiz.name}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -186,16 +199,16 @@ function Session({ session }: SessionProps) {
                     </a>
                   </Link>
                 )}
-                {(SessionStatus.Prepared === session.status ||
-                  SessionStatus.Scheduled === session.status) && (
+                {(PublicationStatus.Draft === quiz.status ||
+                  PublicationStatus.Scheduled === quiz.status) && (
                   <Button
                     basic
                     disabled={startingQuiz}
                     onClick={async () => {
                       await startSession()
-                      router.push(`sessions/${session.id}/cockpit`)
+                      router.push(`sessions/${quiz.id}/cockpit`)
                     }}
-                    data={{ cy: `start-session-${session.name}` }}
+                    data={{ cy: `start-session-${quiz.name}` }}
                   >
                     <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
@@ -205,10 +218,10 @@ function Session({ session }: SessionProps) {
                 )}
                 <div className="flex flex-row items-center gap-1 text-sm">
                   <FontAwesomeIcon
-                    icon={timeIcon[session.status]}
+                    icon={timeIcon[quiz.status]}
                     className="mr-1"
                   />
-                  {dayjs(timeStamp[session.status]).format('YYYY-MM-DD HH:mm')}
+                  {dayjs(timeStamp[quiz.status]).format('YYYY-MM-DD HH:mm')}
                 </div>
               </div>
             </div>
@@ -216,8 +229,8 @@ function Session({ session }: SessionProps) {
           closedContent={
             <div className="italic">
               {t('manage.sessions.nBlocksQuestions', {
-                blocks: session.numOfBlocks,
-                questions: session.numOfQuestions,
+                blocks: quiz.numOfBlocks,
+                questions: quiz.numOfInstances,
               })}
             </div>
           }
@@ -229,12 +242,12 @@ function Session({ session }: SessionProps) {
                   router.push({
                     pathname: '/',
                     query: {
-                      elementId: session.id,
+                      elementId: quiz.id,
                       duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
                 }
-                data={{ cy: `duplicate-session-${session.name}` }}
+                data={{ cy: `duplicate-session-${quiz.name}` }}
               >
                 <Button.Icon className={{ root: 'text-slate-600' }}>
                   <FontAwesomeIcon icon={faCopy} />
@@ -243,20 +256,20 @@ function Session({ session }: SessionProps) {
                   {t('manage.sessions.duplicateSession')}
                 </Button.Label>
               </Button>
-              {(SessionStatus.Prepared === session.status ||
-                SessionStatus.Scheduled === session.status) && (
+              {(PublicationStatus.Draft === quiz.status ||
+                PublicationStatus.Scheduled === quiz.status) && (
                 <Button
                   className={{ root: 'px-3 py-1 text-sm' }}
                   onClick={() =>
                     router.push({
                       pathname: '/',
                       query: {
-                        elementId: session.id,
+                        elementId: quiz.id,
                         editMode: WizardMode.LiveQuiz,
                       },
                     })
                   }
-                  data={{ cy: `edit-session-${session.name}` }}
+                  data={{ cy: `edit-session-${quiz.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-slate-600' }}>
                     <FontAwesomeIcon icon={faPencil} />
@@ -266,15 +279,15 @@ function Session({ session }: SessionProps) {
                   </Button.Label>
                 </Button>
               )}
-              {(SessionStatus.Prepared === session.status ||
-                SessionStatus.Scheduled === session.status ||
-                SessionStatus.Completed === session.status) && (
+              {(PublicationStatus.Draft === quiz.status ||
+                PublicationStatus.Scheduled === quiz.status ||
+                PublicationStatus.Ended === quiz.status) && (
                 <Button
                   className={{
                     root: 'border-red-600 px-3 py-1 text-sm',
                   }}
                   onClick={() => setDeletionModal(true)}
-                  data={{ cy: `delete-live-quiz-${session.name}` }}
+                  data={{ cy: `delete-live-quiz-${quiz.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-red-400' }}>
                     <FontAwesomeIcon icon={faTrash} />
@@ -288,7 +301,7 @@ function Session({ session }: SessionProps) {
           }
         >
           <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
-            {session.blocks?.map((block, index) => (
+            {quiz.blocks?.map((block, index) => (
               <div
                 key={block.id}
                 className="w-64 min-w-52 border-r border-black pr-4 last:border-r-0 last:pr-0"
@@ -310,9 +323,9 @@ function Session({ session }: SessionProps) {
                   ) : null}
                 </div>
                 <div>
-                  {block.instances?.map((instance) => (
+                  {block.elements?.map((instance) => (
                     <Link
-                      href={`/questions/${instance.questionData!.questionId}`}
+                      href={`/questions/${instance.elementData!.elementId}`}
                       className="text-sm hover:text-slate-700"
                       key={instance.id}
                       legacyBehavior
@@ -325,8 +338,8 @@ function Session({ session }: SessionProps) {
                       >
                         <div className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm">
                           <div>
-                            {instance.questionData?.name} (
-                            {t(`shared.${instance.questionData!.type}.short`)})
+                            {instance.elementData?.name} (
+                            {t(`shared.${instance.elementData!.type}.short`)})
                           </div>
                           <FontAwesomeIcon
                             icon={faArrowUpRightFromSquare}
@@ -339,7 +352,7 @@ function Session({ session }: SessionProps) {
                 </div>
                 <div className="float-right text-sm">
                   {t('shared.generic.Nelements', {
-                    number: block.instances?.length,
+                    number: block.elements?.length,
                   })}
                 </div>
               </div>
@@ -350,7 +363,7 @@ function Session({ session }: SessionProps) {
       <DeletionModal
         title={t('manage.sessions.deleteLiveQuiz')}
         description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name || ''}
+        elementName={quiz.name || ''}
         message={t('manage.sessions.liveQuizDeletionHint')}
         deleteElement={deleteLiveQuiz}
         open={deletionModal}
@@ -359,9 +372,9 @@ function Session({ session }: SessionProps) {
         secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />
       <LiveQuizNameChangeModal
-        quizId={session.id}
-        name={session.name}
-        displayName={session.displayName}
+        quizId={quiz.id}
+        name={quiz.name}
+        displayName={quiz.displayName}
         open={changeName}
         setOpen={setChangeName}
       />
@@ -369,4 +382,4 @@ function Session({ session }: SessionProps) {
   )
 }
 
-export default Session
+export default LiveQuiz

@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CancelSessionDocument,
   GetLiveQuizSummaryDocument,
+  GetUserLiveQuizzesDocument,
   GetUserRunningSessionsDocument,
-  GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -65,7 +65,7 @@ function CancelSessionModal({
           query: GetUserRunningSessionsDocument,
         },
         {
-          query: GetUserSessionsDocument,
+          query: GetUserLiveQuizzesDocument,
         },
       ],
     }

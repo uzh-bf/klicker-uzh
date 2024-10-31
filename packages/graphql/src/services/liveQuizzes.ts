@@ -227,3 +227,59 @@ export async function getLiveQuizData(
 
   return session
 }
+
+export async function getUserLiveQuizzes(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          course: true,
+          blocks: {
+            orderBy: {
+              order: 'asc',
+            },
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+              _count: {
+                select: { elements: true },
+              },
+            },
+          },
+          _count: {
+            select: { blocks: true },
+          },
+        },
+      },
+    },
+  })
+
+  return user?.liveQuizzes.map((session) => ({
+    ...session,
+    blocks: session.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+    })),
+    course: session.course ? session.course : undefined,
+    numOfBlocks: session._count?.blocks,
+    numOfInstances: session.blocks.reduce(
+      (acc, block) => acc + block._count?.elements,
+      0
+    ),
+  }))
+}

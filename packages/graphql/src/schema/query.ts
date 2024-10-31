@@ -290,11 +290,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userSessions: asUser.field({
+      userLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         resolve(_, __, ctx) {
-          return SessionService.getUserSessions(ctx)
+          return LiveQuizService.getUserLiveQuizzes(ctx)
         },
       }),
 

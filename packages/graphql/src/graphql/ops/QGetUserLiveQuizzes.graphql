@@ -1,5 +1,5 @@
-query GetUserSessions {
-  userSessions {
+query GetUserLiveQuizzes {
+  userLiveQuizzes {
     id
     name
     displayName
@@ -12,17 +12,21 @@ query GetUserSessions {
     startedAt
     finishedAt
     numOfBlocks
-    numOfQuestions
+    numOfInstances
     isGamificationEnabled
     isConfusionFeedbackEnabled
     isLiveQAEnabled
     isModerationEnabled
     blocks {
       id
+      order
+      status
       numOfParticipants
-      instances {
+      elements {
         id
-        ...QuestionDataInfo
+        type
+        elementType
+        ...ElementData
       }
     }
     course {

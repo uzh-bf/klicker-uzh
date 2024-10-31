@@ -15,6 +15,8 @@ export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
 interface ILiveQuiz extends DB.LiveQuiz {
   blocks: DB.ElementBlock[]
   course?: DB.Course | null
+  numOfBlocks?: number
+  numOfInstances?: number
 }
 
 export const LiveQuizRef = builder.objectRef<ILiveQuiz>('LiveQuiz')
@@ -40,8 +42,8 @@ export const LiveQuiz = LiveQuizRef.implement({
     status: t.expose('status', { type: PublicationStatus }),
     accessMode: t.expose('accessMode', { type: LiveQuizAccessMode }),
 
-    // numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
-    // numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
+    numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
+    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
 
     blocks: t.expose('blocks', {
       type: [ElementBlockRef],

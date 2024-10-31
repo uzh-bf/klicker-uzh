@@ -4,8 +4,8 @@ import {
   DeactivateSessionBlockDocument,
   EndSessionDocument,
   GetCockpitSessionDocument,
+  GetUserLiveQuizzesDocument,
   GetUserRunningSessionsDocument,
-  GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
@@ -33,7 +33,7 @@ function Cockpit() {
           query: GetUserRunningSessionsDocument,
         },
         {
-          query: GetUserSessionsDocument,
+          query: GetUserLiveQuizzesDocument,
         },
       ],
     }

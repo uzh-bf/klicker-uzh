@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementInstance,
   GetSessionHmacDocument,
-  QuestionInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -65,14 +65,14 @@ interface EmbeddingModalProps {
   open: boolean
   onClose: () => void
   sessionId: string
-  questions?: Omit<QuestionInstance, 'questionData'>[]
+  elements?: ElementInstance[]
 }
 
 function EmbeddingModal({
   open,
   onClose,
   sessionId,
-  questions,
+  elements,
 }: EmbeddingModalProps) {
   const t = useTranslations()
 
@@ -103,14 +103,14 @@ function EmbeddingModal({
         <LazyHMACLink sessionId={sessionId} params={``} />
       </div>
       <div className="flex flex-col gap-2">
-        {questions?.map((question: QuestionInstance, ix: number) => {
+        {elements?.map((element, ix) => {
           return (
-            <div key={question.id}>
+            <div key={element.id}>
               <div className="font-bold">
                 {ix + 1}{' '}
-                {question.questionData!.name.length > 25
-                  ? `${question.questionData!.name.substring(0, 25)}...`
-                  : question.questionData!.name}
+                {element.elementData.name.length > 25
+                  ? `${element.elementData.name.substring(0, 25)}...`
+                  : element.elementData.name}
               </div>
               <LazyHMACLink
                 sessionId={sessionId}

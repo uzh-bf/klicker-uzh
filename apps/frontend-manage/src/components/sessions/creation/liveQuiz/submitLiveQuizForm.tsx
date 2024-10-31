@@ -1,6 +1,6 @@
 import {
   GetSingleCourseDocument,
-  GetUserSessionsDocument,
+  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
@@ -58,7 +58,7 @@ async function submitLiveQuizForm({
         },
         refetchQueries: [
           {
-            query: GetUserSessionsDocument,
+            query: GetUserLiveQuizzesDocument,
           },
           ...(values.courseId
             ? [
@@ -92,7 +92,7 @@ async function submitLiveQuizForm({
         },
         refetchQueries: [
           {
-            query: GetUserSessionsDocument,
+            query: GetUserLiveQuizzesDocument,
           },
           ...(values.courseId
             ? [
