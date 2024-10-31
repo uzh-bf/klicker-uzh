@@ -32,7 +32,6 @@
     "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
     "dev:lti": "npm-run-all --parallel dev:build dev:run",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
-    "dev:test": "cross-env NODE_ENV=test pnpm run dev",
     "start": "node dist/index.js"
   },
   "engines": {

@@ -137,7 +137,6 @@
       "persistent": true
     },
     "dev:test": {
-      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
@@ -155,6 +154,10 @@
     },
     "test": {
       "cache": false
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
     },
     "test:run": {
       "cache": false
