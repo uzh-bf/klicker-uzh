@@ -1,5 +1,5 @@
-query GetCockpitSession($id: String!) {
-  cockpitSession(id: $id) {
+query GetCockpitQuiz($id: String!) {
+  cockpitQuiz(id: $id) {
     id
     isLiveQAEnabled
     isConfusionFeedbackEnabled
@@ -23,9 +23,11 @@ query GetCockpitSession($id: String!) {
       timeLimit
       randomSelection
       execution
-      instances {
+      elements {
         id
-        ...QuestionDataInfo
+        type
+        elementType
+        ...ElementDataInfo
       }
     }
     activeBlock {

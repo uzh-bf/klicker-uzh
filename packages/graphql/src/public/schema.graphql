@@ -942,11 +942,15 @@ type Level {
 
 type LiveQuiz {
   accessMode: LiveQuizAccessMode!
+  activeBlock: ElementBlock
   blocks: [ElementBlock!]
+  confusionFeedbacks: [ConfusionTimestep!]
+  confusionSummary: ConfusionSummary
   course: Course
   createdAt: Date!
   description: String
   displayName: String!
+  feedbacks: [Feedback!]
   finishedAt: Date
   id: ID!
   isConfusionFeedbackEnabled: Boolean!
@@ -1396,7 +1400,7 @@ type Query {
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
-  cockpitSession(id: String!): Session
+  cockpitQuiz(id: String!): LiveQuiz
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlSession(id: String!): Session
@@ -1442,9 +1446,9 @@ type Query {
   runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
-  session(id: String!): Session
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
+  studentLiveQuiz(id: String!): LiveQuiz
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userLiveQuizzes: [LiveQuiz!]

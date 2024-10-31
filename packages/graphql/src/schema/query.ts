@@ -25,7 +25,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
-import { LiveQuiz, LiveQuizInfo } from './liveQuiz.js'
+import { Feedback, LiveQuiz, LiveQuizInfo } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -42,7 +42,6 @@ import {
 } from './practiceQuiz.js'
 import { Element, Tag } from './question.js'
 import {
-  Feedback,
   RunningLiveQuizSummary,
   Session,
   SessionEvaluation,
@@ -298,15 +297,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      cockpitSession: asUser.field({
+      cockpitQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        // TODO: fix type errors after migration to live quiz
         resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx) as any
+          return LiveQuizService.getCockpitQuiz(args, ctx)
         },
       }),
 
@@ -411,14 +409,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      session: t.field({
+      studentLiveQuiz: t.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSession(args, ctx)
+          return LiveQuizService.getRunningLiveQuiz(args, ctx)
         },
       }),
 

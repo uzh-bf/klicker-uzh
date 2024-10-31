@@ -8,9 +8,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  QuestionInstance,
+  ElementBlockStatus,
+  ElementBlock as ElementBlockType,
+  ElementInstance,
   SessionBlockStatus,
-  SessionBlock as SessionBlockType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { CycleCountdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -19,18 +20,18 @@ import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type SessionTimelineInstance = Omit<QuestionInstance, 'questionData'> & {
-  questionData?: { questionId?: number | null; name: string } | null
+type QuizTimelineInstance = Omit<ElementInstance, 'elementData'> & {
+  elementData: { elementId: number | null; name: string }
 }
 
-export type SessionTimelineBlock = Omit<SessionBlockType, 'instances'> & {
-  instances?: SessionTimelineInstance[] | null
+export type QuizTimelineBlock = Omit<ElementBlockType, 'elements'> & {
+  elements?: QuizTimelineInstance[] | null
 }
 
 interface SessionBlockProps {
   className?: string
   active: boolean
-  block: SessionTimelineBlock
+  block: QuizTimelineBlock
   inCooldown: boolean
   setInCooldown: (value: boolean) => void
 }
@@ -61,7 +62,7 @@ function SessionBlock({
   // compute the time until expiration (student-visible time) and
   // the time until the block is closed (including cooldown)
   const { expiration: expirationTime, closure: closureTime } = useMemo(() => {
-    if (block.status === SessionBlockStatus.Executed) {
+    if (block.status === ElementBlockStatus.Executed) {
       setTotalDuration(0)
       return { expiration: undefined, closure: undefined }
     }
@@ -123,7 +124,7 @@ function SessionBlock({
             key={`${block.id}-${endTime}-${totalDuration}`}
             size="sm"
             isStatic={
-              !block.expiresAt || block.status === SessionBlockStatus.Executed
+              !block.expiresAt || block.status === ElementBlockStatus.Executed
             }
             color={timerColor}
             expiresAt={endTime ?? new Date()}
@@ -149,10 +150,10 @@ function SessionBlock({
           />
         )}
       </div>
-      {block.instances?.map((instance: SessionTimelineInstance) => (
+      {block.elements?.map((instance) => (
         <div key={instance.id}>
           <Link
-            href={`/questions/${instance.questionData!.questionId}`}
+            href={`/questions/${instance.elementData!.elementId}`}
             className="text-sm hover:text-slate-700"
             legacyBehavior
             passHref
@@ -162,7 +163,7 @@ function SessionBlock({
               target="_blank"
               rel="noopener noreferrer"
             >
-              {instance.questionData!.name}{' '}
+              {instance.elementData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
             </a>
           </Link>

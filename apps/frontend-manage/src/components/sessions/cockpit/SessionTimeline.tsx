@@ -17,7 +17,7 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
-import SessionBlock, { SessionTimelineBlock } from './SessionBlock'
+import SessionBlock, { QuizTimelineBlock } from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
 
 dayjs.extend(durationPlugin)
@@ -38,7 +38,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 }
 
 interface SessionTimelineProps {
-  blocks?: SessionTimelineBlock[]
+  blocks?: QuizTimelineBlock[]
   sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
@@ -167,7 +167,7 @@ function SessionTimeline({
                 open={embedModalOpen}
                 onClose={() => setEmbedModalOpen(false)}
                 quizId={sessionId}
-                elements={blocks.flatMap((block) => block.instances ?? [])}
+                elements={blocks.flatMap((block) => block.elements ?? [])}
               />
             )}
             <SessionQRModal sessionId={sessionId} />

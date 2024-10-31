@@ -159,7 +159,21 @@ export function getInitialElementResults(
 
 export function getInitialInstanceStatistics(type: PrismaElementInstanceType) {
   if (type === PrismaElementInstanceType.LIVE_QUIZ) {
-    return undefined
+    return {
+      anonymousCorrectCount: 0,
+      anonymousPartialCorrectCount: 0,
+      anonymousWrongCount: 0,
+
+      correctCount: 0,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+
+      upvoteCount: 0,
+      downvoteCount: 0,
+
+      uniqueParticipantCount: 0,
+      averageTimeSpent: 0,
+    }
   } else if (type === PrismaElementInstanceType.PRACTICE_QUIZ) {
     return {
       anonymousCorrectCount: 0,

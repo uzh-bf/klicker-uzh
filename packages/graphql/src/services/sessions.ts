@@ -1,6 +1,5 @@
 import {
   type ConfusionTimestep,
-  type Element,
   ElementType,
   SessionBlockStatus,
   SessionStatus,
@@ -13,7 +12,6 @@ import type {
 } from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
-import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
@@ -30,31 +28,6 @@ const scheduledJobs: Record<string, any> = {}
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
-
-async function getQuestionMap(
-  blocks: BlockArgs[],
-  ctx: ContextWithUser
-): Promise<Record<number, Element>> {
-  const allQuestionsIds = new Set(
-    blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
-  )
-
-  const questions = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: Array.from(allQuestionsIds) },
-      ownerId: ctx.user.sub,
-    },
-  })
-
-  if (questions.length !== allQuestionsIds.size) {
-    throw new GraphQLError('Not all questions could be found')
-  }
-
-  return questions.reduce<Record<number, Element>>(
-    (acc, question) => ({ ...acc, [question.id]: question }),
-    {}
-  )
-}
 
 interface BlockArgs {
   questionIds: number[]
@@ -1176,114 +1149,6 @@ const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
     }
   }
   return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
-}
-
-export async function getCockpitSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      activeBlock: {
-        include: {
-          instances: true,
-        },
-      },
-      blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      course: true,
-      confusionFeedbacks: true,
-      feedbacks: {
-        include: {
-          responses: true,
-        },
-      },
-    },
-  })
-
-  if (!session || session?.status !== SessionStatus.RUNNING) {
-    return null
-  }
-
-  // number of participants per block
-  const blockParticipants = session.blocks.reduce<Record<number, number>>(
-    (acc, block) => {
-      acc[block.id] = block.instances.reduce(
-        (instanceAcc, instance) => min(instanceAcc, instance.participants),
-        100000
-      )
-      return acc
-    },
-    {}
-  )
-
-  if (session.activeBlock && session.activeBlock.id) {
-    const activeInstanceIds = session.activeBlock?.instances.map(
-      (instance) => instance.id
-    )
-    const redisMulti = ctx.redisExec.pipeline()
-    activeInstanceIds?.forEach((instanceId) => {
-      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
-    })
-    const cacheContent = (await redisMulti.exec()) as
-      | [
-          Error | null,
-          {
-            // TODO: extend type with more content of cache (as needed)
-            participants: string
-          },
-        ][]
-      | null
-    const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants))
-      .reduce((acc, val) => min(acc, val), 100000)
-    blockParticipants[session.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[session.activeBlock.id] ?? 0
-  }
-
-  // recude session to only contain what is required for the lecturer cockpit
-  const reducedSession = {
-    ...session,
-    activeBlock: session.activeBlock,
-    blocks: session.blocks.map((block) => {
-      return {
-        ...block,
-        numOfParticipants: blockParticipants[block.id],
-        instances: block.instances.map((instance) => {
-          const questionData = instance.questionData
-          if (
-            !questionData ||
-            typeof questionData !== 'object' ||
-            Array.isArray(questionData)
-          ) {
-            return instance
-          } else {
-            return {
-              ...instance,
-              questionData: {
-                ...questionData,
-                options: null,
-              },
-            }
-          }
-        }),
-      }
-    }),
-    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
-  }
-
-  return reducedSession
 }
 
 export async function getControlSession(

@@ -8,12 +8,12 @@ import {
   DeleteFeedbackResponseDocument,
   Feedback,
   FeedbackCreatedDocument,
-  GetCockpitSessionDocument,
+  GetCockpitQuizDocument,
+  LiveQuiz,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
-  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2, Switch } from '@uzh-bf/design-system'
@@ -25,7 +25,7 @@ import { useTranslations } from 'next-intl'
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 interface Props {
-  sessionId: string
+  quizId: string
   sessionName: string
   confusionValues?: ConfusionSummary
   feedbacks?: Feedback[]
@@ -37,7 +37,7 @@ interface Props {
 }
 
 function AudienceInteraction({
-  sessionId,
+  quizId,
   sessionName,
   confusionValues,
   feedbacks,
@@ -50,26 +50,26 @@ function AudienceInteraction({
   const t = useTranslations()
 
   useEffect(() => {
-    if (!sessionId) return
+    if (!quizId) return
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
-      variables: { sessionId },
+      variables: { sessionId: quizId },
       updateQuery: (
-        prev: { cockpitSession: Session },
+        prev: { cockpitQuiz: LiveQuiz },
         {
           subscriptionData,
         }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
       ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackCreated
-        const updatedSession = {
-          ...prev.cockpitSession,
-          feedbacks: [newItem, ...(prev.cockpitSession.feedbacks ?? [])],
+        const updatedQuiz = {
+          ...prev.cockpitQuiz,
+          feedbacks: [newItem, ...(prev.cockpitQuiz.feedbacks ?? [])],
         }
 
         return {
-          cockpitSession: updatedSession,
+          cockpitQuiz: updatedQuiz,
         }
       },
     })
@@ -77,7 +77,7 @@ function AudienceInteraction({
     return () => {
       feedbackAdded && feedbackAdded()
     }
-  }, [subscribeToMore, sessionId])
+  }, [subscribeToMore, quizId])
 
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
@@ -99,7 +99,7 @@ function AudienceInteraction({
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
-                href={`/sessions/${sessionId}/lecturer`}
+                href={`/sessions/${quizId}/lecturer`}
                 target="_blank"
                 passHref
                 legacyBehavior
@@ -120,7 +120,7 @@ function AudienceInteraction({
                 onCheckedChange={(): void => {
                   changeSessionSettings({
                     variables: {
-                      id: sessionId,
+                      id: quizId,
                       isLiveQAEnabled: !isLiveQAEnabled,
                     },
                   })
@@ -141,7 +141,7 @@ function AudienceInteraction({
                 onCheckedChange={(): void => {
                   changeSessionSettings({
                     variables: {
-                      id: sessionId,
+                      id: quizId,
                       isModerationEnabled: !isModerationEnabled,
                     },
                   })
@@ -185,19 +185,19 @@ function AudienceInteraction({
                       update(cache, res) {
                         const removedFeedback = res.data?.deleteFeedback
                         const data = cache.readQuery({
-                          query: GetCockpitSessionDocument,
-                          variables: { id: sessionId },
+                          query: GetCockpitQuizDocument,
+                          variables: { id: quizId },
                         })
 
-                        if (data?.cockpitSession && removedFeedback) {
+                        if (data?.cockpitQuiz && removedFeedback) {
                           cache.writeQuery({
-                            query: GetCockpitSessionDocument,
-                            variables: { id: sessionId },
+                            query: GetCockpitQuizDocument,
+                            variables: { id: quizId },
                             data: {
-                              cockpitSession: {
-                                ...data.cockpitSession,
+                              cockpitQuiz: {
+                                ...data.cockpitQuiz,
                                 feedbacks:
-                                  data.cockpitSession.feedbacks?.filter(
+                                  data.cockpitQuiz.feedbacks?.filter(
                                     (feedback) =>
                                       feedback.id !== removedFeedback.id
                                   ) ?? [],
@@ -215,18 +215,18 @@ function AudienceInteraction({
                       update(cache, res) {
                         const updatedFeedback = res.data?.deleteFeedbackResponse
                         const data = cache.readQuery({
-                          query: GetCockpitSessionDocument,
-                          variables: { id: sessionId },
+                          query: GetCockpitQuizDocument,
+                          variables: { id: quizId },
                         })
 
-                        if (data?.cockpitSession && updatedFeedback) {
+                        if (data?.cockpitQuiz && updatedFeedback) {
                           cache.writeQuery({
-                            query: GetCockpitSessionDocument,
-                            variables: { id: sessionId },
+                            query: GetCockpitQuizDocument,
+                            variables: { id: quizId },
                             data: {
-                              cockpitSession: {
-                                ...data.cockpitSession,
-                                feedbacks: data.cockpitSession.feedbacks?.map(
+                              cockpitQuiz: {
+                                ...data.cockpitQuiz,
+                                feedbacks: data.cockpitQuiz.feedbacks?.map(
                                   (feedback) => {
                                     if (feedback.id === updatedFeedback.id) {
                                       return updatedFeedback
@@ -322,7 +322,7 @@ function AudienceInteraction({
               onCheckedChange={(): void => {
                 changeSessionSettings({
                   variables: {
-                    id: sessionId,
+                    id: quizId,
                     isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,
                   },
                 })

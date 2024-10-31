@@ -23,7 +23,13 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
-import { LiveQuiz, LiveQuizMeta } from './liveQuiz.js'
+import {
+  ConfusionTimestep,
+  Feedback,
+  FeedbackResponse,
+  LiveQuiz,
+  LiveQuizMeta,
+} from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -54,12 +60,7 @@ import {
   Tag,
 } from './question.js'
 import { ElementStatus, ElementType } from './questionData.js'
-import {
-  ConfusionTimestep,
-  Feedback,
-  FeedbackResponse,
-  Session,
-} from './session.js'
+import { Session } from './session.js'
 import {
   FileUploadSAS,
   LocaleType,

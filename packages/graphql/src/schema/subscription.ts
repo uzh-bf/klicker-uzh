@@ -2,8 +2,9 @@ import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder.js'
 import { GroupActivityRef } from './groupActivity.js'
+import { FeedbackRef } from './liveQuiz.js'
 import { MicroLearningRef } from './microLearning.js'
-import { FeedbackRef, SessionBlockRef } from './session.js'
+import { SessionBlockRef } from './session.js'
 
 export const Subscription = builder.subscriptionType({
   fields(t) {

@@ -3,7 +3,7 @@ import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
-  GetCockpitSessionDocument,
+  GetCockpitQuizDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -50,15 +50,11 @@ function Cockpit() {
     }
   )
 
-  // TODO: when refactoring this code to be compatible with the new live quiz setup,
-  // think about modifying this logic to only refetch the required live quiz elements
-  // regularly (feedbacks should be handled entirely through subscriptions, etc.)
   const {
     loading: cockpitLoading,
-    error: cockpitError,
     data: cockpitData,
     subscribeToMore,
-  } = useQuery(GetCockpitSessionDocument, {
+  } = useQuery(GetCockpitQuizDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -67,19 +63,12 @@ function Cockpit() {
   })
 
   // data has not been received yet
-  if (cockpitLoading)
+  if (cockpitLoading || !cockpitData?.cockpitQuiz)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
-
-  // loading is finished, but was not successful
-  if (!cockpitData?.cockpitSession || cockpitError) {
-    // TODO fix router instance not available error
-    // router.push('/404')
-    return null
-  }
 
   const {
     id,
@@ -97,12 +86,11 @@ function Cockpit() {
     blocks,
     confusionSummary,
     feedbacks,
-  } = cockpitData.cockpitSession
+  } = cockpitData.cockpitQuiz
 
   return (
     <Layout>
       <div className="mb-8 print:hidden">
-        {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         <SessionTimeline
           blocks={blocks ?? []}
           sessionName={name}
@@ -138,7 +126,7 @@ function Cockpit() {
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}
-        sessionId={id}
+        quizId={id}
         sessionName={name}
       />
     </Layout>
