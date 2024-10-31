@@ -73,7 +73,7 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'min' in values.options.restrictions &&
-                            typeof values.options.restrictions.min ===
+                            typeof values.options.restrictions.min !==
                               'undefined' &&
                             values.options.restrictions.min !== null
                               ? parseFloat(
