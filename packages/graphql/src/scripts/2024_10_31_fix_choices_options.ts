@@ -96,33 +96,31 @@ async function run() {
           )
         }
 
-        // if no sample solution has been specified, simply fix the indices
-        if (choices.every((c) => c.correct === false)) {
-          const newChoices = choices.map((c, index) => ({
-            ...c,
-            ix: index,
-          }))
+        // update the indices on the element instances
+        const newChoices = choices.map((c, index) => ({
+          ...c,
+          ix: index,
+        }))
 
-          console.log('OLD CHOICES:')
-          console.log(choices)
-          console.log('NEW CHOICES:')
-          console.log(newChoices)
-          ei_updates += 1
+        console.log('OLD CHOICES:')
+        console.log(choices)
+        console.log('NEW CHOICES:')
+        console.log(newChoices)
+        ei_updates += 1
 
-          // TODO: uncomment to trigger element instance updates
-          // await prisma.elementInstance.update({
-          //   where: { id: ei.id },
-          //   data: {
-          //     elementData: {
-          //       ...ei.elementData,
-          //       options: {
-          //         ...ei.elementData.options,
-          //         choices: newChoices,
-          //       },
-          //     },
-          //   },
-          // })
-        }
+        // TODO: uncomment to trigger element instance updates
+        // await prisma.elementInstance.update({
+        //   where: { id: ei.id },
+        //   data: {
+        //     elementData: {
+        //       ...ei.elementData,
+        //       options: {
+        //         ...ei.elementData.options,
+        //         choices: newChoices,
+        //       },
+        //     },
+        //   },
+        // })
       }
     }
   }
@@ -149,33 +147,31 @@ async function run() {
           )
         }
 
-        // if no sample solution has been specified, simply fix the indices
-        if (choices.every((c) => c.correct === false)) {
-          const newChoices = choices.map((c, index) => ({
-            ...c,
-            ix: index,
-          }))
+        // update the indices on the question instances
+        const newChoices = choices.map((c, index) => ({
+          ...c,
+          ix: index,
+        }))
 
-          console.log('OLD CHOICES:')
-          console.log(choices)
-          console.log('NEW CHOICES:')
-          console.log(newChoices)
-          qi_updates += 1
+        console.log('OLD CHOICES:')
+        console.log(choices)
+        console.log('NEW CHOICES:')
+        console.log(newChoices)
+        qi_updates += 1
 
-          // TODO: uncomment to trigger question instance updates
-          // await prisma.questionInstance.update({
-          //   where: { id: qi.id },
-          //   data: {
-          //     questionData: {
-          //       ...qi.questionData,
-          //       options: {
-          //         ...qi.questionData.options,
-          //         choices: newChoices,
-          //       },
-          //     },
-          //   },
-          // })
-        }
+        // TODO: uncomment to trigger question instance updates
+        // await prisma.questionInstance.update({
+        //   where: { id: qi.id },
+        //   data: {
+        //     questionData: {
+        //       ...qi.questionData,
+        //       options: {
+        //         ...qi.questionData.options,
+        //         choices: newChoices,
+        //       },
+        //     },
+        //   },
+        // })
       }
     }
   }
