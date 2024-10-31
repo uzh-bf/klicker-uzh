@@ -1452,25 +1452,6 @@ function completeQuestionData(instances: PickedInstanceType[]) {
   )
 }
 
-export async function getSessionHMAC(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id,
-    },
-  })
-
-  if (!session) return null
-
-  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-  hmacEncoder.update(session.namespace + session.id)
-  const sessionHmac = hmacEncoder.digest('hex')
-
-  return sessionHmac
-}
-
 export async function getSessionEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context

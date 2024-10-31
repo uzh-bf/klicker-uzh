@@ -173,7 +173,7 @@ function LiveQuiz({
                       key={quiz.id}
                       open={embedModalOpen}
                       onClose={() => setEmbedModalOpen(false)}
-                      sessionId={quiz.id}
+                      quizId={quiz.id}
                       elements={quiz.blocks
                         ?.flatMap((block) => block.elements)
                         .filter(

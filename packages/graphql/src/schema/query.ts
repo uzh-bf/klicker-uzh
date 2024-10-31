@@ -444,14 +444,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionHMAC: asUser.field({
+      liveQuizHMAC: asUser.field({
         nullable: true,
         type: 'String',
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionHMAC(args, ctx)
+          return LiveQuizService.getLiveQuizHMAC(args, ctx)
         },
       }),
 

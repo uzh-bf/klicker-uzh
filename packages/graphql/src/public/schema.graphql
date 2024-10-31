@@ -1038,7 +1038,7 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
-  deleteLiveQuiz(id: String!): Session
+  deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
@@ -1429,6 +1429,7 @@ type Query {
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
+  liveQuizHMAC(id: String!): String
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -1443,7 +1444,6 @@ type Query {
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
-  sessionHMAC(id: String!): String
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   unassignedSessions: [Session!]
   userCourses: [Course!]

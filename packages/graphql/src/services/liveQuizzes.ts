@@ -11,6 +11,7 @@ import {
   processElementData,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
+import { createHmac } from 'node:crypto'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
@@ -441,4 +442,23 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   }
+}
+
+export async function getLiveQuizHMAC(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!quiz) return null
+
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(quiz.namespace + quiz.id)
+  const quizHmac = hmacEncoder.digest('hex')
+
+  return quizHmac
 }

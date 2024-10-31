@@ -166,8 +166,8 @@ function SessionTimeline({
                 key={sessionId}
                 open={embedModalOpen}
                 onClose={() => setEmbedModalOpen(false)}
-                sessionId={sessionId}
-                questions={blocks.flatMap((block) => block.instances ?? [])}
+                quizId={sessionId}
+                elements={blocks.flatMap((block) => block.instances ?? [])}
               />
             )}
             <SessionQRModal sessionId={sessionId} />
