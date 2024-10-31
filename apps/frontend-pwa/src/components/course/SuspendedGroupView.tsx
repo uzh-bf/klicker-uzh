@@ -38,6 +38,7 @@ import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { useState } from 'react'
+import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import GroupActivityList from '../groupActivity/GroupActivityList'
@@ -163,7 +164,7 @@ function SuspendedGroupView({
               })}
             </div>
             <Leaderboard
-              leaderboard={
+              leaderboard={sortBy(
                 group.participants!.map((participant) => {
                   return {
                     ...participant,
@@ -171,8 +172,9 @@ function SuspendedGroupView({
                     rank: participant.rank ?? 1,
                     level: participant.level ?? 1,
                   }
-                }) ?? []
-              }
+                }) ?? [],
+                [prop('rank'), 'asc']
+              )}
               participant={participant}
               onLeave={
                 isGroupDeadlinePassed

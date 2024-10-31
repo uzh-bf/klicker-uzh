@@ -899,6 +899,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
       tags: 'Tags',
+      selectOrType: 'Auswählen oder Eingeben...',
       untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
