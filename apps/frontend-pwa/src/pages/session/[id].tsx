@@ -5,9 +5,9 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
+  LiveQuiz,
   RunningSessionUpdatedDocument,
   SelfDocument,
-  Session,
   SessionBlock,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
@@ -39,7 +39,7 @@ function Subscriber({
         sessionId: id,
       },
       updateQuery: (
-        prev: { session: Session },
+        prev: { studentLiveQuiz: LiveQuiz },
         {
           subscriptionData,
         }: {
