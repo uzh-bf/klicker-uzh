@@ -1018,7 +1018,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newStackSelected: 'Add 1 stack with {count} elements',
       pasteSelection: 'Add {count} questions',
       pasteSelectionElements: 'Add {count} elements',
-      pasteSingleQuestions: 'Add {count} blocks with 1 question',
+      pasteSingleElementsBlock: 'Add {count} blocks with 1 question',
       pasteSingleElementsStack: 'Add {count} stacks with 1 element',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',

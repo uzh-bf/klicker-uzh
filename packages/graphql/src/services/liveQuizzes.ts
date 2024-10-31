@@ -120,6 +120,7 @@ export async function manipulateLiveQuiz(
       create: blocks.map((block) => {
         return {
           order: block.order,
+          timeLimit: block.timeLimit,
           elements: {
             create: block.elements.map((elem) => {
               const element = elementMap[elem.elementId]!

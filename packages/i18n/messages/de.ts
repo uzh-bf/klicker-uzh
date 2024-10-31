@@ -1018,7 +1018,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newStackSelected: '1 Stack mit {count} Elementen hinzufügen',
       pasteSelection: '{count} Fragen hinzufügen',
       pasteSelectionElements: '{count} Elemente hinzufügen',
-      pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
+      pasteSingleElementsBlock: '{count} Blocks mit 1 Frage anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',

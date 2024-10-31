@@ -108,9 +108,13 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.newStackSelected', {
-                count: Object.keys(selection).length,
-              })}
+              {type === 'block'
+                ? t('manage.sessionForms.newStackSelected', {
+                    count: Object.keys(selection).length,
+                  })
+                : t('manage.sessionForms.newBlockSelected', {
+                    count: Object.keys(selection).length,
+                  })}
             </Button.Label>
           </Button>
           <Button
@@ -156,9 +160,14 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.pasteSingleElementsStack', {
-                count: Object.keys(selection).length,
-              })}
+              {t(
+                type === 'block'
+                  ? 'manage.sessionForms.pasteSingleElementsBlock'
+                  : 'manage.sessionForms.pasteSingleElementsStack',
+                {
+                  count: Object.keys(selection).length,
+                }
+              )}
             </div>
           </Button>
         </div>
@@ -186,7 +195,11 @@ function AddStackButton({
           data-cy="drop-elements-add-stack"
         >
           <FontAwesomeIcon icon={faPlus} size="lg" />
-          <div>{t('manage.sessionForms.newStack')}</div>
+          <div>
+            {type === 'block'
+              ? t('manage.sessionForms.newBlock')
+              : t('manage.sessionForms.newStack')}
+          </div>
         </div>
       )}
     </div>

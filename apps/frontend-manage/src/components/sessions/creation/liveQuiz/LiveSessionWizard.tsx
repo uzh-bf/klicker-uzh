@@ -29,7 +29,7 @@ import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
 import LiveQuizSettingsStep from './LiveQuizSettingsStep'
-import submitLiveSessionForm from './submitLiveSessionForm'
+import submitLiveQuizForm from './submitLiveQuizForm'
 
 export interface LiveQuizWizardStepProps {
   editMode: boolean
@@ -222,7 +222,7 @@ function LiveSessionWizard({
   const [startSession] = useMutation(StartSessionDocument)
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
-      submitLiveSessionForm({
+      submitLiveQuizForm({
         id: initialValues?.id,
         editMode,
         values,

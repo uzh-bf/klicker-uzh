@@ -2,7 +2,7 @@ import {
   GetSingleCourseDocument,
   GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { LiveQuizFormValues } from '../WizardLayout'
+import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
 interface LiveSessionFormProps {
   id?: string
@@ -14,7 +14,7 @@ interface LiveSessionFormProps {
   setErrorToastOpen: (isOpen: boolean) => void
 }
 
-async function submitLiveSessionForm({
+async function submitLiveQuizForm({
   id,
   editMode,
   values,
@@ -23,26 +23,29 @@ async function submitLiveSessionForm({
   setIsWizardCompleted,
   setErrorToastOpen,
 }: LiveSessionFormProps) {
-  const blockQuestions = values.blocks
-    .filter((block) => block.questionIds.length > 0)
-    .map((block) => {
+  const blockSubmission = values.blocks.map(
+    (block: ElementBlockFormValues, ix) => {
       return {
-        questionIds: block.questionIds,
+        order: ix,
         timeLimit: block.timeLimit,
+        elements: block.elements.map((element, ix) => {
+          return { elementId: element.id, order: ix }
+        }),
       }
-    })
+    }
+  )
 
   try {
     let success = false
 
     if (editMode && id) {
-      const session = await editLiveQuiz({
+      const liveQuiz = await editLiveQuiz({
         variables: {
           id: id,
           name: values.name,
           displayName: values.displayName,
           description: values.description,
-          blocks: blockQuestions,
+          blocks: blockSubmission,
           courseId: values.courseId,
           multiplier: values.courseId !== '' ? parseInt(values.multiplier) : 1,
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
@@ -69,14 +72,14 @@ async function submitLiveSessionForm({
             : []),
         ],
       })
-      success = Boolean(session.data?.editSession)
+      success = Boolean(liveQuiz.data?.editLiveQuiz)
     } else {
-      const session = await createLiveQuiz({
+      const liveQuiz = await createLiveQuiz({
         variables: {
           name: values.name,
           displayName: values.displayName,
           description: values.description,
-          blocks: blockQuestions,
+          blocks: blockSubmission,
           courseId: values.courseId,
           multiplier: parseInt(values.multiplier),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
@@ -103,7 +106,7 @@ async function submitLiveSessionForm({
             : []),
         ],
       })
-      success = Boolean(session.data?.createSession)
+      success = Boolean(liveQuiz.data?.createLiveQuiz)
     }
 
     if (success) {
@@ -115,4 +118,4 @@ async function submitLiveSessionForm({
   }
 }
 
-export default submitLiveSessionForm
+export default submitLiveQuizForm
