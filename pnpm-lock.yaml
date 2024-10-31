@@ -1491,9 +1491,6 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
-      mongodb:
-        specifier: 5.7.0
-        version: 5.7.0
       node-schedule:
         specifier: 2.1.1
         version: 2.1.1
@@ -12383,27 +12380,6 @@ packages:
   mongodb-connection-string-url@2.6.0:
     resolution: {integrity: sha512-WvTZlI9ab0QYtTYnuMLgobULWhokRjtC7db9LtcVfJ+Hsnyr5eo6ZtNAt3Ly24XZScGMelOcGtm7lSn0332tPQ==}
 
-  mongodb@5.7.0:
-    resolution: {integrity: sha512-zm82Bq33QbqtxDf58fLWBwTjARK3NSvKYjyz997KSy6hpat0prjeX/kxjbPVyZY60XYPDNETaHkHJI2UCzSLuw==}
-    engines: {node: '>=14.20.1'}
-    peerDependencies:
-      '@aws-sdk/credential-providers': ^3.201.0
-      '@mongodb-js/zstd': ^1.1.0
-      kerberos: ^2.0.1
-      mongodb-client-encryption: '>=2.3.0 <3'
-      snappy: ^7.2.2
-    peerDependenciesMeta:
-      '@aws-sdk/credential-providers':
-        optional: true
-      '@mongodb-js/zstd':
-        optional: true
-      kerberos:
-        optional: true
-      mongodb-client-encryption:
-        optional: true
-      snappy:
-        optional: true
-
   mongodb@5.9.2:
     resolution: {integrity: sha512-H60HecKO4Bc+7dhOv4sJlgvenK4fQNqqUIlXxZYQNbfEWSALGAwGoyJd/0Qwk4TttFXUOHJ2ZJQe/52ScaUwtQ==}
     engines: {node: '>=14.20.1'}
@@ -14572,10 +14548,6 @@ packages:
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
-
-  saslprep@1.0.3:
-    resolution: {integrity: sha512-/MY/PEMbk2SuY5sScONwhUDsV2p77Znkb/q3nSVstq/yQzYJOH/Azh29p9oJLsl3LnQwSvZDKagDGBsBwSooag==}
-    engines: {node: '>=6'}
 
   sax@1.1.4:
     resolution: {integrity: sha512-5f3k2PbGGp+YtKJjOItpg3P99IMD84E4HOvcfleTb5joCHNXYLsR9yWFPOYGgaeMPDubQILTCMdsFb2OMeOjtg==}
@@ -31987,14 +31959,6 @@ snapshots:
       '@types/whatwg-url': 8.2.2
       whatwg-url: 11.0.0
 
-  mongodb@5.7.0:
-    dependencies:
-      bson: 5.5.1
-      mongodb-connection-string-url: 2.6.0
-      socks: 2.8.3
-    optionalDependencies:
-      saslprep: 1.0.3
-
   mongodb@5.9.2:
     dependencies:
       bson: 5.5.1
@@ -34550,11 +34514,6 @@ snapshots:
       is-regex: 1.1.4
 
   safer-buffer@2.1.2: {}
-
-  saslprep@1.0.3:
-    dependencies:
-      sparse-bitfield: 3.0.3
-    optional: true
 
   sax@1.1.4: {}
 

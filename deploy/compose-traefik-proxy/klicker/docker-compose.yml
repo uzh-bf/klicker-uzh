@@ -80,16 +80,6 @@ services:
     restart: unless-stopped
     image: redis:5.0.9
 
-  # mongodb database
-  # it is recommended to run this service outside of docker
-  mongodb:
-    restart: unless-stopped
-    image: mongo:4.0
-    env_file: services.env
-    volumes:
-      #- /data/klicker/mongo/:/data/db
-      - mongo-data:/data/db
-
   # minio storage platform for S3
   minio:
     restart: unless-stopped
@@ -136,7 +126,6 @@ services:
 volumes:
   redis-data:
   minio-data:
-  mongo-data:
 
 networks:
   traefik_proxy:
