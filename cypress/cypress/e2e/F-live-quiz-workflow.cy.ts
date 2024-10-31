@@ -55,7 +55,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
-    cy.get('[data-cy="add-block"]').click()
+    cy.get('[data-cy="drop-elements-add-stack"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 2)
     cy.get('[data-cy="delete-block-1"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
@@ -208,7 +208,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="add-block"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="question-0-stack-0"]')
@@ -635,7 +635,7 @@ describe('Different live-quiz workflows', () => {
       })
     }
 
-    cy.get('[data-cy="add-block"]').click()
+    cy.get('[data-cy="drop-elements-add-stack"]').click()
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
       cy.get(`[data-cy="question-item-${questionTitle2}"]`)
