@@ -786,7 +786,7 @@ async function run() {
               grade: 1,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = Math.min(newValues.interval, 10000)
+            acc.interval = newValues.interval
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -881,7 +881,7 @@ async function run() {
                     : 0,
             })
             acc.eFactor = updatedRepetition.eFactor
-            acc.interval = Math.min(updatedRepetition.interval, 10000)
+            acc.interval = updatedRepetition.interval
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -1059,7 +1059,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = Math.min(newValues.interval, 10000)
+            acc.interval = newValues.interval
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -1266,7 +1266,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = Math.min(newValues.interval, 10000)
+            acc.interval = newValues.interval
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -1499,7 +1499,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = Math.min(newValues.interval, 10000)
+            acc.interval = newValues.interval
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
