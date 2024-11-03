@@ -552,6 +552,30 @@ function computeInstanceUpdate({
         stats.wrongCount !== newValues.wrongCount)
     updateReq =
       updateReq ||
+      (typeof newValues.firstCorrectCount !== 'undefined' &&
+        stats.firstCorrectCount !== newValues.firstCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.firstPartialCorrectCount !== 'undefined' &&
+        stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.firstWrongCount !== 'undefined' &&
+        stats.firstWrongCount !== newValues.firstWrongCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastCorrectCount !== 'undefined' &&
+        stats.lastCorrectCount !== newValues.lastCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastPartialCorrectCount !== 'undefined' &&
+        stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastWrongCount !== 'undefined' &&
+        stats.lastWrongCount !== newValues.lastWrongCount)
+    updateReq =
+      updateReq ||
       (typeof newValues.uniqueParticipantCount !== 'undefined' &&
         stats.uniqueParticipantCount !== newValues.uniqueParticipantCount)
     updateReq =
