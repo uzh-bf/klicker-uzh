@@ -1,8 +1,47 @@
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 
+interface Choice {
+  ix: number
+  [key: string]: any
+}
+
+interface ValidationResult {
+  hasValidIndices: boolean
+  hasDuplicateIndices: boolean
+  hasGaps: boolean
+  needsReordering: boolean
+}
+
+function validateChoices(
+  choices: Choice[],
+  entityType: string,
+  entityId: number,
+  verbose: boolean
+): ValidationResult {
+  const hasValidIndices = choices.every((c) => typeof c.ix === 'number')
+  const hasDuplicateIndices =
+    new Set(choices.map((c) => c.ix)).size !== choices.length
+  const hasGaps = !choices.every((_, index) =>
+    choices.some((c) => c.ix === index)
+  )
+  const needsReordering = choices.some((c, index) => c.ix !== index)
+
+  if ((verbose && !hasValidIndices) || hasDuplicateIndices || hasGaps) {
+    console.error(
+      `${entityType} ${entityId} has invalid choices configuration:`
+    )
+    if (!hasValidIndices) console.error(' - Some indices are not numbers')
+    if (hasDuplicateIndices) console.error(' - Contains duplicate indices')
+    if (hasGaps) console.error(' - Has gaps in index sequence')
+    console.error('Choices:', choices)
+  }
+
+  return { hasValidIndices, hasDuplicateIndices, hasGaps, needsReordering }
+}
+
 async function run() {
   const prisma = new PrismaClient()
-  const verbose = false // verbose logging setting
+  const verbose = true
 
   // ! VALIDATION
   // fetch all elements
@@ -21,17 +60,19 @@ async function run() {
   let e_updates = 0
   for (const e of es) {
     if (
-      (e.type === ElementType.SC ||
-        e.type === ElementType.MC ||
-        e.type === ElementType.KPRIM) &&
-      (e.type === ElementType.SC ||
-        e.type === ElementType.MC ||
-        e.type === ElementType.KPRIM)
+      e.type === ElementType.SC ||
+      e.type === ElementType.MC ||
+      e.type === ElementType.KPRIM
     ) {
       const choices = e.options.choices
+      const { needsReordering } = validateChoices(
+        choices,
+        'Element',
+        e.id,
+        verbose
+      )
 
-      // check if choices are in order with ix attribute
-      if (choices.some((c, index) => c.ix !== index)) {
+      if (needsReordering) {
         e_errors += 1
 
         if (verbose) {
@@ -73,17 +114,19 @@ async function run() {
   let ei_updates = 0
   for (const ei of eis) {
     if (
-      (ei.elementType === ElementType.SC ||
-        ei.elementType === ElementType.MC ||
-        ei.elementType === ElementType.KPRIM) &&
-      (ei.elementData.type === ElementType.SC ||
-        ei.elementData.type === ElementType.MC ||
-        ei.elementData.type === ElementType.KPRIM)
+      ei.elementType === ElementType.SC ||
+      ei.elementType === ElementType.MC ||
+      ei.elementType === ElementType.KPRIM
     ) {
       const choices = ei.elementData.options.choices
+      const { needsReordering } = validateChoices(
+        choices,
+        'ElementInstance',
+        ei.id,
+        verbose
+      )
 
-      // check if choices are in order with ix attribute
-      if (choices.some((c, index) => c.ix !== index)) {
+      if (needsReordering) {
         ei_errors += 1
 
         if (verbose) {
@@ -134,9 +177,14 @@ async function run() {
       qi.questionData.type === ElementType.KPRIM
     ) {
       const choices = qi.questionData.options.choices
+      const { needsReordering } = validateChoices(
+        choices,
+        'QuestionInstance',
+        qi.id,
+        verbose
+      )
 
-      // check if choices are in order with ix attribute
-      if (choices.some((c, index) => c.ix !== index)) {
+      if (needsReordering) {
         qi_errors += 1
 
         if (verbose) {
