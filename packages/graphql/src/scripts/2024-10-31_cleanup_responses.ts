@@ -996,15 +996,22 @@ async function run() {
               correctness === 0 ? detail.createdAt : acc.lastWrongAt
 
             // check if points and xp are awarded and set attributes
-            const newPoints = dayjs(acc.lastAwardedAt).isBefore(
-              dayjs().subtract(
-                instance.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
-                'days'
-              )
-            )
-            const newXP = dayjs(acc.lastXpAwardedAt).isBefore(
-              dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-            )
+            const newPoints =
+              typeof acc.lastAwardedAt !== 'undefined'
+                ? dayjs(acc.lastAwardedAt).isBefore(
+                    dayjs().subtract(
+                      instance.options.resetTimeDays ??
+                        POINTS_AWARD_TIMEFRAME_DAYS,
+                      'days'
+                    )
+                  )
+                : true
+            const newXP =
+              typeof acc.lastXpAwardedAt !== 'undefined'
+                ? dayjs(acc.lastXpAwardedAt).isBefore(
+                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                  )
+                : true
 
             if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
@@ -1196,15 +1203,22 @@ async function run() {
               correctness === 0 ? detail.createdAt : acc.lastWrongAt
 
             // check if points and xp are awarded and set attributes
-            const newPoints = dayjs(acc.lastAwardedAt).isBefore(
-              dayjs().subtract(
-                instance.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
-                'days'
-              )
-            )
-            const newXP = dayjs(acc.lastXpAwardedAt).isBefore(
-              dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-            )
+            const newPoints =
+              typeof acc.lastAwardedAt !== 'undefined'
+                ? dayjs(acc.lastAwardedAt).isBefore(
+                    dayjs().subtract(
+                      instance.options.resetTimeDays ??
+                        POINTS_AWARD_TIMEFRAME_DAYS,
+                      'days'
+                    )
+                  )
+                : true
+            const newXP =
+              typeof acc.lastXpAwardedAt !== 'undefined'
+                ? dayjs(acc.lastXpAwardedAt).isBefore(
+                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                  )
+                : true
 
             if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
@@ -1423,15 +1437,22 @@ async function run() {
               correctness === 0 ? detail.createdAt : acc.lastWrongAt
 
             // check if points and xp are awarded and set attributes
-            const newPoints = dayjs(acc.lastAwardedAt).isBefore(
-              dayjs().subtract(
-                instance.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
-                'days'
-              )
-            )
-            const newXP = dayjs(acc.lastXpAwardedAt).isBefore(
-              dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-            )
+            const newPoints =
+              typeof acc.lastAwardedAt !== 'undefined'
+                ? dayjs(acc.lastAwardedAt).isBefore(
+                    dayjs().subtract(
+                      instance.options.resetTimeDays ??
+                        POINTS_AWARD_TIMEFRAME_DAYS,
+                      'days'
+                    )
+                  )
+                : true
+            const newXP =
+              typeof acc.lastXpAwardedAt !== 'undefined'
+                ? dayjs(acc.lastXpAwardedAt).isBefore(
+                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                  )
+                : true
 
             if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
