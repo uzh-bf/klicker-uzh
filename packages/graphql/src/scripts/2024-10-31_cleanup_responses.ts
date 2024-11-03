@@ -762,7 +762,7 @@ async function run() {
               grade: 1,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
+            acc.interval = Math.min(newValues.interval, 10000)
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -857,10 +857,11 @@ async function run() {
                     : 0,
             })
             acc.eFactor = updatedRepetition.eFactor
-            acc.interval = updatedRepetition.interval
+            acc.interval = Math.min(updatedRepetition.interval, 10000)
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
+
             // update aggregated responses
             acc.aggResponses.total += 1
             if (correctness === FlashcardCorrectness.CORRECT) {
@@ -1034,7 +1035,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
+            acc.interval = Math.min(newValues.interval, 10000)
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -1240,7 +1241,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
+            acc.interval = Math.min(newValues.interval, 10000)
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
@@ -1473,7 +1474,7 @@ async function run() {
               grade: correctness,
             })
             acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
+            acc.interval = Math.min(newValues.interval, 10000)
             acc.nextDueAt = dayjs(detail.createdAt)
               .add(acc.interval, 'day')
               .toDate()
