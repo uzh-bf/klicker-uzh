@@ -37,6 +37,9 @@ const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
+// ? Flag for extended logging
+const verbose = true
+
 function computeDetailUpdate({
   detail,
   newValues,
@@ -58,6 +61,14 @@ function computeDetailUpdate({
   updateReq = updateReq || detail.timeSpent !== newValues.timeSpent
 
   if (updateReq) {
+    if (verbose) {
+      console.log('Detail update required')
+      console.log('PREVIOUS:')
+      console.log(detail)
+      console.log('NEW:')
+      console.log(newValues)
+    }
+
     return {
       where: {
         id: detail.id,
@@ -160,6 +171,14 @@ function computeResponseUpdate({
     !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)
 
   if (updateReq) {
+    if (verbose) {
+      console.log('Response update required')
+      console.log('PREVIOUS:')
+      console.log(response)
+      console.log('NEW:')
+      console.log(newValues)
+    }
+
     return {
       where: {
         id: response.id,
@@ -243,6 +262,14 @@ function computeInstanceUpdate({
       updateReq || stats.averageTimeSpent !== newValues.averageTimeSpent
 
     if (updateReq) {
+      if (verbose) {
+        console.log('Practice quiz instance update required')
+        console.log('PREVIOUS:')
+        console.log({ results: instance.results, stats })
+        console.log('NEW:')
+        console.log({ results: newValues.results, stats: newValues })
+      }
+
       return {
         where: {
           id: instance.id,
@@ -284,6 +311,14 @@ function computeInstanceUpdate({
       updateReq || stats.averageTimeSpent !== newValues.averageTimeSpent
 
     if (updateReq) {
+      if (verbose) {
+        console.log('Microlearning instance update required')
+        console.log('PREVIOUS:')
+        console.log({ results: instance.results, stats })
+        console.log('NEW:')
+        console.log({ results: newValues.results, stats: newValues })
+      }
+
       return {
         id: instance.id,
         data: {
