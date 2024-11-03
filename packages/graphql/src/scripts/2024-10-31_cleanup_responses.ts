@@ -1059,6 +1059,7 @@ async function run() {
               }),
               (instanceResults as ElementResultsChoices).choices
             )
+            instanceResults.total += 1
 
             // check if update of detail response is required
             const detailUpdate = computeDetailUpdate({
