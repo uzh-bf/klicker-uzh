@@ -926,7 +926,7 @@ async function run() {
         // evaluate first and last answer correctness
         const firstCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
-          response: lastResponse,
+          response: firstResponse,
         })
         const lastCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
@@ -1132,7 +1132,7 @@ async function run() {
         // evaluate first and last answer correctness
         const firstCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
-          response: lastResponse,
+          response: firstResponse,
         })
         const lastCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
@@ -1365,7 +1365,7 @@ async function run() {
         // evaluate first and last answer correctness
         const firstCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
-          response: lastResponse,
+          response: firstResponse,
         })
         const lastCorrect = evaluateAnswerCorrectness({
           elementData: instance.elementData,
