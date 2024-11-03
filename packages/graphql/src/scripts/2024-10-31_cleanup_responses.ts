@@ -55,6 +55,33 @@ function computeDetailUpdate({
   let updateReq = false
 
   // check if the stored values are correct
+  if (verbose) {
+    console.log(
+      'Comparing score:',
+      `${typeof newValues.score !== 'undefined' && detail.score !== newValues.score} |`,
+      detail.score,
+      newValues.score
+    )
+    console.log(
+      'Comparing pointsAwarded:',
+      `${typeof newValues.pointsAwarded !== 'undefined' && detail.pointsAwarded !== newValues.pointsAwarded} |`,
+      detail.pointsAwarded,
+      newValues.pointsAwarded
+    )
+    console.log(
+      'Comparing xpAwarded:',
+      `${typeof newValues.xpAwarded !== 'undefined' && detail.xpAwarded !== newValues.xpAwarded} |`,
+      detail.xpAwarded,
+      newValues.xpAwarded
+    )
+    console.log(
+      'Comparing timeSpent:',
+      `${typeof newValues.timeSpent !== 'undefined' && detail.timeSpent !== newValues.timeSpent} |`,
+      detail.timeSpent,
+      newValues.timeSpent
+    )
+  }
+
   updateReq =
     updateReq ||
     (typeof newValues.score !== 'undefined' && detail.score !== newValues.score)
@@ -129,7 +156,99 @@ function computeResponseUpdate({
 }) {
   let updateReq = false
 
-  // check if the stored values are correct
+  if (verbose) {
+    console.log(
+      'Comparing trialsCount:',
+      `${typeof newValues.trialsCount !== 'undefined' && response.trialsCount !== newValues.trialsCount} |`,
+      response.trialsCount,
+      newValues.trialsCount
+    )
+    console.log(
+      'Comparing totalScore:',
+      `${typeof newValues.totalScore !== 'undefined' && response.totalScore !== newValues.totalScore} |`,
+      response.totalScore,
+      newValues.totalScore
+    )
+    console.log(
+      'Comparing totalPointsAwarded:',
+      `${typeof newValues.totalPointsAwarded !== 'undefined' && response.totalPointsAwarded !== newValues.totalPointsAwarded} |`,
+      response.totalPointsAwarded,
+      newValues.totalPointsAwarded
+    )
+    console.log(
+      'Comparing averageTimeSpent:',
+      `${typeof newValues.averageTimeSpent !== 'undefined' && response.averageTimeSpent !== newValues.averageTimeSpent} |`,
+      response.averageTimeSpent,
+      newValues.averageTimeSpent
+    )
+    console.log(
+      'Comparing correctCount:',
+      `${typeof newValues.correctCount !== 'undefined' && response.correctCount !== newValues.correctCount} |`,
+      response.correctCount,
+      newValues.correctCount
+    )
+    console.log(
+      'Comparing correctCountStreak:',
+      `${typeof newValues.correctCountStreak !== 'undefined' && response.correctCountStreak !== newValues.correctCountStreak} |`,
+      response.correctCountStreak,
+      newValues.correctCountStreak
+    )
+    console.log(
+      'Comparing partialCorrectCount:',
+      `${typeof newValues.partialCorrectCount !== 'undefined' && response.partialCorrectCount !== newValues.partialCorrectCount} |`,
+      response.partialCorrectCount,
+      newValues.partialCorrectCount
+    )
+    console.log(
+      'Comparing wrongCount:',
+      `${typeof newValues.wrongCount !== 'undefined' && response.wrongCount !== newValues.wrongCount} |`,
+      response.wrongCount,
+      newValues.wrongCount
+    )
+    console.log(
+      'Comparing eFactor:',
+      `${typeof newValues.eFactor !== 'undefined' && response.eFactor !== newValues.eFactor} |`,
+      response.eFactor,
+      newValues.eFactor
+    )
+    console.log(
+      'Comparing interval:',
+      `${typeof newValues.interval !== 'undefined' && response.interval !== newValues.interval} |`,
+      response.interval,
+      newValues.interval
+    )
+    console.log(
+      'Comparing firstResponse:',
+      `${typeof newValues.firstResponse !== 'undefined' && !isDeepEqual(response.firstResponse, newValues.firstResponse)} |`,
+      response.firstResponse,
+      newValues.firstResponse
+    )
+    console.log(
+      'Comparing firstResponseCorrectness:',
+      `${typeof newValues.firstResponseCorrectness !== 'undefined' && response.firstResponseCorrectness !== newValues.firstResponseCorrectness} |`,
+      response.firstResponseCorrectness,
+      newValues.firstResponseCorrectness
+    )
+    console.log(
+      'Comparing lastResponse:',
+      `${typeof newValues.lastResponse !== 'undefined' && !isDeepEqual(response.lastResponse, newValues.lastResponse)} |`,
+      response.lastResponse,
+      newValues.lastResponse
+    )
+    console.log(
+      'Comparing lastResponseCorrectness:',
+      `${typeof newValues.lastResponseCorrectness !== 'undefined' && response.lastResponseCorrectness !== newValues.lastResponseCorrectness} |`,
+      response.lastResponseCorrectness,
+      newValues.lastResponseCorrectness
+    )
+    console.log(
+      'Comparing aggregatedResponses:',
+      `${typeof newValues.aggregatedResponses !== 'undefined' && !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)} |`,
+      response.aggregatedResponses,
+      newValues.aggregatedResponses
+    )
+  }
+
   updateReq =
     updateReq ||
     (typeof newValues.trialsCount !== 'undefined' &&
@@ -258,90 +377,81 @@ function computeInstanceUpdate({
   let updateReq = false
 
   if (instance.type === ElementInstanceType.PRACTICE_QUIZ) {
-    updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
-    updateReq =
-      updateReq ||
-      (typeof newValues.correctCount !== 'undefined' &&
-        stats.correctCount !== newValues.correctCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.partialCorrectCount !== 'undefined' &&
-        stats.partialCorrectCount !== newValues.partialCorrectCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.wrongCount !== 'undefined' &&
-        stats.wrongCount !== newValues.wrongCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.firstCorrectCount !== 'undefined' &&
-        stats.firstCorrectCount !== newValues.firstCorrectCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.firstPartialCorrectCount !== 'undefined' &&
-        stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.firstWrongCount !== 'undefined' &&
-        stats.firstWrongCount !== newValues.firstWrongCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.lastCorrectCount !== 'undefined' &&
-        stats.lastCorrectCount !== newValues.lastCorrectCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.lastPartialCorrectCount !== 'undefined' &&
-        stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.lastWrongCount !== 'undefined' &&
-        stats.lastWrongCount !== newValues.lastWrongCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.uniqueParticipantCount !== 'undefined' &&
-        stats.uniqueParticipantCount !== newValues.uniqueParticipantCount)
-    updateReq =
-      updateReq ||
-      (typeof newValues.averageTimeSpent !== 'undefined' &&
-        stats.averageTimeSpent !== newValues.averageTimeSpent)
-
-    if (updateReq) {
-      if (verbose) {
-        console.log('Practice quiz instance update required')
-        console.log('PREVIOUS:')
-        console.log({ results: instance.results, stats })
-        console.log('NEW:')
-        console.log({ results: newValues.results, stats: newValues })
-      }
-
-      return {
-        where: {
-          id: instance.id,
-        },
-        data: {
-          results: newValues.results,
-          instanceStatistics: {
-            update: {
-              correctCount: newValues.correctCount,
-              partialCorrectCount: newValues.partialCorrectCount,
-              wrongCount: newValues.wrongCount,
-              firstCorrectCount: newValues.firstCorrectCount,
-              firstPartialCorrectCount: newValues.firstPartialCorrectCount,
-              firstWrongCount: newValues.firstWrongCount,
-              lastCorrectCount: newValues.lastCorrectCount,
-              lastPartialCorrectCount: newValues.lastPartialCorrectCount,
-              lastWrongCount: newValues.lastWrongCount,
-              uniqueParticipantCount: newValues.uniqueParticipantCount,
-              averageTimeSpent: newValues.averageTimeSpent,
-            },
-          },
-        },
-      }
-    } else {
-      return undefined
+    if (verbose) {
+      console.log(
+        'Comparing instance results:',
+        `${typeof newValues.results !== 'undefined' && !isDeepEqual(instance.results, newValues.results)} |`,
+        instance.results,
+        newValues.results
+      )
+      console.log(
+        'Comparing correctCount:',
+        `${typeof newValues.correctCount !== 'undefined' && stats.correctCount !== newValues.correctCount} |`,
+        stats.correctCount,
+        newValues.correctCount
+      )
+      console.log(
+        'Comparing partialCorrectCount:',
+        `${typeof newValues.partialCorrectCount !== 'undefined' && stats.partialCorrectCount !== newValues.partialCorrectCount} |`,
+        stats.partialCorrectCount,
+        newValues.partialCorrectCount
+      )
+      console.log(
+        'Comparing wrongCount:',
+        `${typeof newValues.wrongCount !== 'undefined' && stats.wrongCount !== newValues.wrongCount} |`,
+        stats.wrongCount,
+        newValues.wrongCount
+      )
+      console.log(
+        'Comparing firstCorrectCount:',
+        `${typeof newValues.firstCorrectCount !== 'undefined' && stats.firstCorrectCount !== newValues.firstCorrectCount} |`,
+        stats.firstCorrectCount,
+        newValues.firstCorrectCount
+      )
+      console.log(
+        'Comparing firstPartialCorrectCount:',
+        `${typeof newValues.firstPartialCorrectCount !== 'undefined' && stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount} |`,
+        stats.firstPartialCorrectCount,
+        newValues.firstPartialCorrectCount
+      )
+      console.log(
+        'Comparing firstWrongCount:',
+        `${typeof newValues.firstWrongCount !== 'undefined' && stats.firstWrongCount !== newValues.firstWrongCount} |`,
+        stats.firstWrongCount,
+        newValues.firstWrongCount
+      )
+      console.log(
+        'Comparing lastCorrectCount:',
+        `${typeof newValues.lastCorrectCount !== 'undefined' && stats.lastCorrectCount !== newValues.lastCorrectCount} |`,
+        stats.lastCorrectCount,
+        newValues.lastCorrectCount
+      )
+      console.log(
+        'Comparing lastPartialCorrectCount:',
+        `${typeof newValues.lastPartialCorrectCount !== 'undefined' && stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount} |`,
+        stats.lastPartialCorrectCount,
+        newValues.lastPartialCorrectCount
+      )
+      console.log(
+        'Comparing lastWrongCount:',
+        `${typeof newValues.lastWrongCount !== 'undefined' && stats.lastWrongCount !== newValues.lastWrongCount} |`,
+        stats.lastWrongCount,
+        newValues.lastWrongCount
+      )
+      console.log(
+        'Comparing uniqueParticipantCount:',
+        `${typeof newValues.uniqueParticipantCount !== 'undefined' && stats.uniqueParticipantCount !== newValues.uniqueParticipantCount} |`,
+        stats.uniqueParticipantCount,
+        newValues.uniqueParticipantCount
+      )
+      console.log(
+        'Comparing averageTimeSpent:',
+        `${typeof newValues.averageTimeSpent !== 'undefined' && stats.averageTimeSpent !== newValues.averageTimeSpent} |`,
+        stats.averageTimeSpent,
+        newValues.averageTimeSpent
+      )
     }
-  }
 
-  if (instance.type === ElementInstanceType.MICROLEARNING) {
     updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
     updateReq =
       updateReq ||
@@ -423,7 +533,8 @@ async function run() {
   })
 
   for (const instance of instances) {
-    console.log('PROCESSING INSTANCE', counter + 1, 'OF', instances.length)
+    counter += 1
+    console.log('PROCESSING INSTANCE', counter, 'OF', instances.length)
 
     // ! Initialization
     const emptyInstanceResults = getInitialElementResults(instance.element)
@@ -1389,36 +1500,24 @@ async function run() {
       instanceWrongCount += wrongCount
 
       instanceFirstCorrectCount =
-        (instanceFirstCorrectCount ?? 0) + firstResponseCorrectness! ===
-        ResponseCorrectness.CORRECT
-          ? 1
-          : 0
+        (instanceFirstCorrectCount ?? 0) +
+        (firstResponseCorrectness === ResponseCorrectness.CORRECT ? 1 : 0)
       instanceFirstPartialCorrectCount =
-        (instanceFirstPartialCorrectCount ?? 0) + firstResponseCorrectness! ===
-        ResponseCorrectness.PARTIAL
-          ? 1
-          : 0
+        (instanceFirstPartialCorrectCount ?? 0) +
+        (firstResponseCorrectness === ResponseCorrectness.PARTIAL ? 1 : 0)
       instanceFirstWrongCount =
-        (instanceFirstWrongCount ?? 0) + firstResponseCorrectness! ===
-        ResponseCorrectness.WRONG
-          ? 1
-          : 0
+        (instanceFirstWrongCount ?? 0) +
+        (firstResponseCorrectness === ResponseCorrectness.WRONG ? 1 : 0)
 
       instanceLastCorrectCount =
-        (instanceLastCorrectCount ?? 0) + lastResponseCorrectness! ===
-        ResponseCorrectness.CORRECT
-          ? 1
-          : 0
+        (instanceLastCorrectCount ?? 0) +
+        (lastResponseCorrectness! === ResponseCorrectness.CORRECT ? 1 : 0)
       instanceLastPartialCorrectCount =
-        (instanceLastPartialCorrectCount ?? 0) + lastResponseCorrectness! ===
-        ResponseCorrectness.PARTIAL
-          ? 1
-          : 0
+        (instanceLastPartialCorrectCount ?? 0) +
+        (lastResponseCorrectness! === ResponseCorrectness.PARTIAL ? 1 : 0)
       instanceLastWrongCount =
-        (instanceLastWrongCount ?? 0) + lastResponseCorrectness! ===
-        ResponseCorrectness.WRONG
-          ? 1
-          : 0
+        (instanceLastWrongCount ?? 0) +
+        (lastResponseCorrectness! === ResponseCorrectness.WRONG ? 1 : 0)
     }
 
     // prepare instance updates if any are required
