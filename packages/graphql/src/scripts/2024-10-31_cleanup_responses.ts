@@ -348,6 +348,7 @@ function computeInstanceUpdate({
 async function run() {
   const prisma = new PrismaClient()
   const MD5 = createHash('md5')
+  let counter = 0
 
   // fetch all element instances with their corresponding responses
   const instances = await prisma.elementInstance.findMany({
@@ -368,6 +369,8 @@ async function run() {
   })
 
   for (const instance of instances) {
+    console.log('PROCESSING INSTANCE', counter, 'OF', instances.length)
+
     // ! Initialization
     const emptyInstanceResults = getInitialElementResults(instance.element)
     let instanceResults = { ...emptyInstanceResults }
@@ -509,7 +512,15 @@ async function run() {
         firstResponse = { viewed: true }
         lastResponse = { viewed: true }
         aggregatedResponses.total = details.length
-      } else if (instance.elementType === ElementType.FLASHCARD) {
+
+        // update instance results
+        instanceResults.total += details.length
+      } else if (
+        instance.elementType === ElementType.FLASHCARD &&
+        FlashcardCorrectness.CORRECT in instanceResults &&
+        FlashcardCorrectness.PARTIAL in instanceResults &&
+        FlashcardCorrectness.INCORRECT in instanceResults
+      ) {
         const firstDetail = details[0]
         const lastDetail = details[details.length - 1]
         // set correctness parameters, trials, timestamps and time spent
@@ -614,6 +625,12 @@ async function run() {
         interval = newValues.interval
         nextDueAt = newValues.nextDueAt
         aggregatedResponses = newValues.aggResponses
+
+        // update instance results
+        instanceResults[FlashcardCorrectness.CORRECT] += correctCount
+        instanceResults[FlashcardCorrectness.PARTIAL] += partialCorrectCount
+        instanceResults[FlashcardCorrectness.INCORRECT] += wrongCount
+        instanceResults.total += trialsCount
       } else if (
         (instance.elementType === ElementType.SC ||
           instance.elementType === ElementType.MC ||
@@ -1273,6 +1290,10 @@ async function run() {
         interval = newValues.interval
         nextDueAt = newValues.nextDueAt
         aggregatedResponses = newValues.aggResponses
+      } else {
+        throw new Error(
+          `Unsupported element type or missing results for element instance ${instance.id} with type ${instance.elementType}`
+        )
       }
 
       // update question response, if the content is different
