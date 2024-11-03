@@ -1023,7 +1023,6 @@ async function run() {
             }
 
             // update spaced repetition parameters
-            acc.correctCountStreak += correctness === 1 ? 1 : 0
             const newValues = updateSpacedRepetition({
               eFactor: acc.eFactor,
               interval: acc.interval,
