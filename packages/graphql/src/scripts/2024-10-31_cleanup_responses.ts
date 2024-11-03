@@ -55,10 +55,21 @@ function computeDetailUpdate({
   let updateReq = false
 
   // check if the stored values are correct
-  updateReq = updateReq || detail.score !== newValues.score
-  updateReq = updateReq || detail.pointsAwarded !== newValues.pointsAwarded
-  updateReq = updateReq || detail.xpAwarded !== newValues.xpAwarded
-  updateReq = updateReq || detail.timeSpent !== newValues.timeSpent
+  updateReq =
+    updateReq ||
+    (typeof newValues.score !== 'undefined' && detail.score !== newValues.score)
+  updateReq =
+    updateReq ||
+    (typeof newValues.pointsAwarded !== 'undefined' &&
+      detail.pointsAwarded !== newValues.pointsAwarded)
+  updateReq =
+    updateReq ||
+    (typeof newValues.xpAwarded !== 'undefined' &&
+      detail.xpAwarded !== newValues.xpAwarded)
+  updateReq =
+    updateReq ||
+    (typeof newValues.timeSpent !== 'undefined' &&
+      detail.timeSpent !== newValues.timeSpent)
 
   if (updateReq) {
     if (verbose) {
@@ -119,53 +130,62 @@ function computeResponseUpdate({
   let updateReq = false
 
   // check if the stored values are correct
-  updateReq = updateReq || response.trialsCount !== newValues.trialsCount
-  updateReq = updateReq || response.totalScore !== newValues.totalScore
-  updateReq =
-    updateReq || response.totalPointsAwarded !== newValues.totalPointsAwarded
   updateReq =
     updateReq ||
-    dayjs(response.totalXpAwarded).isSame(dayjs(newValues.totalXpAwarded))
-  updateReq =
-    updateReq || response.averageTimeSpent !== newValues.averageTimeSpent
-  updateReq =
-    updateReq ||
-    dayjs(response.lastAwardedAt).isSame(dayjs(newValues.lastAwardedAt))
+    (typeof newValues.trialsCount !== 'undefined' &&
+      response.trialsCount !== newValues.trialsCount)
   updateReq =
     updateReq ||
-    dayjs(response.lastXpAwardedAt).isSame(dayjs(newValues.lastXpAwardedAt))
+    (typeof newValues.totalScore !== 'undefined' &&
+      response.totalScore !== newValues.totalScore)
   updateReq =
     updateReq ||
-    dayjs(response.lastAnsweredAt).isSame(dayjs(newValues.lastAnsweredAt))
-  updateReq = updateReq || response.correctCount !== newValues.correctCount
-  updateReq =
-    updateReq || response.correctCountStreak !== newValues.correctCountStreak
+    (typeof newValues.totalPointsAwarded !== 'undefined' &&
+      response.totalPointsAwarded !== newValues.totalPointsAwarded)
   updateReq =
     updateReq ||
-    dayjs(response.lastCorrectAt).isSame(dayjs(newValues.lastCorrectAt))
-  updateReq =
-    updateReq || response.partialCorrectCount !== newValues.partialCorrectCount
-  updateReq =
-    updateReq ||
-    dayjs(response.lastPartialCorrectAt).isSame(
-      dayjs(newValues.lastPartialCorrectAt)
-    )
-  updateReq = updateReq || response.wrongCount !== newValues.wrongCount
+    (typeof newValues.averageTimeSpent !== 'undefined' &&
+      response.averageTimeSpent !== newValues.averageTimeSpent)
   updateReq =
     updateReq ||
-    dayjs(response.lastWrongAt).isSame(dayjs(newValues.lastWrongAt))
-  updateReq = updateReq || response.eFactor !== newValues.eFactor
-  updateReq = updateReq || response.interval !== newValues.interval
-  updateReq =
-    updateReq || dayjs(response.nextDueAt).isSame(dayjs(newValues.nextDueAt))
-  updateReq = updateReq || response.firstResponse !== newValues.firstResponse
+    (typeof newValues.correctCount !== 'undefined' &&
+      response.correctCount !== newValues.correctCount)
   updateReq =
     updateReq ||
-    response.firstResponseCorrectness !== newValues.firstResponseCorrectness
-  updateReq = updateReq || response.lastResponse !== newValues.lastResponse
+    (typeof newValues.correctCountStreak !== 'undefined' &&
+      response.correctCountStreak !== newValues.correctCountStreak)
   updateReq =
     updateReq ||
-    response.lastResponseCorrectness !== newValues.lastResponseCorrectness
+    (typeof newValues.partialCorrectCount !== 'undefined' &&
+      response.partialCorrectCount !== newValues.partialCorrectCount)
+  updateReq =
+    updateReq ||
+    (typeof newValues.wrongCount !== 'undefined' &&
+      response.wrongCount !== newValues.wrongCount)
+  updateReq =
+    updateReq ||
+    (typeof newValues.eFactor !== 'undefined' &&
+      response.eFactor !== newValues.eFactor)
+  updateReq =
+    updateReq ||
+    (typeof newValues.interval !== 'undefined' &&
+      response.interval !== newValues.interval)
+  updateReq =
+    updateReq ||
+    (typeof newValues.firstResponse !== 'undefined' &&
+      response.firstResponse !== newValues.firstResponse)
+  updateReq =
+    updateReq ||
+    (typeof newValues.firstResponseCorrectness !== 'undefined' &&
+      response.firstResponseCorrectness !== newValues.firstResponseCorrectness)
+  updateReq =
+    updateReq ||
+    (typeof newValues.lastResponse !== 'undefined' &&
+      response.lastResponse !== newValues.lastResponse)
+  updateReq =
+    updateReq ||
+    (typeof newValues.lastResponseCorrectness !== 'undefined' &&
+      response.lastResponseCorrectness !== newValues.lastResponseCorrectness)
   updateReq =
     updateReq ||
     !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)
@@ -239,27 +259,50 @@ function computeInstanceUpdate({
 
   if (instance.type === ElementInstanceType.PRACTICE_QUIZ) {
     updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
-    updateReq = updateReq || stats.correctCount !== newValues.correctCount
-    updateReq =
-      updateReq || stats.partialCorrectCount !== newValues.partialCorrectCount
-    updateReq = updateReq || stats.wrongCount !== newValues.wrongCount
-    updateReq =
-      updateReq || stats.firstCorrectCount !== newValues.firstCorrectCount
     updateReq =
       updateReq ||
-      stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount
-    updateReq = updateReq || stats.firstWrongCount !== newValues.firstWrongCount
-    updateReq =
-      updateReq || stats.lastCorrectCount !== newValues.lastCorrectCount
+      (typeof newValues.correctCount !== 'undefined' &&
+        stats.correctCount !== newValues.correctCount)
     updateReq =
       updateReq ||
-      stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount
-    updateReq = updateReq || stats.lastWrongCount !== newValues.lastWrongCount
+      (typeof newValues.partialCorrectCount !== 'undefined' &&
+        stats.partialCorrectCount !== newValues.partialCorrectCount)
     updateReq =
       updateReq ||
-      stats.uniqueParticipantCount !== newValues.uniqueParticipantCount
+      (typeof newValues.wrongCount !== 'undefined' &&
+        stats.wrongCount !== newValues.wrongCount)
     updateReq =
-      updateReq || stats.averageTimeSpent !== newValues.averageTimeSpent
+      updateReq ||
+      (typeof newValues.firstCorrectCount !== 'undefined' &&
+        stats.firstCorrectCount !== newValues.firstCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.firstPartialCorrectCount !== 'undefined' &&
+        stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.firstWrongCount !== 'undefined' &&
+        stats.firstWrongCount !== newValues.firstWrongCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastCorrectCount !== 'undefined' &&
+        stats.lastCorrectCount !== newValues.lastCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastPartialCorrectCount !== 'undefined' &&
+        stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.lastWrongCount !== 'undefined' &&
+        stats.lastWrongCount !== newValues.lastWrongCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.uniqueParticipantCount !== 'undefined' &&
+        stats.uniqueParticipantCount !== newValues.uniqueParticipantCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.averageTimeSpent !== 'undefined' &&
+        stats.averageTimeSpent !== newValues.averageTimeSpent)
 
     if (updateReq) {
       if (verbose) {
@@ -300,15 +343,26 @@ function computeInstanceUpdate({
 
   if (instance.type === ElementInstanceType.MICROLEARNING) {
     updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
-    updateReq = updateReq || stats.correctCount !== newValues.correctCount
-    updateReq =
-      updateReq || stats.partialCorrectCount !== newValues.partialCorrectCount
-    updateReq = updateReq || stats.wrongCount !== newValues.wrongCount
     updateReq =
       updateReq ||
-      stats.uniqueParticipantCount !== newValues.uniqueParticipantCount
+      (typeof newValues.correctCount !== 'undefined' &&
+        stats.correctCount !== newValues.correctCount)
     updateReq =
-      updateReq || stats.averageTimeSpent !== newValues.averageTimeSpent
+      updateReq ||
+      (typeof newValues.partialCorrectCount !== 'undefined' &&
+        stats.partialCorrectCount !== newValues.partialCorrectCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.wrongCount !== 'undefined' &&
+        stats.wrongCount !== newValues.wrongCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.uniqueParticipantCount !== 'undefined' &&
+        stats.uniqueParticipantCount !== newValues.uniqueParticipantCount)
+    updateReq =
+      updateReq ||
+      (typeof newValues.averageTimeSpent !== 'undefined' &&
+        stats.averageTimeSpent !== newValues.averageTimeSpent)
 
     if (updateReq) {
       if (verbose) {
@@ -369,7 +423,7 @@ async function run() {
   })
 
   for (const instance of instances) {
-    console.log('PROCESSING INSTANCE', counter, 'OF', instances.length)
+    console.log('PROCESSING INSTANCE', counter + 1, 'OF', instances.length)
 
     // ! Initialization
     const emptyInstanceResults = getInitialElementResults(instance.element)
