@@ -629,10 +629,9 @@ async function run() {
         lastCorrectAt = lastDetail.createdAt
         firstResponseCorrectness = ResponseCorrectness.CORRECT
         lastResponseCorrectness = ResponseCorrectness.CORRECT
-        averageTimeSpent = details.reduce(
-          (acc, detail) => acc + detail.timeSpent,
-          0
-        )
+        averageTimeSpent =
+          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
+          trialsCount
 
         // increase aggregated instance values
         instanceUniqueParticipantCount += 1
