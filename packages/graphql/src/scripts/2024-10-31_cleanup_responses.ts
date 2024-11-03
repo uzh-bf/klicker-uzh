@@ -56,30 +56,42 @@ function computeDetailUpdate({
 
   // check if the stored values are correct
   if (verbose) {
-    console.log(
-      'Comparing score:',
-      `${typeof newValues.score !== 'undefined' && detail.score !== newValues.score} |`,
-      detail.score,
-      newValues.score
-    )
-    console.log(
-      'Comparing pointsAwarded:',
-      `${typeof newValues.pointsAwarded !== 'undefined' && detail.pointsAwarded !== newValues.pointsAwarded} |`,
-      detail.pointsAwarded,
-      newValues.pointsAwarded
-    )
-    console.log(
-      'Comparing xpAwarded:',
-      `${typeof newValues.xpAwarded !== 'undefined' && detail.xpAwarded !== newValues.xpAwarded} |`,
-      detail.xpAwarded,
-      newValues.xpAwarded
-    )
-    console.log(
-      'Comparing timeSpent:',
-      `${typeof newValues.timeSpent !== 'undefined' && detail.timeSpent !== newValues.timeSpent} |`,
-      detail.timeSpent,
-      newValues.timeSpent
-    )
+    if (
+      typeof newValues.score !== 'undefined' &&
+      detail.score !== newValues.score
+    ) {
+      console.log('Score not identical:', detail.score, newValues.score)
+    }
+    if (
+      typeof newValues.pointsAwarded !== 'undefined' &&
+      detail.pointsAwarded !== newValues.pointsAwarded
+    ) {
+      console.log(
+        'PointsAwarded not identical:',
+        detail.pointsAwarded,
+        newValues.pointsAwarded
+      )
+    }
+    if (
+      typeof newValues.xpAwarded !== 'undefined' &&
+      detail.xpAwarded !== newValues.xpAwarded
+    ) {
+      console.log(
+        'XpAwarded not identical:',
+        detail.xpAwarded,
+        newValues.xpAwarded
+      )
+    }
+    if (
+      typeof newValues.timeSpent !== 'undefined' &&
+      detail.timeSpent !== newValues.timeSpent
+    ) {
+      console.log(
+        'TimeSpent not identical:',
+        detail.timeSpent,
+        newValues.timeSpent
+      )
+    }
   }
 
   updateReq =
@@ -157,96 +169,151 @@ function computeResponseUpdate({
   let updateReq = false
 
   if (verbose) {
-    console.log(
-      'Comparing trialsCount:',
-      `${typeof newValues.trialsCount !== 'undefined' && response.trialsCount !== newValues.trialsCount} |`,
-      response.trialsCount,
-      newValues.trialsCount
-    )
-    console.log(
-      'Comparing totalScore:',
-      `${typeof newValues.totalScore !== 'undefined' && response.totalScore !== newValues.totalScore} |`,
-      response.totalScore,
-      newValues.totalScore
-    )
-    console.log(
-      'Comparing totalPointsAwarded:',
-      `${typeof newValues.totalPointsAwarded !== 'undefined' && response.totalPointsAwarded !== newValues.totalPointsAwarded} |`,
-      response.totalPointsAwarded,
-      newValues.totalPointsAwarded
-    )
-    console.log(
-      'Comparing averageTimeSpent:',
-      `${typeof newValues.averageTimeSpent !== 'undefined' && response.averageTimeSpent !== newValues.averageTimeSpent} |`,
-      response.averageTimeSpent,
-      newValues.averageTimeSpent
-    )
-    console.log(
-      'Comparing correctCount:',
-      `${typeof newValues.correctCount !== 'undefined' && response.correctCount !== newValues.correctCount} |`,
-      response.correctCount,
-      newValues.correctCount
-    )
-    console.log(
-      'Comparing correctCountStreak:',
-      `${typeof newValues.correctCountStreak !== 'undefined' && response.correctCountStreak !== newValues.correctCountStreak} |`,
-      response.correctCountStreak,
-      newValues.correctCountStreak
-    )
-    console.log(
-      'Comparing partialCorrectCount:',
-      `${typeof newValues.partialCorrectCount !== 'undefined' && response.partialCorrectCount !== newValues.partialCorrectCount} |`,
-      response.partialCorrectCount,
-      newValues.partialCorrectCount
-    )
-    console.log(
-      'Comparing wrongCount:',
-      `${typeof newValues.wrongCount !== 'undefined' && response.wrongCount !== newValues.wrongCount} |`,
-      response.wrongCount,
-      newValues.wrongCount
-    )
-    console.log(
-      'Comparing eFactor:',
-      `${typeof newValues.eFactor !== 'undefined' && response.eFactor !== newValues.eFactor} |`,
-      response.eFactor,
-      newValues.eFactor
-    )
-    console.log(
-      'Comparing interval:',
-      `${typeof newValues.interval !== 'undefined' && response.interval !== newValues.interval} |`,
-      response.interval,
-      newValues.interval
-    )
-    console.log(
-      'Comparing firstResponse:',
-      `${typeof newValues.firstResponse !== 'undefined' && !isDeepEqual(response.firstResponse, newValues.firstResponse)} |`,
-      response.firstResponse,
-      newValues.firstResponse
-    )
-    console.log(
-      'Comparing firstResponseCorrectness:',
-      `${typeof newValues.firstResponseCorrectness !== 'undefined' && response.firstResponseCorrectness !== newValues.firstResponseCorrectness} |`,
-      response.firstResponseCorrectness,
-      newValues.firstResponseCorrectness
-    )
-    console.log(
-      'Comparing lastResponse:',
-      `${typeof newValues.lastResponse !== 'undefined' && !isDeepEqual(response.lastResponse, newValues.lastResponse)} |`,
-      response.lastResponse,
-      newValues.lastResponse
-    )
-    console.log(
-      'Comparing lastResponseCorrectness:',
-      `${typeof newValues.lastResponseCorrectness !== 'undefined' && response.lastResponseCorrectness !== newValues.lastResponseCorrectness} |`,
-      response.lastResponseCorrectness,
-      newValues.lastResponseCorrectness
-    )
-    console.log(
-      'Comparing aggregatedResponses:',
-      `${!isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)} |`,
-      response.aggregatedResponses,
-      newValues.aggregatedResponses
-    )
+    if (
+      typeof newValues.trialsCount !== 'undefined' &&
+      response.trialsCount !== newValues.trialsCount
+    ) {
+      console.log(
+        'trialsCount not identical:',
+        response.trialsCount,
+        newValues.trialsCount
+      )
+    }
+    if (
+      typeof newValues.totalScore !== 'undefined' &&
+      response.totalScore !== newValues.totalScore
+    ) {
+      console.log(
+        'totalScore not identical:',
+        response.totalScore,
+        newValues.totalScore
+      )
+    }
+    if (
+      typeof newValues.totalPointsAwarded !== 'undefined' &&
+      response.totalPointsAwarded !== newValues.totalPointsAwarded
+    ) {
+      console.log(
+        'totalPointsAwarded not identical:',
+        response.totalPointsAwarded,
+        newValues.totalPointsAwarded
+      )
+    }
+    if (
+      typeof newValues.averageTimeSpent !== 'undefined' &&
+      response.averageTimeSpent !== newValues.averageTimeSpent
+    ) {
+      console.log(
+        'averageTimeSpent not identical:',
+        response.averageTimeSpent,
+        newValues.averageTimeSpent
+      )
+    }
+    if (
+      typeof newValues.correctCount !== 'undefined' &&
+      response.correctCount !== newValues.correctCount
+    ) {
+      console.log(
+        'correctCount not identical:',
+        response.correctCount,
+        newValues.correctCount
+      )
+    }
+    if (
+      typeof newValues.correctCountStreak !== 'undefined' &&
+      response.correctCountStreak !== newValues.correctCountStreak
+    ) {
+      console.log(
+        'correctCountStreak not identical:',
+        response.correctCountStreak,
+        newValues.correctCountStreak
+      )
+    }
+    if (
+      typeof newValues.partialCorrectCount !== 'undefined' &&
+      response.partialCorrectCount !== newValues.partialCorrectCount
+    ) {
+      console.log(
+        'partialCorrectCount not identical:',
+        response.partialCorrectCount,
+        newValues.partialCorrectCount
+      )
+    }
+    if (
+      typeof newValues.wrongCount !== 'undefined' &&
+      response.wrongCount !== newValues.wrongCount
+    ) {
+      console.log(
+        'wrongCount not identical:',
+        response.wrongCount,
+        newValues.wrongCount
+      )
+    }
+    if (
+      typeof newValues.eFactor !== 'undefined' &&
+      response.eFactor !== newValues.eFactor
+    ) {
+      console.log('eFactor not identical:', response.eFactor, newValues.eFactor)
+    }
+    if (
+      typeof newValues.interval !== 'undefined' &&
+      response.interval !== newValues.interval
+    ) {
+      console.log(
+        'interval not identical:',
+        response.interval,
+        newValues.interval
+      )
+    }
+    if (
+      typeof newValues.firstResponse !== 'undefined' &&
+      !isDeepEqual(response.firstResponse, newValues.firstResponse)
+    ) {
+      console.log(
+        'firstResponse not identical:',
+        response.firstResponse,
+        newValues.firstResponse
+      )
+    }
+    if (
+      typeof newValues.firstResponseCorrectness !== 'undefined' &&
+      response.firstResponseCorrectness !== newValues.firstResponseCorrectness
+    ) {
+      console.log(
+        'firstResponseCorrectness not identical:',
+        response.firstResponseCorrectness,
+        newValues.firstResponseCorrectness
+      )
+    }
+    if (
+      typeof newValues.lastResponse !== 'undefined' &&
+      !isDeepEqual(response.lastResponse, newValues.lastResponse)
+    ) {
+      console.log(
+        'lastResponse not identical:',
+        response.lastResponse,
+        newValues.lastResponse
+      )
+    }
+    if (
+      typeof newValues.lastResponseCorrectness !== 'undefined' &&
+      response.lastResponseCorrectness !== newValues.lastResponseCorrectness
+    ) {
+      console.log(
+        'lastResponseCorrectness not identical:',
+        response.lastResponseCorrectness,
+        newValues.lastResponseCorrectness
+      )
+    }
+    if (
+      !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)
+    ) {
+      console.log(
+        'aggregatedResponses not identical:',
+        response.aggregatedResponses,
+        newValues.aggregatedResponses
+      )
+    }
   }
 
   updateReq =
@@ -378,78 +445,92 @@ function computeInstanceUpdate({
 
   if (instance.type === ElementInstanceType.PRACTICE_QUIZ) {
     if (verbose) {
-      console.log(
-        'Comparing instance results:',
-        `${typeof newValues.results !== 'undefined' && !isDeepEqual(instance.results, newValues.results)} |`,
-        instance.results,
-        newValues.results
-      )
-      console.log(
-        'Comparing correctCount:',
-        `${typeof newValues.correctCount !== 'undefined' && stats.correctCount !== newValues.correctCount} |`,
-        stats.correctCount,
-        newValues.correctCount
-      )
-      console.log(
-        'Comparing partialCorrectCount:',
-        `${typeof newValues.partialCorrectCount !== 'undefined' && stats.partialCorrectCount !== newValues.partialCorrectCount} |`,
-        stats.partialCorrectCount,
-        newValues.partialCorrectCount
-      )
-      console.log(
-        'Comparing wrongCount:',
-        `${typeof newValues.wrongCount !== 'undefined' && stats.wrongCount !== newValues.wrongCount} |`,
-        stats.wrongCount,
-        newValues.wrongCount
-      )
-      console.log(
-        'Comparing firstCorrectCount:',
-        `${typeof newValues.firstCorrectCount !== 'undefined' && stats.firstCorrectCount !== newValues.firstCorrectCount} |`,
-        stats.firstCorrectCount,
-        newValues.firstCorrectCount
-      )
-      console.log(
-        'Comparing firstPartialCorrectCount:',
-        `${typeof newValues.firstPartialCorrectCount !== 'undefined' && stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount} |`,
-        stats.firstPartialCorrectCount,
-        newValues.firstPartialCorrectCount
-      )
-      console.log(
-        'Comparing firstWrongCount:',
-        `${typeof newValues.firstWrongCount !== 'undefined' && stats.firstWrongCount !== newValues.firstWrongCount} |`,
-        stats.firstWrongCount,
-        newValues.firstWrongCount
-      )
-      console.log(
-        'Comparing lastCorrectCount:',
-        `${typeof newValues.lastCorrectCount !== 'undefined' && stats.lastCorrectCount !== newValues.lastCorrectCount} |`,
-        stats.lastCorrectCount,
-        newValues.lastCorrectCount
-      )
-      console.log(
-        'Comparing lastPartialCorrectCount:',
-        `${typeof newValues.lastPartialCorrectCount !== 'undefined' && stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount} |`,
-        stats.lastPartialCorrectCount,
-        newValues.lastPartialCorrectCount
-      )
-      console.log(
-        'Comparing lastWrongCount:',
-        `${typeof newValues.lastWrongCount !== 'undefined' && stats.lastWrongCount !== newValues.lastWrongCount} |`,
-        stats.lastWrongCount,
-        newValues.lastWrongCount
-      )
-      console.log(
-        'Comparing uniqueParticipantCount:',
-        `${typeof newValues.uniqueParticipantCount !== 'undefined' && stats.uniqueParticipantCount !== newValues.uniqueParticipantCount} |`,
-        stats.uniqueParticipantCount,
-        newValues.uniqueParticipantCount
-      )
-      console.log(
-        'Comparing averageTimeSpent:',
-        `${typeof newValues.averageTimeSpent !== 'undefined' && stats.averageTimeSpent !== newValues.averageTimeSpent} |`,
-        stats.averageTimeSpent,
-        newValues.averageTimeSpent
-      )
+      if (!isDeepEqual(instance.results, newValues.results)) {
+        console.log(
+          'Instance results not identical:',
+          instance.results,
+          newValues.results
+        )
+      }
+      if (stats.correctCount !== newValues.correctCount) {
+        console.log(
+          'Correct count not identical:',
+          stats.correctCount,
+          newValues.correctCount
+        )
+      }
+      if (stats.partialCorrectCount !== newValues.partialCorrectCount) {
+        console.log(
+          'Partial correct count not identical:',
+          stats.partialCorrectCount,
+          newValues.partialCorrectCount
+        )
+      }
+      if (stats.wrongCount !== newValues.wrongCount) {
+        console.log(
+          'Wrong count not identical:',
+          stats.wrongCount,
+          newValues.wrongCount
+        )
+      }
+      if (stats.firstCorrectCount !== newValues.firstCorrectCount) {
+        console.log(
+          'First correct count not identical:',
+          stats.firstCorrectCount,
+          newValues.firstCorrectCount
+        )
+      }
+      if (
+        stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount
+      ) {
+        console.log(
+          'First partial correct count not identical:',
+          stats.firstPartialCorrectCount,
+          newValues.firstPartialCorrectCount
+        )
+      }
+      if (stats.firstWrongCount !== newValues.firstWrongCount) {
+        console.log(
+          'First wrong count not identical:',
+          stats.firstWrongCount,
+          newValues.firstWrongCount
+        )
+      }
+      if (stats.lastCorrectCount !== newValues.lastCorrectCount) {
+        console.log(
+          'Last correct count not identical:',
+          stats.lastCorrectCount,
+          newValues.lastCorrectCount
+        )
+      }
+      if (stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount) {
+        console.log(
+          'Last partial correct count not identical:',
+          stats.lastPartialCorrectCount,
+          newValues.lastPartialCorrectCount
+        )
+      }
+      if (stats.lastWrongCount !== newValues.lastWrongCount) {
+        console.log(
+          'Last wrong count not identical:',
+          stats.lastWrongCount,
+          newValues.lastWrongCount
+        )
+      }
+      if (stats.uniqueParticipantCount !== newValues.uniqueParticipantCount) {
+        console.log(
+          'Unique participant count not identical:',
+          stats.uniqueParticipantCount,
+          newValues.uniqueParticipantCount
+        )
+      }
+      if (stats.averageTimeSpent !== newValues.averageTimeSpent) {
+        console.log(
+          'Average time spent not identical:',
+          stats.averageTimeSpent,
+          newValues.averageTimeSpent
+        )
+      }
     }
 
     updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
@@ -525,7 +606,7 @@ async function run() {
       },
     },
     include: {
-      responses: { include: { participant: true, participation: true } },
+      responses: true,
       detailResponses: { include: { participant: true } },
       element: true,
       instanceStatistics: true,
@@ -662,7 +743,7 @@ async function run() {
           interval: number
           nextDueAt: Date | undefined
         }>(
-          (acc, _) => {
+          (acc, detail) => {
             acc.streak += 1
             const newValues = updateSpacedRepetition({
               eFactor: acc.eFactor,
@@ -672,7 +753,9 @@ async function run() {
             })
             acc.eFactor = newValues.eFactor
             acc.interval = newValues.interval
-            acc.nextDueAt = newValues.nextDueAt
+            acc.nextDueAt = dayjs(detail.createdAt)
+              .add(acc.interval, 'day')
+              .toDate()
             return acc
           },
           {
@@ -750,16 +833,24 @@ async function run() {
               acc.lastWrongAt = detail.createdAt
               acc.correctCountStreak = 0
             }
+
             // update spaced repetition parameters
             const updatedRepetition = updateSpacedRepetition({
               eFactor: acc.eFactor,
               interval: acc.interval,
               streak: acc.correctCountStreak,
-              grade: 1,
+              grade:
+                correctness === FlashcardCorrectness.CORRECT
+                  ? 1
+                  : correctness === FlashcardCorrectness.PARTIAL
+                    ? 0.5
+                    : 0,
             })
             acc.eFactor = updatedRepetition.eFactor
             acc.interval = updatedRepetition.interval
-            acc.nextDueAt = updatedRepetition.nextDueAt
+            acc.nextDueAt = dayjs(detail.createdAt)
+              .add(acc.interval, 'day')
+              .toDate()
             // update aggregated responses
             acc.aggResponses.total += 1
             if (correctness === FlashcardCorrectness.CORRECT) {
@@ -928,7 +1019,9 @@ async function run() {
             })
             acc.eFactor = newValues.eFactor
             acc.interval = newValues.interval
-            acc.nextDueAt = newValues.nextDueAt
+            acc.nextDueAt = dayjs(detail.createdAt)
+              .add(acc.interval, 'day')
+              .toDate()
 
             // TODO: replace this through helper function once available
             // update aggregated responses
@@ -1126,7 +1219,9 @@ async function run() {
             })
             acc.eFactor = newValues.eFactor
             acc.interval = newValues.interval
-            acc.nextDueAt = newValues.nextDueAt
+            acc.nextDueAt = dayjs(detail.createdAt)
+              .add(acc.interval, 'day')
+              .toDate()
 
             // TODO: replace this through helper function once available
             // update aggregated responses
@@ -1351,7 +1446,9 @@ async function run() {
             })
             acc.eFactor = newValues.eFactor
             acc.interval = newValues.interval
-            acc.nextDueAt = newValues.nextDueAt
+            acc.nextDueAt = dayjs(detail.createdAt)
+              .add(acc.interval, 'day')
+              .toDate()
 
             // TODO: replace this through helper function once available
             // update aggregated responses
