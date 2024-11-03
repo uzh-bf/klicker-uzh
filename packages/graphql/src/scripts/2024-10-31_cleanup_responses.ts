@@ -569,7 +569,7 @@ function computeInstanceUpdate({
       }
 
       return {
-        id: instance.id,
+        where: { id: instance.id },
         data: {
           results: newValues.results,
           instanceStatistics: {
@@ -1675,32 +1675,23 @@ async function run() {
 
     // TODO: uncomment this part to apply updates in a single transaction for each element instance
     // ! Execute all updates that are potentially required in a single transaction
-    // if (
-    //   detailUpdates.length > 0 ||
-    //   responseUpdates.length > 0 ||
-    //   instanceUpdates.length > 0
-    // ) {
-    //   await prisma.$transaction([
-    //     ...detailUpdates.map((update) =>
-    //       prisma.questionResponseDetail.update({
-    //         where: { id: update.id },
-    //         data: update.data,
-    //       })
-    //     ),
-    //     ...responseUpdates.map((update) =>
-    //       prisma.questionResponse.update({
-    //         where: { id: update.id },
-    //         data: update.data,
-    //       })
-    //     ),
-    //     ...instanceUpdates.map((update) =>
-    //       prisma.elementInstance.update({
-    //         where: { id: update.id },
-    //         data: update.data,
-    //       })
-    //     ),
-    //   ])
-    // }
+    if (
+      detailUpdates.length > 0 ||
+      responseUpdates.length > 0 ||
+      instanceUpdates.length > 0
+    ) {
+      await prisma.$transaction([
+        ...detailUpdates.map((update) =>
+          prisma.questionResponseDetail.update(update)
+        ),
+        ...responseUpdates.map((update) =>
+          prisma.questionResponse.update(update)
+        ),
+        ...instanceUpdates.map((update) =>
+          prisma.elementInstance.update(update)
+        ),
+      ])
+    }
   }
 }
 
