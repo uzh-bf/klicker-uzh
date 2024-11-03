@@ -6,6 +6,7 @@ import {
 import {
   type AllElementTypeData,
   type AllQuestionTypeData,
+  type Choice,
   type ElementInstanceResults,
   type ElementKeys,
 } from '@klicker-uzh/types'
@@ -110,9 +111,9 @@ export function getInitialElementResults(
     element.type === PrismaElementType.KPRIM
   ) {
     const choices = element.options.choices.reduce(
-      (acc: Record<string, number>, _: any, ix: number) => ({
+      (acc: Record<string, number>, choice: Choice) => ({
         ...acc,
-        [ix]: 0,
+        [choice.ix]: 0,
       }),
       {}
     )

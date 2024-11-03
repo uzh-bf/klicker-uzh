@@ -14,7 +14,8 @@
   },
   "scripts": {
     "test": "cypress open",
-    "test:run": "cypress run"
+    "test:run": "cypress run",
+    "test:watch": "cypress open --watch"
   },
   "engines": {
     "node": "=20"
