@@ -606,7 +606,7 @@ async function run() {
       },
     },
     include: {
-      responses: true,
+      responses: { include: { participation: true } },
       detailResponses: { include: { participant: true } },
       element: true,
       instanceStatistics: true,
@@ -630,7 +630,11 @@ async function run() {
     const participantResponses = instance.responses.reduce<
       Record<
         string,
-        { response: QuestionResponse; details: QuestionResponseDetail[] }
+        {
+          response: QuestionResponse
+          details: QuestionResponseDetail[]
+          participationActive: boolean
+        }
       >
     >((acc, response) => {
       // find all details for this response (same participant and same instance)
@@ -647,6 +651,7 @@ async function run() {
       acc[response.participantId] = {
         response,
         details: sortBy(responseDetails, [prop('createdAt'), 'asc']),
+        participationActive: response.participation?.isActive ?? false,
       }
       return acc
     }, {})
@@ -665,9 +670,10 @@ async function run() {
     let instanceUniqueParticipantCount = 0
     let instanceAverageTimeSpent: number | undefined = undefined
 
-    for (const [participantId, { response, details }] of Object.entries(
-      participantResponses
-    )) {
+    for (const [
+      participantId,
+      { response, details, participationActive },
+    ] of Object.entries(participantResponses)) {
       // initialize fields for question response
       let trialsCount = 0
       let totalScore = 0
@@ -1000,7 +1006,7 @@ async function run() {
               dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
             )
 
-            if (newPoints) {
+            if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
               acc.lastAwardedAt = detail.createdAt
             }
@@ -1200,7 +1206,7 @@ async function run() {
               dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
             )
 
-            if (newPoints) {
+            if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
               acc.lastAwardedAt = detail.createdAt
             }
@@ -1427,7 +1433,7 @@ async function run() {
               dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
             )
 
-            if (newPoints) {
+            if (newPoints && participationActive) {
               acc.totalPointsAwarded += score
               acc.lastAwardedAt = detail.createdAt
             }
