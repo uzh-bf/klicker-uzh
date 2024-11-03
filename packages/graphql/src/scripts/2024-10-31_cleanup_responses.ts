@@ -243,7 +243,7 @@ function computeResponseUpdate({
     )
     console.log(
       'Comparing aggregatedResponses:',
-      `${typeof newValues.aggregatedResponses !== 'undefined' && !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)} |`,
+      `${!isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)} |`,
       response.aggregatedResponses,
       newValues.aggregatedResponses
     )
@@ -292,7 +292,7 @@ function computeResponseUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.firstResponse !== 'undefined' &&
-      response.firstResponse !== newValues.firstResponse)
+      !isDeepEqual(response.firstResponse, newValues.firstResponse))
   updateReq =
     updateReq ||
     (typeof newValues.firstResponseCorrectness !== 'undefined' &&
@@ -300,7 +300,7 @@ function computeResponseUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.lastResponse !== 'undefined' &&
-      response.lastResponse !== newValues.lastResponse)
+      !isDeepEqual(response.lastResponse, newValues.lastResponse))
   updateReq =
     updateReq ||
     (typeof newValues.lastResponseCorrectness !== 'undefined' &&
@@ -619,8 +619,33 @@ async function run() {
         ...emptyInstanceResults,
       }
 
+      // compute average times
+      // (floor required due to the way prisma handles float to int conversion)
+      const res = details.reduce<{ avgTime: number; counter: number }>(
+        (acc, detail) => {
+          acc.avgTime = Math.floor(
+            (acc.avgTime * acc.counter + detail.timeSpent) / (acc.counter + 1)
+          )
+          acc.counter += 1
+          return acc
+        },
+        { avgTime: 0, counter: 0 }
+      )
+      averageTimeSpent = res.avgTime
+
+      // increase aggregated instance values
+      // (floor required due to the way prisma handles float to int conversion)
+      instanceUniqueParticipantCount += 1
+      instanceAverageTimeSpent = Math.floor(
+        ((instanceAverageTimeSpent ?? 0) *
+          (instanceUniqueParticipantCount - 1) +
+          averageTimeSpent) /
+          instanceUniqueParticipantCount
+      )
+
       if (instance.elementType === ElementType.CONTENT) {
         const lastDetail = details[details.length - 1]
+
         // set correctness parameters, trials, timestamps and time spent
         trialsCount = details.length
         lastAnsweredAt = lastDetail.createdAt
@@ -629,17 +654,6 @@ async function run() {
         lastCorrectAt = lastDetail.createdAt
         firstResponseCorrectness = ResponseCorrectness.CORRECT
         lastResponseCorrectness = ResponseCorrectness.CORRECT
-        averageTimeSpent =
-          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
-          trialsCount
-
-        // increase aggregated instance values
-        instanceUniqueParticipantCount += 1
-        instanceAverageTimeSpent =
-          ((instanceAverageTimeSpent ?? 0) *
-            (instanceUniqueParticipantCount - 1) +
-            averageTimeSpent) /
-          instanceUniqueParticipantCount
 
         // compute updated spaced repetition parameters
         const repetitionParams = details.reduce<{
@@ -704,9 +718,6 @@ async function run() {
             : lastResponse.correctness === FlashcardCorrectness.PARTIAL
               ? ResponseCorrectness.PARTIAL
               : ResponseCorrectness.WRONG
-        averageTimeSpent =
-          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
-          details.length
 
         // aggregate over all details to compute the total quantities
         const newValues = details.reduce<{
@@ -832,9 +843,6 @@ async function run() {
             : firstCorrect === 0
               ? ResponseCorrectness.WRONG
               : ResponseCorrectness.PARTIAL
-        averageTimeSpent =
-          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
-          details.length
 
         const newValues = details.reduce<{
           totalScore: number
@@ -1033,9 +1041,6 @@ async function run() {
             : firstCorrect === 0
               ? ResponseCorrectness.WRONG
               : ResponseCorrectness.PARTIAL
-        averageTimeSpent =
-          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
-          details.length
 
         const newValues = details.reduce<{
           totalScore: number
@@ -1261,9 +1266,6 @@ async function run() {
             : firstCorrect === 0
               ? ResponseCorrectness.WRONG
               : ResponseCorrectness.PARTIAL
-        averageTimeSpent =
-          details.reduce((acc, detail) => acc + detail.timeSpent, 0) /
-          details.length
 
         const newValues = details.reduce<{
           totalScore: number
