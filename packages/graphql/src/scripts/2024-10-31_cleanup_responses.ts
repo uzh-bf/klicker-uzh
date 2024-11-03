@@ -47,7 +47,7 @@ function computeDetailUpdate({
   detail: QuestionResponseDetail
   newValues: {
     score: number
-    pointsAwarded: number
+    pointsAwarded: number | undefined
     xpAwarded: number
     timeSpent: number
   }
@@ -63,6 +63,7 @@ function computeDetailUpdate({
       console.log('Score not identical:', detail.score, newValues.score)
     }
     if (
+      detail.pointsAwarded !== null &&
       typeof newValues.pointsAwarded !== 'undefined' &&
       detail.pointsAwarded !== newValues.pointsAwarded
     ) {
@@ -99,7 +100,8 @@ function computeDetailUpdate({
     (typeof newValues.score !== 'undefined' && detail.score !== newValues.score)
   updateReq =
     updateReq ||
-    (typeof newValues.pointsAwarded !== 'undefined' &&
+    (detail.pointsAwarded !== null &&
+      typeof newValues.pointsAwarded !== 'undefined' &&
       detail.pointsAwarded !== newValues.pointsAwarded)
   updateReq =
     updateReq ||
@@ -143,7 +145,7 @@ function computeResponseUpdate({
   newValues: {
     trialsCount: number
     totalScore: number
-    totalPointsAwarded: number
+    totalPointsAwarded: number | undefined
     totalXpAwarded: number
     averageTimeSpent: number
     lastAwardedAt: Date | undefined
@@ -190,6 +192,7 @@ function computeResponseUpdate({
       )
     }
     if (
+      response.totalPointsAwarded !== null &&
       typeof newValues.totalPointsAwarded !== 'undefined' &&
       response.totalPointsAwarded !== newValues.totalPointsAwarded
     ) {
@@ -326,7 +329,8 @@ function computeResponseUpdate({
       response.totalScore !== newValues.totalScore)
   updateReq =
     updateReq ||
-    (typeof newValues.totalPointsAwarded !== 'undefined' &&
+    (response.totalPointsAwarded !== null &&
+      typeof newValues.totalPointsAwarded !== 'undefined' &&
       response.totalPointsAwarded !== newValues.totalPointsAwarded)
   updateReq =
     updateReq ||
@@ -1060,7 +1064,7 @@ async function run() {
               detail,
               newValues: {
                 score,
-                pointsAwarded: score,
+                pointsAwarded: participationActive ? score : undefined,
                 xpAwarded: xp,
                 timeSpent: detail.timeSpent,
               },
@@ -1584,15 +1588,18 @@ async function run() {
       }
 
       // update question response, if the content is different
+      // (if participation is not active, do not update awarded points in any case)
       const responseUpdate = computeResponseUpdate({
         response,
         newValues: {
           trialsCount,
           totalScore,
-          totalPointsAwarded,
+          totalPointsAwarded: participationActive
+            ? totalPointsAwarded
+            : undefined,
           totalXpAwarded,
           averageTimeSpent,
-          lastAwardedAt,
+          lastAwardedAt: participationActive ? lastAwardedAt : undefined,
           lastXpAwardedAt,
           lastAnsweredAt,
           correctCount,
