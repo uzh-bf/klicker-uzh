@@ -2,12 +2,12 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivateSessionBlockDocument,
-  DeactivateSessionBlockDocument,
+  ActivateLiveQuizBlockDocument,
+  DeactivateLiveQuizBlockDocument,
   ElementBlockStatus,
-  EndSessionDocument,
+  EndLiveQuizDocument,
   GetControlLiveQuizDocument,
-  GetUserRunningLiveQuizzesDocument,
+  GetUnassignedLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -26,25 +26,25 @@ function RunningSession() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
-    ActivateSessionBlockDocument
+  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
+    ActivateLiveQuizBlockDocument
   )
-  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateSessionBlockDocument
+  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
       update(cache, res) {
         const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
+          query: GetUnassignedLiveQuizzesDocument,
         })
         cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
+          query: GetUnassignedLiveQuizzesDocument,
           data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endSession?.id
+            unassignedLiveQuizzes:
+              data?.unassignedLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.endLiveQuiz?.id
               ) ?? [],
           },
         })
@@ -154,10 +154,10 @@ function RunningSession() {
             <Button
               loading={deactivatingBlock}
               onClick={async () => {
-                await deactivateSessionBlock({
+                await deactivateLiveQuizBlock({
                   variables: {
-                    sessionId: id,
-                    sessionBlockId:
+                    quizId: id,
+                    blockId:
                       blocks.find((block) => block.order === currentBlockOrder)
                         ?.id || -1,
                   },
@@ -196,10 +196,10 @@ function RunningSession() {
               loading={activatingBlock}
               onClick={async () => {
                 {
-                  await activateSessionBlock({
+                  await activateLiveQuizBlock({
                     variables: {
-                      sessionId: id,
-                      sessionBlockId:
+                      quizId: id,
+                      blockId:
                         blocks.find((block) => block.order === nextBlockOrder)
                           ?.id || -1,
                     },
@@ -228,7 +228,7 @@ function RunningSession() {
             <Button
               loading={endingLiveQuiz}
               onClick={async () => {
-                await endSession({ variables: { id: id } })
+                await endLiveQuiz({ variables: { id: id } })
                 router.push(
                   course ? `/course/${course?.id}` : '/course/unassigned'
                 )
@@ -238,7 +238,7 @@ function RunningSession() {
               }}
               data={{ cy: 'end-session' }}
             >
-              {t('control.session.endSession')}
+              {t('control.session.endQuiz')}
             </Button>
           </div>
         )}

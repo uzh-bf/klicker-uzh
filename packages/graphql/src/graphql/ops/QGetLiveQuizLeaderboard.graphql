@@ -1,5 +1,5 @@
-query GetSessionLeaderboard($sessionId: String!) {
-  sessionLeaderboard(sessionId: $sessionId) {
+query GetLiveQuizLeaderboard($quizId: String!) {
+  liveQuizLeaderboard(quizId: $quizId) {
     id
     participantId
     rank

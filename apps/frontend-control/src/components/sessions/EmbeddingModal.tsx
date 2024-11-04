@@ -83,11 +83,13 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
     >
       <H2>{t('control.course.pptEmbedding')}</H2>
       <div className="flex flex-col gap-3">
-        {questions?.map((question: any, ix: number) => {
+        {questions?.map((element, ix) => {
+          if (!element || !element.elementData) return null
+
           return (
-            <div key={question.id}>
+            <div key={element.id}>
               <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
-                question.questionData.name
+                element.elementData.name
               }`}</div>
               <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
                 <LazyHMACLink quizId={quizId} params={`questionIx=${ix}`} />

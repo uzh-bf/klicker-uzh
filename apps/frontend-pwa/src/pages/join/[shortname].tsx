@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -31,7 +31,7 @@ function Join({
     cookiesAvailable,
   })
 
-  const { data } = useQuery(GetRunningSessionsDocument, {
+  const { data } = useQuery(GetShortnameQuizzesDocument, {
     variables: { shortname },
     skip: isInactive,
   })
@@ -39,8 +39,8 @@ function Join({
   if (
     isInactive ||
     !data ||
-    !data.runningSessions?.length ||
-    data.runningSessions.length === 0
+    !data.shortnameQuizzes?.length ||
+    data.shortnameQuizzes.length === 0
   ) {
     return (
       <Layout>
@@ -69,20 +69,20 @@ function Join({
           })}
         </div>
         <div className="mt-2 space-y-1">
-          {data.runningSessions.map((session) => (
-            <div key={session.id}>
-              <Link href={`/session/${session.id}`}>
+          {data.shortnameQuizzes.map((quiz) => (
+            <div key={quiz.id}>
+              <Link href={`/session/${quiz.id}`}>
                 <Button
                   fluid
                   className={{ root: 'justify-start gap-4' }}
-                  data={{ cy: `join-session-${session.name}` }}
+                  data={{ cy: `join-session-${quiz.name}` }}
                 >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faExternalLink} />
                   </Button.Icon>
                   <Button.Label>
-                    {session.displayName}{' '}
-                    {session.course && `in ${session.course?.displayName}`}
+                    {quiz.displayName}{' '}
+                    {quiz.course && `in ${quiz.course?.displayName}`}
                   </Button.Label>
                 </Button>
               </Link>
@@ -107,14 +107,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   const result = await apolloClient.query({
-    query: GetRunningSessionsDocument,
+    query: GetShortnameQuizzesDocument,
     variables: {
       shortname: ctx.params.shortname,
     },
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  if (!result?.data?.runningSessions) {
+  if (!result?.data?.shortnameQuizzes) {
     return {
       props: {
         isInactive: true,
@@ -124,19 +124,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if only a single session is running, redirect directly to the corresponding session page
   // or if linkTo is set, redirect to the specified link
-  if (result.data.runningSessions.length === 1) {
-    if (result.data.runningSessions[0].linkTo) {
-      return {
-        redirect: {
-          destination: result.data.runningSessions[0].linkTo,
-          permanent: false,
-        },
-      }
-    }
-
+  if (result.data.shortnameQuizzes.length === 1) {
     return {
       redirect: {
-        destination: `/session/${result.data.runningSessions[0].id}`,
+        destination: `/session/${result.data.shortnameQuizzes[0].id}`,
         permanent: false,
       },
     }

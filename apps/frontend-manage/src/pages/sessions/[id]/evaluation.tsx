@@ -247,10 +247,10 @@ function Evaluation() {
           <div className="overflow-y-auto">
             <div className="border-t p-4">
               <div className="mx-auto max-w-2xl text-xl">
-                {data.sessionLeaderboard &&
-                data.sessionLeaderboard.length > 0 ? (
+                {data.liveQuizLeaderboard &&
+                data.liveQuizLeaderboard.length > 0 ? (
                   <Leaderboard
-                    leaderboard={data.sessionLeaderboard ?? []}
+                    leaderboard={data.liveQuizLeaderboard ?? []}
                     podiumImgSrc={{
                       rank1: Rank1Img,
                       rank2: Rank2Img,

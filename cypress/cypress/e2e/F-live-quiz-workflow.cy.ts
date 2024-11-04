@@ -661,7 +661,7 @@ describe('Different live-quiz workflows', () => {
     // login student and answer first question
     cy.loginStudent()
     cy.findByText(sessionDisplayName2).click()
-    cy.get('[data-cy="sc-answer-option-0"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -682,7 +682,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
     cy.get('[data-cy="mobile-menu-questions"]').click()
-    cy.get('[data-cy="sc-answer-option-1"]').click()
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -734,10 +734,10 @@ describe('Different live-quiz workflows', () => {
   it('Student answers questions in second block', () => {
     cy.loginStudent()
     cy.findByText(sessionDisplayName2).click()
-    cy.get('[data-cy="sc-answer-option-0"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="sc-answer-option-1"]').click()
+    cy.get('[data-cy="sc-2-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
   })

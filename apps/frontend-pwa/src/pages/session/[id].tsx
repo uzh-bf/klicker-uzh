@@ -20,7 +20,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
-import SessionLeaderboard from '../../components/common/SessionLeaderboard'
+import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
@@ -47,7 +47,7 @@ function Subscriber({
       ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
-          session: {
+          studentLiveQuiz: {
             ...prev.studentLiveQuiz,
             activeBlock: subscriptionData.data.runningLiveQuizUpdated,
           },
@@ -123,7 +123,7 @@ function Index({ id }: { id: string }) {
       return null
     }
     try {
-      const response = await fetch(
+      await fetch(
         process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
         requestOptions
       )
@@ -189,7 +189,7 @@ function Index({ id }: { id: string }) {
           {!activeBlock ? (
             isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
-                <SessionLeaderboard sessionId={id} />
+                <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
               <div>{t('pwa.session.noActiveQuestion')}</div>
@@ -197,47 +197,9 @@ function Index({ id }: { id: string }) {
           ) : (
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
-              questions={
-                activeBlock.elements
-                  ?.map((instance) => {
-                    const elementData = instance.elementData
-
-                    // filter out question data types that are not supported by live session
-                    if (
-                      !elementData ||
-                      elementData?.__typename === 'FlashcardElementData' ||
-                      elementData?.__typename === 'ContentElementData'
-                    ) {
-                      return null
-                    }
-
-                    if (elementData.__typename === 'FreeTextElementData') {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else if (
-                      elementData.__typename === 'NumericalElementData'
-                    ) {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else if (
-                      elementData.__typename === 'ChoicesElementData'
-                    ) {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else {
-                      return null
-                    }
-                  })
-                  .filter((q) => q !== null) ?? []
-              }
+              instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}
-              sessionId={id}
+              quizId={id}
               timeLimit={activeBlock?.timeLimit ?? undefined}
               execution={activeBlock?.execution ?? 0}
             />
@@ -251,7 +213,7 @@ function Index({ id }: { id: string }) {
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <SessionLeaderboard sessionId={id} />
+            <LiveQuizLeaderboard quizId={id} />
           </div>
         )}
 

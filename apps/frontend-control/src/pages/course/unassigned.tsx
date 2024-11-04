@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
-  GetUnassignedSessionsDocument,
-  SessionStatus,
+  GetUnassignedLiveQuizzesDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -11,25 +11,25 @@ import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 import SessionLists from '../../components/sessions/SessionLists'
 
-function UnassignedSessions() {
+function UnassignedLiveQuizzes() {
   const t = useTranslations()
   const {
     loading: loadingSessions,
     error: errorSessions,
     data: dataSessions,
-  } = useQuery(GetUnassignedSessionsDocument)
+  } = useQuery(GetUnassignedLiveQuizzesDocument)
 
   const runningSessions = useMemo(() => {
-    return dataSessions?.unassignedSessions?.filter(
-      (session) => session.status === SessionStatus.Running
+    return dataSessions?.unassignedLiveQuizzes?.filter(
+      (session) => session.status === PublicationStatus.Published
     )
   }, [dataSessions])
 
   const plannedSessions = useMemo(() => {
-    return dataSessions?.unassignedSessions?.filter(
+    return dataSessions?.unassignedLiveQuizzes?.filter(
       (session) =>
-        session.status === SessionStatus.Scheduled ||
-        session.status === SessionStatus.Prepared
+        session.status === PublicationStatus.Scheduled ||
+        session.status === PublicationStatus.Draft
     )
   }, [dataSessions])
 
@@ -70,4 +70,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default UnassignedSessions
+export default UnassignedLiveQuizzes

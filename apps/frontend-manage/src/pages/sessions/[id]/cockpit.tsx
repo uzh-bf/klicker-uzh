@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  ActivateSessionBlockDocument,
-  DeactivateSessionBlockDocument,
-  EndSessionDocument,
+  ActivateLiveQuizBlockDocument,
+  DeactivateLiveQuizBlockDocument,
+  EndLiveQuizDocument,
   GetCockpitQuizDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
@@ -19,14 +19,14 @@ function Cockpit() {
   const router = useRouter()
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
-  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
-    ActivateSessionBlockDocument
+  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
+    ActivateLiveQuizBlockDocument
   )
-  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateSessionBlockDocument
+  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
       update(cache, res) {
         const data = cache.readQuery({
@@ -37,7 +37,7 @@ function Cockpit() {
           data: {
             userRunningLiveQuizzes:
               data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endSession?.id
+                (q) => q.id !== res.data?.endLiveQuiz?.id
               ) ?? [],
           },
         })
@@ -95,17 +95,17 @@ function Cockpit() {
           blocks={blocks ?? []}
           sessionName={name}
           handleEndSession={() => {
-            endSession({ variables: { id: id } })
+            endLiveQuiz({ variables: { id: id } })
             router.push('/sessions')
           }}
           handleOpenBlock={(blockId: number) => {
-            activateSessionBlock({
-              variables: { sessionId: id, sessionBlockId: blockId },
+            activateLiveQuizBlock({
+              variables: { quizId: id, blockId },
             })
           }}
           handleCloseBlock={(blockId: number) => {
-            deactivateSessionBlock({
-              variables: { sessionId: id, sessionBlockId: blockId },
+            deactivateLiveQuizBlock({
+              variables: { quizId: id, blockId },
             })
           }}
           handleTogglePublicEvaluation={() =>

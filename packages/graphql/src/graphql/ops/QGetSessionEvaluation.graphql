@@ -130,7 +130,7 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
       createdAt
     }
   }
-  sessionLeaderboard(sessionId: $id) {
+  liveQuizLeaderboard(quizId: $id) {
     id
     participantId
     rank

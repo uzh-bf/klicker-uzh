@@ -234,7 +234,7 @@ export default {
         'Select this setting to include a LaTeX formula centered on a separate line.',
     },
     leaderboard: {
-      sessionTitle: 'Quiz Leaderboard',
+      lqLeaderboard: 'Quiz Leaderboard',
       ranks: 'Ranks',
       points: 'Points',
       computed: 'Computed',
@@ -1342,7 +1342,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
-      endSession: 'End quiz',
+      endQuiz: 'End quiz',
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
       abortSession: 'Abort quiz',
@@ -1839,7 +1839,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activateBlockN: 'Activate Block {number}',
       hintAllBlocksClosed:
         'All blocks of this live quiz have already been executed and closed. The feedback channel will be closed when the quiz is ended.',
-      endSession: 'End Quiz',
+      endQuiz: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
     },

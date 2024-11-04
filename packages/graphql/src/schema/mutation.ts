@@ -12,7 +12,6 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
-import * as SessionService from '../services/sessions.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
@@ -60,7 +59,6 @@ import {
   Tag,
 } from './question.js'
 import { ElementStatus, ElementType } from './questionData.js'
-import { Session } from './session.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -690,14 +688,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      endSession: t.withAuth(asUserSessionExec).field({
+      endLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.endSession(args, ctx)
+          return LiveQuizService.endLiveQuiz(args, ctx)
         },
       }),
 
@@ -775,15 +773,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deactivateSessionBlock: t.withAuth(asUserSessionExec).field({
+      deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deactivateSessionBlock(args, ctx)
+          return LiveQuizService.deactivateLiveQuizBlock(args, ctx)
         },
       }),
 
@@ -802,15 +800,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      activateSessionBlock: t.withAuth(asUserSessionExec).field({
+      activateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.activateSessionBlock(args, ctx)
+          return LiveQuizService.activateLiveQuizBlock(args, ctx)
         },
       }),
 
