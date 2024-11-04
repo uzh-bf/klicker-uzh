@@ -308,14 +308,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      controlSession: asUser.field({
+      controlLiveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getControlSession(args, ctx)
+          return LiveQuizService.getControlLiveQuiz(args, ctx)
         },
       }),
 

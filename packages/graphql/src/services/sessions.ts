@@ -1016,37 +1016,6 @@ const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
   return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
 }
 
-export async function getControlSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      activeBlock: true,
-      course: true,
-      blocks: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  })
-
-  if (!session || session?.status !== SessionStatus.RUNNING) {
-    return null
-  }
-
-  return session
-}
-
 type PickedInstanceType = Pick<
   AllQuestionInstanceTypeData,
   'questionData' | 'elementType' | 'results' | 'statistics'

@@ -346,6 +346,37 @@ export async function getLecturerViewLiveQuiz(
 
   return reducedSession
 }
+
+export async function getControlLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      activeBlock: true,
+      course: true,
+      blocks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!session || session?.status !== PublicationStatus.PUBLISHED) {
+    return null
+  }
+
+  return session
+}
 // #endregion
 
 // ------ LIVE QUIZ EXECUTION (LECTURER) ------

@@ -4,10 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
+  ElementBlockStatus,
   EndSessionDocument,
-  GetControlSessionDocument,
+  GetControlLiveQuizDocument,
   GetUserRunningLiveQuizzesDocument,
-  SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -56,7 +56,7 @@ function RunningSession() {
     loading: sessionLoading,
     error: sessionError,
     data: sessionData,
-  } = useQuery(GetControlSessionDocument, {
+  } = useQuery(GetControlLiveQuizDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -65,28 +65,28 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    setCurrentBlockOrder(sessionData?.controlSession?.activeBlock?.order)
+    setCurrentBlockOrder(sessionData?.controlLiveQuiz?.activeBlock?.order)
   }, [
-    sessionData?.controlSession?.id,
-    sessionData?.controlSession?.activeBlock,
+    sessionData?.controlLiveQuiz?.id,
+    sessionData?.controlLiveQuiz?.activeBlock,
   ])
 
   useEffect(() => {
-    if (!sessionData?.controlSession?.blocks) return
+    if (!sessionData?.controlLiveQuiz?.blocks) return
 
     const sortedBlocks = sort(
-      sessionData?.controlSession?.blocks,
+      sessionData?.controlLiveQuiz?.blocks,
       (a, b) => a.order - b.order
     )
 
     if (!sortedBlocks) return
     const scheduledNext = sortedBlocks.find(
-      (block) => block.status === SessionBlockStatus.Scheduled
+      (block) => block.status === ElementBlockStatus.Scheduled
     )
     setNextBlockOrder(
       typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
     )
-  }, [sessionData?.controlSession?.blocks])
+  }, [sessionData?.controlLiveQuiz?.blocks])
 
   if (sessionLoading) {
     return (
@@ -96,7 +96,7 @@ function RunningSession() {
     )
   }
 
-  if (!sessionData?.controlSession || sessionError) {
+  if (!sessionData?.controlLiveQuiz || sessionError) {
     return (
       <Layout title={t('control.session.sessionControl')}>
         <UserNotification
@@ -107,7 +107,7 @@ function RunningSession() {
     )
   }
 
-  const { id, name, course, blocks } = sessionData?.controlSession
+  const { id, name, course, blocks } = sessionData?.controlLiveQuiz
 
   if (!blocks) {
     return (

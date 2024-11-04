@@ -1,9 +1,9 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  QuestionInstance,
-  SessionBlockStatus,
-  SessionBlock as SessionBlockType,
+  ElementBlock,
+  ElementBlockStatus,
+  ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import { CycleCountdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -12,10 +12,10 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
-  block?: Omit<SessionBlockType, 'instances'> & {
-    instances?:
-      | (Omit<QuestionInstance, 'questionData'> & {
-          questionData?: { name: string } | null
+  block?: Omit<ElementBlock, 'elements'> & {
+    elements?:
+      | (Omit<ElementInstance, 'elementData' | 'type' | 'elementType'> & {
+          elementData?: { name: string } | null
         })[]
       | null
   }
@@ -28,7 +28,7 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
   // compute the time until expiration in seconds + 20 seconds buffer from now
   const untilExpiration = useMemo(() => {
     if (!block) return -1
-    if (block.status === SessionBlockStatus.Executed) {
+    if (block.status === ElementBlockStatus.Executed) {
       return -1
     }
     return block.expiresAt
@@ -73,12 +73,12 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
               key={`${block.expiresAt}-${block.status}`}
               overrideSize={15}
               isStatic={
-                !block.expiresAt || block.status === SessionBlockStatus.Executed
+                !block.expiresAt || block.status === ElementBlockStatus.Executed
               }
               expiresAt={expirationTime}
               strokeWidthRem={0.2}
               totalDuration={
-                block.status !== SessionBlockStatus.Executed
+                block.status !== ElementBlockStatus.Executed
                   ? untilExpiration
                   : 0
               }
@@ -88,18 +88,18 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
               }}
             />
           )}
-          {block.status === SessionBlockStatus.Scheduled && (
+          {block.status === ElementBlockStatus.Scheduled && (
             <FontAwesomeIcon icon={faClock} />
           )}
-          {block.status === SessionBlockStatus.Active && (
+          {block.status === ElementBlockStatus.Active && (
             <FontAwesomeIcon icon={faPlay} />
           )}
         </div>
       </div>
       <div className="flex flex-col p-1">
-        {block.instances?.map((instance) => (
+        {block.elements?.map((instance) => (
           <div key={instance.id} className="line-clamp-1">
-            - {instance.questionData?.name}
+            - {instance.elementData?.name}
           </div>
         ))}
       </div>

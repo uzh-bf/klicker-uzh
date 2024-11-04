@@ -1404,7 +1404,7 @@ type Query {
   cockpitQuiz(id: String!): LiveQuiz
   controlCourse(id: String!): Course
   controlCourses: [Course!]
-  controlSession(id: String!): Session
+  controlLiveQuiz(id: String!): LiveQuiz
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(quizId: String!): [Feedback!]

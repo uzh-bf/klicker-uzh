@@ -20468,7 +20468,7 @@
             "deprecationReason": null
           },
           {
-            "name": "controlSession",
+            "name": "controlLiveQuiz",
             "description": null,
             "args": [
               {
@@ -20490,7 +20490,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,
