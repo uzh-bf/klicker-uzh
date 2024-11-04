@@ -1,12 +1,14 @@
 import {
   ChoiceQuestionOptions,
-  ChoicesElementData,
+  ElementInstance,
   ElementType,
-  FreeTextElementData,
-  NumericalElementData,
 } from '@klicker-uzh/graphql/dist/ops'
-import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import StudentElement, {
+  SingleStudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
+import SessionProgress from '@klicker-uzh/shared-components/src/questions/SessionProgress'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -15,15 +17,9 @@ import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 
-// TODO: notifications
-
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: ((
-    | ChoicesElementData
-    | NumericalElementData
-    | FreeTextElementData
-  ) & { instanceId: number })[]
+  instances: ElementInstance[]
   handleNewResponse: (
     type: ElementType,
     instanceId: number,
@@ -37,7 +33,7 @@ interface QuestionAreaProps {
 
 function QuestionArea({
   expiresAt,
-  questions,
+  instances,
   handleNewResponse,
   sessionId,
   timeLimit,
@@ -46,20 +42,35 @@ function QuestionArea({
   const t = useTranslations()
 
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
-  const [activeQuestion, setActiveQuestion] = useState(
+  const [activeInstance, setactiveInstance] = useState(
     (): any => remainingQuestions[0]
   )
-  const currentQuestion = questions[activeQuestion]
+  const currentInstance = instances[activeInstance]
 
+  // initialize student response with default state (FT question) - is overwritten on instance change
+  const [studentResponse, setStudentResponse] =
+    useState<SingleStudentResponseType>({
+      type: ElementType.FreeText,
+      response: undefined,
+      valid: false,
+    })
+
+  // hook running on every instance change to initialize the student response correctly
+  useSingleStudentResponse({
+    instance: currentInstance,
+    setStudentResponse,
+  })
+
+  // TODO: remove this once replaced with new answering logic
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
     inputValid: false,
     inputValue: QUESTION_GROUPS.CHOICES.includes(
-      questions[remainingQuestions[0]]?.type
+      instances[remainingQuestions[0]]?.elementType
     )
       ? new Array(
           (
-            questions[remainingQuestions[0]].options as ChoiceQuestionOptions
+            instances[remainingQuestions[0]].options as ChoiceQuestionOptions
           ).choices.length
         ).fill(false)
       : '',
@@ -78,7 +89,7 @@ function QuestionArea({
           storedResponses = JSON.parse(storedResponses)
         }
 
-        const remaining = questions
+        const remaining = instances
           .map((question: any) => question.instanceId)
           .reduce((indices, instanceId, index): any[] => {
             if (
@@ -90,21 +101,21 @@ function QuestionArea({
             return [...indices, index]
           }, [])
 
-        setActiveQuestion(remaining[0])
+        setactiveInstance(remaining[0])
         setRemainingQuestions(remaining)
       } catch (e) {
         console.error(e)
       }
     }
     exec()
-  }, [sessionId, questions, execution])
+  }, [sessionId, instances, execution])
 
   const onSubmit = async (): Promise<void> => {
-    const { instanceId, type } = questions[activeQuestion]
+    const { id: instanceId, elementType } = instances[activeInstance]
 
     // if the question has been answered, add a response
     if (typeof inputValue !== 'undefined') {
-      answerQuestion(inputValue, type, instanceId)
+      answerQuestion(inputValue, elementType, instanceId)
     } else {
       push(['trackEvent', 'Live Quiz', 'Question Skipped'])
     }
@@ -114,10 +125,10 @@ function QuestionArea({
 
     // calculate the new indices of remaining questions
     const newRemaining = remainingQuestions.filter(
-      (question) => !isDeepEqual(activeQuestion, question)
+      (question) => !isDeepEqual(activeInstance, question)
     )
 
-    setActiveQuestion(newRemaining[0] || 0)
+    setactiveInstance(newRemaining[0] || 0)
     setInputState({
       inputEmpty: true,
       inputValid: false,
@@ -127,7 +138,7 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
-    const { instanceId, type } = questions[activeQuestion]
+    const { id: instanceId, elementType } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
     if (
@@ -135,11 +146,11 @@ function QuestionArea({
       inputValue.length !== 0 &&
       inputValid
     ) {
-      answerQuestion(inputValue, type, instanceId)
+      answerQuestion(inputValue, elementType, instanceId)
     }
 
     const remainingQuestionIds = remainingQuestions.map(
-      (index: number) => questions[index].instanceId
+      (index: number) => instances[index].id
     )
     await updateStoredResponses(remainingQuestionIds, sessionId, execution)
 
@@ -227,24 +238,22 @@ function QuestionArea({
         t('pwa.session.allQuestionsAnswered')
       ) : (
         <div className="flex w-full flex-col gap-2">
-          <StudentQuestion
-            key={currentQuestion.instanceId}
-            activeIndex={questions.length - remainingQuestions.length}
-            numItems={questions.length}
+          <SessionProgress
+            activeIndex={instances.length - remainingQuestions.length}
+            numItems={instances.length}
             expiresAt={expiresAt}
             timeLimit={timeLimit}
-            isSubmitDisabled={
-              remainingQuestions.length === 0 ||
-              (!inputEmpty && !inputValid) ||
-              inputEmpty
-            }
+            isSubmitDisabled={!studentResponse.valid}
             onSubmit={onSubmit}
             onExpire={onExpire}
-            currentQuestion={currentQuestion}
-            inputValue={inputValue}
-            inputValid={inputValid}
-            inputEmpty={inputEmpty}
-            setInputState={setInputState}
+          />
+          <StudentElement
+            element={currentInstance}
+            elementIx={activeInstance}
+            singleStudentResponse={studentResponse}
+            setSingleStudentResponse={setStudentResponse}
+            hideReadButton
+            // disabledInput={submitting} // TODO: add to avoid double submission
           />
         </div>
       )}

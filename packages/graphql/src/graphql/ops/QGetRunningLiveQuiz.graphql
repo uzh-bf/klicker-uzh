@@ -22,6 +22,8 @@ query GetRunningLiveQuiz($id: String!) {
       execution
       elements {
         id
+        type
+        elementType
         ...ElementDataWithoutSolutions
       }
     }

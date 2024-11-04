@@ -123,7 +123,7 @@ function Index({ id }: { id: string }) {
       return null
     }
     try {
-      const response = await fetch(
+      await fetch(
         process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
         requestOptions
       )
@@ -197,45 +197,7 @@ function Index({ id }: { id: string }) {
           ) : (
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
-              questions={
-                activeBlock.elements
-                  ?.map((instance) => {
-                    const elementData = instance.elementData
-
-                    // filter out question data types that are not supported by live session
-                    if (
-                      !elementData ||
-                      elementData?.__typename === 'FlashcardElementData' ||
-                      elementData?.__typename === 'ContentElementData'
-                    ) {
-                      return null
-                    }
-
-                    if (elementData.__typename === 'FreeTextElementData') {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else if (
-                      elementData.__typename === 'NumericalElementData'
-                    ) {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else if (
-                      elementData.__typename === 'ChoicesElementData'
-                    ) {
-                      return {
-                        ...elementData,
-                        instanceId: instance.id,
-                      }
-                    } else {
-                      return null
-                    }
-                  })
-                  .filter((q) => q !== null) ?? []
-              }
+              instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}
               sessionId={id}
               timeLimit={activeBlock?.timeLimit ?? undefined}

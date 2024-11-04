@@ -17,8 +17,7 @@ export type ElementChoicesType =
   | ElementType.Mc
   | ElementType.Kprim
 
-export type StudentResponseType = Record<
-  number,
+export type SingleStudentResponseType =
   | {
       type: ElementType.Flashcard
       response?: FlashcardCorrectness
@@ -49,16 +48,30 @@ export type StudentResponseType = Record<
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
->
 
-interface StudentElementProps {
+export type StudentResponseType = Record<number, SingleStudentResponseType>
+
+interface StudentElementBaseProps {
   element: ElementInstance
   elementIx: number
+  hideReadButton?: boolean
+  disabledInput?: boolean
+}
+
+interface StudentElementStackProps extends StudentElementBaseProps {
   studentResponse: StudentResponseType
   setStudentResponse: Dispatch<SetStateAction<StudentResponseType>>
   stackStorage?: StudentResponseType
-  hideReadButton?: boolean
-  disabledInput?: boolean
+  singleStudentResponse?: never
+  setSingleStudentResponse?: never
+}
+
+interface StudentElementSingleProps extends StudentElementBaseProps {
+  studentResponse?: never
+  setStudentResponse?: never
+  stackStorage?: never
+  singleStudentResponse: SingleStudentResponseType
+  setSingleStudentResponse: Dispatch<SetStateAction<SingleStudentResponseType>>
 }
 
 function StudentElement({
@@ -67,9 +80,11 @@ function StudentElement({
   studentResponse,
   setStudentResponse,
   stackStorage,
+  singleStudentResponse,
+  setSingleStudentResponse,
   hideReadButton = false,
   disabledInput = false,
-}: StudentElementProps) {
+}: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
   if (element.elementData.__typename === 'FlashcardElementData') {
@@ -78,19 +93,32 @@ function StudentElement({
         key={element.id}
         content={element.elementData.content}
         explanation={element.elementData.explanation!}
-        response={studentResponse[element.id]?.response as FlashcardCorrectness}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as FlashcardCorrectness)
+            : (singleStudentResponse.response as FlashcardCorrectness)
+        }
         setResponse={(studentResponse) => {
-          setStudentResponse((response) => {
-            return {
-              ...response,
-              [element.id]: {
-                ...response[element.id],
-                type: ElementType.Flashcard,
-                response: studentResponse,
-                valid: true,
-              },
-            }
-          })
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Flashcard,
+                    response: studentResponse,
+                    valid: true,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Flashcard,
+                  response: studentResponse,
+                  valid: true,
+                }
+              })
         }}
         existingResponse={
           stackStorage?.[element.id]?.response as FlashcardCorrectness
@@ -106,20 +134,31 @@ function StudentElement({
         type={element.elementData.type as ElementChoicesType}
         options={element.elementData.options}
         response={
-          studentResponse[element.id]?.response as Record<number, boolean>
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as Record<number, boolean>)
+            : (singleStudentResponse.response as Record<number, boolean>)
         }
         setResponse={(newValue, valid) => {
-          setStudentResponse((response) => {
-            return {
-              ...response,
-              [element.id]: {
-                ...response[element.id],
-                type: element.elementData.type as ElementChoicesType,
-                response: newValue,
-                valid: valid,
-              },
-            }
-          })
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: element.elementData.type as ElementChoicesType,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: element.elementData.type as ElementChoicesType,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
         }}
         existingResponse={
           stackStorage?.[element.id]?.response as Record<number, boolean>
@@ -139,20 +178,37 @@ function StudentElement({
         key={element.id}
         content={element.elementData.content}
         options={element.elementData.options}
-        response={studentResponse[element.id]?.response as string}
-        valid={studentResponse[element.id]?.valid as boolean}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as string)
+            : (singleStudentResponse.response as string)
+        }
+        valid={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.valid as boolean)
+            : (singleStudentResponse.valid as boolean)
+        }
         setResponse={(newValue, valid) => {
-          setStudentResponse((response) => {
-            return {
-              ...response,
-              [element.id]: {
-                ...response[element.id],
-                type: ElementType.Numerical,
-                response: newValue,
-                valid: valid,
-              },
-            }
-          })
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Numerical,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Numerical,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
         evaluation={
@@ -170,20 +226,37 @@ function StudentElement({
         key={element.id}
         content={element.elementData.content}
         options={element.elementData.options}
-        response={studentResponse[element.id]?.response as string}
-        valid={studentResponse[element.id]?.valid as boolean}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as string)
+            : (singleStudentResponse.response as string)
+        }
+        valid={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.valid as boolean)
+            : (singleStudentResponse.valid as boolean)
+        }
         setResponse={(newValue, valid) => {
-          setStudentResponse((response) => {
-            return {
-              ...response,
-              [element.id]: {
-                ...response[element.id],
-                type: ElementType.FreeText,
-                response: newValue,
-                valid: valid,
-              },
-            }
-          })
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.FreeText,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.FreeText,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
         }}
         existingResponse={stackStorage?.[element.id]?.response as string}
         evaluation={
@@ -202,20 +275,31 @@ function StudentElement({
         element={element}
         read={
           (stackStorage?.[element.id]?.response as boolean) ||
-          (studentResponse[element.id]?.response as boolean)
+          (typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as boolean)
+            : (singleStudentResponse.response as boolean))
         }
         onRead={() => {
-          setStudentResponse((response) => {
-            return {
-              ...response,
-              [element.id]: {
-                ...response[element.id],
-                type: ElementType.Content,
-                response: true,
-                valid: true,
-              },
-            }
-          })
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Content,
+                    response: true,
+                    valid: true,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Content,
+                  response: true,
+                  valid: true,
+                }
+              })
         }}
         elementIx={elementIx}
         hideReadButton={hideReadButton}
