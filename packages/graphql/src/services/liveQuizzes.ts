@@ -1276,6 +1276,7 @@ export async function cancelLiveQuiz(
           },
           data: {
             results: getInitialElementResults(instance.element),
+            anonymousResults: getInitialElementResults(instance.element),
           },
         })
       ),
