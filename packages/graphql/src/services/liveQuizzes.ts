@@ -568,6 +568,50 @@ export async function changeLiveQuizName(
 
   return updatedQuiz
 }
+
+export async function getLiveQuizSummary(
+  { quizId }: { quizId: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+        },
+      },
+      blocks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+    acc_b += block.elements.reduce((acc_i, instance) => {
+      acc_i += instance.results.total + instance.anonymousResults.total
+      return acc_i
+    }, 0)
+    return acc_b
+  }, 0)
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+  }
+}
+
 // #endregion
 
 // ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------

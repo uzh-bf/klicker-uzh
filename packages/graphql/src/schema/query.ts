@@ -258,7 +258,7 @@ export const Query = builder.queryType({
           quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveQuizSummary(args, ctx)
+          return LiveQuizService.getLiveQuizSummary(args, ctx)
         },
       }),
 
