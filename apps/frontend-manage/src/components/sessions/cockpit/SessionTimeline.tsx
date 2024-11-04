@@ -72,7 +72,7 @@ function SessionTimeline({
 
   // logic: keep track of the current and previous block
   const [buttonState, setButtonState] = useState<
-    'firstBlock' | 'blockActive' | 'nextBlock' | 'endSession'
+    'firstBlock' | 'blockActive' | 'nextBlock' | 'endQuiz'
   >('firstBlock')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
@@ -118,7 +118,7 @@ function SessionTimeline({
         activeBlockId === -1
       ) {
         setInCooldown(false)
-        setButtonState('endSession')
+        setButtonState('endQuiz')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
@@ -222,7 +222,7 @@ function SessionTimeline({
                 onClick={handleEndSession}
                 data={{ cy: 'end-session-cockpit' }}
               >
-                <Button.Label>{t('manage.cockpit.endSession')}</Button.Label>
+                <Button.Label>{t('manage.cockpit.endQuiz')}</Button.Label>
               </Button>
             </div>
           )}
@@ -267,7 +267,7 @@ function SessionTimeline({
               size="xl"
               className={twMerge(
                 'my-auto rounded-md p-2',
-                buttonState === 'endSession' && 'text-uzh-red-100'
+                buttonState === 'endQuiz' && 'text-uzh-red-100'
               )}
             />
           </div>
@@ -286,7 +286,7 @@ function SessionTimeline({
                   (buttonState === 'firstBlock' ||
                     buttonState === 'nextBlock') &&
                     `bg-primary-80 text-white`,
-                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white',
+                  buttonState === 'endQuiz' && 'bg-uzh-red-100 text-white',
                   buttonState === 'blockActive' &&
                     inCooldown &&
                     'text-uzh-red-100 border-uzh-red-100'

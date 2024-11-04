@@ -5,7 +5,7 @@ import {
   ActivateLiveQuizBlockDocument,
   DeactivateLiveQuizBlockDocument,
   ElementBlockStatus,
-  EndSessionDocument,
+  EndLiveQuizDocument,
   GetControlLiveQuizDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -32,8 +32,8 @@ function RunningSession() {
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
       update(cache, res) {
         const data = cache.readQuery({
@@ -44,7 +44,7 @@ function RunningSession() {
           data: {
             userRunningLiveQuizzes:
               data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endSession?.id
+                (q) => q.id !== res.data?.endLiveQuiz?.id
               ) ?? [],
           },
         })
@@ -228,7 +228,7 @@ function RunningSession() {
             <Button
               loading={endingLiveQuiz}
               onClick={async () => {
-                await endSession({ variables: { id: id } })
+                await endLiveQuiz({ variables: { id: id } })
                 router.push(
                   course ? `/course/${course?.id}` : '/course/unassigned'
                 )
@@ -238,7 +238,7 @@ function RunningSession() {
               }}
               data={{ cy: 'end-session' }}
             >
-              {t('control.session.endSession')}
+              {t('control.session.endQuiz')}
             </Button>
           </div>
         )}

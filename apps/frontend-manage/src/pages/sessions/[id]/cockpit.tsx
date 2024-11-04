@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivateLiveQuizBlockDocument,
   DeactivateLiveQuizBlockDocument,
-  EndSessionDocument,
+  EndLiveQuizDocument,
   GetCockpitQuizDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
@@ -25,8 +25,8 @@ function Cockpit() {
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
       update(cache, res) {
         const data = cache.readQuery({
@@ -37,7 +37,7 @@ function Cockpit() {
           data: {
             userRunningLiveQuizzes:
               data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endSession?.id
+                (q) => q.id !== res.data?.endLiveQuiz?.id
               ) ?? [],
           },
         })
@@ -95,7 +95,7 @@ function Cockpit() {
           blocks={blocks ?? []}
           sessionName={name}
           handleEndSession={() => {
-            endSession({ variables: { id: id } })
+            endLiveQuiz({ variables: { id: id } })
             router.push('/sessions')
           }}
           handleOpenBlock={(blockId: number) => {

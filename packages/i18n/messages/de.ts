@@ -1355,7 +1355,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
-      endSession: 'Session beenden',
+      endQuiz: 'Quiz beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
       abortSession: 'Quiz abbrechen',
@@ -1852,7 +1852,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activateBlockN: 'Block {number} aktivieren',
       hintAllBlocksClosed:
         'Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen.',
-      endSession: 'Session beenden',
+      endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.',
     },

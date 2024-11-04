@@ -37,6 +37,10 @@ import { sendTeamsNotifications } from '../lib/util.js'
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
+const FIRST_ACHIEVEMENT_ID = 5
+const SECOND_ACHIEVEMENT_ID = 6
+const THIRD_ACHIEVEMENT_ID = 7
+
 // ------ HELPER FUNCTIONS ------
 // #region
 async function getCachedBlockResults({
@@ -1096,6 +1100,332 @@ export async function deactivateLiveQuizBlock(
   }
 }
 
+export async function endLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findFirst({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          id: 'asc',
+        },
+      },
+    },
+  })
+
+  // if there is no live quiz matching the current user and quiz id, exit early
+  if (!quiz) {
+    return null
+  }
+
+  if (quiz.status === PublicationStatus.ENDED) {
+    return quiz
+  }
+  if (
+    quiz.status === PublicationStatus.DRAFT ||
+    quiz.status === PublicationStatus.SCHEDULED
+  ) {
+    return null
+  }
+
+  try {
+    const quizLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+    const quizXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+
+    let promises: any[] = []
+    const participants: Record<string, any> = {}
+
+    Object.entries(quizXP).forEach(([id, xp]) => {
+      participants[id] = {
+        xp: parseInt(xp),
+      }
+    })
+    Object.entries(quizLB).forEach(([id, score]) => {
+      participants[id] = {
+        ...(participants[id] ?? {}),
+        score: parseInt(score),
+      }
+    })
+
+    // quizXP should always be around as soon as there are logged-in participants (check first)
+    // quizLB only for live quizzes that are compatible with points collection (check second)
+    if (quizXP) {
+      let existingParticipants = (
+        await Promise.allSettled(
+          Object.entries(participants).map(async ([id, { score, xp }]) => {
+            const participant = await ctx.prisma.participant.findUnique({
+              where: { id },
+              include: {
+                // if the live quiz is part of a course, include the corresponding participations
+                // if the participant is not part of the relevant course, the joined array will be empty
+                participations: quiz.courseId
+                  ? {
+                      where: {
+                        courseId: quiz.courseId,
+                      },
+                    }
+                  : undefined,
+              },
+            })
+
+            if (!participant) return null
+
+            return {
+              id,
+              score,
+              xp,
+              hasParticipation: participant.participations?.[0]?.isActive,
+            }
+          })
+        )
+      ).flatMap((result) => {
+        if (result.status !== 'fulfilled' || !result.value) return []
+        return [result.value]
+      })
+
+      // track the achievement ids, which should be awarded to the participants
+      let newAchievements: Record<string, number> = {}
+
+      // only award achievements, if the live quiz did contain questions with sample
+      // solutions and at least three participants collected points
+      const awardAchievements = quiz.blocks.some(
+        (block) =>
+          block.elements.some((instance) => {
+            return 'hasSampleSolution' in instance.elementData.options
+              ? (instance.elementData.options.hasSampleSolution ?? false)
+              : false
+          }) &&
+          existingParticipants.filter(
+            ({ score }) => typeof score !== 'undefined'
+          ).length >= 3
+      )
+
+      // award achievements to the top 3 participants (and all others with equal scores)
+      if (awardAchievements) {
+        const topScores = existingParticipants
+          .filter(({ score }) => typeof score !== 'undefined')
+          .sort((a, b) => Number(b.score) - Number(a.score))
+          .slice(0, 3)
+
+        const firstRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: FIRST_ACHIEVEMENT_ID },
+        })
+        const secondRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: SECOND_ACHIEVEMENT_ID },
+        })
+        const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: THIRD_ACHIEVEMENT_ID },
+        })
+
+        const goldScore = topScores[0]?.score
+        const silverScore = topScores[1]?.score
+        const bronzeScore = topScores[2]?.score
+
+        // awarding logic (including point and xp updates):
+        // award gold to every participant with gold score
+        // award silver to every participant with silver score, if silver score != gold score
+        // award bronze to every participant with bronze score, if bronze score != silver score
+        existingParticipants = existingParticipants.map((participant) => {
+          if (
+            typeof participant.score === 'undefined' ||
+            typeof participant.xp === 'undefined'
+          ) {
+            return participant
+          }
+
+          if (participant.score === goldScore) {
+            participant.xp += firstRankAchievement!.rewardedXP ?? 0
+            participant.score += firstRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = firstRankAchievement!.id
+          }
+          if (participant.score === silverScore && silverScore !== goldScore) {
+            participant.xp += secondRankAchievement!.rewardedXP ?? 0
+            participant.score += secondRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = secondRankAchievement!.id
+          }
+          if (
+            participant.score === bronzeScore &&
+            bronzeScore !== silverScore
+          ) {
+            participant.xp += thirdRankAchievement!.rewardedXP ?? 0
+            participant.score += thirdRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = thirdRankAchievement!.id
+          }
+
+          return participant
+        })
+      }
+
+      // update xp of existing participants
+      promises = promises.concat(
+        existingParticipants
+          .filter(({ xp }) => typeof xp !== 'undefined')
+          .map(({ id, xp }) =>
+            ctx.prisma.participant.update({
+              where: { id },
+              data: {
+                xp: {
+                  increment: Number(xp),
+                },
+              },
+            })
+          )
+      )
+
+      // if the live quiz is part of a course, update the course leaderboard with the accumulated points and award achievements
+      if (quizLB && quiz.courseId) {
+        promises = promises.concat(
+          existingParticipants
+            .filter(
+              ({ score, hasParticipation }) =>
+                typeof score !== 'undefined' && hasParticipation
+            )
+            .map(({ id, score }) =>
+              ctx.prisma.leaderboardEntry.upsert({
+                where: {
+                  type_participantId_courseId: {
+                    type: LeaderboardType.COURSE,
+                    courseId: quiz.courseId!,
+                    participantId: id,
+                  },
+                },
+                include: {
+                  participation: true,
+                  participant: true,
+                },
+                create: {
+                  type: LeaderboardType.COURSE,
+                  course: {
+                    connect: {
+                      id: quiz.courseId!,
+                    },
+                  },
+                  participant: {
+                    connect: {
+                      id,
+                    },
+                  },
+                  participation: {
+                    connectOrCreate: {
+                      where: {
+                        courseId_participantId: {
+                          courseId: quiz.courseId!,
+                          participantId: id,
+                        },
+                      },
+                      create: {
+                        course: {
+                          connect: {
+                            id: quiz.courseId!,
+                          },
+                        },
+                        participant: {
+                          connect: {
+                            id,
+                          },
+                        },
+                      },
+                    },
+                  },
+                  score: score,
+                },
+                update: {
+                  score: {
+                    increment: score,
+                  },
+                },
+              })
+            )
+        )
+
+        // award new achievements
+        promises = promises.concat(
+          existingParticipants
+            .filter(({ id }) => typeof newAchievements[id] !== 'undefined')
+            .map(({ id }) =>
+              ctx.prisma.participant.update({
+                where: { id },
+                data: {
+                  achievements: {
+                    upsert: {
+                      where: {
+                        participantId_achievementId: {
+                          participantId: id,
+                          achievementId: newAchievements[id]!,
+                        },
+                      },
+                      create: {
+                        achievedAt: new Date(),
+                        achievedCount: 1,
+                        achievement: {
+                          connect: {
+                            id: newAchievements[id]!,
+                          },
+                        },
+                      },
+                      update: {
+                        achievedCount: {
+                          increment: 1,
+                        },
+                      },
+                    },
+                  },
+                },
+              })
+            )
+        )
+      }
+    }
+
+    // execute XP and points in the same transaction to prevent issues when one fails
+    // the live quiz update later on should never fail, but we need the return value (keep separate)
+    await ctx.prisma.$transaction(promises)
+
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
+
+    const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
+      where: {
+        id,
+      },
+      data: {
+        status: PublicationStatus.ENDED,
+        finishedAt: new Date(),
+        pinCode: null,
+      },
+    })
+
+    await sendTeamsNotifications(
+      'graphql/endLiveQuiz',
+      `END Live quiz ${quiz.name} with id ${quiz.id}.`
+    )
+
+    return endedLiveQuiz
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/endLiveQuiz',
+      `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`
+    )
+    throw error
+  }
+}
+
 export async function changeLiveQuizSettings(
   {
     id,
@@ -1518,7 +1848,7 @@ export async function getLiveQuizLeaderboard(
   { quizId }: { quizId: string },
   ctx: Context
 ) {
-  const session = await ctx.prisma.liveQuiz.findUnique({
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id: quizId,
     },
@@ -1536,7 +1866,7 @@ export async function getLiveQuizLeaderboard(
     },
   })
 
-  if (!session) return []
+  if (!quiz) return []
 
   const participant = ctx.user?.sub
     ? await ctx.prisma.participant.findUnique({
@@ -1552,20 +1882,17 @@ export async function getLiveQuizLeaderboard(
     ctx.user?.role === 'ADMIN'
 
   // find the order attribute of the last exectued block
-  const executedBlockOrders = session?.blocks
-    .filter(
-      (sessionBlock) => sessionBlock.status === ElementBlockStatus.EXECUTED
-    )
-    .map((sessionBlock) => Number(sessionBlock.order))
+  const executedBlockOrders = quiz?.blocks
+    .filter((quizBlock) => quizBlock.status === ElementBlockStatus.EXECUTED)
+    .map((quizBlock) => Number(quizBlock.order))
 
   const lastBlockOrder = executedBlockOrders
     ? Math.max(...executedBlockOrders)
     : 0
 
-  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
+  const preparedEntries = quiz?.leaderboard?.flatMap((entry) => {
     if (!entry.sessionParticipation?.isActive) return []
 
-    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
       participantId: entry.participant.id,
