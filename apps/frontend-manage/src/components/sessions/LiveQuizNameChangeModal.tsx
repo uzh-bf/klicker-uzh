@@ -28,9 +28,9 @@ function LiveQuizNameChangeModal({
   const [errorToast, setErrorToast] = useState(false)
 
   const schema = Yup.object().shape({
-    name: Yup.string().required(t('manage.sessionForms.sessionName')),
+    name: Yup.string().required(t('manage.activityWizard.sessionName')),
     displayName: Yup.string().required(
-      t('manage.sessionForms.sessionDisplayName')
+      t('manage.activityWizard.sessionDisplayName')
     ),
   })
 
@@ -88,8 +88,8 @@ function LiveQuizNameChangeModal({
                 required
                 autoComplete="off"
                 name="name"
-                label={t('manage.sessionForms.name')}
-                tooltip={t('manage.sessionForms.liveQuizName')}
+                label={t('manage.activityWizard.name')}
+                tooltip={t('manage.activityWizard.liveQuizName')}
                 className={{
                   root: '-mt-2 mb-2 w-full',
                   tooltip: 'z-20 w-80',
@@ -102,8 +102,8 @@ function LiveQuizNameChangeModal({
                 required
                 autoComplete="off"
                 name="displayName"
-                label={t('manage.sessionForms.displayName')}
-                tooltip={t('manage.sessionForms.displayNameTooltip')}
+                label={t('manage.activityWizard.displayName')}
+                tooltip={t('manage.activityWizard.displayNameTooltip')}
                 className={{
                   root: 'w-full',
                   tooltip: 'z-20 w-80',

@@ -19,8 +19,8 @@ function LiveQuizDescriptionStep({
 
   return (
     <DescriptionStep
-      displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
-      descriptionTooltip={t('manage.sessionForms.liveQuizDescField')}
+      displayNameTooltip={t('manage.activityWizard.displayNameTooltip')}
+      descriptionTooltip={t('manage.activityWizard.liveQuizDescField')}
       dataDisplayName={{ cy: 'insert-live-display-name' }}
       dataDescription={{ cy: 'insert-live-description' }}
       validationSchema={validationSchema}

@@ -89,23 +89,23 @@ function MicroLearningWizard({
   })
 
   const nameValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    name: yup.string().required(t('manage.activityWizard.sessionName')),
   })
 
   const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
-      .required(t('manage.sessionForms.sessionDisplayName')),
+      .required(t('manage.activityWizard.sessionDisplayName')),
     description: yup.string(),
   })
 
   const settingsValidationSchema = yup.object().shape({
     startDate: yup
       .date()
-      .required(t('manage.sessionForms.startDate'))
+      .required(t('manage.activityWizard.startDate'))
       .test(
         'afterCourseStart',
-        t('manage.sessionForms.microlearningStartAfterCourseStart'),
+        t('manage.activityWizard.microlearningStartAfterCourseStart'),
         (value, context) =>
           context.parent.courseStartDate
             ? dayjs(value) > dayjs(context.parent.courseStartDate)
@@ -113,16 +113,20 @@ function MicroLearningWizard({
       ),
     endDate: yup
       .date()
-      .required(t('manage.sessionForms.endDate'))
-      .test('checkDateInPast', t('manage.sessionForms.endInFuture'), (date) => {
-        return !!(date && date > new Date())
-      })
+      .required(t('manage.activityWizard.endDate'))
+      .test(
+        'checkDateInPast',
+        t('manage.activityWizard.endInFuture'),
+        (date) => {
+          return !!(date && date > new Date())
+        }
+      )
       .when('startDate', (startDate, schema) =>
-        schema.min(startDate, t('manage.sessionForms.endAfterStart'))
+        schema.min(startDate, t('manage.activityWizard.endAfterStart'))
       )
       .test(
         'beforeCourseEnd',
-        t('manage.sessionForms.microlearningEndBeforeCourseEnd'),
+        t('manage.activityWizard.microlearningEndBeforeCourseEnd'),
         (value, context) =>
           context.parent.courseEndDate
             ? dayjs(value) < dayjs(context.parent.courseEndDate)
@@ -130,10 +134,10 @@ function MicroLearningWizard({
       ),
     multiplier: yup
       .string()
-      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+      .matches(/^[0-9]+$/, t('manage.activityWizard.validMultiplicator')),
     courseId: yup
       .string()
-      .required(t('manage.sessionForms.microlearningCourse')),
+      .required(t('manage.activityWizard.microlearningCourse')),
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -145,7 +149,7 @@ function MicroLearningWizard({
           description: yup.string(),
           elements: yup
             .array()
-            .min(1, t('manage.sessionForms.minOneElementPerStack'))
+            .min(1, t('manage.activityWizard.minOneElementPerStack'))
             .of(
               yup.object().shape({
                 id: yup.number(),
@@ -154,12 +158,14 @@ function MicroLearningWizard({
                   .string()
                   .oneOf(
                     acceptedTypes,
-                    t('manage.sessionForms.microlearningTypes')
+                    t('manage.activityWizard.microlearningTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
                   is: (type: ElementType) => type !== ElementType.FreeText,
                   then: (schema) =>
-                    schema.isTrue(t('manage.sessionForms.elementSolutionReq')),
+                    schema.isTrue(
+                      t('manage.activityWizard.elementSolutionReq')
+                    ),
                 }),
               })
             ),
@@ -190,22 +196,22 @@ function MicroLearningWizard({
   const workflowItems = [
     {
       title: t('shared.generic.information'),
-      tooltip: t('manage.sessionForms.microLearningInformation'),
+      tooltip: t('manage.activityWizard.microLearningInformation'),
     },
     {
       title: t('shared.generic.description'),
-      tooltip: t('manage.sessionForms.microlearningDescription'),
-      tooltipDisabled: t('manage.sessionForms.microlearningDescription'),
+      tooltip: t('manage.activityWizard.microlearningDescription'),
+      tooltipDisabled: t('manage.activityWizard.microlearningDescription'),
     },
     {
       title: t('shared.generic.settings'),
-      tooltip: t('manage.sessionForms.microlearningSettings'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.microlearningSettings'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
     {
       title: t('shared.generic.questions'),
-      tooltip: t('manage.sessionForms.microlearningQuestions'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.microlearningQuestions'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
   ]
 
@@ -281,11 +287,11 @@ function MicroLearningWizard({
             completionSuccessMessage={(elementName) => (
               <div>
                 {editMode
-                  ? t.rich('manage.sessionForms.microlearningCreated', {
+                  ? t.rich('manage.activityWizard.microlearningCreated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })
-                  : t.rich('manage.sessionForms.microlearningEdited', {
+                  : t.rich('manage.activityWizard.microlearningEdited', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })}
@@ -400,8 +406,8 @@ function MicroLearningWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.microlearningEditingFailed')
-            : t('manage.sessionForms.microlearningCreationFailed')
+            ? t('manage.activityWizard.microlearningEditingFailed')
+            : t('manage.activityWizard.microlearningCreationFailed')
         }
       />
     </>

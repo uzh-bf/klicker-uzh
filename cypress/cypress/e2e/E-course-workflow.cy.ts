@@ -605,7 +605,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-course"]').contains(
-      messages.manage.sessionForms.liveQuizNoCourse
+      messages.manage.activityWizard.liveQuizNoCourse
     )
   })
 

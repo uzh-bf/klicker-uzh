@@ -85,7 +85,7 @@ function GroupActivityStackClues({
                           label={t('shared.generic.clues')}
                           labelType="small"
                           tooltip={t(
-                            'manage.sessionForms.groupActivityCluesDescription'
+                            'manage.activityWizard.groupActivityCluesDescription'
                           )}
                           className={{ label: 'mt-0' }}
                         />

@@ -239,7 +239,7 @@ function CourseManipulationModal({
                 />
                 <FormikTextField
                   name="displayName"
-                  label={t('manage.sessionForms.displayName')}
+                  label={t('manage.activityWizard.displayName')}
                   placeholder={t('manage.courseList.courseDisplayName')}
                   tooltip={t('manage.courseList.courseDisplayNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}

@@ -87,8 +87,8 @@ function LiveQuizSettingsStep({
                 <FormikSelectField
                   name="courseId"
                   label={t('shared.generic.course')}
-                  tooltip={t('manage.sessionForms.liveQuizDescCourse')}
-                  placeholder={t('manage.sessionForms.liveQuizSelectCourse')}
+                  tooltip={t('manage.activityWizard.liveQuizDescCourse')}
+                  placeholder={t('manage.activityWizard.liveQuizSelectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
                   className={{ tooltip: 'z-20' }}
@@ -100,7 +100,7 @@ function LiveQuizSettingsStep({
                 ) : (
                   <UserNotification
                     message={t(
-                      'manage.sessionForms.liveQuizEnableGamification'
+                      'manage.activityWizard.liveQuizEnableGamification'
                     )}
                     className={{ root: 'mt-2' }}
                     type="info"
@@ -119,14 +119,14 @@ function LiveQuizSettingsStep({
                     required
                     name="isConfusionFeedbackEnabled"
                     label={t('shared.generic.feedbackChannel')}
-                    tooltip={t('manage.sessionForms.liveQuizFeedbackChannel')}
+                    tooltip={t('manage.activityWizard.liveQuizFeedbackChannel')}
                     data={{ cy: 'set-feedback-enabled' }}
                   />
                   <FormikSwitchField
                     required
                     name="isLiveQAEnabled"
                     label={t('shared.generic.liveQA')}
-                    tooltip={t('manage.sessionForms.liveQuizLiveQA')}
+                    tooltip={t('manage.activityWizard.liveQuizLiveQA')}
                     data={{ cy: 'set-liveqa-enabled' }}
                   />
                   <FormikSwitchField
@@ -134,7 +134,7 @@ function LiveQuizSettingsStep({
                     disabled={!values.isLiveQAEnabled}
                     name="isModerationEnabled"
                     label={t('shared.generic.moderation')}
-                    tooltip={t('manage.sessionForms.liveQuizModeration')}
+                    tooltip={t('manage.activityWizard.liveQuizModeration')}
                     data={{ cy: 'set-liveqa-moderation' }}
                   />
                 </div>

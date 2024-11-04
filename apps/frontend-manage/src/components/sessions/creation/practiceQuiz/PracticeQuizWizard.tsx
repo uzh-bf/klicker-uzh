@@ -102,35 +102,35 @@ function PracticeQuizWizard({
   })
 
   const nameValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    name: yup.string().required(t('manage.activityWizard.sessionName')),
   })
 
   const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
-      .required(t('manage.sessionForms.sessionDisplayName')),
+      .required(t('manage.activityWizard.sessionDisplayName')),
     description: yup.string(),
   })
 
   const settingsValidationSchema = yup.object().shape({
     multiplier: yup
       .string()
-      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+      .matches(/^[0-9]+$/, t('manage.activityWizard.validMultiplicator')),
     courseId: yup
       .string()
-      .required(t('manage.sessionForms.practiceQuizSelectCourse')),
+      .required(t('manage.activityWizard.practiceQuizSelectCourse')),
     order: yup
       .string()
       .required()
       .oneOf(
         Object.values(ElementOrderType),
-        t('manage.sessionForms.practiceQuizOrder')
+        t('manage.activityWizard.practiceQuizOrder')
       ),
     availableFrom: yup
       .date()
       .test(
         'afterCourseStart',
-        t('manage.sessionForms.practiceQuizStartAfterCourseStart'),
+        t('manage.activityWizard.practiceQuizStartAfterCourseStart'),
         (value, context) =>
           context.parent.courseStartDate && dayjs(value) > dayjs()
             ? dayjs(value) > dayjs(context.parent.courseStartDate)
@@ -138,8 +138,11 @@ function PracticeQuizWizard({
       ),
     resetTimeDays: yup
       .string()
-      .required(t('manage.sessionForms.practiceQuizResetDays'))
-      .matches(/^[0-9]+$/, t('manage.sessionForms.practiceQuizValidResetDays')),
+      .required(t('manage.activityWizard.practiceQuizResetDays'))
+      .matches(
+        /^[0-9]+$/,
+        t('manage.activityWizard.practiceQuizValidResetDays')
+      ),
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -151,7 +154,7 @@ function PracticeQuizWizard({
           description: yup.string(),
           elements: yup
             .array()
-            .min(1, t('manage.sessionForms.minOneElementPerStack'))
+            .min(1, t('manage.activityWizard.minOneElementPerStack'))
             .of(
               yup.object().shape({
                 id: yup.number(),
@@ -160,12 +163,14 @@ function PracticeQuizWizard({
                   .string()
                   .oneOf(
                     acceptedTypes,
-                    t('manage.sessionForms.practiceQuizTypes')
+                    t('manage.activityWizard.practiceQuizTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
                   is: (type: ElementType) => type !== ElementType.FreeText,
                   then: (schema) =>
-                    schema.isTrue(t('manage.sessionForms.elementSolutionReq')),
+                    schema.isTrue(
+                      t('manage.activityWizard.elementSolutionReq')
+                    ),
                 }),
               })
             ),
@@ -196,21 +201,21 @@ function PracticeQuizWizard({
   const workflowItems = [
     {
       title: t('shared.generic.information'),
-      tooltip: t('manage.sessionForms.practiceQuizInformation'),
+      tooltip: t('manage.activityWizard.practiceQuizInformation'),
     },
     {
       title: t('shared.generic.description'),
-      tooltip: t('manage.sessionForms.practiceQuizDescription'),
+      tooltip: t('manage.activityWizard.practiceQuizDescription'),
     },
     {
       title: t('shared.generic.settings'),
-      tooltip: t('manage.sessionForms.practiceQuizSettings'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.practiceQuizSettings'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
     {
       title: t('shared.generic.questions'),
-      tooltip: t('manage.sessionForms.practiceQuizContent'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.practiceQuizContent'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
   ]
 
@@ -285,11 +290,11 @@ function PracticeQuizWizard({
             completionSuccessMessage={(elementName) => (
               <div>
                 {editMode
-                  ? t.rich('manage.sessionForms.practiceQuizUpdated', {
+                  ? t.rich('manage.activityWizard.practiceQuizUpdated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })
-                  : t.rich('manage.sessionForms.practiceQuizCreated', {
+                  : t.rich('manage.activityWizard.practiceQuizCreated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })}
@@ -404,8 +409,8 @@ function PracticeQuizWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.practiceQuizEditingFailed')
-            : t('manage.sessionForms.practiceQuizCreationFailed')
+            ? t('manage.activityWizard.practiceQuizEditingFailed')
+            : t('manage.activityWizard.practiceQuizCreationFailed')
         }
       />
     </>

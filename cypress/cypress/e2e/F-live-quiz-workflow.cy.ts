@@ -80,7 +80,7 @@ describe('Different live-quiz workflows', () => {
     // course settings
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveQuizNoCourse)
+      .contains(messages.manage.activityWizard.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="live-quiz-advanced-settings"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
@@ -109,13 +109,13 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
 
     // toggle settings
@@ -313,7 +313,7 @@ describe('Different live-quiz workflows', () => {
     )
     cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="set-feedback-enabled"]').should(
       'have.attr',
@@ -348,10 +348,10 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="set-feedback-enabled"]').click()
     cy.get('[data-cy="set-liveqa-enabled"]').click()
@@ -439,7 +439,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="select-course"]').contains(courseGamified)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="set-feedback-enabled"]').should(
       'have.attr',
@@ -594,7 +594,7 @@ describe('Different live-quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveQuizNoCourse)
+      .contains(messages.manage.activityWizard.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseGamified}"]`).click()
@@ -610,13 +610,13 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-multiplier"]').should('exist')
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="set-liveqa-enabled"]').click()
     cy.get('[data-cy="next-or-submit"]').click()

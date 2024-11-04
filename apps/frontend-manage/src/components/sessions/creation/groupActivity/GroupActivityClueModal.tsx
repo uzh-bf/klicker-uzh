@@ -55,14 +55,14 @@ function GroupActivityClueModal({
         }}
       >
         <FontAwesomeIcon icon={faPlus} />
-        <div>{t('manage.sessionForms.groupActivityAddClue')}</div>
+        <div>{t('manage.activityWizard.groupActivityAddClue')}</div>
       </Button>
 
       <Modal
         escapeDisabled
         open={open}
         onClose={() => setOpen(false)}
-        title={t('manage.sessionForms.groupActivityAddClue')}
+        title={t('manage.activityWizard.groupActivityAddClue')}
         className={{ content: 'w-[40rem]' }}
       >
         <Formik
@@ -70,16 +70,16 @@ function GroupActivityClueModal({
           validationSchema={yup.object().shape({
             name: yup
               .string()
-              .required(t('manage.sessionForms.clueNameMissing')),
+              .required(t('manage.activityWizard.clueNameMissing')),
             displayName: yup
               .string()
-              .required(t('manage.sessionForms.clueDisplayNameMissing')),
+              .required(t('manage.activityWizard.clueDisplayNameMissing')),
             type: yup
               .string()
               .oneOf([ParameterType.String, ParameterType.Number]),
             value: yup
               .string()
-              .required(t('manage.sessionForms.clueValueMissing')),
+              .required(t('manage.activityWizard.clueValueMissing')),
             unit: yup.string().optional(),
           })}
           initialValues={
@@ -100,23 +100,23 @@ function GroupActivityClueModal({
           {({ values, resetForm, submitForm }) => (
             <Form className="flex flex-col">
               <div className="test-gray-800 text-base">
-                {t('manage.sessionForms.groupActivityCluesDescription')}
+                {t('manage.activityWizard.groupActivityCluesDescription')}
               </div>
               <FormikSelectField
                 name="type"
                 items={[
                   {
-                    label: t('manage.sessionForms.textClue'),
+                    label: t('manage.activityWizard.textClue'),
                     value: ParameterType.String,
                     data: { cy: 'group-activity-clue-type-string' },
                   },
                   {
-                    label: t('manage.sessionForms.numericalClue'),
+                    label: t('manage.activityWizard.numericalClue'),
                     value: ParameterType.Number,
                     data: { cy: 'group-activity-clue-type-number' },
                   },
                 ]}
-                label={t('manage.sessionForms.groupActivityClueType')}
+                label={t('manage.activityWizard.groupActivityClueType')}
                 labelType="small"
                 data={{ cy: 'group-activity-clue-type' }}
                 required
@@ -124,7 +124,7 @@ function GroupActivityClueModal({
               <div className="flex w-full flex-row gap-2">
                 <FormikTextField
                   name="name"
-                  label={t('manage.sessionForms.name')}
+                  label={t('manage.activityWizard.name')}
                   labelType="small"
                   className={{ root: 'w-1/2' }}
                   data={{ cy: 'group-activity-clue-name' }}
@@ -132,7 +132,7 @@ function GroupActivityClueModal({
                 />
                 <FormikTextField
                   name="displayName"
-                  label={t('manage.sessionForms.displayName')}
+                  label={t('manage.activityWizard.displayName')}
                   labelType="small"
                   data={{ cy: 'group-activity-clue-display-name' }}
                   required

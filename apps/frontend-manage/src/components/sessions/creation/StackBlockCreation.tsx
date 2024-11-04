@@ -117,7 +117,7 @@ function StackBlockCreation({
           </div>
           {highlightFTNoSL && FTQuestionNoSLCount > 0 && (
             <Tooltip
-              tooltip={t('manage.sessionForms.stackFTQuestionsNoSL')}
+              tooltip={t('manage.activityWizard.stackFTQuestionsNoSL')}
               delay={0}
               className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
             >

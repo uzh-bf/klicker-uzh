@@ -50,20 +50,20 @@ function MicroLearningInformationStep({
                 {noCourse ? (
                   <UserNotification
                     type="error"
-                    message={t('manage.sessionForms.microLearningNoCourse')}
+                    message={t('manage.activityWizard.microLearningNoCourse')}
                     className={{ root: 'mb-2' }}
                   />
                 ) : (
                   <div className="w-full md:pr-14">
-                    {t('manage.sessionForms.microLearningIntroductionName')}
+                    {t('manage.activityWizard.microLearningIntroductionName')}
                   </div>
                 )}
                 <FormikTextField
                   required
                   autoComplete="off"
                   name="name"
-                  label={t('manage.sessionForms.name')}
-                  tooltip={t('manage.sessionForms.microlearningName')}
+                  label={t('manage.activityWizard.name')}
+                  tooltip={t('manage.activityWizard.microlearningName')}
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
@@ -78,7 +78,7 @@ function MicroLearningInformationStep({
                       icon: faLightbulb,
                       iconColor: 'text-orange-400',
                       richText: t.rich(
-                        'manage.sessionForms.microlearningUseCase',
+                        'manage.activityWizard.microlearningUseCase',
                         {
                           link: (text) => (
                             <a
@@ -96,7 +96,7 @@ function MicroLearningInformationStep({
                       icon: faBookOpen,
                       iconColor: 'text-uzh-blue-100',
                       richText: t.rich(
-                        'manage.sessionForms.microLearningLecturerDocs',
+                        'manage.activityWizard.microLearningLecturerDocs',
                         {
                           link: (text) => (
                             <a
@@ -114,7 +114,7 @@ function MicroLearningInformationStep({
                       icon: faUsers,
                       iconColor: 'text-black',
                       richText: t.rich(
-                        'manage.sessionForms.microLearningStudentDocs',
+                        'manage.activityWizard.microLearningStudentDocs',
                         {
                           link: (text) => (
                             <a

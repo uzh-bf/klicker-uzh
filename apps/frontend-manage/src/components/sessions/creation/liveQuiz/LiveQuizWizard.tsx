@@ -98,32 +98,32 @@ function LiveQuizWizard({
   })
 
   const nameValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    name: yup.string().required(t('manage.activityWizard.sessionName')),
   })
 
   const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
-      .required(t('manage.sessionForms.sessionDisplayName')),
+      .required(t('manage.activityWizard.sessionDisplayName')),
     description: yup.string(),
   })
 
   const settingsValidationSchema = yup.object().shape({
     multiplier: yup
       .string()
-      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+      .matches(/^[0-9]+$/, t('manage.activityWizard.validMultiplicator')),
     courseId: yup.string(),
     isGamificationEnabled: yup
       .boolean()
-      .required(t('manage.sessionForms.liveQuizGamified')),
+      .required(t('manage.activityWizard.liveQuizGamified')),
     maxBonusPoints: yup
       .number()
-      .required(t('manage.sessionForms.liveQuizMaxBonusPointsReq'))
-      .min(0, t('manage.sessionForms.liveQuizMaxBonusPointsMin')),
+      .required(t('manage.activityWizard.liveQuizMaxBonusPointsReq'))
+      .min(0, t('manage.activityWizard.liveQuizMaxBonusPointsMin')),
     timeToZeroBonus: yup
       .number()
-      .required(t('manage.sessionForms.liveQuizTimeToZeroBonusReq'))
-      .min(1, t('manage.sessionForms.liveQuizTimeToZeroBonusMin')),
+      .required(t('manage.activityWizard.liveQuizTimeToZeroBonusReq'))
+      .min(1, t('manage.activityWizard.liveQuizTimeToZeroBonusMin')),
   })
 
   const questionsValidationSchema = yup.object().shape({
@@ -144,12 +144,12 @@ function LiveQuizWizard({
                   ElementType.Numerical,
                   ElementType.FreeText,
                 ],
-                t('manage.sessionForms.liveQuizTypes')
+                t('manage.activityWizard.liveQuizTypes')
               )
           ),
         timeLimit: yup
           .number()
-          .min(1, t('manage.sessionForms.liveQuizTimeRestriction')),
+          .min(1, t('manage.activityWizard.liveQuizTimeRestriction')),
       })
     ),
   })
@@ -172,22 +172,22 @@ function LiveQuizWizard({
   const workflowItems = [
     {
       title: t('shared.generic.information'),
-      tooltip: t('manage.sessionForms.liveQuizInformation'),
+      tooltip: t('manage.activityWizard.liveQuizInformation'),
     },
     {
       title: t('shared.generic.description'),
-      tooltip: t('manage.sessionForms.liveQuizDescription'),
-      tooltipDisabled: t('manage.sessionForms.liveQuizDescription'),
+      tooltip: t('manage.activityWizard.liveQuizDescription'),
+      tooltipDisabled: t('manage.activityWizard.liveQuizDescription'),
     },
     {
       title: t('shared.generic.settings'),
-      tooltip: t('manage.sessionForms.liveQuizSettings'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.liveQuizSettings'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
     {
-      title: t('manage.sessionForms.liveQuizBlocks'),
-      tooltip: t('manage.sessionForms.liveQuizDragDrop'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      title: t('manage.activityWizard.liveQuizBlocks'),
+      tooltip: t('manage.activityWizard.liveQuizDragDrop'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
   ]
 
@@ -288,11 +288,11 @@ function LiveQuizWizard({
             completionSuccessMessage={(elementName) => (
               <div>
                 {editMode
-                  ? t.rich('manage.sessionForms.liveQuizUpdated', {
+                  ? t.rich('manage.activityWizard.liveQuizUpdated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })
-                  : t.rich('manage.sessionForms.liveQuizCreated', {
+                  : t.rich('manage.activityWizard.liveQuizCreated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })}
@@ -328,7 +328,7 @@ function LiveQuizWizard({
                   <FontAwesomeIcon icon={faPlay} />
                 </Button.Icon>
                 <Button.Label>
-                  {t('manage.sessionForms.liveQuizStartNow')}
+                  {t('manage.activityWizard.liveQuizStartNow')}
                 </Button.Label>
               </Button>
             ) : null}
@@ -424,8 +424,8 @@ function LiveQuizWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.liveQuizEditingFailed')
-            : t('manage.sessionForms.liveQuizCreationFailed')
+            ? t('manage.activityWizard.liveQuizEditingFailed')
+            : t('manage.activityWizard.liveQuizCreationFailed')
         }
       />
     </>

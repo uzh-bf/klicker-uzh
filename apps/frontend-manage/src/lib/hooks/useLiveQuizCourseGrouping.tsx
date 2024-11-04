@@ -17,10 +17,10 @@ function useLiveQuizCourseGrouping({
     {
       items: [
         {
-          label: t('manage.sessionForms.liveQuizNoCourse'),
+          label: t('manage.activityWizard.liveQuizNoCourse'),
           value: '',
           data: {
-            cy: `select-course-${t('manage.sessionForms.liveQuizNoCourse')}`,
+            cy: `select-course-${t('manage.activityWizard.liveQuizNoCourse')}`,
           },
         },
       ],

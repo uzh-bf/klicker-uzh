@@ -148,7 +148,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -208,7 +208,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -268,7 +268,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -349,7 +349,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -411,7 +411,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -502,7 +502,7 @@ Cypress.Commands.add(
     if (typeof courseName !== 'undefined') {
       cy.get('[data-cy="select-course"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.liveQuizNoCourse)
+        .contains(messages.manage.activityWizard.liveQuizNoCourse)
       cy.get('[data-cy="select-course"]').click()
       cy.get(`[data-cy="select-course-${courseName}"]`).click()
       cy.get('[data-cy="select-course"]').contains(courseName)
