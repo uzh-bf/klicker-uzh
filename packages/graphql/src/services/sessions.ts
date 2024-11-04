@@ -6,7 +6,7 @@ import type {
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, prop, sortBy } from 'remeda'
-import type { Context, ContextWithUser } from '../lib/context.js'
+import type { Context } from '../lib/context.js'
 
 // FIXME: move to config file or environment variable?
 const FIRST_ACHIEVEMENT_ID = 5
@@ -117,61 +117,6 @@ async function processCachedData({
     cachedResults,
     instanceResults,
   }
-}
-
-interface GetRunningSessionsArgs {
-  shortname: string
-}
-
-export async function getRunningSessions(
-  { shortname }: GetRunningSessionsArgs,
-  ctx: Context
-) {
-  const userWithSessions = await ctx.prisma.user.findUnique({
-    where: {
-      shortname: shortname.trim(),
-    },
-    include: {
-      sessions: {
-        where: {
-          accessMode: 'PUBLIC',
-          status: 'RUNNING',
-        },
-        include: {
-          course: true,
-        },
-      },
-    },
-  })
-
-  if (!userWithSessions?.sessions) return []
-
-  return userWithSessions.sessions
-}
-
-export async function getUnassignedSessions(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      sessions: {
-        where: {
-          courseId: null,
-          status: {
-            in: [
-              SessionStatus.RUNNING,
-              SessionStatus.SCHEDULED,
-              SessionStatus.PREPARED,
-            ],
-          },
-        },
-        orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
-      },
-    },
-  })
-
-  return user?.sessions
 }
 
 type PickedInstanceType = Pick<

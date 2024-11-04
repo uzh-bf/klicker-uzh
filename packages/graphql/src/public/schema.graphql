@@ -1445,12 +1445,12 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
-  runningSessions(shortname: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
+  shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentLiveQuiz(id: String!): LiveQuiz
-  unassignedSessions: [Session!]
+  unassignedLiveQuizzes: [LiveQuiz!]
   userCourses: [Course!]
   userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]

@@ -572,6 +572,55 @@ export async function getControlLiveQuiz(
 
   return quiz
 }
+
+export async function getShortnameQuizzes(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      shortname: shortname.trim(),
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          accessMode: AccessMode.PUBLIC,
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return user?.liveQuizzes ?? []
+}
+
+export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          courseId: null,
+          status: {
+            in: [
+              PublicationStatus.PUBLISHED,
+              PublicationStatus.SCHEDULED,
+              PublicationStatus.DRAFT,
+            ],
+          },
+        },
+        orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
+      },
+    },
+  })
+
+  return user?.liveQuizzes ?? []
+}
 // #endregion
 
 // ------ LIVE QUIZ EXECUTION (LECTURER) ------

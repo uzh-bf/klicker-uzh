@@ -41,11 +41,7 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, Tag } from './question.js'
-import {
-  RunningLiveQuizSummary,
-  Session,
-  SessionEvaluation,
-} from './session.js'
+import { RunningLiveQuizSummary, SessionEvaluation } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -232,22 +228,22 @@ export const Query = builder.queryType({
         },
       }),
 
-      unassignedSessions: asUser.field({
+      unassignedLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         resolve(_, __, ctx) {
-          return SessionService.getUnassignedSessions(ctx)
+          return LiveQuizService.getUnassignedLiveQuizzes(ctx)
         },
       }),
 
-      runningSessions: t.field({
+      shortnameQuizzes: t.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         args: {
           shortname: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSessions(args, ctx)
+          return LiveQuizService.getShortnameQuizzes(args, ctx)
         },
       }),
 
