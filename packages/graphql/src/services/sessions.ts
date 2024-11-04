@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
+import { mapValues, omitBy, prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 
@@ -847,78 +847,6 @@ export async function deactivateSessionBlock(
   }
 }
 
-export async function getRunningSession({ id }: { id: string }, ctx: Context) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id },
-    include: {
-      activeBlock: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      course: true,
-    },
-  })
-
-  // extract solution from instances in active block
-  let sessionWithoutSolutions: any
-
-  if (session && session.activeBlock) {
-    sessionWithoutSolutions = {
-      ...session,
-      activeBlock: {
-        ...session.activeBlock,
-        instances: session.activeBlock.instances.map((instance) => {
-          const questionData = instance.questionData
-          if (
-            !questionData ||
-            typeof questionData !== 'object' ||
-            Array.isArray(questionData)
-          )
-            return instance
-
-          switch (questionData.type) {
-            case ElementType.SC:
-            case ElementType.MC:
-              return {
-                ...instance,
-                questionData: {
-                  ...questionData,
-                  options: {
-                    ...questionData.options,
-                    choices: questionData.options.choices.map((choice) => ({
-                      ...pick(choice, ['ix', 'value']),
-                    })),
-                  },
-                },
-              }
-
-            case ElementType.NUMERICAL:
-            case ElementType.FREE_TEXT:
-              return {
-                ...instance,
-                questionData,
-              }
-
-            default:
-              return instance
-          }
-        }),
-      },
-    }
-  }
-
-  if (session?.status === SessionStatus.RUNNING) {
-    return sessionWithoutSolutions || session
-  }
-
-  return null
-}
-
 export async function getLeaderboard(
   { sessionId }: { sessionId: string },
   ctx: Context
@@ -1030,33 +958,6 @@ export async function getRunningSessions(
   if (!userWithSessions?.sessions) return []
 
   return userWithSessions.sessions
-}
-
-export async function getRunningSessionsCourse(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
-  ctx: Context
-) {
-  const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
-    include: {
-      sessions: {
-        where: {
-          status: SessionStatus.RUNNING,
-        },
-        include: {
-          course: true,
-        },
-      },
-    },
-  })
-
-  return course?.sessions ?? []
 }
 
 export async function getUnassignedSessions(ctx: ContextWithUser) {

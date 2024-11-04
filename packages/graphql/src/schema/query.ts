@@ -262,14 +262,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      runningSessionsCourse: t.field({
+      getCourseRunningLiveQuizzes: t.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSessionsCourse(args, ctx)
+          return LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
         },
       }),
 

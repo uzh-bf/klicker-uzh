@@ -1413,6 +1413,7 @@ type Query {
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
@@ -1444,7 +1445,6 @@ type Query {
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   runningSessions(shortname: String!): [Session!]
-  runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation

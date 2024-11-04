@@ -909,4 +909,27 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   return null
 }
+
+export async function getCourseRunningLiveQuizzes(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return course?.liveQuizzes ?? []
+}
 // #endregion
