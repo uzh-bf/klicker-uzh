@@ -1004,40 +1004,6 @@ export async function getLeaderboard(
   return filteredEntries
 }
 
-// modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
-interface SessionSettingArgs {
-  id: string
-  isLiveQAEnabled?: boolean | null
-  isConfusionFeedbackEnabled?: boolean | null
-  isModerationEnabled?: boolean | null
-  isGamificationEnabled?: boolean | null
-}
-
-export async function changeSessionSettings(
-  {
-    id,
-    isLiveQAEnabled,
-    isConfusionFeedbackEnabled,
-    isModerationEnabled,
-    isGamificationEnabled,
-  }: SessionSettingArgs,
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
-      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
-      isModerationEnabled: isModerationEnabled ?? undefined,
-      isGamificationEnabled: isGamificationEnabled ?? undefined,
-    },
-  })
-  return session
-}
-
 interface GetRunningSessionsArgs {
   shortname: string
 }

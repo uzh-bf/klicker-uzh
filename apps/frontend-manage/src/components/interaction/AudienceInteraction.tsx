@@ -2,7 +2,7 @@ import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeSessionSettingsDocument,
+  ChangeLiveQuizSettingsDocument,
   ConfusionSummary,
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
@@ -79,13 +79,13 @@ function AudienceInteraction({
     }
   }, [subscribeToMore, quizId])
 
-  const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
-  const [publishFeedback] = useMutation(PublishFeedbackDocument)
-  const [pinFeedback] = useMutation(PinFeedbackDocument)
-  const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
-  const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
-  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
-  const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
+  const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument)
+  const [publishFeedback] = useMutation(PublishFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [pinFeedback] = useMutation(PinFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [resolveFeedback] = useMutation(ResolveFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [deleteFeedback] = useMutation(DeleteFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [respondToFeedback] = useMutation(RespondToFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
 
   return (
     <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
@@ -118,7 +118,7 @@ function AudienceInteraction({
                 data={{ cy: 'toggle-qa' }}
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
                       id: quizId,
                       isLiveQAEnabled: !isLiveQAEnabled,
@@ -139,7 +139,7 @@ function AudienceInteraction({
                 checked={isModerationEnabled}
                 disabled={!isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
                       id: quizId,
                       isModerationEnabled: !isModerationEnabled,
@@ -320,7 +320,7 @@ function AudienceInteraction({
               data={{ cy: 'toggle-gamification' }}
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
-                changeSessionSettings({
+                changeQuizSettings({
                   variables: {
                     id: quizId,
                     isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,
