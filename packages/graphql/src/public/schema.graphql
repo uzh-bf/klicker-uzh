@@ -1021,7 +1021,7 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  cancelSession(id: String!): Session
+  cancelLiveQuiz(id: String!): LiveQuiz
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz

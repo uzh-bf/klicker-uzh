@@ -16,9 +16,7 @@ import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
-import type { ISession } from 'src/schema/session.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 
 // TODO: rework scheduling for serverless
@@ -1452,116 +1450,116 @@ export async function getSessionEvaluation(
   }
 }
 
-export async function cancelSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activeBlock: true,
-      blocks: {
-        include: {
-          instances: true,
-          activeInSession: true,
-        },
-      },
-      leaderboard: true,
-    },
-  })
+// export async function cancelSession(
+//   { id }: { id: string },
+//   ctx: ContextWithUser
+// ) {
+//   const session = await ctx.prisma.liveSession.findUnique({
+//     where: {
+//       id,
+//       ownerId: ctx.user.sub,
+//     },
+//     include: {
+//       activeBlock: true,
+//       blocks: {
+//         include: {
+//           instances: true,
+//           activeInSession: true,
+//         },
+//       },
+//       leaderboard: true,
+//     },
+//   })
 
-  if (!session) return null
+//   if (!session) return null
 
-  try {
-    if (session.status !== SessionStatus.RUNNING) {
-      throw new Error('Session is not running')
-    }
+//   try {
+//     if (session.status !== SessionStatus.RUNNING) {
+//       throw new Error('Session is not running')
+//     }
 
-    const instances = session.blocks.flatMap((block) => block.instances)
+//     const instances = session.blocks.flatMap((block) => block.instances)
 
-    const [updatedSession] = await ctx.prisma.$transaction([
-      ctx.prisma.liveSession.update({
-        where: { id },
-        data: {
-          status: SessionStatus.PREPARED,
-          startedAt: null,
-          pinCode: null,
-          activeBlock: {
-            disconnect: true,
-          },
-          leaderboard: {
-            deleteMany: {},
-          },
-          feedbacks: {
-            deleteMany: {},
-          },
-          confusionFeedbacks: {
-            deleteMany: {},
-          },
-          blocks: {
-            updateMany: {
-              where: {
-                status: {
-                  in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
-                },
-              },
-              data: {
-                status: SessionBlockStatus.SCHEDULED,
-                expiresAt: null,
-                execution: {
-                  increment: 1,
-                },
-              },
-            },
-          },
-        },
-        include: {
-          activeBlock: true,
-          blocks: {
-            include: {
-              instances: true,
-              activeInSession: true,
-            },
-          },
-        },
-      }),
+//     const [updatedSession] = await ctx.prisma.$transaction([
+//       ctx.prisma.liveSession.update({
+//         where: { id },
+//         data: {
+//           status: SessionStatus.PREPARED,
+//           startedAt: null,
+//           pinCode: null,
+//           activeBlock: {
+//             disconnect: true,
+//           },
+//           leaderboard: {
+//             deleteMany: {},
+//           },
+//           feedbacks: {
+//             deleteMany: {},
+//           },
+//           confusionFeedbacks: {
+//             deleteMany: {},
+//           },
+//           blocks: {
+//             updateMany: {
+//               where: {
+//                 status: {
+//                   in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+//                 },
+//               },
+//               data: {
+//                 status: SessionBlockStatus.SCHEDULED,
+//                 expiresAt: null,
+//                 execution: {
+//                   increment: 1,
+//                 },
+//               },
+//             },
+//           },
+//         },
+//         include: {
+//           activeBlock: true,
+//           blocks: {
+//             include: {
+//               instances: true,
+//               activeInSession: true,
+//             },
+//           },
+//         },
+//       }),
 
-      ...instances.map((instance) =>
-        ctx.prisma.questionInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            participants: 0,
-            results: prepareInitialQuestionInstanceResults(
-              instance.questionData
-            ),
-          },
-        })
-      ),
-    ])
+//       ...instances.map((instance) =>
+//         ctx.prisma.questionInstance.update({
+//           where: {
+//             id: instance.id,
+//           },
+//           data: {
+//             participants: 0,
+//             results: prepareInitialQuestionInstanceResults(
+//               instance.questionData
+//             ),
+//           },
+//         })
+//       ),
+//     ])
 
-    const keys = await ctx.redisExec.keys(`s:${id}:*`)
-    const pipe = ctx.redisExec.multi()
-    for (const key of keys) {
-      pipe.unlink(key)
-    }
-    await pipe.exec()
+//     const keys = await ctx.redisExec.keys(`s:${id}:*`)
+//     const pipe = ctx.redisExec.multi()
+//     for (const key of keys) {
+//       pipe.unlink(key)
+//     }
+//     await pipe.exec()
 
-    await sendTeamsNotifications(
-      'graphql/cancelSession',
-      `CANCEL Session ${session.name} with id ${session.id}.`
-    )
+//     await sendTeamsNotifications(
+//       'graphql/cancelSession',
+//       `CANCEL Session ${session.name} with id ${session.id}.`
+//     )
 
-    return updatedSession as ISession
-  } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/cancelSession',
-      `ERROR - failed to cancel session ${session.name} with id ${session.id}: ${error}`
-    )
-    throw error
-  }
-}
+//     return updatedSession as ISession
+//   } catch (error) {
+//     await sendTeamsNotifications(
+//       'graphql/cancelSession',
+//       `ERROR - failed to cancel session ${session.name} with id ${session.id}: ${error}`
+//     )
+//     throw error
+//   }
+// }

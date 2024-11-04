@@ -3,7 +3,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
-import { SessionAbortionConfirmationType } from './CancelSessionModal'
+import { SessionAbortionConfirmationType } from './CancelLiveQuizModal'
 
 interface SessionAbortionConfirmationsProps {
   summary: RunningLiveQuizSummary

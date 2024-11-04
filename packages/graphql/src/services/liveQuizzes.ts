@@ -2,6 +2,7 @@ import {
   AccessMode,
   ConfusionTimestep,
   type Element,
+  ElementBlockStatus,
   ElementInstanceType,
   ElementType,
   PublicationStatus,
@@ -609,6 +610,117 @@ export async function getLiveQuizSummary(
     numOfFeedbacks: liveQuiz._count.feedbacks,
     numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
     numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+  }
+}
+
+export async function cancelLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          elements: { include: { element: true } },
+          activeInLiveQuiz: true,
+        },
+      },
+      leaderboard: true,
+    },
+  })
+
+  if (!quiz) return null
+
+  try {
+    if (quiz.status !== PublicationStatus.PUBLISHED) {
+      throw new Error('Session is not running')
+    }
+
+    const instances = quiz.blocks.flatMap((block) => block.elements)
+
+    const [updatedQuiz] = await ctx.prisma.$transaction([
+      ctx.prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          status: PublicationStatus.DRAFT,
+          startedAt: null,
+          pinCode: null,
+          activeBlock: {
+            disconnect: true,
+          },
+          leaderboard: {
+            deleteMany: {},
+          },
+          feedbacks: {
+            deleteMany: {},
+          },
+          confusionFeedbacks: {
+            deleteMany: {},
+          },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [ElementBlockStatus.EXECUTED, ElementBlockStatus.ACTIVE],
+                },
+              },
+              data: {
+                status: ElementBlockStatus.SCHEDULED,
+                expiresAt: null,
+                execution: {
+                  increment: 1,
+                },
+              },
+            },
+          },
+        },
+        include: {
+          activeBlock: true,
+          blocks: {
+            include: {
+              elements: true,
+              activeInLiveQuiz: true,
+            },
+          },
+        },
+      }),
+
+      ...instances.map((instance) =>
+        ctx.prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            results: getInitialElementResults(instance.element),
+          },
+        })
+      ),
+    ])
+
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
+
+    await sendTeamsNotifications(
+      'graphql/abortLiveQuiz',
+      `CANCEL Session ${quiz.name} with id ${quiz.id}.`
+    )
+
+    return updatedQuiz
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/abortLiveQuiz',
+      `ERROR - failed to cancel session ${quiz.name} with id ${quiz.id}: ${error}`
+    )
+    throw error
   }
 }
 

@@ -11644,7 +11644,7 @@
             "deprecationReason": null
           },
           {
-            "name": "cancelSession",
+            "name": "cancelLiveQuiz",
             "description": null,
             "args": [
               {
@@ -11666,7 +11666,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,

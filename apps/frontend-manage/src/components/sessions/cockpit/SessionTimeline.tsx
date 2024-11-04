@@ -16,7 +16,7 @@ import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
-import CancelSessionModal from './CancelSessionModal'
+import CancelLiveQuizModal from './CancelLiveQuizModal'
 import SessionBlock, { QuizTimelineBlock } from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
 
@@ -66,7 +66,7 @@ function SessionTimeline({
   const isFeedbackSession = blocks?.length === 0
   const { locale } = useRouter()
 
-  const [cancelSessionModal, setCancelSessionModal] = useState(false)
+  const [cancelLiveQuizModal, setCancelLiveQuizModal] = useState(false)
   const [inCooldown, setInCooldown] = useState<boolean>(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
@@ -273,7 +273,7 @@ function SessionTimeline({
           </div>
           <div className="mt-2 flex w-full flex-row justify-between gap-2">
             <Button
-              onClick={() => setCancelSessionModal(true)}
+              onClick={() => setCancelLiveQuizModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
               data={{ cy: 'abort-session-cockpit' }}
             >
@@ -317,9 +317,9 @@ function SessionTimeline({
               </Button.Label>
             </Button>
           </div>
-          <CancelSessionModal
-            open={cancelSessionModal}
-            setOpen={setCancelSessionModal}
+          <CancelLiveQuizModal
+            open={cancelLiveQuizModal}
+            setOpen={setCancelLiveQuizModal}
             sessionId={sessionId}
             title={sessionName}
           />

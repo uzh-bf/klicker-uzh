@@ -601,14 +601,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelSession: t.withAuth(asUserSessionExec).field({
+      cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.cancelSession(args, ctx)
+          return LiveQuizService.cancelLiveQuiz(args, ctx)
         },
       }),
 
