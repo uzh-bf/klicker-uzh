@@ -54,7 +54,7 @@ function AudienceInteraction({
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
-      variables: { sessionId: quizId },
+      variables: { quizId },
       updateQuery: (
         prev: { cockpitQuiz: LiveQuiz },
         {

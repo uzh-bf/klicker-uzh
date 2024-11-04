@@ -1,14 +1,14 @@
-subscription RunningSessionUpdated($sessionId: String!) {
-  runningSessionUpdated(sessionId: $sessionId) {
+subscription RunningLiveQuizUpdated($quizId: String!) {
+  runningLiveQuizUpdated(quizId: $quizId) {
     id
     status
     expiresAt
     timeLimit
     randomSelection
     execution
-    instances {
+    elements {
       id
-      ...QuestionDataWithoutSolutions
+      ...ElementDataWithoutSolutions
     }
   }
 }

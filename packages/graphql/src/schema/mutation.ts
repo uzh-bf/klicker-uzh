@@ -88,7 +88,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ConfusionTimestep,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           difficulty: t.arg.int({ required: true }),
           speed: t.arg.int({ required: true }),
         },
@@ -112,7 +112,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Feedback,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {

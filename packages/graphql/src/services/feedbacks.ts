@@ -1,9 +1,12 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
-export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
-  const sessionWithFeedbacks = await ctx.prisma.liveSession.findUnique({
-    where: { id },
+export async function getFeedbacks(
+  { quizId }: { quizId: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: quizId },
     include: {
       feedbacks: {
         include: { responses: { orderBy: { createdAt: 'desc' } } },
@@ -12,13 +15,11 @@ export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
     },
   })
 
-  if (sessionWithFeedbacks?.isModerationEnabled) {
-    return sessionWithFeedbacks.feedbacks.filter(
-      (feedback) => feedback.isPublished
-    )
+  if (quiz?.isModerationEnabled) {
+    return quiz.feedbacks.filter((feedback) => feedback.isPublished)
   }
 
-  return sessionWithFeedbacks?.feedbacks ?? []
+  return quiz?.feedbacks ?? []
 }
 
 export async function upvoteFeedback(
@@ -55,26 +56,26 @@ export async function voteFeedbackResponse(
 }
 
 export async function createFeedback(
-  { sessionId, content }: { sessionId: string; content: string },
+  { quizId, content }: { quizId: string; content: string },
   ctx: Context
 ) {
   const isLoggedInParticipant =
     ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
 
-  const session = await ctx.prisma.liveSession.findUnique({
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
-      id: sessionId,
+      id: quizId,
     },
   })
 
-  if (!session || !session.isLiveQAEnabled) return null
+  if (!quiz || !quiz.isLiveQAEnabled) return null
 
   const newFeedback = await ctx.prisma.feedback.create({
     data: {
-      isPublished: !session.isModerationEnabled,
+      isPublished: !quiz.isModerationEnabled,
       content,
-      session: {
-        connect: { id: sessionId },
+      liveQuiz: {
+        connect: { id: quizId },
       },
       participant: isLoggedInParticipant
         ? {
@@ -85,10 +86,10 @@ export async function createFeedback(
   })
 
   ctx.pubSub.publish('feedbackCreated', newFeedback)
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: quizId })
 
-  ctx.emitter.emit('invalidate', { typename: 'Session', id: sessionId })
-
-  if (!session.isModerationEnabled) {
+  if (!quiz.isModerationEnabled) {
+    console.log('TRIGGERING FEEDBACK ADDED SUBSCRIPTION')
     ctx.pubSub.publish('feedbackAdded', newFeedback)
   }
 
@@ -144,30 +145,32 @@ export async function respondToFeedback(
 }
 
 // add confusion timestep to session
-interface AddConfusionTimestepArgs {
-  sessionId: string
-  difficulty: number
-  speed: number
-}
-
 export async function addConfusionTimestep(
-  { sessionId, difficulty, speed }: AddConfusionTimestepArgs,
+  {
+    quizId,
+    difficulty,
+    speed,
+  }: {
+    quizId: string
+    difficulty: number
+    speed: number
+  },
   ctx: Context
 ) {
   const confusionTS = await ctx.prisma.confusionTimestep.create({
     data: {
       difficulty,
       speed,
-      session: {
-        connect: { id: sessionId },
+      liveQuiz: {
+        connect: { id: quizId },
       },
       createdAt: new Date(),
     },
   })
 
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: sessionId,
+    typename: 'LiveQuiz',
+    id: quizId,
   })
 
   return confusionTS

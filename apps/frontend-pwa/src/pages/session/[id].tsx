@@ -2,20 +2,20 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementBlock,
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
   LiveQuiz,
-  RunningSessionUpdatedDocument,
+  RunningLiveQuizUpdatedDocument,
   SelfDocument,
-  SessionBlock,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { useQuery } from '@apollo/client'
+import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
@@ -29,28 +29,27 @@ function Subscriber({
   subscribeToMore,
 }: {
   id: string
-  subscribeToMore: any
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
 }) {
-  // TODO: udpate this to the new live quiz approach with corresponding types
   useEffect(() => {
     subscribeToMore({
-      document: RunningSessionUpdatedDocument,
+      document: RunningLiveQuizUpdatedDocument,
       variables: {
-        sessionId: id,
+        quizId: id,
       },
       updateQuery: (
         prev: { studentLiveQuiz: LiveQuiz },
         {
           subscriptionData,
         }: {
-          subscriptionData: { data: { runningSessionUpdated: SessionBlock } }
+          subscriptionData: { data: { runningLiveQuizUpdated: ElementBlock } }
         }
       ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
           session: {
-            ...prev.session,
-            activeBlock: subscriptionData.data.runningSessionUpdated,
+            ...prev.studentLiveQuiz,
+            activeBlock: subscriptionData.data.runningLiveQuizUpdated,
           },
         })
       },
@@ -297,7 +296,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     apolloClient.query({
       query: GetFeedbacksDocument,
       variables: {
-        sessionId: ctx.query?.id as string,
+        quizId: ctx.query?.id as string,
+        skip: !ctx.query?.id,
       },
     }),
   ])

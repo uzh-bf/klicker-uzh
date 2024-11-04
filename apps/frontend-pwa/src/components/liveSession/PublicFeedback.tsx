@@ -8,21 +8,19 @@ import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 
-interface FeedbackProps {
-  feedback: Feedback
-  onUpvoteFeedback: (id: number, change: number) => void
-  onReactToFeedbackResponse: (
-    id: number,
-    upvoteChange: number,
-    downvoteChange: number
-  ) => void
-}
-
 function PublicFeedback({
   feedback,
   onUpvoteFeedback,
   onReactToFeedbackResponse,
-}: FeedbackProps): React.ReactElement {
+}: {
+  feedback: Feedback
+  onUpvoteFeedback: (id: number, change: number) => Promise<void>
+  onReactToFeedbackResponse: (
+    id: number,
+    upvoteChange: number,
+    downvoteChange: number
+  ) => Promise<void>
+}): React.ReactElement {
   const feedbackId = feedback.id
   const t = useTranslations()
 
@@ -79,7 +77,7 @@ function PublicFeedback({
       `${feedbackId}-upvotes`,
       JSON.stringify(newUpvotes)
     )
-    onUpvoteFeedback(feedbackId, previousValue ? -1 : 1)
+    await onUpvoteFeedback(feedbackId, previousValue ? -1 : 1)
   }
 
   const onResponseUpvote = async (
@@ -98,11 +96,11 @@ function PublicFeedback({
 
     // send upvote change to parent component
     if (previousValue === 1) {
-      onReactToFeedbackResponse(responseId, -1, 0)
+      await onReactToFeedbackResponse(responseId, -1, 0)
     } else if (previousValue === 0) {
-      onReactToFeedbackResponse(responseId, 1, 0)
+      await onReactToFeedbackResponse(responseId, 1, 0)
     } else {
-      onReactToFeedbackResponse(responseId, 1, -1)
+      await onReactToFeedbackResponse(responseId, 1, -1)
     }
   }
 
@@ -122,11 +120,11 @@ function PublicFeedback({
 
     // send upvote change to parent component
     if (previousValue === -1) {
-      onReactToFeedbackResponse(responseId, 0, -1)
+      await onReactToFeedbackResponse(responseId, 0, -1)
     } else if (previousValue === 0) {
-      onReactToFeedbackResponse(responseId, 0, 1)
+      await onReactToFeedbackResponse(responseId, 0, 1)
     } else {
-      onReactToFeedbackResponse(responseId, -1, 1)
+      await onReactToFeedbackResponse(responseId, -1, 1)
     }
   }
 
@@ -169,8 +167,8 @@ function PublicFeedback({
                 <div className="flex flex-1 flex-col">{response.content}</div>
                 <div>
                   <Button
-                    onClick={() =>
-                      onResponseUpvote(upvotes[response.id], response.id)
+                    onClick={async () =>
+                      await onResponseUpvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === 1}
                     className={{ root: 'mr-1 h-9 w-9' }}
@@ -183,8 +181,11 @@ function PublicFeedback({
                     </Button.Icon>
                   </Button>
                   <Button
-                    onClick={() =>
-                      onResponseDownvote(upvotes[response.id], response.id)
+                    onClick={async () =>
+                      await onResponseDownvote(
+                        upvotes[response.id],
+                        response.id
+                      )
                     }
                     active={upvotes[response.id] === -1}
                     className={{ root: 'h-9 w-9' }}

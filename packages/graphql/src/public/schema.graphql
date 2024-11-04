@@ -1018,7 +1018,7 @@ type MicroLearning {
 type Mutation {
   activateParticipantAccount(token: String!): ID
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
-  addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelSession(id: String!): Session
@@ -1030,7 +1030,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
-  createFeedback(content: String!, sessionId: String!): Feedback
+  createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
@@ -1407,7 +1407,7 @@ type Query {
   controlSession(id: String!): Session
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
-  feedbacks(id: String!): [Feedback!]
+  feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
@@ -1670,14 +1670,14 @@ type StudentCourse {
 }
 
 type Subscription {
-  feedbackAdded(sessionId: String!): Feedback!
-  feedbackCreated(sessionId: String!): Feedback!
-  feedbackRemoved(sessionId: String!): String!
-  feedbackUpdated(sessionId: String!): Feedback!
+  feedbackAdded(quizId: String!): Feedback!
+  feedbackCreated(quizId: String!): Feedback!
+  feedbackRemoved(quizId: String!): String!
+  feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
   microLearningEnded(activityId: String!): MicroLearning!
-  runningSessionUpdated(sessionId: String!): SessionBlock
+  runningLiveQuizUpdated(quizId: String!): ElementBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 

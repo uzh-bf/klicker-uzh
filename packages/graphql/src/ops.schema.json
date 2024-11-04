@@ -11501,7 +11501,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -12213,7 +12213,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -20571,7 +20571,7 @@
             "description": null,
             "args": [
               {
-                "name": "id",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24167,7 +24167,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24200,7 +24200,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24233,7 +24233,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24266,7 +24266,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24394,11 +24394,11 @@
             "deprecationReason": null
           },
           {
-            "name": "runningSessionUpdated",
+            "name": "runningLiveQuizUpdated",
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24416,7 +24416,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "SessionBlock",
+              "name": "ElementBlock",
               "ofType": null
             },
             "isDeprecated": false,

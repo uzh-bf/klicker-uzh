@@ -160,7 +160,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [Feedback],
         args: {
-          id: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
