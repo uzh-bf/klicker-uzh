@@ -125,7 +125,7 @@ export default {
       practiceQuizzes: 'Übungs-Quizzes',
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
-      activeSessions: 'Aktive Sessions',
+      activeLiveQuizzes: 'Aktive Live Quizzes',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',

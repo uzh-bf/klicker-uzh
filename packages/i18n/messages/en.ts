@@ -125,7 +125,7 @@ export default {
       practiceQuizzes: 'Practice Quizzes',
       microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
-      activeSessions: 'Active Quizzes',
+      activeLiveQuizzes: 'Active Live Quizzes',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
       characters: 'characters',

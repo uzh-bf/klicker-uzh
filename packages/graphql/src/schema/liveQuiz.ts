@@ -78,7 +78,7 @@ export const ConfusionSummary = builder
 
 // ----- LIVE QUIZ INTERFACE -----
 // #region
-interface ILiveQuiz extends DB.LiveQuiz {
+export interface ILiveQuiz extends DB.LiveQuiz {
   blocks?: DB.ElementBlock[] | null
   activeBlock?: DB.ElementBlock | null
   course?: DB.Course | null

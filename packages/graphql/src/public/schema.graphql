@@ -328,6 +328,7 @@ type Course {
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
+  liveQuizzes: [LiveQuiz!]
   maxGroupSize: Int!
   microLearnings: [MicroLearning!]
   name: String!

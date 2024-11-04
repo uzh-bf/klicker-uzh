@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import { type IGroupActivity, GroupActivityRef } from './groupActivity.js'
+import { type ILiveQuiz, LiveQuizRef } from './liveQuiz.js'
 import { type IMicroLearning, MicroLearningRef } from './microLearning.js'
 import {
   type IGroupAssignmentPoolEntryRef,
@@ -14,7 +15,7 @@ import {
   ParticipationRef,
 } from './participant.js'
 import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
-import { type ISession, SessionRef } from './session.js'
+import { ISession, SessionRef } from './session.js'
 import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
@@ -24,7 +25,8 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-  sessions?: ISession[]
+  sessions?: ISession[] // TODO: remove after migration
+  liveQuizzes?: ILiveQuiz[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
   participantGroups?: IParticipantGroup[]
@@ -93,8 +95,13 @@ export const Course = builder.objectType(CourseRef, {
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
+    // TODO: remove after migration
     sessions: t.expose('sessions', {
       type: [SessionRef],
+      nullable: true,
+    }),
+    liveQuizzes: t.expose('liveQuizzes', {
+      type: [LiveQuizRef],
       nullable: true,
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
