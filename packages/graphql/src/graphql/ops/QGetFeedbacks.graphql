@@ -1,5 +1,5 @@
-query GetFeedbacks($sessionId: String!) {
-  feedbacks(id: $sessionId) {
+query GetFeedbacks($quizId: String!) {
+  feedbacks(quizId: $quizId) {
     id
     isPublished
     isPinned

@@ -1,3 +1,4 @@
+import { SubscribeToMoreOptions } from '@apollo/client'
 import {
   GroupActivity,
   GroupActivityDetails,
@@ -7,7 +8,7 @@ import { Dispatch, SetStateAction, useEffect } from 'react'
 
 interface GroupActivitySubscriberProps {
   activityId: string
-  subscribeToMore: any
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
   setEndedGroupActivity: Dispatch<SetStateAction<boolean>>
 }
 

@@ -2,14 +2,11 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AddConfusionTimestepDocument,
   CreateFeedbackDocument,
-  Feedback,
-  FeedbackAddedDocument,
-  FeedbackRemovedDocument,
-  FeedbackUpdatedDocument,
   GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { push } from '@socialgouv/matomo-next'
 import {
   Button,
@@ -24,103 +21,41 @@ import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
-import Loader from '@klicker-uzh/shared-components/src/Loader'
+import FeedbackAreaSubscriber from './FeedbackAreaSubscriber'
 import PublicFeedback from './PublicFeedback'
 
-interface SubscriberProps {
-  sessionId: string
-  subscribeToMore: any
+const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
+const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
+const RANGE_COLOR_MAP: Record<string, string> = {
+  '-2': 'bg-red-200',
+  '-1': 'bg-yellow-200',
+  '0': 'bg-green-200',
+  '1': 'bg-yellow-200',
+  '2': 'bg-red-200',
 }
-
-function Subscriber({ subscribeToMore, sessionId }: SubscriberProps) {
-  useEffect(() => {
-    if (!sessionId) return
-
-    const feedbackAdded = subscribeToMore({
-      document: FeedbackAddedDocument,
-      variables: { sessionId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackAdded: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const newItem = subscriptionData.data.feedbackAdded
-        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id))
-          return prev
-        return { ...prev, feedbacks: [newItem, ...prev.feedbacks] }
-      },
-    })
-
-    const feedbackRemoved = subscribeToMore({
-      document: FeedbackRemovedDocument,
-      variables: { sessionId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackRemoved: string } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const removedItem = subscriptionData.data.feedbackRemoved
-        return {
-          ...prev,
-          feedbacks: prev.feedbacks?.filter(
-            (item) => item.id !== parseInt(removedItem)
-          ),
-        }
-      },
-    })
-
-    const feedbackUpdated = subscribeToMore({
-      document: FeedbackUpdatedDocument,
-      variables: { sessionId },
-      updateQuery: (
-        prev: { feedbacks: Feedback[] },
-        {
-          subscriptionData,
-        }: { subscriptionData: { data: { feedbackUpdated: Feedback } } }
-      ) => {
-        if (!subscriptionData.data) return prev
-        const updatedItem = subscriptionData.data.feedbackUpdated
-        return {
-          ...prev,
-          feedbacks: prev.feedbacks?.map((item) => {
-            if (item.id === updatedItem.id) return updatedItem
-            return item
-          }),
-        }
-      },
-    })
-
-    return () => {
-      feedbackAdded && feedbackAdded()
-      feedbackRemoved && feedbackRemoved()
-      feedbackUpdated && feedbackUpdated()
-    }
-  }, [subscribeToMore, sessionId])
-
-  return <div></div>
-}
-
-interface FeedbackAreaProps {
-  isLiveQAEnabled: boolean
-  isConfusionFeedbackEnabled: boolean
+const BORDER_COLOR_MAP: Record<string, string> = {
+  '-2': 'border-red-300',
+  '-1': 'border-yellow-300',
+  '0': 'border-green-300',
+  '1': 'border-yellow-300',
+  '2': 'border-red-300',
 }
 
 function FeedbackArea({
   isConfusionFeedbackEnabled,
   isLiveQAEnabled,
-}: FeedbackAreaProps) {
+}: {
+  isLiveQAEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+}) {
   const t = useTranslations()
-
   const router = useRouter()
-  const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
-  const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
+  const quizId = router.query.id as string
+
   const [createFeedback] = useMutation(CreateFeedbackDocument)
   const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
+  const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
+  const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
 
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
@@ -128,56 +63,37 @@ function FeedbackArea({
   const confusionButtonTimeout = useRef<any>()
   const confusionSubmissionTimeout = useRef<any>()
 
-  const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
-  const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
-  const sessionId = router.query.id as string
-  const RANGE_COLOR_MAP: Record<string, string> = {
-    '-2': 'bg-red-200',
-    '-1': 'bg-yellow-200',
-    '0': 'bg-green-200',
-    '1': 'bg-yellow-200',
-    '2': 'bg-red-200',
-  }
-  const BORDER_COLOR_MAP: Record<string, string> = {
-    '-2': 'border-red-300',
-    '-1': 'border-yellow-300',
-    '0': 'border-green-300',
-    '1': 'border-yellow-300',
-    '2': 'border-red-300',
-  }
-
   const {
     loading: feedbacksLoading,
-    error: feedbacksError,
     data: feedbacksData,
     subscribeToMore,
   } = useQuery(GetFeedbacksDocument, {
     variables: {
-      sessionId: router.query.id as string,
+      quizId: router.query.id as string,
     },
     skip: !router.query.id,
   })
 
-  const onAddFeedback = (input: string) => {
+  const onAddFeedback = async (input: string) => {
     if (!router.query.id) return
-    createFeedback({
+    await createFeedback({
       variables: {
-        sessionId: router.query.id as string,
+        quizId: router.query.id as string,
         content: input,
       },
     })
   }
 
-  const onUpvoteFeedback = (id: number, change: number) => {
-    upvoteFeedback({ variables: { feedbackId: id, increment: change } })
+  const onUpvoteFeedback = async (id: number, change: number) => {
+    await upvoteFeedback({ variables: { feedbackId: id, increment: change } })
   }
 
-  const onReactToFeedbackResponse = (
+  const onReactToFeedbackResponse = async (
     id: number,
     upvoteChange: number,
     downvoteChange: number
   ) => {
-    voteFeedbackResponse({
+    await voteFeedbackResponse({
       variables: {
         id: id,
         incrementUpvote: upvoteChange,
@@ -189,9 +105,7 @@ function FeedbackArea({
   useEffect((): void => {
     const exec = async () => {
       try {
-        const confusion: any = await localForage.getItem(
-          `${sessionId}-confusion`
-        )
+        const confusion: any = await localForage.getItem(`${quizId}-confusion`)
         if (confusion) {
           setConfusionSpeed(confusion.prevSpeed)
           setConfusionDifficulty(confusion.prevDifficulty)
@@ -218,7 +132,7 @@ function FeedbackArea({
       }
     }
     exec()
-  }, [sessionId])
+  }, [quizId])
 
   // handle creation of a new confusion timestep with debounce for aggregation
   const handleNewConfusionTS = useCallback(
@@ -226,13 +140,13 @@ function FeedbackArea({
       try {
         addConfusionTimestep({
           variables: {
-            sessionId: sessionId,
+            quizId,
             difficulty: difficulty,
             speed: speed,
           },
         })
 
-        localForage.setItem(`${sessionId}-confusion`, {
+        localForage.setItem(`${quizId}-confusion`, {
           prevSpeed: speed,
           prevDifficulty: difficulty,
           prevTimestamp: dayjs().format(),
@@ -258,7 +172,7 @@ function FeedbackArea({
         )
       }
     },
-    [addConfusionTimestep, sessionId]
+    [addConfusionTimestep, quizId]
   )
 
   // custom implementation of confusion feedback debouncing
@@ -315,7 +229,10 @@ function FeedbackArea({
     <div className="h-full w-full">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
-      <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
+      <FeedbackAreaSubscriber
+        quizId={quizId}
+        subscribeToMore={subscribeToMore}
+      />
 
       {isLiveQAEnabled && (
         <div className="mb-8">

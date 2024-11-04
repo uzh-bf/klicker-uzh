@@ -1,5 +1,5 @@
-mutation CreateFeedback($sessionId: String!, $content: String!) {
-  createFeedback(sessionId: $sessionId, content: $content) {
+mutation CreateFeedback($quizId: String!, $content: String!) {
+  createFeedback(quizId: $quizId, content: $content) {
     id
     isPublished
     isPinned

@@ -1,11 +1,11 @@
-mutation ChangeSessionSettings(
+mutation ChangeLiveQuizSettings(
   $id: String!
   $isLiveQAEnabled: Boolean
   $isConfusionFeedbackEnabled: Boolean
   $isModerationEnabled: Boolean
   $isGamificationEnabled: Boolean
 ) {
-  changeSessionSettings(
+  changeLiveQuizSettings(
     id: $id
     isLiveQAEnabled: $isLiveQAEnabled
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled

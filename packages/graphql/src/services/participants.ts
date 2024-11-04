@@ -1,6 +1,5 @@
 import {
   PublicationStatus,
-  SessionStatus,
   UserRole,
   type ElementFeedback,
 } from '@klicker-uzh/prisma'
@@ -121,8 +120,8 @@ export async function getParticipations(
                   isDeleted: false,
                 },
               },
-              sessions: {
-                where: { status: SessionStatus.RUNNING },
+              liveQuizzes: {
+                where: { status: PublicationStatus.PUBLISHED },
               },
             },
           },

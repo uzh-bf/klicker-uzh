@@ -103,24 +103,22 @@ function FeedbackChannel({
             }: FeedbackType,
             index
           ) => (
-            <div className="flex flex-row print:mt-2" key={id}>
+            <div className="flex flex-row gap-2 print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    className={{ root: 'mr-2 h-9 w-9 justify-center' }}
+                    className={{
+                      root: 'flex h-9 w-9 items-center justify-center',
+                    }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}
                     data={{ cy: `publish-feedback-${content}` }}
                   >
                     {isPublished ? (
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faEye} />
-                      </Button.Icon>
+                      <FontAwesomeIcon icon={faEye} />
                     ) : (
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faEyeSlash} />
-                      </Button.Icon>
+                      <FontAwesomeIcon icon={faEyeSlash} />
                     )}
                   </Button>
                 </div>

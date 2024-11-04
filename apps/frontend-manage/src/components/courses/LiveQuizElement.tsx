@@ -14,9 +14,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteLiveQuizDocument,
   GetSingleCourseDocument,
-  Session,
-  SessionAccessMode,
-  SessionStatus,
+  LiveQuiz,
+  LiveQuizAccessMode,
+  PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -35,26 +35,25 @@ import getActivityDuplicationAction from './actions/getActivityDuplicationAction
 import DeletionModal from './modals/DeletionModal'
 
 const statusMap = {
-  PREPARED: <FontAwesomeIcon icon={faClock} />,
-  SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
-  RUNNING: <FontAwesomeIcon icon={faPlay} />,
-  COMPLETED: <FontAwesomeIcon icon={faCheck} />,
+  [PublicationStatus.Draft]: <FontAwesomeIcon icon={faClock} />,
+  [PublicationStatus.Scheduled]: <FontAwesomeIcon icon={faCalculator} />,
+  [PublicationStatus.Published]: <FontAwesomeIcon icon={faPlay} />,
+  [PublicationStatus.Ended]: <FontAwesomeIcon icon={faCheck} />,
+  [PublicationStatus.Graded]: <FontAwesomeIcon icon={faCheck} />,
 }
 
-interface LiveQuizElementProps {
-  session: Pick<
-    Session,
-    | 'id'
-    | 'status'
-    | 'name'
-    | 'numOfBlocks'
-    | 'numOfQuestions'
-    | 'isGamificationEnabled'
-    | 'accessMode'
-  >
-}
+export type LiveQuizListElementType = Pick<
+  LiveQuiz,
+  | 'id'
+  | 'status'
+  | 'name'
+  | 'numOfBlocks'
+  | 'numOfInstances'
+  | 'isGamificationEnabled'
+  | 'accessMode'
+>
 
-function LiveQuizElement({ session }: LiveQuizElementProps) {
+function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -66,7 +65,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   })
 
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
-    variables: { id: session.id },
+    variables: { id: quiz.id },
     update(cache, res) {
       const data = cache.readQuery({
         query: GetSingleCourseDocument,
@@ -81,8 +80,8 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         data: {
           course: {
             ...data.course,
-            sessions: data.course.sessions?.filter(
-              (session) => session.id !== res.data!.deleteLiveQuiz!.id
+            liveQuizzes: data.course.liveQuizzes?.filter(
+              (quiz) => quiz.id !== res.data!.deleteLiveQuiz!.id
             ),
           },
         },
@@ -91,7 +90,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     optimisticResponse: {
       deleteLiveQuiz: {
         __typename: 'LiveQuiz',
-        id: session.id,
+        id: quiz.id,
       },
     },
     refetchQueries: [GetSingleCourseDocument],
@@ -102,35 +101,35 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
-      data-cy={`session-${session.name}`}
+      data-cy={`session-${quiz.name}`}
     >
       <div className="flex-1">
         <div className="flex flex-row gap-2">
-          <div>{statusMap[session.status]}</div>
+          <div>{statusMap[quiz.status]}</div>
 
           <Ellipsis
             maxLength={50}
             className={{ markdown: 'text-base font-bold' }}
           >
-            {session.name}
+            {quiz.name}
           </Ellipsis>
         </div>
         <div className="mb-1 text-sm italic">
           {t('manage.sessions.nBlocksQuestions', {
-            blocks: session.numOfBlocks,
-            questions: session.numOfQuestions,
+            blocks: quiz.numOfBlocks,
+            questions: quiz.numOfInstances,
           })}
         </div>
       </div>
 
       <div className="flex flex-col items-end justify-between gap-4">
         <div className="flex flex-row items-center gap-3.5 text-sm">
-          {(session.status === SessionStatus.Scheduled ||
-            session.status === SessionStatus.Prepared) && (
+          {(quiz.status === PublicationStatus.Scheduled ||
+            quiz.status === PublicationStatus.Draft) && (
             <>
-              <StartLiveQuizButton liveQuiz={session} />
+              <StartLiveQuizButton liveQuiz={quiz} />
               <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
+                data={{ cy: `live-quiz-actions-${quiz.name}` }}
                 className={{
                   item: 'p-1 hover:bg-gray-200',
                   viewport: 'bg-white',
@@ -141,14 +140,14 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     href,
                     setCopyToast,
                     t,
-                    name: session.name,
+                    name: quiz.name,
                   }),
                   dataUser?.userProfile?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
                         t,
-                        name: session.name,
+                        name: quiz.name,
                       })
                     : [],
                   {
@@ -162,18 +161,18 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                       router.push({
                         pathname: '/',
                         query: {
-                          elementId: session.id,
+                          elementId: quiz.id,
                           editMode: WizardMode.LiveQuiz,
                         },
                       }),
-                    data: { cy: `edit-live-quiz-${session.name}` },
+                    data: { cy: `edit-live-quiz-${quiz.name}` },
                   },
                   getActivityDuplicationAction({
-                    id: session.id,
+                    id: quiz.id,
                     text: t('manage.sessions.duplicateSession'),
                     wizardMode: WizardMode.LiveQuiz,
                     router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                    data: { cy: `duplicate-live-quiz-${quiz.name}` },
                   }),
                   {
                     label: (
@@ -183,18 +182,18 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                       </div>
                     ),
                     onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-live-quiz-${session.name}` },
+                    data: { cy: `delete-live-quiz-${quiz.name}` },
                   },
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
             </>
           )}
-          {session.status === SessionStatus.Running && (
+          {quiz.status === PublicationStatus.Published && (
             <>
-              <RunningLiveQuizLink liveQuiz={session} />
+              <RunningLiveQuizLink liveQuiz={quiz} />
               <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
+                data={{ cy: `live-quiz-actions-${quiz.name}` }}
                 className={{
                   item: 'p-1 hover:bg-gray-200',
                   viewport: 'bg-white',
@@ -205,33 +204,33 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                     href,
                     setCopyToast,
                     t,
-                    name: session.name,
+                    name: quiz.name,
                   }),
                   dataUser?.userProfile?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
                         t,
-                        name: session.name,
+                        name: quiz.name,
                       })
                     : [],
                   getActivityDuplicationAction({
-                    id: session.id,
+                    id: quiz.id,
                     text: t('manage.sessions.duplicateSession'),
                     wizardMode: WizardMode.LiveQuiz,
                     router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                    data: { cy: `duplicate-live-quiz-${quiz.name}` },
                   }),
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
             </>
           )}
-          {session.status === SessionStatus.Completed && (
+          {quiz.status === PublicationStatus.Ended && (
             <>
-              <EvaluationLinkLiveQuiz liveQuiz={session} />
+              <EvaluationLinkLiveQuiz liveQuiz={quiz} />
               <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
+                data={{ cy: `live-quiz-actions-${quiz.name}` }}
                 className={{
                   item: 'p-1 hover:bg-gray-200',
                   viewport: 'bg-white',
@@ -246,14 +245,14 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
                       </div>
                     ),
                     onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-live-quiz-${session.name}` },
+                    data: { cy: `delete-live-quiz-${quiz.name}` },
                   },
                   getActivityDuplicationAction({
-                    id: session.id,
+                    id: quiz.id,
                     text: t('manage.sessions.duplicateSession'),
                     wizardMode: WizardMode.LiveQuiz,
                     router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
+                    data: { cy: `duplicate-live-quiz-${quiz.name}` },
                   }),
                 ]}
                 triggerIcon={faHandPointer}
@@ -262,21 +261,21 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
           )}
         </div>
         <div className="flex flex-row gap-2">
-          {session.isGamificationEnabled && (
+          {quiz.isGamificationEnabled && (
             <StatusTag
               color="bg-uzh-red-40"
               status="Gamified"
               icon={faTrophy}
             />
           )}
-          {session.accessMode === SessionAccessMode.Public && (
+          {quiz.accessMode === LiveQuizAccessMode.Public && (
             <StatusTag
               color="bg-green-300"
               status={t('manage.course.publicAccess')}
               icon={faUserGroup}
             />
           )}
-          {session.accessMode === SessionAccessMode.Restricted && (
+          {quiz.accessMode === LiveQuizAccessMode.Restricted && (
             <StatusTag
               color="bg-red-300"
               status={t('manage.course.restrictedAccess')}
@@ -290,7 +289,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
       <DeletionModal
         title={t('manage.sessions.deleteLiveQuiz')}
         description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name}
+        elementName={quiz.name}
         message={t('manage.sessions.liveQuizDeletionHint')}
         deleteElement={deleteLiveQuiz}
         open={deletionModal}

@@ -1,5 +1,5 @@
-query GetControlSession($id: String!) {
-  controlSession(id: $id) {
+query GetControlLiveQuiz($id: String!) {
+  controlLiveQuiz(id: $id) {
     id
     name
     displayName
@@ -15,9 +15,9 @@ query GetControlSession($id: String!) {
       timeLimit
       randomSelection
       execution
-      instances {
+      elements {
         id
-        ...QuestionDataInfo
+        ...ElementDataInfo
       }
     }
     activeBlock {

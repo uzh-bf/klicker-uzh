@@ -2,7 +2,7 @@ import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeSessionSettingsDocument,
+  ChangeLiveQuizSettingsDocument,
   ConfusionSummary,
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
@@ -54,7 +54,7 @@ function AudienceInteraction({
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
-      variables: { sessionId: quizId },
+      variables: { quizId },
       updateQuery: (
         prev: { cockpitQuiz: LiveQuiz },
         {
@@ -79,7 +79,7 @@ function AudienceInteraction({
     }
   }, [subscribeToMore, quizId])
 
-  const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
+  const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
@@ -118,7 +118,7 @@ function AudienceInteraction({
                 data={{ cy: 'toggle-qa' }}
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
                       id: quizId,
                       isLiveQAEnabled: !isLiveQAEnabled,
@@ -139,7 +139,7 @@ function AudienceInteraction({
                 checked={isModerationEnabled}
                 disabled={!isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
                       id: quizId,
                       isModerationEnabled: !isModerationEnabled,
@@ -252,7 +252,7 @@ function AudienceInteraction({
                     isPinned: boolean
                   ) => {
                     pinFeedback({
-                      variables: { id: feedbackId, isPinned: isPinned },
+                      variables: { id: feedbackId, isPinned },
                     })
                     push([
                       'trackEvent',
@@ -266,7 +266,7 @@ function AudienceInteraction({
                     isPublished: boolean
                   ) => {
                     publishFeedback({
-                      variables: { id: feedbackId, isPublished: isPublished },
+                      variables: { id: feedbackId, isPublished },
                     })
                     push([
                       'trackEvent',
@@ -280,7 +280,7 @@ function AudienceInteraction({
                     isResolved: boolean
                   ) => {
                     resolveFeedback({
-                      variables: { id: feedbackId, isResolved: isResolved },
+                      variables: { id: feedbackId, isResolved },
                     })
                     push([
                       'trackEvent',
@@ -320,7 +320,7 @@ function AudienceInteraction({
               data={{ cy: 'toggle-gamification' }}
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
-                changeSessionSettings({
+                changeQuizSettings({
                   variables: {
                     id: quizId,
                     isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,

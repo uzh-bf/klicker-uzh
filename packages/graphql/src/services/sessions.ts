@@ -15,10 +15,8 @@ import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import { mapValues, omitBy, pick, prop, sortBy } from 'remeda'
-import type { ISession } from 'src/schema/session.js'
+import { mapValues, omitBy, prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 
 // TODO: rework scheduling for serverless
@@ -849,78 +847,6 @@ export async function deactivateSessionBlock(
   }
 }
 
-export async function getRunningSession({ id }: { id: string }, ctx: Context) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id },
-    include: {
-      activeBlock: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      course: true,
-    },
-  })
-
-  // extract solution from instances in active block
-  let sessionWithoutSolutions: any
-
-  if (session && session.activeBlock) {
-    sessionWithoutSolutions = {
-      ...session,
-      activeBlock: {
-        ...session.activeBlock,
-        instances: session.activeBlock.instances.map((instance) => {
-          const questionData = instance.questionData
-          if (
-            !questionData ||
-            typeof questionData !== 'object' ||
-            Array.isArray(questionData)
-          )
-            return instance
-
-          switch (questionData.type) {
-            case ElementType.SC:
-            case ElementType.MC:
-              return {
-                ...instance,
-                questionData: {
-                  ...questionData,
-                  options: {
-                    ...questionData.options,
-                    choices: questionData.options.choices.map((choice) => ({
-                      ...pick(choice, ['ix', 'value']),
-                    })),
-                  },
-                },
-              }
-
-            case ElementType.NUMERICAL:
-            case ElementType.FREE_TEXT:
-              return {
-                ...instance,
-                questionData,
-              }
-
-            default:
-              return instance
-          }
-        }),
-      },
-    }
-  }
-
-  if (session?.status === SessionStatus.RUNNING) {
-    return sessionWithoutSolutions || session
-  }
-
-  return null
-}
-
 export async function getLeaderboard(
   { sessionId }: { sessionId: string },
   ctx: Context
@@ -1004,40 +930,6 @@ export async function getLeaderboard(
   return filteredEntries
 }
 
-// modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
-interface SessionSettingArgs {
-  id: string
-  isLiveQAEnabled?: boolean | null
-  isConfusionFeedbackEnabled?: boolean | null
-  isModerationEnabled?: boolean | null
-  isGamificationEnabled?: boolean | null
-}
-
-export async function changeSessionSettings(
-  {
-    id,
-    isLiveQAEnabled,
-    isConfusionFeedbackEnabled,
-    isModerationEnabled,
-    isGamificationEnabled,
-  }: SessionSettingArgs,
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
-      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
-      isModerationEnabled: isModerationEnabled ?? undefined,
-      isGamificationEnabled: isGamificationEnabled ?? undefined,
-    },
-  })
-  return session
-}
-
 interface GetRunningSessionsArgs {
   shortname: string
 }
@@ -1066,33 +958,6 @@ export async function getRunningSessions(
   if (!userWithSessions?.sessions) return []
 
   return userWithSessions.sessions
-}
-
-export async function getRunningSessionsCourse(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
-  ctx: Context
-) {
-  const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
-    include: {
-      sessions: {
-        where: {
-          status: SessionStatus.RUNNING,
-        },
-        include: {
-          course: true,
-        },
-      },
-    },
-  })
-
-  return course?.sessions ?? []
 }
 
 export async function getUnassignedSessions(ctx: ContextWithUser) {
@@ -1149,66 +1014,6 @@ const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
     }
   }
   return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
-}
-
-export async function getControlSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      activeBlock: true,
-      course: true,
-      blocks: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  })
-
-  if (!session || session?.status !== SessionStatus.RUNNING) {
-    return null
-  }
-
-  return session
-}
-
-export async function getPinnedFeedbacks(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      confusionFeedbacks: true,
-      feedbacks: {
-        where: {
-          isPinned: true,
-        },
-      },
-    },
-  })
-
-  if (session?.status !== SessionStatus.RUNNING || !session) {
-    return null
-  }
-
-  // recude session to only contain what is required for the lecturer cockpit
-  const reducedSession = {
-    ...session,
-    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
-  }
-
-  return reducedSession
 }
 
 type PickedInstanceType = Pick<
@@ -1484,184 +1289,4 @@ export async function getSessionEvaluation(
     feedbacks: session.feedbacks,
     confusionFeedbacks: session.confusionFeedbacks,
   }
-}
-
-export async function cancelSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activeBlock: true,
-      blocks: {
-        include: {
-          instances: true,
-          activeInSession: true,
-        },
-      },
-      leaderboard: true,
-    },
-  })
-
-  if (!session) return null
-
-  try {
-    if (session.status !== SessionStatus.RUNNING) {
-      throw new Error('Session is not running')
-    }
-
-    const instances = session.blocks.flatMap((block) => block.instances)
-
-    const [updatedSession] = await ctx.prisma.$transaction([
-      ctx.prisma.liveSession.update({
-        where: { id },
-        data: {
-          status: SessionStatus.PREPARED,
-          startedAt: null,
-          pinCode: null,
-          activeBlock: {
-            disconnect: true,
-          },
-          leaderboard: {
-            deleteMany: {},
-          },
-          feedbacks: {
-            deleteMany: {},
-          },
-          confusionFeedbacks: {
-            deleteMany: {},
-          },
-          blocks: {
-            updateMany: {
-              where: {
-                status: {
-                  in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
-                },
-              },
-              data: {
-                status: SessionBlockStatus.SCHEDULED,
-                expiresAt: null,
-                execution: {
-                  increment: 1,
-                },
-              },
-            },
-          },
-        },
-        include: {
-          activeBlock: true,
-          blocks: {
-            include: {
-              instances: true,
-              activeInSession: true,
-            },
-          },
-        },
-      }),
-
-      ...instances.map((instance) =>
-        ctx.prisma.questionInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            participants: 0,
-            results: prepareInitialQuestionInstanceResults(
-              instance.questionData
-            ),
-          },
-        })
-      ),
-    ])
-
-    const keys = await ctx.redisExec.keys(`s:${id}:*`)
-    const pipe = ctx.redisExec.multi()
-    for (const key of keys) {
-      pipe.unlink(key)
-    }
-    await pipe.exec()
-
-    await sendTeamsNotifications(
-      'graphql/cancelSession',
-      `CANCEL Session ${session.name} with id ${session.id}.`
-    )
-
-    return updatedSession as ISession
-  } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/cancelSession',
-      `ERROR - failed to cancel session ${session.name} with id ${session.id}: ${error}`
-    )
-    throw error
-  }
-}
-
-export async function getLiveQuizSummary(
-  { quizId }: { quizId: string },
-  ctx: ContextWithUser
-) {
-  const liveQuiz = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      _count: {
-        select: {
-          feedbacks: true,
-          confusionFeedbacks: true,
-          leaderboard: true,
-        },
-      },
-      blocks: {
-        include: {
-          instances: true,
-        },
-      },
-    },
-  })
-
-  if (!liveQuiz) return null
-
-  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
-    acc_b += block.instances.reduce((acc_i, instance) => {
-      acc_i += instance.participants
-      return acc_i
-    }, 0)
-    return acc_b
-  }, 0)
-
-  return {
-    numOfResponses: storedResponses,
-    numOfFeedbacks: liveQuiz._count.feedbacks,
-    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
-    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
-  }
-}
-
-export async function changeLiveQuizName(
-  { id, name, displayName }: { id: string; name: string; displayName: string },
-  ctx: ContextWithUser
-) {
-  const updatedSession = await ctx.prisma.liveSession.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name,
-      displayName,
-    },
-  })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id,
-  })
-
-  return updatedSession
 }

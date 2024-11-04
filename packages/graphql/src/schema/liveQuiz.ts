@@ -78,7 +78,7 @@ export const ConfusionSummary = builder
 
 // ----- LIVE QUIZ INTERFACE -----
 // #region
-interface ILiveQuiz extends DB.LiveQuiz {
+export interface ILiveQuiz extends DB.LiveQuiz {
   blocks?: DB.ElementBlock[] | null
   activeBlock?: DB.ElementBlock | null
   course?: DB.Course | null
@@ -94,7 +94,7 @@ export const LiveQuiz = LiveQuizRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
-    namespace: t.exposeString('namespace'),
+    namespace: t.exposeString('namespace', { nullable: true }),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     displayName: t.exposeString('displayName'),
@@ -106,8 +106,8 @@ export const LiveQuiz = LiveQuizRef.implement({
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
-    maxBonusPoints: t.exposeInt('maxBonusPoints'),
-    timeToZeroBonus: t.exposeInt('timeToZeroBonus'),
+    maxBonusPoints: t.exposeInt('maxBonusPoints', { nullable: true }),
+    timeToZeroBonus: t.exposeInt('timeToZeroBonus', { nullable: true }),
 
     status: t.expose('status', { type: PublicationStatus }),
     accessMode: t.expose('accessMode', { type: LiveQuizAccessMode }),

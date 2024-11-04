@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CancelSessionDocument,
+  CancelLiveQuizDocument,
   GetLiveQuizSummaryDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
@@ -18,19 +18,17 @@ export interface SessionAbortionConfirmationType {
   deleteLeaderboardEntries: boolean
 }
 
-interface CancelSessionModalProps {
-  sessionId: string
-  title: string
-  open: boolean
-  setOpen: (value: boolean) => void
-}
-
-function CancelSessionModal({
+function CancelLiveQuizModal({
   sessionId,
   title,
   open,
   setOpen,
-}: CancelSessionModalProps) {
+}: {
+  sessionId: string
+  title: string
+  open: boolean
+  setOpen: (value: boolean) => void
+}) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -56,8 +54,8 @@ function CancelSessionModal({
     skip: !open,
   })
 
-  const [cancelSession, { loading: sessionDeleting }] = useMutation(
-    CancelSessionDocument,
+  const [cancelLiveQuiz, { loading: sessionDeleting }] = useMutation(
+    CancelLiveQuizDocument,
     {
       variables: { id: sessionId },
       update(cache, res) {
@@ -69,7 +67,7 @@ function CancelSessionModal({
           data: {
             userRunningLiveQuizzes:
               data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.cancelSession?.id
+                (q) => q.id !== res.data?.cancelLiveQuiz?.id
               ) ?? [],
           },
         })
@@ -123,7 +121,7 @@ function CancelSessionModal({
             Object.values(confirmations).some((confirmation) => !confirmation)
           }
           onClick={async () => {
-            await cancelSession()
+            await cancelLiveQuiz()
             router.push('/sessions')
             setOpen(false)
             setConfirmations({ ...initialConfirmations })
@@ -157,4 +155,4 @@ function CancelSessionModal({
   )
 }
 
-export default CancelSessionModal
+export default CancelLiveQuizModal

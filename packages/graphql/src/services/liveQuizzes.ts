@@ -2,6 +2,7 @@ import {
   AccessMode,
   ConfusionTimestep,
   type Element,
+  ElementBlockStatus,
   ElementInstanceType,
   ElementType,
   PublicationStatus,
@@ -21,6 +22,8 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 
+// ------ LIVE QUIZ CREATION / EDITING ------
+// #region
 interface ManipulateLiveQuizArgs {
   id?: string
   name: string
@@ -201,7 +204,10 @@ export async function manipulateLiveQuiz(
 
   return element
 }
+// #endregion
 
+// ------ LIVE QUIZ GETTER FUNCTIONS (LECTURER) ------
+// #region
 export async function getLiveQuizData(
   {
     id,
@@ -312,6 +318,69 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   return user?.liveQuizzes ?? []
 }
 
+export async function getLecturerViewLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      confusionFeedbacks: true,
+      feedbacks: {
+        where: {
+          isPinned: true,
+        },
+      },
+    },
+  })
+
+  if (session?.status !== PublicationStatus.PUBLISHED || !session) {
+    return null
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
+  }
+
+  return reducedSession
+}
+
+export async function getControlLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      activeBlock: true,
+      course: true,
+      blocks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!session || session?.status !== PublicationStatus.PUBLISHED) {
+    return null
+  }
+
+  return session
+}
+// #endregion
+
+// ------ LIVE QUIZ EXECUTION (LECTURER) ------
+// #region
 export async function startLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -389,114 +458,6 @@ export async function startLiveQuiz(
     )
     throw error
   }
-}
-
-export async function deleteLiveQuiz(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  // fetch live quiz to check its status
-  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    select: {
-      status: true,
-    },
-  })
-
-  if (!liveQuiz) return null
-
-  if (liveQuiz.status === PublicationStatus.PUBLISHED) {
-    // running live quizzes cannot be deleted
-    return null
-  } else if (liveQuiz.status === PublicationStatus.ENDED) {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: PublicationStatus.ENDED,
-      },
-      data: {
-        isDeleted: true,
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'Session',
-      id,
-    })
-
-    return deletedLiveQuiz
-  } else {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: {
-          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
-        },
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'LiveQuiz',
-      id,
-    })
-
-    return deletedLiveQuiz
-  }
-}
-
-export async function getLiveQuizHMAC(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-    },
-  })
-
-  if (!quiz) return null
-
-  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-  hmacEncoder.update(quiz.namespace + quiz.id)
-  const quizHmac = hmacEncoder.digest('hex')
-
-  return quizHmac
-}
-
-// compute the average of all feedbacks that were given within the last 10 minutes
-const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
-  // TODO: for improved efficiency, try to use descending feedback ordering
-  // and break early once first is not within the filtering requirements anymore
-  const recentFeedbacks = feedbacks.filter(
-    (feedback) =>
-      dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
-      dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
-  )
-
-  if (recentFeedbacks.length > 0) {
-    const summedFeedbacks = recentFeedbacks.reduce(
-      (previousValue, feedback) => {
-        return {
-          speed: previousValue.speed + feedback.speed,
-          difficulty: previousValue.difficulty + feedback.difficulty,
-          numberOfParticipants: previousValue.numberOfParticipants + 1,
-        }
-      },
-      { speed: 0, difficulty: 0, numberOfParticipants: 0 }
-    )
-    return {
-      ...summedFeedbacks,
-      speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
-      difficulty:
-        summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
-    }
-  }
-  return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
 }
 
 export async function getCockpitQuiz(
@@ -615,6 +576,329 @@ export async function getCockpitQuiz(
   return reducedSession
 }
 
+export async function changeLiveQuizSettings(
+  {
+    id,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled,
+    isModerationEnabled,
+    isGamificationEnabled,
+  }: {
+    id: string
+    isLiveQAEnabled?: boolean | null
+    isConfusionFeedbackEnabled?: boolean | null
+    isModerationEnabled?: boolean | null
+    isGamificationEnabled?: boolean | null
+  },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
+      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
+      isModerationEnabled: isModerationEnabled ?? undefined,
+      isGamificationEnabled: isGamificationEnabled ?? undefined,
+    },
+  })
+  return quiz
+}
+
+export async function changeLiveQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  const updatedQuiz = await ctx.prisma.liveQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      name,
+      displayName,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id,
+  })
+
+  return updatedQuiz
+}
+
+export async function getLiveQuizSummary(
+  { quizId }: { quizId: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          feedbacks: true,
+          confusionFeedbacks: true,
+          leaderboard: true,
+        },
+      },
+      blocks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+    acc_b += block.elements.reduce((acc_i, instance) => {
+      acc_i += instance.results.total + instance.anonymousResults.total
+      return acc_i
+    }, 0)
+    return acc_b
+  }, 0)
+
+  return {
+    numOfResponses: storedResponses,
+    numOfFeedbacks: liveQuiz._count.feedbacks,
+    numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
+    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+  }
+}
+
+export async function cancelLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          elements: { include: { element: true } },
+          activeInLiveQuiz: true,
+        },
+      },
+      leaderboard: true,
+    },
+  })
+
+  if (!quiz) return null
+
+  try {
+    if (quiz.status !== PublicationStatus.PUBLISHED) {
+      throw new Error('Session is not running')
+    }
+
+    const instances = quiz.blocks.flatMap((block) => block.elements)
+
+    const [updatedQuiz] = await ctx.prisma.$transaction([
+      ctx.prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          status: PublicationStatus.DRAFT,
+          startedAt: null,
+          pinCode: null,
+          activeBlock: {
+            disconnect: true,
+          },
+          leaderboard: {
+            deleteMany: {},
+          },
+          feedbacks: {
+            deleteMany: {},
+          },
+          confusionFeedbacks: {
+            deleteMany: {},
+          },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [ElementBlockStatus.EXECUTED, ElementBlockStatus.ACTIVE],
+                },
+              },
+              data: {
+                status: ElementBlockStatus.SCHEDULED,
+                expiresAt: null,
+                execution: {
+                  increment: 1,
+                },
+              },
+            },
+          },
+        },
+        include: {
+          activeBlock: true,
+          blocks: {
+            include: {
+              elements: true,
+              activeInLiveQuiz: true,
+            },
+          },
+        },
+      }),
+
+      ...instances.map((instance) =>
+        ctx.prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            results: getInitialElementResults(instance.element),
+          },
+        })
+      ),
+    ])
+
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
+
+    await sendTeamsNotifications(
+      'graphql/abortLiveQuiz',
+      `CANCEL Session ${quiz.name} with id ${quiz.id}.`
+    )
+
+    return updatedQuiz
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/abortLiveQuiz',
+      `ERROR - failed to cancel session ${quiz.name} with id ${quiz.id}: ${error}`
+    )
+    throw error
+  }
+}
+
+// #endregion
+
+// ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------
+// #region
+export async function deleteLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch live quiz to check its status
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    select: {
+      status: true,
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  if (liveQuiz.status === PublicationStatus.PUBLISHED) {
+    // running live quizzes cannot be deleted
+    return null
+  } else if (liveQuiz.status === PublicationStatus.ENDED) {
+    const deletedLiveQuiz = await ctx.prisma.liveQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: PublicationStatus.ENDED,
+      },
+      data: {
+        isDeleted: true,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'Session',
+      id,
+    })
+
+    return deletedLiveQuiz
+  } else {
+    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: {
+          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+        },
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id,
+    })
+
+    return deletedLiveQuiz
+  }
+}
+
+export async function getLiveQuizHMAC(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!quiz) return null
+
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(quiz.namespace + quiz.id)
+  const quizHmac = hmacEncoder.digest('hex')
+
+  return quizHmac
+}
+
+// compute the average of all feedbacks that were given within the last 10 minutes
+const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+  // TODO: for improved efficiency, try to use descending feedback ordering
+  // and break early once first is not within the filtering requirements anymore
+  const recentFeedbacks = feedbacks.filter(
+    (feedback) =>
+      dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
+      dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
+  )
+
+  if (recentFeedbacks.length > 0) {
+    const summedFeedbacks = recentFeedbacks.reduce(
+      (previousValue, feedback) => {
+        return {
+          speed: previousValue.speed + feedback.speed,
+          difficulty: previousValue.difficulty + feedback.difficulty,
+          numberOfParticipants: previousValue.numberOfParticipants + 1,
+        }
+      },
+      { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+    )
+    return {
+      ...summedFeedbacks,
+      speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
+      difficulty:
+        summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
+    }
+  }
+  return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+}
+// #endregion
+
+// ------ LIVE QUIZ GETTER FUNCTIONS (STUDENT) ------
+// #region
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
@@ -685,3 +969,27 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   return null
 }
+
+export async function getCourseRunningLiveQuizzes(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      liveQuizzes: {
+        where: {
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return course?.liveQuizzes ?? []
+}
+// #endregion

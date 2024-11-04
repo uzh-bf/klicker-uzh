@@ -160,7 +160,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [Feedback],
         args: {
-          id: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
@@ -258,18 +258,18 @@ export const Query = builder.queryType({
           quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveQuizSummary(args, ctx)
+          return LiveQuizService.getLiveQuizSummary(args, ctx)
         },
       }),
 
-      runningSessionsCourse: t.field({
+      getCourseRunningLiveQuizzes: t.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSessionsCourse(args, ctx)
+          return LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
         },
       }),
 
@@ -308,14 +308,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      controlSession: asUser.field({
+      controlLiveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getControlSession(args, ctx)
+          return LiveQuizService.getControlLiveQuiz(args, ctx)
         },
       }),
 
@@ -453,14 +453,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      pinnedFeedbacks: asUser.field({
+      getLecturerViewLiveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getPinnedFeedbacks(args, ctx)
+          return LiveQuizService.getLecturerViewLiveQuiz(args, ctx)
         },
       }),
 

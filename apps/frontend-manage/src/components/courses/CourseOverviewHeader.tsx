@@ -21,7 +21,7 @@ import CourseManipulationModal, {
 interface CourseOverviewHeaderProps {
   course: Omit<
     Course,
-    'leaderboard' | 'sessions' | 'practiceQuizzes' | 'microLearnings'
+    'leaderboard' | 'liveQuizzes' | 'practiceQuizzes' | 'microLearnings'
   >
   name: string
   pinCode: number

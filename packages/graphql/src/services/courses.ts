@@ -709,7 +709,7 @@ export async function getCourseData(
       _count: {
         select: { participantGroups: true },
       },
-      sessions: {
+      liveQuizzes: {
         where: {
           isDeleted: false,
         },
@@ -717,7 +717,7 @@ export async function getCourseData(
           blocks: {
             include: {
               _count: {
-                select: { instances: true },
+                select: { elements: true },
               },
             },
           },
@@ -790,12 +790,12 @@ export async function getCourseData(
 
   if (!course) return null
 
-  const reducedSessions = course?.sessions.map((session) => {
+  const reducedLiveQuizzes = course?.liveQuizzes.map((session) => {
     return {
       ...session,
       numOfBlocks: session.blocks.length,
-      numOfQuestions: session.blocks.reduce(
-        (acc, block) => acc + block._count.instances,
+      numOfInstances: session.blocks.reduce(
+        (acc, block) => acc + block._count.elements,
         0
       ),
     }
@@ -864,7 +864,7 @@ export async function getCourseData(
 
   return {
     ...course,
-    sessions: reducedSessions,
+    liveQuizzes: reducedLiveQuizzes,
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: reducedGroupActivities,
     microLearnings: reducedMicroLearnings,

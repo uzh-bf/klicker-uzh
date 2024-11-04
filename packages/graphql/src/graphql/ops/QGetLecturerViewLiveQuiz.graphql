@@ -1,5 +1,5 @@
-query GetPinnedFeedbacks($id: String!) {
-  pinnedFeedbacks(id: $id) {
+query GetLecturerViewLiveQuiz($id: String!) {
+  getLecturerViewLiveQuiz(id: $id) {
     id
     isLiveQAEnabled
     isConfusionFeedbackEnabled

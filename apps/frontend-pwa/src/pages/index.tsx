@@ -6,13 +6,10 @@ import {
   faCheck,
   faCirclePlus,
   faGraduationCap,
-  faLink,
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  MicroLearning,
   ParticipationsDocument,
-  Session,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -22,31 +19,12 @@ import { H1, Toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import MicroLearningListSubscriber from '~/components/microLearning/MicroLearningListSubscriber'
+import useStudentOverviewSplit from '~/lib/hooks/useStudentOverviewSplit'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
-
-type LocalCourseType = {
-  id: string
-  displayName: string
-  description?: string
-  isSubscribed: boolean
-  startDate: string
-  endDate: string
-  isGamificationEnabled: boolean
-}
-
-type LocalLiveSessionType = Partial<Session> & { courseName: string }
-
-type LocalMicroLearningType = Pick<
-  MicroLearning,
-  'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
-> & {
-  courseName: string
-  isCompleted: boolean
-}
 
 const Index = function () {
   const t = useTranslations()
@@ -119,86 +97,8 @@ const Index = function () {
     fetchPolicy: 'network-only',
   })
 
-  const {
-    courses,
-    oldCourses,
-    activeSessions,
-    activeMicrolearning,
-  }: {
-    courses: LocalCourseType[]
-    oldCourses: LocalCourseType[]
-    activeSessions: LocalLiveSessionType[]
-    activeMicrolearning: LocalMicroLearningType[]
-  } = useMemo(() => {
-    const obj = {
-      courses: [] as LocalCourseType[],
-      oldCourses: [] as LocalCourseType[],
-      activeSessions: [] as LocalLiveSessionType[],
-      activeMicrolearning: [] as LocalMicroLearningType[],
-    }
-    if (!data?.participations) return obj
-    return data.participations.reduce((acc, participation) => {
-      if (!participation.course) return acc
-      const course = participation.course
-
-      return {
-        courses:
-          // check if endDate of course is before today or today
-          dayjs(participation.course?.endDate).isAfter(dayjs()) ||
-          dayjs(participation.course?.endDate).isSame(dayjs())
-            ? [
-                ...acc.courses,
-                {
-                  id: participation.course?.id,
-                  displayName: participation.course?.displayName,
-                  startDate: participation.course?.startDate,
-                  endDate: participation.course?.endDate,
-                  isGamificationEnabled:
-                    participation.course?.isGamificationEnabled,
-                  isSubscribed:
-                    (participation.subscriptions &&
-                      participation.subscriptions.length > 0) ??
-                    false,
-                },
-              ]
-            : acc.courses,
-        oldCourses: dayjs(participation.course?.endDate).isBefore(dayjs())
-          ? [
-              ...acc.oldCourses,
-              {
-                id: participation.course?.id,
-                displayName: participation.course?.displayName,
-                startDate: participation.course?.startDate,
-                endDate: participation.course?.endDate,
-                isGamificationEnabled:
-                  participation.course?.isGamificationEnabled,
-                isSubscribed:
-                  (participation.subscriptions &&
-                    participation.subscriptions.length > 0) ??
-                  false,
-              },
-            ]
-          : acc.oldCourses,
-        activeSessions: [
-          ...acc.activeSessions,
-          ...(course.sessions?.map((session) => ({
-            ...session,
-            courseName: course.displayName,
-          })) ?? []),
-        ],
-        activeMicrolearning: [
-          ...acc.activeMicrolearning,
-          ...(course.microLearnings?.map((micro) => ({
-            ...micro,
-            courseName: course.displayName,
-            isCompleted: participation.completedMicroLearnings?.includes(
-              micro.id
-            ),
-          })) ?? []),
-        ],
-      }
-    }, obj)
-  }, [data])
+  const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
+    useStudentOverviewSplit({ participations: data?.participations ?? [] })
 
   if (loading || !data) {
     return (
@@ -252,17 +152,17 @@ const Index = function () {
           </Link>
         )} */}
 
-        {activeSessions.length !== 0 && (
+        {activeLiveQuizzes.length !== 0 && (
           <div>
             <H1 className={{ root: 'mb-2 text-xl' }}>
-              {t('shared.generic.activeSessions')}
+              {t('shared.generic.activeLiveQuizzes')}
             </H1>
             <div className="flex flex-col gap-2">
-              {activeSessions.map((session) => (
+              {activeLiveQuizzes.map((session) => (
                 <LinkButton
-                  href={session.linkTo || `/session/${session.id}`}
+                  href={`/session/${session.id}`}
                   key={session.id}
-                  icon={session.linkTo ? faLink : faChalkboard}
+                  icon={faChalkboard}
                   data={{ cy: `live-quiz-${session.displayName}` }}
                 >
                   <div className="flex flex-row items-end justify-between md:flex-row">

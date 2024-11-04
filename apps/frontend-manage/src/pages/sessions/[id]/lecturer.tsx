@@ -3,7 +3,7 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Feedback,
-  GetPinnedFeedbacksDocument,
+  GetLecturerViewLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Head from 'next/head'
@@ -20,30 +20,30 @@ function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data, loading, error, subscribeToMore } = useQuery(
-    GetPinnedFeedbacksDocument,
-    {
-      variables: {
-        id: router.query.id as string,
-      },
-      pollInterval: 5000,
-      skip: !router.query.id,
-    }
-  )
+  // TODO: implement subscription logic instead of polling on this lecturer view
+  const { data, loading, error } = useQuery(GetLecturerViewLiveQuizDocument, {
+    variables: {
+      id: router.query.id as string,
+    },
+    pollInterval: 5000,
+    skip: !router.query.id,
+  })
 
   const aggregateConfusion = useMemo(() => {
+    const quiz = data?.getLecturerViewLiveQuiz
+
     if (
-      data?.pinnedFeedbacks &&
-      data?.pinnedFeedbacks.confusionSummary &&
-      (data?.pinnedFeedbacks.confusionSummary.numberOfParticipants ?? -1) > 0
+      quiz &&
+      quiz.confusionSummary &&
+      (quiz.confusionSummary.numberOfParticipants ?? -1) > 0
     ) {
       return Math.max(
-        Math.abs(data?.pinnedFeedbacks.confusionSummary.speed),
-        Math.abs(data?.pinnedFeedbacks.confusionSummary.difficulty)
+        Math.abs(quiz.confusionSummary.speed),
+        Math.abs(quiz.confusionSummary.difficulty)
       )
     }
     return 0
-  }, [data?.pinnedFeedbacks])
+  }, [data?.getLecturerViewLiveQuiz])
 
   const borderColor = useMemo(() => {
     if (aggregateConfusion >= 1.4) {
@@ -65,11 +65,11 @@ function LecturerView() {
     return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
   }
 
-  const isLiveQAEnabled = data?.pinnedFeedbacks?.isLiveQAEnabled
-  const isConfusionFeedbackEnabled =
-    data?.pinnedFeedbacks?.isConfusionFeedbackEnabled
-  const confusionSummary = data?.pinnedFeedbacks?.confusionSummary
-  const feedbacks = data?.pinnedFeedbacks?.feedbacks
+  const quiz = data?.getLecturerViewLiveQuiz
+  const isLiveQAEnabled = quiz?.isLiveQAEnabled
+  const isConfusionFeedbackEnabled = quiz?.isConfusionFeedbackEnabled
+  const confusionSummary = quiz?.confusionSummary
+  const feedbacks = quiz?.feedbacks
 
   if (!isLiveQAEnabled && !isConfusionFeedbackEnabled) {
     return (

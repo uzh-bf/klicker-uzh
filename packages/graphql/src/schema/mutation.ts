@@ -88,7 +88,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ConfusionTimestep,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           difficulty: t.arg.int({ required: true }),
           speed: t.arg.int({ required: true }),
         },
@@ -112,7 +112,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Feedback,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -601,14 +601,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelSession: t.withAuth(asUserSessionExec).field({
+      cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.cancelSession(args, ctx)
+          return LiveQuizService.cancelLiveQuiz(args, ctx)
         },
       }),
 
@@ -787,9 +787,9 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeSessionSettings: t.withAuth(asUserSessionExec).field({
+      changeLiveQuizSettings: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: false }),
@@ -798,7 +798,7 @@ export const Mutation = builder.mutationType({
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SessionService.changeSessionSettings(args, ctx)
+          return LiveQuizService.changeLiveQuizSettings(args, ctx)
         },
       }),
 
@@ -1081,14 +1081,14 @@ export const Mutation = builder.mutationType({
 
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.changeLiveQuizName(args, ctx)
+          return LiveQuizService.changeLiveQuizName(args, ctx)
         },
       }),
 

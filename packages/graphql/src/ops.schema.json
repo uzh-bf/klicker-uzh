@@ -3884,6 +3884,26 @@
             "deprecationReason": null
           },
           {
+            "name": "liveQuizzes",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "LiveQuiz",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "maxGroupSize",
             "description": null,
             "args": [],
@@ -10787,13 +10807,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -10819,13 +10835,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -10915,13 +10927,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -11481,7 +11489,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -11636,7 +11644,7 @@
             "deprecationReason": null
           },
           {
-            "name": "cancelSession",
+            "name": "cancelLiveQuiz",
             "description": null,
             "args": [
               {
@@ -11658,7 +11666,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,
@@ -11809,43 +11817,14 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "changeParticipantLocale",
-            "description": null,
-            "args": [
-              {
-                "name": "locale",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "ENUM",
-                    "name": "LocaleType",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Participant",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "changeSessionSettings",
+            "name": "changeLiveQuizSettings",
             "description": null,
             "args": [
               {
@@ -11915,7 +11894,36 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "changeParticipantLocale",
+            "description": null,
+            "args": [
+              {
+                "name": "locale",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "ENUM",
+                    "name": "LocaleType",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Participant",
               "ofType": null
             },
             "isDeprecated": false,
@@ -12193,7 +12201,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -20460,7 +20468,7 @@
             "deprecationReason": null
           },
           {
-            "name": "controlSession",
+            "name": "controlLiveQuiz",
             "description": null,
             "args": [
               {
@@ -20482,7 +20490,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,
@@ -20551,7 +20559,7 @@
             "description": null,
             "args": [
               {
-                "name": "id",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -20748,6 +20756,43 @@
             "deprecationReason": null
           },
           {
+            "name": "getCourseRunningLiveQuizzes",
+            "description": null,
+            "args": [
+              {
+                "name": "courseId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "LiveQuiz",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "getCourseSummary",
             "description": null,
             "args": [
@@ -20829,6 +20874,35 @@
             "type": {
               "kind": "OBJECT",
               "name": "GroupActivitySummary",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "getLecturerViewLiveQuiz",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,
@@ -21534,35 +21608,6 @@
             "deprecationReason": null
           },
           {
-            "name": "pinnedFeedbacks",
-            "description": null,
-            "args": [
-              {
-                "name": "id",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Session",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "practiceQuiz",
             "description": null,
             "args": [
@@ -21655,43 +21700,6 @@
             "args": [
               {
                 "name": "shortname",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "Session",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "runningSessionsCourse",
-            "description": null,
-            "args": [
-              {
-                "name": "courseId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24147,7 +24155,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24180,7 +24188,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24213,7 +24221,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24246,7 +24254,7 @@
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24374,11 +24382,11 @@
             "deprecationReason": null
           },
           {
-            "name": "runningSessionUpdated",
+            "name": "runningLiveQuizUpdated",
             "description": null,
             "args": [
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -24396,7 +24404,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "SessionBlock",
+              "name": "ElementBlock",
               "ofType": null
             },
             "isDeprecated": false,
