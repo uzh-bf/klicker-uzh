@@ -522,7 +522,7 @@ Cypress.Commands.add(
         cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${ix}-block-0"]`)
+        cy.get(`[data-cy="question-${ix}-stack-0"]`)
           .should('exist')
           .should('contain', question.substring(0, 20))
       })
