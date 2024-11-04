@@ -1417,6 +1417,7 @@ type Query {
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
+  getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
@@ -1440,7 +1441,6 @@ type Query {
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
-  pinnedFeedbacks(id: String!): Session
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element

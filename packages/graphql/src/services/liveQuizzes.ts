@@ -317,6 +317,35 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
 
   return user?.liveQuizzes ?? []
 }
+
+export async function getLecturerViewLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ownerId: ctx.user.sub },
+    include: {
+      confusionFeedbacks: true,
+      feedbacks: {
+        where: {
+          isPinned: true,
+        },
+      },
+    },
+  })
+
+  if (session?.status !== PublicationStatus.PUBLISHED || !session) {
+    return null
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
+  }
+
+  return reducedSession
+}
 // #endregion
 
 // ------ LIVE QUIZ EXECUTION (LECTURER) ------

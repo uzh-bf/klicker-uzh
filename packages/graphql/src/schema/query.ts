@@ -453,14 +453,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      pinnedFeedbacks: asUser.field({
+      getLecturerViewLiveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getPinnedFeedbacks(args, ctx)
+          return LiveQuizService.getLecturerViewLiveQuiz(args, ctx)
         },
       }),
 

@@ -1047,35 +1047,6 @@ export async function getControlSession(
   return session
 }
 
-export async function getPinnedFeedbacks(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: { id, ownerId: ctx.user.sub },
-    include: {
-      confusionFeedbacks: true,
-      feedbacks: {
-        where: {
-          isPinned: true,
-        },
-      },
-    },
-  })
-
-  if (session?.status !== SessionStatus.RUNNING || !session) {
-    return null
-  }
-
-  // recude session to only contain what is required for the lecturer cockpit
-  const reducedSession = {
-    ...session,
-    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
-  }
-
-  return reducedSession
-}
-
 type PickedInstanceType = Pick<
   AllQuestionInstanceTypeData,
   'questionData' | 'elementType' | 'results' | 'statistics'
