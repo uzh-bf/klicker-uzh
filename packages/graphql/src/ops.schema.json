@@ -11829,7 +11829,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,

@@ -545,6 +545,29 @@ export async function changeLiveQuizSettings(
   })
   return quiz
 }
+
+export async function changeLiveQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  const updatedQuiz = await ctx.prisma.liveQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      name,
+      displayName,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id,
+  })
+
+  return updatedQuiz
+}
 // #endregion
 
 // ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------

@@ -1081,14 +1081,14 @@ export const Mutation = builder.mutationType({
 
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.changeLiveQuizName(args, ctx)
+          return LiveQuizService.changeLiveQuizName(args, ctx)
         },
       }),
 

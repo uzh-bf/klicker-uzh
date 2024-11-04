@@ -1024,7 +1024,7 @@ type Mutation {
   cancelSession(id: String!): Session
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
-  changeLiveQuizName(displayName: String!, id: String!, name: String!): Session
+  changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User

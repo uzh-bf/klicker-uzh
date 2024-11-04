@@ -1117,7 +1117,7 @@ export type Mutation = {
   cancelSession?: Maybe<Session>;
   changeEmailSettings?: Maybe<User>;
   changeInitialSettings?: Maybe<User>;
-  changeLiveQuizName?: Maybe<Session>;
+  changeLiveQuizName?: Maybe<LiveQuiz>;
   changeLiveQuizSettings?: Maybe<LiveQuiz>;
   changeParticipantLocale?: Maybe<Participant>;
   changeShortname?: Maybe<User>;
@@ -2920,7 +2920,7 @@ export type ChangeLiveQuizNameMutationVariables = Exact<{
 }>;
 
 
-export type ChangeLiveQuizNameMutation = { __typename?: 'Mutation', changeLiveQuizName?: { __typename?: 'Session', id: string, name: string, displayName: string } | null };
+export type ChangeLiveQuizNameMutation = { __typename?: 'Mutation', changeLiveQuizName?: { __typename?: 'LiveQuiz', id: string, name: string, displayName: string } | null };
 
 export type ChangeLiveQuizSettingsMutationVariables = Exact<{
   id: Scalars['String']['input'];
