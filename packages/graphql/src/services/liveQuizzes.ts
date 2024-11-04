@@ -23,12 +23,13 @@ import {
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import { omitBy, pick } from 'remeda'
+import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
@@ -1511,5 +1512,88 @@ export async function getCourseRunningLiveQuizzes(
   })
 
   return course?.liveQuizzes ?? []
+}
+
+export async function getLiveQuizLeaderboard(
+  { quizId }: { quizId: string },
+  ctx: Context
+) {
+  const session = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+    },
+    include: {
+      leaderboard: {
+        orderBy: {
+          score: 'desc',
+        },
+        include: {
+          participant: true,
+          sessionParticipation: true,
+        },
+      },
+      blocks: true,
+    },
+  })
+
+  if (!session) return []
+
+  const participant = ctx.user?.sub
+    ? await ctx.prisma.participant.findUnique({
+        where: {
+          id: ctx.user.sub,
+        },
+      })
+    : null
+
+  const participantProfilePublic =
+    (participant?.isProfilePublic ?? false) ||
+    ctx.user?.role === 'USER' ||
+    ctx.user?.role === 'ADMIN'
+
+  // find the order attribute of the last exectued block
+  const executedBlockOrders = session?.blocks
+    .filter(
+      (sessionBlock) => sessionBlock.status === ElementBlockStatus.EXECUTED
+    )
+    .map((sessionBlock) => Number(sessionBlock.order))
+
+  const lastBlockOrder = executedBlockOrders
+    ? Math.max(...executedBlockOrders)
+    : 0
+
+  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
+    if (!entry.sessionParticipation?.isActive) return []
+
+    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
+    return {
+      id: entry.id,
+      participantId: entry.participant.id,
+      username:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.username
+          : 'Anonymous',
+      avatar:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.avatar
+          : null,
+      score: entry.score,
+      level: levelFromXp(entry.participant.xp),
+      // isSelf: entry.participantId === ctx.user.sub,
+      lastBlockOrder,
+    }
+  })
+
+  const sortedEntries = sortBy(
+    preparedEntries,
+    [prop('score'), 'desc'],
+    [prop('username'), 'asc']
+  )
+
+  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+    return { ...entry, rank: ix + 1 }
+  })
+
+  return filteredEntries
 }
 // #endregion

@@ -497,14 +497,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionLeaderboard: t.field({
+      liveQuizLeaderboard: t.field({
         nullable: true,
         type: [LeaderboardEntry],
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLeaderboard(args, ctx)
+          return LiveQuizService.getLiveQuizLeaderboard(args, ctx)
         },
       }),
 

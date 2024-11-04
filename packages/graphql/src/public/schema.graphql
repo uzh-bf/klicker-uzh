@@ -1437,6 +1437,7 @@ type Query {
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
   liveQuizHMAC(id: String!): String
+  liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -1448,7 +1449,6 @@ type Query {
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   sessionEvaluation(hmac: String, id: String!): SessionEvaluation
-  sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedSessions: [Session!]
   userCourses: [Course!]

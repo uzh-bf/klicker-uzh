@@ -1,9 +1,8 @@
-import { SessionBlockStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { SessionStatus } from '@klicker-uzh/prisma'
 import type {
   AllQuestionInstanceTypeData,
   QuestionResultsOpen,
 } from '@klicker-uzh/types'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import { createHmac } from 'node:crypto'
 import { mapValues, omitBy, prop, sortBy } from 'remeda'
@@ -448,89 +447,6 @@ async function processCachedData({
     cachedResults,
     instanceResults,
   }
-}
-
-export async function getLeaderboard(
-  { sessionId }: { sessionId: string },
-  ctx: Context
-) {
-  const session = await ctx.prisma.liveSession.findUnique({
-    where: {
-      id: sessionId,
-    },
-    include: {
-      leaderboard: {
-        orderBy: {
-          score: 'desc',
-        },
-        include: {
-          participant: true,
-          sessionParticipation: true,
-        },
-      },
-      blocks: true,
-    },
-  })
-
-  if (!session) return []
-
-  const participant = ctx.user?.sub
-    ? await ctx.prisma.participant.findUnique({
-        where: {
-          id: ctx.user.sub,
-        },
-      })
-    : null
-
-  const participantProfilePublic =
-    (participant?.isProfilePublic ?? false) ||
-    ctx.user?.role === 'USER' ||
-    ctx.user?.role === 'ADMIN'
-
-  // find the order attribute of the last exectued block
-  const executedBlockOrders = session?.blocks
-    .filter(
-      (sessionBlock) => sessionBlock.status === SessionBlockStatus.EXECUTED
-    )
-    .map((sessionBlock) => Number(sessionBlock.order))
-
-  const lastBlockOrder = executedBlockOrders
-    ? Math.max(...executedBlockOrders)
-    : 0
-
-  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
-    if (!entry.sessionParticipation?.isActive) return []
-
-    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
-    return {
-      id: entry.id,
-      participantId: entry.participant.id,
-      username:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.username
-          : 'Anonymous',
-      avatar:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.avatar
-          : null,
-      score: entry.score,
-      level: levelFromXp(entry.participant.xp),
-      // isSelf: entry.participantId === ctx.user.sub,
-      lastBlockOrder,
-    }
-  })
-
-  const sortedEntries = sortBy(
-    preparedEntries,
-    [prop('score'), 'desc'],
-    [prop('username'), 'asc']
-  )
-
-  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-    return { ...entry, rank: ix + 1 }
-  })
-
-  return filteredEntries
 }
 
 interface GetRunningSessionsArgs {

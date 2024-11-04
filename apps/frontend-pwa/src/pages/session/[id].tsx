@@ -20,7 +20,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
-import SessionLeaderboard from '../../components/common/SessionLeaderboard'
+import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
@@ -189,7 +189,7 @@ function Index({ id }: { id: string }) {
           {!activeBlock ? (
             isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
-                <SessionLeaderboard sessionId={id} />
+                <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
               <div>{t('pwa.session.noActiveQuestion')}</div>
@@ -213,7 +213,7 @@ function Index({ id }: { id: string }) {
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <SessionLeaderboard sessionId={id} />
+            <LiveQuizLeaderboard quizId={id} />
           </div>
         )}
 
