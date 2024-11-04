@@ -1,6 +1,6 @@
 import Prisma from '../../../dist/index.js'
 import { AchievementType } from '../../prisma/client/index.js'
-const { ElementType, SessionStatus } = Prisma
+const { ElementType, SessionStatus, PublicationStatus } = Prisma
 
 export const QUESTIONS = [
   {
@@ -173,11 +173,12 @@ export const QUESTIONS = [
   },
 ]
 
-export const SESSIONS = [
+export const LIVE_QUIZZES = [
   {
     id: '1ec093e0-b6b6-421f-98ac-98ab146505f7',
     name: 'Test mit Multiplier',
     displayName: 'Test mit Multiplier',
+    description: 'Test description for test session with multiplier.',
     isGamificationEnabled: true,
     pointsMultiplier: 2,
     blocks: [
@@ -199,7 +200,9 @@ export const SESSIONS = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
-    status: SessionStatus.PREPARED,
+    status: PublicationStatus.DRAFT,
+    maxBonusPoints: 100,
+    timeToZeroBonus: 200,
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
@@ -219,7 +222,7 @@ export const SESSIONS = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
-    status: SessionStatus.PREPARED,
+    status: PublicationStatus.SCHEDULED,
     blocks: [
       {
         questions: [0, 1, 2, 3, 4],
@@ -239,7 +242,7 @@ export const SESSIONS = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
-    status: SessionStatus.PREPARED,
+    status: PublicationStatus.DRAFT,
     blocks: [
       {
         questions: [4],
