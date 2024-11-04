@@ -20,8 +20,8 @@ function GroupActivityDescriptionStep({
   return (
     <DescriptionStep
       descriptionRequired
-      displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
-      descriptionTooltip={t('manage.sessionForms.groupActivityDescField')}
+      displayNameTooltip={t('manage.activityWizard.displayNameTooltip')}
+      descriptionTooltip={t('manage.activityWizard.groupActivityDescField')}
       descriptionLabel={t('shared.generic.taskDescription')}
       dataDisplayName={{ cy: 'insert-groupactivity-display-name' }}
       dataDescription={{ cy: 'insert-groupactivity-description' }}

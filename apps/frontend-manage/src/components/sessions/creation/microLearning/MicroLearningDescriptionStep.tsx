@@ -19,8 +19,8 @@ function MicroLearningDescriptionStep({
 
   return (
     <DescriptionStep
-      displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
-      descriptionTooltip={t('manage.sessionForms.microlearningDescField')}
+      displayNameTooltip={t('manage.activityWizard.displayNameTooltip')}
+      descriptionTooltip={t('manage.activityWizard.microlearningDescField')}
       dataDisplayName={{ cy: 'insert-microlearning-display-name' }}
       dataDescription={{ cy: 'insert-microlearning-description' }}
       validationSchema={validationSchema}

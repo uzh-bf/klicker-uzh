@@ -1,13 +1,17 @@
 import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { DisplayMode } from '@klicker-uzh/types'
-import { processQuestionData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
+import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 
@@ -1260,44 +1264,52 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   ]
 
-  await ctx.prisma.liveSession.create({
+  const quizMultiplier = 2
+  await ctx.prisma.liveQuiz.create({
     data: {
-      name: 'Demo Session',
-      displayName: 'Demo Session Display Name',
-      description: 'Demo Session Description',
-      pointsMultiplier: 2,
+      name: 'Demo Live Quiz',
+      displayName: 'Demo Live Quiz Display Name',
+      description: 'Demo Live Quiz Description',
+      pointsMultiplier: quizMultiplier,
       isGamificationEnabled: true,
       blocks: {
         create: blockData.map(
-          ({ questions, randomSelection, timeLimit }, blockIx) => {
-            const newInstances = questions.map((question, ix) => {
-              const processedQuestionData = processQuestionData(question)
-              return {
-                order: ix,
-                type: DB.QuestionInstanceType.SESSION,
-                pointsMultiplier: 2 * question.pointsMultiplier,
-                questionData: processedQuestionData!,
-                results: prepareInitialQuestionInstanceResults(
-                  processedQuestionData!
-                ),
-                question: {
-                  connect: { id: question.id },
-                },
-                owner: {
-                  connect: { id: ctx.user.sub },
-                },
-              }
-            })
-
-            return {
-              order: blockIx,
-              randomSelection,
-              timeLimit,
-              instances: {
-                create: newInstances,
-              },
-            }
-          }
+          ({ questions, randomSelection, timeLimit }, blockIx) => ({
+            order: blockIx,
+            timeLimit,
+            randomSelection,
+            elements: {
+              create: questions.map((element, elementIx) => {
+                return {
+                  migrationId: uuidv4(),
+                  order: elementIx,
+                  type: DB.ElementInstanceType.LIVE_QUIZ,
+                  elementType: element.type,
+                  elementData: processElementData(element),
+                  options: {
+                    pointsMultiplier: quizMultiplier * element.pointsMultiplier,
+                  },
+                  results: getInitialElementResults(element),
+                  anonymousResults: getInitialElementResults(element),
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      DB.ElementInstanceType.LIVE_QUIZ
+                    ),
+                  },
+                  element: {
+                    connect: {
+                      id: element.id,
+                    },
+                  },
+                  owner: {
+                    connect: {
+                      id: ctx.user.sub,
+                    },
+                  },
+                }
+              }),
+            },
+          })
         ),
       },
       owner: {

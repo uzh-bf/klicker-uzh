@@ -82,8 +82,8 @@ function MicroLearningSettingsStep({
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
-                  tooltip={t('manage.sessionForms.microlearningCourse')}
-                  placeholder={t('manage.sessionForms.selectCourse')}
+                  tooltip={t('manage.activityWizard.microlearningCourse')}
+                  placeholder={t('manage.activityWizard.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
                   className={{ tooltip: 'z-20' }}
@@ -92,7 +92,7 @@ function MicroLearningSettingsStep({
                 {typeof values.courseId === 'undefined' ? (
                   <UserNotification
                     message={t(
-                      'manage.sessionForms.microLearningMissingCourse'
+                      'manage.activityWizard.microLearningMissingCourse'
                     )}
                     className={{ root: 'mt-2' }}
                     type="warning"
@@ -102,7 +102,7 @@ function MicroLearningSettingsStep({
                 ) : (
                   <UserNotification
                     message={t(
-                      'manage.sessionForms.microLearningCourseNotGamified'
+                      'manage.activityWizard.microLearningCourseNotGamified'
                     )}
                     className={{ root: 'mt-2' }}
                     type="info"
@@ -120,7 +120,7 @@ function MicroLearningSettingsStep({
                   <FormikDateField
                     label={t('shared.generic.startDate')}
                     name="startDate"
-                    tooltip={t('manage.sessionForms.microlearningStartDate')}
+                    tooltip={t('manage.activityWizard.microlearningStartDate')}
                     required
                     className={{
                       root: 'w-full',
@@ -132,7 +132,7 @@ function MicroLearningSettingsStep({
                   <FormikDateField
                     label={t('shared.generic.endDate')}
                     name="endDate"
-                    tooltip={t('manage.sessionForms.microlearningEndDate')}
+                    tooltip={t('manage.activityWizard.microlearningEndDate')}
                     required
                     className={{
                       root: 'w-full',

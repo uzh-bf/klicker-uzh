@@ -68,7 +68,9 @@ function EditorField({
             helpers.setTouched(true)
           }}
           showToolbarOnFocus={showToolbarOnFocus}
-          placeholder={placeholder ?? t('manage.sessionForms.enterContentHere')}
+          placeholder={
+            placeholder ?? t('manage.activityWizard.enterContentHere')
+          }
           className={{
             ...className?.input,
             root: twMerge('w-full', className?.input?.root),

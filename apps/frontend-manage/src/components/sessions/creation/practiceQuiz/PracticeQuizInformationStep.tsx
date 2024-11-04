@@ -50,19 +50,19 @@ function PracticeQuizInformationStep({
                 {noCourse ? (
                   <UserNotification
                     type="error"
-                    message={t('manage.sessionForms.practiceQuizNoCourse')}
+                    message={t('manage.activityWizard.practiceQuizNoCourse')}
                     className={{ root: 'mb-2' }}
                   />
                 ) : null}
                 <div className="w-full md:pr-14">
-                  {t('manage.sessionForms.practiceQuizIntroductionName')}
+                  {t('manage.activityWizard.practiceQuizIntroductionName')}
                 </div>
                 <FormikTextField
                   required
                   autoComplete="off"
                   name="name"
-                  label={t('manage.sessionForms.name')}
-                  tooltip={t('manage.sessionForms.practiceQuizName')}
+                  label={t('manage.activityWizard.name')}
+                  tooltip={t('manage.activityWizard.practiceQuizName')}
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
@@ -77,7 +77,7 @@ function PracticeQuizInformationStep({
                       icon: faLightbulb,
                       iconColor: 'text-orange-400',
                       richText: t.rich(
-                        'manage.sessionForms.practiceQuizUseCase',
+                        'manage.activityWizard.practiceQuizUseCase',
                         {
                           link: (text) => (
                             <a
@@ -95,7 +95,7 @@ function PracticeQuizInformationStep({
                       icon: faBookOpen,
                       iconColor: 'text-uzh-blue-100',
                       richText: t.rich(
-                        'manage.sessionForms.practiceQuizLecturerDocs',
+                        'manage.activityWizard.practiceQuizLecturerDocs',
                         {
                           link: (text) => (
                             <a
@@ -113,7 +113,7 @@ function PracticeQuizInformationStep({
                       icon: faUsers,
                       iconColor: 'text-black',
                       richText: t.rich(
-                        'manage.sessionForms.practiceQuizStudentDocs',
+                        'manage.activityWizard.practiceQuizStudentDocs',
                         {
                           link: (text) => (
                             <a

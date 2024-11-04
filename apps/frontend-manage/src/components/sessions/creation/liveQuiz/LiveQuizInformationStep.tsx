@@ -44,14 +44,14 @@ function LiveQuizInformationStep({
             <div className="flex flex-row">
               <div className="w-full md:w-1/2">
                 <div className="w-full md:pr-14">
-                  {t('manage.sessionForms.liveQuizIntroductionName')}
+                  {t('manage.activityWizard.liveQuizIntroductionName')}
                 </div>
                 <FormikTextField
                   required
                   autoComplete="off"
                   name="name"
-                  label={t('manage.sessionForms.name')}
-                  tooltip={t('manage.sessionForms.liveQuizName')}
+                  label={t('manage.activityWizard.name')}
+                  tooltip={t('manage.activityWizard.liveQuizName')}
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
@@ -65,23 +65,26 @@ function LiveQuizInformationStep({
                     {
                       icon: faLightbulb,
                       iconColor: 'text-orange-400',
-                      richText: t.rich('manage.sessionForms.liveQuizUseCase', {
-                        link: (text) => (
-                          <a
-                            href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
-                            target="_blank"
-                            className="underline"
-                          >
-                            {text}
-                          </a>
-                        ),
-                      }),
+                      richText: t.rich(
+                        'manage.activityWizard.liveQuizUseCase',
+                        {
+                          link: (text) => (
+                            <a
+                              href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
+                              target="_blank"
+                              className="underline"
+                            >
+                              {text}
+                            </a>
+                          ),
+                        }
+                      ),
                     },
                     {
                       icon: faBookOpen,
                       iconColor: 'text-uzh-blue-100',
                       richText: t.rich(
-                        'manage.sessionForms.liveQuizLecturerDocs',
+                        'manage.activityWizard.liveQuizLecturerDocs',
                         {
                           link: (text) => (
                             <a
@@ -99,7 +102,7 @@ function LiveQuizInformationStep({
                       icon: faUsers,
                       iconColor: 'text-black',
                       richText: t.rich(
-                        'manage.sessionForms.liveQuizStudentDocs',
+                        'manage.activityWizard.liveQuizStudentDocs',
                         {
                           link: (text) => (
                             <a

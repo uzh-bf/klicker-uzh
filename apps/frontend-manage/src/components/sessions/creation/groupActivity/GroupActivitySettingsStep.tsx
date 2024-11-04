@@ -80,8 +80,8 @@ function GroupActivitySettingsStep({
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
-                  tooltip={t('manage.sessionForms.groupActivityCourse')}
-                  placeholder={t('manage.sessionForms.selectCourse')}
+                  tooltip={t('manage.activityWizard.groupActivityCourse')}
+                  placeholder={t('manage.activityWizard.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
                   className={{ tooltip: 'z-20' }}
@@ -90,7 +90,7 @@ function GroupActivitySettingsStep({
                 {typeof values.courseId === 'undefined' ? (
                   <UserNotification
                     message={t(
-                      'manage.sessionForms.groupActivityMissingCourse'
+                      'manage.activityWizard.groupActivityMissingCourse'
                     )}
                     className={{ root: 'mt-2' }}
                     type="warning"
@@ -110,7 +110,7 @@ function GroupActivitySettingsStep({
                   <FormikDateField
                     label={t('shared.generic.startDate')}
                     name="startDate"
-                    tooltip={t('manage.sessionForms.groupActivityStartDate')}
+                    tooltip={t('manage.activityWizard.groupActivityStartDate')}
                     required
                     className={{
                       root: 'w-full',
@@ -122,7 +122,7 @@ function GroupActivitySettingsStep({
                   <FormikDateField
                     label={t('shared.generic.endDate')}
                     name="endDate"
-                    tooltip={t('manage.sessionForms.groupActivityEndDate')}
+                    tooltip={t('manage.activityWizard.groupActivityEndDate')}
                     required
                     className={{
                       root: 'w-full',

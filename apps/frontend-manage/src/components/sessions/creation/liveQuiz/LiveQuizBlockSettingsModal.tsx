@@ -21,7 +21,7 @@ function LiveQuizBlockSettingsModal({
     <Modal
       open={openSettings}
       onClose={() => setOpenSettings(false)}
-      title={t('manage.sessionForms.blockSettingsTitle', {
+      title={t('manage.activityWizard.blockSettingsTitle', {
         blockIx: index + 1,
       })}
       className={{
@@ -29,8 +29,8 @@ function LiveQuizBlockSettingsModal({
       }}
     >
       <NumberField
-        label={t('manage.sessionForms.timeLimit')}
-        tooltip={t('manage.sessionForms.timeLimitTooltip', {
+        label={t('manage.activityWizard.timeLimit')}
+        tooltip={t('manage.activityWizard.timeLimitTooltip', {
           blockIx: index + 1,
         })}
         id={`timeLimits.${index}`}
@@ -41,7 +41,7 @@ function LiveQuizBlockSettingsModal({
             timeLimit: newValue === '' ? undefined : parseInt(newValue),
           })
         }}
-        placeholder={t('manage.sessionForms.optionalTimeLimit')}
+        placeholder={t('manage.activityWizard.optionalTimeLimit')}
         data={{ cy: 'block-time-limit' }}
       />
       <Button

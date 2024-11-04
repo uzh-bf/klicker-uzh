@@ -982,7 +982,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       updateInstancesExplanation:
         'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
-    sessionForms: {
+    activityWizard: {
       sessionName: 'Please enter a name for your quiz.',
       sessionDisplayName: 'Please enter a valid display name for your quiz.',
       considerFormErrors: 'Please check the form for error messages.',

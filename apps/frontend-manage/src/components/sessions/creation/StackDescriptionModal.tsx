@@ -19,7 +19,7 @@ function StackDescriptionModal({
     <Modal
       open={modalOpen}
       onClose={() => setModalOpen(false)}
-      title={t('manage.sessionForms.stackDescriptionTitle', {
+      title={t('manage.activityWizard.stackDescriptionTitle', {
         stackIx: stackIx + 1,
       })}
       className={{
@@ -28,16 +28,16 @@ function StackDescriptionModal({
     >
       <FormikTextField
         name={`stacks.${stackIx}.displayName`}
-        label={t('manage.sessionForms.stackDisplayName')}
-        tooltip={t('manage.sessionForms.stackDisplayNameTooltip')}
+        label={t('manage.activityWizard.stackDisplayName')}
+        tooltip={t('manage.activityWizard.stackDisplayNameTooltip')}
         data={{ cy: `stack-${stackIx}-displayname` }}
         className={{ label: 'mt-0' }}
       />
       <EditorField
-        label={t('manage.sessionForms.stackDescription')}
-        tooltip={t('manage.sessionForms.stackDescriptionTooltip')}
+        label={t('manage.activityWizard.stackDescription')}
+        tooltip={t('manage.activityWizard.stackDescriptionTooltip')}
         fieldName={`stacks.${stackIx}.description`}
-        placeholder={t('manage.sessionForms.stackDescriptionPlaceholder')}
+        placeholder={t('manage.activityWizard.stackDescriptionPlaceholder')}
         showToolbarOnFocus={false}
         className={{ label: 'mt-2' }}
         data={{ cy: `stack-${stackIx}-description` }}

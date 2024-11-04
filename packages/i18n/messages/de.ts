@@ -981,7 +981,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateInstancesExplanation:
         'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
     },
-    sessionForms: {
+    activityWizard: {
       sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
       sessionDisplayName:
         'Bitte geben Sie einen Anzeigenamen für Ihre Session ein.',

@@ -93,25 +93,25 @@ function GroupActivityWizard({
   const nameValidationSchema = yup.object().shape({
     name: yup
       .string()
-      .required(t('manage.sessionForms.groupActivityNameError')),
+      .required(t('manage.activityWizard.groupActivityNameError')),
   })
 
   const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
-      .required(t('manage.sessionForms.groupActivityDisplayNameError')),
+      .required(t('manage.activityWizard.groupActivityDisplayNameError')),
     description: yup
       .string()
-      .required(t('manage.sessionForms.groupActivityDescriptionError')),
+      .required(t('manage.activityWizard.groupActivityDescriptionError')),
   })
 
   const settingsValidationSchema = yup.object().shape({
     startDate: yup
       .date()
-      .required(t('manage.sessionForms.groupActivityStartDate'))
+      .required(t('manage.activityWizard.groupActivityStartDate'))
       .test(
         'afterCourseStart',
-        t('manage.sessionForms.groupActivityStartAfterCourseStart'),
+        t('manage.activityWizard.groupActivityStartAfterCourseStart'),
         (value, context) =>
           context.parent.courseStartDate
             ? dayjs(value) > dayjs(context.parent.courseStartDate)
@@ -119,7 +119,7 @@ function GroupActivityWizard({
       )
       .test(
         'afterGroupDeadline',
-        t('manage.sessionForms.groupActivityStartAfterGroupDeadline'),
+        t('manage.activityWizard.groupActivityStartAfterGroupDeadline'),
         (value, context) =>
           context.parent.courseGroupDeadline
             ? dayjs(value) > dayjs(context.parent.courseGroupDeadline)
@@ -127,11 +127,11 @@ function GroupActivityWizard({
       ),
     endDate: yup
       .date()
-      .required(t('manage.sessionForms.groupActivityEndDate'))
-      .min(yup.ref('startDate'), t('manage.sessionForms.endAfterStart'))
+      .required(t('manage.activityWizard.groupActivityEndDate'))
+      .min(yup.ref('startDate'), t('manage.activityWizard.endAfterStart'))
       .test(
         'beforeCourseEnd',
-        t('manage.sessionForms.groupActivityEndBeforeCourseEnd'),
+        t('manage.activityWizard.groupActivityEndBeforeCourseEnd'),
         (value, context) =>
           context.parent.courseEndDate
             ? dayjs(value) < dayjs(context.parent.courseEndDate)
@@ -139,17 +139,17 @@ function GroupActivityWizard({
       ),
     multiplier: yup
       .string()
-      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+      .matches(/^[0-9]+$/, t('manage.activityWizard.validMultiplicator')),
     courseId: yup
       .string()
-      .required(t('manage.sessionForms.groupActivityCourse')),
+      .required(t('manage.activityWizard.groupActivityCourse')),
   })
 
   const stackCluesValiationSchema = yup.object().shape({
     stack: yup.object().shape({
       elements: yup
         .array()
-        .min(1, t('manage.sessionForms.minOneQuestionGroupActivity'))
+        .min(1, t('manage.activityWizard.minOneQuestionGroupActivity'))
         .of(
           yup.object().shape({
             id: yup.number(),
@@ -158,7 +158,7 @@ function GroupActivityWizard({
               .string()
               .oneOf(
                 acceptedTypes,
-                t('manage.sessionForms.groupActivityTypes')
+                t('manage.activityWizard.groupActivityTypes')
               ),
           })
         ),
@@ -169,9 +169,9 @@ function GroupActivityWizard({
         yup.object().shape({
           name: yup
             .string()
-            .required(t('manage.sessionForms.clueNameMissing'))
+            .required(t('manage.activityWizard.clueNameMissing'))
             .test({
-              message: t('manage.sessionForms.groupActivityCluesUniqueNames'),
+              message: t('manage.activityWizard.groupActivityCluesUniqueNames'),
               test: function (value) {
                 const { from } = this
                 const clues = from?.[1].value
@@ -183,17 +183,17 @@ function GroupActivityWizard({
             }),
           displayName: yup
             .string()
-            .required(t('manage.sessionForms.clueDisplayNameMissing')),
+            .required(t('manage.activityWizard.clueDisplayNameMissing')),
           type: yup
             .string()
             .oneOf([ParameterType.String, ParameterType.Number]),
           value: yup
             .string()
-            .required(t('manage.sessionForms.clueValueMissing')),
+            .required(t('manage.activityWizard.clueValueMissing')),
           unit: yup.string(),
         })
       )
-      .min(2, t('manage.sessionForms.groupActivityMin2Clues')),
+      .min(2, t('manage.activityWizard.groupActivityMin2Clues')),
   })
 
   const formDefaultValues = {
@@ -218,21 +218,21 @@ function GroupActivityWizard({
   const workflowItems = [
     {
       title: t('shared.generic.information'),
-      tooltip: t('manage.sessionForms.groupActivityInformation'),
+      tooltip: t('manage.activityWizard.groupActivityInformation'),
     },
     {
       title: t('shared.generic.description'),
-      tooltip: t('manage.sessionForms.groupActivityDescription'),
+      tooltip: t('manage.activityWizard.groupActivityDescription'),
     },
     {
       title: t('shared.generic.settings'),
-      tooltip: t('manage.sessionForms.groupActivitySettings'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.groupActivitySettings'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
     {
       title: t('shared.generic.questions'),
-      tooltip: t('manage.sessionForms.groupActivityQuestions'),
-      tooltipDisabled: t('manage.sessionForms.checkValues'),
+      tooltip: t('manage.activityWizard.groupActivityQuestions'),
+      tooltipDisabled: t('manage.activityWizard.checkValues'),
     },
   ]
 
@@ -315,11 +315,11 @@ function GroupActivityWizard({
             completionSuccessMessage={(elementName) => (
               <div>
                 {editMode
-                  ? t.rich('manage.sessionForms.groupActivityEdited', {
+                  ? t.rich('manage.activityWizard.groupActivityEdited', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })
-                  : t.rich('manage.sessionForms.groupActivityCreated', {
+                  : t.rich('manage.activityWizard.groupActivityCreated', {
                       b: (text) => <strong>{text}</strong>,
                       name: elementName,
                     })}
@@ -432,8 +432,8 @@ function GroupActivityWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.groupActivityEditingFailed')
-            : t('manage.sessionForms.groupActivityCreationFailed')
+            ? t('manage.activityWizard.groupActivityEditingFailed')
+            : t('manage.activityWizard.groupActivityCreationFailed')
         }
       />
     </>

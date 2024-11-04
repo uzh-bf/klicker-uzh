@@ -19,8 +19,8 @@ function PracticeQuizDescriptionStep({
 
   return (
     <DescriptionStep
-      displayNameTooltip={t('manage.sessionForms.displayNameTooltip')}
-      descriptionTooltip={t('manage.sessionForms.practiceQuizDescField')}
+      displayNameTooltip={t('manage.activityWizard.displayNameTooltip')}
+      descriptionTooltip={t('manage.activityWizard.practiceQuizDescField')}
       dataDisplayName={{ cy: 'insert-practice-quiz-display-name' }}
       dataDescription={{ cy: 'insert-practice-quiz-description' }}
       validationSchema={validationSchema}

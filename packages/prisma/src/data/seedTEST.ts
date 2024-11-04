@@ -1,3 +1,9 @@
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
+import { v4 as uuid } from 'uuid'
 import Prisma from '../../dist/index.js'
 import { type Element } from '../prisma/client/index.js'
 import {
@@ -15,7 +21,6 @@ import {
   prepareGroupActivityStack,
   prepareParticipant,
   prepareQuestion,
-  prepareSession,
   prepareStackVariety,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements.js'
@@ -173,23 +178,92 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // ----- LEGACY SEED -----
   const sessionsTest = await Promise.all(
-    DATA_TEST.SESSIONS.map(async (data) =>
-      prisma.liveSession.upsert(
-        await prepareSession({
-          ...data,
-          status: data.status ?? 'PREPARED',
-          blocks: data.blocks.map((block, ix) => ({
-            order: ix,
-            expiresAt: undefined,
-            timeLimit: block.timeLimit,
-            questions: questionsTest.filter((q) =>
-              block.questions.includes(parseInt(q.originalId!))
-            ),
-          })),
-          ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
+    DATA_TEST.LIVE_QUIZZES.map(
+      async (data) =>
+        await prismaClient.liveQuiz.upsert({
+          where: {
+            id: data.id,
+          },
+          create: {
+            id: data.id,
+            name: data.name,
+            displayName: data.displayName,
+            description: data.description,
+            isModerationEnabled: data.isModerationEnabled,
+            isLiveQAEnabled: data.isLiveQAEnabled,
+            isConfusionFeedbackEnabled: data.isConfusionFeedbackEnabled,
+            isGamificationEnabled: data.isGamificationEnabled,
+            status: data.status ?? Prisma.PublicationStatus.DRAFT,
+            pointsMultiplier: data.pointsMultiplier,
+            maxBonusPoints: data.maxBonusPoints,
+            timeToZeroBonus: data.timeToZeroBonus,
+            blocks: {
+              create: data.blocks.map((block, ix) => ({
+                order: ix,
+                timeLimit: block.timeLimit,
+                elements: {
+                  create: block.questions.map((elementId, elementIx) => {
+                    const el = questionsTest.find(
+                      (el) => el.originalId === String(elementId)
+                    )
+                    if (typeof el === 'undefined') {
+                      throw new Error(
+                        `Element with id ${elementId} not found in questionsTest`
+                      )
+                    }
+
+                    return {
+                      migrationId: uuid(),
+                      order: elementIx,
+                      type: Prisma.ElementInstanceType.LIVE_QUIZ,
+                      elementType: el.type,
+                      elementData: processElementData(el),
+                      options: {
+                        pointsMultiplier:
+                          (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
+                      },
+                      results: getInitialElementResults(el),
+                      anonymousResults: getInitialElementResults(el),
+                      instanceStatistics: {
+                        create: getInitialInstanceStatistics(
+                          Prisma.ElementInstanceType.LIVE_QUIZ
+                        ),
+                      },
+                      element: {
+                        connect: {
+                          id: el.id,
+                        },
+                      },
+                      owner: {
+                        connect: {
+                          id: USER_ID_TEST,
+                        },
+                      },
+                    }
+                  }),
+                },
+              })),
+            },
+            owner: {
+              connect: {
+                id: USER_ID_TEST,
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
+              },
+            },
+          },
+          update: {},
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
         })
-      )
     )
   )
 

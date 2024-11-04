@@ -48,19 +48,19 @@ function GroupActivityInformationStep({
                 {noCoursesWithGroups ? (
                   <UserNotification
                     type="error"
-                    message={t('manage.sessionForms.groupActivityNoCourse')}
+                    message={t('manage.activityWizard.groupActivityNoCourse')}
                     className={{ root: 'mb-2' }}
                   />
                 ) : null}
                 <div className="w-full md:pr-14">
-                  {t('manage.sessionForms.groupActivityIntroductionName')}
+                  {t('manage.activityWizard.groupActivityIntroductionName')}
                 </div>
                 <FormikTextField
                   required
                   autoComplete="off"
                   name="name"
-                  label={t('manage.sessionForms.name')}
-                  tooltip={t('manage.sessionForms.groupActivityName')}
+                  label={t('manage.activityWizard.name')}
+                  tooltip={t('manage.activityWizard.groupActivityName')}
                   className={{
                     root: 'mb-2 md:w-96',
                     tooltip: 'z-20',
@@ -75,7 +75,7 @@ function GroupActivityInformationStep({
                       icon: faLightbulb,
                       iconColor: 'text-orange-400',
                       richText: t.rich(
-                        'manage.sessionForms.groupActivityUseCase',
+                        'manage.activityWizard.groupActivityUseCase',
                         {
                           link: (text) => (
                             <a
@@ -93,7 +93,7 @@ function GroupActivityInformationStep({
                       icon: faBookOpen,
                       iconColor: 'text-uzh-blue-100',
                       richText: t.rich(
-                        'manage.sessionForms.groupActivityLecturerDocs',
+                        'manage.activityWizard.groupActivityLecturerDocs',
                         {
                           link: (text) => (
                             <a
@@ -111,7 +111,7 @@ function GroupActivityInformationStep({
                       icon: faUsers,
                       iconColor: 'text-black',
                       richText: t.rich(
-                        'manage.sessionForms.groupActivityStudentDocs',
+                        'manage.activityWizard.groupActivityStudentDocs',
                         {
                           link: (text) => (
                             <a

@@ -81,8 +81,8 @@ function PracticeQuizSettingsStep({
                   required
                   name="courseId"
                   label={t('shared.generic.course')}
-                  tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}
-                  placeholder={t('manage.sessionForms.selectCourse')}
+                  tooltip={t('manage.activityWizard.practiceQuizSelectCourse')}
+                  placeholder={t('manage.activityWizard.selectCourse')}
                   groups={groupedCourses}
                   data={{ cy: 'select-course' }}
                   className={{ tooltip: 'z-20' }}
@@ -90,7 +90,9 @@ function PracticeQuizSettingsStep({
 
                 {typeof values.courseId === 'undefined' ? (
                   <UserNotification
-                    message={t('manage.sessionForms.practiceQuizMissingCourse')}
+                    message={t(
+                      'manage.activityWizard.practiceQuizMissingCourse'
+                    )}
                     className={{ root: 'mt-2' }}
                     type="warning"
                   />
@@ -99,7 +101,7 @@ function PracticeQuizSettingsStep({
                 ) : (
                   <UserNotification
                     message={t(
-                      'manage.sessionForms.practiceQuizCourseNotGamified'
+                      'manage.activityWizard.practiceQuizCourseNotGamified'
                     )}
                     className={{ root: 'mt-2' }}
                     type="info"
@@ -117,7 +119,7 @@ function PracticeQuizSettingsStep({
                   <FormikNumberField
                     name="resetTimeDays"
                     label={t('shared.generic.repetitionInterval')}
-                    tooltip={t('manage.sessionForms.practiceQuizRepetition')}
+                    tooltip={t('manage.activityWizard.practiceQuizRepetition')}
                     className={{
                       root: 'w-full',
                       field: 'w-full',
@@ -129,18 +131,18 @@ function PracticeQuizSettingsStep({
                   />
                   <FormikSelectField
                     label={t('shared.generic.order')}
-                    tooltip={t('manage.sessionForms.practiceQuizOrder')}
+                    tooltip={t('manage.activityWizard.practiceQuizOrder')}
                     name="order"
                     placeholder={t(
-                      'manage.sessionForms.practiceQuizSelectOrder'
+                      'manage.activityWizard.practiceQuizSelectOrder'
                     )}
                     items={Object.values(ElementOrderType).map((order) => {
                       return {
                         value: order,
-                        label: t(`manage.sessionForms.practiceQuiz${order}`),
+                        label: t(`manage.activityWizard.practiceQuiz${order}`),
                         data: {
                           cy: `select-order-${t(
-                            `manage.sessionForms.practiceQuiz${order}`
+                            `manage.activityWizard.practiceQuiz${order}`
                           )}`,
                         },
                       }
@@ -158,12 +160,14 @@ function PracticeQuizSettingsStep({
                 <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faClock} />
                   <div className="text-lg font-bold">
-                    {t('manage.sessionForms.practiceQuizAvailabilityOptional')}
+                    {t(
+                      'manage.activityWizard.practiceQuizAvailabilityOptional'
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="mt-1 text-sm">
-                    {t('manage.sessionForms.practiceQuizAvailableFrom')}
+                    {t('manage.activityWizard.practiceQuizAvailableFrom')}
                   </div>
                   <FormikDateField
                     label={t('shared.generic.availableFrom')}

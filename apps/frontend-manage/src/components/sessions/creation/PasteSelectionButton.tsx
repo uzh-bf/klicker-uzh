@@ -60,7 +60,7 @@ function PasteSelectionButton({
         <FontAwesomeIcon icon={faBars} />
       </Button.Icon>
       <Button.Label>
-        {t('manage.sessionForms.pasteSelectionElements', {
+        {t('manage.activityWizard.pasteSelectionElements', {
           count: Object.keys(selection).length,
         })}
       </Button.Label>

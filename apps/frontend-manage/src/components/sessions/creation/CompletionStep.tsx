@@ -37,8 +37,8 @@ function CompletionStep({
         {completionSuccessMessage
           ? completionSuccessMessage(name)
           : editMode
-            ? t('manage.sessionForms.changesSaved')
-            : t('manage.sessionForms.elementCreated')}
+            ? t('manage.activityWizard.changesSaved')
+            : t('manage.activityWizard.elementCreated')}
       </div>
       <div className="space-x-2">
         {children}
@@ -50,7 +50,7 @@ function CompletionStep({
           <Button.Icon>
             <FontAwesomeIcon icon={faEye} />
           </Button.Icon>
-          <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
+          <Button.Label>{t('manage.activityWizard.openOverview')}</Button.Label>
         </Button>
         {editMode ? (
           <Button
@@ -62,7 +62,9 @@ function CompletionStep({
             <Button.Icon>
               <FontAwesomeIcon icon={faXmark} />
             </Button.Icon>
-            <Button.Label>{t('manage.sessionForms.closeWizard')}</Button.Label>
+            <Button.Label>
+              {t('manage.activityWizard.closeWizard')}
+            </Button.Label>
           </Button>
         ) : (
           <Button
@@ -79,7 +81,7 @@ function CompletionStep({
               <FontAwesomeIcon icon={faSync} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.createNewElement')}
+              {t('manage.activityWizard.createNewElement')}
             </Button.Label>
           </Button>
         )}

@@ -45,7 +45,7 @@ function AdvancedLiveQuizSettings({
           <FontAwesomeIcon icon={faGears} className="hover:text-primary-100" />
         </Button>
       }
-      title={t('manage.sessionForms.liveQuizAdvancedSettings')}
+      title={t('manage.activityWizard.liveQuizAdvancedSettings')}
       className={{ content: '!w-full max-w-[60rem] !pb-2' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
     >
@@ -55,8 +55,8 @@ function AdvancedLiveQuizSettings({
             required
             precision={0}
             name="maxBonusPoints"
-            label={t('manage.sessionForms.liveQuizMaxBonusPoints')}
-            tooltip={t('manage.sessionForms.liveQuizMaxBonusPointsTooltip', {
+            label={t('manage.activityWizard.liveQuizMaxBonusPoints')}
+            tooltip={t('manage.activityWizard.liveQuizMaxBonusPointsTooltip', {
               defaultValue: LQ_MAX_BONUS_POINTS,
             })}
             data={{
@@ -67,8 +67,8 @@ function AdvancedLiveQuizSettings({
             required
             precision={0}
             name="timeToZeroBonus"
-            label={t('manage.sessionForms.liveQuizTimeToZeroBonus')}
-            tooltip={t('manage.sessionForms.liveQuizTimeToZeroBonusTooltip', {
+            label={t('manage.activityWizard.liveQuizTimeToZeroBonus')}
+            tooltip={t('manage.activityWizard.liveQuizTimeToZeroBonusTooltip', {
               defaultValue: LQ_TIME_TO_ZERO_BONUS,
             })}
             data={{
@@ -78,7 +78,7 @@ function AdvancedLiveQuizSettings({
         </div>
         <div className="w-full md:w-1/2">
           <div className="mb-2 font-bold">
-            {t('manage.sessionForms.liveQuizTotalPointsCorrect')}
+            {t('manage.activityWizard.liveQuizTotalPointsCorrect')}
           </div>
           <ResponsiveContainer className="mb-4" height={150}>
             <LineChart
@@ -108,7 +108,7 @@ function AdvancedLiveQuizSettings({
                 type="number"
               >
                 <Label
-                  value={t('manage.sessionForms.liveQuizTSinceFirstCorrect')}
+                  value={t('manage.activityWizard.liveQuizTSinceFirstCorrect')}
                   offset={-10}
                   position="insideBottom"
                 />
@@ -130,14 +130,17 @@ function AdvancedLiveQuizSettings({
                     return (
                       <div className="border-primary-100 rounded border border-solid bg-white p-2 text-gray-600">
                         <div>
-                          {t('manage.sessionForms.liveQuizAnswerTime', {
+                          {t('manage.activityWizard.liveQuizAnswerTime', {
                             answerTime: time,
                           })}{' '}
                         </div>
                         <div>
-                          {t('manage.sessionForms.liveQuizTotalAwardedPoints', {
-                            totalPoints: points,
-                          })}
+                          {t(
+                            'manage.activityWizard.liveQuizTotalAwardedPoints',
+                            {
+                              totalPoints: points,
+                            }
+                          )}
                         </div>
                       </div>
                     )

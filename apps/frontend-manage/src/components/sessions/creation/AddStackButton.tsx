@@ -109,10 +109,10 @@ function AddStackButton({
             </Button.Icon>
             <Button.Label>
               {type === 'block'
-                ? t('manage.sessionForms.newStackSelected', {
+                ? t('manage.activityWizard.newStackSelected', {
                     count: Object.keys(selection).length,
                   })
-                : t('manage.sessionForms.newBlockSelected', {
+                : t('manage.activityWizard.newBlockSelected', {
                     count: Object.keys(selection).length,
                   })}
             </Button.Label>
@@ -162,8 +162,8 @@ function AddStackButton({
             <div>
               {t(
                 type === 'block'
-                  ? 'manage.sessionForms.pasteSingleElementsBlock'
-                  : 'manage.sessionForms.pasteSingleElementsStack',
+                  ? 'manage.activityWizard.pasteSingleElementsBlock'
+                  : 'manage.activityWizard.pasteSingleElementsStack',
                 {
                   count: Object.keys(selection).length,
                 }
@@ -197,8 +197,8 @@ function AddStackButton({
           <FontAwesomeIcon icon={faPlus} size="lg" />
           <div>
             {type === 'block'
-              ? t('manage.sessionForms.newBlock')
-              : t('manage.sessionForms.newStack')}
+              ? t('manage.activityWizard.newBlock')
+              : t('manage.activityWizard.newStack')}
           </div>
         </div>
       )}

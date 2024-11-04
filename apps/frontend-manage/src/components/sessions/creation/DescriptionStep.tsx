@@ -95,7 +95,7 @@ function DescriptionStep({
                   required
                   autoComplete="off"
                   name="displayName"
-                  label={t('manage.sessionForms.displayName')}
+                  label={t('manage.activityWizard.displayName')}
                   tooltip={displayNameTooltip}
                   className={{
                     root: 'mb-1 w-full md:w-1/2',
