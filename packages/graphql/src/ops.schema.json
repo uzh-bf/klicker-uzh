@@ -11395,6 +11395,51 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "activateLiveQuizBlock",
+            "description": null,
+            "args": [
+              {
+                "name": "blockId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "quizId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "LiveQuiz",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "activateParticipantAccount",
             "description": null,
             "args": [
@@ -11418,51 +11463,6 @@
             "type": {
               "kind": "SCALAR",
               "name": "ID",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "activateSessionBlock",
-            "description": null,
-            "args": [
-              {
-                "name": "sessionBlockId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "sessionId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Session",
               "ofType": null
             },
             "isDeprecated": false,
@@ -13093,11 +13093,11 @@
             "deprecationReason": null
           },
           {
-            "name": "deactivateSessionBlock",
+            "name": "deactivateLiveQuizBlock",
             "description": null,
             "args": [
               {
-                "name": "sessionBlockId",
+                "name": "blockId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -13113,7 +13113,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "sessionId",
+                "name": "quizId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -13131,7 +13131,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Session",
+              "name": "LiveQuiz",
               "ofType": null
             },
             "isDeprecated": false,

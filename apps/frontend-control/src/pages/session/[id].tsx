@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivateSessionBlockDocument,
-  DeactivateSessionBlockDocument,
+  ActivateLiveQuizBlockDocument,
+  DeactivateLiveQuizBlockDocument,
   ElementBlockStatus,
   EndSessionDocument,
   GetControlLiveQuizDocument,
@@ -26,11 +26,11 @@ function RunningSession() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
-    ActivateSessionBlockDocument
+  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
+    ActivateLiveQuizBlockDocument
   )
-  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateSessionBlockDocument
+  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateLiveQuizBlockDocument
   )
   const [endSession, { loading: endingLiveQuiz }] = useMutation(
     EndSessionDocument,
@@ -154,10 +154,10 @@ function RunningSession() {
             <Button
               loading={deactivatingBlock}
               onClick={async () => {
-                await deactivateSessionBlock({
+                await deactivateLiveQuizBlock({
                   variables: {
-                    sessionId: id,
-                    sessionBlockId:
+                    quizId: id,
+                    blockId:
                       blocks.find((block) => block.order === currentBlockOrder)
                         ?.id || -1,
                   },
@@ -196,10 +196,10 @@ function RunningSession() {
               loading={activatingBlock}
               onClick={async () => {
                 {
-                  await activateSessionBlock({
+                  await activateLiveQuizBlock({
                     variables: {
-                      sessionId: id,
-                      sessionBlockId:
+                      quizId: id,
+                      blockId:
                         blocks.find((block) => block.order === nextBlockOrder)
                           ?.id || -1,
                     },

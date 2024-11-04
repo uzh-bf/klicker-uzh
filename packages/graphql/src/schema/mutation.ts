@@ -775,15 +775,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deactivateSessionBlock: t.withAuth(asUserSessionExec).field({
+      deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deactivateSessionBlock(args, ctx)
+          return LiveQuizService.deactivateLiveQuizBlock(args, ctx)
         },
       }),
 
@@ -802,15 +802,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      activateSessionBlock: t.withAuth(asUserSessionExec).field({
+      activateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.activateSessionBlock(args, ctx)
+          return LiveQuizService.activateLiveQuizBlock(args, ctx)
         },
       }),
 

@@ -2,12 +2,23 @@ import {
   AccessMode,
   ConfusionTimestep,
   type Element,
+  ElementBlock,
   ElementBlockStatus,
+  ElementInstance,
   ElementInstanceType,
   ElementType,
+  LeaderboardType,
   PublicationStatus,
+  SessionBlockStatus,
 } from '@klicker-uzh/prisma'
-import type { BlockInput } from '@klicker-uzh/types'
+import type {
+  BlockInput,
+  ElementResultsChoices,
+  ElementResultsContent,
+  ElementResultsFlashcard,
+  ElementResultsOpen,
+  QuestionResultsChoices,
+} from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -16,11 +27,189 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { min } from 'mathjs'
+import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
-import { pick } from 'remeda'
+import { omitBy, pick } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
+
+// TODO: rework scheduling for serverless
+const scheduledJobs: Record<string, any> = {}
+
+// ------ HELPER FUNCTIONS ------
+// #region
+async function getCachedBlockResults({
+  ctx,
+  quizId,
+  blockId,
+  activeInstanceIds,
+}: {
+  ctx: Context
+  quizId: string
+  blockId: number
+  activeInstanceIds: number[]
+}) {
+  const redisMulti = ctx.redisExec.multi()
+  redisMulti.hgetall(`s:${quizId}:lb`)
+  redisMulti.hgetall(`s:${quizId}:b:${blockId}:lb`)
+  activeInstanceIds.forEach((instanceId) => {
+    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responseHashes`)
+    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responses`)
+    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:results`)
+  })
+  return redisMulti.exec()
+}
+
+async function processCachedData({
+  cachedResults,
+  activeBlock,
+}: {
+  cachedResults: any[]
+  activeBlock: ElementBlock & { elements: ElementInstance[] }
+}) {
+  const mappedResults = cachedResults.map(([_, result]) => result)
+
+  const sessionLeaderboard: Record<string, string> = mappedResults[0]
+  const blockLeaderboard: Record<string, string> = mappedResults[1]
+
+  const instanceResults: Record<
+    string,
+    {
+      responseHashes: Record<string, string>
+      responses: Record<string, string>
+      anonymousResults:
+        | ElementResultsChoices
+        | ElementResultsOpen
+        | ElementResultsFlashcard
+        | ElementResultsContent
+    }
+  > = mappedResults.slice(2).reduce((acc, cacheObj, ix) => {
+    const ixMod = ix % 3
+    const instance = activeBlock.elements[Math.floor((ix - ixMod) / 3)]
+
+    if (!instance) return acc
+
+    switch (ixMod) {
+      // compute element instance results from cache entries
+      case 2: {
+        // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
+        let anonymousResults:
+          | ElementResultsChoices
+          | ElementResultsOpen
+          | ElementResultsFlashcard
+          | ElementResultsContent
+          | undefined
+
+        if (
+          instance.elementType === ElementType.SC ||
+          instance.elementType === ElementType.MC ||
+          instance.elementType === ElementType.KPRIM
+        ) {
+          const choices = Object.entries(
+            omitBy(cacheObj, (_, key) => key === 'participants')
+          ).reduce<Record<string, number>>((acc, [responseHash, count]) => {
+            return {
+              ...acc,
+              [responseHash]: acc[responseHash] + count,
+            }
+          }, {})
+
+          anonymousResults = {
+            choices,
+            total: cacheObj.participants,
+          } as ElementResultsChoices
+        } else if (
+          instance.elementType === ElementType.NUMERICAL ||
+          instance.elementType === ElementType.FREE_TEXT
+        ) {
+          const responses = Object.entries(
+            omitBy(cacheObj, (_, key) => key === 'participants')
+          ).reduce<Record<string, { value: string; count: number }>>(
+            (acc, [responseHash, count]) => {
+              return {
+                ...acc,
+                [responseHash]: {
+                  value:
+                    acc[instance.id]?.['responseHashes'][responseHash] ??
+                    responseHash,
+                  count: acc[responseHash] + count,
+                },
+              }
+            },
+            {}
+          )
+
+          anonymousResults = {
+            responses,
+            total: cacheObj.participants,
+          } as ElementResultsOpen
+        }
+
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            anonymousResults,
+          },
+        }
+      }
+
+      // responses
+      case 1:
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            responses: cacheObj,
+          },
+        }
+
+      // response hashes
+      case 0:
+        return {
+          ...acc,
+          [instance.id]: {
+            responseHashes: cacheObj,
+          },
+        }
+
+      default:
+        return acc
+    }
+  }, {})
+
+  return {
+    sessionLeaderboard,
+    // blockLeaderboard,
+    // cachedResults,
+    instanceResults,
+  }
+}
+
+async function unlinkCachedBlockResults({
+  ctx,
+  quizId,
+  blockId,
+  activeInstanceIds,
+}: {
+  ctx: Context
+  quizId: string
+  blockId: number
+  activeInstanceIds: number[]
+}) {
+  // unlink everything regarding the block in redis
+  const unlinkMulti = ctx.redisExec.pipeline()
+  unlinkMulti.unlink(`s:${quizId}:b:${blockId}:lb`)
+  activeInstanceIds.forEach((instanceId) => {
+    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:results`)
+  })
+  return unlinkMulti.exec()
+}
+// #endregion
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
@@ -574,6 +763,338 @@ export async function getCockpitQuiz(
   }
 
   return reducedSession
+}
+
+export async function activateLiveQuizBlock(
+  { quizId, blockId }: { quizId: string; blockId: number },
+  ctx: ContextWithUser
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!quiz || quiz.ownerId !== ctx.user.sub) return null
+
+  const newBlock = quiz.blocks.find((block) => block.id === blockId)
+
+  // if the block is not from the current quiz or it is already active, return early
+  if (!newBlock || quiz.activeBlockId === blockId) return quiz
+
+  // set the new block to active
+  const updatedQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id: quizId },
+    data: {
+      activeBlock: {
+        connect: { id: blockId },
+      },
+      blocks: {
+        update: {
+          where: { id: blockId },
+          data: {
+            status: ElementBlockStatus.ACTIVE,
+            expiresAt: newBlock.timeLimit
+              ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
+              : undefined,
+          },
+        },
+      },
+    },
+    include: {
+      activeBlock: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (updatedQuiz.activeBlock?.expiresAt) {
+    scheduledJobs[blockId] = schedule.scheduleJob(
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(20, 'second').toDate(),
+      async () => {
+        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+        ctx.emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: updatedQuiz.id,
+        })
+      }
+    )
+  }
+
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    quizId,
+    block: updatedQuiz.activeBlock,
+  })
+
+  // initialize the cache for the new active block
+  const redisMulti = ctx.redisExec.pipeline()
+
+  updatedQuiz.activeBlock!.elements.forEach((instance) => {
+    const elementData = instance.elementData
+
+    const commonInfo = {
+      namespace: updatedQuiz.namespace,
+      startedAt: Number(new Date()),
+      sessionBlockId: blockId,
+      type: elementData.type,
+      pointsMultiplier: instance.options.pointsMultiplier,
+      maxBonusPoints: updatedQuiz.maxBonusPoints,
+      timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+    }
+
+    switch (elementData.type) {
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM: {
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          choiceCount: elementData.options.choices.length,
+          solutions: JSON.stringify(
+            elementData.options.choices
+              .map((choice, ix) => ({ ix, correct: choice.correct }))
+              .filter((choice) => choice.correct)
+              .map((choice) => choice.ix)
+          ),
+        })
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results as QuestionResultsChoices).choices,
+        })
+        break
+      }
+
+      case ElementType.NUMERICAL: {
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: JSON.stringify(elementData.options.solutionRanges),
+        })
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
+
+      case ElementType.FREE_TEXT: {
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: JSON.stringify(elementData.options.solutions),
+        })
+        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
+    }
+  })
+
+  redisMulti.exec()
+  return updatedQuiz
+}
+
+export async function deactivateLiveQuizBlock(
+  { quizId, blockId }: { quizId: string; blockId: number },
+  ctx: ContextWithUser,
+  isScheduled?: boolean
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      activeBlock: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!quiz || quiz.ownerId !== ctx.user.sub || !quiz.activeBlock) return null
+
+  // if the block is not the active one, return early
+  if (quiz.activeBlockId !== blockId) return quiz
+
+  const activeInstanceIds = quiz.activeBlock.elements.map(
+    (instance) => instance.id
+  )
+
+  const cachedResults = await getCachedBlockResults({
+    ctx,
+    quizId,
+    blockId,
+    activeInstanceIds,
+  })
+
+  if (!cachedResults) return null
+
+  try {
+    const { instanceResults, sessionLeaderboard } = await processCachedData({
+      cachedResults,
+      activeBlock: quiz.activeBlock,
+    })
+
+    const existingParticipantsLB = (
+      await Promise.allSettled(
+        Object.entries(sessionLeaderboard).map(async ([id, score]) => {
+          const participant = await ctx.prisma.participant.findUnique({
+            where: { id },
+          })
+
+          if (!participant) return null
+
+          return [id, score] as [string, string]
+        })
+      )
+    ).flatMap((result) => {
+      if (result.status !== 'fulfilled' || !result.value) return []
+      return [result.value]
+    })
+
+    const updatedSession = await ctx.prisma.liveQuiz.update({
+      where: {
+        id: quizId,
+      },
+      data: {
+        activeBlock: {
+          disconnect: true,
+        },
+        blocks: {
+          update: {
+            where: {
+              id: blockId,
+            },
+            data: {
+              status: SessionBlockStatus.EXECUTED,
+              elements: {
+                update: Object.entries(instanceResults).map(
+                  ([id, instanceResult]) => ({
+                    where: { id: Number(id) },
+                    data: { anonymousResults: instanceResult.anonymousResults },
+                  })
+                ),
+              },
+            },
+          },
+        },
+        leaderboard: quiz.isGamificationEnabled
+          ? {
+              upsert: existingParticipantsLB.map(
+                ([id, score]: [string, string]) => ({
+                  where: {
+                    type_participantId_liveQuizId: {
+                      type: LeaderboardType.SESSION,
+                      participantId: id,
+                      liveQuizId: quizId,
+                    },
+                  },
+                  create: {
+                    type: LeaderboardType.SESSION,
+                    participant: {
+                      connect: { id },
+                    },
+                    score: parseInt(score),
+                    sessionParticipation: {
+                      connectOrCreate: {
+                        where: {
+                          courseId_participantId: {
+                            courseId: quiz.courseId!,
+                            participantId: id,
+                          },
+                        },
+                        create: {
+                          course: {
+                            connect: {
+                              id: quiz.courseId!,
+                            },
+                          },
+                          participant: {
+                            connect: {
+                              id,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  update: {
+                    score: parseInt(score),
+                  },
+                })
+              ),
+            }
+          : undefined,
+      },
+      include: {
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+    })
+
+    ctx.pubSub.publish('runningLiveQuizUpdated', {
+      quizId,
+      block: null,
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: quiz.id,
+    })
+
+    if (!isScheduled && scheduledJobs[blockId]) {
+      await scheduledJobs[blockId].cancel()
+      delete scheduledJobs[blockId]
+    }
+
+    unlinkCachedBlockResults({
+      ctx,
+      quizId,
+      blockId,
+      activeInstanceIds,
+    })
+
+    return updatedSession
+  } catch (error: any) {
+    await sendTeamsNotifications(
+      'graphql/deactivateLiveQuizBlock',
+      `ERROR - failed to deactivate block ${blockId} in live quiz ${
+        quiz.id
+      } with active block ${quiz.activeBlockId}: ${error?.message || error}`
+    )
+
+    throw error
+  }
 }
 
 export async function changeLiveQuizSettings(
