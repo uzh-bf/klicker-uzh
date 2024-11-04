@@ -609,7 +609,11 @@ export async function getCourseSummary(
     include: {
       _count: {
         select: {
-          sessions: true,
+          liveQuizzes: {
+            where: {
+              isDeleted: false,
+            },
+          },
           practiceQuizzes: {
             where: {
               isDeleted: false,
@@ -637,7 +641,7 @@ export async function getCourseSummary(
 
   return {
     numOfParticipations: course._count.participations,
-    numOfLiveQuizzes: course._count.sessions,
+    numOfLiveQuizzes: course._count.liveQuizzes,
     numOfPracticeQuizzes: course._count.practiceQuizzes,
     numOfMicroLearnings: course._count.microLearnings,
     numOfGroupActivities: course._count.groupActivities,
