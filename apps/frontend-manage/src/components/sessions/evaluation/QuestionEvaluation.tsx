@@ -4,8 +4,10 @@ import {
   CHART_COLORS,
   STATISTICS_ORDER,
 } from '@klicker-uzh/shared-components/src/constants'
+import QR from '@pages/qr/[...args]'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Statistic from '../../../components/evaluation/Statistic'
@@ -32,6 +34,7 @@ function QuestionEvaluation({
   totalParticipants,
   className,
 }: QuestionEvaluationProps) {
+  const router = useRouter()
   const t = useTranslations()
   const questionData = currentInstance.questionData
   const [statisticStates, setStatisticStates] = useState<{
@@ -43,6 +46,8 @@ function QuestionEvaluation({
     q3: false,
     sd: false,
   })
+
+  const sessionRelativeLink = `/session/${router.query.id}`
 
   return (
     <div className={twMerge('flex h-full flex-col', className)}>
@@ -134,7 +139,6 @@ function QuestionEvaluation({
               </div>
             </div>
           )}
-
           {questionData.__typename === 'NumericalQuestionData' &&
             questionData.options.restrictions && (
               <div>
@@ -237,6 +241,12 @@ function QuestionEvaluation({
                 </ul>
               </div>
             )}
+
+          <QR
+            className={{ title: 'text-base', canvas: 'flex justify-center' }}
+            path={sessionRelativeLink}
+            width={100}
+          />
         </div>
       </div>
     </div>
