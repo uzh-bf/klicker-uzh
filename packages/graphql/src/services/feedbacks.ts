@@ -104,11 +104,11 @@ export async function respondToFeedback(
   const feedback = await ctx.prisma.feedback.findUnique({
     where: { id },
     include: {
-      session: true,
+      liveQuiz: true,
     },
   })
 
-  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
 
   const feedbackPublished = feedback.isPublished
   const updatedFeedback = await ctx.prisma.feedback.update({
@@ -137,8 +137,8 @@ export async function respondToFeedback(
   }
 
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: updatedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: updatedFeedback.liveQuizId,
   })
 
   return updatedFeedback
@@ -184,11 +184,11 @@ export async function publishFeedback(
   const feedback = await ctx.prisma.feedback.findUnique({
     where: { id },
     include: {
-      session: true,
+      liveQuiz: true,
     },
   })
 
-  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
@@ -209,8 +209,8 @@ export async function publishFeedback(
   }
 
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: updatedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: updatedFeedback.liveQuizId,
   })
 
   return updatedFeedback
@@ -224,11 +224,11 @@ export async function pinFeedback(
   const feedback = await ctx.prisma.feedback.findUnique({
     where: { id },
     include: {
-      session: true,
+      liveQuiz: true,
     },
   })
 
-  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
@@ -243,10 +243,9 @@ export async function pinFeedback(
   })
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
-
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: updatedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: updatedFeedback.liveQuizId,
   })
 
   return updatedFeedback
@@ -260,11 +259,11 @@ export async function resolveFeedback(
   const feedback = await ctx.prisma.feedback.findUnique({
     where: { id },
     include: {
-      session: true,
+      liveQuiz: true,
     },
   })
 
-  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
@@ -278,10 +277,9 @@ export async function resolveFeedback(
   })
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
-
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: updatedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: updatedFeedback.liveQuizId,
   })
 
   return updatedFeedback
@@ -295,21 +293,20 @@ export async function deleteFeedback(
   const feedback = await ctx.prisma.feedback.findUnique({
     where: { id },
     include: {
-      session: true,
+      liveQuiz: true,
     },
   })
 
-  if (!feedback || feedback.session!.ownerId !== ctx.user.sub) return null
+  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
 
   const deletedFeedback = await ctx.prisma.feedback.delete({
     where: { id },
   })
 
   ctx.pubSub.publish('feedbackRemoved', deletedFeedback)
-
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: deletedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: deletedFeedback.liveQuizId,
   })
 
   return deletedFeedback
@@ -325,7 +322,7 @@ export async function deleteFeedbackResponse(
     include: {
       feedback: {
         include: {
-          session: true,
+          liveQuiz: true,
         },
       },
     },
@@ -333,7 +330,7 @@ export async function deleteFeedbackResponse(
 
   if (
     !feedbackResponse ||
-    feedbackResponse.feedback.session!.ownerId !== ctx.user.sub
+    feedbackResponse.feedback.liveQuiz!.ownerId !== ctx.user.sub
   ) {
     return null
   }
@@ -355,8 +352,8 @@ export async function deleteFeedbackResponse(
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
   ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: updatedFeedback.sessionId,
+    typename: 'LiveQuiz',
+    id: updatedFeedback.liveQuizId,
   })
 
   return updatedFeedback

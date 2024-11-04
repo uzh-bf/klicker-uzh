@@ -80,12 +80,12 @@ function AudienceInteraction({
   }, [subscribeToMore, quizId])
 
   const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument)
-  const [publishFeedback] = useMutation(PublishFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
-  const [pinFeedback] = useMutation(PinFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
-  const [resolveFeedback] = useMutation(ResolveFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
-  const [deleteFeedback] = useMutation(DeleteFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
-  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument) // TODO: udpate to new live quiz structure (including subscriptions)
-  const [respondToFeedback] = useMutation(RespondToFeedbackDocument) // TODO: udpate to new live quiz structure (including subscriptions)
+  const [publishFeedback] = useMutation(PublishFeedbackDocument)
+  const [pinFeedback] = useMutation(PinFeedbackDocument)
+  const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
+  const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
+  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
+  const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
 
   return (
     <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
@@ -252,7 +252,7 @@ function AudienceInteraction({
                     isPinned: boolean
                   ) => {
                     pinFeedback({
-                      variables: { id: feedbackId, isPinned: isPinned },
+                      variables: { id: feedbackId, isPinned },
                     })
                     push([
                       'trackEvent',
@@ -266,7 +266,7 @@ function AudienceInteraction({
                     isPublished: boolean
                   ) => {
                     publishFeedback({
-                      variables: { id: feedbackId, isPublished: isPublished },
+                      variables: { id: feedbackId, isPublished },
                     })
                     push([
                       'trackEvent',
@@ -280,7 +280,7 @@ function AudienceInteraction({
                     isResolved: boolean
                   ) => {
                     resolveFeedback({
-                      variables: { id: feedbackId, isResolved: isResolved },
+                      variables: { id: feedbackId, isResolved },
                     })
                     push([
                       'trackEvent',
