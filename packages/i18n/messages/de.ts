@@ -234,7 +234,7 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
     },
     leaderboard: {
-      sessionTitle: 'Session Leaderboard',
+      lqLeaderboard: 'Quiz Leaderboard',
       ranks: 'Ränge',
       points: 'Punkte',
       computed: 'Berechnet',

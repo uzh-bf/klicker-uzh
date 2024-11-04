@@ -89,7 +89,7 @@ function SessionLeaderboard({
 
   return (
     <div className={twMerge('space-y-4', className)}>
-      <H2>{t('shared.leaderboard.sessionTitle')}</H2>
+      <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
       <div>
         {data.sessionLeaderboard?.length &&
         data.sessionLeaderboard.length > 0 ? (

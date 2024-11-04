@@ -234,7 +234,7 @@ export default {
         'Select this setting to include a LaTeX formula centered on a separate line.',
     },
     leaderboard: {
-      sessionTitle: 'Quiz Leaderboard',
+      lqLeaderboard: 'Quiz Leaderboard',
       ranks: 'Ranks',
       points: 'Points',
       computed: 'Computed',
