@@ -7,7 +7,7 @@ import {
   ElementBlockStatus,
   EndLiveQuizDocument,
   GetControlLiveQuizDocument,
-  GetUserRunningLiveQuizzesDocument,
+  GetUnassignedLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -37,13 +37,13 @@ function RunningSession() {
     {
       update(cache, res) {
         const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
+          query: GetUnassignedLiveQuizzesDocument,
         })
         cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
+          query: GetUnassignedLiveQuizzesDocument,
           data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
+            unassignedLiveQuizzes:
+              data?.unassignedLiveQuizzes?.filter(
                 (q) => q.id !== res.data?.endLiveQuiz?.id
               ) ?? [],
           },

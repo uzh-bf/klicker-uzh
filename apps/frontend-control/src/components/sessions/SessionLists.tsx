@@ -109,8 +109,8 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
         quizId={sessionId}
       />
       <StartModal
-        startId={startId}
-        startName={startName}
+        quizId={startId}
+        quizName={startName}
         startModalOpen={startModalOpen}
         setStartModalOpen={setStartModalOpen}
         setErrorToast={setErrorToast}

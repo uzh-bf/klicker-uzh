@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
+  GetUnassignedLiveQuizzesDocument,
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -8,16 +9,16 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
 interface StartModalProps {
-  startId: string
-  startName: string
+  quizId: string
+  quizName: string
   startModalOpen: boolean
   setStartModalOpen: (open: boolean) => void
   setErrorToast: (open: boolean) => void
 }
 
 function StartModal({
-  startId,
-  startName,
+  quizId,
+  quizName,
   startModalOpen,
   setStartModalOpen,
   setErrorToast,
@@ -30,10 +31,30 @@ function StartModal({
       optimisticResponse: {
         startLiveQuiz: {
           __typename: 'LiveQuizMeta',
-          id: startId,
-          name: startName,
+          id: quizId,
+          name: quizName,
           status: PublicationStatus.Published,
         },
+      },
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetUnassignedLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUnassignedLiveQuizzesDocument,
+          data: {
+            unassignedLiveQuizzes:
+              data?.unassignedLiveQuizzes?.map((quiz) =>
+                quiz.id === quizId
+                  ? {
+                      id: quizId,
+                      name: quizName,
+                      status: PublicationStatus.Published,
+                    }
+                  : quiz
+              ) ?? [],
+          },
+        })
       },
     }
   )
@@ -48,9 +69,9 @@ function StartModal({
           onClick={async () => {
             try {
               await startLiveQuiz({
-                variables: { id: startId },
+                variables: { id: quizId },
               })
-              router.push(`/session/${startId}`)
+              router.push(`/session/${quizId}`)
             } catch (error) {
               setStartModalOpen(false)
               setErrorToast(true)
@@ -80,7 +101,7 @@ function StartModal({
       <H3>{t('control.course.startLiveQuiz')}</H3>
       <div className="border-uzh-grey-100 bg-uzh-grey-20 rounded border border-solid p-2">
         {t('control.course.confirmStartLiveQuiz')}
-        <div className="font-bold">{startName}</div>
+        <div className="font-bold">{quizName}</div>
       </div>
       <div className="mt-4 text-sm italic">
         {t('control.course.explanationStartLiveQuiz')}
