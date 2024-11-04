@@ -47,7 +47,7 @@ function Subscriber({
       ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
-          session: {
+          studentLiveQuiz: {
             ...prev.studentLiveQuiz,
             activeBlock: subscriptionData.data.runningLiveQuizUpdated,
           },
@@ -199,7 +199,7 @@ function Index({ id }: { id: string }) {
               expiresAt={activeBlock.expiresAt}
               instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}
-              sessionId={id}
+              quizId={id}
               timeLimit={activeBlock?.timeLimit ?? undefined}
               execution={activeBlock?.execution ?? 0}
             />

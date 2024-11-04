@@ -9,7 +9,6 @@ import {
   ElementType,
   LeaderboardType,
   PublicationStatus,
-  SessionBlockStatus,
 } from '@klicker-uzh/prisma'
 import type {
   BlockInput,
@@ -70,7 +69,7 @@ async function processCachedData({
 }) {
   const mappedResults = cachedResults.map(([_, result]) => result)
 
-  const sessionLeaderboard: Record<string, string> = mappedResults[0]
+  const liveQuizLeaderboard: Record<string, string> = mappedResults[0]
   const blockLeaderboard: Record<string, string> = mappedResults[1]
 
   const instanceResults: Record<
@@ -111,13 +110,13 @@ async function processCachedData({
           ).reduce<Record<string, number>>((acc, [responseHash, count]) => {
             return {
               ...acc,
-              [responseHash]: acc[responseHash] + count,
+              [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
             }
           }, {})
 
           anonymousResults = {
             choices,
-            total: cacheObj.participants,
+            total: parseInt(cacheObj.participants),
           } as ElementResultsChoices
         } else if (
           instance.elementType === ElementType.NUMERICAL ||
@@ -126,14 +125,15 @@ async function processCachedData({
           const responses = Object.entries(
             omitBy(cacheObj, (_, key) => key === 'participants')
           ).reduce<Record<string, { value: string; count: number }>>(
-            (acc, [responseHash, count]) => {
+            (responses_acc, [responseHash, count]) => {
               return {
-                ...acc,
+                ...responses_acc,
                 [responseHash]: {
                   value:
                     acc[instance.id]?.['responseHashes'][responseHash] ??
                     responseHash,
-                  count: acc[responseHash] + count,
+                  count:
+                    (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
                 },
               }
             },
@@ -142,7 +142,7 @@ async function processCachedData({
 
           anonymousResults = {
             responses,
-            total: cacheObj.participants,
+            total: parseInt(cacheObj.participants),
           } as ElementResultsOpen
         }
 
@@ -170,6 +170,7 @@ async function processCachedData({
         return {
           ...acc,
           [instance.id]: {
+            ...acc[instance.id],
             responseHashes: cacheObj,
           },
         }
@@ -180,7 +181,7 @@ async function processCachedData({
   }, {})
 
   return {
-    sessionLeaderboard,
+    liveQuizLeaderboard,
     // blockLeaderboard,
     // cachedResults,
     instanceResults,
@@ -409,7 +410,7 @@ export async function getLiveQuizData(
     return null
   }
 
-  const session = await ctx.prisma.liveQuiz.findUnique({
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       blocks: {
@@ -428,7 +429,7 @@ export async function getLiveQuizData(
     },
   })
 
-  return session
+  return quiz
 }
 
 export async function getUserLiveQuizzes(ctx: ContextWithUser) {
@@ -511,7 +512,7 @@ export async function getLecturerViewLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.liveQuiz.findUnique({
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       confusionFeedbacks: true,
@@ -523,24 +524,24 @@ export async function getLecturerViewLiveQuiz(
     },
   })
 
-  if (session?.status !== PublicationStatus.PUBLISHED || !session) {
+  if (liveQuiz?.status !== PublicationStatus.PUBLISHED || !liveQuiz) {
     return null
   }
 
-  // recude session to only contain what is required for the lecturer cockpit
-  const reducedSession = {
-    ...session,
-    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
+  // recude live quiz to only contain what is required for the lecturer cockpit
+  const reducedQuiz = {
+    ...liveQuiz,
+    confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
   }
 
-  return reducedSession
+  return reducedQuiz
 }
 
 export async function getControlLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.liveQuiz.findUnique({
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       activeBlock: true,
@@ -560,11 +561,11 @@ export async function getControlLiveQuiz(
     },
   })
 
-  if (!session || session?.status !== PublicationStatus.PUBLISHED) {
+  if (!quiz || quiz?.status !== PublicationStatus.PUBLISHED) {
     return null
   }
 
-  return session
+  return quiz
 }
 // #endregion
 
@@ -596,7 +597,7 @@ export async function startLiveQuiz(
       },
     })
 
-    // if there is no session matching the current user and session id, exit early
+    // if there is no live quiz matching the current user and quiz id, exit early
     if (!quiz) {
       return null
     }
@@ -653,7 +654,7 @@ export async function getCockpitQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.liveQuiz.findUnique({
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       activeBlock: {
@@ -687,12 +688,12 @@ export async function getCockpitQuiz(
     },
   })
 
-  if (!session || session?.status !== PublicationStatus.PUBLISHED) {
+  if (!liveQuiz || liveQuiz?.status !== PublicationStatus.PUBLISHED) {
     return null
   }
 
   // number of participants per block
-  const blockParticipants = session.blocks.reduce<Record<number, number>>(
+  const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
       acc[block.id] = block.elements.reduce(
         (instanceAcc, instance) =>
@@ -707,8 +708,8 @@ export async function getCockpitQuiz(
     {}
   )
 
-  if (session.activeBlock && session.activeBlock.id) {
-    const activeInstanceIds = session.activeBlock?.elements.map(
+  if (liveQuiz.activeBlock && liveQuiz.activeBlock.id) {
+    const activeInstanceIds = liveQuiz.activeBlock?.elements.map(
       (instance) => instance.id
     )
     const redisMulti = ctx.redisExec.pipeline()
@@ -727,15 +728,15 @@ export async function getCockpitQuiz(
     const activeBlockParticipants = cacheContent
       ?.map(([_, result]) => parseInt(result?.participants))
       .reduce((acc, val) => min(acc, val), 100000)
-    blockParticipants[session.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[session.activeBlock.id] ?? 0
+    blockParticipants[liveQuiz.activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
   }
 
-  // recude session to only contain what is required for the lecturer cockpit
-  const reducedSession = {
-    ...session,
-    activeBlock: session.activeBlock,
-    blocks: session.blocks.map((block) => {
+  // recude live quiz to only contain what is required for the lecturer cockpit
+  const reducedQuiz = {
+    ...liveQuiz,
+    activeBlock: liveQuiz.activeBlock,
+    blocks: liveQuiz.blocks.map((block) => {
       return {
         ...block,
         numOfParticipants: blockParticipants[block.id],
@@ -759,10 +760,10 @@ export async function getCockpitQuiz(
         }),
       }
     }),
-    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
+    confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
   }
 
-  return reducedSession
+  return reducedQuiz
 }
 
 export async function activateLiveQuizBlock(
@@ -840,10 +841,7 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
-    quizId,
-    block: updatedQuiz.activeBlock,
-  })
+  ctx.pubSub.publish('runningLiveQuizUpdated', updatedQuiz)
 
   // initialize the cache for the new active block
   const redisMulti = ctx.redisExec.pipeline()
@@ -957,14 +955,14 @@ export async function deactivateLiveQuizBlock(
   if (!cachedResults) return null
 
   try {
-    const { instanceResults, sessionLeaderboard } = await processCachedData({
+    const { instanceResults, liveQuizLeaderboard } = await processCachedData({
       cachedResults,
       activeBlock: quiz.activeBlock,
     })
 
     const existingParticipantsLB = (
       await Promise.allSettled(
-        Object.entries(sessionLeaderboard).map(async ([id, score]) => {
+        Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
           const participant = await ctx.prisma.participant.findUnique({
             where: { id },
           })
@@ -979,7 +977,7 @@ export async function deactivateLiveQuizBlock(
       return [result.value]
     })
 
-    const updatedSession = await ctx.prisma.liveQuiz.update({
+    const updatedQuiz = await ctx.prisma.liveQuiz.update({
       where: {
         id: quizId,
       },
@@ -993,7 +991,7 @@ export async function deactivateLiveQuizBlock(
               id: blockId,
             },
             data: {
-              status: SessionBlockStatus.EXECUTED,
+              status: ElementBlockStatus.EXECUTED,
               elements: {
                 update: Object.entries(instanceResults).map(
                   ([id, instanceResult]) => ({
@@ -1063,8 +1061,8 @@ export async function deactivateLiveQuizBlock(
     })
 
     ctx.pubSub.publish('runningLiveQuizUpdated', {
-      quizId,
-      block: null,
+      ...updatedQuiz,
+      activeBlock: null,
     })
 
     ctx.emitter.emit('invalidate', {
@@ -1084,7 +1082,7 @@ export async function deactivateLiveQuizBlock(
       activeInstanceIds,
     })
 
-    return updatedSession
+    return updatedQuiz
   } catch (error: any) {
     await sendTeamsNotifications(
       'graphql/deactivateLiveQuizBlock',
@@ -1219,7 +1217,7 @@ export async function cancelLiveQuiz(
 
   try {
     if (quiz.status !== PublicationStatus.PUBLISHED) {
-      throw new Error('Session is not running')
+      throw new Error('Live quiz is not running')
     }
 
     const instances = quiz.blocks.flatMap((block) => block.elements)
@@ -1292,14 +1290,14 @@ export async function cancelLiveQuiz(
 
     await sendTeamsNotifications(
       'graphql/abortLiveQuiz',
-      `CANCEL Session ${quiz.name} with id ${quiz.id}.`
+      `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`
     )
 
     return updatedQuiz
   } catch (error) {
     await sendTeamsNotifications(
       'graphql/abortLiveQuiz',
-      `ERROR - failed to cancel session ${quiz.name} with id ${quiz.id}: ${error}`
+      `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`
     )
     throw error
   }
@@ -1342,7 +1340,7 @@ export async function deleteLiveQuiz(
     })
 
     ctx.emitter.emit('invalidate', {
-      typename: 'Session',
+      typename: 'LiveQuiz',
       id,
     })
 

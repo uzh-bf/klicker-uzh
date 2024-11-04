@@ -31,9 +31,9 @@ export const Subscription = builder.subscriptionType({
         subscribe: (_, args, ctx) =>
           pipe(
             ctx.pubSub.subscribe('runningLiveQuizUpdated'),
-            filter((data) => data.liveQuizId === args.quizId)
+            filter((data) => data.id === args.quizId)
           ),
-        resolve: (payload) => payload.block,
+        resolve: (payload) => payload.activeBlock,
       }),
 
       feedbackCreated: t.field({
