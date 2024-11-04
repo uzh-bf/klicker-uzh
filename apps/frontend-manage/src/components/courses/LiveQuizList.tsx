@@ -1,7 +1,7 @@
-import { Session, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import { SessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
-import LiveQuizElement from './LiveQuizElement'
+import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 
 const sortingOrderSessions: Record<string, number> = {
   [SessionStatus.Running]: 0,
@@ -10,34 +10,25 @@ const sortingOrderSessions: Record<string, number> = {
   [SessionStatus.Completed]: 3,
 }
 
-interface LiveQuizListProps {
-  sessions: Pick<
-    Session,
-    | 'id'
-    | 'status'
-    | 'name'
-    | 'numOfBlocks'
-    | 'numOfQuestions'
-    | 'isGamificationEnabled'
-    | 'accessMode'
-  >[]
-}
-
-function LiveQuizList({ sessions }: LiveQuizListProps) {
+function LiveQuizList({
+  liveQuizzes,
+}: {
+  liveQuizzes: LiveQuizListElementType[]
+}) {
   const t = useTranslations()
 
   return (
     <div className="">
-      {sessions && sessions.length > 0 ? (
+      {liveQuizzes && liveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {sort(sessions, (a, b) => {
+          {sort(liveQuizzes, (a, b) => {
             if (!a.status || !b.status) return 0
 
             return (
               sortingOrderSessions[a.status] - sortingOrderSessions[b.status]
             )
-          }).map((session) => (
-            <LiveQuizElement session={session} key={session.id} />
+          }).map((quiz) => (
+            <LiveQuizElement quiz={quiz} key={quiz.id} />
           ))}
         </div>
       ) : (

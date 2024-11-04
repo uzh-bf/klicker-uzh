@@ -1,11 +1,11 @@
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { LiveQuiz } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
 interface EvaluationLinkLiveQuizProps {
-  liveQuiz: Partial<Session>
+  liveQuiz: Pick<LiveQuiz, 'id' | 'name'>
 }
 
 function EvaluationLinkLiveQuiz({ liveQuiz }: EvaluationLinkLiveQuizProps) {

@@ -3,7 +3,7 @@ import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetUserRunningLiveQuizzesDocument,
-  Session,
+  LiveQuiz,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
 interface StartLiveQuizButtonProps {
-  liveQuiz: Partial<Session>
+  liveQuiz: Pick<LiveQuiz, 'id' | 'name'>
 }
 
 function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {

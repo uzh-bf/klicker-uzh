@@ -958,16 +958,16 @@ type LiveQuiz {
   isGamificationEnabled: Boolean!
   isLiveQAEnabled: Boolean!
   isModerationEnabled: Boolean!
-  maxBonusPoints: Int!
+  maxBonusPoints: Int
   name: String!
-  namespace: String!
+  namespace: String
   numOfBlocks: Int
   numOfInstances: Int
   pinCode: Int
   pointsMultiplier: Int!
   startedAt: Date
   status: PublicationStatus!
-  timeToZeroBonus: Int!
+  timeToZeroBonus: Int
   updatedAt: Date
 }
 
