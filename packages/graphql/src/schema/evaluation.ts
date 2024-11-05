@@ -78,9 +78,20 @@ export interface INumericalElementEvaluationResults {
   }[]
 }
 
+export interface IStatistics {
+  max: number
+  min: number
+  mean: number
+  median: number
+  q1: number
+  q3: number
+  sd: number
+}
+
 export interface INumericalElementInstanceEvaluation
   extends IElementInstanceEvaluation {
   results: INumericalElementEvaluationResults
+  statistics?: IStatistics
 }
 
 export interface IFreeElementEvaluationResults {
@@ -208,6 +219,20 @@ export const ChoiceElementResults = ChoiceElementResultsRef.implement({
 })
 
 // ----- NUMERICAL ELEMENT EVALUATION INTERFACE -----
+export const Statistics = builder
+  .objectRef<IStatistics>('Statistics')
+  .implement({
+    fields: (t) => ({
+      max: t.exposeFloat('max'),
+      min: t.exposeFloat('min'),
+      mean: t.exposeFloat('mean'),
+      median: t.exposeFloat('median'),
+      q1: t.exposeFloat('q1'),
+      q3: t.exposeFloat('q3'),
+      sd: t.exposeFloat('sd'),
+    }),
+  })
+
 export const NumericalElementInstanceEvaluationRef =
   builder.objectRef<INumericalElementInstanceEvaluation>(
     'NumericalElementInstanceEvaluation'
@@ -216,6 +241,7 @@ export const NumericalElementInstanceEvaluation =
   NumericalElementInstanceEvaluationRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
+      statistics: t.expose('statistics', { type: Statistics, nullable: true }),
       results: t.expose('results', {
         type: NumericalElementResults,
       }),

@@ -1160,6 +1160,7 @@ type NumericalElementInstanceEvaluation {
   id: Int!
   name: String!
   results: NumericalElementResults!
+  statistics: Statistics
   type: ElementType!
 }
 

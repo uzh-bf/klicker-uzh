@@ -1,17 +1,31 @@
 import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChartType,
+  STATISTICS_ORDER,
+} from '@klicker-uzh/shared-components/src/constants'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction } from 'react'
+import Statistic from '../Statistic'
 import { TextSizeType } from '../textSizes'
+import { ShowStatisticsType } from './NREvaluation'
 
 interface NumericalSidebarProps {
   instance: NumericalElementInstanceEvaluation
+  chartType: ChartType
   textSize: TextSizeType
   showSolution: boolean
+  showStatistics: ShowStatisticsType
+  setShowStatistics: Dispatch<SetStateAction<ShowStatisticsType>>
 }
 
 function NumericalSidebar({
   instance,
+  chartType,
   textSize,
   showSolution,
+  showStatistics,
+  setShowStatistics,
 }: NumericalSidebarProps) {
   const t = useTranslations()
 
@@ -24,10 +38,9 @@ function NumericalSidebar({
         [{instance.results.minValue ?? '-∞'},{instance.results.maxValue ?? '+∞'}
         ]
       </div>
-      {/* // TODO: reintroduce this, once statistics are available */}
-      {/* <div className="mt-4 font-bold">{t('manage.evaluation.statistics')}:</div>
-      {currentInstance.statistics ? (
-        Object.entries(currentInstance.statistics)
+      <div className="mt-4 font-bold">{t('manage.evaluation.statistics')}:</div>
+      {instance.statistics ? (
+        Object.entries(instance.statistics)
           .slice(1)
           .sort(
             (a, b) =>
@@ -45,11 +58,17 @@ function NumericalSidebar({
                   !(statisticName === 'min' || statisticName === 'max')
                 }
                 chartType={chartType}
-                checked={statisticStates[statisticName]}
+                checked={
+                  showStatistics[statisticName as keyof ShowStatisticsType] ??
+                  false
+                }
                 onCheck={() => {
-                  setStatisticStates({
-                    ...statisticStates,
-                    [statisticName]: !statisticStates[statisticName],
+                  setShowStatistics({
+                    ...showStatistics,
+                    [statisticName]:
+                      !showStatistics[
+                        statisticName as keyof ShowStatisticsType
+                      ],
                   })
                 }}
                 size={textSize.size}
@@ -60,7 +79,7 @@ function NumericalSidebar({
         <UserNotification type="info">
           {t('manage.evaluation.noStatistics')}
         </UserNotification>
-      )} */}
+      )}
       {showSolution && instance.results.solutionRanges && (
         <div className={textSize.textLg}>
           <div className="mt-4 font-bold">

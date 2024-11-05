@@ -51,7 +51,7 @@ import type {
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import { getInitialElementResults } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import { round } from 'mathjs'
+import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import type { Context } from '../lib/context.js'
@@ -2775,6 +2775,26 @@ function computeChoicesEvaluation({
   }
 }
 
+function computeNumericalStatistics(results: ElementResultsOpen) {
+  const resultValues = Object.values(results.responses)
+  const valueArray = resultValues.reduce<number[]>((acc, { count, value }) => {
+    const elements = Array(count).fill(parseFloat(value))
+    return acc.concat(elements)
+  }, [])
+
+  return valueArray.length > 0
+    ? {
+        max: max(valueArray),
+        mean: mean(valueArray),
+        median: median(valueArray),
+        min: min(valueArray),
+        q1: quantileSeq(valueArray, 0.25) as number,
+        q3: quantileSeq(valueArray, 0.75) as number,
+        sd: std(valueArray) as number[],
+      }
+    : null
+}
+
 function computeNumericalEvaluation({
   options,
   results,
@@ -2798,8 +2818,8 @@ function computeNumericalEvaluation({
         results,
         anonymousResults,
       }),
-      // TODO: extend with statistics
     },
+    statistics: computeNumericalStatistics(results),
   }
 }
 
