@@ -6,7 +6,6 @@ import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as MicroLearningService from '../services/microLearning.js'
-import * as MigrationService from '../services/migration.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -1493,26 +1492,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER OWNER OPERATIONS -----
       // #region
-      requestMigrationToken: t.withAuth(asUserOwner).boolean({
-        nullable: true,
-        args: {
-          email: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.requestMigrationToken(args, ctx)
-        },
-      }),
-
-      triggerMigration: t.withAuth(asUserOwner).boolean({
-        nullable: true,
-        args: {
-          token: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.triggerMigration(args, ctx)
-        },
-      }),
-
       createUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,

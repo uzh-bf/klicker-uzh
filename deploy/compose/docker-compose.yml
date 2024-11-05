@@ -56,9 +56,6 @@ services:
       EMAIL_PORT:
       EMAIL_USER:
       EMAIL_PASSWORD:
-      MONGO_URL: mongodb:27017/klicker?authSource=admin
-      MONGO_USER: klicker
-      MONGO_PASSWORD: klicker
       S3_ENABLED: 'true'
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
@@ -93,21 +90,6 @@ services:
     #   - 6379:6379
     networks:
       - klicker
-
-  # mongodb database
-  # it is recommended to run this service outside of docker
-  mongodb:
-    restart: unless-stopped
-    image: mongo:4.0
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: klicker
-      MONGO_INITDB_ROOT_PASSWORD: klicker
-    # ports:
-    #   - 27017:27017
-    networks:
-      - klicker
-    volumes:
-      - mongo-data:/data/db
 
   # minio storage platform for S3
   minio:
@@ -144,7 +126,6 @@ services:
 volumes:
   redis-data:
   minio-data:
-  mongo-data:
 
 networks:
   klicker:
