@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   type Element,
+  ElementBlock,
   type ElementInstance,
   type ElementStack,
   ElementStackType,
@@ -2775,10 +2776,15 @@ function computeChoicesEvaluation({
   }
 }
 
-function computeNumericalStatistics(results: ElementResultsOpen) {
-  const resultValues = Object.values(results.responses)
-  const valueArray = resultValues.reduce<number[]>((acc, { count, value }) => {
-    const elements = Array(count).fill(parseFloat(value))
+function computeNumericalStatistics(
+  results: {
+    value: number
+    count: number
+    correct?: boolean | null
+  }[]
+) {
+  const valueArray = results.reduce<number[]>((acc, { count, value }) => {
+    const elements = Array(count).fill(value)
     return acc.concat(elements)
   }, [])
 
@@ -2806,6 +2812,11 @@ function computeNumericalEvaluation({
   anonymousResults: ElementResultsOpen
   common: CommonEvaluationProps
 }) {
+  const combinedResults = combineNumericalResults({
+    results,
+    anonymousResults,
+  })
+
   return {
     ...common,
     results: {
@@ -2814,12 +2825,9 @@ function computeNumericalEvaluation({
       maxValue: options.restrictions?.max,
       minValue: options.restrictions?.min,
       solutionRanges: options.solutionRanges,
-      responseValues: combineNumericalResults({
-        results,
-        anonymousResults,
-      }),
+      responseValues: combinedResults,
     },
-    statistics: computeNumericalStatistics(results),
+    statistics: computeNumericalStatistics(combinedResults),
   }
 }
 
@@ -2939,6 +2947,7 @@ function computeInstanceEvaluation({
     'responses' in instance.results &&
     'responses' in instance.anonymousResults
   ) {
+    console.log('COMPUTING INSTANCE EVALUATION')
     return computeNumericalEvaluation({
       options: instance.elementData.options,
       results: instance.results,
@@ -2978,12 +2987,15 @@ function computeInstanceEvaluation({
 }
 
 export function computeStackEvaluation(
-  stacks: (ElementStack & { elements: ElementInstance[] })[]
+  stacks: (
+    | (ElementStack & { elements: ElementInstance[] })
+    | (ElementBlock & { elements: ElementInstance[] })
+  )[]
 ) {
   return stacks.map((stack) => ({
     stackId: stack.id!,
-    stackName: stack.displayName,
-    stackDescription: stack.description,
+    stackName: 'displayName' in stack ? stack.displayName : null,
+    stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
 
     instances: stack.elements
