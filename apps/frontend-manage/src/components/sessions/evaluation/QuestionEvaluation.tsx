@@ -248,6 +248,7 @@ function QuestionEvaluation({
             width={100}
             showLink={false}
             showButton={false}
+            showLogo={false}
           />
         </div>
       </div>

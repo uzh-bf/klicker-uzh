@@ -10,13 +10,14 @@ import { twMerge } from 'tailwind-merge'
 
 interface Props {
   path: string
-  width: number
+  width?: number
   className?: {
     title?: string
     canvas?: string
   }
-  showLink: boolean
-  showButton: boolean
+  showLink?: boolean
+  showButton?: boolean
+  showLogo?: boolean
 }
 
 export function QR({
@@ -25,6 +26,7 @@ export function QR({
   className,
   showLink = true,
   showButton = true,
+  showLogo = true,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -54,14 +56,22 @@ export function QR({
         </Link>
       )}
       <div className={className?.canvas}>
-        <QRCode
-          ref={ref as MutableRefObject<QRCode>}
-          logoHeight={width / 3.34}
-          logoImage="/img/KlickerLogo.png"
-          logoWidth={width}
-          size={width * 3}
-          value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
-        />
+        {showLogo && width ? (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            logoHeight={width / 3.34}
+            logoImage="/img/KlickerLogo.png"
+            logoWidth={width}
+            size={width * 3}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        ) : (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            style={{ width: '100%', height: '100%' }}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        )}
       </div>
       {showButton && (
         <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
