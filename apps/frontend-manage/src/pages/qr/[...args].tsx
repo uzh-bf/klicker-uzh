@@ -12,6 +12,7 @@ interface Props {
   path: string
   width?: number
   className?: {
+    root?: string
     title?: string
     canvas?: string
   }
@@ -41,7 +42,7 @@ export function QR({
   }, [ref, path])
 
   return (
-    <div className="space-y-2">
+    <div className={twMerge('space-y-2', className?.root)}>
       {showLink && (
         <Link
           target="_blank"
