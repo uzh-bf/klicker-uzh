@@ -246,6 +246,8 @@ function QuestionEvaluation({
             className={{ title: 'text-base', canvas: 'flex justify-center' }}
             path={sessionRelativeLink}
             width={100}
+            showLink={false}
+            showButton={false}
           />
         </div>
       </div>

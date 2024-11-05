@@ -15,12 +15,16 @@ interface Props {
     title?: string
     canvas?: string
   }
+  showLink: boolean
+  showButton: boolean
 }
 
 export function QR({
   path,
   width = 200,
   className,
+  showLink = true,
+  showButton = true,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -36,12 +40,19 @@ export function QR({
 
   return (
     <div className="space-y-2">
-      <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
-        <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
-          {process.env.NEXT_PUBLIC_PWA_URL}
-          {path}
-        </div>
-      </Link>
+      {showLink && (
+        <Link
+          target="_blank"
+          href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+        >
+          <div
+            className={twMerge('text-primary-100 text-6xl', className?.title)}
+          >
+            {process.env.NEXT_PUBLIC_PWA_URL}
+            {path}
+          </div>
+        </Link>
+      )}
       <div className={className?.canvas}>
         <QRCode
           ref={ref as MutableRefObject<QRCode>}
@@ -52,12 +63,14 @@ export function QR({
           value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         />
       </div>
-      <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
-        <Button.Icon>
-          <FontAwesomeIcon icon={faDownload} />
-        </Button.Icon>
-        <Button.Label>{t('shared.generic.download')}</Button.Label>
-      </Button>
+      {showButton && (
+        <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faDownload} />
+          </Button.Icon>
+          <Button.Label>{t('shared.generic.download')}</Button.Label>
+        </Button>
+      )}
     </div>
   )
 }
