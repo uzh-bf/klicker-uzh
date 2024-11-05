@@ -1,7 +1,6 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import Layout from '@theme/Layout'
 
-import Team from '@site/src/components/teampage/team'
 import { CTA } from '../components/landing/CTA'
 import { FeatureFocusSection } from '../components/landing/FeatureFocusSection'
 import FeatureSection from '../components/landing/FeatureSection'
@@ -15,7 +14,7 @@ function Home() {
       <FeatureSection
         title={'Synchronous Interaction'}
         description={
-          'Interact with your students during class and drive engagement with your materials.'
+          'Interact with your students during class and drive engagement with your lecture.'
         }
         features={[
           {
@@ -27,7 +26,7 @@ function Home() {
           {
             title: 'Live Q&A',
             icon: faArrowRight,
-            text: 'You can launch a Live Q&A session during your lecture. Students can ask questions and upvote questions from other students. You can answer questions live or at the end of the session.',
+            text: 'You can launch a Live Q&A session during your lecture. Students can ask and upvote questions from other students and give real-time feedback. You can answer questions live in writing or orally.',
             hoverImage: '/img_v3/06_live_qa.png',
           },
         ]}
@@ -41,59 +40,58 @@ function Home() {
             title: 'Microlearning',
             icon: faArrowRight,
             text: 'You can prepare short Microlearning units that students can work through at their own pace. The units are time-restricted and can be used to combat the forgetting curve.',
-            hoverImage: '/img_v3/06_live_quiz.png',
+            hoverImage: '/img_v3/microlearning_cut.png',
           },
           {
             title: 'Practice Quizzes',
             icon: faArrowRight,
-            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or by the date of the last response, allowing for a simple way of spaced repetition.',
-            hoverImage: '/img_v3/quiz_evaluation.png',
-          },
-        ]}
-      />
-      <FeatureSection
-        title="Gamified Learning"
-        description=""
-        features={[
-          {
-            title: 'Reward-Based Scoring',
-            icon: faArrowRight,
-            text: 'Points are granted for correct answers, providing incentives and making participation more engaging.',
-            hoverImage: '/img_v3/10_group_overview.png',
-            shadow: false,
+            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or using a spaced repetition algorithm.',
+            hoverImage: '/img_v3/07_practice_quiz.png',
           },
           {
             title: 'Group Activities',
             icon: faArrowRight,
-            text: 'Students engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
-            hoverImage: '/img_v3/landing_page/groups.png',
-            shadow: false,
+            text: 'Students form groups and engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
+            hoverImage: '/img_v3/16_group_activity_graded_students.png',
           },
+        ]}
+      />
+
+      <FeatureSection
+        title="Gamified Learning"
+        description="Engage your students with gamified learning activities."
+        features={[
           {
-            title: 'Leaderboards',
+            title: 'Points and Leaderboards',
             icon: faArrowRight,
             text: 'Individual and group leaderboards display rankings, inspiring a sense of friendly competition and prompting students to stay engaged.',
             hoverImage: '/img_v3/08_gamification.png',
             shadow: false,
           },
+          {
+            title: 'Group Formation',
+            icon: faArrowRight,
+            text: 'Students can form groups with their peers by choice or randomly and collaborate and compete against other groups.',
+            hoverImage: '/img_v3/10_group_overview.png',
+          },
         ]}
       />
-      <FeatureSection
-        title={'AI Learning Analytics'}
+
+      {/* <FeatureFocusSection
+        title={'Coming Soon'}
         description={
           'Enhancing Learning Through Insightful Tracking for Lecturers and Personalized Progress Overviews for Students'
         }
-        isComingSoon={true}
         features={[
           {
-            title: 'For Lecturers',
+            title: 'Learning Analytics',
             icon: faArrowRight,
             text: 'Track student activity, behavior, performance, and quiz results via aggregated, anonymized analytics.',
             hoverImage:
               '/img_v3/landing_page/feature/learning_analytics_lecturer.png',
           },
           {
-            title: 'For Students',
+            title: 'Integrated AI',
             icon: faArrowRight,
             text:
               'View insights into personal learning behavior and track completed course elements.\n' +
@@ -102,7 +100,8 @@ function Home() {
               '/img_v3/landing_page/feature/learning_analytics_students.png',
           },
         ]}
-      ></FeatureSection>
+      /> */}
+
       <FeatureFocusSection
         title="Question Pool and Activity Management"
         description="Manage everything in one place."
@@ -114,8 +113,8 @@ function Home() {
             icon: faArrowRight,
           },
           {
-            title: 'Various Question Types',
-            text: 'Question types like Single and Multiple Choice (SC/MC), Kprim (KP), Free Text (FT), and Numerical (NR) are supported and cover a wide range of use cases. Questions can be grouped and/or stacked for sequential presentation. Questions can be augmented with sample solutions and explanations, as well as choice-specific feedback.',
+            title: 'Various Element Types',
+            text: 'Element types like Content Element (CT), Flashcard (FC), Single and Multiple Choice (SC/MC), Kprim (KP), Free Text (FT), and Numerical (NR) are supported and cover a wide range of use cases. Elements can be grouped and/or stacked for sequential presentation. Question types can be augmented with sample solutions and explanations, as well as choice-specific feedback.',
             icon: faArrowRight,
           },
           {
@@ -125,7 +124,7 @@ function Home() {
           },
         ]}
       />
-      <Team
+      {/* <Team
         teamMembers={[
           {
             imgSrc:
@@ -140,7 +139,7 @@ function Home() {
             position: '123',
           },
         ]}
-      ></Team>
+      /> */}
       <div className="mx-auto max-w-7xl space-y-8 p-4">
         <UseCaseOverview />
 

@@ -1,6 +1,16 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+interface Props {
+  title: string
+  description: string
+  features: { title: string; icon: any; text: string }[]
+  imgSrc?: string
+}
 
-export function FeatureFocusSection({ title, description, features, imgSrc }) {
+export function FeatureFocusSection({
+  title,
+  description,
+  features,
+  imgSrc,
+}: Props) {
   return (
     <div className="bg-white py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -13,11 +23,13 @@ export function FeatureFocusSection({ title, description, features, imgSrc }) {
       </div>
       <div className="relative overflow-hidden pt-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <img
-            src={imgSrc}
-            alt="App screenshot"
-            className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-900/10"
-          />
+          {typeof imgSrc !== 'undefined' && (
+            <img
+              src={imgSrc}
+              alt="App screenshot"
+              className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-gray-900/10"
+            />
+          )}
           <div className="relative" aria-hidden="true">
             <div className="absolute -inset-x-20 bottom-0 bg-gradient-to-t from-white pt-[7%]" />
           </div>
@@ -26,13 +38,11 @@ export function FeatureFocusSection({ title, description, features, imgSrc }) {
       <div className="mx-auto mt-16 max-w-7xl px-6 sm:mt-20 md:mt-24 lg:px-8">
         <dl className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 text-base leading-7 text-gray-600 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
           {features.map((feature) => (
-            <div key={feature.title} className="relative pl-9">
+            <div
+              key={feature.title}
+              className="relative rounded-xl bg-gray-100 p-6 pl-9"
+            >
               <dt className="inline font-semibold text-gray-900">
-                <FontAwesomeIcon
-                  aria-hidden="true"
-                  icon={feature.icon}
-                  className="text-uzh-red-100 absolute left-1 top-1 h-5 w-5"
-                />
                 {feature.title}
               </dt>{' '}
               <p>{feature.text}</p>

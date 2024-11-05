@@ -11,7 +11,7 @@ export function UseCaseOverview() {
         {Object.entries(USE_CASES).map(([href, item]) => (
           <div
             key={item.title}
-            className="flex flex-col justify-between gap-4 p-4 shadow"
+            className="flex flex-col justify-between gap-4 rounded-xl bg-gray-100 p-6"
           >
             <div className="flex-1">
               <H3>{item.title}</H3>
