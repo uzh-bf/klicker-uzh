@@ -1,5 +1,5 @@
 import { ElementType, MicroLearning } from '@klicker-uzh/graphql/dist/ops'
-import { StudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
+import { StackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
 import { useMemo } from 'react'
 
 interface UseStackEvaluationAggregationProps {
@@ -28,7 +28,7 @@ function useStackEvaluationAggregation({
         const rawStackStorage = localStorage.getItem(
           `qi-${microlearning.id}-${stack.id}`
         )
-        const stackStorage: StudentResponseType = rawStackStorage
+        const stackStorage: StackStudentResponseType = rawStackStorage
           ? JSON.parse(rawStackStorage)
           : null
 

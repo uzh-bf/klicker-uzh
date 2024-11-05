@@ -1,6 +1,6 @@
 import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  SingleStudentResponseType,
+  InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import SessionProgress from '@klicker-uzh/shared-components/src/questions/SessionProgress'
@@ -43,7 +43,7 @@ function QuestionArea({
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
-    useState<SingleStudentResponseType>({
+    useState<InstanceStackStudentResponseType>({
       type: ElementType.FreeText,
       response: undefined,
       valid: false,
@@ -112,7 +112,7 @@ function QuestionArea({
   }: {
     instanceId: number
     type: ElementType
-    input: SingleStudentResponseType
+    input: InstanceStackStudentResponseType
   }): void => {
     if (!input.valid) {
       return

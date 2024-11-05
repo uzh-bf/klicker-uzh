@@ -139,6 +139,48 @@ export async function getSingleQuestion(
   }
 }
 
+export async function getArtificialElementInstance(
+  {
+    elementId,
+  }: {
+    elementId: number
+  },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.findUnique({
+    where: {
+      id: elementId,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  if (!element) return null
+
+  const elementData = processElementData(element)
+  const initialResults = getInitialElementResults(element)
+
+  return {
+    id: 0,
+    elementId: element.id,
+    migrationId: '',
+    originalId: '',
+    elementType: element.type,
+    order: 0,
+    type: DB.ElementInstanceType.LIVE_QUIZ,
+    elementData,
+    options: {
+      pointsMultiplier: element.pointsMultiplier,
+    },
+    results: initialResults,
+    anonymousResults: initialResults,
+    ownerId: '',
+    elementBlockId: 0,
+    elementStackId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+}
+
 interface QuestionOptionsArgs {
   unit?: string | null
   accuracy?: number | null

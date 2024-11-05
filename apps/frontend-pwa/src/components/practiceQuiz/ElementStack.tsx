@@ -9,7 +9,7 @@ import {
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  StudentResponseType,
+  StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
@@ -73,14 +73,14 @@ function ElementStack({
     withParticipant: withParticipant,
   })
 
-  const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
-    `qi-${parentId}-${stack.id}`,
-    undefined
-  )
+  const [stackStorage, setStackStorage] =
+    useLocalStorage<StackStudentResponseType>(
+      `qi-${parentId}-${stack.id}`,
+      undefined
+    )
 
-  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
-    {}
-  )
+  const [studentResponse, setStudentResponse] =
+    useState<StackStudentResponseType>({})
 
   const showMarkAsRead = useMemo(() => {
     if (
@@ -128,7 +128,7 @@ function ElementStack({
       const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
 
       setStackStorage(
-        evaluations.reduce<StudentResponseType>((acc, evaluation) => {
+        evaluations.reduce<StackStudentResponseType>((acc, evaluation) => {
           const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
           )
@@ -343,7 +343,7 @@ function ElementStack({
           onClick={() => {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
-              Object.entries(currentResponses).reduce<StudentResponseType>(
+              Object.entries(currentResponses).reduce<StackStudentResponseType>(
                 (acc, [instanceId, value]) => {
                   if (value.type === ElementType.Content) {
                     return {
@@ -453,7 +453,7 @@ function ElementStack({
             }
 
             setStackStorage(
-              Object.entries(studentResponse).reduce<StudentResponseType>(
+              Object.entries(studentResponse).reduce<StackStudentResponseType>(
                 (acc, [key, value]) => {
                   return {
                     ...acc,

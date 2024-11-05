@@ -1,12 +1,17 @@
 import type { ElementStack } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
-import type { ElementChoicesType, StudentResponseType } from '../StudentElement'
+import type {
+  ElementChoicesType,
+  StackStudentResponseType,
+} from '../StudentElement'
 
 interface UseStudentResponseProps {
   stack: ElementStack
   currentStep: number
-  setStudentResponse: React.Dispatch<React.SetStateAction<StudentResponseType>>
+  setStudentResponse: React.Dispatch<
+    React.SetStateAction<StackStudentResponseType>
+  >
   defaultRead?: boolean
 }
 
@@ -57,7 +62,7 @@ function useStudentResponse({
             },
           }
         }
-      }, {} as StudentResponseType) || {}
+      }, {} as StackStudentResponseType) || {}
 
     setStudentResponse(newStudentResponse)
   }, [currentStep, stack.elements])

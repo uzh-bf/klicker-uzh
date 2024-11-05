@@ -39,7 +39,7 @@ import {
   PracticeQuiz,
   StackFeedback,
 } from './practiceQuiz.js'
-import { Element, Tag } from './question.js'
+import { Element, ElementInstance, Tag } from './question.js'
 import { RunningLiveQuizSummary } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
@@ -488,6 +488,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return QuestionService.getSingleQuestion(args, ctx)
+        },
+      }),
+
+      artificialInstance: asUser.field({
+        nullable: true,
+        type: ElementInstance,
+        args: {
+          elementId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getArtificialElementInstance(args, ctx)
         },
       }),
 
