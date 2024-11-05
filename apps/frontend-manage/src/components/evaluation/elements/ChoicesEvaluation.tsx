@@ -1,5 +1,6 @@
 import { ChoicesElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { twMerge } from 'tailwind-merge'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
@@ -24,9 +25,18 @@ function ChoicesEvaluation({
   chartType,
   showSolution,
 }: ChoicesEvaluationProps) {
+  const [isCollapsed, setIsCollapsed] = useLocalStorage(
+    `evaluation-${instanceEvaluation.id}-isCollapsed`,
+    false
+  )
+
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={80} minSize={50} className="px-4">
+      <ResizablePanel
+        defaultSize={isCollapsed ? 100 : 80}
+        minSize={50}
+        className="px-4"
+      >
         <ElementChart
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
@@ -36,10 +46,12 @@ function ChoicesEvaluation({
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel
-        defaultSize={20}
+        defaultSize={isCollapsed ? 0 : 20}
         minSize={10}
         collapsible
         collapsedSize={0}
+        onCollapse={() => setIsCollapsed(true)}
+        onExpand={() => setIsCollapsed(false)}
         className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
       >
         <ChoicesSidebar
