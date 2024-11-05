@@ -12,16 +12,18 @@ interface SharedQuestionFormProps {
   tags?: string[] | null
 }
 
+interface ElementFormTypesChoice {
+  id: string
+  value?: string | null
+  correct?: boolean | null
+  feedback?: string | null
+}
+
 export interface ElementFormTypesChoices extends SharedQuestionFormProps {
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
   explanation?: string | null
   options: {
-    choices: {
-      ix: number
-      value?: string | null
-      correct?: boolean | null
-      feedback?: string | null
-    }[]
+    choices: ElementFormTypesChoice[]
     displayMode: ElementDisplayMode
     hasAnswerFeedbacks: boolean
     hasSampleSolution: boolean

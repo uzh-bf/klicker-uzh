@@ -84,13 +84,13 @@ function QuestionEvaluation({
                   textSize.text
                 )}
               >
-                {questionData.options.choices.map((choice, innerIndex) => {
+                {questionData.options.choices.map((choice) => {
                   const correctFraction =
-                    parseInt(currentInstance.results[innerIndex].count) /
+                    parseInt(currentInstance.results[choice.ix].count) /
                     totalParticipants
 
                   return (
-                    <div key={`${currentInstance.blockIx}-${innerIndex}`}>
+                    <div key={`${currentInstance.blockIx}-${choice.ix}`}>
                       <div className="flex flex-row items-center justify-between leading-5">
                         <div
                           // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
@@ -99,7 +99,7 @@ function QuestionEvaluation({
                               ? choice.correct
                                 ? '#00de0d'
                                 : '#ff0000'
-                              : CHART_COLORS[innerIndex % 12],
+                              : CHART_COLORS[choice.ix % 12],
                             minWidth: '1.75rem',
                             width: `calc(${correctFraction * 100}%)`,
                           }}
@@ -108,7 +108,7 @@ function QuestionEvaluation({
                             choice.correct && showSolution && 'text-black'
                           )}
                         >
-                          {String.fromCharCode(65 + innerIndex)}
+                          {String.fromCharCode(65 + choice.ix)}
                         </div>
                         <div className="whitespace-nowrap text-right">
                           {Math.round(100 * correctFraction)} %

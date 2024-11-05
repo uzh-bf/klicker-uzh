@@ -9,7 +9,7 @@ export function prepareInitialQuestionInstanceResults(
     case ElementType.MC:
     case ElementType.KPRIM: {
       const choices = questionData.options.choices.reduce(
-        (acc, _, ix) => ({ ...acc, [ix]: 0 }),
+        (acc, choice) => ({ ...acc, [choice.ix]: 0 }),
         {}
       )
       return { choices, total: 0 }

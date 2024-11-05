@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2024-11-03)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that repetition interval remains below maximum value ([#4348](https://github.com/uzh-bf/klicker-uzh/issues/4348)) ([30f4953](https://github.com/uzh-bf/klicker-uzh/commit/30f495306567711e237b7a3ddc950473aa82343e))
+
+## [3.3.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2024-10-31)
+
+
+### Bug Fixes
+
+* ensure that re-ordered answer options on choices questions are displayed consistently ([#4339](https://github.com/uzh-bf/klicker-uzh/issues/4339)) ([e139988](https://github.com/uzh-bf/klicker-uzh/commit/e1399888081f3389f7d0437be1c2e7b2041b3243))
+* make sure that participants on group leaderboard are always in correct order ([7fb55ed](https://github.com/uzh-bf/klicker-uzh/commit/7fb55ed2031d26e6c8855f468b60fa9315f6960f))
+
 ## [3.3.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2024-10-24)
 
 

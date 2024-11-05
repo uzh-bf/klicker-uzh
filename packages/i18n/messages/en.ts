@@ -900,6 +900,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementTypes: 'Element Types',
       elementStatus: 'Status',
       tags: 'Tags',
+      selectOrType: 'Select or Type...',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',

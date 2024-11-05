@@ -531,7 +531,8 @@ function updateSpacedRepetition({
     } else if (streak === 2) {
       newInterval = 6
     } else {
-      newInterval = Math.ceil(interval * newEfactor)
+      // limit maximum interval to 10'000 days to ensure that dates remain valid
+      newInterval = Math.min(Math.ceil(interval * newEfactor), 10000)
     }
   }
 

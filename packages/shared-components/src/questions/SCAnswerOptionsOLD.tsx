@@ -1,12 +1,13 @@
 import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import type { Choice } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface SCAnswerOptionsOLDProps {
   displayMode?: ElementDisplayMode
-  choices: { value: string; correct: boolean; feedback: string }[]
+  choices: Choice[]
   value?: number[]
   onChange: (value: any) => any
   id?: string
@@ -27,17 +28,17 @@ export function SCAnswerOptionsOLD({
           : 'flex flex-col'
       )}
     >
-      {choices.map((choice, index) => {
+      {choices.map((choice) => {
         return (
           <Button
             fluid
             className={{
               root: twMerge('hover:bg-unset min-h-[2.5rem] border-slate-400'),
             }}
-            onClick={onChange(index)}
-            key={`${choice.value}-${index}`}
-            active={value?.includes(index)}
-            data={{ cy: `sc-answer-option-${index}` }}
+            onClick={onChange(choice.ix)}
+            key={`${choice.value}-${choice.ix}`}
+            active={value?.includes(choice.ix)}
+            data={{ cy: `sc-answer-option-${choice.ix}` }}
           >
             <Button.Label>
               <Markdown
