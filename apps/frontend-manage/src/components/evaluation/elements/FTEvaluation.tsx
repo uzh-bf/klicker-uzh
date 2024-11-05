@@ -46,6 +46,7 @@ function FTEvaluation({
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel
+            key={`parent-${instanceEvaluation.id}-${isCollapsed ? 'collapsed' : 'expanded'}`}
         defaultSize={isCollapsed ? 0 : 20}
         minSize={10}
         collapsible
