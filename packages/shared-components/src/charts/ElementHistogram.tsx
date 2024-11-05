@@ -1,4 +1,4 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, type Statistics } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_SOLUTION_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { NumberField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -21,10 +21,11 @@ interface ElementHistogramProps {
   type: ElementType
   responses: { value: number; count: number }[]
   solutionRanges?: { min?: number | null; max?: number | null }[]
+  statistics?: Statistics | null
   minValue?: number | null
   maxValue?: number | null
-  showSolution: {
-    general: boolean
+  showSolution: boolean
+  showStatistics?: {
     mean?: boolean
     median?: boolean
     q1?: boolean
@@ -42,9 +43,11 @@ function ElementHistogram({
   type,
   responses,
   solutionRanges,
+  statistics,
   minValue,
   maxValue,
   showSolution,
+  showStatistics,
   textSize,
   reference,
   hideBins = false,
@@ -131,8 +134,7 @@ function ElementHistogram({
             />
           )}
 
-          {/* // TODO: reintroduce these elements as soon as statistics are available for asynchronous elements */}
-          {/* {data.statistics && showSolution.mean && (
+          {statistics && showStatistics?.mean && (
             <ReferenceLine
               isFront
               label={{
@@ -141,12 +143,12 @@ function ElementHistogram({
                 value: 'MEAN',
               }}
               className={textSize}
-              key={`mean-` + data.statistics.mean}
+              key={`mean-` + statistics.mean}
               stroke="blue"
-              x={data.statistics.mean}
+              x={statistics.mean}
             />
           )}
-          {data.statistics && showSolution.median && (
+          {statistics && showStatistics?.median && (
             <ReferenceLine
               isFront
               label={{
@@ -155,12 +157,12 @@ function ElementHistogram({
                 value: 'MEDIAN',
               }}
               className={textSize}
-              key={`median-` + data.statistics.median}
+              key={`median-` + statistics.median}
               stroke="red"
-              x={data.statistics.median}
+              x={statistics.median}
             />
           )}
-          {data.statistics && showSolution.q1 && (
+          {statistics && showStatistics?.q1 && (
             <ReferenceLine
               isFront
               label={{
@@ -169,12 +171,12 @@ function ElementHistogram({
                 value: 'Q1',
               }}
               className={textSize}
-              key={`q1-` + data.statistics.q1}
+              key={`q1-` + statistics.q1}
               stroke="black"
-              x={data.statistics.q1}
+              x={statistics.q1}
             />
           )}
-          {data.statistics && showSolution.q3 && (
+          {statistics && showStatistics?.q3 && (
             <ReferenceLine
               isFront
               label={{
@@ -183,20 +185,20 @@ function ElementHistogram({
                 value: 'Q3',
               }}
               className={textSize}
-              key={`q3-` + data.statistics.q3}
+              key={`q3-` + statistics.q3}
               stroke="black"
-              x={data.statistics.q3}
+              x={statistics.q3}
             />
           )}
-          {data.statistics && showSolution.sd && (
+          {statistics && showStatistics?.sd && (
             <ReferenceArea
               key="sd-area"
               x1={Math.max(
-                data.statistics.mean - data.statistics.sd,
+                statistics.mean - statistics.sd,
                 processedData.domain.min
               )}
               x2={Math.min(
-                data.statistics.mean + data.statistics.sd,
+                statistics.mean + statistics.sd,
                 processedData.domain.max
               )}
               fill="gray"
@@ -208,9 +210,9 @@ function ElementHistogram({
               }}
               className={textSize}
             />
-          )} */}
+          )}
 
-          {showSolution.general &&
+          {showSolution &&
             solutionRanges &&
             solutionRanges.map(
               (

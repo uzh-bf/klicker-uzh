@@ -13,7 +13,7 @@ import type {
 import { FlashcardCorrectness as FlashcardCorrectnessEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
-import { FlashcardCorrectness } from './evaluation.js'
+import { FlashcardCorrectness, IStatistics, Statistics } from './evaluation.js'
 import {
   ConfusionSummary,
   ConfusionTimestepRef,
@@ -162,30 +162,6 @@ export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
   }),
 })
 // #endregion
-
-// ----- LIVE QUIZ EVALUATION INTERFACE -----
-export interface IStatistics {
-  max: number
-  min: number
-  mean: number
-  median: number
-  q1: number
-  q3: number
-  sd: number
-}
-export const Statistics = builder
-  .objectRef<IStatistics>('Statistics')
-  .implement({
-    fields: (t) => ({
-      max: t.exposeFloat('max'),
-      min: t.exposeFloat('min'),
-      mean: t.exposeFloat('mean'),
-      median: t.exposeFloat('median'),
-      q1: t.exposeFloat('q1'),
-      q3: t.exposeFloat('q3'),
-      sd: t.exposeFloat('sd'),
-    }),
-  })
 
 // ----- INSTANCE RESULT INTERFACE -----
 export interface IInstanceResult {

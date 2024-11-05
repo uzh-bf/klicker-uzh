@@ -25,7 +25,7 @@ function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
         solutionRanges={options.solutionRanges ?? undefined}
         minValue={options.restrictions?.min}
         maxValue={options.restrictions?.max}
-        showSolution={{ general: true }}
+        showSolution={true}
         textSize="md"
         className={{ root: 'h-40' }}
         reference={reference ? parseFloat(reference) : undefined}
