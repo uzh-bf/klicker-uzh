@@ -72,17 +72,17 @@ const config: Config = {
         },
       }
     },
-    [
-      '@gabrielcsapo/docusaurus-plugin-matomo',
-      {
-        matomoUrl: 'https://webstats.uzh.ch',
-        siteUrl: 'https://www.klicker.uzh.ch',
-        siteId: '356',
-        matomoPhpScript: 'matomo.php',
-        matomoJsScript: 'matomo.js',
-        dev: true,
-      },
-    ],
+    // [
+    //   '@gabrielcsapo/docusaurus-plugin-matomo',
+    //   {
+    //     matomoUrl: 'https://webstats.uzh.ch',
+    //     siteUrl: 'https://www.klicker.uzh.ch',
+    //     siteId: '356',
+    //     matomoPhpScript: 'matomo.php',
+    //     matomoJsScript: 'matomo.js',
+    //     dev: true,
+    //   },
+    // ],
     [
       '@docusaurus/plugin-ideal-image',
       {
