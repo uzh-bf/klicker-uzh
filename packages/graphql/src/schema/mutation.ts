@@ -53,10 +53,10 @@ import {
 import {
   ArchivedElement,
   Element,
+  ElementInstance,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  QuestionOrElementInstance,
   Tag,
 } from './question.js'
 import {
@@ -972,9 +972,9 @@ export const Mutation = builder.mutationType({
       }),
 
       updateElementInstances: t.withAuth(asUserFullAccess).field({
-        type: [QuestionOrElementInstance],
+        type: [ElementInstance],
         args: {
-          questionId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
           return QuestionService.updateElementInstances(args, ctx)

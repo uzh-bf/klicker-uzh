@@ -425,27 +425,6 @@ export const ArchivedElement = builder
   })
 // #endregion
 
-export interface IQuestionOrElementInstance {
-  questionInstance?: DB.QuestionInstance | null
-  elementInstance?: DB.ElementInstance | null
-}
-export const QuestionOrElementInstanceRef =
-  builder.objectRef<IQuestionOrElementInstance>('QuestionOrElementInstance')
-export const QuestionOrElementInstance = QuestionOrElementInstanceRef.implement(
-  {
-    fields: (t) => ({
-      questionInstance: t.expose('questionInstance', {
-        type: QuestionInstanceRef,
-        nullable: true,
-      }),
-      elementInstance: t.expose('elementInstance', {
-        type: ElementInstanceRef,
-        nullable: true,
-      }),
-    }),
-  }
-)
-
 export const QuestionInstanceRef =
   builder.objectRef<DB.QuestionInstance>('QuestionInstance')
 export const QuestionInstance = QuestionInstanceRef.implement({

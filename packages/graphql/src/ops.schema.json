@@ -16894,7 +16894,7 @@
             "description": null,
             "args": [
               {
-                "name": "questionId",
+                "name": "elementId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -16921,7 +16921,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "QuestionOrElementInstance",
+                    "name": "ElementInstance",
                     "ofType": null
                   }
                 }
@@ -22259,42 +22259,6 @@
             "type": {
               "kind": "UNION",
               "name": "QuestionData",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
-        "name": "QuestionOrElementInstance",
-        "description": null,
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "elementInstance",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "ElementInstance",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "questionInstance",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "QuestionInstance",
               "ofType": null
             },
             "isDeprecated": false,

@@ -1116,7 +1116,7 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
-  updateElementInstances(questionId: Int!): [QuestionOrElementInstance!]!
+  updateElementInstances(elementId: Int!): [ElementInstance!]!
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
@@ -1478,11 +1478,6 @@ type QuestionInstance {
   id: Int!
   pointsMultiplier: Int
   questionData: QuestionData
-}
-
-type QuestionOrElementInstance {
-  elementInstance: ElementInstance
-  questionInstance: QuestionInstance
 }
 
 union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse

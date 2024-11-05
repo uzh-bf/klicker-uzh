@@ -1,8 +1,6 @@
-mutation UpdateElementInstances($questionId: Int!) {
-  updateElementInstances(questionId: $questionId) {
-    elementInstance {
-      id
-      ...ElementDataWithoutSolutions
-    }
+mutation UpdateElementInstances($elementId: Int!) {
+  updateElementInstances(elementId: $elementId) {
+    id
+    ...ElementDataWithoutSolutions
   }
 }
