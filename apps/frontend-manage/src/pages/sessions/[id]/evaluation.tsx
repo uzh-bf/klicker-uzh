@@ -48,12 +48,15 @@ function Evaluation() {
 
   // TODO: add feedbacks, confusion feedbacks and leaderboard to activity evaluation props and illustrate them
   const evaluation = data.liveQuizEvaluation
+  const leaderboard = data.liveQuizLeaderboard
+
   return (
     <ActivityEvaluation
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
       feedbacks={evaluation?.feedbacks}
       confusionFeedbacks={evaluation?.confusionFeedbacks}
+      leaderboard={leaderboard}
       type="LiveQuiz"
     />
   )

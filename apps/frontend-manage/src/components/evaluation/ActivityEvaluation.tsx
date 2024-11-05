@@ -4,10 +4,16 @@ import {
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import Leaderboard, {
+  LeaderboardCombinedEntry,
+} from '@klicker-uzh/shared-components/src/Leaderboard'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import Rank1Img from 'public/img/rank1.svg'
+import Rank2Img from 'public/img/rank2.svg'
+import Rank3Img from 'public/img/rank3.svg'
 import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementEvaluation from './ElementEvaluation'
@@ -27,6 +33,7 @@ interface ActivityEvaluationProps {
   stacks: StackEvaluation[]
   feedbacks?: Feedback[] | null
   confusionFeedbacks?: ConfusionTimestep[] | null
+  leaderboard?: LeaderboardCombinedEntry[] | null
   type?: ActivityEvaluationType
 }
 
@@ -35,6 +42,7 @@ function ActivityEvaluation({
   stacks,
   feedbacks,
   confusionFeedbacks,
+  leaderboard,
   type = 'Asynchronous',
 }: ActivityEvaluationProps) {
   const router = useRouter()
@@ -82,6 +90,10 @@ function ActivityEvaluation({
             setActiveInstance={setActiveInstance}
             numOfInstances={instanceResults.length}
             type={type}
+            leaderboardAvailable={leaderboard !== null}
+            feedbacksAvailable={
+              feedbacks !== null && confusionFeedbacks !== null
+            }
           />
         </div>
       )}
@@ -101,31 +113,32 @@ function ActivityEvaluation({
           />
         )}
 
-        {/* {showLeaderboard && !showConfusion && !showFeedbacks && (
-          <div className="overflow-y-auto">
-            <div className="border-t p-4">
-              <div className="mx-auto max-w-2xl text-xl">
-                {data.sessionLeaderboard &&
-                data.sessionLeaderboard.length > 0 ? (
-                  <Leaderboard
-                    leaderboard={data.sessionLeaderboard ?? []}
-                    podiumImgSrc={{
-                      rank1: Rank1Img,
-                      rank2: Rank2Img,
-                      rank3: Rank3Img,
-                    }}
-                  />
-                ) : (
-                  <UserNotification
-                    className={{ message: 'text-lg' }}
-                    type="warning"
-                    message={t('manage.evaluation.noSignedInStudents')}
-                  />
-                )}
+        {type === 'LiveQuiz' &&
+          leaderboard !== null &&
+          activeStack === 'leaderboard' && (
+            <div className="overflow-y-auto">
+              <div className="border-t p-4">
+                <div className="mx-auto max-w-2xl text-xl">
+                  {leaderboard && leaderboard.length > 0 ? (
+                    <Leaderboard
+                      leaderboard={leaderboard ?? []}
+                      podiumImgSrc={{
+                        rank1: Rank1Img,
+                        rank2: Rank2Img,
+                        rank3: Rank3Img,
+                      }}
+                    />
+                  ) : (
+                    <UserNotification
+                      className={{ message: 'text-lg' }}
+                      type="warning"
+                      message={t('manage.evaluation.noSignedInStudents')}
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )} */}
+          )}
 
         {type === 'LiveQuiz' &&
           feedbacks !== null &&

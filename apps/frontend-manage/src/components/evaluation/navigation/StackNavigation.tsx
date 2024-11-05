@@ -1,11 +1,14 @@
+import { faComment, faFaceSmile } from '@fortawesome/free-regular-svg-icons'
 import {
   faChevronLeft,
   faChevronRight,
+  faGamepad,
   faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useVisibleStacks from '../hooks/useVisibleStacks'
@@ -17,6 +20,8 @@ interface StackNavigationProps {
   setActiveInstance: (instance: number) => void
   stackInstanceMap: Record<number, { label: string; value: number }[]>
   type: ActivityEvaluationType
+  leaderboardAvailable?: boolean
+  feedbacksAvailable?: boolean
 }
 
 function StackNavigation({
@@ -26,7 +31,10 @@ function StackNavigation({
   setActiveInstance,
   stackInstanceMap,
   type,
+  leaderboardAvailable = false,
+  feedbacksAvailable = false,
 }: StackNavigationProps) {
+  const t = useTranslations()
   const width = 1
   const visibleStacks = useVisibleStacks({
     stacks,
@@ -115,6 +123,66 @@ function StackNavigation({
           <FontAwesomeIcon icon={faChevronRight} size="lg" />
         </div>
       </Button>
+      {leaderboardAvailable && (
+        <Button
+          basic
+          className={{
+            root: twMerge(
+              'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+              activeStack === 'leaderboard' && `border-primary-80 border-solid`
+            ),
+          }}
+          onClick={() => {
+            setActiveStack('leaderboard')
+          }}
+          data={{ cy: 'evaluation-leaderboard' }}
+        >
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faGamepad} />
+            <div>{t('shared.generic.leaderboard')}</div>
+          </div>
+        </Button>
+      )}
+      {feedbacksAvailable && (
+        <>
+          <Button
+            basic
+            className={{
+              root: twMerge(
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                activeStack === 'feedbacks' && `border-primary-80 border-solid`
+              ),
+            }}
+            onClick={() => {
+              setActiveStack('feedbacks')
+            }}
+            data={{ cy: 'evaluation-feedbacks' }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faComment} />
+              <div>{t('shared.generic.feedbacks')}</div>
+            </div>
+          </Button>
+          <Button
+            basic
+            className={{
+              root: twMerge(
+                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
+                activeStack === 'confusion' && `border-primary-80 border-solid`
+              ),
+            }}
+            onClick={() => {
+              setActiveStack('confusion')
+            }}
+            data={{ cy: 'evaluation-confusion' }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faFaceSmile} />
+              <div>{t('manage.evaluation.confusion')}</div>
+            </div>
+          </Button>
+        </>
+      )}
     </div>
   )
 }

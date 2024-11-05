@@ -1798,17 +1798,18 @@ export async function getLiveQuizEvaluation(
       : liveQuiz.blocks
   )
 
-  // TODO: add leaderboard - return conditional from cache or DB depending on quiz status?
-
-  // TODO: only return feedbacks and confusion feedbacks for ended live quizzes?
   return {
     id: liveQuiz.id,
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     results: blockEvaluations,
-    feedbacks: liveQuiz.feedbacks, // only shown on evaluation for completed quizzes
-    confusionFeedbacks: liveQuiz.confusionFeedbacks, // only shown on evaluation for completed quizzes
+    feedbacks:
+      liveQuiz.status === PublicationStatus.ENDED ? liveQuiz.feedbacks : null, // only shown on evaluation for completed quizzes
+    confusionFeedbacks:
+      liveQuiz.status === PublicationStatus.ENDED
+        ? liveQuiz.confusionFeedbacks
+        : null, // only shown on evaluation for completed quizzes
   }
 }
 // #endregion

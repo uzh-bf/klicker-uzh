@@ -8,15 +8,14 @@ import builder from '../builder.js'
 import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
 import { ElementType } from './questionData.js'
 
-// TODO: move types to separate file with type definitions in types directory (if no graphql types are used)
 export interface IActivityEvaluation {
   id: string
   name: string
   displayName?: string | null
   description?: string | null
   results: IStackEvaluation[]
-  feedbacks?: IFeedback[]
-  confusionFeedbacks?: DB.ConfusionTimestep[]
+  feedbacks?: IFeedback[] | null
+  confusionFeedbacks?: DB.ConfusionTimestep[] | null
 }
 
 export interface IStackFeedback {

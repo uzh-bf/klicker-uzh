@@ -14,6 +14,8 @@ interface EvaluationNavigationProps {
   setActiveInstance: (instance: number) => void
   numOfInstances: number
   type: ActivityEvaluationType
+  leaderboardAvailable?: boolean
+  feedbacksAvailable?: boolean
 }
 
 function EvaluationNavigation({
@@ -25,6 +27,8 @@ function EvaluationNavigation({
   setActiveInstance,
   numOfInstances,
   type,
+  leaderboardAvailable,
+  feedbacksAvailable,
 }: EvaluationNavigationProps) {
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
@@ -42,7 +46,7 @@ function EvaluationNavigation({
 
   return (
     <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
-      {typeof activeStack === 'number' && (
+      {typeof activeStack === 'number' ? (
         <InstanceNavigation
           stack={stacks[activeStack]}
           activeInstance={activeInstance ?? 0}
@@ -50,6 +54,8 @@ function EvaluationNavigation({
           numOfInstances={numOfInstances}
           instanceSelection={stackInstanceMap[activeStack]}
         />
+      ) : (
+        <div />
       )}
       <StackNavigation
         stacks={stacks}
@@ -58,6 +64,8 @@ function EvaluationNavigation({
         stackInstanceMap={stackInstanceMap}
         setActiveInstance={setActiveInstance}
         type={type}
+        leaderboardAvailable={leaderboardAvailable}
+        feedbacksAvailable={feedbacksAvailable}
       />
     </div>
   )
