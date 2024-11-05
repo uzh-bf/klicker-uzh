@@ -13,6 +13,7 @@ import type {
 import { FlashcardCorrectness as FlashcardCorrectnessEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
+import { ElementType } from './elementData.js'
 import { FlashcardCorrectness, IStatistics, Statistics } from './evaluation.js'
 import {
   ConfusionSummary,
@@ -22,7 +23,7 @@ import {
   IFeedback,
 } from './liveQuiz.js'
 import { QuestionInstanceRef } from './question.js'
-import { ElementType, QuestionData } from './questionData.js'
+import { QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),

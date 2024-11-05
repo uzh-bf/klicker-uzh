@@ -12,21 +12,22 @@ import type {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
-import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
   ChoiceQuestionOptions,
+  ElementData,
   ElementDisplayMode,
+  ElementInstanceOptions,
   ElementInstanceType,
   ElementStatus,
   ElementType,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   NumericalSolutionRange,
-  QuestionData,
   type IChoiceQuestionOptions,
   type IFreeTextQuestionOptions,
   type INumericalQuestionOptions,
-} from './questionData.js'
+} from './elementData.js'
+import { QuestionData } from './questionData.js'
 import {
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,

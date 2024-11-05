@@ -15,6 +15,7 @@ import * as QuestionService from '../services/questions.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -58,7 +59,6 @@ import {
   QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementStatus, ElementType } from './questionData.js'
 import {
   FileUploadSAS,
   LocaleType,
