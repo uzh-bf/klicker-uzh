@@ -33,7 +33,7 @@ export function buildIndex(
 }
 
 // TODO: optimize for one pass instead of stacked passes
-export function filterQuestions(
+function filterQuestions(
   questions: Element[],
   filters: QuestionPoolFilters,
   index: JsSearch.Search | null
@@ -106,7 +106,7 @@ export function filterQuestions(
   return results
 }
 
-export function sortQuestions(
+function sortQuestions(
   questions: Element[],
   sort: QuestionPoolSortType
 ): Element[] {
