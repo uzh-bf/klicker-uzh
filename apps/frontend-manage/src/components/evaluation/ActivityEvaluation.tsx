@@ -14,14 +14,21 @@ import useChartTypeUpdate from './hooks/useChartTypeUpdate'
 import useStackInstanceMap from './hooks/useStackInstanceMap'
 import EvaluationNavigation from './navigation/EvaluationNavigation'
 
+export type ActivityEvaluationType = 'LiveQuiz' | 'Asynchronous'
+
 interface ActivityEvaluationProps {
   activityName: string
   stacks: StackEvaluation[]
+  type?: ActivityEvaluationType
 }
 
 export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
 
-function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
+function ActivityEvaluation({
+  activityName,
+  stacks,
+  type = 'Asynchronous',
+}: ActivityEvaluationProps) {
   const router = useRouter()
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
@@ -65,6 +72,7 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
             activeInstance={activeInstance}
             setActiveInstance={setActiveInstance}
             numOfInstances={instanceResults.length}
+            type={type}
           />
         </div>
       )}

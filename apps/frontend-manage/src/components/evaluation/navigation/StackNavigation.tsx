@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
-import { ActiveStackType } from '../ActivityEvaluation'
+import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useVisibleStacks from '../hooks/useVisibleStacks'
 
 interface StackNavigationProps {
@@ -16,6 +16,7 @@ interface StackNavigationProps {
   setActiveStack: (stack: ActiveStackType) => void
   setActiveInstance: (instance: number) => void
   stackInstanceMap: Record<number, { label: string; value: number }[]>
+  type: ActivityEvaluationType
 }
 
 function StackNavigation({
@@ -24,12 +25,14 @@ function StackNavigation({
   setActiveStack,
   setActiveInstance,
   stackInstanceMap,
+  type,
 }: StackNavigationProps) {
   const width = 1
   const visibleStacks = useVisibleStacks({
     stacks,
     activeStack,
     width,
+    type,
   })
 
   return (

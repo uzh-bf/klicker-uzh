@@ -1,5 +1,5 @@
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { ActiveStackType } from '../ActivityEvaluation'
+import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useInstanceArrowNavigation from '../hooks/useInstanceArrowNavigation'
 import useStackInstanceUpdates from '../hooks/useStackInstanceUpdates'
 import InstanceNavigation from './InstanceNavigation'
@@ -13,6 +13,7 @@ interface EvaluationNavigationProps {
   activeInstance: number
   setActiveInstance: (instance: number) => void
   numOfInstances: number
+  type: ActivityEvaluationType
 }
 
 function EvaluationNavigation({
@@ -23,6 +24,7 @@ function EvaluationNavigation({
   activeInstance,
   setActiveInstance,
   numOfInstances,
+  type,
 }: EvaluationNavigationProps) {
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
@@ -55,6 +57,7 @@ function EvaluationNavigation({
         setActiveStack={setActiveStack}
         stackInstanceMap={stackInstanceMap}
         setActiveInstance={setActiveInstance}
+        type={type}
       />
     </div>
   )

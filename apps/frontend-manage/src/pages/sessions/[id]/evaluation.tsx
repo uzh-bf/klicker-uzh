@@ -52,6 +52,7 @@ function Evaluation() {
     <ActivityEvaluation
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
+      type="LiveQuiz"
     />
   )
 }
