@@ -15,7 +15,6 @@ import {
   ParticipationRef,
 } from './participant.js'
 import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
-import { ISession, SessionRef } from './session.js'
 import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
@@ -25,7 +24,6 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-  sessions?: ISession[] // TODO: remove after migration
   liveQuizzes?: ILiveQuiz[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
@@ -95,11 +93,6 @@ export const Course = builder.objectType(CourseRef, {
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
-    // TODO: remove after migration
-    sessions: t.expose('sessions', {
-      type: [SessionRef],
-      nullable: true,
-    }),
     liveQuizzes: t.expose('liveQuizzes', {
       type: [LiveQuizRef],
       nullable: true,
@@ -196,7 +189,6 @@ export interface ILeaderboardEntry
   participant?: IParticipant
   participation?: IParticipation
   courseId?: string | null
-  sessionId?: string | null
   liveQuizId?: string | null
   sessionParticipationId?: string | null
   type?: string | null // TODO: specify custom leaderboard type enum here

@@ -344,7 +344,6 @@ type Course {
   practiceQuizzes: [PracticeQuiz!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
-  sessions: [Session!]
   startDate: Date!
   updatedAt: Date
 }
