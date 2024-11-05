@@ -167,17 +167,6 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
-type ChoicesQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: ChoiceQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
 type ChoicesQuestionResponse {
   aggregatedResponses: ElementResultsChoices!
   correctCount: Int!
@@ -276,16 +265,6 @@ type ContentInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
-}
-
-type ContentQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
 }
 
 type ContentQuestionResponse {
@@ -604,16 +583,6 @@ type FlashcardInstanceEvaluation {
   xpAwarded: Int
 }
 
-type FlashcardQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
 type FlashcardQuestionResponse {
   aggregatedResponses: ElementResultsFlashcard!
   correctCount: Int!
@@ -709,17 +678,6 @@ type FreeTextInstanceEvaluation {
   solutions: [String!]
   xp: Int
   xpAwarded: Int
-}
-
-type FreeTextQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: FreeTextQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
 }
 
 type FreeTextQuestionOptions {
@@ -897,7 +855,6 @@ type InstanceResult {
   id: String!
   instanceIx: Int!
   participants: Int!
-  questionData: QuestionData!
   results: Json!
   statistics: Statistics
   status: SessionBlockStatus!
@@ -1205,17 +1162,6 @@ type NumericalInstanceEvaluation {
   xpAwarded: Int
 }
 
-type NumericalQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: NumericalQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
 type NumericalQuestionOptions {
   accuracy: Int
   hasAnswerFeedbacks: Boolean
@@ -1464,8 +1410,6 @@ type Query {
   userScope: UserLoginScope
   userTags: [Tag!]
 }
-
-union QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean

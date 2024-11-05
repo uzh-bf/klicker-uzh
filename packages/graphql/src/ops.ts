@@ -201,18 +201,6 @@ export type ChoicesInstanceEvaluation = {
   xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
-export type ChoicesQuestionData = {
-  __typename?: 'ChoicesQuestionData';
-  content: Scalars['String']['output'];
-  explanation?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  options: ChoiceQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionId?: Maybe<Scalars['Int']['output']>;
-  type: ElementType;
-};
-
 export type ChoicesQuestionResponse = {
   __typename?: 'ChoicesQuestionResponse';
   aggregatedResponses: ElementResultsChoices;
@@ -320,17 +308,6 @@ export type ContentInstanceEvaluation = {
   score: Scalars['Float']['output'];
   xp?: Maybe<Scalars['Int']['output']>;
   xpAwarded?: Maybe<Scalars['Int']['output']>;
-};
-
-export type ContentQuestionData = {
-  __typename?: 'ContentQuestionData';
-  content: Scalars['String']['output'];
-  explanation?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionId?: Maybe<Scalars['Int']['output']>;
-  type: ElementType;
 };
 
 export type ContentQuestionResponse = {
@@ -665,17 +642,6 @@ export type FlashcardInstanceEvaluation = {
   xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
-export type FlashcardQuestionData = {
-  __typename?: 'FlashcardQuestionData';
-  content: Scalars['String']['output'];
-  explanation?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionId?: Maybe<Scalars['Int']['output']>;
-  type: ElementType;
-};
-
 export type FlashcardQuestionResponse = {
   __typename?: 'FlashcardQuestionResponse';
   aggregatedResponses: ElementResultsFlashcard;
@@ -778,18 +744,6 @@ export type FreeTextInstanceEvaluation = {
   solutions?: Maybe<Array<Scalars['String']['output']>>;
   xp?: Maybe<Scalars['Int']['output']>;
   xpAwarded?: Maybe<Scalars['Int']['output']>;
-};
-
-export type FreeTextQuestionData = {
-  __typename?: 'FreeTextQuestionData';
-  content: Scalars['String']['output'];
-  explanation?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  options: FreeTextQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionId?: Maybe<Scalars['Int']['output']>;
-  type: ElementType;
 };
 
 export type FreeTextQuestionOptions = {
@@ -985,7 +939,6 @@ export type InstanceResult = {
   id: Scalars['String']['output'];
   instanceIx: Scalars['Int']['output'];
   participants: Scalars['Int']['output'];
-  questionData: QuestionData;
   results: Scalars['Json']['output'];
   statistics?: Maybe<Statistics>;
   status: SessionBlockStatus;
@@ -1977,18 +1930,6 @@ export type NumericalInstanceEvaluation = {
   xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
-export type NumericalQuestionData = {
-  __typename?: 'NumericalQuestionData';
-  content: Scalars['String']['output'];
-  explanation?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  options: NumericalQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionId?: Maybe<Scalars['Int']['output']>;
-  type: ElementType;
-};
-
 export type NumericalQuestionOptions = {
   __typename?: 'NumericalQuestionOptions';
   accuracy?: Maybe<Scalars['Int']['output']>;
@@ -2485,8 +2426,6 @@ export type QueryShortnameQuizzesArgs = {
 export type QueryStudentLiveQuizArgs = {
   id: Scalars['String']['input'];
 };
-
-export type QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData;
 
 export type QuestionFeedback = {
   __typename?: 'QuestionFeedback';
@@ -4444,13 +4383,6 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       "FlashcardInstanceEvaluation",
       "FreeTextInstanceEvaluation",
       "NumericalInstanceEvaluation"
-    ],
-    "QuestionData": [
-      "ChoicesQuestionData",
-      "ContentQuestionData",
-      "FlashcardQuestionData",
-      "FreeTextQuestionData",
-      "NumericalQuestionData"
     ],
     "QuestionResponse": [
       "ChoicesQuestionResponse",

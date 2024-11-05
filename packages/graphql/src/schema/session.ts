@@ -22,7 +22,6 @@ import {
   IConfusionSummary,
   IFeedback,
 } from './liveQuiz.js'
-import { QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -182,10 +181,6 @@ export const InstanceResult = InstanceResultRef.implement({
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
-    questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q.questionData,
-    }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),
 })

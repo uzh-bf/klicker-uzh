@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/prisma'
 import {
   type AllElementTypeData,
-  type AllQuestionTypeData,
   type ElementInstanceResults,
   type ElementKeys,
   type ElementOptionsChoices,
@@ -13,34 +12,6 @@ import {
   type ElementOptionsNumerical,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
-
-const RELEVANT_KEYS: ElementKeys[] = [
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'type',
-  'options',
-]
-
-export function processQuestionData(
-  question: Element
-): AllQuestionTypeData | null {
-  if (
-    question.type === PrismaElementType.SC ||
-    question.type === PrismaElementType.MC ||
-    question.type === PrismaElementType.KPRIM ||
-    question.type === PrismaElementType.NUMERICAL ||
-    question.type === PrismaElementType.FREE_TEXT
-  ) {
-    return {
-      ...pick(question, RELEVANT_KEYS),
-      id: `${question.id}-v${question.version}`,
-      questionId: question.id,
-    } as AllQuestionTypeData
-  }
-  return null
-}
 
 // save custom type
 const CONTENT_KEYS: ElementKeys[] = [

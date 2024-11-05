@@ -6,9 +6,9 @@ import {
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
-import Statistic from '../Statistic'
 import { TextSizeType } from '../textSizes'
 import { ShowStatisticsType } from './NREvaluation'
+import Statistic from './Statistic'
 
 interface NumericalSidebarProps {
   instance: NumericalElementInstanceEvaluation
