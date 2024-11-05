@@ -33,6 +33,7 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
+import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -1684,6 +1685,93 @@ export async function cancelLiveQuiz(
   }
 }
 
+export async function getLiveQuizEvaluation(
+  { id, hmac }: { id: string; hmac?: string | null },
+  ctx: Context
+) {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+    return null
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      status: { in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED] },
+      isDeleted: false,
+    },
+    include: {
+      activeBlock: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        where: {
+          status: {
+            equals: ElementBlockStatus.EXECUTED,
+          },
+        },
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      },
+      confusionFeedbacks: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  if (typeof hmac === 'string') {
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
+    const quizHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
+    if (quizHmac !== hmac) {
+      return null
+    }
+  }
+
+  // TODO: extract / compute results for running live quiz blocks
+
+  // compute evaluation
+  const blockEvaluations = computeStackEvaluation(liveQuiz.blocks)
+
+  return {
+    id: liveQuiz.id,
+    name: liveQuiz.name,
+    displayName: liveQuiz.displayName,
+    description: liveQuiz.description,
+    results: blockEvaluations,
+    feedbacks: liveQuiz.feedbacks, // only shown on evaluation for completed quizzes
+    confusionFeedbacks: liveQuiz.confusionFeedbacks, // only shown on evaluation for completed quizzes
+  }
+}
 // #endregion
 
 // ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------

@@ -392,6 +392,7 @@ export const Query = builder.queryType({
         },
       }),
 
+      // TODO: remove after migration
       sessionEvaluation: t.field({
         nullable: true,
         type: SessionEvaluation,
@@ -402,6 +403,18 @@ export const Query = builder.queryType({
         resolve(_, args, ctx) {
           // TODO: fix type issues after migration to live quiz
           return SessionService.getSessionEvaluation(args, ctx) as any
+        },
+      }),
+
+      liveQuizEvaluation: t.field({
+        nullable: true,
+        type: ActivityEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+          hmac: t.arg.string(),
+        },
+        resolve(_, args, ctx) {
+          return LiveQuizService.getLiveQuizEvaluation(args, ctx)
         },
       }),
 

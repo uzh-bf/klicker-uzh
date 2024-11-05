@@ -5,6 +5,7 @@ import {
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
 import { ElementType } from './questionData.js'
 
 // TODO: move types to separate file with type definitions in types directory (if no graphql types are used)
@@ -14,6 +15,8 @@ export interface IActivityEvaluation {
   displayName?: string | null
   description?: string | null
   results: IStackEvaluation[]
+  feedbacks?: IFeedback[]
+  confusionFeedbacks?: DB.ConfusionTimestep[]
 }
 
 export interface IStackFeedback {
@@ -149,6 +152,14 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     description: t.exposeString('description', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
+    }),
+    feedbacks: t.expose('feedbacks', {
+      type: [FeedbackRef],
+      nullable: true,
+    }),
+    confusionFeedbacks: t.expose('confusionFeedbacks', {
+      type: [ConfusionTimestepRef],
+      nullable: true,
     }),
   }),
 })

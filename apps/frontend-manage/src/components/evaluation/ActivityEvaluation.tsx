@@ -29,6 +29,8 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
+  // TODO: add use Effect hook logic that directly jumps to a certain instance / leaderboard / ... for PPT integration
+
   const instanceResults = stacks.flatMap((stack) => stack.instances)
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}

@@ -15,8 +15,10 @@ type Achievement {
 }
 
 type ActivityEvaluation {
+  confusionFeedbacks: [ConfusionTimestep!]
   description: String
   displayName: String
+  feedbacks: [Feedback!]
   id: ID!
   name: String!
   results: [StackEvaluation!]!
@@ -1437,6 +1439,7 @@ type Query {
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
+  liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizHMAC(id: String!): String
   liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
