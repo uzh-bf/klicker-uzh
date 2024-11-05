@@ -1,13 +1,14 @@
-import { SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
 import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 
-const sortingOrderSessions: Record<string, number> = {
-  [SessionStatus.Running]: 0,
-  [SessionStatus.Scheduled]: 1,
-  [SessionStatus.Prepared]: 2,
-  [SessionStatus.Completed]: 3,
+const sortingOrderSessions: Record<PublicationStatus, number> = {
+  [PublicationStatus.Published]: 0,
+  [PublicationStatus.Scheduled]: 1,
+  [PublicationStatus.Draft]: 2,
+  [PublicationStatus.Ended]: 3,
+  [PublicationStatus.Graded]: 4,
 }
 
 function LiveQuizList({

@@ -21,8 +21,8 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
-import FeedbackArea from '../../components/liveSession/FeedbackArea'
-import QuestionArea from '../../components/liveSession/QuestionArea'
+import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
+import QuestionArea from '../../components/liveQuiz/QuestionArea'
 
 function Subscriber({
   id,

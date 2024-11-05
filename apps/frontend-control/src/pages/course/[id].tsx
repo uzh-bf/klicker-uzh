@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Layout from '../../components/Layout'
-import SessionLists from '../../components/sessions/SessionLists'
+import SessionLists from '../../components/liveQuizzes/SessionLists'
 
 function Course() {
   const t = useTranslations()

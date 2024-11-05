@@ -15,10 +15,10 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import GroupActivityWizard from './groupActivity/GroupActivityWizard'
-import LiveQuizWizard from './liveQuiz/LiveQuizWizard'
-import MicroLearningWizard from './microLearning/MicroLearningWizard'
-import PracticeQuizWizard from './practiceQuiz/PracticeQuizWizard'
+import GroupActivityWizard from './creation/groupActivity/GroupActivityWizard'
+import LiveQuizWizard from './creation/liveQuiz/LiveQuizWizard'
+import MicroLearningWizard from './creation/microLearning/MicroLearningWizard'
+import PracticeQuizWizard from './creation/practiceQuiz/PracticeQuizWizard'
 
 export enum WizardMode {
   LiveQuiz = 'liveQuiz',

@@ -1,25 +1,25 @@
 import { FormikErrors, FormikTouched } from 'formik'
 import { SetStateAction, useEffect } from 'react'
-import { ElementSelectCourse } from './ElementCreation'
-import { MicroLearningFormValues } from './WizardLayout'
+import { ElementSelectCourse } from '../ElementCreation'
+import { PracticeQuizFormValues } from './WizardLayout'
 
-function CourseSelectionMonitorMicrolearning({
+function CourseSelectionMonitorPracticeQuiz({
   values,
   gamifiedCourses,
   setCourseGamified,
   setTouched,
   setValues,
 }: {
-  values: MicroLearningFormValues
+  values: PracticeQuizFormValues
   gamifiedCourses?: ElementSelectCourse[]
   setCourseGamified: (value: boolean) => void
   setTouched: (
-    touched: FormikTouched<MicroLearningFormValues>
-  ) => Promise<void | FormikErrors<MicroLearningFormValues>>
+    touched: FormikTouched<PracticeQuizFormValues>
+  ) => Promise<void | FormikErrors<PracticeQuizFormValues>>
   setValues: (
-    values: SetStateAction<MicroLearningFormValues>,
+    values: SetStateAction<PracticeQuizFormValues>,
     shouldValidate?: boolean
-  ) => Promise<void | FormikErrors<MicroLearningFormValues>>
+  ) => Promise<void | FormikErrors<PracticeQuizFormValues>>
 }) {
   useEffect(() => {
     if (values.courseId) {
@@ -34,8 +34,7 @@ function CourseSelectionMonitorMicrolearning({
 
       setCourseGamified(course.isGamified)
       setTouched({
-        startDate: true,
-        endDate: true,
+        availableFrom: true,
         courseStartDate: true,
         courseEndDate: true,
       })
@@ -55,4 +54,4 @@ function CourseSelectionMonitorMicrolearning({
   return null
 }
 
-export default CourseSelectionMonitorMicrolearning
+export default CourseSelectionMonitorPracticeQuiz
