@@ -54,7 +54,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
           ))}
         </dl>
 
-        <div className="flex-1 pt-4">
+        <div className="hidden flex-1 pt-4 sm:block">
           <img
             src={features[hoveredFeatureIx].hoverImage ?? ''}
             alt="Feature specific screenshot"
