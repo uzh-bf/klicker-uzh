@@ -6,8 +6,8 @@ import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementW
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import React from 'react'
-import { TextSizeType } from '../sessions/evaluation/constants'
 import { ShowStatisticsType } from './elements/NREvaluation'
+import { TextSizeType } from './textSizes'
 
 interface ElementChartProps {
   chartType: string
