@@ -1757,10 +1757,46 @@ export async function getLiveQuizEvaluation(
     }
   }
 
-  // TODO: extract / compute results for running live quiz blocks
+  // load results from active block as well
+  let activeBlockWithResults:
+    | (ElementBlock & { elements: ElementInstance[] })
+    | undefined
+  if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
+    const activeInstanceIds = liveQuiz.activeBlock.elements.map(
+      (instance) => instance.id
+    )
+
+    const cachedResults = await getCachedBlockResults({
+      ctx,
+      quizId: id,
+      blockId: liveQuiz.activeBlockId,
+      activeInstanceIds,
+    })
+
+    if (cachedResults) {
+      const { instanceResults } = await processCachedData({
+        cachedResults,
+        activeBlock: liveQuiz.activeBlock,
+      })
+
+      activeBlockWithResults = {
+        ...liveQuiz.activeBlock,
+        elements: liveQuiz.activeBlock.elements.map((instance) => ({
+          ...instance,
+          anonymousResults:
+            instanceResults[instance.id]?.anonymousResults ??
+            instance.anonymousResults,
+        })),
+      }
+    }
+  }
 
   // compute evaluation
-  const blockEvaluations = computeStackEvaluation(liveQuiz.blocks)
+  const blockEvaluations = computeStackEvaluation(
+    typeof activeBlockWithResults !== 'undefined'
+      ? [...liveQuiz.blocks, activeBlockWithResults]
+      : liveQuiz.blocks
+  )
 
   return {
     id: liveQuiz.id,
