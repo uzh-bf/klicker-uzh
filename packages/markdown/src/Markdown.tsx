@@ -103,9 +103,7 @@ function Markdown({
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
           })
-          .use(katex, {
-            throwOnError: false,
-          })
+          .use(katex)
           .use(rehype2react, {
             createElement: React.createElement,
             components: {
@@ -157,7 +155,7 @@ function Markdown({
                     )
                   }
                 : 'a',
-              ...(components as any),
+              ...components,
             },
           })
           .processSync(contentUnescaped).result

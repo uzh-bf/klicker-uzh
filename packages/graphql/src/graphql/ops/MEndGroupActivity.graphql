@@ -1,0 +1,7 @@
+mutation EndGroupActivity($id: String!) {
+  endGroupActivity(id: $id) {
+    id
+    status
+    scheduledEndAt
+  }
+}

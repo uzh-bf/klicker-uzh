@@ -15,6 +15,7 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "noErrorTruncation": true,
     /* If transpiling with TypeScript: */
     "module": "NodeNext",
     "outDir": "dist",
@@ -28,5 +29,5 @@
     "lib": ["es2022"],
     "rootDir": "."
   },
-  "exclude": ["src/client", "src/scripts", "dist"]
+  "exclude": ["src/prisma/client", "src/scripts", "dist"]
 }

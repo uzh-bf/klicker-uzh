@@ -33,6 +33,7 @@ export default async function execute(prisma: PrismaMigrationClient) {
 
   const elementInstances = await prisma.elementInstance.findMany({})
   const filteredElementInstances = elementInstances.filter(
+    // @ts-ignore - elementData has been updated in the meantim
     (elem) => typeof elem.elementData.questionId === 'undefined'
   )
   for (const elem of filteredElementInstances) {
@@ -48,10 +49,12 @@ export default async function execute(prisma: PrismaMigrationClient) {
             typeof elem.elementData.id === 'number'
               ? `${elem.elementData.id}-v1`
               : elem.elementData.id,
+          // @ts-ignore - elementData has been updated in the meantim
           questionId:
             typeof elem.elementData.id === 'number'
               ? elem.elementData.id
-              : elem.elementData.questionId,
+              : // @ts-ignore - elementData has been updated in the meantim
+                elem.elementData.questionId,
         },
       },
     })

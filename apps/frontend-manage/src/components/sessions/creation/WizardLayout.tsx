@@ -19,6 +19,9 @@ interface CommonFormValues {
   displayName: string
   description: string
   courseId?: string
+  courseStartDate?: Date
+  courseEndDate?: Date
+  courseGroupDeadline?: Date
   multiplier: string
 }
 

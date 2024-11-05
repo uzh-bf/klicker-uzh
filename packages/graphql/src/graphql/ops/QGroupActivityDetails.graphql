@@ -1,9 +1,8 @@
-#import "./FElementDataWithoutSolutions.graphql"
-
 query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id
     displayName
+    status
     description
     scheduledStartAt
     scheduledEndAt
@@ -62,10 +61,28 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
         }
       }
 
-      decisions
       decisionsSubmittedAt
-      results
+      decisions {
+        instanceId
+        type
+        freeTextResponse
+        choicesResponse
+        numericalResponse
+        contentResponse
+      }
+
       resultsComputedAt
+      results {
+        passed
+        points
+        comment
+        grading {
+          instanceId
+          score
+          maxPoints
+          feedback
+        }
+      }
     }
   }
 }

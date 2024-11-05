@@ -1,0 +1,6 @@
+query GetGroupActivitySummary($id: String!) {
+  getGroupActivitySummary(id: $id) {
+    numOfStartedInstances
+    numOfSubmissions
+  }
+}

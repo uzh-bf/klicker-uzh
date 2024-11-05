@@ -2,10 +2,7 @@
 
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  FeedbackResponse,
-  Feedback as FeedbackType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
@@ -92,17 +89,20 @@ function FeedbackChannel({
           )}
 
         {sortedFeedbacks?.map(
-          ({
-            id,
-            content,
-            createdAt,
-            votes,
-            isResolved,
-            isPinned,
-            isPublished,
-            responses,
-            resolvedAt,
-          }: FeedbackType) => (
+          (
+            {
+              id,
+              content,
+              createdAt,
+              votes,
+              isResolved,
+              isPinned,
+              isPublished,
+              responses,
+              resolvedAt,
+            }: FeedbackType,
+            index
+          ) => (
             <div className="flex flex-row print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
@@ -133,7 +133,7 @@ function FeedbackChannel({
                   pinned={isPinned}
                   resolved={isResolved}
                   resolvedAt={resolvedAt}
-                  responses={responses as FeedbackResponse[]}
+                  responses={responses ?? []}
                   votes={votes}
                   onDeleteFeedback={() => handleDeleteFeedback(id)}
                   onDeleteResponse={(responseId) =>

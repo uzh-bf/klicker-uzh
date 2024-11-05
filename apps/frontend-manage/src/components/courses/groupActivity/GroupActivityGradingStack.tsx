@@ -9,7 +9,9 @@ import {
   GroupActivityGrading,
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement from '@klicker-uzh/shared-components/src/StudentElement'
+import StudentElement, {
+  StudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
   FormLabel,
@@ -21,7 +23,7 @@ import {
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
@@ -65,9 +67,13 @@ function GroupActivityGradingStack({
   const results = submission?.results
   const findResponse = useCallback(
     (elementId: number, type: ElementType) => {
-      const decision = submission?.decisions.find(
+      const decision = submission?.decisions?.find(
         (decision: GroupActivityDecision) => decision.instanceId === elementId
       )
+
+      if (!decision) {
+        return
+      }
 
       if (type === ElementType.FreeText) {
         return {
@@ -92,10 +98,9 @@ function GroupActivityGradingStack({
           },
         }
       } else if (type === ElementType.Kprim) {
-        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce(
-          (acc, choice) => ({ ...acc, [choice]: false }),
-          {} as Record<number, boolean>
-        )
+        const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce<
+          Record<number, boolean>
+        >((acc, choice) => ({ ...acc, [choice]: false }), {})
 
         return {
           [elementId]: {
@@ -105,7 +110,7 @@ function GroupActivityGradingStack({
                 ...acc,
                 [choice]: true,
               }),
-              responseObj as Record<number, boolean>
+              responseObj
             ),
             valid: true,
           },
@@ -123,23 +128,21 @@ function GroupActivityGradingStack({
     [submission?.decisions]
   )
 
-  const gradingSchema = useMemo(() => {
-    Yup.object().shape({
-      passed: Yup.boolean().required(
-        t('manage.groupActivity.passedMissingError')
-      ),
-      comment: Yup.string(),
-      grading: Yup.array().of(
-        Yup.object().shape({
-          instanceId: Yup.number().required(),
-          score: Yup.number()
-            .required(t('manage.groupActivity.scoreMissingError'))
-            .min(0, t('manage.groupActivity.scoreMissingError')),
-          feedback: Yup.string(),
-        })
-      ),
-    })
-  }, [t])
+  const gradingSchema = Yup.object().shape({
+    passed: Yup.boolean().required(
+      t('manage.groupActivity.passedMissingError')
+    ),
+    comment: Yup.string(),
+    grading: Yup.array().of(
+      Yup.object().shape({
+        instanceId: Yup.number().required(),
+        score: Yup.number()
+          .required(t('manage.groupActivity.scoreMissingError'))
+          .min(0, t('manage.groupActivity.scoreMissingError')),
+        feedback: Yup.string(),
+      })
+    ),
+  })
 
   if (!submission) {
     return null
@@ -174,19 +177,13 @@ function GroupActivityGradingStack({
           variables: {
             id: submission.id,
             gradingDecisions: {
-              passed: values.passed,
+              passed: values.passed!,
               comment: values.comment,
-              grading: values.grading.map(
-                (res: {
-                  instanceId: number
-                  score: number
-                  feedback?: string
-                }) => ({
-                  instanceId: res.instanceId,
-                  score: parseFloat(String(res.score)),
-                  feedback: res.feedback,
-                })
-              ),
+              grading: values.grading.map((res) => ({
+                instanceId: res.instanceId,
+                score: parseFloat(String(res.score!)),
+                feedback: res.feedback,
+              })),
             },
           },
         })
@@ -227,7 +224,10 @@ function GroupActivityGradingStack({
                   element={element}
                   elementIx={ix}
                   studentResponse={
-                    findResponse(element.id, element.elementType) ?? []
+                    (findResponse(
+                      element.id,
+                      element.elementType
+                    ) as StudentResponseType) ?? []
                   }
                   setStudentResponse={() => null}
                   hideReadButton
@@ -278,7 +278,7 @@ function GroupActivityGradingStack({
                     tooltip={t('manage.groupActivity.maxScoreTooltip')}
                     min={0}
                     max={
-                      (element.options?.pointsMultiplier || 1) *
+                      (element.options?.pointsMultiplier ?? 1) *
                       pointsPerInstance
                     }
                     data={{ cy: `groupActivity-grading-score-${ix}` }}
@@ -288,7 +288,7 @@ function GroupActivityGradingStack({
                     'manage.groupActivity.nPoints',
                     {
                       number:
-                        (element.options?.pointsMultiplier || 1) *
+                        (element.options?.pointsMultiplier ?? 1) *
                         pointsPerInstance,
                     }
                   )}`}</div>
@@ -297,24 +297,14 @@ function GroupActivityGradingStack({
             ))}
             <div className="self-end border-t border-black pt-2 text-lg font-bold">
               {t('manage.groupActivity.totalAchievedPoints', {
-                achieved: values.grading.reduce(
-                  (
-                    acc: number,
-                    result: {
-                      instanceId: number
-                      score: number
-                      feedback?: string
-                    }
-                  ) => {
-                    return (
-                      acc +
-                      (String(result.score) === ''
-                        ? 0
-                        : parseFloat(String(result.score ?? 0)))
-                    )
-                  },
-                  0
-                ),
+                achieved: values.grading.reduce((acc: number, result) => {
+                  return (
+                    acc +
+                    (String(result.score) === ''
+                      ? 0
+                      : parseFloat(String(result.score ?? 0)))
+                  )
+                }, 0),
                 total: maxPoints,
               })}
             </div>
@@ -369,7 +359,7 @@ function GroupActivityGradingStack({
               </FastField>
             </div>
             <Button
-              disabled={!isValid || isSubmitting || gradingCompleted}
+              disabled={!isValid || gradingCompleted}
               type="submit"
               className={{
                 root: twMerge(
@@ -388,7 +378,7 @@ function GroupActivityGradingStack({
             <Toast
               dismissible
               openExternal={successToast}
-              setOpenExternal={setSuccessToast}
+              onCloseExternal={() => setSuccessToast(false)}
               type="success"
               duration={4000}
             >
@@ -397,7 +387,7 @@ function GroupActivityGradingStack({
             <Toast
               dismissible
               openExternal={errorToast}
-              setOpenExternal={setErrorToast}
+              onCloseExternal={() => setErrorToast(false)}
               type="error"
               duration={6000}
             >

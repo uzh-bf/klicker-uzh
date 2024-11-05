@@ -1,6 +1,6 @@
 import type {
   ChoiceQuestionOptions,
-  InstanceEvaluation,
+  ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -27,7 +27,7 @@ interface ChoicesQuestionProps {
   setResponse: (newValue: Record<number, boolean>, valid: boolean) => void
   existingResponse?: Record<number, boolean>
   elementIx: number
-  evaluation?: InstanceEvaluation
+  evaluation?: ChoicesInstanceEvaluation
   disabled?: boolean
 }
 

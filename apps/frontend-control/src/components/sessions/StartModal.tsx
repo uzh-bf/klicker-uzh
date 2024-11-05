@@ -21,7 +21,8 @@ function StartModal({
 }: StartModalProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [startSession] = useMutation(StartSessionDocument)
+  const [startSession, { loading: startingSession }] =
+    useMutation(StartSessionDocument)
 
   return (
     <Modal
@@ -29,6 +30,7 @@ function StartModal({
       onClose={() => setStartModalOpen(false)}
       onPrimaryAction={
         <Button
+          loading={startingSession}
           onClick={async () => {
             try {
               await startSession({

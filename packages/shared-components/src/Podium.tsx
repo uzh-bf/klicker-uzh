@@ -12,7 +12,7 @@ const rankHeights: Record<number, string> = {
 
 interface SinglePodiumProps {
   username?: string
-  avatar?: string
+  avatar?: string | null
   score?: number
   rank: number
   noEntries?: boolean
@@ -127,7 +127,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
       <SinglePodium
         rank={2}
         username={rank2?.username}
-        avatar={rank2?.avatar as string}
+        avatar={rank2?.avatar}
         score={rank2?.score}
         noEntries={emptyLeaderboard}
         className={className?.single}
@@ -137,7 +137,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
       <SinglePodium
         rank={1}
         username={rank1?.username}
-        avatar={rank1?.avatar as string}
+        avatar={rank1?.avatar}
         score={rank1?.score}
         noEntries={emptyLeaderboard}
         className={className?.single}
@@ -147,7 +147,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
       <SinglePodium
         rank={3}
         username={rank3?.username}
-        avatar={rank3?.avatar as string}
+        avatar={rank3?.avatar}
         score={rank3?.score}
         noEntries={emptyLeaderboard}
         className={className?.single}

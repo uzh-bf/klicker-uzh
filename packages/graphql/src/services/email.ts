@@ -1,6 +1,6 @@
 import { createRequire } from 'module'
 import nodemailer from 'nodemailer'
-import { Context } from 'src/lib/context.js'
+import type { Context } from 'src/lib/context.js'
 
 const require = createRequire(import.meta.url)
 

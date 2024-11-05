@@ -8,21 +8,40 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
-  Element,
-  ElementInstance,
+  type Element,
+  type ElementInstance,
   ElementInstanceType,
   ElementOrderType,
-  ElementStack,
+  type ElementStack,
   ElementStackType,
   ElementType,
-  InstanceStatistics,
-  Participation,
-  QuestionResponse as PrismaQuestionResponse,
+  type InstanceStatistics,
+  type Participation,
+  type QuestionResponse as PrismaQuestionResponse,
   PublicationStatus,
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
+import type {
+  AllElementTypeData,
+  Choice,
+  ContentResults,
+  ElementInstanceResults,
+  ElementResultsChoices,
+  ElementResultsOpen,
+  FlashcardResults,
+  InstanceEvaluation,
+  InstanceEvaluationChoices,
+  InstanceEvaluationFreeText,
+  InstanceEvaluationNumerical,
+  SingleQuestionResponse,
+  SingleQuestionResponseChoices,
+  SingleQuestionResponseContent,
+  SingleQuestionResponseFlashcard,
+  SingleQuestionResponseValue,
+  StackInput,
+} from '@klicker-uzh/types'
+import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -32,37 +51,15 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { round } from 'mathjs'
 import { createHash } from 'node:crypto'
-import * as R from 'ramda'
+import { toLowerCase } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import {
+import type {
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
-  QuestionResponse as QuestionResponseType,
   ResponseInput,
 } from '../ops.js'
-import { IInstanceEvaluation } from '../schema/question.js'
-import {
-  AllElementTypeData,
-  Choice,
-  ChoicesElementData,
-  ContentResults,
-  ElementInstanceResults,
-  ElementResultsChoices,
-  ElementResultsOpen,
-  FlashcardCorrectness,
-  FlashcardResults,
-  FreeTextElementData,
-  NumericalElementData,
-  QuestionResponse,
-  QuestionResponseChoices,
-  QuestionResponseContent,
-  QuestionResponseFlashcard,
-  QuestionResponseValue,
-  StackFeedbackStatus,
-  StackInput,
-} from '../types/app.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -84,6 +81,7 @@ export async function getPracticeQuizData(
       OR: [
         {
           status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
         },
         {
           status: PublicationStatus.SCHEDULED,
@@ -157,6 +155,7 @@ export function computeStackEvaluation(
       instances: stack.elements.flatMap((instance) => {
         let hasSampleSolution = false
         let hasAnswerFeedbacks = false
+        const elementData = instance.elementData
         const instanceType = instance.elementData.type
 
         if (
@@ -361,6 +360,7 @@ export async function getPracticeQuizEvaluation(
     where: {
       id,
       status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
     },
     include: {
       stacks: {
@@ -401,6 +401,7 @@ export async function getSinglePracticeQuiz(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      isDeleted: false,
     },
     include: {
       course: true,
@@ -426,7 +427,7 @@ interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
   incorrect: boolean
-  existingResponse?: QuestionResponseType | null
+  existingResponse?: PrismaQuestionResponse | null
 }
 
 function combineNewCorrectnessParams({
@@ -530,7 +531,8 @@ function updateSpacedRepetition({
     } else if (streak === 2) {
       newInterval = 6
     } else {
-      newInterval = Math.ceil(interval * newEfactor)
+      // limit maximum interval to 10'000 days to ensure that dates remain valid
+      newInterval = Math.min(Math.ceil(interval * newEfactor), 10000)
     }
   }
 
@@ -855,9 +857,9 @@ async function respondToFlashcard(
           ? ResponseCorrectness.WRONG
           : ResponseCorrectness.PARTIAL
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
       grade: correctness,
     })
 
@@ -1110,9 +1112,9 @@ async function respondToContent(
       }
 
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + 1,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + 1,
       grade: 1,
     })
 
@@ -1249,21 +1251,21 @@ export function evaluateAnswerCorrectness({
       if (elementData.type === ElementType.SC) {
         const correctness = gradeQuestionSC({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
       } else if (elementData.type === ElementType.MC) {
         const correctness = gradeQuestionMC({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
       } else {
         const correctness = gradeQuestionKPRIM({
           responseCount: elementOptions.choices.length,
-          response: (response as QuestionResponseChoices).choices,
+          response: (response as SingleQuestionResponseChoices).choices,
           solution,
         })
         return correctness
@@ -1297,24 +1299,39 @@ export function evaluateAnswerCorrectness({
   }
 }
 
-interface EvaluatedQuestionResponses {
-  feedbacks: any[]
-  numAnswers: number
-  choices?: Record<string, number>
-  answers?: Record<string, number>
-  score: number
-  xp: number
-  percentile: number
-  pointsMultiplier?: number
-  explanation?: string | null
-}
+type SharedEvaluationProps =
+  | 'elementType'
+  | 'feedbacks'
+  | 'numAnswers'
+  | 'score'
+  | 'xp'
+  | 'percentile'
+  | 'pointsMultiplier'
+  | 'explanation'
+
+type ChoicesEvaluationReturnType = Pick<
+  InstanceEvaluationChoices,
+  SharedEvaluationProps | 'choices'
+>
+type NumericalEvaluationReturnType = Pick<
+  InstanceEvaluationNumerical,
+  SharedEvaluationProps | 'solutionRanges' | 'answers'
+>
+type FreeTextEvaluationReturnType = Pick<
+  InstanceEvaluationFreeText,
+  SharedEvaluationProps | 'solutions' | 'answers'
+>
 
 function evaluateElementResponse(
   elementData: AllElementTypeData,
-  results: any,
+  results: any, // TODO: as soon as correctly typed element instance results are available, update this import and the type checking inside the function
   correctness: number | null,
   multiplier?: number
-): EvaluatedQuestionResponses | null {
+):
+  | ChoicesEvaluationReturnType
+  | NumericalEvaluationReturnType
+  | FreeTextEvaluationReturnType
+  | null {
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -1329,6 +1346,7 @@ function evaluateElementResponse(
 
       if (elementData.type === ElementType.SC) {
         return {
+          elementType: ElementType.SC,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1341,11 +1359,12 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
         return {
+          elementType: ElementType.MC,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1358,11 +1377,12 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       } else {
         return {
+          elementType: ElementType.KPRIM,
           feedbacks,
           numAnswers: results.total,
           choices: results.choices,
@@ -1375,7 +1395,7 @@ function evaluateElementResponse(
             pointsPercentage: correctness,
           }),
           percentile: correctness ?? 0,
-          pointsMultiplier: multiplier,
+          pointsMultiplier: multiplier ?? 1,
           explanation: elementData.explanation,
         }
       }
@@ -1384,6 +1404,7 @@ function evaluateElementResponse(
     case ElementType.NUMERICAL: {
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
+        elementType: ElementType.NUMERICAL,
         feedbacks: [],
         numAnswers: results.total,
         answers: results?.responses ?? {},
@@ -1392,13 +1413,14 @@ function evaluateElementResponse(
           pointsPercentage: correctness,
         }),
         percentile: correctness ?? 0,
-        pointsMultiplier: multiplier,
+        pointsMultiplier: multiplier ?? 1,
         explanation: elementData.explanation,
       }
     }
 
     case ElementType.FREE_TEXT: {
       return {
+        elementType: ElementType.FREE_TEXT,
         feedbacks: [],
         numAnswers: results.total,
         answers: elementData.options.hasSampleSolution
@@ -1409,7 +1431,7 @@ function evaluateElementResponse(
           pointsPercentage: correctness,
         }),
         percentile: correctness ?? 0,
-        pointsMultiplier: multiplier,
+        pointsMultiplier: multiplier ?? 1,
         explanation: elementData.explanation,
       }
     }
@@ -1442,7 +1464,7 @@ export function updateQuestionResults({
       let updatedResults: ElementResultsChoices = results
 
       updatedResults.choices = (
-        response as QuestionResponseChoices
+        response as SingleQuestionResponseChoices
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
@@ -1483,7 +1505,7 @@ export function updateQuestionResults({
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
-      if (Object.keys(results.responses).includes(value)) {
+      if (Object.keys(results.responses).includes(hashedValue)) {
         updatedResults.responses = {
           ...results.responses,
           [hashedValue]: {
@@ -1515,7 +1537,7 @@ export function updateQuestionResults({
         return { results: results, modified: false }
       }
 
-      const value = R.toLower(R.trim(response.value))
+      const value = toLowerCase(response.value.trim())
       MD5.update(value)
       const hashedValue = MD5.digest('hex')
 
@@ -1622,9 +1644,18 @@ export async function respondToQuestion(
 
     // evaluate the correctness of the response
     const elementData = instance?.elementData
-    const correctness = elementData.options.hasSampleSolution
-      ? evaluateAnswerCorrectness({ elementData, response })
-      : 1
+
+    let correctness: number | null
+    if (
+      elementData.type === ElementType.CONTENT ||
+      elementData.type === ElementType.FLASHCARD
+    ) {
+      correctness = 1
+    } else {
+      correctness = elementData.options.hasSampleSolution
+        ? evaluateAnswerCorrectness({ elementData, response })
+        : 1
+    }
 
     const updatedResults = updateQuestionResults({
       previousResults:
@@ -1717,15 +1748,24 @@ export async function respondToQuestion(
     correctness,
     updatedInstance.options.pointsMultiplier
   )
-  const score = evaluation?.score || 0
-  const xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
+  const score = evaluation?.score ?? 0
+
+  let xp: number | null
+  if (
+    elementData.type === ElementType.CONTENT ||
+    elementData.type === ElementType.FLASHCARD
+  ) {
+    xp = 0
+  } else {
+    xp = elementData.options.hasSampleSolution ? (evaluation?.xp ?? 0) : 0
+  }
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
   let lastXpAwardedAt
   let xpAwarded
   let newXpFrom
-  const promises = []
+  const promises: any[] = []
 
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response
@@ -1815,7 +1855,7 @@ export async function respondToQuestion(
 
       // update aggregated responses for choices
       newAggResponses.choices = (
-        response as QuestionResponseChoices
+        response as SingleQuestionResponseChoices
       ).choices.reduce(
         (acc, ix) => ({
           ...acc,
@@ -1836,7 +1876,7 @@ export async function respondToQuestion(
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
@@ -1856,11 +1896,11 @@ export async function respondToQuestion(
         }
         newAggResponses.total = newAggResponses.total + 1
       } else {
-        const value = R.toLower(R.trim(response.value!))
+        const value = toLowerCase(response.value!.trim())
         MD5.update(value)
         const hashedValue = MD5.digest('hex')
 
-        if (Object.keys(newAggResponses.responses).includes(value)) {
+        if (Object.keys(newAggResponses.responses).includes(hashedValue)) {
           newAggResponses.responses = {
             ...newAggResponses.responses,
             [hashedValue]: {
@@ -1884,9 +1924,9 @@ export async function respondToQuestion(
 
     const streakIncrement = correctness === 1 ? 1 : 0
     const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor || 2.5,
-      interval: existingResponse?.interval || 1,
-      streak: (existingResponse?.correctCountStreak || 0) + streakIncrement,
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
       grade: correctness,
     })
 
@@ -1913,9 +1953,9 @@ export async function respondToQuestion(
           averageTimeSpent: newAverageResponseTime,
           lastAwardedAt,
           lastXpAwardedAt,
-          firstResponse: response as QuestionResponse,
+          firstResponse: response as SingleQuestionResponse,
           firstResponseCorrectness: responseCorrectness,
-          lastResponse: response as QuestionResponse,
+          lastResponse: response as SingleQuestionResponse,
           lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           participant: {
@@ -1964,7 +2004,7 @@ export async function respondToQuestion(
           interval: resultSpacedRepetition.interval,
         },
         update: {
-          lastResponse: response as QuestionResponse,
+          lastResponse: response as SingleQuestionResponse,
           lastResponseCorrectness: responseCorrectness,
           aggregatedResponses: newAggResponses,
           lastAwardedAt,
@@ -2004,7 +2044,7 @@ export async function respondToQuestion(
           pointsAwarded,
           xpAwarded,
           timeSpent: answerTime,
-          response: response as QuestionResponse,
+          response: response as SingleQuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
           },
@@ -2204,7 +2244,7 @@ export async function getPreviousStackEvaluation(
 
   // TODO: investigate if this logic can be combined with content of the respondToElementStack
   // function once it is refactored and split up into smaller functions
-  const evaluations: IInstanceEvaluation[] = stackEvaluation.elements.flatMap(
+  const evaluations: InstanceEvaluation[] = stackEvaluation.elements.flatMap(
     (element) => {
       if (!element.responses || element.responses.length === 0) {
         return []
@@ -2212,7 +2252,7 @@ export async function getPreviousStackEvaluation(
 
       if (element.elementType === ElementType.FLASHCARD) {
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseFlashcard
+          .lastResponse as SingleQuestionResponseFlashcard
         stackFeedback = combineStackStatus({
           prevStatus: stackFeedback,
           newStatus: flashcardResultMap[lastResponse.correctness],
@@ -2221,10 +2261,11 @@ export async function getPreviousStackEvaluation(
         return {
           ...element.elementData,
           instanceId: element.id,
+          elementType: ElementType.FLASHCARD,
           score: 0,
           correctness: null,
           lastResponse: element.responses[0]!
-            .lastResponse as QuestionResponseFlashcard,
+            .lastResponse as SingleQuestionResponseFlashcard,
         }
       } else if (element.elementType === ElementType.CONTENT) {
         stackFeedback = combineStackStatus({
@@ -2235,19 +2276,23 @@ export async function getPreviousStackEvaluation(
         return {
           ...element.elementData,
           instanceId: element.id,
+          elementType: ElementType.CONTENT,
           score: 0,
           correctness: 1,
           lastResponse: element.responses[0]!
-            .lastResponse as QuestionResponseContent,
+            .lastResponse as SingleQuestionResponseContent,
         }
       } else if (
-        element.elementType === ElementType.SC ||
-        element.elementType === ElementType.MC ||
-        element.elementType === ElementType.KPRIM
+        (element.elementData.type === ElementType.SC ||
+          element.elementData.type === ElementType.MC ||
+          element.elementData.type === ElementType.KPRIM) &&
+        (element.elementType === ElementType.SC ||
+          element.elementType === ElementType.MC ||
+          element.elementType === ElementType.KPRIM)
       ) {
-        const elementData = element.elementData as ChoicesElementData
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseChoices
+          .lastResponse as SingleQuestionResponseChoices
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
@@ -2280,11 +2325,14 @@ export async function getPreviousStackEvaluation(
           xpAwarded: evaluation?.xp,
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
-      } else if (element.elementType === ElementType.NUMERICAL) {
-        const elementData = element.elementData as NumericalElementData
+        } as InstanceEvaluation
+      } else if (
+        element.elementData.type === ElementType.NUMERICAL &&
+        element.elementType === ElementType.NUMERICAL
+      ) {
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseValue
+          .lastResponse as SingleQuestionResponseValue
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
@@ -2320,11 +2368,14 @@ export async function getPreviousStackEvaluation(
             : [],
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
-      } else if (element.elementType === ElementType.FREE_TEXT) {
-        const elementData = element.elementData as FreeTextElementData
+        } as InstanceEvaluation
+      } else if (
+        element.elementData.type === ElementType.FREE_TEXT &&
+        element.elementType === ElementType.FREE_TEXT
+      ) {
+        const elementData = element.elementData
         const lastResponse = element.responses[0]!
-          .lastResponse as QuestionResponseValue
+          .lastResponse as SingleQuestionResponseValue
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
@@ -2360,7 +2411,7 @@ export async function getPreviousStackEvaluation(
             : [],
           correctness,
           lastResponse,
-        } as IInstanceEvaluation
+        } as InstanceEvaluation
       } else {
         throw new Error(
           'Evaluation of previous stack answers not implemented for type ' +
@@ -2417,7 +2468,8 @@ export async function respondToElementStack(
 
     if (
       stack?.microLearning &&
-      stack.elements.some((element) => element.responses.length > 0)
+      (stack.elements.some((element) => element.responses.length > 0) ||
+        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
     ) {
       return null
     }
@@ -2425,7 +2477,7 @@ export async function respondToElementStack(
 
   let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
-  const evaluationsArr: IInstanceEvaluation[] = []
+  const evaluationsArr: InstanceEvaluation[] = []
 
   // compute average answer time per element / question by dividing the
   // answer time for the entire stack through the number of responses
@@ -2510,7 +2562,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else if (response.type === ElementType.NUMERICAL) {
       const result = await respondToQuestion(
@@ -2537,7 +2589,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else if (response.type === ElementType.FREE_TEXT) {
       const result = await respondToQuestion(
@@ -2564,7 +2616,7 @@ export async function respondToElementStack(
         evaluationsArr.push({
           instanceId: response.instanceId,
           ...result.evaluation,
-        } as IInstanceEvaluation)
+        } as InstanceEvaluation)
       }
     } else {
       throw new Error(
@@ -2616,6 +2668,7 @@ export async function manipulatePracticeQuiz(
       where: {
         id,
         ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       include: {
         stacks: {
@@ -2692,8 +2745,7 @@ export async function manipulatePracticeQuiz(
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
               const processedElementData = processElementData(element)
-              const initialResults =
-                getInitialElementResults(processedElementData)
+              const initialResults = getInitialElementResults(element)
 
               return {
                 elementType: element.type,
@@ -2822,6 +2874,52 @@ export async function unpublishPracticeQuiz(
   return practiceQuiz
 }
 
+export async function getPracticeQuizSummary(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const { responses, anonymousResponses } = practiceQuiz.stacks.reduce(
+    (acc, stack) => {
+      const elem_counts = stack.elements.reduce(
+        (acc_elem, instance) => {
+          acc_elem.responses += instance.results.total
+          acc_elem.anonymousResponses += instance.anonymousResults.total
+          return acc_elem
+        },
+        { responses: 0, anonymousResponses: 0 }
+      )
+
+      acc.responses += elem_counts.responses
+      acc.anonymousResponses += elem_counts.anonymousResponses
+      return acc
+    },
+    { responses: 0, anonymousResponses: 0 }
+  )
+
+  return {
+    numOfResponses: responses,
+    numOfAnonymousResponses: anonymousResponses,
+  }
+}
+
 interface DeletePracticeQuizArgs {
   id: string
 }
@@ -2830,30 +2928,67 @@ export async function deletePracticeQuiz(
   { id }: DeletePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
-  try {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // if the practice quiz is not published yet or has no responses -> hard deletion
+  // anonymous results are ignored, since deleting them does not have an impage on data consistency
+  if (
+    practiceQuiz.status === PublicationStatus.DRAFT ||
+    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.responses.length === 0
+  ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: PublicationStatus.DRAFT,
       },
     })
 
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
 
     return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The practice quiz is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
+  } else {
+    // if the practice quiz is published and has responses -> soft deletion
+    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        isDeleted: true,
+      },
+      include: {
+        stacks: true,
+      },
+    })
 
-    throw e
+    // disconnect the stacks from the course they are linked to
+    const stackIds = updatedPracticeQuiz.stacks.map((stack) => stack.id)
+    await ctx.prisma.elementStack.updateMany({
+      where: {
+        id: {
+          in: stackIds,
+        },
+      },
+      data: {
+        courseId: null,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedPracticeQuiz
   }
 }
 
@@ -2869,6 +3004,7 @@ export async function publishPracticeQuiz(
     where: {
       id,
       ownerId: ctx.user.sub,
+      isDeleted: false,
     },
   })
 
@@ -2933,55 +3069,4 @@ export async function publishPracticeQuiz(
 
     return updatedQuiz
   }
-}
-
-export async function publishScheduledPracticeQuizzes(ctx: Context) {
-  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
-    where: {
-      status: PublicationStatus.SCHEDULED,
-      availableFrom: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedQuizzes = await Promise.all(
-    quizzesToPublish.map((quiz) =>
-      ctx.prisma.practiceQuiz.update({
-        where: {
-          id: quiz.id,
-        },
-        data: {
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          stacks: true,
-        },
-      })
-    )
-  )
-
-  await Promise.all(
-    updatedQuizzes.map((quiz) =>
-      ctx.prisma.course.update({
-        where: {
-          id: quiz.courseId,
-        },
-        data: {
-          elementStacks: {
-            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
-          },
-        },
-      })
-    )
-  )
-
-  updatedQuizzes.forEach((quiz) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id: quiz.id,
-    })
-  })
-
-  return true
 }

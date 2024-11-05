@@ -1,12 +1,12 @@
 import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma'
-import { getInitialElementResults } from '@klicker-uzh/util'
-import { createHash } from 'node:crypto'
 import {
-  QuestionResponseChoices,
-  QuestionResponseValue,
   QuestionResultsChoices,
   QuestionResultsOpen,
-} from 'src/types/app.js'
+  SingleQuestionResponseChoices,
+  SingleQuestionResponseValue,
+} from '@klicker-uzh/types'
+import { getInitialElementResults } from '@klicker-uzh/util'
+import { createHash } from 'node:crypto'
 
 async function run() {
   const MD5 = createHash('md5')
@@ -119,7 +119,7 @@ async function run() {
         // loop over the detail responses and update the aggregated responses
         for (const detailResponse of detailResponses) {
           aggregatedResponses.choices = (
-            detailResponse.response as QuestionResponseChoices
+            detailResponse.response as SingleQuestionResponseChoices
           ).choices.reduce(
             (acc, ix) => ({
               ...acc,
@@ -158,7 +158,8 @@ async function run() {
 
         // loop over the detail responses and update the aggregated responses
         for (const detailResponse of detailResponses) {
-          const value = (detailResponse.response as QuestionResponseValue).value
+          const value = (detailResponse.response as SingleQuestionResponseValue)
+            .value
           MD5.update(value)
           const hashValue = MD5.digest('hex')
           aggregatedResponses.responses[hashValue] = {

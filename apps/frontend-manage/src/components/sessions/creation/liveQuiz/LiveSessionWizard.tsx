@@ -279,7 +279,7 @@ function LiveSessionWizard({
                 onClick={async () => {
                   await startSession({
                     variables: {
-                      id: data?.createSession?.id as string,
+                      id: data?.createSession?.id!,
                     },
                   })
                   router.push(`/sessions/${data?.createSession?.id}/cockpit`)

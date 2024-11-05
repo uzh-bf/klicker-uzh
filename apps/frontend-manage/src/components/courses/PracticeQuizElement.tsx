@@ -11,7 +11,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeletePracticeQuizDocument,
   GetSingleCourseDocument,
   PracticeQuiz,
   PublicationStatus,
@@ -23,7 +22,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
@@ -31,7 +30,7 @@ import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import DeletionModal from './modals/DeletionModal'
+import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
 
 interface AccessLinkArgs {
   name: string
@@ -53,6 +52,7 @@ export function getAccessLink({
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
         <div>
+          {/* @ts-expect-error next-intl dictionary is not correctly typed */}
           {t('manage.course.copyAccessLink')}
           {typeof label == 'string' && ` (${label})`}
         </div>
@@ -82,6 +82,7 @@ export function getLTIAccessLink({
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>
+          {/* @ts-expect-error next-intl dictionary is not correctly typed */}
           {t('manage.course.copyLTIAccessLink')}
           {typeof label == 'string' && ` (${label})`}
         </div>
@@ -121,14 +122,6 @@ function PracticeQuizElement({
     fetchPolicy: 'cache-only',
   })
 
-  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
-    variables: { id: practiceQuiz.id! },
-    // TODO: add optimistic response and update cache
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
-  })
-
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
     variables: { id: practiceQuiz.id! },
     // TODO: add optimistic response and update cache
@@ -150,7 +143,7 @@ function PracticeQuizElement({
     ),
     [PublicationStatus.Scheduled]: (
       <StatusTag
-        color="bg-green-300"
+        color="bg-orange-200"
         status={t('shared.generic.scheduled')}
         icon={faClock}
       />
@@ -162,6 +155,17 @@ function PracticeQuizElement({
         icon={faUserGroup}
       />
     ),
+  }
+
+  const deletionItem = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-[1.2rem]" />
+        <div>{t('manage.course.deletePracticeQuiz')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
   }
 
   return (
@@ -259,19 +263,7 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="w-[1.1rem]"
-                        />
-                        <div>{t('manage.course.deletePracticeQuiz')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
-                  },
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -309,7 +301,7 @@ function PracticeQuizElement({
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+                        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
 
                         <div>{t('manage.course.unpublishPracticeQuiz')}</div>
                       </div>
@@ -319,6 +311,7 @@ function PracticeQuizElement({
                       cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
                     },
                   },
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -371,6 +364,7 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
+                  deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -382,16 +376,11 @@ function PracticeQuizElement({
         </div>
       </div>
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <DeletionModal
-        title={t('manage.course.deletePracticeQuiz')}
-        description={t('manage.course.confirmDeletionPracticeQuiz')}
-        elementName={practiceQuiz.name!}
-        message={t('manage.course.hintDeletionPracticeQuiz')}
-        deleteElement={deletePracticeQuiz}
+      <PracticeQuizDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-practice-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-practice-quiz' }}
+        activityId={practiceQuiz.id}
+        courseId={courseId}
       />
     </div>
   )

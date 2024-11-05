@@ -1,72 +1,87 @@
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
-import { toPng } from 'html-to-image'
 import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useCallback, useRef } from 'react'
+import React, { MutableRefObject, useCallback, useRef } from 'react'
 import { QRCode } from 'react-qrcode-logo'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
   path: string
-  width: number
+  width?: number
   className?: {
+    root?: string
     title?: string
     canvas?: string
   }
+  showLink?: boolean
+  showButton?: boolean
+  showLogo?: boolean
 }
 
 export function QR({
   path,
   width = 200,
   className,
+  showLink = true,
+  showButton = true,
+  showLogo = true,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
-  const canvasRef = useRef<HTMLDivElement>(null)
+  const ref = useRef<QRCode>()
 
   const onButtonClick = useCallback(() => {
-    if (canvasRef.current === null) {
+    if (ref.current === null) {
       return
     }
 
-    toPng(canvasRef.current)
-      .then((dataUrl) => {
-        const link = document.createElement('a')
-        link.download = `${path}.png`
-        link.href = dataUrl
-        link.click()
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  }, [canvasRef, path])
+    ref.current?.download('png', `klickeruzh-${path}.png`)
+  }, [ref, path])
 
   return (
-    <div className="space-y-2">
-      <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
-        <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
-          {process.env.NEXT_PUBLIC_PWA_URL}
-          {path}
-        </div>
-      </Link>
-      <div ref={canvasRef} className={className?.canvas}>
-        <QRCode
-          logoHeight={width / 3.34}
-          logoImage="/img/KlickerLogo.png"
-          logoWidth={width}
-          size={width * 3}
-          value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
-        />
+    <div className={twMerge('space-y-2', className?.root)}>
+      {showLink && (
+        <Link
+          target="_blank"
+          href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+        >
+          <div
+            className={twMerge('text-primary-100 text-6xl', className?.title)}
+          >
+            {process.env.NEXT_PUBLIC_PWA_URL}
+            {path}
+          </div>
+        </Link>
+      )}
+      <div className={className?.canvas}>
+        {showLogo && width ? (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            logoHeight={width / 3.34}
+            logoImage="/img/KlickerLogo.png"
+            logoWidth={width}
+            size={width * 3}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        ) : (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            style={{ width: '100%', height: '100%' }}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        )}
       </div>
-      <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
-        <Button.Icon>
-          <FontAwesomeIcon icon={faDownload} />
-        </Button.Icon>
-        <Button.Label>{t('shared.generic.download')}</Button.Label>
-      </Button>
+      {showButton && (
+        <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faDownload} />
+          </Button.Icon>
+          <Button.Label>{t('shared.generic.download')}</Button.Label>
+        </Button>
+      )}
     </div>
   )
 }

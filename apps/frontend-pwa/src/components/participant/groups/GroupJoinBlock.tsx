@@ -7,6 +7,7 @@ import {
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import * as Yup from 'yup'
 import GroupAction from './GroupAction'
 
 function GroupJoinBlock({
@@ -29,6 +30,13 @@ function GroupJoinBlock({
         buttonMode={false}
         title={t('pwa.courses.joinGroup')}
         icon={faPeopleGroup}
+        validationSchema={Yup.object().shape({
+          value: Yup.string()
+            .required(t('pwa.groups.pinRequired'))
+            .test('is-numeric', t('pwa.groups.pinNumeric'), (value) => {
+              return !isNaN(Number(value)) && value.length === 6
+            }),
+        })}
         onSubmit={async (value) => {
           const result = await joinParticipantGroup({
             variables: {
@@ -64,7 +72,7 @@ function GroupJoinBlock({
         type="error"
         duration={6000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('pwa.courses.joinGroupError')}
@@ -74,7 +82,7 @@ function GroupJoinBlock({
         type="warning"
         duration={6000}
         openExternal={fullMessage}
-        setOpenExternal={setFullMessage}
+        onCloseExternal={() => setFullMessage(false)}
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('pwa.courses.joinGroupFull')}

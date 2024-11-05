@@ -23,7 +23,7 @@ function StackDescriptionModal({
         stackIx: stackIx + 1,
       })}
       className={{
-        content: '!h-max !min-h-max w-full !pb-0 sm:w-3/4 md:w-1/2',
+        content: 'w-full sm:w-3/4 md:w-1/2',
       }}
     >
       <FormikTextField

@@ -36,7 +36,9 @@ function Header({
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
   //   useStickyState('hasSeenSurvey', 'false')
 
-  const [changeParticipantLocale] = useMutation(ChangeParticipantLocaleDocument)
+  const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
+    ChangeParticipantLocaleDocument
+  )
 
   const pageInFrame =
     global?.window &&
@@ -65,6 +67,7 @@ function Header({
       <div className="flex flex-row items-center gap-2 sm:gap-4">
         <div className="flex flex-row rounded bg-transparent text-black">
           <Select
+            disabled={changingLocale}
             value={router.locale}
             items={[
               {
@@ -87,11 +90,11 @@ function Header({
               })
             }}
             className={{
-              trigger:
-                'rounded-none border-b border-solid p-0.5 pb-0 text-white hover:bg-transparent hover:text-white',
+              trigger: 'p-0 px-1 text-white focus:ring-0',
             }}
             data={{ cy: 'language-select' }}
             basic
+            contentPosition="popper"
           />
         </div>
         {/* {hasSeenSurvey === 'false' && (

@@ -1,5 +1,19 @@
 mutation DeleteQuestion($id: Int!) {
   deleteQuestion(id: $id) {
-    id
+    ... on ChoicesElement {
+      id
+    }
+    ... on NumericalElement {
+      id
+    }
+    ... on FreeTextElement {
+      id
+    }
+    ... on FlashcardElement {
+      id
+    }
+    ... on ContentElement {
+      id
+    }
   }
 }

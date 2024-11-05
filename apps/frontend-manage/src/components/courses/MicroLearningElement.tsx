@@ -1,8 +1,13 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faCalendar,
+  faClock,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
+  faFlagCheckered,
   faHandPointer,
   faHourglassEnd,
   faHourglassStart,
@@ -12,8 +17,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteMicroLearningDocument,
-  GetSingleCourseDocument,
   MicroLearning,
   PublicationStatus,
   UnpublishMicroLearningDocument,
@@ -24,7 +27,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { WizardMode } from '../sessions/creation/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
@@ -33,7 +36,9 @@ import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import DeletionModal from './modals/DeletionModal'
+import ExtensionModal from './modals/ExtensionModal'
+import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
+import MicroLearningEndingModal from './modals/MicroLearningEndingModal'
 
 interface MicroLearningElementProps {
   microLearning: Pick<
@@ -56,6 +61,8 @@ function MicroLearningElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [extensionModal, setExtensionModal] = useState(false)
+  const [endingModal, setEndingModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -65,23 +72,10 @@ function MicroLearningElement({
   const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
+  const isActive = !isFuture && !isPast
 
   const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
     variables: { id: microLearning.id },
-  })
-
-  const [deleteMicroLearning] = useMutation(DeleteMicroLearningDocument, {
-    variables: { id: microLearning.id },
-    optimisticResponse: {
-      __typename: 'Mutation',
-      deleteMicroLearning: {
-        __typename: 'MicroLearning',
-        id: microLearning.id,
-      },
-    },
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
   })
 
   const statusMap: Record<PublicationStatus, React.ReactElement> = {
@@ -95,11 +89,30 @@ function MicroLearningElement({
     [PublicationStatus.Published]: (
       <StatusTag
         color="bg-green-300"
-        status={t('shared.generic.published')}
-        icon={isFuture ? faClock : isPast ? faCheck : faPlay}
+        status={
+          isPast ? t('shared.generic.completed') : t('shared.generic.published')
+        }
+        icon={isPast ? faCheck : faPlay}
       />
     ),
-    [PublicationStatus.Scheduled]: <div />,
+    [PublicationStatus.Scheduled]: (
+      <StatusTag
+        color="bg-orange-200"
+        status={t('shared.generic.scheduled')}
+        icon={faClock}
+      />
+    ),
+  }
+
+  const deletionElement = {
+    label: (
+      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+        <FontAwesomeIcon icon={faTrashCan} className="w-4" />
+        <div>{t('manage.course.deleteMicroLearning')}</div>
+      </div>
+    ),
+    onClick: () => setDeletionModal(true),
+    data: { cy: `delete-microlearning-${microLearning.name}` },
   }
 
   return (
@@ -203,19 +216,66 @@ function MicroLearningElement({
                       cy: `duplicate-microlearning-${microLearning.name}`,
                     },
                   }),
+                  deletionElement,
+                ].flat()}
+                triggerIcon={faHandPointer}
+              />
+            </>
+          )}
+
+          {microLearning.status === PublicationStatus.Scheduled && (
+            <>
+              <MicroLearningAccessLink
+                microLearning={microLearning}
+                href={href}
+              />
+              <Dropdown
+                data={{ cy: `microlearning-actions-${microLearning.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[
+                  dataUser?.userProfile?.catalyst
+                    ? getLTIAccessLink({
+                        href,
+                        setCopyToast,
+                        t,
+                        name: microLearning.name,
+                      })
+                    : [],
+                  // {
+                  //   label: (
+                  //     <MicroLearningPreviewLink
+                  //       microLearning={microLearning}
+                  //       href={href}
+                  //     />
+                  //   ),
+                  //   onClick: () => null,
+                  // },
+                  getActivityDuplicationAction({
+                    id: microLearning.id,
+                    text: t('manage.course.duplicateMicroLearning'),
+                    wizardMode: WizardMode.Microlearning,
+                    router: router,
+                    data: {
+                      cy: `duplicate-microlearning-${microLearning.name}`,
+                    },
+                  }),
                   {
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="w-[1.1rem]"
-                        />
-                        <div>{t('manage.course.deleteMicrolearning')}</div>
+                        <FontAwesomeIcon icon={faLock} className="w-4" />
+                        <div>{t('manage.course.unpublishMicrolearning')}</div>
                       </div>
                     ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-microlearning-${microLearning.name}` },
+                    onClick: async () => await unpublishMicroLearning(),
+                    data: {
+                      cy: `unpublish-microlearning-${microLearning.name}`,
+                    },
                   },
+                  deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -271,24 +331,38 @@ function MicroLearningElement({
                       cy: `duplicate-microlearning-${microLearning.name}`,
                     },
                   }),
-                  ...(isFuture
+                  ...(isActive
                     ? [
                         {
                           label: (
-                            <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
                               <FontAwesomeIcon
-                                icon={faLock}
-                                className="w-[1.1rem]"
+                                icon={faCalendar}
+                                className="w-4"
                               />
-
                               <div>
-                                {t('manage.course.unpublishMicrolearning')}
+                                {t('manage.course.extendMicroLearning')}
                               </div>
                             </div>
                           ),
-                          onClick: async () => await unpublishMicroLearning(),
+                          onClick: () => setExtensionModal(true),
                           data: {
-                            cy: `unpublish-microlearning-${microLearning.name}`,
+                            cy: `extend-microlearning-${microLearning.name}`,
+                          },
+                        },
+                        {
+                          label: (
+                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faFlagCheckered}
+                                className="w-[1.2rem]"
+                              />
+                              <div>{t('manage.course.endMicroLearning')}</div>
+                            </div>
+                          ),
+                          onClick: () => setEndingModal(true),
+                          data: {
+                            cy: `end-microlearning-${microLearning.name}`,
                           },
                         },
                       ]
@@ -320,6 +394,7 @@ function MicroLearningElement({
                         },
                       ]
                     : []),
+                  deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
               />
@@ -332,16 +407,27 @@ function MicroLearningElement({
       </div>
 
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <DeletionModal
-        title={t('manage.course.deleteMicrolearning')}
-        description={t('manage.course.confirmDeletionMicrolearning')}
-        elementName={microLearning.name}
-        message={t('manage.course.hintDeletionMicrolearning')}
-        deleteElement={deleteMicroLearning}
+      <MicroLearningDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-microlearning' }}
-        secondaryData={{ cy: 'cancel-delete-microlearning' }}
+        activityId={microLearning.id}
+        courseId={courseId}
+      />
+      <MicroLearningEndingModal
+        open={endingModal}
+        setOpen={setEndingModal}
+        activityId={microLearning.id}
+        courseId={courseId}
+      />
+      <ExtensionModal
+        type="microLearning"
+        id={microLearning.id}
+        currentEndDate={microLearning.scheduledEndAt}
+        courseId={courseId}
+        title={t('manage.course.extendMicroLearning')}
+        description={t('manage.course.extendMicroLearningDescription')}
+        open={extensionModal}
+        setOpen={setExtensionModal}
       />
     </div>
   )

@@ -63,7 +63,7 @@ function Login() {
         type="error"
         duration={6000}
         openExternal={showError}
-        setOpenExternal={setShowError}
+        onCloseExternal={() => setShowError(false)}
         className={{ root: 'max-w-[30rem]' }}
       >
         {error}

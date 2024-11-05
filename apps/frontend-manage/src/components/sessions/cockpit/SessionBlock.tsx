@@ -19,10 +19,18 @@ import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+type SessionTimelineInstance = Omit<QuestionInstance, 'questionData'> & {
+  questionData?: { questionId?: number | null; name: string } | null
+}
+
+export type SessionTimelineBlock = Omit<SessionBlockType, 'instances'> & {
+  instances?: SessionTimelineInstance[] | null
+}
+
 interface SessionBlockProps {
   className?: string
   active: boolean
-  block: SessionBlockType
+  block: SessionTimelineBlock
   inCooldown: boolean
   setInCooldown: (value: boolean) => void
 }
@@ -141,7 +149,7 @@ function SessionBlock({
           />
         )}
       </div>
-      {block.instances?.map((instance: QuestionInstance) => (
+      {block.instances?.map((instance: SessionTimelineInstance) => (
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData!.questionId}`}

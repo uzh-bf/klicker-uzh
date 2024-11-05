@@ -18,11 +18,9 @@ function FinalizeGradingModal({
   activityId,
 }: FinalizeGradingModalProps) {
   const t = useTranslations()
-  const [finalizeGroupActivityGrading] = useMutation(
-    FinalizeGroupActivityGradingDocument
-  )
+  const [finalizeGroupActivityGrading, { loading: finalizingGrading }] =
+    useMutation(FinalizeGroupActivityGradingDocument)
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
 
@@ -32,9 +30,8 @@ function FinalizeGradingModal({
         title={t('manage.groupActivity.finalizeGrading')}
         onPrimaryAction={
           <Button
-            loading={isSubmitting}
+            loading={finalizingGrading}
             onClick={async () => {
-              setIsSubmitting(true)
               const { data } = await finalizeGroupActivityGrading({
                 variables: { id: activityId },
               })
@@ -44,7 +41,6 @@ function FinalizeGradingModal({
               } else {
                 setErrorToast(true)
               }
-              setIsSubmitting(false)
               setOpen(false)
             }}
             className={{
@@ -86,7 +82,7 @@ function FinalizeGradingModal({
       <Toast
         dismissible
         openExternal={successToast}
-        setOpenExternal={setSuccessToast}
+        onCloseExternal={() => setSuccessToast(false)}
         type="success"
         duration={4000}
       >
@@ -95,7 +91,7 @@ function FinalizeGradingModal({
       <Toast
         dismissible
         openExternal={errorToast}
-        setOpenExternal={setErrorToast}
+        onCloseExternal={() => setErrorToast(false)}
         type="error"
         duration={6000}
       >

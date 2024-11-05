@@ -5,7 +5,6 @@ import { FormikNumberField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { repeat } from 'ramda'
 import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
@@ -57,7 +56,8 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
 
       const numOfIntervals = Math.ceil(confusionInterval / xDataInterval)
 
-      return repeat({}, numOfIntervals).map((_, k) => {
+      const emptyIntervals = Array(numOfIntervals).fill({})
+      return emptyIntervals.map((_, k) => {
         const startRunningInterval: dayjs.Dayjs = dayjs(
           confusionTS[0].createdAt
         ).subtract(
@@ -229,7 +229,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-
       <div className="flex-initial p-3 lg:w-1/2">
         <div className="mb-2 font-bold">
           {t('manage.evaluation.graphSettings')}

@@ -165,7 +165,7 @@ function FeedbackSearchAndFilters({
         )}
       </div>
 
-      <div className="flex flex-row">
+      <div className="flex flex-row items-center">
         {!hidden?.print && (
           <Button
             basic
@@ -179,9 +179,7 @@ function FeedbackSearchAndFilters({
             disabled={disabled?.print}
             data={{ cy: 'print-feedback-channel-button' }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faPrint} />
-            </Button.Icon>
+            <FontAwesomeIcon icon={faPrint} />
           </Button>
         )}
 

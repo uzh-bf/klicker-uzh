@@ -1,6 +1,7 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  QuestionInstance,
   SessionBlockStatus,
   SessionBlock as SessionBlockType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,7 +12,13 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
-  block?: SessionBlockType
+  block?: Omit<SessionBlockType, 'instances'> & {
+    instances?:
+      | (Omit<QuestionInstance, 'questionData'> & {
+          questionData?: { name: string } | null
+        })[]
+      | null
+  }
   active?: boolean
 }
 

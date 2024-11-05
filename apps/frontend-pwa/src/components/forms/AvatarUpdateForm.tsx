@@ -6,15 +6,24 @@ import {
   Participant,
   UpdateParticipantAvatarDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { AvatarOptions } from '@klicker-uzh/shared-components/src/constants'
 import {
-  AVATAR_OPTIONS,
-  AVATAR_OPTIONS_KEY,
-} from '@klicker-uzh/shared-components/src/constants'
+  AvatarAccessoryTypes,
+  AvatarClothingColorTypes,
+  AvatarClothingTypes,
+  AvatarEyesTypes,
+  AvatarFacialHairTypes,
+  AvatarHairColorTypes,
+  AvatarHairTypes,
+  AvatarKeyTypes,
+  AvatarMouthTypes,
+  AvatarSkinToneTypes,
+} from '@klicker-uzh/types'
 import { Button, FormikSelectField, H3 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import hash from 'object-hash'
-import { pick } from 'ramda'
+import { pick } from 'remeda'
 
 interface AvatarUpdateFormProps {
   user: Partial<Participant>
@@ -33,20 +42,17 @@ function AvatarUpdateForm({
   return (
     <Formik
       initialValues={{
-        // TODO: canton or country on the shirts
-        skinTone: user.avatarSettings?.skinTone ?? AVATAR_OPTIONS.skinTone[0],
-        eyes: user.avatarSettings?.eyes ?? AVATAR_OPTIONS.eyes[0],
-        mouth: user.avatarSettings?.mouth ?? AVATAR_OPTIONS.mouth[0],
-        hair: user.avatarSettings?.hair ?? AVATAR_OPTIONS.hair[0],
+        skinTone: user.avatarSettings?.skinTone ?? AvatarOptions.skinTone[0],
+        eyes: user.avatarSettings?.eyes ?? AvatarOptions.eyes[0],
+        mouth: user.avatarSettings?.mouth ?? AvatarOptions.mouth[0],
+        hair: user.avatarSettings?.hair ?? AvatarOptions.hair[0],
         facialHair:
-          user.avatarSettings?.facialHair ?? AVATAR_OPTIONS.facialHair[0],
-        accessory:
-          user.avatarSettings?.accessory ?? AVATAR_OPTIONS.accessory[0],
-        hairColor:
-          user.avatarSettings?.hairColor ?? AVATAR_OPTIONS.hairColor[0],
-        clothing: user.avatarSettings?.clothing ?? AVATAR_OPTIONS.clothing[0],
+          user.avatarSettings?.facialHair ?? AvatarOptions.facialHair[0],
+        accessory: user.avatarSettings?.accessory ?? AvatarOptions.accessory[0],
+        hairColor: user.avatarSettings?.hairColor ?? AvatarOptions.hairColor[0],
+        clothing: user.avatarSettings?.clothing ?? AvatarOptions.clothing[0],
         clothingColor:
-          user.avatarSettings?.clothingColor ?? AVATAR_OPTIONS.clothingColor[0],
+          user.avatarSettings?.clothingColor ?? AvatarOptions.clothingColor[0],
       }}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -75,20 +81,17 @@ function AvatarUpdateForm({
         const result = await updateParticipantAvatar({
           variables: {
             avatar: avatarHash,
-            avatarSettings: pick(
-              [
-                'skinTone',
-                'eyes',
-                'mouth',
-                'hair',
-                'clothingColor',
-                'clothing',
-                'accessory',
-                'hairColor',
-                'facialHair',
-              ],
-              definition
-            ),
+            avatarSettings: pick(definition, [
+              'skinTone',
+              'eyes',
+              'mouth',
+              'hair',
+              'clothingColor',
+              'clothing',
+              'accessory',
+              'hairColor',
+              'facialHair',
+            ]),
           },
         })
 
@@ -109,43 +112,47 @@ function AvatarUpdateForm({
                     {t('shared.generic.avatar')}
                   </H3>
                   <BigHead
-                    // @ts-ignore
+                    // @ts-expect-error - BigHead types are not up to date
                     className="border-primary-80 w-full border-b-4 md:h-48"
                     eyebrows="raised"
                     faceMask={false}
                     lashes={false}
                     mask={false}
-                    clothing={values.clothing}
+                    clothing={values.clothing as AvatarClothingTypes}
                     hat="none"
                     graphic="none"
-                    accessory={values.accessory}
+                    accessory={values.accessory as AvatarAccessoryTypes}
                     body="chest"
-                    skinTone={values.skinTone}
-                    clothingColor={values.clothingColor}
-                    eyes={values.eyes}
-                    hair={values.hair}
-                    hairColor={values.hairColor}
-                    mouth={values.mouth}
-                    facialHair={values.facialHair}
+                    skinTone={values.skinTone as AvatarSkinToneTypes}
+                    clothingColor={
+                      values.clothingColor as AvatarClothingColorTypes
+                    }
+                    eyes={values.eyes as AvatarEyesTypes}
+                    hair={values.hair as AvatarHairTypes}
+                    hairColor={values.hairColor as AvatarHairColorTypes}
+                    mouth={values.mouth as AvatarMouthTypes}
+                    facialHair={values.facialHair as AvatarFacialHairTypes}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="grid w-full grid-cols-2 gap-2 text-sm md:grid-cols-3">
-                    {Object.keys(AVATAR_OPTIONS).map((key) => (
+                    {Object.keys(AvatarOptions).map((key) => (
                       <FormikSelectField
                         className={{
                           root: 'w-full',
                           label: 'text-md',
                           select: {
                             root: 'md:w-38 w-full',
-                            trigger: 'w-full justify-between md:p-1 md:px-3',
+                            trigger:
+                              'h-max w-full justify-between text-sm md:p-1 md:px-3',
+                            item: 'text-sm',
                           },
                         }}
                         key={key}
-                        label={t(`pwa.avatar.${key as AVATAR_OPTIONS_KEY}`)}
+                        label={t(`pwa.avatar.${key as AvatarKeyTypes}`)}
                         labelType="small"
                         name={key}
-                        items={AVATAR_OPTIONS[key as AVATAR_OPTIONS_KEY].map(
+                        items={AvatarOptions[key as AvatarKeyTypes].map(
                           (value) => {
                             return {
                               label: t(`pwa.avatar.${value}`),
@@ -161,7 +168,8 @@ function AvatarUpdateForm({
                   <Button
                     fluid
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    loading={isSubmitting}
+                    disabled={!isValid}
                     data={{ cy: 'save-avatar-update' }}
                   >
                     <Button.Icon>

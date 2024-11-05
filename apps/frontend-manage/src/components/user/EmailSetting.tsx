@@ -13,7 +13,9 @@ interface EmailSettingProps {
 
 function EmailSetting({ user }: EmailSettingProps) {
   const t = useTranslations()
-  const [changeEmailSettings] = useMutation(ChangeEmailSettingsDocument)
+  const [changeEmailSettings, { loading: changingSetting }] = useMutation(
+    ChangeEmailSettingsDocument
+  )
 
   return (
     <SimpleSetting
@@ -21,6 +23,7 @@ function EmailSetting({ user }: EmailSettingProps) {
       tooltip={t('manage.settings.emailUpdatesTooltip')}
     >
       <Switch
+        disabled={changingSetting}
         checked={user?.sendProjectUpdates ?? false}
         onCheckedChange={async () =>
           await changeEmailSettings({

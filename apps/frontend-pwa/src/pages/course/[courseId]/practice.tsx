@@ -1,8 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetCoursePracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetCoursePracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
@@ -68,7 +65,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
     >
       <PracticeQuiz
         quiz={{
-          ...(data?.coursePracticeQuiz as PracticeQuizType),
+          ...data?.coursePracticeQuiz,
           description: t('pwa.courses.coursePracticeArea', {
             courseName: data?.coursePracticeQuiz.course?.displayName,
           }),

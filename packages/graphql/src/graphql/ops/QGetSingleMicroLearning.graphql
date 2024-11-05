@@ -1,5 +1,3 @@
-#import "./FMicroLearningData.graphql"
-
 query GetSingleMicroLearning($id: String!) {
   getSingleMicroLearning(id: $id) {
     ...MicroLearningData

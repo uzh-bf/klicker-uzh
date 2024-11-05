@@ -36,7 +36,7 @@ function PublicFeedback({
     ...feedback.responses
       ?.map((response) => response?.id)
       .reduce((accumulator, value) => {
-        return { ...accumulator, [value as unknown as string]: 0 }
+        return { ...accumulator, [String(value)]: 0 }
       }, {}),
   })
 
@@ -60,7 +60,7 @@ function PublicFeedback({
               ...feedback.responses
                 ?.map((response) => response?.id)
                 .reduce((accumulator, value) => {
-                  return { ...accumulator, [value as unknown as string]: 0 }
+                  return { ...accumulator, [String(value)]: 0 }
                 }, {}),
             })
           )
@@ -88,7 +88,7 @@ function PublicFeedback({
   ) => {
     const newUpvotes = {
       ...upvotes,
-      [responseId as unknown as string]: previousValue === 1 ? 0 : 1,
+      [String(responseId)]: previousValue === 1 ? 0 : 1,
     }
     setUpvotes(newUpvotes)
     await localForage.setItem(
@@ -112,7 +112,7 @@ function PublicFeedback({
   ) => {
     const newUpvotes = {
       ...upvotes,
-      [responseId as unknown as string]: previousValue === -1 ? 0 : -1,
+      [String(responseId)]: previousValue === -1 ? 0 : -1,
     }
     setUpvotes(newUpvotes)
     await localForage.setItem(

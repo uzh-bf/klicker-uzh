@@ -39,11 +39,11 @@ function QuestionList({
 
   return (
     <div className="space-y-1 md:space-y-2">
-      {questions.map((question): any => (
+      {questions.map((question) => (
         <Question
           checked={!!selectedQuestions[question.id]}
           id={question.id}
-          isArchived={question.isArchived}
+          isArchived={question.isArchived ?? false}
           key={question.id}
           tags={question.tags || []}
           handleTagClick={handleTagClick}
@@ -51,8 +51,16 @@ function QuestionList({
           status={question.status}
           type={question.type}
           content={question.content}
-          hasAnswerFeedbacks={question.options.hasAnswerFeedbacks}
-          hasSampleSolution={question.options.hasSampleSolution}
+          hasAnswerFeedbacks={
+            'options' in question
+              ? (question.options.hasAnswerFeedbacks ?? false)
+              : true
+          }
+          hasSampleSolution={
+            'options' in question
+              ? (question.options.hasSampleSolution ?? false)
+              : true
+          }
           onCheck={() => setSelectedQuestions(question.id, question)}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}

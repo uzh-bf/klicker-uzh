@@ -134,7 +134,11 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
               scope: UserLoginScope.FullAccess,
             }}
             validationSchema={loginSchema}
-            onSubmit={async (values, { resetForm, setFieldValue }) => {
+            onSubmit={async (
+              values,
+              { resetForm, setFieldValue, setSubmitting }
+            ) => {
+              setSubmitting(true)
               const result = await createUserLogin({
                 variables: {
                   name: values.name,
@@ -142,6 +146,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   scope: values.scope,
                 },
               })
+              setSubmitting(false)
               setConfirmationModal(false)
 
               if (result.data?.createUserLogin) {
@@ -248,7 +253,9 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       }))}
                       label={t('manage.settings.scope')}
                       labelType="large"
-                      className={{ root: 'md:w-1/2' }}
+                      className={{
+                        root: 'md:w-1/2',
+                      }}
                       data={{ cy: 'delegated-login-scope' }}
                       required
                     />
@@ -338,7 +345,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
         <Toast
           dismissible
           openExternal={copiedPassword}
-          setOpenExternal={setCopiedPassword}
+          onCloseExternal={() => setCopiedPassword(false)}
           type="success"
           duration={4000}
         >

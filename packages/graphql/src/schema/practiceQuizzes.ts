@@ -1,15 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder.js'
 import {
   FlashcardCorrectness,
+  type InstanceEvaluation as InstanceEvaluationType,
   StackFeedbackStatus as StackFeedbackStatusType,
-} from '../types/app.js'
-import { CourseRef, ICourse } from './course.js'
-import {
-  ElementInstanceRef,
-  IInstanceEvaluation,
-  InstanceEvaluation,
-} from './question.js'
+} from '@klicker-uzh/types'
+import builder from '../builder.js'
+import { CourseRef, type ICourse } from './course.js'
+import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 import { ElementType } from './questionData.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -70,7 +67,7 @@ export interface IStackFeedback {
   id: number
   status: StackFeedbackStatusType
   score?: number
-  evaluations?: IInstanceEvaluation[]
+  evaluations?: InstanceEvaluationType[]
 }
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
@@ -136,5 +133,18 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     // startedCount: t.exposeInt('startedCount', { nullable: true }),
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
+  }),
+})
+
+export interface IActivitySummary {
+  numOfResponses: number
+  numOfAnonymousResponses: number
+}
+export const ActivitySummaryRef =
+  builder.objectRef<IActivitySummary>('ActivitySummary')
+export const ActivitySummary = ActivitySummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfAnonymousResponses: t.exposeInt('numOfAnonymousResponses'),
   }),
 })

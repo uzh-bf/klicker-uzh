@@ -1,0 +1,10 @@
+subscription SingleGroupActivityEnded($activityId: String!) {
+  singleGroupActivityEnded(activityId: $activityId) {
+    id
+    displayName
+    status
+    description
+    scheduledStartAt
+    scheduledEndAt
+  }
+}

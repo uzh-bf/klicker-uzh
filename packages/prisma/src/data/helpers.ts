@@ -7,7 +7,6 @@ import {
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
-import * as R from 'ramda'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
@@ -182,7 +181,10 @@ export function prepareQuestion({
 
     return {
       where: {
-        originalId: args.originalId,
+        ownerId_originalId: {
+          ownerId: args.ownerId,
+          originalId: args.originalId,
+        },
       },
       create: data,
       update: data,
@@ -197,7 +199,10 @@ export function prepareQuestion({
 
   return {
     where: {
-      originalId: args.originalId,
+      ownerId_originalId: {
+        ownerId: args.ownerId,
+        originalId: args.originalId,
+      },
     },
     create: data,
     update: data,
@@ -325,7 +330,11 @@ export async function prepareSession({
           blocks.map(async ({ questions, ...rest }) => {
             const questionData = await Promise.all(questions)
 
-            if (R.any(R.isNil, questionData)) {
+            if (
+              questionData.some(
+                (value) => value === null || typeof value === 'undefined'
+              )
+            ) {
               throw new Error('Invalid question data')
             }
 
@@ -357,7 +366,11 @@ export async function prepareSession({
           blocks.map(async ({ questions, ...rest }) => {
             const questionData = await Promise.all(questions)
 
-            if (R.any(R.isNil, questionData)) {
+            if (
+              questionData.some(
+                (value) => value === null || typeof value === 'undefined'
+              )
+            ) {
               throw new Error('Invalid question data')
             }
 
@@ -399,7 +412,7 @@ export function prepareGroupActivityStack({
   questions,
   contentElements,
   courseId,
-  connectStackToCourse,
+  connectStackToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -478,7 +491,7 @@ export function prepareStackVariety({
   stackType,
   elementInstanceType,
   courseId,
-  connectToCourse = true,
+  connectToCourse = false,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -1071,7 +1084,10 @@ export async function prepareFlashcardsFromFile(
     quizInfo.elements.map(async (data: any) => {
       const flashcard = await prismaClient.element.upsert({
         where: {
-          originalId: data.originalId,
+          ownerId_originalId: {
+            ownerId: userId,
+            originalId: data.originalId,
+          },
         },
         create: {
           ...data,

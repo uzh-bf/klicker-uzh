@@ -2,27 +2,44 @@
 title: Welcome
 ---
 
-KlickerUZH is a web application that supports the interaction between lecturers and their audience in various ways. In a KlickerUZH live quiz (e.g., during a lecture), a speaker may pose questions to be answered by participants over their devices. If so desired by the speaker, the audience may ask questions to which the lecturer can leave a response from within the tool (Live Q&A). KlickerUZH further supports asynchronous interactions (i.e., outside of class) like microlearning and and practice quizzes, as well as collaborative activities (e.g., group activity).
+**KlickerUZH** is a web application that supports the interaction between lecturers and their audience in various ways. In a KlickerUZH live quiz (e.g., during a lecture), a speaker may pose questions to be answered by participants over their devices. If so desired by the speaker, the audience may ask questions to which the lecturer can leave a response from within the tool (**Live Q&A**). KlickerUZH further supports **asynchronous interactions** (i.e., outside of class) like microlearning and practice quizzes, as well as **collaborative activities** (e.g., group activity).
 
-The platform is being developed by the Teaching Center of the Department of Finance at the University of Zurich, Switzerland. The development and planning roadmap are entirely open-source, allowing for further extensibility and collaboration. This documentation is thought to provide both a helpful guide to users of the KlickerUZH, as well as the necessary information for anyone thinking about contributing to the project or deploying it on their own infrastructure.
+The platform is being developed by the **Teaching Center** of the **Department of Finance** at the **University of Zurich**, Switzerland. The development is entirely **open-source**, allowing for further extensibility and collaboration. This documentation is designed to provide both a helpful guide to teachers using KlickerUZH, as well as the necessary information for anyone thinking about contributing to the project or deploying it on their own infrastructure.
 
 ## User Guide
 
-To learn how to use the KlickerUZH efficiently, we recommend you get familiar with the core concepts and work through the tutorials. These tutorials have been created to guide you through the entire application by means of examples. The KlickerUZH also offers a number of use cases in university teaching that allow lecturers to achieve different goals depending on their needs. To help you decide which use case best suits your purpose, you will find a selection in the Use Cases area of the documentation.
+To learn how to use the KlickerUZH efficiently, we recommend you get familiar with the [**core concepts**](/getting_started/core_concepts/) and work through the [**tutorials**](/tutorials/supported_element_types/). These tutorials have been created to guide you through the entire application by means of examples. KlickerUZH also offers a number of **use cases in university teaching** that allow lecturers to achieve different goals depending on their needs. To help you decide which use case best suits your purpose, you will find a selection in the [Use Cases](/use_cases) area of the documentation.
 
+:::info
 In case of any questions, please have a look if your problem has already been described in the FAQ. For further support, please feel free to connect with us in our [community](https://www.community.klicker.uzh.ch) or through the other channels as described below.
+:::
+
+## Official KlickerUZH
+
+The official instance of KlickerUZH (**www.klicker.uzh.ch**) is provided by the Department of Finance of the University of Zurich. The application and its dependencies are hosted on Microsoft Azure and within Europe. Data processing is outlined further in our [Privacy Policy](/privacy_policy).
+
+- Core functionalities (element library, live quiz, course management, gamification) are **freely accessible** for anyone logging in to our public instance. We always reserve the right of restricting usage over a "fair" amount so that usage for other users is not restricted.
+- Advanced features require participation in our **Catalyst program** (see [Catalyst](/catalyst) for more information).
+- Lecturers at the University of Zurich (UZH) and affiliated institutions (currently USZ) are **automatically part of the program**, if their Edu-ID is linked to their institutional account.
 
 ## Deployment
 
-Instead of using the publicly hosted and freely accessible version of the application (the official "KlickerUZH"), it is also possible to host an instance on private infrastructure. This can be useful if an institution prefers to host their questions and results on private infrastructure only (e.g., if the question contents are sensitive, or the votes are confidential). The only thing to keep in mind is that you are required as reinforced by the license that any extensions of self-hosted instances be provided back to the open-source project (as is good open-source spirit).
+Instead of using the publicly hosted version of the application (the official "KlickerUZH"), it is also possible to **host an instance on private infrastructure**. This can be useful if an institution prefers to host their questions and results on private infrastructure only (e.g., if the question contents are sensitive, or the votes are confidential).
 
-To deploy a private KlickerUZH instance, we strongly recommend that you first familiarize yourself with the architecture of the application on our GitHub project. Feel free to get in touch if there are any questions or issues regarding deployment.
+:::warning
+**Important:** You are required, as reinforced by the AGPL license, that any extensions of self-hosted instances be provided as open-source as well (as is good open-source spirit).
+:::
+
+To deploy a private KlickerUZH instance, we strongly recommend that you first familiarize yourself with the architecture of the application on our GitHub project. Feel free to get in touch in our community if there are any questions or issues regarding deployment.
 
 ## Contributing
 
-In the spirit of open source, we welcome any good-spirited contributions to the KlickerUZH (be it from institutions or individuals). It is generally a good idea to first get an orientation about the general direction of the project from the Roadmap. Please feel free to create an issue or discussion on the klicker-uzh project if you are unsure about your idea or the next steps to its implementation.
+In the spirit of open source, we welcome any good-spirited contributions to the KlickerUZH (be it from institutions or individuals). It is generally a good idea to first get an orientation about the general direction of the project from the [**Roadmap**](/development).
 
-Additionally, in order to reduce the time spent on reviewing and refactoring code (on our side as well as yours), we put some Contributing Guidelines in place that must be followed for a contribution to be accepted.
+**Steps for contributing:**
+
+1. Create an issue or discussion on the [klicker-uzh](https://github.com/uzh-bf/klicker-uzh) project if you are unsure about your idea or the next steps to its implementation.
+2. Follow our Contributing Guidelines to ensure your contribution is accepted.
 
 ## Support & Community
 
@@ -32,4 +49,6 @@ We offer support for the KlickerUZH on various channels:
 - Github Issues on [uzh-bf/klicker-uzh](https://github.com/uzh-bf/klicker-uzh/discussions)
 - Feature Requests / Bug Reports on our [feedback platform](https://klicker-uzh.feedbear.com)
 
+:::info
 Please bear in mind that even though we strive for good response time and general support (i.e., best-effort), we do not have a dedicated support team for the project, as we are funded primarily through project-based funding.
+:::

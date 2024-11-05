@@ -20,33 +20,31 @@ mutation ManipulateChoicesQuestion(
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
-    id
-    name
-    status
-    type
-    content
-    explanation
-    pointsMultiplier
-
-    questionData {
-      ... on ChoicesQuestionData {
-        options {
-          displayMode
-          hasSampleSolution
-          hasAnswerFeedbacks
-          choices {
-            ix
-            correct
-            feedback
-            value
-          }
-        }
-      }
-    }
-
-    tags {
+    __typename
+    ... on ChoicesElement {
       id
       name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+      options {
+        displayMode
+        hasSampleSolution
+        hasAnswerFeedbacks
+        choices {
+          ix
+          correct
+          feedback
+          value
+        }
+      }
+
+      tags {
+        id
+        name
+      }
     }
   }
 }

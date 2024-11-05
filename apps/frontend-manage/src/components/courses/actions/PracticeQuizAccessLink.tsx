@@ -38,7 +38,7 @@ function PracticeQuizAccessLink({
       <Toast
         dismissible
         openExternal={copyToast}
-        setOpenExternal={setCopyToast}
+        onCloseExternal={() => setCopyToast(false)}
         type="success"
         duration={4000}
         className={{ root: 'w-[24rem]' }}

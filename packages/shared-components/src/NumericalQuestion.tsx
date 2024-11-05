@@ -1,5 +1,5 @@
 import type {
-  InstanceEvaluation,
+  NumericalInstanceEvaluation,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -19,7 +19,7 @@ interface NumericalQuestionProps {
   setResponse: (newValue: string, valid: boolean) => void
   existingResponse?: string
   elementIx: number
-  evaluation?: InstanceEvaluation
+  evaluation?: NumericalInstanceEvaluation
   disabled?: boolean
 }
 

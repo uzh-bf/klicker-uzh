@@ -13,6 +13,7 @@ interface DebouncedUsernameFieldProps {
   setValid: (isAvailable: boolean | undefined) => void
   validateField: () => void
   checkUsernameAvailable: (username: string) => Promise<boolean>
+  unavailableMessage: string
   labelType?: 'small' | 'large'
   required?: boolean
   hideError?: boolean
@@ -31,6 +32,7 @@ function DebouncedUsernameField({
   setValid,
   validateField,
   checkUsernameAvailable,
+  unavailableMessage,
   labelType = 'small',
   required = false,
   hideError = false,
@@ -63,7 +65,7 @@ function DebouncedUsernameField({
         const isAvailable = await checkUsernameAvailable(username)
         setValid(isAvailable)
         if (!isAvailable) {
-          helpers.setError(t('pwa.createAccount.usernameAvailability'))
+          helpers.setError(unavailableMessage)
         }
       }, 1000)
     },

@@ -1,3 +1,4 @@
+import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import {
   faClock,
   faCode,
@@ -8,19 +9,15 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
-
 import durationPlugin from 'dayjs/plugin/duration'
-
-import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
-import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
-import SessionBlock from './SessionBlock'
+import SessionBlock, { SessionTimelineBlock } from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
 
 dayjs.extend(durationPlugin)
@@ -40,9 +37,8 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   return `${hours}:${minutes}:${seconds}`
 }
 
-interface Props {
-  shortname: string
-  blocks?: ISessionBlock[]
+interface SessionTimelineProps {
+  blocks?: SessionTimelineBlock[]
   sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
@@ -51,10 +47,10 @@ interface Props {
   isEvaluationPublic?: boolean
   sessionId: string
   startedAt?: string
+  loading?: boolean
 }
 
 function SessionTimeline({
-  shortname,
   sessionId,
   blocks = [],
   sessionName,
@@ -64,7 +60,8 @@ function SessionTimeline({
   handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
-}: Props): React.ReactElement {
+  loading,
+}: SessionTimelineProps): React.ReactElement {
   const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
   const { locale } = useRouter()
@@ -96,7 +93,7 @@ function SessionTimeline({
   useEffect(() => {
     if (blocks && blocks.length > 0) {
       setActiveBlockId(
-        blocks.find((block) => block.status === 'ACTIVE')?.id || -1
+        blocks.find((block) => block.status === 'ACTIVE')?.id ?? -1
       )
       if (blocks.every((block) => block.status === 'EXECUTED')) {
         setLastActiveBlockId(blocks[blocks.length - 1].id)
@@ -173,7 +170,7 @@ function SessionTimeline({
                 questions={blocks.flatMap((block) => block.instances ?? [])}
               />
             )}
-            <SessionQRModal sessionId={sessionId} shortname={shortname} />
+            <SessionQRModal sessionId={sessionId} />
             <a
               className="flex-1"
               href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
@@ -218,6 +215,7 @@ function SessionTimeline({
           {isFeedbackSession && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
+                loading={loading}
                 className={{
                   root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
@@ -282,6 +280,7 @@ function SessionTimeline({
               {t('manage.cockpit.abortSession')}
             </Button>
             <Button
+              loading={loading}
               className={{
                 root: twMerge(
                   (buttonState === 'firstBlock' ||
@@ -319,8 +318,8 @@ function SessionTimeline({
             </Button>
           </div>
           <CancelSessionModal
-            isCancellationModalOpen={cancelSessionModal}
-            setIsCancellationModalOpen={setCancelSessionModal}
+            open={cancelSessionModal}
+            setOpen={setCancelSessionModal}
             sessionId={sessionId}
             title={sessionName}
           />

@@ -28,7 +28,7 @@ function PublishGroupActivityButton({
         data={{ cy: `publish-groupActivity-${groupActivity.name}` }}
       >
         <Button.Icon>
-          <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
+          <FontAwesomeIcon icon={faUserGroup} className="w-[1.2rem]" />
         </Button.Icon>
         <Button.Label>{t('manage.course.publishGroupActivity')}</Button.Label>
       </Button>

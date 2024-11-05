@@ -1,4 +1,4 @@
-import {
+import type {
   ElementInstance,
   ElementStack,
   QuestionResponse,
@@ -9,8 +9,8 @@ import minMax from 'dayjs/plugin/minMax.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
-import * as R from 'ramda'
-import { Context } from './context.js'
+import { sort } from 'remeda'
+import type { Context } from './context.js'
 
 dayjs.extend(utc)
 dayjs.extend(minMax)
@@ -65,15 +65,12 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-export const orderStacks = R.sort(
-  (
-    stackA: ElementStack & {
-      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
-    },
-    stackB: ElementStack & {
-      elements: (ElementInstance & { responses?: QuestionResponse[] })[]
-    }
-  ) => {
+export const orderStacks = (
+  stacks: (ElementStack & {
+    elements: (ElementInstance & { responses?: QuestionResponse[] })[]
+  })[]
+) =>
+  sort(stacks, (stackA, stackB) => {
     const stackAResponses = stackA.elements
       .flatMap((e) => e.responses)
       .filter((response) => !!response)
@@ -116,8 +113,7 @@ export const orderStacks = R.sort(
     if (aResponse.lastCorrectAt > bResponse.lastCorrectAt) return 1
 
     return 0
-  }
-)
+  })
 
 const findEarliestDueDate = (
   stackResponses: (QuestionResponse | undefined)[]
@@ -129,52 +125,4 @@ const findEarliestDueDate = (
       )
     )
     ?.toDate()
-}
-
-export async function sendEmailMigrationNotification(
-  email: string,
-  templateId: string
-) {
-  const LISTMONK_AUTH = {
-    username: process.env.LISTMONK_USER as string,
-    password: process.env.LISTMONK_PASS as string,
-  }
-
-  try {
-    // add the user as a subscriber to enable sending emails via listmonk
-    await axios.post(
-      `${process.env.LISTMONK_URL}/api/subscribers`,
-      {
-        email: email,
-        name: email,
-        status: 'enabled',
-        preconfirm_subscriptions: true,
-      },
-      { auth: LISTMONK_AUTH }
-    )
-  } catch (e: any) {
-    console.error(e)
-    // if (e.response.status !== 409) {
-    //   context.error(e)
-    // }
-  }
-
-  try {
-    const result = await axios.post(
-      `${process.env.LISTMONK_URL}/api/tx`,
-      {
-        subscriber_emails: [email],
-        template_id: Number(templateId),
-      },
-      { auth: LISTMONK_AUTH }
-    )
-
-    console.log(result)
-
-    return result
-  } catch (e) {
-    console.error(e)
-  }
-
-  return null
 }

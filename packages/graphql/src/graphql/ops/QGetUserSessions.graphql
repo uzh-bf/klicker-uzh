@@ -19,14 +19,10 @@ query GetUserSessions {
     isModerationEnabled
     blocks {
       id
+      numOfParticipants
       instances {
         id
-        questionData {
-          id
-          name
-          type
-          content
-        }
+        ...QuestionDataInfo
       }
     }
     course {

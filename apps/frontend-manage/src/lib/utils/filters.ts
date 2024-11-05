@@ -23,13 +23,6 @@ export function buildIndex(
   // look for all substrings, not only prefixed
   search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
 
-  if (name !== 'users') {
-    // impedes the user search, must it be included for the other types?
-    search.tokenizer = new JsSearch.StopWordsTokenizer(
-      new JsSearch.SimpleTokenizer()
-    )
-  }
-
   // index by properties
   searchIndices.forEach((index): void => search.addIndex(index))
 
@@ -64,14 +57,16 @@ export function filterQuestions(
   // if a sample solution filter was selected, only show questions with a sample solution
   if (filters.sampleSolution) {
     results = results.filter(
-      ({ options }) => options.hasSampleSolution === true
+      (element) =>
+        'options' in element && element.options.hasSampleSolution === true
     )
   }
 
   // if an answer feedback filter was selected, only show questions with answer feedbacks
   if (filters.answerFeedbacks) {
     results = results.filter(
-      ({ options }) => options.hasAnswerFeedbacks === true
+      (element) =>
+        'options' in element && element.options.hasAnswerFeedbacks === true
     )
   }
 

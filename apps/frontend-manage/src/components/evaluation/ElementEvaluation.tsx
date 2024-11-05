@@ -1,14 +1,5 @@
-import {
-  ChoicesElementInstanceEvaluation,
-  ElementInstanceEvaluation,
-  ElementType,
-  FreeElementInstanceEvaluation,
-  NumericalElementInstanceEvaluation,
-} from '@klicker-uzh/graphql/dist/ops'
-import {
-  ChartType,
-  QUESTION_GROUPS,
-} from '@klicker-uzh/shared-components/src/constants'
+import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
@@ -45,40 +36,36 @@ function ElementEvaluation({
         />
       </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {QUESTION_GROUPS.CHOICES.includes(currentInstance.type) && (
+        {currentInstance.__typename === 'ChoicesElementInstanceEvaluation' && (
           <ChoicesEvaluation
-            instanceEvaluation={
-              currentInstance as ChoicesElementInstanceEvaluation
-            }
+            instanceEvaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
           />
         )}
-        {currentInstance.type === ElementType.Numerical && (
+        {currentInstance.__typename ===
+          'NumericalElementInstanceEvaluation' && (
           <NREvaluation
-            instanceEvaluation={
-              currentInstance as NumericalElementInstanceEvaluation
-            }
+            instanceEvaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
           />
         )}
-        {currentInstance.type === ElementType.FreeText && (
+        {currentInstance.__typename === 'FreeElementInstanceEvaluation' && (
           <FTEvaluation
-            instanceEvaluation={
-              currentInstance as FreeElementInstanceEvaluation
-            }
+            instanceEvaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
           />
         )}
-        {currentInstance.type === ElementType.Flashcard && (
+        {currentInstance.__typename ===
+          'FlashcardElementInstanceEvaluation' && (
           <FCEvaluation evaluation={currentInstance} />
         )}
-        {currentInstance.type === ElementType.Content && (
+        {currentInstance.__typename === 'ContentElementInstanceEvaluation' && (
           <CTEvaluation evaluation={currentInstance} />
         )}
       </div>

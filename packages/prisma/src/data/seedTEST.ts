@@ -115,10 +115,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
-      startDate: new Date('2023-01-01T00:00'),
-      endDate: new Date('2030-01-01T23:59'),
+      startDate: new Date('2020-01-01T00:00'),
+      endDate: new Date('2050-01-01T23:59'),
       isGroupCreationEnabled: true,
-      groupDeadlineDate: new Date('2024-01-01T00:01'),
+      groupDeadlineDate: new Date('2021-01-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
@@ -128,15 +128,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const courseTest2 = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST2,
-      name: 'Abrakadabra',
-      displayName: 'Abrakadabra',
+      name: 'Testkurs 2',
+      displayName: 'Testkurs 2',
       description: 'Das ist ein Testkurs. Hier wird getestet. Abrakadabra!',
       isGamificationEnabled: true,
       ownerId: USER_ID_TEST,
-      color: '#016273',
+      color: '#ff0000',
       pinCode: 987654321,
       startDate: new Date('2023-01-01T00:00'),
-      endDate: new Date('2030-01-01T23:59'),
+      endDate: new Date('2024-01-01T23:59'),
       isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2024-01-01T00:01'),
       maxGroupSize: 5,
@@ -153,7 +153,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'This is a course without gamification.',
       isGamificationEnabled: false,
       ownerId: USER_ID_TEST,
-      color: '#016274',
+      color: '#166b16',
       pinCode: 482748273,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2030-01-01T23:59'),
@@ -199,7 +199,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'abcd',
+          password: 'abcdabcd',
           username: `testuser${ix + 1}`,
           courseIds: [COURSE_ID_TEST],
         })
@@ -257,7 +257,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Single Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -353,7 +353,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           name: `Gruppe ${ix + 1}`,
           code: code,
-          courseId: COURSE_ID_TEST,
+          course: { connect: { id: COURSE_ID_TEST } },
           participants: {
             connect: [
               {
@@ -382,7 +382,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'abcd',
+          password: 'abcdabcd',
           username: `testuser${ix + PARTICIPANT_IDS.length + 1}`,
           courseIds: [],
         })
@@ -498,7 +498,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: true,
           }),
         },
       },
@@ -516,21 +515,21 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const groupActivityId2 = '07e9847d-32bb-44a1-af49-de11a2151a92'
-  const groupActivityDraft = await prisma.groupActivity.upsert({
+  const groupActivityId2 = 'c3e2e776-87fe-4b59-95dd-ac1977a411ba'
+  const groupActivityScheduled = await prisma.groupActivity.upsert({
     where: {
       id: groupActivityId2,
     },
     create: {
       id: groupActivityId2,
-      name: 'Gruppenquest Draft',
-      displayName: 'Gruppenquest Draft',
-      description: `Description of the draft group activity.`,
-      status: Prisma.GroupActivityStatus.DRAFT,
-      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
-      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
-      pointsMultiplier: 2,
+      name: 'Gruppenquest Scheduled',
+      displayName: 'Gruppenquest Scheduled',
+      description: `Description of the scheduled group activity.`,
+      status: Prisma.GroupActivityStatus.SCHEDULED,
+      scheduledStartAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2050-01-01T11:00:00.000Z'),
       parameters: {},
+      pointsMultiplier: 2,
       clues: {
         connectOrCreate: [
           ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
@@ -544,7 +543,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: false,
           }),
         },
       },
@@ -562,21 +560,21 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const groupActivityId3 = '8918501d-5e44-49d6-916e-43ba11794b96'
-  const groupActivityCompleted = await prisma.groupActivity.upsert({
+  const groupActivityId3 = '07e9847d-32bb-44a1-af49-de11a2151a92'
+  const groupActivityDraft = await prisma.groupActivity.upsert({
     where: {
       id: groupActivityId3,
     },
     create: {
       id: groupActivityId3,
-      name: 'Gruppenquest Completed',
-      displayName: 'Gruppenquest Completed',
-      description: `Description of the completed group activity.`,
-      status: Prisma.GroupActivityStatus.PUBLISHED,
+      name: 'Gruppenquest Draft',
+      displayName: 'Gruppenquest Draft',
+      description: `Description of the draft group activity.`,
+      status: Prisma.GroupActivityStatus.DRAFT,
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
-      scheduledEndAt: new Date('2021-01-01T11:00:00.000Z'),
-      parameters: {},
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
       pointsMultiplier: 2,
+      parameters: {},
       clues: {
         connectOrCreate: [
           ...prepareGroupActivityClues({ activityId: groupActivityId3 }),
@@ -586,11 +584,152 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: {
           ...prepareGroupActivityStack({
             migrationIdOffset: 200,
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityId4 = '89f84817-2669-42bb-9ca2-d643fdf72926'
+  const groupActivityDraftPast = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId4,
+    },
+    create: {
+      id: groupActivityId4,
+      name: 'Gruppenquest Draft Past',
+      displayName: 'Gruppenquest Draft Past',
+      description: `Description of the draft group activity with a past end date.`,
+      status: Prisma.GroupActivityStatus.DRAFT,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2022-01-01T11:00:00.000Z'),
+      pointsMultiplier: 2,
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId4 }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            migrationIdOffset: 300,
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityId5 = '8918501d-5e44-49d6-916e-43ba11794b96'
+  const groupActivityCompleted = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId5,
+    },
+    create: {
+      id: groupActivityId5,
+      name: 'Gruppenquest Ended',
+      displayName: 'Gruppenquest Ended',
+      description: `Description of the completed group activity.`,
+      status: Prisma.GroupActivityStatus.ENDED,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2021-01-01T11:00:00.000Z'),
+      parameters: {},
+      pointsMultiplier: 2,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId5 }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
             questions: questionsTest,
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
-            connectStackToCourse: true,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  const groupActivityId6 = '62f4511e-6760-4cef-9784-1814891a0f2b'
+  const groupActivityGraded = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId6,
+    },
+    create: {
+      id: groupActivityId6,
+      name: 'Gruppenquest Graded',
+      displayName: 'Gruppenquest Graded',
+      description: `Description of the graded group activity.`,
+      status: Prisma.GroupActivityStatus.GRADED,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2021-01-01T11:00:00.000Z'),
+      parameters: {},
+      pointsMultiplier: 2,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId6 }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            migrationIdOffset: 500,
+            flashcards: [flashcards[0]!],
+            questions: questionsTest,
+            contentElements: [contentElements[0]!],
+            courseId: COURSE_ID_TEST,
           }),
         },
       },
@@ -696,6 +835,46 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       }
     })
 
+  const groupActivityDecisionsGraded =
+    groupActivityGraded.stacks[0]!.elements.map((element) => {
+      const baseDecisions = {
+        instanceId: element.id,
+        type: element.elementType,
+      }
+
+      if (element.elementType === Prisma.ElementType.CONTENT) {
+        return {
+          ...baseDecisions,
+          contentResponse: true,
+        }
+      } else if (element.elementType === Prisma.ElementType.SC) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [1],
+        }
+      } else if (element.elementType === Prisma.ElementType.MC) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [1, 2],
+        }
+      } else if (element.elementType === Prisma.ElementType.KPRIM) {
+        return {
+          ...baseDecisions,
+          choicesResponse: [0, 1, 3],
+        }
+      } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
+        return {
+          ...baseDecisions,
+          freeTextResponse: 'This is a free text response.',
+        }
+      } else if (element.elementType === Prisma.ElementType.NUMERICAL) {
+        return {
+          ...baseDecisions,
+          numericalResponse: 10,
+        }
+      }
+    })
+
   // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1
   const groupActivityInstance = await prisma.groupActivityInstance.upsert({
@@ -707,7 +886,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-01T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId5,
         },
       },
       group: {
@@ -729,7 +908,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-10T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId5,
         },
       },
       group: {
@@ -751,7 +930,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       decisionsSubmittedAt: new Date('2020-06-20T11:00:00.000Z'),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId5,
         },
       },
       group: {
@@ -772,7 +951,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     create: {
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId5,
         },
       },
       group: {
@@ -798,7 +977,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     >((acc, element) => {
       if (element.elementType === Prisma.ElementType.CONTENT) return acc
 
-      const maxPoints = (element.options.pointsMultiplier || 1) * 25 // default: 25 points
+      const maxPoints = (element.options.pointsMultiplier ?? 1) * 25 // default: 25 points
       const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
         Math.floor(Math.random() * 3)
       ] as 'INCORRECT' | 'PARTIAL' | 'CORRECT'
@@ -828,7 +1007,51 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     }, []),
   }
 
-  // seed group activity instance with decisions and results
+  const groupActivityResultsGraded = {
+    passed: true,
+    points: 105,
+    comment: 'This is an optional comment by the lecturer.',
+    grading: groupActivityGraded.stacks[0]!.elements.reduce<
+      {
+        instanceId: number
+        correctness: string
+        score: number
+        feedback?: string
+      }[]
+    >((acc, element) => {
+      if (element.elementType === Prisma.ElementType.CONTENT) return acc
+
+      const maxPoints = (element.options.pointsMultiplier ?? 1) * 25 // default: 25 points
+      const correctness = ['INCORRECT', 'PARTIAL', 'CORRECT'][
+        Math.floor(Math.random() * 3)
+      ] as 'INCORRECT' | 'PARTIAL' | 'CORRECT'
+
+      return [
+        ...acc,
+        {
+          instanceId: element.id,
+          correctness: correctness,
+          maxPoints: maxPoints,
+          score:
+            correctness === 'CORRECT'
+              ? maxPoints
+              : correctness === 'PARTIAL'
+                ? Math.floor(Math.random() * maxPoints)
+                : 0,
+          ...(correctness === 'INCORRECT' && {
+            feedback:
+              'In case of an incorrect answer, this feedback is provided.',
+          }),
+          ...(correctness === 'PARTIAL' && {
+            feedback:
+              'In case of a partially correct answer, this feedback is provided.',
+          }),
+        },
+      ]
+    }, []),
+  }
+
+  // seed group activity instance with decisions and results for partially graded and ended group activity
   const groupActivityInstanceId5 = 5
   const groupActivityInstance5 = await prisma.groupActivityInstance.upsert({
     where: {
@@ -841,12 +1064,61 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       resultsComputedAt: new Date(),
       groupActivity: {
         connect: {
-          id: groupActivityId3,
+          id: groupActivityId5,
         },
       },
       group: {
         connect: {
           id: PARTICIPANT_GROUP_IDS[4],
+        },
+      },
+    },
+    update: {},
+  })
+
+  // seed group activity instance with decisions and results for graded and ended group activity
+  const groupActivityInstanceId6 = 6
+  const groupActivityInstance6 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId6,
+    },
+    create: {
+      decisions: groupActivityDecisionsGraded,
+      decisionsSubmittedAt: new Date('2020-06-15T11:00:00.000Z'),
+      results: groupActivityResultsGraded,
+      resultsComputedAt: new Date(),
+      groupActivity: {
+        connect: {
+          id: groupActivityId6,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[0],
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityInstanceId7 = 7
+  const groupActivityInstance7 = await prisma.groupActivityInstance.upsert({
+    where: {
+      id: groupActivityInstanceId7,
+    },
+    create: {
+      decisions: groupActivityDecisionsGraded,
+      decisionsSubmittedAt: new Date('2020-06-15T12:00:00.000Z'),
+      results: groupActivityResultsGraded,
+      resultsComputedAt: new Date(),
+      groupActivity: {
+        connect: {
+          id: groupActivityId6,
+        },
+      },
+      group: {
+        connect: {
+          id: PARTICIPANT_GROUP_IDS[1],
         },
       },
     },
@@ -872,7 +1144,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 300,
+            migrationIdOffset: 600,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -912,14 +1184,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 400,
+            migrationIdOffset: 700,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
-            connectToCourse: false,
           }),
         ],
       },
@@ -953,14 +1224,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 500,
+            migrationIdOffset: 800,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
-            connectToCourse: false,
           }),
         ],
       },
@@ -1006,7 +1276,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 600,
+            migrationIdOffset: 900,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1051,7 +1321,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 700,
+            migrationIdOffset: 1000,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1092,7 +1362,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 800,
+            migrationIdOffset: 1100,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -1133,11 +1403,54 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 900,
+            migrationIdOffset: 1200,
             flashcards: flashcards,
             questions: questionsTest.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT
             ),
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const microlearningId5 = 'ec13a44b-22ce-4edc-b419-e2d7c07024fe'
+  const microlearningDraft = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId5,
+    },
+    create: {
+      id: microlearningId5,
+      name: 'Test Microlearning Draft',
+      displayName: 'Test Microlearning Draft',
+      description: `
+Once this microlearning is published, it will be immediately accessible
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.PublicationStatus.DRAFT,
+      scheduledEndAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            migrationIdOffset: 1300,
+            flashcards: flashcards,
+            questions: questionsTest,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
