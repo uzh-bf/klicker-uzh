@@ -31,39 +31,54 @@ function FTEvaluation({
   )
 
   return (
-    <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel
-        defaultSize={isCollapsed ? 100 : 80}
-        minSize={50}
-        className="px-4"
-      >
-        <ElementChart
-          chartType={chartType}
-          instanceEvaluation={instanceEvaluation}
-          showSolution={showSolution}
-          textSize={textSize}
-        />
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel
+    <>
+      {showSolution ? (
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel
+            defaultSize={isCollapsed ? 100 : 80}
+            minSize={50}
+            className="px-4"
+          >
+            <ElementChart
+              chartType={chartType}
+              instanceEvaluation={instanceEvaluation}
+              showSolution={showSolution}
+              textSize={textSize}
+            />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel
             key={`parent-${instanceEvaluation.id}-${isCollapsed ? 'collapsed' : 'expanded'}`}
-        defaultSize={isCollapsed ? 0 : 20}
-        minSize={10}
-        collapsible
-        collapsedSize={0}
-        onCollapse={() => setIsCollapsed(true)}
-        onExpand={() => setIsCollapsed(false)}
-        className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
-      >
-        {instanceEvaluation.results.solutions && showSolution && (
-          <FTSidebar
-            instance={instanceEvaluation}
-            textSize={textSize}
+            defaultSize={isCollapsed ? 0 : 20}
+            minSize={10}
+            collapsible
+            collapsedSize={0}
+            onCollapse={() => setIsCollapsed(true)}
+            onExpand={() => setIsCollapsed(false)}
+            className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
+          >
+            {instanceEvaluation.results.solutions &&
+              showSolution &&
+              !isCollapsed && (
+                <FTSidebar
+                  instance={instanceEvaluation}
+                  textSize={textSize}
+                  showSolution={showSolution}
+                />
+              )}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="order-2 flex-1 px-4 md:order-1">
+          <ElementChart
+            chartType={chartType}
+            instanceEvaluation={instanceEvaluation}
             showSolution={showSolution}
+            textSize={textSize}
           />
-        )}
-      </ResizablePanel>
-    </ResizablePanelGroup>
+        </div>
+      )}
+    </>
   )
 }
 
