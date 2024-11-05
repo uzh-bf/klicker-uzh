@@ -1474,12 +1474,6 @@ type QuestionFeedback {
   value: String!
 }
 
-type QuestionInstance {
-  id: Int!
-  pointsMultiplier: Int
-  questionData: QuestionData
-}
-
 union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
 
 enum ResponseCorrectness {
@@ -1547,7 +1541,6 @@ type SessionBlock {
   execution: Int
   expiresAt: Date
   id: Int!
-  instances: [QuestionInstance!]
   numOfParticipants: Int
   order: Int!
   randomSelection: Int

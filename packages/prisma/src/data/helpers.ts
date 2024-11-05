@@ -2,7 +2,6 @@ import {
   getInitialElementResults,
   getInitialInstanceStatistics,
   processElementData,
-  processQuestionData,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
@@ -11,12 +10,7 @@ import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
 import Prisma from '../../dist/index.js'
-import {
-  ElementType,
-  QuestionInstanceType,
-  UserLoginScope,
-  type Element,
-} from '../prisma/client/index.js'
+import { ElementType, UserLoginScope } from '../prisma/client/index.js'
 
 export async function prepareUser({
   name,
@@ -206,84 +200,6 @@ export function prepareQuestion({
     },
     create: data,
     update: data,
-  }
-}
-
-export function prepareQuestionInstance({
-  question,
-  type,
-  pointsMultiplier,
-  resetTimeDays,
-  maxBonusPoints,
-  timeToZeroBonus,
-  order,
-}: {
-  question: Partial<Prisma.Element>
-  type: QuestionInstanceType
-  pointsMultiplier?: number
-  resetTimeDays?: number
-  maxBonusPoints?: number
-  timeToZeroBonus?: number
-  order?: number
-}): any {
-  const common = {
-    order,
-    type,
-    pointsMultiplier,
-    resetTimeDays,
-    maxBonusPoints,
-    timeToZeroBonus,
-    questionData: processQuestionData(question as Element),
-    question: {
-      connect: {
-        id: question.id,
-      },
-    },
-    owner: {
-      connect: {
-        id: question.ownerId,
-      },
-    },
-  }
-
-  switch (question.type) {
-    case Prisma.ElementType.SC:
-    case Prisma.ElementType.MC:
-    case Prisma.ElementType.KPRIM: {
-      const questionOptions = question.options?.valueOf() as {
-        choices: {
-          ix: number
-          value: string
-          feedback: string
-          correct: boolean
-        }[]
-      }
-
-      return {
-        ...common,
-        results: {
-          choices: questionOptions.choices.reduce(
-            (acc, choice) => ({
-              ...acc,
-              [choice.ix]: 0,
-            }),
-            {}
-          ),
-        },
-      }
-    }
-
-    case Prisma.ElementType.NUMERICAL:
-    case Prisma.ElementType.FREE_TEXT:
-    case Prisma.ElementType.CONTENT:
-    case Prisma.ElementType.FLASHCARD: {
-      return {
-        ...common,
-        results: {
-          participants: 0,
-        },
-      }
-    }
   }
 }
 

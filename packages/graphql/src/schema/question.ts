@@ -27,7 +27,6 @@ import {
   type IFreeTextQuestionOptions,
   type INumericalQuestionOptions,
 } from './elementData.js'
-import { QuestionData } from './questionData.js'
 import {
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,
@@ -424,21 +423,6 @@ export const ArchivedElement = builder
     }),
   })
 // #endregion
-
-export const QuestionInstanceRef =
-  builder.objectRef<DB.QuestionInstance>('QuestionInstance')
-export const QuestionInstance = QuestionInstanceRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-
-    questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q.questionData,
-      nullable: true,
-    }),
-  }),
-})
 
 export interface IElementInstance extends DB.ElementInstance {
   feedbacks?: DB.ElementFeedback[] | null

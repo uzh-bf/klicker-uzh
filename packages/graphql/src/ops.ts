@@ -2496,13 +2496,6 @@ export type QuestionFeedback = {
   value: Scalars['String']['output'];
 };
 
-export type QuestionInstance = {
-  __typename?: 'QuestionInstance';
-  id: Scalars['Int']['output'];
-  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
-  questionData?: Maybe<QuestionData>;
-};
-
 export type QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse;
 
 export enum ResponseCorrectness {
@@ -2573,7 +2566,6 @@ export type SessionBlock = {
   execution?: Maybe<Scalars['Int']['output']>;
   expiresAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['Int']['output'];
-  instances?: Maybe<Array<QuestionInstance>>;
   numOfParticipants?: Maybe<Scalars['Int']['output']>;
   order: Scalars['Int']['output'];
   randomSelection?: Maybe<Scalars['Int']['output']>;

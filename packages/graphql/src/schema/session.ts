@@ -22,7 +22,6 @@ import {
   IConfusionSummary,
   IFeedback,
 } from './liveQuiz.js'
-import { QuestionInstanceRef } from './question.js'
 import { QuestionData } from './questionData.js'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
@@ -124,7 +123,6 @@ export const Session = SessionRef.implement({
 
 export interface ISessionBlock extends DB.SessionBlock {
   numOfParticipants?: number
-  instances?: DB.QuestionInstance[]
 }
 export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
 export const SessionBlock = SessionBlockRef.implement({
@@ -138,11 +136,6 @@ export const SessionBlock = SessionBlockRef.implement({
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
-
-    instances: t.expose('instances', {
-      type: [QuestionInstanceRef],
-      nullable: true,
-    }),
   }),
 })
 

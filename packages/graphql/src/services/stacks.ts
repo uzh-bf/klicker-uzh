@@ -1139,7 +1139,7 @@ type FreeTextEvaluationReturnType = Pick<
   SharedEvaluationProps | 'solutions' | 'answers'
 >
 
-async function getValidateQuestionInstance({
+async function getValidateElementInstance({
   prisma,
   id,
   participantId,
@@ -2147,7 +2147,7 @@ export async function respondToQuestion(
   ctx: Context
 ) {
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await getValidateQuestionInstance({
+    const existingInstance = await getValidateElementInstance({
       prisma,
       id,
       participantId: ctx.user?.sub,
