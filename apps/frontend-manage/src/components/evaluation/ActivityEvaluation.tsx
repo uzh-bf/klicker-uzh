@@ -1,35 +1,44 @@
 import {
-  sizeReducer,
-  TextSizes,
-} from '@components/sessions/evaluation/constants'
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+  ConfusionTimestep,
+  Feedback,
+  StackEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementEvaluation from './ElementEvaluation'
 import EvaluationFooter from './EvaluationFooter'
+import EvaluationConfusion from './feedbacks/EvaluationConfusion'
+import EvaluationFeedbacks from './feedbacks/EvaluationFeedbacks'
 import useChartTypeUpdate from './hooks/useChartTypeUpdate'
 import useStackInstanceMap from './hooks/useStackInstanceMap'
 import EvaluationNavigation from './navigation/EvaluationNavigation'
+import { sizeReducer, TextSizes } from './textSizes'
 
 export type ActivityEvaluationType = 'LiveQuiz' | 'Asynchronous'
+export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
 
 interface ActivityEvaluationProps {
   activityName: string
   stacks: StackEvaluation[]
+  feedbacks?: Feedback[] | null
+  confusionFeedbacks?: ConfusionTimestep[] | null
   type?: ActivityEvaluationType
 }
-
-export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
 
 function ActivityEvaluation({
   activityName,
   stacks,
+  feedbacks,
+  confusionFeedbacks,
   type = 'Asynchronous',
 }: ActivityEvaluationProps) {
   const router = useRouter()
+  const t = useTranslations()
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
@@ -118,17 +127,16 @@ function ActivityEvaluation({
           </div>
         )} */}
 
-        {/* {!showLeaderboard &&
-          !showConfusion &&
-          showFeedbacks &&
-          data.sessionEvaluation && (
+        {type === 'LiveQuiz' &&
+          feedbacks !== null &&
+          activeStack === 'feedbacks' && (
             <div className="overflow-y-auto print:overflow-y-visible">
               <div className="p-4">
                 <div className="mx-auto max-w-5xl text-xl">
                   {feedbacks && feedbacks.length > 0 ? (
                     <EvaluationFeedbacks
                       feedbacks={feedbacks}
-                      sessionName={data.sessionEvaluation.displayName}
+                      sessionName={activityName}
                     />
                   ) : (
                     <UserNotification
@@ -140,25 +148,27 @@ function ActivityEvaluation({
                 </div>
               </div>
             </div>
-          )} */}
+          )}
 
-        {/* {!showLeaderboard && showConfusion && !showFeedbacks && (
-          <div className="overflow-y-auto">
-            <div className="border-t p-4">
-              <div className="mx-auto max-w-5xl text-xl">
-                {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
-                  <EvaluationConfusion confusionTS={confusionFeedbacks} />
-                ) : (
-                  <UserNotification
-                    className={{ message: 'text-lg' }}
-                    type="warning"
-                    message={t('manage.evaluation.noConfusionFeedbacksYet')}
-                  />
-                )}
+        {type === 'LiveQuiz' &&
+          confusionFeedbacks !== null &&
+          activeStack === 'confusion' && (
+            <div className="overflow-y-auto">
+              <div className="border-t p-4">
+                <div className="mx-auto max-w-5xl text-xl">
+                  {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
+                    <EvaluationConfusion confusionTS={confusionFeedbacks} />
+                  ) : (
+                    <UserNotification
+                      className={{ message: 'text-lg' }}
+                      type="warning"
+                      message={t('manage.evaluation.noConfusionFeedbacksYet')}
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )} */}
+          )}
       </div>
 
       <div

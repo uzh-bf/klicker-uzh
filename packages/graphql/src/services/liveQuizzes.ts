@@ -1798,6 +1798,9 @@ export async function getLiveQuizEvaluation(
       : liveQuiz.blocks
   )
 
+  // TODO: add leaderboard - return conditional from cache or DB depending on quiz status?
+
+  // TODO: only return feedbacks and confusion feedbacks for ended live quizzes?
   return {
     id: liveQuiz.id,
     name: liveQuiz.name,

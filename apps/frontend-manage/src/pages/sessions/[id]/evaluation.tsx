@@ -52,6 +52,8 @@ function Evaluation() {
     <ActivityEvaluation
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
+      feedbacks={evaluation?.feedbacks}
+      confusionFeedbacks={evaluation?.confusionFeedbacks}
       type="LiveQuiz"
     />
   )
