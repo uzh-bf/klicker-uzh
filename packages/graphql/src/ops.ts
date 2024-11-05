@@ -95,12 +95,6 @@ export type AwardEntry = {
   type: Scalars['String']['output'];
 };
 
-export type BlockInput = {
-  questionIds: Array<Scalars['Int']['input']>;
-  randomSelection?: InputMaybe<Scalars['Int']['input']>;
-  timeLimit?: InputMaybe<Scalars['Int']['input']>;
-};
-
 export type Choice = {
   __typename?: 'Choice';
   correct?: Maybe<Scalars['Boolean']['output']>;
@@ -201,31 +195,6 @@ export type ChoicesInstanceEvaluation = {
   xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
-export type ChoicesQuestionResponse = {
-  __typename?: 'ChoicesQuestionResponse';
-  aggregatedResponses: ElementResultsChoices;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  elementType: ElementType;
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: SingleQuestionResponseChoices;
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
-};
-
 export type ClassAchievementInstance = {
   __typename?: 'ClassAchievementInstance';
   id: Scalars['Int']['output'];
@@ -308,31 +277,6 @@ export type ContentInstanceEvaluation = {
   score: Scalars['Float']['output'];
   xp?: Maybe<Scalars['Int']['output']>;
   xpAwarded?: Maybe<Scalars['Int']['output']>;
-};
-
-export type ContentQuestionResponse = {
-  __typename?: 'ContentQuestionResponse';
-  aggregatedResponses: ElementResultsContent;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  elementType: ElementType;
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: SingleQuestionResponseContent;
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
 };
 
 export type Course = {
@@ -461,31 +405,6 @@ export enum ElementOrderType {
   SpacedRepetition = 'SPACED_REPETITION'
 }
 
-export type ElementResultsChoices = {
-  __typename?: 'ElementResultsChoices';
-  choices: Scalars['Json']['output'];
-  total: Scalars['Int']['output'];
-};
-
-export type ElementResultsContent = {
-  __typename?: 'ElementResultsContent';
-  total: Scalars['Int']['output'];
-};
-
-export type ElementResultsFlashcard = {
-  __typename?: 'ElementResultsFlashcard';
-  CORRECT: Scalars['Int']['output'];
-  INCORRECT: Scalars['Int']['output'];
-  PARTIAL: Scalars['Int']['output'];
-  total: Scalars['Int']['output'];
-};
-
-export type ElementResultsOpen = {
-  __typename?: 'ElementResultsOpen';
-  responses: Scalars['Json']['output'];
-  total: Scalars['Int']['output'];
-};
-
 export type ElementStack = {
   __typename?: 'ElementStack';
   description?: Maybe<Scalars['String']['output']>;
@@ -524,13 +443,6 @@ export enum ElementType {
   Numerical = 'NUMERICAL',
   Sc = 'SC'
 }
-
-export type EvaluationBlock = {
-  __typename?: 'EvaluationBlock';
-  blockIx: Scalars['Int']['output'];
-  blockStatus: SessionBlockStatus;
-  tabData: Array<TabData>;
-};
 
 export type Feedback = {
   __typename?: 'Feedback';
@@ -640,31 +552,6 @@ export type FlashcardInstanceEvaluation = {
   score: Scalars['Float']['output'];
   xp?: Maybe<Scalars['Int']['output']>;
   xpAwarded?: Maybe<Scalars['Int']['output']>;
-};
-
-export type FlashcardQuestionResponse = {
-  __typename?: 'FlashcardQuestionResponse';
-  aggregatedResponses: ElementResultsFlashcard;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  elementType: ElementType;
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: SingleQuestionResponseFlashcard;
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
 };
 
 export type FreeElementInstanceEvaluation = {
@@ -932,17 +819,6 @@ export type GroupMessage = {
 };
 
 export type InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation;
-
-export type InstanceResult = {
-  __typename?: 'InstanceResult';
-  blockIx?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['String']['output'];
-  instanceIx: Scalars['Int']['output'];
-  participants: Scalars['Int']['output'];
-  results: Scalars['Json']['output'];
-  statistics?: Maybe<Statistics>;
-  status: SessionBlockStatus;
-};
 
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
@@ -1960,31 +1836,6 @@ export type NumericalSolutionRange = {
   min?: Maybe<Scalars['Float']['output']>;
 };
 
-export type OpenQuestionResponse = {
-  __typename?: 'OpenQuestionResponse';
-  aggregatedResponses: ElementResultsOpen;
-  correctCount: Scalars['Int']['output'];
-  correctCountStreak: Scalars['Int']['output'];
-  eFactor: Scalars['Float']['output'];
-  elementType: ElementType;
-  id: Scalars['Int']['output'];
-  interval: Scalars['Int']['output'];
-  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
-  lastAwardedAt?: Maybe<Scalars['Date']['output']>;
-  lastCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastPartialCorrectAt?: Maybe<Scalars['Date']['output']>;
-  lastResponse: SingleQuestionResponseValue;
-  lastWrongAt?: Maybe<Scalars['Date']['output']>;
-  lastXpAwardedAt?: Maybe<Scalars['Date']['output']>;
-  nextDueAt?: Maybe<Scalars['Date']['output']>;
-  partialCorrectCount: Scalars['Int']['output'];
-  totalPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  totalScore: Scalars['Float']['output'];
-  totalXpAwarded?: Maybe<Scalars['Float']['output']>;
-  trialsCount: Scalars['Int']['output'];
-  wrongCount: Scalars['Int']['output'];
-};
-
 export type OptionsChoicesInput = {
   choices?: InputMaybe<Array<ChoiceInput>>;
   displayMode?: InputMaybe<ElementDisplayMode>;
@@ -2435,14 +2286,6 @@ export type QuestionFeedback = {
   value: Scalars['String']['output'];
 };
 
-export type QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse;
-
-export enum ResponseCorrectness {
-  Correct = 'CORRECT',
-  Partial = 'PARTIAL',
-  Wrong = 'WRONG'
-}
-
 export enum ResponseCorrectnessType {
   Correct = 'CORRECT',
   Incorrect = 'INCORRECT',
@@ -2461,81 +2304,6 @@ export type RunningLiveQuizSummary = {
   numOfLeaderboardEntries: Scalars['Int']['output'];
   numOfResponses: Scalars['Int']['output'];
 };
-
-export type Session = {
-  __typename?: 'Session';
-  accessMode: SessionAccessMode;
-  activeBlock?: Maybe<SessionBlock>;
-  blocks?: Maybe<Array<SessionBlock>>;
-  confusionFeedbacks?: Maybe<Array<ConfusionTimestep>>;
-  confusionSummary?: Maybe<ConfusionSummary>;
-  course?: Maybe<Course>;
-  createdAt: Scalars['Date']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  displayName: Scalars['String']['output'];
-  feedbacks?: Maybe<Array<Feedback>>;
-  finishedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isConfusionFeedbackEnabled: Scalars['Boolean']['output'];
-  isGamificationEnabled: Scalars['Boolean']['output'];
-  isLiveQAEnabled: Scalars['Boolean']['output'];
-  isModerationEnabled: Scalars['Boolean']['output'];
-  linkTo?: Maybe<Scalars['String']['output']>;
-  linkToJoin?: Maybe<Scalars['String']['output']>;
-  maxBonusPoints: Scalars['Int']['output'];
-  name: Scalars['String']['output'];
-  namespace: Scalars['String']['output'];
-  numOfBlocks?: Maybe<Scalars['Int']['output']>;
-  numOfQuestions?: Maybe<Scalars['Int']['output']>;
-  pinCode?: Maybe<Scalars['Int']['output']>;
-  pointsMultiplier: Scalars['Int']['output'];
-  startedAt?: Maybe<Scalars['Date']['output']>;
-  status: SessionStatus;
-  timeToZeroBonus: Scalars['Int']['output'];
-  updatedAt?: Maybe<Scalars['Date']['output']>;
-};
-
-export enum SessionAccessMode {
-  Public = 'PUBLIC',
-  Restricted = 'RESTRICTED'
-}
-
-export type SessionBlock = {
-  __typename?: 'SessionBlock';
-  execution?: Maybe<Scalars['Int']['output']>;
-  expiresAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['Int']['output'];
-  numOfParticipants?: Maybe<Scalars['Int']['output']>;
-  order: Scalars['Int']['output'];
-  randomSelection?: Maybe<Scalars['Int']['output']>;
-  status: SessionBlockStatus;
-  timeLimit?: Maybe<Scalars['Int']['output']>;
-};
-
-export enum SessionBlockStatus {
-  Active = 'ACTIVE',
-  Executed = 'EXECUTED',
-  Scheduled = 'SCHEDULED'
-}
-
-export type SessionEvaluation = {
-  __typename?: 'SessionEvaluation';
-  blocks: Array<EvaluationBlock>;
-  confusionFeedbacks: Array<ConfusionTimestep>;
-  displayName: Scalars['String']['output'];
-  feedbacks: Array<Feedback>;
-  id: Scalars['String']['output'];
-  instanceResults: Array<InstanceResult>;
-  isGamificationEnabled: Scalars['Boolean']['output'];
-  status: SessionStatus;
-};
-
-export enum SessionStatus {
-  Completed = 'COMPLETED',
-  Prepared = 'PREPARED',
-  Running = 'RUNNING',
-  Scheduled = 'SCHEDULED'
-}
 
 export type SingleChoiceResponse = {
   __typename?: 'SingleChoiceResponse';
@@ -2703,14 +2471,6 @@ export type SubscriptionObjectInput = {
   endpoint: Scalars['String']['input'];
   expirationTime?: InputMaybe<Scalars['Int']['input']>;
   keys: SubscriptionKeysInput;
-};
-
-export type TabData = {
-  __typename?: 'TabData';
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  questionIx?: Maybe<Scalars['Int']['output']>;
-  status?: Maybe<Scalars['String']['output']>;
 };
 
 export type Tag = {
@@ -4383,12 +4143,6 @@ export const UpdateParticipantAvatarDocument = {"kind":"Document","definitions":
       "FlashcardInstanceEvaluation",
       "FreeTextInstanceEvaluation",
       "NumericalInstanceEvaluation"
-    ],
-    "QuestionResponse": [
-      "ChoicesQuestionResponse",
-      "ContentQuestionResponse",
-      "FlashcardQuestionResponse",
-      "OpenQuestionResponse"
     ]
   }
 };

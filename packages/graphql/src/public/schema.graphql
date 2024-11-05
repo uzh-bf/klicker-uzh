@@ -69,12 +69,6 @@ type AwardEntry {
   type: String!
 }
 
-input BlockInput {
-  questionIds: [Int!]!
-  randomSelection: Int
-  timeLimit: Int
-}
-
 type Choice {
   correct: Boolean
   feedback: String
@@ -167,30 +161,6 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
-type ChoicesQuestionResponse {
-  aggregatedResponses: ElementResultsChoices!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseChoices!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type ClassAchievementInstance {
   id: Int!
 }
@@ -265,30 +235,6 @@ type ContentInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
-}
-
-type ContentQuestionResponse {
-  aggregatedResponses: ElementResultsContent!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseContent!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
 }
 
 type Course {
@@ -416,27 +362,6 @@ enum ElementOrderType {
   SPACED_REPETITION
 }
 
-type ElementResultsChoices {
-  choices: Json!
-  total: Int!
-}
-
-type ElementResultsContent {
-  total: Int!
-}
-
-type ElementResultsFlashcard {
-  CORRECT: Int!
-  INCORRECT: Int!
-  PARTIAL: Int!
-  total: Int!
-}
-
-type ElementResultsOpen {
-  responses: Json!
-  total: Int!
-}
-
 type ElementStack {
   description: String
   displayName: String
@@ -473,12 +398,6 @@ enum ElementType {
   MC
   NUMERICAL
   SC
-}
-
-type EvaluationBlock {
-  blockIx: Int!
-  blockStatus: SessionBlockStatus!
-  tabData: [TabData!]!
 }
 
 type Feedback {
@@ -581,30 +500,6 @@ type FlashcardInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
-}
-
-type FlashcardQuestionResponse {
-  aggregatedResponses: ElementResultsFlashcard!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseFlashcard!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
 }
 
 type FreeElementInstanceEvaluation {
@@ -849,16 +744,6 @@ type GroupMessage {
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
-
-type InstanceResult {
-  blockIx: Int
-  id: String!
-  instanceIx: Int!
-  participants: Int!
-  results: Json!
-  statistics: Statistics
-  status: SessionBlockStatus!
-}
 
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
@@ -1189,30 +1074,6 @@ type NumericalSolutionRange {
   min: Float
 }
 
-type OpenQuestionResponse {
-  aggregatedResponses: ElementResultsOpen!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseValue!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 input OptionsChoicesInput {
   choices: [ChoiceInput!]
   displayMode: ElementDisplayMode
@@ -1418,14 +1279,6 @@ type QuestionFeedback {
   value: String!
 }
 
-union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
-
-enum ResponseCorrectness {
-  CORRECT
-  PARTIAL
-  WRONG
-}
-
 enum ResponseCorrectnessType {
   CORRECT
   INCORRECT
@@ -1442,78 +1295,6 @@ type RunningLiveQuizSummary {
   numOfFeedbacks: Int!
   numOfLeaderboardEntries: Int!
   numOfResponses: Int!
-}
-
-type Session {
-  accessMode: SessionAccessMode!
-  activeBlock: SessionBlock
-  blocks: [SessionBlock!]
-  confusionFeedbacks: [ConfusionTimestep!]
-  confusionSummary: ConfusionSummary
-  course: Course
-  createdAt: Date!
-  description: String
-  displayName: String!
-  feedbacks: [Feedback!]
-  finishedAt: Date
-  id: ID!
-  isConfusionFeedbackEnabled: Boolean!
-  isGamificationEnabled: Boolean!
-  isLiveQAEnabled: Boolean!
-  isModerationEnabled: Boolean!
-  linkTo: String
-  linkToJoin: String
-  maxBonusPoints: Int!
-  name: String!
-  namespace: String!
-  numOfBlocks: Int
-  numOfQuestions: Int
-  pinCode: Int
-  pointsMultiplier: Int!
-  startedAt: Date
-  status: SessionStatus!
-  timeToZeroBonus: Int!
-  updatedAt: Date
-}
-
-enum SessionAccessMode {
-  PUBLIC
-  RESTRICTED
-}
-
-type SessionBlock {
-  execution: Int
-  expiresAt: Date
-  id: Int!
-  numOfParticipants: Int
-  order: Int!
-  randomSelection: Int
-  status: SessionBlockStatus!
-  timeLimit: Int
-}
-
-enum SessionBlockStatus {
-  ACTIVE
-  EXECUTED
-  SCHEDULED
-}
-
-type SessionEvaluation {
-  blocks: [EvaluationBlock!]!
-  confusionFeedbacks: [ConfusionTimestep!]!
-  displayName: String!
-  feedbacks: [Feedback!]!
-  id: String!
-  instanceResults: [InstanceResult!]!
-  isGamificationEnabled: Boolean!
-  status: SessionStatus!
-}
-
-enum SessionStatus {
-  COMPLETED
-  PREPARED
-  RUNNING
-  SCHEDULED
 }
 
 type SingleChoiceResponse {
@@ -1625,13 +1406,6 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeysInput!
-}
-
-type TabData {
-  id: String!
-  name: String!
-  questionIx: Int
-  status: String
 }
 
 type Tag {
