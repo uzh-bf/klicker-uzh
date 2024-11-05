@@ -971,13 +971,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
+      updateElementInstances: t.withAuth(asUserFullAccess).field({
         type: [QuestionOrElementInstance],
         args: {
           questionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.updateQuestionInstances(args, ctx)
+          return QuestionService.updateElementInstances(args, ctx)
         },
       }),
 

@@ -536,7 +536,7 @@ export async function getFileUploadSas(
   }
 }
 
-export async function updateQuestionInstances(
+export async function updateElementInstances(
   { questionId }: { questionId: number },
   ctx: ContextWithUser
 ) {
@@ -564,15 +564,6 @@ export async function updateQuestionInstances(
           },
         },
       },
-      instances: {
-        include: {
-          sessionBlock: {
-            include: {
-              session: true,
-            },
-          },
-        },
-      },
     },
   })
 
@@ -589,87 +580,54 @@ export async function updateQuestionInstances(
     sessionId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
-  }[] = {
-    ...question.instances.reduce<
-      {
-        instanceId: number
-        multiplier: number
-        maxBonusPoints: number | undefined
-        timeToZeroBonus: number | undefined
-        sessionId: string | undefined
-        practiceQuizId: string | undefined
-        microLearningId: string | undefined
-      }[]
-    >((acc, instance) => {
-      if (
-        instance.sessionBlock?.session?.status === DB.SessionStatus.PREPARED ||
-        instance.sessionBlock?.session?.status === DB.SessionStatus.SCHEDULED
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.sessionBlock.session.pointsMultiplier,
-            maxBonusPoints: instance.sessionBlock.session.maxBonusPoints,
-            timeToZeroBonus: instance.sessionBlock.session.timeToZeroBonus,
-            sessionId: instance.sessionBlock.session.id,
-            practiceQuizId: undefined,
-            microLearningId: undefined,
-          },
-        ]
-      }
-      return acc
-    }, []),
-    ...question.elementInstances.reduce<
-      {
-        instanceId: number
-        multiplier: number
-        maxBonusPoints: number | undefined
-        timeToZeroBonus: number | undefined
-        sessionId: string | undefined
-        practiceQuizId: string | undefined
-        microLearningId: string | undefined
-      }[]
-    >((acc, instance) => {
-      if (
-        instance.elementStack?.microLearning?.status ===
-        DB.PublicationStatus.DRAFT
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.elementStack.microLearning.pointsMultiplier,
-            maxBonusPoints: undefined,
-            timeToZeroBonus: undefined,
-            sessionId: undefined,
-            practiceQuizId: undefined,
-            microLearningId: instance.elementStack.microLearning.id,
-          },
-        ]
-      }
+  }[] = question.elementInstances.reduce<
+    {
+      instanceId: number
+      multiplier: number
+      maxBonusPoints: number | undefined
+      timeToZeroBonus: number | undefined
+      sessionId: string | undefined
+      practiceQuizId: string | undefined
+      microLearningId: string | undefined
+    }[]
+  >((acc, instance) => {
+    if (
+      instance.elementStack?.microLearning?.status ===
+      DB.PublicationStatus.DRAFT
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementStack.microLearning.pointsMultiplier,
+          maxBonusPoints: undefined,
+          timeToZeroBonus: undefined,
+          sessionId: undefined,
+          practiceQuizId: undefined,
+          microLearningId: instance.elementStack.microLearning.id,
+        },
+      ]
+    }
 
-      if (
-        instance.elementStack?.practiceQuiz?.status ===
-        DB.PublicationStatus.DRAFT
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
-            maxBonusPoints: undefined,
-            timeToZeroBonus: undefined,
-            sessionId: undefined,
-            practiceQuizId: instance.elementStack.practiceQuiz.id,
-            microLearningId: undefined,
-          },
-        ]
-      }
+    if (
+      instance.elementStack?.practiceQuiz?.status === DB.PublicationStatus.DRAFT
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+          maxBonusPoints: undefined,
+          timeToZeroBonus: undefined,
+          sessionId: undefined,
+          practiceQuizId: instance.elementStack.practiceQuiz.id,
+          microLearningId: undefined,
+        },
+      ]
+    }
 
-      return acc
-    }, []),
-  }
+    return acc
+  }, [])
 
   const updatedInstances = (
     await Promise.allSettled(

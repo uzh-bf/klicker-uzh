@@ -1116,10 +1116,10 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
+  updateElementInstances(questionId: Int!): [QuestionOrElementInstance!]!
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
-  updateQuestionInstances(questionId: Int!): [QuestionOrElementInstance!]!
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
