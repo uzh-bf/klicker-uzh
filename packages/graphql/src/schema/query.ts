@@ -9,7 +9,6 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
-import * as SessionService from '../services/sessions.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import {
@@ -41,7 +40,7 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, Tag } from './question.js'
-import { RunningLiveQuizSummary, SessionEvaluation } from './session.js'
+import { RunningLiveQuizSummary } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -389,20 +388,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.getSingleMicroLearning(args, ctx)
-        },
-      }),
-
-      // TODO: remove after migration
-      sessionEvaluation: t.field({
-        nullable: true,
-        type: SessionEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-          hmac: t.arg.string(),
-        },
-        resolve(_, args, ctx) {
-          // TODO: fix type issues after migration to live quiz
-          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 

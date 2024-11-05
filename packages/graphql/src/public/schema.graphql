@@ -1451,7 +1451,6 @@ type Query {
   question(id: Int!): Element
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
-  sessionEvaluation(hmac: String, id: String!): SessionEvaluation
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
