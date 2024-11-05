@@ -1,8 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
-  faHandPointer,
   faHourglassStart,
   faLink,
   faLock,
