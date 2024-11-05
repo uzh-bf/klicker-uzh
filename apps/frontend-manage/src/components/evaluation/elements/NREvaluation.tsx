@@ -55,11 +55,13 @@ function NREvaluation({
         onExpand={() => setIsCollapsed(false)}
         className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
       >
-        <NumericalSidebar
-          instance={instanceEvaluation}
-          textSize={textSize}
-          showSolution={showSolution}
-        />
+        {!isCollapsed && (
+          <NumericalSidebar
+            instance={instanceEvaluation}
+            textSize={textSize}
+            showSolution={showSolution}
+          />
+        )}
       </ResizablePanel>
     </ResizablePanelGroup>
   )
