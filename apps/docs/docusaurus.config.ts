@@ -4,6 +4,9 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 
 const config: Config = {
+  future: {
+    experimental_faster: true,
+  },
   trailingSlash: true,
   title: 'KlickerUZH',
   tagline: 'Open Source Audience Interaction',
