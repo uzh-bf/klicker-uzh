@@ -9,7 +9,7 @@ import {
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  StudentResponseType,
+  StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
@@ -58,9 +58,8 @@ function GroupActivityStack({
     withParticipant: true,
   })
 
-  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
-    {}
-  )
+  const [studentResponse, setStudentResponse] =
+    useState<StackStudentResponseType>({})
 
   useStudentResponse({
     stack,
@@ -70,7 +69,7 @@ function GroupActivityStack({
   })
 
   useEffect(() => {
-    const loadedResponses = decisions?.reduce<StudentResponseType>(
+    const loadedResponses = decisions?.reduce<StackStudentResponseType>(
       (acc, decision) => {
         if (!decision) return acc
 

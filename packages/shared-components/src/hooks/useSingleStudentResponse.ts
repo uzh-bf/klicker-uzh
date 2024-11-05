@@ -3,7 +3,7 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
 import type {
   ElementChoicesType,
-  SingleStudentResponseType,
+  InstanceStackStudentResponseType,
 } from '../StudentElement'
 
 function useSingleStudentResponse({
@@ -11,9 +11,9 @@ function useSingleStudentResponse({
   setStudentResponse,
   defaultRead = false,
 }: {
-  instance?: ElementInstance
+  instance?: ElementInstance | null
   setStudentResponse: React.Dispatch<
-    React.SetStateAction<SingleStudentResponseType>
+    React.SetStateAction<InstanceStackStudentResponseType>
   >
   defaultRead?: boolean
 }) {

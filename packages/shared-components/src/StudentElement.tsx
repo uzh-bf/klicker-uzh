@@ -17,7 +17,7 @@ export type ElementChoicesType =
   | ElementType.Mc
   | ElementType.Kprim
 
-export type SingleStudentResponseType =
+export type InstanceStackStudentResponseType =
   | {
       type: ElementType.Flashcard
       response?: FlashcardCorrectness
@@ -49,7 +49,10 @@ export type SingleStudentResponseType =
       evaluation?: InstanceEvaluation
     }
 
-export type StudentResponseType = Record<number, SingleStudentResponseType>
+export type StackStudentResponseType = Record<
+  number,
+  InstanceStackStudentResponseType
+>
 
 interface StudentElementBaseProps {
   element: ElementInstance
@@ -59,9 +62,9 @@ interface StudentElementBaseProps {
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
-  studentResponse: StudentResponseType
-  setStudentResponse: Dispatch<SetStateAction<StudentResponseType>>
-  stackStorage?: StudentResponseType
+  studentResponse: StackStudentResponseType
+  setStudentResponse: Dispatch<SetStateAction<StackStudentResponseType>>
+  stackStorage?: StackStudentResponseType
   singleStudentResponse?: never
   setSingleStudentResponse?: never
 }
@@ -70,8 +73,10 @@ interface StudentElementSingleProps extends StudentElementBaseProps {
   studentResponse?: never
   setStudentResponse?: never
   stackStorage?: never
-  singleStudentResponse: SingleStudentResponseType
-  setSingleStudentResponse: Dispatch<SetStateAction<SingleStudentResponseType>>
+  singleStudentResponse: InstanceStackStudentResponseType
+  setSingleStudentResponse: Dispatch<
+    SetStateAction<InstanceStackStudentResponseType>
+  >
 }
 
 function StudentElement({

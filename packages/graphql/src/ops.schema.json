@@ -20318,6 +20318,35 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "artificialInstance",
+            "description": null,
+            "args": [
+              {
+                "name": "elementId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "ElementInstance",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "basicCourseInformation",
             "description": null,
             "args": [

@@ -10,7 +10,7 @@ import {
   GroupActivityInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  StudentResponseType,
+  StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import {
   Button,
@@ -227,7 +227,7 @@ function GroupActivityGradingStack({
                     (findResponse(
                       element.id,
                       element.elementType
-                    ) as StudentResponseType) ?? []
+                    ) as StackStudentResponseType) ?? []
                   }
                   setStudentResponse={() => null}
                   hideReadButton
