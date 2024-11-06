@@ -8,7 +8,7 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum QuestionType {
+enum QuestionType {
   SC = 'SC',
   MC = 'MC',
   KPRIM = 'KPRIM',
@@ -149,21 +149,6 @@ export type NumericalSolutionRange = {
   max?: number | null
 }
 
-export type ChoicesInputType = {
-  type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
-  value: number[]
-}
-
-export type NumericalInputType = {
-  type: QuestionType.NUMERICAL
-  value: number
-}
-
-export type FreeTextInputType = {
-  type: QuestionType.FREE_TEXT
-  value: string
-}
-
 interface BaseQuestionOptions {
   hasSampleSolution?: boolean
   hasAnswerFeedbacks?: boolean
@@ -192,7 +177,6 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   }
 }
 
-// TODO: no options for FC and CONTENT?
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -202,11 +186,6 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
-
-export type QuestionOptions =
-  | ElementOptionsChoices
-  | ElementOptionsNumerical
-  | ElementOptionsFreeText
 
 export interface BaseElementData {
   id: string
@@ -327,7 +306,7 @@ export interface IQuestionFeedback {
   value: string
 }
 
-export interface IBaseInstanceEvaluation {
+interface IBaseInstanceEvaluation {
   instanceId: number
   elementType: ElementType
   score: number
