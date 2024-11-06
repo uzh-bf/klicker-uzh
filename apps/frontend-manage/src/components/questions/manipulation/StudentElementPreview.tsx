@@ -129,8 +129,11 @@ function StudentElementPreview({
         values.options.hasAnswerFeedbacks && (
           <div className="mt-4">
             <H3>{t('shared.generic.feedbacks')}</H3>
-            {values.options.choices.map((choice, index) => (
-              <div key={index} className="border-b pb-1 pt-1 last:border-b-0">
+            {values.options.choices.map((choice) => (
+              <div
+                key={`choice-${choice.id}`}
+                className="border-b pb-1 pt-1 last:border-b-0"
+              >
                 {choice.feedback ? (
                   <Markdown
                     className={{

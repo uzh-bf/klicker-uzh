@@ -20,11 +20,6 @@ data:
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
-  LISTMONK_URL: {{ .Values.listmonk.url | quote }}
-  LISTMONK_USER: {{ .Values.listmonk.username | quote }}
-  LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE: {{ .Values.listmonk.templates.emailNotFound | quote }}
-  LISTMONK_TEMPLATE_MIGRATION_REQUEST: {{ .Values.listmonk.templates.migrationRequest | quote }}
-  MIGRATION_SERVICE_BUS_QUEUE_NAME: {{ .Values.migration.serviceBus.queueName | quote }}
   EMAIL_TYPE: {{ .Values.email.type | quote }}
   EMAIL_FROM: {{ .Values.email.from | quote }}
   EMAIL_HOST: {{ .Values.email.host | quote }}

@@ -33,7 +33,12 @@ function Evaluation() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
-  if (!data) {
+  if (
+    !data?.liveQuizEvaluation ||
+    !data?.liveQuizLeaderboard ||
+    (data.liveQuizEvaluation.results.length === 0 &&
+      data.liveQuizLeaderboard.length === 0)
+  ) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
         <UserNotification
@@ -46,7 +51,6 @@ function Evaluation() {
     )
   }
 
-  // TODO: add feedbacks, confusion feedbacks and leaderboard to activity evaluation props and illustrate them
   const evaluation = data.liveQuizEvaluation
   const leaderboard = data.liveQuizLeaderboard
 

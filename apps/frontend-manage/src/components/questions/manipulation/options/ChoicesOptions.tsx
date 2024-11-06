@@ -14,6 +14,7 @@ import {
   FieldProps,
   FormikErrors,
 } from 'formik'
+import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../../common/ContentInput'
@@ -41,7 +42,7 @@ function ChoicesOptions({
           <div className="flex w-full flex-col gap-2 pt-2">
             {values.options.choices.map((choice, index: number) => (
               <div
-                key={index}
+                key={choice.id}
                 className={twMerge(
                   'border-uzh-grey-80 w-full rounded',
                   values.options.hasSampleSolution && 'p-2',
@@ -73,14 +74,16 @@ function ChoicesOptions({
                         (prev.formik.values.type === ElementType.Sc ||
                           prev.formik.values.type === ElementType.Mc ||
                           prev.formik.values.type === ElementType.Kprim) &&
-                        next.formik.values.options.choices[index].value !==
-                          prev.formik.values.options.choices[index].value) ||
+                        (next.formik.values.options.choices[index]?.value !==
+                          prev.formik.values.options.choices[index]?.value ||
+                          next.formik.values.options.choices[index]?.id !==
+                            prev.formik.values.options.choices[index]?.id)) ||
                       next?.formik.values.type !== prev?.formik.values.type
                     }
                   >
                     {({ field, meta }: FastFieldProps) => (
                       <ContentInput
-                        key={`${values.type}-choice-${index}-${values.options.choices.length}-${values.options.choices[index].ix}`}
+                        key={`${values.type}-choice-${values.options.choices[index].id}`}
                         error={meta.error}
                         touched={meta.touched}
                         content={field.value}
@@ -151,18 +154,7 @@ function ChoicesOptions({
                     </Button>
                   </div>
                   <Button
-                    onClick={() => {
-                      // decrement the choice.ix value of all answers after this one
-                      values.options.choices
-                        .slice(index + 1)
-                        .forEach((choice) => {
-                          setFieldValue(
-                            `options.choices.${choice.ix}.ix`,
-                            choice.ix - 1
-                          )
-                        })
-                      remove(index)
-                    }}
+                    onClick={() => remove(index)}
                     className={{
                       root: 'h-10 w-10 items-center justify-center rounded-md bg-red-600 text-white',
                     }}
@@ -208,16 +200,19 @@ function ChoicesOptions({
                             (prev.formik.values.type === ElementType.Sc ||
                               prev.formik.values.type === ElementType.Mc ||
                               prev.formik.values.type === ElementType.Kprim) &&
-                            next?.formik.values.options.choices[index]
-                              .feedback !==
+                            (next?.formik.values.options.choices[index]
+                              ?.feedback !==
                               prev?.formik.values.options.choices[index]
-                                .feedback) ||
+                                ?.feedback ||
+                              next?.formik.values.options.choices[index]?.id !==
+                                prev?.formik.values.options.choices[index]
+                                  ?.id)) ||
                           next?.formik.values.type !== prev?.formik.values.type
                         }
                       >
                         {({ field, meta }: FastFieldProps) => (
                           <ContentInput
-                            key={`${values.type}-feedback-${index}-${values.options.choices[index].ix}`}
+                            key={`${values.type}-feedback-${values.options.choices[index].id}`}
                             error={meta.error}
                             touched={meta.touched}
                             content={field.value || '<br>'}
@@ -260,10 +255,8 @@ function ChoicesOptions({
               }
               onClick={() =>
                 push({
-                  ix: values.options.choices[values.options.choices.length - 1]
-                    ? values.options.choices[values.options.choices.length - 1]
-                        .ix + 1
-                    : 0,
+                  id: nanoid(),
+                  ix: values.options.choices.length,
                   value: '<br>',
                   correct: false,
                   feedback: '',

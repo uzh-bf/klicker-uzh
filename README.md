@@ -2,7 +2,7 @@
 
 > Please note that this is the repository branch for KlickerUZH v3.0 released in August 2023. If you would like to have more information on the new concept of v3.0, have a look at our [public discussion](https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79).
 >
-> Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which will be available until the end of 2023. To migrate to KlickerUZH v3.0, start the [migration process](https://manage.klicker.uzh.ch/migration).
+> Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which is not publically available anymore.
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Finance at the University of Zurich, Switzerland.
 
@@ -17,7 +17,6 @@ KlickerUZH v3.0 uses multiple different web applications and services, which com
 - [Backend Docker](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/backend-docker) is the main backend service of KlickerUZH.
 - [Backend Responses](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-incoming-responses) is a service that handles incoming student responses during a live quizzes and puts them into an Azure queue for improved load handling.
 - [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores and experience points, updating the cache, etc.
-- The [v2.0 Export](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-migration-v2-export) and [v3.0 Import](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-migration-v3-import) folders contain serverless Azure Functions related to the migration from KlickerUZH v2.0 to v3.0.
 
 In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts for Helm/Kubernetes. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added until the end of the year.
 

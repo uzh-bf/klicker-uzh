@@ -30,12 +30,6 @@
     "FUNCTIONS_EXTENSION_VERSION",
     "FUNCTIONS_WORKER_PROCESS_COUNT",
     "FUNCTIONS_WORKER_RUNTIME",
-    "LISTMONK_PASS",
-    "LISTMONK_TEMPLATE_MIGRATION_FAILURE",
-    "LISTMONK_TEMPLATE_MIGRATION_REQUEST",
-    "LISTMONK_TEMPLATE_MIGRATION_SUCCESS",
-    "LISTMONK_URL",
-    "LISTMONK_USER",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
@@ -121,23 +115,11 @@
       ],
       "persistent": true
     },
-    "dev:migration": {
-      "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/transactional#build"
-      ],
-      "persistent": true
-    },
     "dev:docs": {
       "cache": false,
       "persistent": true
     },
     "dev:test": {
-      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
@@ -155,6 +137,10 @@
     },
     "test": {
       "cache": false
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
     },
     "test:run": {
       "cache": false

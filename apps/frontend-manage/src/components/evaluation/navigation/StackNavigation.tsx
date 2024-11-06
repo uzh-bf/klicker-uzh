@@ -123,7 +123,7 @@ function StackNavigation({
           <FontAwesomeIcon icon={faChevronRight} size="lg" />
         </div>
       </Button>
-      {leaderboardAvailable && (
+      {type === 'LiveQuiz' && leaderboardAvailable && (
         <Button
           basic
           className={{
@@ -143,7 +143,7 @@ function StackNavigation({
           </div>
         </Button>
       )}
-      {feedbacksAvailable && (
+      {type === 'LiveQuiz' && feedbacksAvailable && (
         <>
           <Button
             basic

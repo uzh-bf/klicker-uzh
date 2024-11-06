@@ -757,7 +757,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       questionPool: 'Question Pool',
       sessions: 'Live Quizzes',
       courses: 'Courses',
-      migration: 'Migration',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -901,6 +900,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementTypes: 'Element Types',
       elementStatus: 'Status',
       tags: 'Tags',
+      selectOrType: 'Select or Type...',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',

@@ -63,7 +63,7 @@ function ActivityEvaluation({
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({
     activeInstance,
-    activeElementType: instanceResults[activeInstance].type,
+    activeElementType: instanceResults[activeInstance]?.type,
     chartType,
     setChartType,
   })
@@ -110,6 +110,7 @@ function ActivityEvaluation({
                 ? showSolution
                 : false
             }
+            type={type}
           />
         )}
 

@@ -73,9 +73,9 @@ export function prepareChoicesArgs({
       hasSampleSolution: values.options.hasSampleSolution,
       hasAnswerFeedbacks: values.options.hasAnswerFeedbacks,
       displayMode: values.options.displayMode,
-      choices: values.options.choices.map((choice) => {
+      choices: values.options.choices.map((choice, index) => {
         return {
-          ix: choice.ix,
+          ix: index,
           value: choice.value!,
           correct: choice.correct,
           feedback: choice.feedback,

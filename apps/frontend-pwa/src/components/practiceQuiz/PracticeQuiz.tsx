@@ -134,13 +134,6 @@ function PracticeQuiz({
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
           />
         )}
-
-        {/* {currentIx >= 0 && !currentStack && (
-        <ElementSummary
-          displayName={quiz.displayName}
-          stacks={quiz.stacks || []}
-        />
-      )} */}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.3.0-alpha.4",
+  "version": "3.3.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,7 +28,6 @@
     "graphql-yoga": "3.9.1",
     "jsonwebtoken": "9.0.2",
     "mathjs": "11.9.1",
-    "mongodb": "5.7.0",
     "node-schedule": "2.1.1",
     "nodemailer": "6.9.15",
     "remeda": "2.15.0",

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.3.0-alpha.4",
+  "version": "3.3.0-alpha.7",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.11.8",
@@ -19,6 +19,8 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
+    "@tanstack/react-table": "8.20.5",
+    "@uidotdev/usehooks": "2.4.1",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
     "dayjs": "1.11.13",
     "deepmerge": "4.3.1",
@@ -30,6 +32,7 @@
     "is-hotkey": "0.2.0",
     "js-search": "2.0.1",
     "lodash": "4.17.21",
+    "nanoid": "5.0.8",
     "next": "15.0.0",
     "next-intl": "3.21.1",
     "react": "18.3.1",

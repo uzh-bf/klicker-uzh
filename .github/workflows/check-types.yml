@@ -83,20 +83,6 @@ jobs:
         run: |
           pnpm run check
 
-      - name: Check v2 export function typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/func-migration-v2-export
-        run: |
-          pnpm run check
-
-      - name: Check v3 import function typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/func-migration-v3-import
-        run: |
-          pnpm run check
-
       - name: Check backend-docker typescript types
         if: always()
         shell: bash

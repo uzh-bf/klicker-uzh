@@ -1,16 +1,17 @@
 import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
-import NumericalSidebar from './NumericalSidebar'
+import NRSidebar from './NRSidebar'
 
 interface NREvaluationProps {
   instanceEvaluation: NumericalElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  type: ActivityEvaluationType
 }
 
 export interface ShowStatisticsType {
@@ -26,6 +27,7 @@ function NREvaluation({
   textSize,
   chartType,
   showSolution,
+  type,
 }: NREvaluationProps) {
   const [showStatistics, setShowStatistics] = useState<ShowStatisticsType>({
     mean: false,
@@ -46,21 +48,15 @@ function NREvaluation({
           textSize={textSize}
         />
       </div>
-      <div
-        className={twMerge(
-          'order-1 flex flex-none flex-col gap-2 border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
-          textSize.text
-        )}
-      >
-        <NumericalSidebar
-          instance={instanceEvaluation}
-          chartType={chartType}
-          textSize={textSize}
-          showSolution={showSolution}
-          showStatistics={showStatistics}
-          setShowStatistics={setShowStatistics}
-        />
-      </div>
+      <NRSidebar
+        instance={instanceEvaluation}
+        chartType={chartType}
+        textSize={textSize}
+        showSolution={showSolution}
+        showStatistics={showStatistics}
+        setShowStatistics={setShowStatistics}
+        type={type}
+      />
     </>
   )
 }
