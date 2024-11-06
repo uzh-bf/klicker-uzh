@@ -15,7 +15,8 @@ import { v4 as uuidv4 } from 'uuid'
 // ? (liveSession -> liveQuiz, sessionBlock -> elementBlock, questionInstance -> elementInstance)
 
 // ! Flags
-const verbose = false
+const logFakedElement = false
+const logQuestionDataConversion = false
 
 function computeElementType({
   questionData,
@@ -74,6 +75,14 @@ function fakeElementFromQuestionData({
     updatedAt: new Date(), // unused
   }
 
+  if (logFakedElement) {
+    console.log('QUESTION DATA')
+    console.log(questionData)
+    console.log('FAKED ELEMENT')
+    console.log(fakedElement)
+    console.log('\n\n')
+  }
+
   return fakedElement
 }
 
@@ -84,7 +93,7 @@ function questionDataToElementData({
 }): AllElementTypeData {
   const fakedElement = fakeElementFromQuestionData({ questionData })
 
-  if (verbose) {
+  if (logQuestionDataConversion) {
     console.log('QUESTION DATA')
     console.log(questionData)
     console.log('FAKED ELEMENT')
@@ -113,6 +122,8 @@ async function run() {
         },
       },
     },
+    skip: 0, // TODO: remove this
+    take: 10, // TODO: remove this
   })
 
   for (const liveSession of liveSessions) {
