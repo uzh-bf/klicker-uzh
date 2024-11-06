@@ -4,6 +4,7 @@ import type {
   QuestionInstance,
 } from '@klicker-uzh/prisma'
 
+// TODO: remove all question instance and questiondata content from this file
 export type ElementKeys = keyof Element
 
 // ! Types used in helpers (this file) and across GraphQL

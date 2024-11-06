@@ -24,7 +24,6 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@radix-ui/react-collapsible": "1.1.1",
-    "@radix-ui/react-tabs": "1.1.1",
     "@socialgouv/matomo-next": "1.9.1",
     "@uidotdev/usehooks": "2.4.1",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
@@ -47,7 +46,6 @@
     "react-dom": "18.3.1",
     "recharts": "2.13.0",
     "remeda": "2.15.0",
-    "sharp": "0.33.5",
     "tailwind-merge": "2.5.4",
     "yup": "1.4.0"
   },
@@ -63,7 +61,6 @@
     "@types/object-hash": "^3.0.2",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
-    "@types/web-push": "^3.6.3",
     "autoprefixer": "~10.4.20",
     "cross-env": "~7.0.3",
     "cssnano": "~6.0.1",
@@ -75,8 +72,7 @@
     "tailwindcss": "~3.4.14",
     "tailwindcss-radix": "~3.0.5",
     "tsx": "~4.19.1",
-    "typescript": "~5.6.3",
-    "web-push": "~3.6.7"
+    "typescript": "~5.6.3"
   },
   "scripts": {
     "build": "next build",

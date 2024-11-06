@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface SessionBlockProps {
+interface LiveQuizBlockProps {
   block?: Omit<ElementBlock, 'elements'> & {
     elements?:
       | (Omit<ElementInstance, 'elementData' | 'type' | 'elementType'> & {
@@ -22,7 +22,7 @@ interface SessionBlockProps {
   active?: boolean
 }
 
-function SessionBlock({ block, active = false }: SessionBlockProps) {
+function LiveQuizBlock({ block, active = false }: LiveQuizBlockProps) {
   const t = useTranslations()
 
   // compute the time until expiration in seconds + 20 seconds buffer from now
@@ -107,4 +107,4 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
   )
 }
 
-export default SessionBlock
+export default LiveQuizBlock

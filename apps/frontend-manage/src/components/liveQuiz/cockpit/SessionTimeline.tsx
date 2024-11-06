@@ -17,7 +17,7 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelLiveQuizModal from './CancelLiveQuizModal'
-import SessionBlock, { QuizTimelineBlock } from './SessionBlock'
+import LiveQuizBlock, { QuizTimelineBlock } from './LiveQuizBlock'
 import SessionQRModal from './SessionQRModal'
 
 dayjs.extend(durationPlugin)
@@ -241,7 +241,7 @@ function SessionTimeline({
             />
             {blocks.map((block, idx) => (
               <>
-                <SessionBlock
+                <LiveQuizBlock
                   key={`${block.id}-${block.status}`}
                   block={block}
                   inCooldown={inCooldown && activeBlockId === block.id}

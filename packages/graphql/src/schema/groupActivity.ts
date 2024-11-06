@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
+import { ElementType } from './elementData.js'
 import {
   type IParticipant,
   type IParticipantGroup,
@@ -18,7 +19,6 @@ import {
   ElementStackRef,
   PublicationStatus,
 } from './practiceQuiz.js'
-import { ElementType } from './questionData.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),

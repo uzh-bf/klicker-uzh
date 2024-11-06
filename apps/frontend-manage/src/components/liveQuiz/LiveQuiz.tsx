@@ -26,10 +26,10 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { WizardMode } from '../activities/ElementCreation'
 import DeletionModal from '../courses/modals/DeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
-import { WizardMode } from './creation/ElementCreation'
 
 function LiveQuiz({
   quiz,

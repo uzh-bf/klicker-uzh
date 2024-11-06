@@ -1,6 +1,6 @@
 import { FormikErrors } from 'formik'
 import { useEffect } from 'react'
-import { ElementSelectCourse } from '../ElementCreation'
+import { ElementSelectCourse } from '../../ElementCreation'
 import { LiveQuizFormValues } from '../WizardLayout'
 
 function LiveQuizCourseMonitor({

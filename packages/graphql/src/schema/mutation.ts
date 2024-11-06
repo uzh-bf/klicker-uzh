@@ -15,6 +15,7 @@ import * as QuestionService from '../services/questions.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -52,13 +53,12 @@ import {
 import {
   ArchivedElement,
   Element,
+  ElementInstance,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementStatus, ElementType } from './questionData.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -971,13 +971,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
-        type: [QuestionOrElementInstance],
+      updateElementInstances: t.withAuth(asUserFullAccess).field({
+        type: [ElementInstance],
         args: {
-          questionId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.updateQuestionInstances(args, ctx)
+          return QuestionService.updateElementInstances(args, ctx)
         },
       }),
 

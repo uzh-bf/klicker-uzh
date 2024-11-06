@@ -12,7 +12,7 @@ import { Button, Dropdown, H1, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import CourseQRModal from '../sessions/cockpit/CourseQRModal'
+import CourseQRModal from '../liveQuiz/cockpit/CourseQRModal'
 import { getLTIAccessLink } from './PracticeQuizElement'
 import CourseManipulationModal, {
   CourseManipulationFormData,

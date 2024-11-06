@@ -3,7 +3,7 @@ import {
   GetUserLiveQuizzesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import Session from '../../components/sessions/LiveQuiz'
+import Session from '../../components/liveQuiz/LiveQuiz'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'

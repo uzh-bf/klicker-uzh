@@ -9,31 +9,32 @@ import type {
   SingleChoiceResponse as SingleChoiceResponseType,
   SingleFreeTextResponse as SingleFreeTextResponseType,
   SingleNumericalResponse as SingleNumericalRepsonseType,
+  SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
+  SingleQuestionResponseContent as SingleQuestionResponseContentType,
+  SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  SingleQuestionResponseValue as SingleQuestionResponseValueType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
-import { ElementData, ElementInstanceOptions } from './elementData.js'
 import {
   ChoiceQuestionOptions,
+  ElementData,
   ElementDisplayMode,
+  ElementInstanceOptions,
   ElementInstanceType,
   ElementStatus,
   ElementType,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   NumericalSolutionRange,
-  QuestionData,
   type IChoiceQuestionOptions,
   type IFreeTextQuestionOptions,
   type INumericalQuestionOptions,
-} from './questionData.js'
-import {
-  SingleQuestionResponseChoices,
-  SingleQuestionResponseContent,
-  SingleQuestionResponseFlashcard,
-  SingleQuestionResponseValue,
-} from './session.js'
+} from './elementData.js'
+import { FlashcardCorrectness } from './evaluation.js'
 
+// ----- QUESTION INPUTS -----
+// #region
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
     ix: t.int({ required: true }),
@@ -119,16 +120,49 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   }),
 })
 
-// TODO: remove after migration to new element structure
 export const ResponseInput = builder.inputType('ResponseInput', {
-  // directives: {
-  //   oneOf: {},
-  // },
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
   }),
 })
+
+// ----- SINGLE QUESTION RESPONSE INTERFACES -----
+// #region
+export const SingleQuestionResponseChoices = builder
+  .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
+  .implement({
+    fields: (t) => ({
+      choices: t.exposeIntList('choices'),
+    }),
+  })
+
+export const SingleQuestionResponseValue = builder
+  .objectRef<SingleQuestionResponseValueType>('SingleQuestionResponseValue')
+  .implement({
+    fields: (t) => ({
+      value: t.exposeString('value'),
+    }),
+  })
+
+export const SingleQuestionResponseFlashcard = builder
+  .objectRef<SingleQuestionResponseFlashcardType>(
+    'SingleQuestionResponseFlashcard'
+  )
+  .implement({
+    fields: (t) => ({
+      correctness: t.expose('correctness', { type: FlashcardCorrectness }),
+    }),
+  })
+
+export const SingleQuestionResponseContent = builder
+  .objectRef<SingleQuestionResponseContentType>('SingleQuestionResponseContent')
+  .implement({
+    fields: (t) => ({
+      viewed: t.exposeBoolean('viewed'),
+    }),
+  })
+// #endregion
 
 // ----- INSTANCE EVALUATION INTERFACE -----
 export const QuestionFeedback = builder
@@ -301,6 +335,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
     }
   },
 })
+// #endregion
 
 // ----- ELEMENT INTERFACE -----
 // #region
@@ -423,42 +458,6 @@ export const ArchivedElement = builder
     }),
   })
 // #endregion
-
-export interface IQuestionOrElementInstance {
-  questionInstance?: DB.QuestionInstance | null
-  elementInstance?: DB.ElementInstance | null
-}
-export const QuestionOrElementInstanceRef =
-  builder.objectRef<IQuestionOrElementInstance>('QuestionOrElementInstance')
-export const QuestionOrElementInstance = QuestionOrElementInstanceRef.implement(
-  {
-    fields: (t) => ({
-      questionInstance: t.expose('questionInstance', {
-        type: QuestionInstanceRef,
-        nullable: true,
-      }),
-      elementInstance: t.expose('elementInstance', {
-        type: ElementInstanceRef,
-        nullable: true,
-      }),
-    }),
-  }
-)
-
-export const QuestionInstanceRef =
-  builder.objectRef<DB.QuestionInstance>('QuestionInstance')
-export const QuestionInstance = QuestionInstanceRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-
-    questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q.questionData,
-      nullable: true,
-    }),
-  }),
-})
 
 export interface IElementInstance extends DB.ElementInstance {
   feedbacks?: DB.ElementFeedback[] | null

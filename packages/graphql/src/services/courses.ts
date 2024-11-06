@@ -828,7 +828,6 @@ export async function getCourseData(
           participantId: entry.participantId,
           participant: entry.participation!.participant,
           sessionParticipationId: null,
-          sessionId: null,
           liveQuizId: null,
         })
 
@@ -887,7 +886,7 @@ export async function getControlCourse(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
-      sessions: {
+      liveQuizzes: {
         where: {
           isDeleted: false,
         },
@@ -895,7 +894,7 @@ export async function getControlCourse(
           blocks: {
             include: {
               _count: {
-                select: { instances: true },
+                select: { elements: true },
               },
             },
           },

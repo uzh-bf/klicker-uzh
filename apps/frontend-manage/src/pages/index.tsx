@@ -27,16 +27,16 @@ import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
+import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
+import ElementCreation, {
+  WizardMode,
+} from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
-import ElementCreation, {
-  WizardMode,
-} from '../components/sessions/creation/ElementCreation'
-import SuspendedCreationButtons from '../components/sessions/creation/SuspendedCreationButtons'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SortyByType,

@@ -7,7 +7,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
-import MultiplierSelector from '../../sessions/creation/MultiplierSelector'
+import MultiplierSelector from '../../activities/creation/MultiplierSelector'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'

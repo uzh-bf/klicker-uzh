@@ -5,8 +5,8 @@ import {
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { ElementType } from './elementData.js'
 import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
-import { ElementType } from './questionData.js'
 
 export interface IActivityEvaluation {
   id: string

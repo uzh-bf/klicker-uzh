@@ -69,12 +69,6 @@ type AwardEntry {
   type: String!
 }
 
-input BlockInput {
-  questionIds: [Int!]!
-  randomSelection: Int
-  timeLimit: Int
-}
-
 type Choice {
   correct: Boolean
   feedback: String
@@ -167,41 +161,6 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
-type ChoicesQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: ChoiceQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type ChoicesQuestionResponse {
-  aggregatedResponses: ElementResultsChoices!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseChoices!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type ClassAchievementInstance {
   id: Int!
 }
@@ -278,40 +237,6 @@ type ContentInstanceEvaluation {
   xpAwarded: Int
 }
 
-type ContentQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type ContentQuestionResponse {
-  aggregatedResponses: ElementResultsContent!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseContent!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type Course {
   averageActiveScore: Float
   averageScore: Float
@@ -344,7 +269,6 @@ type Course {
   practiceQuizzes: [PracticeQuiz!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
-  sessions: [Session!]
   startDate: Date!
   updatedAt: Date
 }
@@ -438,27 +362,6 @@ enum ElementOrderType {
   SPACED_REPETITION
 }
 
-type ElementResultsChoices {
-  choices: Json!
-  total: Int!
-}
-
-type ElementResultsContent {
-  total: Int!
-}
-
-type ElementResultsFlashcard {
-  CORRECT: Int!
-  INCORRECT: Int!
-  PARTIAL: Int!
-  total: Int!
-}
-
-type ElementResultsOpen {
-  responses: Json!
-  total: Int!
-}
-
 type ElementStack {
   description: String
   displayName: String
@@ -495,12 +398,6 @@ enum ElementType {
   MC
   NUMERICAL
   SC
-}
-
-type EvaluationBlock {
-  blockIx: Int!
-  blockStatus: SessionBlockStatus!
-  tabData: [TabData!]!
 }
 
 type Feedback {
@@ -605,40 +502,6 @@ type FlashcardInstanceEvaluation {
   xpAwarded: Int
 }
 
-type FlashcardQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type FlashcardQuestionResponse {
-  aggregatedResponses: ElementResultsFlashcard!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseFlashcard!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
@@ -710,17 +573,6 @@ type FreeTextInstanceEvaluation {
   solutions: [String!]
   xp: Int
   xpAwarded: Int
-}
-
-type FreeTextQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: FreeTextQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
 }
 
 type FreeTextQuestionOptions {
@@ -892,17 +744,6 @@ type GroupMessage {
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
-
-type InstanceResult {
-  blockIx: Int
-  id: String!
-  instanceIx: Int!
-  participants: Int!
-  questionData: QuestionData!
-  results: Json!
-  statistics: Statistics
-  status: SessionBlockStatus!
-}
 
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
@@ -1117,10 +958,10 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
+  updateElementInstances(elementId: Int!): [ElementInstance!]!
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
-  updateQuestionInstances(questionId: Int!): [QuestionOrElementInstance!]!
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -1206,17 +1047,6 @@ type NumericalInstanceEvaluation {
   xpAwarded: Int
 }
 
-type NumericalQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: NumericalQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
 type NumericalQuestionOptions {
   accuracy: Int
   hasAnswerFeedbacks: Boolean
@@ -1242,30 +1072,6 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
-}
-
-type OpenQuestionResponse {
-  aggregatedResponses: ElementResultsOpen!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseValue!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
 }
 
 input OptionsChoicesInput {
@@ -1466,32 +1272,11 @@ type Query {
   userTags: [Tag!]
 }
 
-union QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData
-
 type QuestionFeedback {
   correct: Boolean
   feedback: String
   ix: Int!
   value: String!
-}
-
-type QuestionInstance {
-  id: Int!
-  pointsMultiplier: Int
-  questionData: QuestionData
-}
-
-type QuestionOrElementInstance {
-  elementInstance: ElementInstance
-  questionInstance: QuestionInstance
-}
-
-union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
-
-enum ResponseCorrectness {
-  CORRECT
-  PARTIAL
-  WRONG
 }
 
 enum ResponseCorrectnessType {
@@ -1510,79 +1295,6 @@ type RunningLiveQuizSummary {
   numOfFeedbacks: Int!
   numOfLeaderboardEntries: Int!
   numOfResponses: Int!
-}
-
-type Session {
-  accessMode: SessionAccessMode!
-  activeBlock: SessionBlock
-  blocks: [SessionBlock!]
-  confusionFeedbacks: [ConfusionTimestep!]
-  confusionSummary: ConfusionSummary
-  course: Course
-  createdAt: Date!
-  description: String
-  displayName: String!
-  feedbacks: [Feedback!]
-  finishedAt: Date
-  id: ID!
-  isConfusionFeedbackEnabled: Boolean!
-  isGamificationEnabled: Boolean!
-  isLiveQAEnabled: Boolean!
-  isModerationEnabled: Boolean!
-  linkTo: String
-  linkToJoin: String
-  maxBonusPoints: Int!
-  name: String!
-  namespace: String!
-  numOfBlocks: Int
-  numOfQuestions: Int
-  pinCode: Int
-  pointsMultiplier: Int!
-  startedAt: Date
-  status: SessionStatus!
-  timeToZeroBonus: Int!
-  updatedAt: Date
-}
-
-enum SessionAccessMode {
-  PUBLIC
-  RESTRICTED
-}
-
-type SessionBlock {
-  execution: Int
-  expiresAt: Date
-  id: Int!
-  instances: [QuestionInstance!]
-  numOfParticipants: Int
-  order: Int!
-  randomSelection: Int
-  status: SessionBlockStatus!
-  timeLimit: Int
-}
-
-enum SessionBlockStatus {
-  ACTIVE
-  EXECUTED
-  SCHEDULED
-}
-
-type SessionEvaluation {
-  blocks: [EvaluationBlock!]!
-  confusionFeedbacks: [ConfusionTimestep!]!
-  displayName: String!
-  feedbacks: [Feedback!]!
-  id: String!
-  instanceResults: [InstanceResult!]!
-  isGamificationEnabled: Boolean!
-  status: SessionStatus!
-}
-
-enum SessionStatus {
-  COMPLETED
-  PREPARED
-  RUNNING
-  SCHEDULED
 }
 
 type SingleChoiceResponse {
@@ -1694,13 +1406,6 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeysInput!
-}
-
-type TabData {
-  id: String!
-  name: String!
-  questionIx: Int
-  status: String
 }
 
 type Tag {

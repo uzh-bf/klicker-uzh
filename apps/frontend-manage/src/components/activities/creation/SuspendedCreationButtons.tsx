@@ -8,8 +8,8 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
-import CreationButton from '../../sessions/creation/CreationButton'
-import { WizardMode } from './ElementCreation'
+import { WizardMode } from '../ElementCreation'
+import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
   setCreationMode: (mode: WizardMode) => void

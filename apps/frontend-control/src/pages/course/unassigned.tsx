@@ -9,7 +9,7 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Layout from '../../components/Layout'
-import SessionLists from '../../components/sessions/SessionLists'
+import SessionLists from '../../components/liveQuizzes/SessionLists'
 
 function UnassignedLiveQuizzes() {
   const t = useTranslations()

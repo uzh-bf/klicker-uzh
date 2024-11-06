@@ -24,7 +24,12 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
-import { Feedback, LiveQuiz, LiveQuizInfo } from './liveQuiz.js'
+import {
+  Feedback,
+  LiveQuiz,
+  LiveQuizInfo,
+  RunningLiveQuizSummary,
+} from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -40,7 +45,6 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, ElementInstance, Tag } from './question.js'
-import { RunningLiveQuizSummary } from './session.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({

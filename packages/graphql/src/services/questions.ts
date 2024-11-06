@@ -6,16 +6,11 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
 import { DisplayMode } from '@klicker-uzh/types'
-import {
-  getInitialElementResults,
-  processElementData,
-  processQuestionData,
-} from '@klicker-uzh/util'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
-import { prepareInitialQuestionInstanceResults } from '../lib/questions.js'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
   switch (elementType) {
@@ -536,14 +531,14 @@ export async function getFileUploadSas(
   }
 }
 
-export async function updateQuestionInstances(
-  { questionId }: { questionId: number },
+export async function updateElementInstances(
+  { elementId }: { elementId: number },
   ctx: ContextWithUser
 ) {
   // fetch the question and return null, if the question does not exist
-  const question = await ctx.prisma.element.findUnique({
+  const element = await ctx.prisma.element.findUnique({
     where: {
-      id: questionId,
+      id: elementId,
     },
     include: {
       elementInstances: {
@@ -552,23 +547,30 @@ export async function updateQuestionInstances(
             include: {
               microLearning: {
                 where: {
-                  status: DB.PublicationStatus.DRAFT,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
                 },
               },
               practiceQuiz: {
                 where: {
-                  status: DB.PublicationStatus.DRAFT,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
                 },
               },
             },
           },
-        },
-      },
-      instances: {
-        include: {
-          sessionBlock: {
+          elementBlock: {
             include: {
-              session: true,
+              // ? where clause is not accepted by prisma for unknown reasons
+              liveQuiz: true,
             },
           },
         },
@@ -576,7 +578,7 @@ export async function updateQuestionInstances(
     },
   })
 
-  if (!question) {
+  if (!element) {
     return []
   }
 
@@ -586,90 +588,76 @@ export async function updateQuestionInstances(
     multiplier: number
     maxBonusPoints: number | undefined
     timeToZeroBonus: number | undefined
-    sessionId: string | undefined
+    liveQuizId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
-  }[] = {
-    ...question.instances.reduce<
-      {
-        instanceId: number
-        multiplier: number
-        maxBonusPoints: number | undefined
-        timeToZeroBonus: number | undefined
-        sessionId: string | undefined
-        practiceQuizId: string | undefined
-        microLearningId: string | undefined
-      }[]
-    >((acc, instance) => {
-      if (
-        instance.sessionBlock?.session?.status === DB.SessionStatus.PREPARED ||
-        instance.sessionBlock?.session?.status === DB.SessionStatus.SCHEDULED
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.sessionBlock.session.pointsMultiplier,
-            maxBonusPoints: instance.sessionBlock.session.maxBonusPoints,
-            timeToZeroBonus: instance.sessionBlock.session.timeToZeroBonus,
-            sessionId: instance.sessionBlock.session.id,
-            practiceQuizId: undefined,
-            microLearningId: undefined,
-          },
-        ]
-      }
-      return acc
-    }, []),
-    ...question.elementInstances.reduce<
-      {
-        instanceId: number
-        multiplier: number
-        maxBonusPoints: number | undefined
-        timeToZeroBonus: number | undefined
-        sessionId: string | undefined
-        practiceQuizId: string | undefined
-        microLearningId: string | undefined
-      }[]
-    >((acc, instance) => {
-      if (
-        instance.elementStack?.microLearning?.status ===
-        DB.PublicationStatus.DRAFT
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.elementStack.microLearning.pointsMultiplier,
-            maxBonusPoints: undefined,
-            timeToZeroBonus: undefined,
-            sessionId: undefined,
-            practiceQuizId: undefined,
-            microLearningId: instance.elementStack.microLearning.id,
-          },
-        ]
-      }
+  }[] = element.elementInstances.reduce<
+    {
+      instanceId: number
+      multiplier: number
+      maxBonusPoints: number | undefined
+      timeToZeroBonus: number | undefined
+      liveQuizId: string | undefined
+      practiceQuizId: string | undefined
+      microLearningId: string | undefined
+    }[]
+  >((acc, instance) => {
+    if (
+      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
+      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementBlock.liveQuiz.pointsMultiplier,
+          maxBonusPoints: undefined,
+          timeToZeroBonus: undefined,
+          liveQuizId: instance.elementBlock.liveQuiz.id,
+          practiceQuizId: undefined,
+          microLearningId: undefined,
+        },
+      ]
+    } else if (
+      instance.elementStack?.microLearning?.status ===
+        DB.PublicationStatus.DRAFT ||
+      instance.elementStack?.microLearning?.status ===
+        DB.PublicationStatus.SCHEDULED
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementStack.microLearning.pointsMultiplier,
+          maxBonusPoints: undefined,
+          timeToZeroBonus: undefined,
+          liveQuizId: undefined,
+          practiceQuizId: undefined,
+          microLearningId: instance.elementStack.microLearning.id,
+        },
+      ]
+    } else if (
+      instance.elementStack?.practiceQuiz?.status ===
+        DB.PublicationStatus.DRAFT ||
+      instance.elementStack?.practiceQuiz?.status ===
+        DB.PublicationStatus.SCHEDULED
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+          maxBonusPoints: undefined,
+          timeToZeroBonus: undefined,
+          liveQuizId: undefined,
+          practiceQuizId: instance.elementStack.practiceQuiz.id,
+          microLearningId: undefined,
+        },
+      ]
+    }
 
-      if (
-        instance.elementStack?.practiceQuiz?.status ===
-        DB.PublicationStatus.DRAFT
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
-            maxBonusPoints: undefined,
-            timeToZeroBonus: undefined,
-            sessionId: undefined,
-            practiceQuizId: instance.elementStack.practiceQuiz.id,
-            microLearningId: undefined,
-          },
-        ]
-      }
-
-      return acc
-    }, []),
-  }
+    return acc
+  }, [])
 
   const updatedInstances = (
     await Promise.allSettled(
@@ -679,97 +667,48 @@ export async function updateQuestionInstances(
           multiplier,
           maxBonusPoints,
           timeToZeroBonus,
-          sessionId,
+          liveQuizId,
           practiceQuizId,
           microLearningId,
         }) => {
-          let instance
+          const oldInstance = await ctx.prisma.elementInstance.findUnique({
+            where: { id: instanceId },
+          })
 
-          // invalidate cache for the corresponding element
-          if (typeof sessionId !== 'undefined') {
-            // prepare new question objects
-            const newQuestionData = processQuestionData(question)
+          if (!oldInstance) return null
 
-            // prepare new results objects
-            const newResults = prepareInitialQuestionInstanceResults(
-              newQuestionData!
-            )
+          // prepare new element data objects
+          const newElementData = processElementData(element)
 
-            instance = await ctx.prisma.questionInstance.update({
-              where: { id: instanceId },
-              data: {
-                questionData: newQuestionData!,
-                results: newResults,
-                pointsMultiplier: multiplier * question.pointsMultiplier,
-                maxBonusPoints,
-                timeToZeroBonus,
+          // prepare new results objects
+          const newResults = getInitialElementResults(element)
+
+          const instance = await ctx.prisma.elementInstance.update({
+            where: { id: instanceId },
+            data: {
+              elementData: newElementData,
+              results: newResults,
+              anonymousResults: newResults,
+              options: {
+                ...oldInstance.options,
+                pointsMultiplier: multiplier * element.pointsMultiplier,
               },
-            })
+            },
+          })
 
-            if (!instance) return null
+          if (!instance) return null
 
+          if (typeof liveQuizId !== 'undefined') {
             ctx.emitter.emit('invalidate', {
-              typename: 'Session',
-              id: sessionId,
+              typename: 'LiveQuiz',
+              id: liveQuizId,
             })
           } else if (typeof practiceQuizId !== 'undefined') {
-            const oldInstance = await ctx.prisma.elementInstance.findUnique({
-              where: { id: instanceId },
-            })
-
-            if (!oldInstance) return null
-
-            // prepare new question objects
-            const newQuestionData = processElementData(question)
-
-            // prepare new results objects
-            const newResults = getInitialElementResults(question)
-
-            instance = await ctx.prisma.elementInstance.update({
-              where: { id: instanceId },
-              data: {
-                elementData: newQuestionData,
-                results: newResults,
-                anonymousResults: newResults,
-                options: {
-                  ...oldInstance.options,
-                  pointsMultiplier: multiplier * question.pointsMultiplier,
-                },
-              },
-            })
-
             ctx.emitter.emit('invalidate', {
               typename: 'PracticeQuiz',
               id: practiceQuizId,
             })
           } else if (typeof microLearningId !== 'undefined') {
-            const oldInstance = await ctx.prisma.elementInstance.findUnique({
-              where: { id: instanceId },
-            })
-
-            if (!oldInstance) return null
-
-            // prepare new question objects
-            const newQuestionData = processElementData(question)
-
-            // prepare new results objects
-            const newResults = getInitialElementResults(question)
-
-            instance = await ctx.prisma.elementInstance.update({
-              where: { id: instanceId },
-              data: {
-                elementData: newQuestionData,
-                results: newResults,
-                anonymousResults: newResults,
-                options: {
-                  ...oldInstance.options,
-                  pointsMultiplier: multiplier * question.pointsMultiplier,
-                },
-              },
-            })
-
-            if (!instance) return null
-
             ctx.emitter.emit('invalidate', {
               typename: 'MicroLearning',
               id: microLearningId,
@@ -780,28 +719,9 @@ export async function updateQuestionInstances(
         }
       )
     )
-  ).flatMap<{
-    questionInstance?: DB.QuestionInstance
-    elementInstance?: DB.ElementInstance
-  }>((result) => {
+  ).flatMap((result) => {
     if (result.status !== 'fulfilled' || !result.value) return []
-
-    // TODO: remove this mapping after the live quiz migration
-    if (result.value.type === 'SESSION') {
-      return [
-        {
-          questionInstance: result.value as DB.QuestionInstance,
-          elementInstance: undefined,
-        },
-      ]
-    }
-
-    return [
-      {
-        elementInstance: result.value as DB.ElementInstance,
-        questionInstance: undefined,
-      },
-    ]
+    return result.value
   })
 
   return updatedInstances

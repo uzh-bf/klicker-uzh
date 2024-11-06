@@ -1,6 +1,6 @@
 import { FormikErrors, FormikTouched } from 'formik'
 import { SetStateAction, useEffect } from 'react'
-import { ElementSelectCourse } from './ElementCreation'
+import { ElementSelectCourse } from '../ElementCreation'
 import { GroupActivityFormValues } from './WizardLayout'
 
 function CourseChangeMonitor({

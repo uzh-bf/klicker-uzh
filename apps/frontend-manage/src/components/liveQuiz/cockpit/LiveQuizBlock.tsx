@@ -11,7 +11,6 @@ import {
   ElementBlockStatus,
   ElementBlock as ElementBlockType,
   ElementInstance,
-  SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { CycleCountdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -28,7 +27,7 @@ export type QuizTimelineBlock = Omit<ElementBlockType, 'elements'> & {
   elements?: QuizTimelineInstance[] | null
 }
 
-interface SessionBlockProps {
+interface LiveQuizBlockProps {
   className?: string
   active: boolean
   block: QuizTimelineBlock
@@ -37,18 +36,18 @@ interface SessionBlockProps {
 }
 
 const ICON_MAP = {
-  [SessionBlockStatus.Executed]: faCheck,
-  [SessionBlockStatus.Scheduled]: faCalendar,
-  [SessionBlockStatus.Active]: faSync,
+  [ElementBlockStatus.Executed]: faCheck,
+  [ElementBlockStatus.Scheduled]: faCalendar,
+  [ElementBlockStatus.Active]: faSync,
 }
 
-function SessionBlock({
+function LiveQuizBlock({
   className,
   active,
   block,
   inCooldown,
   setInCooldown,
-}: SessionBlockProps): React.ReactElement {
+}: LiveQuizBlockProps): React.ReactElement {
   const t = useTranslations()
   const [endTime, setEndTime] = useState<Date>()
   const [timerColor, setTimerColor] = useState<string | undefined>(undefined)
@@ -173,4 +172,4 @@ function SessionBlock({
   )
 }
 
-export default SessionBlock
+export default LiveQuizBlock

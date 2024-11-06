@@ -17,7 +17,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { sort } from 'remeda'
 import Layout from '../../components/Layout'
-import SessionBlock from '../../components/sessions/SessionBlock'
+import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
 
 function RunningSession() {
   const t = useTranslations()
@@ -130,7 +130,7 @@ function RunningSession() {
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
             <H3>{t('control.session.activeBlock')}</H3>
 
-            <SessionBlock
+            <LiveQuizBlock
               block={blocks.find((block) => block.order === currentBlockOrder)}
               active
             />
@@ -144,7 +144,7 @@ function RunningSession() {
                     size="2xl"
                   />
 
-                  <SessionBlock
+                  <LiveQuizBlock
                     block={blocks.find(
                       (block) => block.order === nextBlockOrder
                     )}
@@ -182,7 +182,7 @@ function RunningSession() {
                 className="mx-auto w-full"
               />
             )}
-            <SessionBlock
+            <LiveQuizBlock
               block={blocks.find((block) => block.order === nextBlockOrder)}
             />
             {nextBlockOrder < blocks.length - 1 && (
