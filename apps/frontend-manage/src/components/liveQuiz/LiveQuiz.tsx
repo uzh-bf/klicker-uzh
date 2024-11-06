@@ -103,7 +103,7 @@ function LiveQuiz({
   })
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
-  const [selectedSession, setSelectedSession] = useState<string>('')
+  const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
@@ -125,19 +125,19 @@ function LiveQuiz({
 
   return (
     <>
-      <div key={quiz.id} className="rounded border p-1" data-cy="session">
+      <div key={quiz.id} className="rounded border p-1" data-cy="live-quiz">
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
           className={{ root: 'border-0 !py-0.5' }}
           key={quiz.id}
-          open={showDetails && quiz.id === selectedSession}
+          open={showDetails && quiz.id === selectedLiveQuiz}
           onChange={() => {
-            if (quiz.id === selectedSession) {
+            if (quiz.id === selectedLiveQuiz) {
               setShowDetails(!showDetails)
             } else {
               setShowDetails(true)
-              setSelectedSession(quiz.id)
+              setSelectedLiveQuiz(quiz.id)
             }
           }}
           staticContent={
@@ -192,7 +192,7 @@ function LiveQuiz({
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-cockpit-${quiz.name}`}
+                      data-cy={`live-quiz-cockpit${quiz.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.liveQuizzes.lecturerCockpit')}</div>
@@ -207,12 +207,12 @@ function LiveQuiz({
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-evaluation-${quiz.name}`}
+                      data-cy={`live-quiz-evaluation${quiz.name}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>{t('manage.liveQuizzes.sessionEvaluation')}</div>
+                      <div>{t('manage.liveQuizzes.liveQuizEvaluation')}</div>
                     </a>
                   </Link>
                 )}
@@ -264,7 +264,7 @@ function LiveQuiz({
                     },
                   })
                 }
-                data={{ cy: `duplicate-session-${quiz.name}` }}
+                data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
               >
                 <Button.Icon className={{ root: 'text-slate-600' }}>
                   <FontAwesomeIcon icon={faCopy} />
@@ -286,7 +286,7 @@ function LiveQuiz({
                       },
                     })
                   }
-                  data={{ cy: `edit-session-${quiz.name}` }}
+                  data={{ cy: `edit-live-quiz-${quiz.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-slate-600' }}>
                     <FontAwesomeIcon icon={faPencil} />

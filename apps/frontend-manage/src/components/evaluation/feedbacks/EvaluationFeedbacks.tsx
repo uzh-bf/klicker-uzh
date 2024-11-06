@@ -7,12 +7,12 @@ import SingleFeedback from './SingleFeedback'
 
 interface EvaluationFeedbacksProps {
   feedbacks: Feedback[]
-  sessionName: string
+  liveQuizName: string
 }
 
 function EvaluationFeedbacks({
   feedbacks,
-  sessionName,
+  liveQuizName,
 }: EvaluationFeedbacksProps) {
   const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
@@ -23,7 +23,7 @@ function EvaluationFeedbacks({
     <>
       <FeedbacksPrintView
         feedbacks={sortedFeedbacks}
-        sessionName={sessionName}
+        liveQuizName={liveQuizName}
       />
       <div className="space-y-3 print:hidden">
         <FeedbackSearchAndFilters

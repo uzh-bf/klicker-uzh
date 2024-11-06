@@ -11,19 +11,19 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
-  const sessionHMAC = useQuery(GetLiveQuizHmacDocument, {
+  const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
     variables: {
       id: quizId,
     },
   })
 
-  if (sessionHMAC.loading || !sessionHMAC.data?.liveQuizHMAC) {
+  if (quizHMAC.loading || !quizHMAC.data?.liveQuizHMAC) {
     return <></>
   }
 
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/sessions/${quizId}/evaluation?hmac=${sessionHMAC.data?.liveQuizHMAC}${
+  }/sessions/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
     params ? `&${params}` : ''
   }`
 
@@ -37,7 +37,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
         passHref
       >
         <a
-          data-cy={`open-embedding-link-session-${quizId}`}
+          data-cy={`open-embedding-link-live-quiz-${quizId}`}
           className="max-w-[calc(100%-3.5rem)] break-words text-sm"
         >
           {link}
@@ -45,7 +45,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
       </Link>
       <Button
         onClick={() => navigator?.clipboard?.writeText(link)}
-        data={{ cy: `copy-embed-link-session-${quizId}` }}
+        data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
       >
         <Button.Icon>
           <FontAwesomeIcon icon={faClipboard} />

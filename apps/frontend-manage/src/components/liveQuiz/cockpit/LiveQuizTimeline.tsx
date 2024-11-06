@@ -18,7 +18,7 @@ import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelLiveQuizModal from './CancelLiveQuizModal'
 import LiveQuizBlock, { QuizTimelineBlock } from './LiveQuizBlock'
-import SessionQRModal from './SessionQRModal'
+import LiveQuizQRModal from './LiveQuizQRModal'
 
 dayjs.extend(durationPlugin)
 
@@ -37,33 +37,33 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   return `${hours}:${minutes}:${seconds}`
 }
 
-interface SessionTimelineProps {
+interface LiveQuizTimelineProps {
   blocks?: QuizTimelineBlock[]
-  sessionName: string
-  handleEndSession: () => void
+  quizName: string
+  handleEndLiveQuiz: () => void
   handleTogglePublicEvaluation: () => void
   handleOpenBlock: (blockId: number) => void
   handleCloseBlock: (blockId: number) => void
   isEvaluationPublic?: boolean
-  sessionId: string
+  quizId: string
   startedAt?: string
   loading?: boolean
 }
 
-function SessionTimeline({
-  sessionId,
+function LiveQuizTimeline({
+  quizId,
   blocks = [],
-  sessionName,
+  quizName,
   startedAt,
   isEvaluationPublic = false,
-  handleEndSession,
+  handleEndLiveQuiz,
   handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
   loading,
-}: SessionTimelineProps): React.ReactElement {
+}: LiveQuizTimelineProps): React.ReactElement {
   const t = useTranslations()
-  const isFeedbackSession = blocks?.length === 0
+  const isFeedbackQuiz = blocks?.length === 0
   const { locale } = useRouter()
 
   const [cancelLiveQuizModal, setCancelLiveQuizModal] = useState(false)
@@ -89,7 +89,7 @@ function SessionTimeline({
     return () => clearInterval(currentRuntime)
   }, [runtime, startedAt])
 
-  // basic session timeline logic - identifying the currently active block as well as the state of the session
+  // basic live quiz timeline logic - identifying the currently active block as well as the state of the live quiz
   useEffect(() => {
     if (blocks && blocks.length > 0) {
       setActiveBlockId(
@@ -127,7 +127,7 @@ function SessionTimeline({
         setInCooldown(false)
         setButtonState('firstBlock')
       } else {
-        // no block is active and the last block of the session has not yet been executed
+        // no block is active and the last block of the live quiz has not yet been executed
         setInCooldown(false)
         setButtonState('nextBlock')
       }
@@ -138,7 +138,7 @@ function SessionTimeline({
     <div className="flex flex-col md:flex-row md:flex-wrap">
       <div className="flex flex-1 flex-row flex-wrap items-end justify-between md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end gap-8">
-          <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {sessionName}</H1>
+          <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {quizName}</H1>
           <div>
             <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
           </div>
@@ -161,19 +161,19 @@ function SessionTimeline({
                 {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            {!isFeedbackSession && (
+            {!isFeedbackQuiz && (
               <EmbeddingModal
-                key={sessionId}
+                key={quizId}
                 open={embedModalOpen}
                 onClose={() => setEmbedModalOpen(false)}
-                quizId={sessionId}
+                quizId={quizId}
                 elements={blocks.flatMap((block) => block.elements ?? [])}
               />
             )}
-            <SessionQRModal sessionId={sessionId} />
+            <LiveQuizQRModal quizId={quizId} />
             <a
               className="flex-1"
-              href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -192,7 +192,7 @@ function SessionTimeline({
           <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
-              href={`/sessions/${sessionId}/evaluation`}
+              href={`/sessions/${quizId}/evaluation`}
               className="flex-1"
               rel="noopener noreferrer"
               target="_blank"
@@ -200,7 +200,7 @@ function SessionTimeline({
               <Button
                 fluid
                 className={{ root: 'h-10' }}
-                disabled={isFeedbackSession}
+                disabled={isFeedbackQuiz}
                 data={{ cy: 'evaluation-results-cockpit' }}
               >
                 <Button.Icon>
@@ -212,14 +212,14 @@ function SessionTimeline({
               </Button>
             </Link>
           </div>
-          {isFeedbackSession && (
+          {isFeedbackQuiz && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 loading={loading}
                 className={{
                   root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
-                onClick={handleEndSession}
+                onClick={handleEndLiveQuiz}
                 data={{ cy: 'end-live-quiz-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endQuiz')}</Button.Label>
@@ -228,7 +228,7 @@ function SessionTimeline({
           )}
         </div>
       </div>
-      {!isFeedbackSession && blocks && (
+      {!isFeedbackQuiz && blocks && (
         <>
           <div className="border-uzh-grey-80 mt-2 flex w-full flex-row gap-2 overflow-auto rounded-lg border border-solid p-4 md:mt-0">
             <FontAwesomeIcon
@@ -275,9 +275,9 @@ function SessionTimeline({
             <Button
               onClick={() => setCancelLiveQuizModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
-              data={{ cy: 'abort-session-cockpit' }}
+              data={{ cy: 'abort-live-quiz-cockpit' }}
             >
-              {t('manage.cockpit.abortSession')}
+              {t('manage.cockpit.abortLiveQuiz')}
             </Button>
             <Button
               loading={loading}
@@ -305,7 +305,7 @@ function SessionTimeline({
                   handleCloseBlock(activeBlockId)
                   setInCooldown(false)
                 } else {
-                  handleEndSession()
+                  handleEndLiveQuiz()
                 }
               }}
               data={{ cy: 'next-block-timeline' }}
@@ -320,8 +320,8 @@ function SessionTimeline({
           <CancelLiveQuizModal
             open={cancelLiveQuizModal}
             setOpen={setCancelLiveQuizModal}
-            sessionId={sessionId}
-            title={sessionName}
+            quizId={quizId}
+            title={quizName}
           />
         </>
       )}
@@ -329,4 +329,4 @@ function SessionTimeline({
   )
 }
 
-export default SessionTimeline
+export default LiveQuizTimeline

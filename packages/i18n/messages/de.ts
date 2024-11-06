@@ -121,6 +121,7 @@ export default {
       repetition: 'Repetition',
       evaluation: 'Auswertung',
       liveQuiz: 'Live Quiz',
+      liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Übungs-Quiz',
       practiceQuizzes: 'Übungs-Quizzes',
       microlearnings: 'Microlearnings',
@@ -1317,11 +1318,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Sessionen',
       plannedLiveQuizzes: 'Geplante Sessionen',
-      preparedSessions: 'Vorbereitete Sessionen',
-      completedSessions: 'Abgeschlossene Sessionen',
+      preparedLiveQuizzes: 'Vorbereitete Sessionen',
+      completedLiveQuizzes: 'Abgeschlossene Sessionen',
       embeddingEvaluation: 'Einbettung Evaluation',
       lecturerCockpit: 'Dozierenden Cockpit',
-      sessionEvaluation: 'Session Evaluation',
+      liveQuizEvaluation: 'Session Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Quiz bearbeiten',
       duplicateLiveQuiz: 'Session duplizieren',
@@ -1357,8 +1358,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
-      abortSession: 'Quiz abbrechen',
-      confirmAbortSession: 'Live Quiz {title} abbrechen?',
+      abortLiveQuiz: 'Quiz abbrechen',
+      confirmAbortLiveQuiz: 'Live Quiz {title} abbrechen?',
       cancelLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:
@@ -1441,7 +1442,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetSorting: 'Sortierung zurücksetzen',
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
-      resolvedDuringSession: 'Während der Session gelöst',
+      resolvedDuringLiveQuiz: 'Während der Session gelöst',
       confusion: 'Verständnis',
       minStep60s: 'Die Schrittweite muss mindestens 60 Sekunden betragen.',
       validMinSteps: 'Bitte geben Sie eine gültige Mindestschrittweite ein.',

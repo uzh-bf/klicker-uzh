@@ -27,7 +27,7 @@ function SingleFeedback({ feedback }: SingleFeedbackProps) {
           {feedback.isResolved && (
             <div className="flex flex-row items-center">
               <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
-              <div>{t('manage.evaluation.resolvedDuringSession')}</div>
+              <div>{t('manage.evaluation.resolvedDuringLiveQuiz')}</div>
             </div>
           )}
         </div>

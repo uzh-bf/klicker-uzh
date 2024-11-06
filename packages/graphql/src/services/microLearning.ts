@@ -188,7 +188,7 @@ export async function manipulateMicroLearning(
   ctx: ContextWithUser
 ) {
   if (id) {
-    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    // find all instances belonging to the old microlearning and delete them as the content of the questions might have changed
     const oldElement = await ctx.prisma.microLearning.findUnique({
       where: {
         id,

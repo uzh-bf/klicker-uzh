@@ -158,16 +158,16 @@ const Index = function () {
               {t('shared.generic.activeLiveQuizzes')}
             </H1>
             <div className="flex flex-col gap-2">
-              {activeLiveQuizzes.map((session) => (
+              {activeLiveQuizzes.map((quiz) => (
                 <LinkButton
-                  href={`/session/${session.id}`}
-                  key={session.id}
+                  href={`/session/${quiz.id}`}
+                  key={quiz.id}
                   icon={faChalkboard}
-                  data={{ cy: `live-quiz-${session.displayName}` }}
+                  data={{ cy: `live-quiz-${quiz.displayName}` }}
                 >
                   <div className="flex flex-row items-end justify-between md:flex-row">
-                    <div>{session.displayName}</div>
-                    <div className="text-sm">{session.courseName}</div>
+                    <div>{quiz.displayName}</div>
+                    <div className="text-sm">{quiz.courseName}</div>
                   </div>
                 </LinkButton>
               ))}

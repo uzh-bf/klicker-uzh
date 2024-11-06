@@ -177,7 +177,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
 export interface ILeaderboardEntry
   extends Omit<
     DB.LeaderboardEntry,
-    'courseId' | 'liveQuizId' | 'type' | 'sessionParticipationId'
+    'courseId' | 'sessionId' | 'liveQuizId' | 'type' | 'sessionParticipationId'
   > {
   username: string
   email?: string | null

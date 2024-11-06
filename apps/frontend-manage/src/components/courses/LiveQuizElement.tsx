@@ -124,7 +124,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
   return (
     <div
       className="border-uzh-grey-80 w-full rounded border border-solid p-2"
-      data-cy={`session-${quiz.name}`}
+      data-cy={`live-quiz-${quiz.name}`}
     >
       <div className="flex w-full flex-row justify-between">
         <div className="flex-1">

@@ -9,9 +9,9 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import SessionAbortionConfirmations from './SessionAbortionConfirmations'
+import LiveQuizAbortionConfirmations from './LiveQuizAbortionConfirmations'
 
-export interface SessionAbortionConfirmationType {
+export interface LiveQuizAbortionConfirmationType {
   deleteResponses: boolean
   deleteFeedbacks: boolean
   deleteConfusionFeedbacks: boolean
@@ -19,12 +19,12 @@ export interface SessionAbortionConfirmationType {
 }
 
 function CancelLiveQuizModal({
-  sessionId,
+  quizId,
   title,
   open,
   setOpen,
 }: {
-  sessionId: string
+  quizId: string
   title: string
   open: boolean
   setOpen: (value: boolean) => void
@@ -32,7 +32,7 @@ function CancelLiveQuizModal({
   const router = useRouter()
   const t = useTranslations()
 
-  const initialConfirmations: SessionAbortionConfirmationType = {
+  const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
     deleteFeedbacks: false,
     deleteConfusionFeedbacks: false,
@@ -40,7 +40,7 @@ function CancelLiveQuizModal({
   }
 
   const [confirmations, setConfirmations] =
-    useState<SessionAbortionConfirmationType>({
+    useState<LiveQuizAbortionConfirmationType>({
       ...initialConfirmations,
     })
 
@@ -50,14 +50,14 @@ function CancelLiveQuizModal({
     loading: queryLoading,
     refetch,
   } = useQuery(GetLiveQuizSummaryDocument, {
-    variables: { quizId: sessionId },
+    variables: { quizId },
     skip: !open,
   })
 
-  const [cancelLiveQuiz, { loading: sessionDeleting }] = useMutation(
+  const [cancelLiveQuiz, { loading: quizDeleting }] = useMutation(
     CancelLiveQuizDocument,
     {
-      variables: { id: sessionId },
+      variables: { id: quizId },
       update(cache, res) {
         const data = cache.readQuery({
           query: GetUserRunningLiveQuizzesDocument,
@@ -112,10 +112,10 @@ function CancelLiveQuizModal({
         setConfirmations({ ...initialConfirmations })
       }}
       className={{ content: '!w-full max-w-[60rem]' }}
-      title={t('manage.cockpit.confirmAbortSession', { title: title })}
+      title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
       onPrimaryAction={
         <Button
-          loading={sessionDeleting}
+          loading={quizDeleting}
           disabled={
             queryLoading ||
             Object.values(confirmations).some((confirmation) => !confirmation)
@@ -129,7 +129,7 @@ function CancelLiveQuizModal({
           className={{
             root: 'bg-red-700 text-white hover:bg-red-800 hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
           }}
-          data={{ cy: 'confirm-cancel-session' }}
+          data={{ cy: 'confirm-cancel-live-quiz' }}
         >
           {t('shared.generic.confirm')}
         </Button>
@@ -140,13 +140,13 @@ function CancelLiveQuizModal({
             setOpen(false)
             setConfirmations({ ...initialConfirmations })
           }}
-          data={{ cy: 'abort-cancel-session' }}
+          data={{ cy: 'abort-cancel-live-quiz' }}
         >
           {t('shared.generic.close')}
         </Button>
       }
     >
-      <SessionAbortionConfirmations
+      <LiveQuizAbortionConfirmations
         summary={summary}
         confirmations={confirmations}
         setConfirmations={setConfirmations}

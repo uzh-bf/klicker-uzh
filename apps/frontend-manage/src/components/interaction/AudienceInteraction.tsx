@@ -26,7 +26,7 @@ import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 interface Props {
   quizId: string
-  sessionName: string
+  liveQuizName: string
   confusionValues?: ConfusionSummary
   feedbacks?: Feedback[]
   isLiveQAEnabled: boolean
@@ -38,7 +38,7 @@ interface Props {
 
 function AudienceInteraction({
   quizId,
-  sessionName,
+  liveQuizName,
   confusionValues,
   feedbacks,
   isLiveQAEnabled,
@@ -106,7 +106,7 @@ function AudienceInteraction({
               >
                 <a
                   className="inline-flex items-center gap-1"
-                  data-cy={`open-lecturer-overview-session-${sessionName}`}
+                  data-cy={`open-lecturer-overview-live-quiz-${liveQuizName}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -126,7 +126,7 @@ function AudienceInteraction({
                   })
                   push([
                     'trackEvent',
-                    'Running Session',
+                    'Running Live Quiz',
                     !isLiveQAEnabled
                       ? 'Feedback Channel Activated'
                       : 'Feedback Channel Deactivated',
@@ -147,7 +147,7 @@ function AudienceInteraction({
                   })
                   push([
                     'trackEvent',
-                    'Running Session',
+                    'Running Live Quiz',
                     'Feedback Moderation Toggled',
                     String(!isModerationEnabled),
                   ])
@@ -171,7 +171,7 @@ function AudienceInteraction({
             <div className="flex flex-1 flex-col rounded border p-4 md:flex-row md:flex-wrap print:border-0">
               <div className="flex-1">
                 <FeedbackChannel
-                  sessionName={sessionName}
+                  liveQuizName={liveQuizName}
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
                     deleteFeedback({
@@ -207,7 +207,11 @@ function AudienceInteraction({
                         }
                       },
                     })
-                    push(['trackEvent', 'Running Session', 'Feedback Deleted'])
+                    push([
+                      'trackEvent',
+                      'Running Live Quiz',
+                      'Feedback Deleted',
+                    ])
                   }}
                   handleDeleteFeedbackResponse={(responseId: number) => {
                     deleteFeedbackResponse({
@@ -243,7 +247,7 @@ function AudienceInteraction({
 
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Response Deleted',
                     ])
                   }}
@@ -256,7 +260,7 @@ function AudienceInteraction({
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Pinned',
                       String(isPinned),
                     ])
@@ -270,7 +274,7 @@ function AudienceInteraction({
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Published',
                       String(isPublished),
                     ])
@@ -284,7 +288,7 @@ function AudienceInteraction({
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Resolved',
                       String(isResolved),
                     ])
@@ -301,7 +305,7 @@ function AudienceInteraction({
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Response Added',
                       response.length,
                     ])
@@ -328,7 +332,7 @@ function AudienceInteraction({
                 })
                 push([
                   'trackEvent',
-                  'Running Session',
+                  'Running Live Quiz',
                   'Feedback Moderation Toggled',
                   String(!isConfusionFeedbackEnabled),
                 ])

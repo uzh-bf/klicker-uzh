@@ -121,6 +121,7 @@ export default {
       repetition: 'Repetition',
       evaluation: 'Evaluation',
       liveQuiz: 'Live Quiz',
+      liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
       microlearnings: 'Microlearning',
@@ -1306,11 +1307,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',
       plannedLiveQuizzes: 'Planned Live Quizzes',
-      preparedSessions: 'Prepared Live Quizzes',
-      completedSessions: 'Completed Live Quizzes',
+      preparedLiveQuizzes: 'Prepared Live Quizzes',
+      completedLiveQuizzes: 'Completed Live Quizzes',
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
-      sessionEvaluation: 'Quiz Evaluation',
+      liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Edit Quiz',
       duplicateLiveQuiz: 'Duplicate Quiz',
@@ -1345,8 +1346,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endQuiz: 'End quiz',
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
-      abortSession: 'Abort quiz',
-      confirmAbortSession: 'Abort live quiz {title}?',
+      abortLiveQuiz: 'Abort quiz',
+      confirmAbortLiveQuiz: 'Abort live quiz {title}?',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
@@ -1429,7 +1430,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetSorting: 'Reset sorting',
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
-      resolvedDuringSession: 'Resolved during session',
+      resolvedDuringLiveQuiz: 'Resolved during session',
       confusion: 'Confusion',
       minStep60s: 'The step size must be at least 60 seconds.',
       validMinSteps: 'Please enter a valid minimum step size.',

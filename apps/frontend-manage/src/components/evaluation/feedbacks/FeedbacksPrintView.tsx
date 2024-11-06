@@ -5,12 +5,12 @@ import SingleFeedback from './SingleFeedback'
 
 interface FeedbacksPrintViewProps {
   feedbacks?: Feedback[]
-  sessionName: string
+  liveQuizName: string
 }
 
 function FeedbacksPrintView({
   feedbacks,
-  sessionName,
+  liveQuizName,
 }: FeedbacksPrintViewProps) {
   const t = useTranslations()
 
@@ -19,7 +19,7 @@ function FeedbacksPrintView({
   return (
     <div className="hidden space-y-3 print:block">
       <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
-        {t('manage.cockpit.printTitle', { name: sessionName })}
+        {t('manage.cockpit.printTitle', { name: liveQuizName })}
       </H2>
       {feedbacks.map((feedback) => (
         <SingleFeedback key={feedback.id} feedback={feedback} />
