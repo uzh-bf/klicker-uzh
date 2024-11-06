@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@prisma/nextjs-monorepo-workaround-plugin':
-        specifier: ~5.22.0
-        version: 5.22.0
+        specifier: ~5.21.1
+        version: 5.21.1
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -211,8 +211,8 @@ importers:
         specifier: 1.0.1
         version: 1.0.1(@prisma/client@5.22.0(prisma@5.21.1))
       '@prisma/instrumentation':
-        specifier: 5.22.0
-        version: 5.22.0
+        specifier: 5.21.0
+        version: 5.21.0
       '@sentry/node':
         specifier: 7.103.0
         version: 7.103.0
@@ -1765,15 +1765,15 @@ importers:
         specifier: workspace:*
         version: link:../util
       '@prisma/client':
-        specifier: 5.22.0
-        version: 5.22.0(prisma@5.21.1)
+        specifier: 5.21.0
+        version: 5.21.0(prisma@5.21.1)
     devDependencies:
       '@klicker-uzh/transactional':
         specifier: workspace:*
         version: link:../transactional
       '@pothos/plugin-prisma':
         specifier: ~4.2.1
-        version: 4.2.2(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.22.0(prisma@5.21.1))(graphql@16.9.0)(typescript@5.6.3)
+        version: 4.2.2(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.21.0(prisma@5.21.1))(graphql@16.9.0)(typescript@5.6.3)
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
@@ -5186,6 +5186,15 @@ packages:
       graphql: '>=16.6.0'
       zod: '*'
 
+  '@prisma/client@5.21.0':
+    resolution: {integrity: sha512-Qf2YleB3dsCRXiKSQZ+j0aF5E+ojpfqF8ExXaNAWBbAhKapMduwNvgo13K2pEuTiQq8voG2aQPQnxjsO9fOpTQ==}
+    engines: {node: '>=16.13'}
+    peerDependencies:
+      prisma: '*'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+
   '@prisma/client@5.22.0':
     resolution: {integrity: sha512-M0SVXfyHnQREBKxCgyo7sffrKttwE6R8PMq330MIUF0pTwjUhLbW84pFDlf06B27XyCR++VtjugEnIHdr07SVA==}
     engines: {node: '>=16.13'}
@@ -5245,11 +5254,11 @@ packages:
   '@prisma/instrumentation@5.19.1':
     resolution: {integrity: sha512-VLnzMQq7CWroL5AeaW0Py2huiNKeoMfCH3SUxstdzPrlWQi6UQ9UrfcbUkNHlVFqOMacqy8X/8YtE0kuKDpD9w==}
 
-  '@prisma/instrumentation@5.22.0':
-    resolution: {integrity: sha512-LxccF392NN37ISGxIurUljZSh1YWnphO34V5a0+T7FVQG2u9bhAXRTJpgmQ3483woVhkraQZFF7cbRrpbw/F4Q==}
+  '@prisma/instrumentation@5.21.0':
+    resolution: {integrity: sha512-ZMWvziSkBIwN/wMiwym6+YhJ0dHuYjN0WpAn7nhcKP1ftgFaQUhTL/a4blX0b6TOA4acTjWWMEQYAfHKQcStUg==}
 
-  '@prisma/nextjs-monorepo-workaround-plugin@5.22.0':
-    resolution: {integrity: sha512-wuKp7FqhETHP2MJJu5y//ac83/EpDpoupcjlmp/Ijv3fnG576EIxY4SU4j24xXPIBOTuApkCk4RkgonkeAOXuQ==}
+  '@prisma/nextjs-monorepo-workaround-plugin@5.21.1':
+    resolution: {integrity: sha512-nbrAetFfGXw3Czg9+u/Hs4a5uLnT8MNsVRK7mSzl+Y2zi5badgpN8hmlhv2WEX1+GSDKMxJ8rAKpTwiIqH7fdQ==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -21546,10 +21555,10 @@ snapshots:
       graphql: 16.9.0
       typescript: 5.6.3
 
-  '@pothos/plugin-prisma@4.2.2(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.22.0(prisma@5.21.1))(graphql@16.9.0)(typescript@5.6.3)':
+  '@pothos/plugin-prisma@4.2.2(@pothos/core@4.3.0(graphql@16.9.0))(@prisma/client@5.21.0(prisma@5.21.1))(graphql@16.9.0)(typescript@5.6.3)':
     dependencies:
       '@pothos/core': 4.3.0(graphql@16.9.0)
-      '@prisma/client': 5.22.0(prisma@5.21.1)
+      '@prisma/client': 5.21.0(prisma@5.21.1)
       '@prisma/generator-helper': 5.22.0
       graphql: 16.9.0
       typescript: 5.6.3
@@ -21564,6 +21573,10 @@ snapshots:
       '@pothos/core': 4.3.0(graphql@16.9.0)
       graphql: 16.9.0
       zod: 3.23.8
+
+  '@prisma/client@5.21.0(prisma@5.21.1)':
+    optionalDependencies:
+      prisma: 5.21.1
 
   '@prisma/client@5.22.0(prisma@5.21.1)':
     optionalDependencies:
@@ -21655,7 +21668,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@prisma/instrumentation@5.22.0':
+  '@prisma/instrumentation@5.21.0':
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.53.0(@opentelemetry/api@1.9.0)
@@ -21663,7 +21676,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@prisma/nextjs-monorepo-workaround-plugin@5.22.0': {}
+  '@prisma/nextjs-monorepo-workaround-plugin@5.21.1': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
