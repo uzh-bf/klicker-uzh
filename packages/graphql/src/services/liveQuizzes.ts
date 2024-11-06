@@ -1,4 +1,8 @@
 import {
+  gradeQuestionFreeText,
+  gradeQuestionNumerical,
+} from '@klicker-uzh/grading'
+import {
   AccessMode,
   ConfusionTimestep,
   type Element,
@@ -59,6 +63,7 @@ async function getCachedBlockResults({
   redisMulti.hgetall(`s:${quizId}:lb`)
   redisMulti.hgetall(`s:${quizId}:b:${blockId}:lb`)
   activeInstanceIds.forEach((instanceId) => {
+    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:info`)
     redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responseHashes`)
     redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responses`)
     redisMulti.hgetall(`s:${quizId}:i:${instanceId}:results`)
@@ -81,6 +86,7 @@ async function processCachedData({
   const instanceResults: Record<
     string,
     {
+      info: Record<string, string>
       responseHashes: Record<string, string>
       responses: Record<string, string>
       anonymousResults:
@@ -90,14 +96,45 @@ async function processCachedData({
         | ElementResultsContent
     }
   > = mappedResults.slice(2).reduce((acc, cacheObj, ix) => {
-    const ixMod = ix % 3
+    const ixMod = ix % 4
     const instance = activeBlock.elements[Math.floor((ix - ixMod) / 3)]
 
     if (!instance) return acc
 
     switch (ixMod) {
       // compute element instance results from cache entries
-      case 2: {
+
+      // instance info / solutions
+      case 0:
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            info: cacheObj,
+          },
+        }
+
+      // response hashes
+      case 1:
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            responseHashes: cacheObj,
+          },
+        }
+
+      // responses
+      case 2:
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            responses: cacheObj,
+          },
+        }
+
+      case 3: {
         // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
         let anonymousResults:
           | ElementResultsChoices
@@ -132,15 +169,47 @@ async function processCachedData({
             omitBy(cacheObj, (_, key) => key === 'participants')
           ).reduce<Record<string, { value: string; count: number }>>(
             (responses_acc, [responseHash, count]) => {
+              const solutions = JSON.parse(
+                acc[instance.id]?.['info']?.solutions
+              )
+              const response =
+                acc[instance.id]?.['responseHashes'][responseHash] ??
+                responseHash
+
+              let grading: number | undefined
+              if (solutions && solutions.length > 0) {
+                if (instance.elementType === ElementType.NUMERICAL) {
+                  grading =
+                    gradeQuestionNumerical({
+                      response,
+                      solutionRanges: solutions,
+                    }) ?? undefined
+                } else if (instance.elementType === ElementType.FREE_TEXT) {
+                  grading =
+                    gradeQuestionFreeText({
+                      response,
+                      solutions,
+                    }) ?? undefined
+                }
+              }
+
+              const updatedResponse = {
+                value:
+                  acc[instance.id]?.['responseHashes'][responseHash] ??
+                  responseHash,
+                count:
+                  (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
+              }
+
               return {
                 ...responses_acc,
-                [responseHash]: {
-                  value:
-                    acc[instance.id]?.['responseHashes'][responseHash] ??
-                    responseHash,
-                  count:
-                    (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
-                },
+                [responseHash]:
+                  typeof grading !== 'undefined'
+                    ? {
+                        ...updatedResponse,
+                        correct: grading === 1 ? true : false,
+                      }
+                    : updatedResponse,
               }
             },
             {}
@@ -160,26 +229,6 @@ async function processCachedData({
           },
         }
       }
-
-      // responses
-      case 1:
-        return {
-          ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            responses: cacheObj,
-          },
-        }
-
-      // response hashes
-      case 0:
-        return {
-          ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            responseHashes: cacheObj,
-          },
-        }
 
       default:
         return acc
