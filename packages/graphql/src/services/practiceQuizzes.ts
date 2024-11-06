@@ -569,7 +569,7 @@ function computeNewAverageTimes({
   const newAverageInstanceTime = existingResponse
     ? (existingInstanceTime! * existingParticipantCount -
         existingResponse.averageTimeSpent +
-        answerTime) /
+        newAverageResponseTime) /
       existingParticipantCount
     : ((existingInstanceTime ?? 0) * existingParticipantCount + answerTime) /
       (existingParticipantCount + 1)
