@@ -158,7 +158,7 @@ function SessionTimeline({
                 <FontAwesomeIcon icon={faCode} size="sm" />
               </Button.Icon>
               <Button.Label>
-                {t('manage.sessions.embeddingEvaluation')}
+                {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
             </Button>
             {!isFeedbackSession && (
@@ -220,7 +220,7 @@ function SessionTimeline({
                   root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
                 onClick={handleEndSession}
-                data={{ cy: 'end-session-cockpit' }}
+                data={{ cy: 'end-live-quiz-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endQuiz')}</Button.Label>
               </Button>

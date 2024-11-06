@@ -28,9 +28,9 @@ function LiveQuizNameChangeModal({
   const [errorToast, setErrorToast] = useState(false)
 
   const schema = Yup.object().shape({
-    name: Yup.string().required(t('manage.activityWizard.sessionName')),
+    name: Yup.string().required(t('manage.activityWizard.activityName')),
     displayName: Yup.string().required(
-      t('manage.activityWizard.sessionDisplayName')
+      t('manage.activityWizard.activityDisplayName')
     ),
   })
 
@@ -41,7 +41,7 @@ function LiveQuizNameChangeModal({
         escapeDisabled
         open={open}
         onClose={(): void => setOpen(false)}
-        title={t('manage.sessions.changeLiveQuizName')}
+        title={t('manage.liveQuizzes.changeLiveQuizName')}
         className={{
           content: 'w-[30rem]',
           title: 'text-xl',
@@ -146,7 +146,7 @@ function LiveQuizNameChangeModal({
         type="success"
         duration={6000}
       >
-        {t('manage.sessions.liveQuizNameChangeSuccess')}
+        {t('manage.liveQuizzes.liveQuizNameChangeSuccess')}
       </Toast>
       <Toast
         dismissible
@@ -155,7 +155,7 @@ function LiveQuizNameChangeModal({
         type="error"
         duration={6000}
       >
-        {t('manage.sessions.liveQuizNameChangeError')}
+        {t('manage.liveQuizzes.liveQuizNameChangeError')}
       </Toast>
     </>
   )

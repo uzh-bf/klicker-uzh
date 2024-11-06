@@ -19,7 +19,7 @@ import { sort } from 'remeda'
 import Layout from '../../components/Layout'
 import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
 
-function RunningSession() {
+function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
   const [nextBlockOrder, setNextBlockOrder] = useState(-1)
@@ -53,9 +53,9 @@ function RunningSession() {
   )
 
   const {
-    loading: sessionLoading,
-    error: sessionError,
-    data: sessionData,
+    loading: quizLoading,
+    error: quizError,
+    data: quizData,
   } = useQuery(GetControlLiveQuizDocument, {
     variables: {
       id: router.query.id as string,
@@ -65,17 +65,14 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    setCurrentBlockOrder(sessionData?.controlLiveQuiz?.activeBlock?.order)
-  }, [
-    sessionData?.controlLiveQuiz?.id,
-    sessionData?.controlLiveQuiz?.activeBlock,
-  ])
+    setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
+  }, [quizData?.controlLiveQuiz?.id, quizData?.controlLiveQuiz?.activeBlock])
 
   useEffect(() => {
-    if (!sessionData?.controlLiveQuiz?.blocks) return
+    if (!quizData?.controlLiveQuiz?.blocks) return
 
     const sortedBlocks = sort(
-      sessionData?.controlLiveQuiz?.blocks,
+      quizData?.controlLiveQuiz?.blocks,
       (a, b) => a.order - b.order
     )
 
@@ -86,35 +83,35 @@ function RunningSession() {
     setNextBlockOrder(
       typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
     )
-  }, [sessionData?.controlLiveQuiz?.blocks])
+  }, [quizData?.controlLiveQuiz?.blocks])
 
-  if (sessionLoading) {
+  if (quizLoading) {
     return (
-      <Layout title={t('control.session.sessionControl')}>
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <Loader />
       </Layout>
     )
   }
 
-  if (!sessionData?.controlLiveQuiz || sessionError) {
+  if (!quizData?.controlLiveQuiz || quizError) {
     return (
-      <Layout title={t('control.session.sessionControl')}>
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <UserNotification
-          message={t('control.session.errorLoadingSession')}
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
           type="error"
         />
       </Layout>
     )
   }
 
-  const { id, name, course, blocks } = sessionData?.controlLiveQuiz
+  const { id, name, course, blocks } = quizData?.controlLiveQuiz
 
   if (!blocks) {
     return (
       <Layout title={name}>
         <UserNotification
           type="warning"
-          message={t('control.session.containsNoQuestions')}
+          message={t('control.liveQuiz.containsNoQuestions')}
         />
       </Layout>
     )
@@ -122,13 +119,13 @@ function RunningSession() {
 
   return (
     <Layout
-      title={t('control.session.sessionWithName', { name: name })}
+      title={t('control.liveQuiz.liveQuizWithName', { name: name })}
       quizId={id}
     >
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
-            <H3>{t('control.session.activeBlock')}</H3>
+            <H3>{t('control.liveQuiz.activeBlock')}</H3>
 
             <LiveQuizBlock
               block={blocks.find((block) => block.order === currentBlockOrder)}
@@ -169,12 +166,12 @@ function RunningSession() {
               }}
               data={{ cy: 'deactivate-block' }}
             >
-              {t('control.session.closeBlock')}
+              {t('control.liveQuiz.closeBlock')}
             </Button>
           </div>
         ) : nextBlockOrder !== -1 ? (
           <div>
-            <H3>{t('control.session.nextBlock')}</H3>
+            <H3>{t('control.liveQuiz.nextBlock')}</H3>
             {nextBlockOrder > 0 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
@@ -213,7 +210,7 @@ function RunningSession() {
               }}
               data={{ cy: 'activate-next-block' }}
             >
-              {t('control.session.activateBlockN', {
+              {t('control.liveQuiz.activateBlockN', {
                 number: nextBlockOrder + 1,
               })}
             </Button>
@@ -222,7 +219,7 @@ function RunningSession() {
           <div>
             <UserNotification
               type="info"
-              message={t('control.session.hintAllBlocksClosed')}
+              message={t('control.liveQuiz.hintAllBlocksClosed')}
               className={{ root: 'mb-2' }}
             />
             <Button
@@ -236,16 +233,16 @@ function RunningSession() {
               className={{
                 root: 'bg-uzh-red-100 float-right text-white',
               }}
-              data={{ cy: 'end-session' }}
+              data={{ cy: 'end-live-quiz' }}
             >
-              {t('control.session.endQuiz')}
+              {t('control.liveQuiz.endQuiz')}
             </Button>
           </div>
         )}
 
         {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
           <UserNotification
-            message={t('control.session.hintLastBlock')}
+            message={t('control.liveQuiz.hintLastBlock')}
             className={{ root: 'mt-14' }}
           />
         )}
@@ -269,4 +266,4 @@ export function getStaticPaths() {
   }
 }
 
-export default RunningSession
+export default RunningLiveQuiz

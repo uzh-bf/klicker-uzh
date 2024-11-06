@@ -31,7 +31,7 @@ function LiveQuizLists({
 
   return (
     <>
-      <H4>{t('control.course.runningSessions')}</H4>
+      <H4>{t('control.course.runningLiveQuizzes')}</H4>
       {runningLiveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           {runningLiveQuizzes.map((quiz) => (
@@ -41,7 +41,7 @@ function LiveQuizLists({
                 icon={faPlay}
                 label={quiz.name}
                 className={{ icon: 'mr-1', root: 'flex-1' }}
-                data={{ cy: `start-session-${quiz.name}` }}
+                data={{ cy: `start-live-quiz-${quiz.name}` }}
               />
               <Button
                 onClick={() => {
@@ -62,11 +62,11 @@ function LiveQuizLists({
           ))}
         </div>
       ) : (
-        <div>{t('control.course.noRunningSessions')}</div>
+        <div>{t('control.course.noRunningLiveQuizzes')}</div>
       )}
 
       <H4 className={{ root: 'mt-4' }}>
-        {t('control.course.plannedSessions')}
+        {t('control.course.plannedLiveQuizzes')}
       </H4>
       {plannedLiveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-1.5">
@@ -82,7 +82,7 @@ function LiveQuizLists({
                   setStartId(quiz.id)
                   setStartName(quiz.name)
                 }}
-                data={{ cy: `start-session-${quiz.name}` }}
+                data={{ cy: `start-live-quiz-${quiz.name}` }}
               />
               <Button
                 onClick={() => {
@@ -103,7 +103,7 @@ function LiveQuizLists({
           ))}
         </div>
       ) : (
-        <div>{t('control.course.noPlannedSessions')}</div>
+        <div>{t('control.course.noPlannedLiveQuizzes')}</div>
       )}
 
       <EmbeddingModal

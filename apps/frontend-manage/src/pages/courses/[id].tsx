@@ -168,7 +168,7 @@ function CourseOverviewPage() {
             <Tabs.Tab
               key="tab-liveQuizzes"
               value="liveQuizzes"
-              label={t('manage.general.sessions')}
+              label={t('manage.general.liveQuizzes')}
               className={{
                 root: 'border border-solid',
                 label: twMerge(

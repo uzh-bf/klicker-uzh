@@ -138,7 +138,7 @@ describe('Different microlearning workflows', () => {
     // Start creation
     cy.loginLecturer()
     cy.get('[data-cy="create-microlearning"]').click()
-    cy.get('[data-cy="cancel-session-creation"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
     cy.get('[data-cy="create-microlearning"]').click()
 
     // Step 1: Name
@@ -148,7 +148,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
@@ -157,7 +157,7 @@ describe('Different microlearning workflows', () => {
       .realClick()
       .type(runningMLDescriptionOLD)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -177,7 +177,7 @@ describe('Different microlearning workflows', () => {
       messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Create stacks
@@ -269,12 +269,12 @@ describe('Different microlearning workflows', () => {
 
     // finalize microlearning creation
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // navigate to list of microlearnings and check status
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
   })
 
   it('Edit the running microlearnings content', () => {
@@ -373,7 +373,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${runningMLName}"]`).contains(
       messages.shared.generic.draft
@@ -417,7 +417,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="stack-1-displayname"]').should('have.value', stackTitle2)
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${runningMLName}"]`).contains(
       messages.shared.generic.draft
@@ -482,7 +482,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${duplicatedMLName}"]`).contains(
       messages.shared.generic.draft
@@ -503,7 +503,7 @@ describe('Different microlearning workflows', () => {
     })
 
     // check if creation was successful
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
       messages.shared.generic.draft
@@ -914,7 +914,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the practice quiz is listed in the course overview
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${convertedPracticeQuizName}"]`).contains(
       messages.shared.generic.draft

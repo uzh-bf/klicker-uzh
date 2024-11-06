@@ -37,9 +37,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
     },
     {
       href: '/sessions',
-      label: t('manage.general.sessions'),
+      label: t('manage.general.liveQuizzes'),
       active: router.pathname == '/sessions',
-      cy: 'sessions',
+      cy: 'live-quizzes',
     },
     {
       href: '/courses',
@@ -96,14 +96,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
             disabled={quizzes?.length === 0}
           >
             {quizzes && quizzes.length > 0 ? (
-              quizzes.map((session) => {
+              quizzes.map((quiz) => {
                 return (
                   <Navigation.DropdownItem
-                    key={session.id}
-                    title={session.name}
-                    onClick={() =>
-                      router.push(`/sessions/${session.id}/cockpit`)
-                    }
+                    key={quiz.id}
+                    title={quiz.name}
+                    onClick={() => router.push(`/sessions/${quiz.id}/cockpit`)}
                     className={{ title: 'text-base font-bold', root: 'p-2' }}
                   />
                 )

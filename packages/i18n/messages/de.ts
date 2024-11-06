@@ -753,7 +753,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
-      sessions: 'Live-Quizzes',
+      liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       generateToken: 'Login-Token generieren',
       '404Message':
@@ -982,9 +982,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
     },
     activityWizard: {
-      sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
-      sessionDisplayName:
-        'Bitte geben Sie einen Anzeigenamen für Ihre Session ein.',
+      activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
+      activityDisplayName:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Aktivität ein.',
       considerFormErrors: 'Bitte beachten Sie die Fehlermeldungen im Formular',
       startDate: 'Bitte geben Sie ein Startdatum für Ihre Session ein.',
       endDate: 'Bitte geben Sie ein Enddatum für Ihre Session ein.',
@@ -1314,9 +1314,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NROverflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
     },
-    sessions: {
-      runningSessions: 'Laufende Sessionen',
-      plannedSessions: 'Geplante Sessionen',
+    liveQuizzes: {
+      runningLiveQuizzes: 'Laufende Sessionen',
+      plannedLiveQuizzes: 'Geplante Sessionen',
       preparedSessions: 'Vorbereitete Sessionen',
       completedSessions: 'Abgeschlossene Sessionen',
       embeddingEvaluation: 'Einbettung Evaluation',
@@ -1324,8 +1324,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sessionEvaluation: 'Session Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Quiz bearbeiten',
-      duplicateSession: 'Session duplizieren',
-      deleteSession: 'Session löschen',
+      duplicateLiveQuiz: 'Session duplizieren',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
@@ -1336,7 +1335,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pastLiveQuizDeletionHint:
         'Das Löschen eines abgeschlossenen Live Quizzes entfernt dieses aus der Dozierendenansicht. Gesammelte Punkte und Antworten der Teilnehmenden bleiben jedoch erhalten und allfällige öffentliche Evaluationslinks bleiben weiterhin gültig. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
-      noSessions: 'Keine Sessionen gefunden',
+      noLiveQuizzes: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
       changeLiveQuizName: 'Änderung Live Quiz Namen',
@@ -1616,7 +1615,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       changedDate: 'Datum wurde erfolgreich angepasst.',
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
-      noSessions: 'Keine Sessionen vorhanden',
+      noLiveQuizzes: 'Keine Sessionen vorhanden',
       noPracticeQuizzes: 'Keine Übungs-Quizzes vorhanden',
       noMicrolearnings: 'Keine Microlearnings vorhanden',
       noGroupActivities: 'Keine Gruppenaktivitäten vorhanden',
@@ -1626,7 +1625,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       assignRandomGroups: 'Zufällige Gruppen zuweisen',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
-      runningSession: 'Laufende Session',
+      runningLiveQuiz: 'Laufendes Live Quiz',
       publicAccess: 'Öffentlicher Zugriff',
       restrictedAccess: 'Restriktierter Zugriff',
       startAt: 'Start: {time}',
@@ -1828,11 +1827,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen Sie es später erneut.',
       completedLiveQuizzesHint:
         'Abgeschlossene Sessionen können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.',
-      runningSessions: 'Laufende Sessionen',
-      noRunningSessions: 'Keine laufenden Sessionen',
-      plannedSessions: 'Geplante Sessionen',
-      noPlannedSessions: 'Keine geplanten Sessionen',
-      sessionStartFailed:
+      runningLiveQuizzes: 'Laufende Live Quizzes',
+      noRunningLiveQuizzes: 'Keine laufenden Live Quizzes',
+      plannedLiveQuizzes: 'Geplante Sessionen',
+      noPlannedLiveQuizzes: 'Keine geplanten Sessionen',
+      liveQuizStartFailed:
         'Leider konnte Ihre Session aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
       pptEmbedding: 'PPT-Einbettung Evaluation',
       startLiveQuiz: 'Quiz starten',
@@ -1841,13 +1840,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       explanationStartLiveQuiz:
         'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
     },
-    session: {
-      sessionControl: 'Session-Steuerung',
-      errorLoadingSession:
+    liveQuiz: {
+      liveQuizControl: 'Session-Steuerung',
+      errorLoadingLiveQuiz:
         'Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals',
       containsNoQuestions:
         'Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten.',
-      sessionWithName: 'Session: {name}',
+      liveQuizWithName: 'Session: {name}',
       activeBlock: 'Aktiver Block:',
       closeBlock: 'Block schliessen',
       nextBlock: 'Nächster Block:',

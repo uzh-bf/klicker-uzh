@@ -60,7 +60,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
       <Button.Icon>
         <FontAwesomeIcon icon={faPlay} />
       </Button.Icon>
-      <Button.Label>{t('manage.sessions.startLiveQuiz')}</Button.Label>
+      <Button.Label>{t('manage.liveQuizzes.startLiveQuiz')}</Button.Label>
     </Button>
   )
 }

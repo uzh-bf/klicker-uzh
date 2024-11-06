@@ -729,7 +729,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()

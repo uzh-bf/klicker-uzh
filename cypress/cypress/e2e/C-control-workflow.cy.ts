@@ -32,8 +32,8 @@ describe('Test functionalities of frontend-control application', () => {
     })
 
     // check if the creation was successful
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionTitle)
+    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', sessionTitle)
   })
 
   it('Generate a token to log into the control-frontend application, execute session', () => {
@@ -54,18 +54,18 @@ describe('Test functionalities of frontend-control application', () => {
     cy.loginControlApp()
 
     // check ppt links and start the session
-    cy.get('[data-cy="unassigned-sessions"]').click()
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
     cy.get(`[data-cy="ppt-link-${sessionTitle}"]`).should('exist').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
     cy.findByText(sessionTitle).click()
-    cy.get('[data-cy="confirm-start-session"]').click()
+    cy.get('[data-cy="confirm-start-live-quiz"]').click()
 
     // test the mobile menu of the control app
     cy.viewport('iphone-6')
     cy.get('[data-cy="ppt-button"]').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
     cy.get('[data-cy="home-button"]').click()
-    cy.get('[data-cy="unassigned-sessions"]').click()
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
     cy.findByText(sessionTitle).click()
     cy.get('[data-cy="back-button"]').click()
     cy.findByText(sessionTitle).click()
@@ -74,7 +74,7 @@ describe('Test functionalities of frontend-control application', () => {
     // open and close block, end the session
     cy.get('[data-cy="activate-next-block"]').click()
     cy.get('[data-cy="deactivate-block"]').click()
-    cy.get('[data-cy="end-session"]').click()
+    cy.get('[data-cy="end-live-quiz"]').click()
     cy.findByText(sessionTitle).should('not.exist')
   })
 

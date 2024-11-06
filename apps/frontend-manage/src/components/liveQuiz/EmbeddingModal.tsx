@@ -74,7 +74,7 @@ function EmbeddingModal({
 
   return (
     <Modal
-      title={t('manage.sessions.evaluationLinksEmbedding')}
+      title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       open={open}
       onClose={onClose}
       className={{ content: 'h-2/3' }}

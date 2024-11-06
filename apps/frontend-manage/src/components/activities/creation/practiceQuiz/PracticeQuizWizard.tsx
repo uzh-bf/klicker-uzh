@@ -102,13 +102,13 @@ function PracticeQuizWizard({
   })
 
   const nameValidationSchema = yup.object().shape({
-    name: yup.string().required(t('manage.activityWizard.sessionName')),
+    name: yup.string().required(t('manage.activityWizard.activityName')),
   })
 
   const descriptionValidationSchema = yup.object().shape({
     displayName: yup
       .string()
-      .required(t('manage.activityWizard.sessionDisplayName')),
+      .required(t('manage.activityWizard.activityDisplayName')),
     description: yup.string(),
   })
 

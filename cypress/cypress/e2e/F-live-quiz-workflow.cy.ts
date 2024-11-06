@@ -46,7 +46,7 @@ describe('Different live-quiz workflows', () => {
   it('Test adding and deleting blocks to a live quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
-    cy.get('[data-cy="cancel-session-creation"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type('TEMP')
     cy.get('[data-cy="next-or-submit"]').click()
@@ -66,7 +66,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName1)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').type(sessionDisplayName1)
     cy.get('[data-cy="insert-live-description"]')
@@ -74,7 +74,7 @@ describe('Different live-quiz workflows', () => {
       .type(sessionDescription1)
     cy.get('[data-cy="insert-live-description"]').contains(sessionDescription1)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // course settings
@@ -189,7 +189,7 @@ describe('Different live-quiz workflows', () => {
       'disabled'
     )
 
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -263,16 +263,16 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="open-block-1-settings"]').click()
     cy.get('[data-cy="block-time-limit"]').should('have.value', '20')
     cy.get('[data-cy="close-block-settings"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
   it('Edit the created session and check if all settings persist', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
 
-    cy.contains('[data-cy="session-block"]', sessionName1)
+    cy.contains('[data-cy="live-quiz-block"]', sessionName1)
     cy.get(`[data-cy="edit-session-${sessionName1}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
@@ -419,8 +419,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName1New)
+    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', sessionName1New)
     cy.get(`[data-cy="edit-session-${sessionName1New}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
@@ -489,8 +489,8 @@ describe('Different live-quiz workflows', () => {
 
   it('Duplicate the live quiz', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName1New)
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', sessionName1New)
 
     // duplicate the session and verify that the content is the same as for the original session
     cy.get(`[data-cy="duplicate-session-${sessionName1New}"]`).click()
@@ -517,13 +517,13 @@ describe('Different live-quiz workflows', () => {
       .should('exist')
       .should('contain', questionTitle1.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName1Dupl)
+    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', sessionName1Dupl)
   })
 
   it('Cleanup: Delete the duplicated live quiz', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
     cy.findByText(sessionName1Dupl).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName1Dupl}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
@@ -533,11 +533,11 @@ describe('Different live-quiz workflows', () => {
   // ! Part 2: Live Quiz Control
   it('Start the created live quizzes, abort it, and restart & completes it', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
-    cy.contains('[data-cy="session-block"]', sessionName1New)
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', sessionName1New)
 
     // start session and then abort it
-    cy.get(`[data-cy="start-session-${sessionName1New}"]`).click()
+    cy.get(`[data-cy="start-live-quiz-${sessionName1New}"]`).click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
     cy.get('[data-cy="abort-cancel-session"]').click()
     cy.get('[data-cy="abort-session-cockpit"]').click()
@@ -554,7 +554,7 @@ describe('Different live-quiz workflows', () => {
       .click()
 
     // start session and then skip through the blocks
-    cy.get(`[data-cy="start-session-${sessionName1New}"]`).click()
+    cy.get(`[data-cy="start-live-quiz-${sessionName1New}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
     cy.wait(500)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -568,7 +568,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Cleanup: Delete the created and completed live quiz', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
 
     cy.findByText(sessionName1New).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName1New}"]`).click()
@@ -649,11 +649,11 @@ describe('Different live-quiz workflows', () => {
     }
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="session"]').contains(sessionName2)
 
     // start session and first block
-    cy.get(`[data-cy="start-session-${sessionName2}"]`).click()
+    cy.get(`[data-cy="start-live-quiz-${sessionName2}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
   })
 
@@ -697,7 +697,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Start the second block of the live quiz', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
 
@@ -709,7 +709,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Make feedbacks visible, respond to one and disable moderation', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
 
@@ -763,7 +763,7 @@ describe('Different live-quiz workflows', () => {
   it('Close block and delete feedback / feedback response', () => {
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -788,7 +788,7 @@ describe('Different live-quiz workflows', () => {
   it('End session on lecturer cockpit', () => {
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -796,7 +796,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Cleanup: Delete the live quiz used for the full cycle test', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
 
     cy.findByText(sessionName2).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName2}"]`).click()

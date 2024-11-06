@@ -56,7 +56,7 @@ function SessionList() {
       <div className="flex flex-col gap-5">
         {runningSessions && runningSessions.length > 0 && (
           <div>
-            <H2>{t('manage.sessions.runningSessions')}</H2>
+            <H2>{t('manage.liveQuizzes.runningLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {runningSessions.map((session) => (
                 <Session key={session.id} quiz={session} />
@@ -66,7 +66,7 @@ function SessionList() {
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
           <div>
-            <H2>{t('manage.sessions.plannedSessions')}</H2>
+            <H2>{t('manage.liveQuizzes.plannedLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledSessions.map((session) => (
                 <Session key={session.id} quiz={session} />
@@ -76,7 +76,7 @@ function SessionList() {
         )}
         {preparedSessions && preparedSessions.length > 0 && (
           <div>
-            <H2>{t('manage.sessions.preparedSessions')}</H2>
+            <H2>{t('manage.liveQuizzes.preparedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {preparedSessions.map((session) => (
                 <Session key={session.id} quiz={session} />
@@ -86,7 +86,7 @@ function SessionList() {
         )}
         {completedSessions && completedSessions.length > 0 && (
           <div>
-            <H2>{t('manage.sessions.completedSessions')}</H2>
+            <H2>{t('manage.liveQuizzes.completedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {completedSessions.map((session) => (
                 <Session key={session.id} quiz={session} />
@@ -100,10 +100,10 @@ function SessionList() {
           completedSessions?.length === 0 && (
             <UserNotification
               type="warning"
-              message={t('manage.sessions.noSessions')}
+              message={t('manage.liveQuizzes.noLiveQuizzes')}
               className={{ message: 'font-bold' }}
             >
-              {t.rich('manage.sessions.creationExplanation', {
+              {t.rich('manage.liveQuizzes.creationExplanation', {
                 link: (text) => (
                   <Link
                     href="/"

@@ -755,7 +755,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
-      sessions: 'Live Quizzes',
+      liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       generateToken: 'Generate login token',
       '404Message':
@@ -983,8 +983,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
     activityWizard: {
-      sessionName: 'Please enter a name for your quiz.',
-      sessionDisplayName: 'Please enter a valid display name for your quiz.',
+      activityName: 'Please enter a name for your activity.',
+      activityDisplayName:
+        'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
       startDate: 'Please enter a start date for your quiz.',
       endDate: 'Please enter an end date for your quiz.',
@@ -1302,9 +1303,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       NROverflow:
         'Numerical quantities cannot be larger than 1e30 for technical reasons.',
     },
-    sessions: {
-      runningSessions: 'Running Live Quizzes',
-      plannedSessions: 'Planned Live Quizzes',
+    liveQuizzes: {
+      runningLiveQuizzes: 'Running Live Quizzes',
+      plannedLiveQuizzes: 'Planned Live Quizzes',
       preparedSessions: 'Prepared Live Quizzes',
       completedSessions: 'Completed Live Quizzes',
       embeddingEvaluation: 'Embed Evaluation',
@@ -1312,8 +1313,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sessionEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Edit Quiz',
-      duplicateSession: 'Duplicate Quiz',
-      deleteSession: 'Delete Quiz',
+      duplicateLiveQuiz: 'Duplicate Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
       deleteLiveQuiz: 'Delete Quiz',
@@ -1324,7 +1324,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pastLiveQuizDeletionHint:
         'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
-      noSessions: 'No live quizzes available',
+      noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       changeLiveQuizName: 'Change live quiz name',
@@ -1596,7 +1596,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
-      noSessions: 'No live quizzes available',
+      noLiveQuizzes: 'No live quizzes available',
       noPracticeQuizzes: 'No practice quizzes available',
       noMicrolearnings: 'No microlearning available',
       noGroupActivities: 'No group activities available',
@@ -1606,7 +1606,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       assignRandomGroups: 'Assign random groups',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
-      runningSession: 'Running live quiz',
+      runningLiveQuiz: 'Running live quiz',
       publicAccess: 'Public access',
       restrictedAccess: 'Restricted access',
       startAt: 'Start: {time}',
@@ -1815,11 +1815,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while loading your courses. Please try again later.',
       completedLiveQuizzesHint:
         'Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.',
-      runningSessions: 'Running Sessions',
-      noRunningSessions: 'No running sessions',
-      plannedSessions: 'Planned Sessions',
-      noPlannedSessions: 'No planned sessions',
-      sessionStartFailed:
+      runningLiveQuizzes: 'Running Live Quizzes',
+      noRunningLiveQuizzes: 'No running live quizzes',
+      plannedLiveQuizzes: 'Planned Sessions',
+      noPlannedLiveQuizzes: 'No planned sessions',
+      liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
       startLiveQuiz: 'Start quiz',
@@ -1828,13 +1828,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       explanationStartLiveQuiz:
         'Please note that a started live quiz is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app.',
     },
-    session: {
-      sessionControl: 'Live Quiz Control',
-      errorLoadingSession:
+    liveQuiz: {
+      liveQuizControl: 'Live Quiz Control',
+      errorLoadingLiveQuiz:
         'Unfortunately, an error occurred while loading the live quiz. Please make sure that the quiz is still running or try again later.',
       containsNoQuestions:
         'This live quiz does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.',
-      sessionWithName: 'Live Quiz: {name}',
+      liveQuizWithName: 'Live Quiz: {name}',
       activeBlock: 'Active Block:',
       closeBlock: 'Close Block',
       nextBlock: 'Next Block:',

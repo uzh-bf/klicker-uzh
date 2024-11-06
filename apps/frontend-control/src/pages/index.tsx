@@ -74,7 +74,7 @@ function Index() {
               link="/course/unassigned"
               icon={faList}
               label={t('control.home.listLiveQuizzesNoCourse')}
-              data={{ cy: 'unassigned-sessions' }}
+              data={{ cy: 'unassigned-live-quizzes' }}
             />
           </div>
         </div>

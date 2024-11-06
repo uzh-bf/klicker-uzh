@@ -81,7 +81,7 @@ function StartModal({
             root: 'bg-primary-80 text-white',
           }}
           data={{
-            cy: 'confirm-start-session',
+            cy: 'confirm-start-live-quiz',
           }}
         >
           {t('shared.generic.start')}
@@ -90,7 +90,7 @@ function StartModal({
       onSecondaryAction={
         <Button
           onClick={() => setStartModalOpen(false)}
-          data={{ cy: 'cancel-start-session-modal' }}
+          data={{ cy: 'cancel-start-live-quiz-modal' }}
         >
           {t('shared.generic.cancel')}
         </Button>

@@ -137,7 +137,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
             </Ellipsis>
           </div>
           <div className="mb-1 text-sm italic">
-            {t('manage.sessions.nBlocksQuestions', {
+            {t('manage.liveQuizzes.nBlocksQuestions', {
               blocks: quiz.numOfBlocks,
               questions: quiz.numOfInstances,
             })}
@@ -176,7 +176,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       label: (
                         <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
                           <FontAwesomeIcon icon={faPencil} />
-                          <div>{t('manage.sessions.editLiveQuiz')}</div>
+                          <div>{t('manage.liveQuizzes.editLiveQuiz')}</div>
                         </div>
                       ),
                       onClick: () =>
@@ -191,7 +191,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                     },
                     getActivityDuplicationAction({
                       id: quiz.id,
-                      text: t('manage.sessions.duplicateSession'),
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
                       wizardMode: WizardMode.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
@@ -200,7 +200,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       label: (
                         <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
                           <FontAwesomeIcon icon={faTrashCan} />
-                          <div>{t('manage.sessions.deleteSession')}</div>
+                          <div>{t('manage.liveQuizzes.deleteLiveQuiz')}</div>
                         </div>
                       ),
                       onClick: () => setDeletionModal(true),
@@ -238,7 +238,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       : [],
                     getActivityDuplicationAction({
                       id: quiz.id,
-                      text: t('manage.sessions.duplicateSession'),
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
                       wizardMode: WizardMode.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
@@ -263,7 +263,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       label: (
                         <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
                           <FontAwesomeIcon icon={faTrashCan} />
-                          <div>{t('manage.sessions.deleteSession')}</div>
+                          <div>{t('manage.liveQuizzes.deleteLiveQuiz')}</div>
                         </div>
                       ),
                       onClick: () => setDeletionModal(true),
@@ -271,7 +271,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                     },
                     getActivityDuplicationAction({
                       id: quiz.id,
-                      text: t('manage.sessions.duplicateSession'),
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
                       wizardMode: WizardMode.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
@@ -286,10 +286,10 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
 
         <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
         <DeletionModal
-          title={t('manage.sessions.deleteLiveQuiz')}
-          description={t('manage.sessions.confirmLiveQuizDeletion')}
+          title={t('manage.liveQuizzes.deleteLiveQuiz')}
+          description={t('manage.liveQuizzes.confirmLiveQuizDeletion')}
           elementName={quiz.name}
-          message={t('manage.sessions.liveQuizDeletionHint')}
+          message={t('manage.liveQuizzes.liveQuizDeletionHint')}
           deleteElement={deleteLiveQuiz}
           open={deletionModal}
           setOpen={setDeletionModal}

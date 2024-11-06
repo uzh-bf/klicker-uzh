@@ -37,7 +37,7 @@ function WizardNavigation({
         {typeof onPrevStep !== 'undefined' && (
           <Button
             onClick={() => onPrevStep()}
-            data={{ cy: 'back-session-creation' }}
+            data={{ cy: 'back-activity-creation' }}
             type="button"
           >
             <FontAwesomeIcon icon={faArrowLeft} />
@@ -47,7 +47,7 @@ function WizardNavigation({
         <Button
           className={{ root: 'border-red-400' }}
           onClick={() => onCloseWizard()}
-          data={{ cy: 'cancel-session-creation' }}
+          data={{ cy: 'cancel-activity-creation' }}
           type="button"
         >
           <FontAwesomeIcon icon={faCancel} />
