@@ -183,12 +183,25 @@ async function run() {
 
       // increase aggregated instance values
       // (floor required due to the way prisma handles float to int conversion)
+      // TODO: investigate why it tends to go to zero
+      // SELECT *
+      // FROM "ElementInstance" ei
+      // JOIN "InstanceStatistics" i ON ei.id = i."elementInstanceId"
+      // JOIN "QuestionResponseDetail" qr ON qr."elementInstanceId" = ei.id
+      // WHERE ei.id = 251;
       instanceUniqueParticipantCount += 1
       instanceAverageTimeSpent = Math.floor(
         ((instanceAverageTimeSpent ?? 0) *
           (instanceUniqueParticipantCount - 1) +
           averageTimeSpent) /
           instanceUniqueParticipantCount
+      )
+      console.log(
+        instanceAverageTimeSpent,
+        instanceUniqueParticipantCount,
+        averageTimeSpent,
+        (instanceAverageTimeSpent ?? 0) * (instanceUniqueParticipantCount - 1) +
+          averageTimeSpent
       )
 
       if (instance.elementType === ElementType.CONTENT) {
@@ -1199,29 +1212,31 @@ function computeDetailUpdate({
 
   // check if the stored values are correct
   if (verbose) {
-    if (
-      typeof newValues.score !== 'undefined' &&
-      detail.score !== newValues.score
-    ) {
-      console.log(
-        'Score not identical:',
-        detail.score,
-        newValues.score,
-        detail.id
-      )
-    }
-    if (
-      detail.pointsAwarded !== null &&
-      typeof newValues.pointsAwarded !== 'undefined' &&
-      detail.pointsAwarded !== newValues.pointsAwarded
-    ) {
-      console.log(
-        'PointsAwarded not identical:',
-        detail.pointsAwarded,
-        newValues.pointsAwarded,
-        detail.id
-      )
-    }
+    // ! VERIFIED
+    // if (
+    //   typeof newValues.score !== 'undefined' &&
+    //   detail.score !== newValues.score
+    // ) {
+    //   console.log(
+    //     'Score not identical:',
+    //     detail.score,
+    //     newValues.score,
+    //     detail.id
+    //   )
+    // }
+    // ! VERIFIED
+    // if (
+    //   detail.pointsAwarded !== null &&
+    //   typeof newValues.pointsAwarded !== 'undefined' &&
+    //   detail.pointsAwarded !== newValues.pointsAwarded
+    // ) {
+    //   console.log(
+    //     'PointsAwarded not identical:',
+    //     detail.pointsAwarded,
+    //     newValues.pointsAwarded,
+    //     detail.id
+    //   )
+    // }
     // ! VERIFIED
     // if (
     //   typeof newValues.xpAwarded !== 'undefined' &&
@@ -1335,29 +1350,30 @@ function computeResponseUpdate({
     //     response.id
     //   )
     // }
-    if (
-      typeof newValues.totalScore !== 'undefined' &&
-      response.totalScore !== newValues.totalScore
-    ) {
-      console.log(
-        'totalScore not identical:',
-        response.totalScore,
-        newValues.totalScore,
-        response.id
-      )
-    }
-    if (
-      response.totalPointsAwarded !== null &&
-      typeof newValues.totalPointsAwarded !== 'undefined' &&
-      response.totalPointsAwarded !== newValues.totalPointsAwarded
-    ) {
-      console.log(
-        'totalPointsAwarded not identical:',
-        response.totalPointsAwarded,
-        newValues.totalPointsAwarded,
-        response.id
-      )
-    }
+    // if (
+    //   typeof newValues.totalScore !== 'undefined' &&
+    //   response.totalScore !== newValues.totalScore
+    // ) {
+    //   console.log(
+    //     'totalScore not identical:',
+    //     response.totalScore,
+    //     newValues.totalScore,
+    //     response.id
+    //   )
+    // }
+    // ! VERIFIED
+    // if (
+    //   response.totalPointsAwarded !== null &&
+    //   typeof newValues.totalPointsAwarded !== 'undefined' &&
+    //   response.totalPointsAwarded !== newValues.totalPointsAwarded
+    // ) {
+    //   console.log(
+    //     'totalPointsAwarded not identical:',
+    //     response.totalPointsAwarded,
+    //     newValues.totalPointsAwarded,
+    //     response.id
+    //   )
+    // }
     if (
       typeof newValues.averageTimeSpent !== 'undefined' &&
       response.averageTimeSpent !== newValues.averageTimeSpent
@@ -1413,12 +1429,16 @@ function computeResponseUpdate({
         response.id
       )
     }
-    // ! VERIFIED
     // if (
     //   typeof newValues.eFactor !== 'undefined' &&
     //   response.eFactor !== newValues.eFactor
     // ) {
-    //   console.log('eFactor not identical:', response.eFactor, newValues.eFactor)
+    // console.log(
+    //   'eFactor not identical:',
+    //   response.eFactor,
+    //   newValues.eFactor,
+    //   response.id
+    // )
     // }
     // if (
     //   typeof newValues.interval !== 'undefined' &&
@@ -1427,7 +1447,8 @@ function computeResponseUpdate({
     //   console.log(
     //     'interval not identical:',
     //     response.interval,
-    //     newValues.interval
+    //     newValues.interval,
+    //     response.id
     //   )
     // }
     if (
@@ -1437,7 +1458,8 @@ function computeResponseUpdate({
       console.log(
         'firstResponse not identical:',
         response.firstResponse,
-        newValues.firstResponse
+        newValues.firstResponse,
+        response.id
       )
     }
     if (
@@ -1447,7 +1469,8 @@ function computeResponseUpdate({
       console.log(
         'firstResponseCorrectness not identical:',
         response.firstResponseCorrectness,
-        newValues.firstResponseCorrectness
+        newValues.firstResponseCorrectness,
+        response.id
       )
     }
     if (
@@ -1457,26 +1480,30 @@ function computeResponseUpdate({
       console.log(
         'lastResponse not identical:',
         response.lastResponse,
-        newValues.lastResponse
+        newValues.lastResponse,
+        response.id
       )
     }
-    if (
-      typeof newValues.lastResponseCorrectness !== 'undefined' &&
-      response.lastResponseCorrectness !== newValues.lastResponseCorrectness
-    ) {
-      console.log(
-        'lastResponseCorrectness not identical:',
-        response.lastResponseCorrectness,
-        newValues.lastResponseCorrectness
-      )
-    }
+    // ! VERIFIED
+    // if (
+    //   typeof newValues.lastResponseCorrectness !== 'undefined' &&
+    //   response.lastResponseCorrectness !== newValues.lastResponseCorrectness
+    // ) {
+    //   console.log(
+    //     'lastResponseCorrectness not identical:',
+    //     response.lastResponseCorrectness,
+    //     newValues.lastResponseCorrectness,
+    //     response.id
+    //   )
+    // }
     if (
       !isDeepEqual(response.aggregatedResponses, newValues.aggregatedResponses)
     ) {
       console.log(
         'aggregatedResponses not identical:',
         response.aggregatedResponses,
-        newValues.aggregatedResponses
+        newValues.aggregatedResponses,
+        response.id
       )
     }
   }
@@ -1611,96 +1638,99 @@ function computeInstanceUpdate({
 
   if (instance.type === ElementInstanceType.PRACTICE_QUIZ) {
     if (verbose) {
-      if (!isDeepEqual(instance.results, newValues.results)) {
-        console.log(
-          'Instance results not identical:',
-          instance.results,
-          newValues.results,
-          instance.id
-        )
-      }
-      if (stats.correctCount !== newValues.correctCount) {
-        console.log(
-          'Correct count not identical:',
-          stats.correctCount,
-          newValues.correctCount,
-          instance.id
-        )
-      }
-      if (stats.partialCorrectCount !== newValues.partialCorrectCount) {
-        console.log(
-          'Partial correct count not identical:',
-          stats.partialCorrectCount,
-          newValues.partialCorrectCount,
-          instance.id
-        )
-      }
-      if (stats.wrongCount !== newValues.wrongCount) {
-        console.log(
-          'Wrong count not identical:',
-          stats.wrongCount,
-          newValues.wrongCount,
-          instance.id
-        )
-      }
-      if (stats.firstCorrectCount !== newValues.firstCorrectCount) {
-        console.log(
-          'First correct count not identical:',
-          stats.firstCorrectCount,
-          newValues.firstCorrectCount,
-          instance.id
-        )
-      }
-      if (
-        stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount
-      ) {
-        console.log(
-          'First partial correct count not identical:',
-          stats.firstPartialCorrectCount,
-          newValues.firstPartialCorrectCount,
-          instance.id
-        )
-      }
-      if (stats.firstWrongCount !== newValues.firstWrongCount) {
-        console.log(
-          'First wrong count not identical:',
-          stats.firstWrongCount,
-          newValues.firstWrongCount,
-          instance.id
-        )
-      }
-      if (stats.lastCorrectCount !== newValues.lastCorrectCount) {
-        console.log(
-          'Last correct count not identical:',
-          stats.lastCorrectCount,
-          newValues.lastCorrectCount,
-          instance.id
-        )
-      }
-      if (stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount) {
-        console.log(
-          'Last partial correct count not identical:',
-          stats.lastPartialCorrectCount,
-          newValues.lastPartialCorrectCount,
-          instance.id
-        )
-      }
-      if (stats.lastWrongCount !== newValues.lastWrongCount) {
-        console.log(
-          'Last wrong count not identical:',
-          stats.lastWrongCount,
-          newValues.lastWrongCount,
-          instance.id
-        )
-      }
-      if (stats.uniqueParticipantCount !== newValues.uniqueParticipantCount) {
-        console.log(
-          'Unique participant count not identical:',
-          stats.uniqueParticipantCount,
-          newValues.uniqueParticipantCount,
-          instance.id
-        )
-      }
+      // ! VERIFIED
+      // if (!isDeepEqual(instance.results, newValues.results)) {
+      //   console.log(
+      //     'Instance results not identical:',
+      //     instance.results,
+      //     newValues.results,
+      //     instance.id
+      //   )
+      // }
+      // ! VERIFIED
+      // if (stats.correctCount !== newValues.correctCount) {
+      //   console.log(
+      //     'Correct count not identical:',
+      //     stats.correctCount,
+      //     newValues.correctCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.partialCorrectCount !== newValues.partialCorrectCount) {
+      //   console.log(
+      //     'Partial correct count not identical:',
+      //     stats.partialCorrectCount,
+      //     newValues.partialCorrectCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.wrongCount !== newValues.wrongCount) {
+      //   console.log(
+      //     'Wrong count not identical:',
+      //     stats.wrongCount,
+      //     newValues.wrongCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.firstCorrectCount !== newValues.firstCorrectCount) {
+      //   console.log(
+      //     'First correct count not identical:',
+      //     stats.firstCorrectCount,
+      //     newValues.firstCorrectCount,
+      //     instance.id
+      //   )
+      // }
+      // if (
+      //   stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount
+      // ) {
+      //   console.log(
+      //     'First partial correct count not identical:',
+      //     stats.firstPartialCorrectCount,
+      //     newValues.firstPartialCorrectCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.firstWrongCount !== newValues.firstWrongCount) {
+      //   console.log(
+      //     'First wrong count not identical:',
+      //     stats.firstWrongCount,
+      //     newValues.firstWrongCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.lastCorrectCount !== newValues.lastCorrectCount) {
+      //   console.log(
+      //     'Last correct count not identical:',
+      //     stats.lastCorrectCount,
+      //     newValues.lastCorrectCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount) {
+      //   console.log(
+      //     'Last partial correct count not identical:',
+      //     stats.lastPartialCorrectCount,
+      //     newValues.lastPartialCorrectCount,
+      //     instance.id
+      //   )
+      // }
+      // if (stats.lastWrongCount !== newValues.lastWrongCount) {
+      //   console.log(
+      //     'Last wrong count not identical:',
+      //     stats.lastWrongCount,
+      //     newValues.lastWrongCount,
+      //     instance.id
+      //   )
+      // }
+      // ! VERIFIED
+      // if (stats.uniqueParticipantCount !== newValues.uniqueParticipantCount) {
+      //   console.log(
+      //     'Unique participant count not identical:',
+      //     stats.uniqueParticipantCount,
+      //     newValues.uniqueParticipantCount,
+      //     instance.id
+      //   )
+      // }
       if (stats.averageTimeSpent !== newValues.averageTimeSpent) {
         console.log(
           'Average time spent not identical:',
