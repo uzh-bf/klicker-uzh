@@ -1,4 +1,8 @@
 import {
+  gradeQuestionFreeText,
+  gradeQuestionNumerical,
+} from '@klicker-uzh/grading'
+import {
   Element,
   ElementBlockStatus,
   ElementInstanceType,
@@ -7,7 +11,14 @@ import {
   PrismaClient,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
-import { AllElementTypeData } from '@klicker-uzh/types'
+import {
+  AllElementTypeData,
+  ElementInstanceResults,
+  ElementOptionsFreeText,
+  ElementOptionsNumerical,
+  ElementResultsChoices,
+  ElementResultsOpen,
+} from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -17,6 +28,8 @@ import { v4 as uuidv4 } from 'uuid'
 // ! Flags
 const logFakedElement = false
 const logQuestionDataConversion = false
+const logResultsConversion = false
+const logInstanceConversion = false
 
 function computeElementType({
   questionData,
@@ -105,6 +118,134 @@ function questionDataToElementData({
   return elementData
 }
 
+function convertOldResults({
+  type,
+  oldResults,
+  elementData,
+  totalParticipants,
+}: {
+  type: ElementType
+  oldResults: any
+  elementData: AllElementTypeData
+  totalParticipants: number
+}): ElementInstanceResults {
+  if (logResultsConversion) {
+    console.log('ELEMENT TYPE')
+    console.log(type)
+    console.log("ELEMENT DATA'S OPTIONS")
+    console.log('options' in elementData ? elementData.options : 'no options')
+    console.log('OLD RESULTS (QUESTION INSTANCE)')
+    console.log(oldResults)
+    console.log('NEW RESULTS (ELEMENT INSTANCE)')
+  }
+
+  if (
+    type === ElementType.SC ||
+    type === ElementType.MC ||
+    type === ElementType.KPRIM
+  ) {
+    const newChoices = Object.entries(oldResults).reduce<
+      ElementResultsChoices['choices']
+    >((acc, [_, option]: [string, any]) => {
+      acc[option.value] = option.count
+      return acc
+    }, {})
+
+    const newResults = {
+      total: totalParticipants,
+      choices: newChoices,
+    }
+
+    if (logResultsConversion) {
+      console.log(newResults)
+      console.log('\n\n')
+    }
+
+    return newResults
+  } else if (type === ElementType.NUMERICAL) {
+    const withSolutions =
+      'options' in elementData && 'solutionRanges' in elementData.options
+
+    const newResponses = Object.entries(oldResults).reduce<
+      ElementResultsOpen['responses']
+    >((acc, [responseHash, response]: [string, any]) => {
+      const grading = withSolutions
+        ? gradeQuestionNumerical({
+            response: response.value,
+            solutionRanges:
+              (elementData.options as ElementOptionsNumerical).solutionRanges ??
+              [],
+          })
+        : null
+      const correctness = grading !== null ? grading === 1 : null
+
+      acc[responseHash] =
+        correctness !== null
+          ? {
+              value: response.value,
+              count: response.count,
+              correct: correctness,
+            }
+          : { value: response.value, count: response.count }
+
+      return acc
+    }, {})
+
+    const newResults = {
+      total: totalParticipants,
+      responses: newResponses,
+    }
+
+    if (logResultsConversion) {
+      console.log(newResults)
+      console.log('\n\n')
+    }
+
+    return newResults
+  } else if (type === ElementType.FREE_TEXT) {
+    const withSolutions =
+      'options' in elementData && 'solutions' in elementData.options
+
+    const newResponses = Object.entries(oldResults).reduce<
+      ElementResultsOpen['responses']
+    >((acc, [responseHash, response]: [string, any]) => {
+      const grading = withSolutions
+        ? gradeQuestionFreeText({
+            response: response.value,
+            solutions:
+              (elementData.options as ElementOptionsFreeText).solutions ?? [],
+          })
+        : null
+      const correctness = grading !== null ? grading === 1 : null
+
+      acc[responseHash] =
+        correctness !== null
+          ? {
+              value: response.value,
+              count: response.count,
+              correct: correctness,
+            }
+          : { value: response.value, count: response.count }
+
+      return acc
+    }, {})
+
+    const newResults = {
+      total: totalParticipants,
+      responses: newResponses,
+    }
+
+    if (logResultsConversion) {
+      console.log(newResults)
+      console.log('\n\n')
+    }
+
+    return newResults
+  }
+
+  throw new Error('Invalid element type encountered during results conversion')
+}
+
 async function run() {
   const prisma = new PrismaClient()
 
@@ -122,8 +263,6 @@ async function run() {
         },
       },
     },
-    skip: 0, // TODO: remove this
-    take: 10, // TODO: remove this
   })
 
   for (const liveSession of liveSessions) {
@@ -144,10 +283,21 @@ async function run() {
 
         const newElementType = computeElementType({ questionData })
         const newElementData = questionDataToElementData({ questionData })
-        const newResults = getInitialElementResults(
+
+        const emptyResults = getInitialElementResults(
           fakeElementFromQuestionData({ questionData })
         )
-        const newAnonymousResults = {} // TODO: parse from existing results on question instance
+
+        const oldResults = instance.results as any
+        const newAnonymousResults =
+          instance.participants === 0
+            ? emptyResults
+            : convertOldResults({
+                type: newElementType,
+                oldResults,
+                elementData: newElementData,
+                totalParticipants: instance.participants,
+              })
 
         // TODO: figure out how to handle cases with missing element (questionId = null)
         // ? also extracting the questionId from the questionData does not work -> error on creation
@@ -158,7 +308,7 @@ async function run() {
           )
         }
 
-        return {
+        const newInstance = {
           originalId: String(instance.id),
 
           type: ElementInstanceType.LIVE_QUIZ,
@@ -168,7 +318,7 @@ async function run() {
 
           options: newOptions,
           elementData: newElementData,
-          results: newResults,
+          results: emptyResults,
           anonymousResults: newAnonymousResults,
 
           owner: {
@@ -185,6 +335,16 @@ async function run() {
           createdAt: instance.createdAt,
           updatedAt: instance.updatedAt,
         }
+
+        if (logInstanceConversion) {
+          console.log('INSTANCE (QUESTION INSTANCE)')
+          console.log(instance)
+          console.log('NEW INSTANCE (ELEMENT INSTANCE)')
+          console.log(newInstance)
+          console.log('\n\n')
+        }
+
+        return newInstance
       })
 
       // compute element block properties based on session block properties
