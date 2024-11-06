@@ -20,7 +20,6 @@ import type {
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
-  QuestionResultsChoices,
 } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
@@ -979,7 +978,7 @@ export async function activateLiveQuizBlock(
         })
         redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
-          ...(instance.results as QuestionResultsChoices).choices,
+          ...(instance.results as ElementResultsChoices).choices,
         })
         break
       }

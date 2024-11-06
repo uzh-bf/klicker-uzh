@@ -12,43 +12,46 @@ import ErrorStartToast from '../toasts/ErrorStartToast'
 import EmbeddingModal from './EmbeddingModal'
 import StartModal from './StartModal'
 
-interface SessionListsProps {
-  runningSessions: { id: string; name: string }[]
-  plannedSessions: { id: string; name: string }[]
+interface LiveQuizListsProps {
+  runningLiveQuizzes: { id: string; name: string }[]
+  plannedLiveQuizzes: { id: string; name: string }[]
 }
 
-function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
+function LiveQuizLists({
+  runningLiveQuizzes,
+  plannedLiveQuizzes,
+}: LiveQuizListsProps) {
   const t = useTranslations()
   const [startModalOpen, setStartModalOpen] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
   const [startId, setStartId] = useState('')
   const [startName, setStartName] = useState('')
   const [embedOpen, setEmbedOpen] = useState(false)
-  const [sessionId, setSessionId] = useState('')
+  const [quizId, setQuizId] = useState('')
 
   return (
     <>
-      <H4>{t('control.course.runningSessions')}</H4>
-      {runningSessions.length > 0 ? (
+      <H4>{t('control.course.runningLiveQuizzes')}</H4>
+      {runningLiveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          {runningSessions.map((session) => (
-            <div key={session.id} className="flex flex-row items-center gap-2">
+          {runningLiveQuizzes.map((quiz) => (
+            <div key={quiz.id} className="flex flex-row items-center gap-2">
               <ListButton
-                link={`/session/${session.id}`}
+                link={`/session/${quiz.id}`}
                 icon={faPlay}
-                label={session.name}
+                label={quiz.name}
                 className={{ icon: 'mr-1', root: 'flex-1' }}
-                data={{ cy: `start-session-${session.name}` }}
+                data={{ cy: `start-live-quiz-${quiz.name}` }}
               />
               <Button
                 onClick={() => {
                   setEmbedOpen(true)
-                  setSessionId(session.id)
+                  setQuizId(quiz.id)
                 }}
                 className={{
                   root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
                 }}
-                data={{ cy: `ppt-link-${session.name}` }}
+                data={{ cy: `ppt-link-${quiz.name}` }}
               >
                 <Button.Icon className={{ root: 'mr-2' }}>
                   <FontAwesomeIcon icon={faPersonChalkboard} />
@@ -59,37 +62,37 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
           ))}
         </div>
       ) : (
-        <div>{t('control.course.noRunningSessions')}</div>
+        <div>{t('control.course.noRunningLiveQuizzes')}</div>
       )}
 
       <H4 className={{ root: 'mt-4' }}>
-        {t('control.course.plannedSessions')}
+        {t('control.course.plannedLiveQuizzes')}
       </H4>
-      {plannedSessions.length > 0 ? (
+      {plannedLiveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          {plannedSessions.map((session) => (
-            <div key={session.id} className="flex flex-row items-center gap-2">
+          {plannedLiveQuizzes.map((quiz) => (
+            <div key={quiz.id} className="flex flex-row items-center gap-2">
               <ListButton
-                key={session.id}
+                key={quiz.id}
                 icon={faCalendar}
-                label={session.name}
+                label={quiz.name}
                 className={{ icon: 'mr-1' }}
                 onClick={() => {
                   setStartModalOpen(true)
-                  setStartId(session.id)
-                  setStartName(session.name)
+                  setStartId(quiz.id)
+                  setStartName(quiz.name)
                 }}
-                data={{ cy: `start-session-${session.name}` }}
+                data={{ cy: `start-live-quiz-${quiz.name}` }}
               />
               <Button
                 onClick={() => {
                   setEmbedOpen(true)
-                  setSessionId(session.id)
+                  setQuizId(quiz.id)
                 }}
                 className={{
                   root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
                 }}
-                data={{ cy: `ppt-link-${session.name}` }}
+                data={{ cy: `ppt-link-${quiz.name}` }}
               >
                 <Button.Icon className={{ root: 'mr-2' }}>
                   <FontAwesomeIcon icon={faPersonChalkboard} />
@@ -100,13 +103,13 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
           ))}
         </div>
       ) : (
-        <div>{t('control.course.noPlannedSessions')}</div>
+        <div>{t('control.course.noPlannedLiveQuizzes')}</div>
       )}
 
       <EmbeddingModal
         open={embedOpen}
         setOpen={(newValue: boolean) => setEmbedOpen(newValue)}
-        quizId={sessionId}
+        quizId={quizId}
       />
       <StartModal
         quizId={startId}
@@ -120,4 +123,4 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
   )
 }
 
-export default SessionLists
+export default LiveQuizLists

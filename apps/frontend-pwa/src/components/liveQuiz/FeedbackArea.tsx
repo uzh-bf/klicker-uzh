@@ -153,7 +153,7 @@ function FeedbackArea({
         })
         push([
           'trackEvent',
-          'Join Session',
+          'Join Live Quiz',
           'Confusion Interacted',
           `speed=${speed}, difficulty=${difficulty}`,
         ])

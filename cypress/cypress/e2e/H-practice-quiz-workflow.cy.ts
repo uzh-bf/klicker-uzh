@@ -126,7 +126,7 @@ describe('Different practice quiz workflows', () => {
 
     // create practice quiz
     cy.get('[data-cy="create-practice-quiz"]').click()
-    cy.get('[data-cy="cancel-session-creation"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
     cy.get('[data-cy="create-practice-quiz"]').click()
 
     // Step 1: Name
@@ -134,7 +134,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
@@ -143,7 +143,7 @@ describe('Different practice quiz workflows', () => {
       .realClick()
       .type(runningDescriptionOLD)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -179,7 +179,7 @@ describe('Different practice quiz workflows', () => {
       .should('exist')
       .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Create stacks
@@ -211,10 +211,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // end the practice quiz creation
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningNameOLD}"]`).contains(
       messages.shared.generic.draft
@@ -318,7 +318,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check on the course overview if the updated practice quiz is visible
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningName}"]`).contains(
       messages.shared.generic.draft
@@ -683,7 +683,7 @@ describe('Different practice quiz workflows', () => {
       .type(`${currentYear - 1}-01-01T02:00`)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
       messages.shared.generic.draft

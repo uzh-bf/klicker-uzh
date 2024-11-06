@@ -41,7 +41,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
       <Link href={link} target="_blank" legacyBehavior passHref>
-        <a data-cy={`open-embedding-link-session-${quizId}`}>{link}</a>
+        <a data-cy={`open-embedding-link-quiz-${quizId}`}>{link}</a>
       </Link>
     </div>
   )
@@ -49,16 +49,15 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
 
 function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
   const t = useTranslations()
-  const { data: dataLiveSession } = useQuery(GetSingleLiveQuizDocument, {
+  const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
     variables: { quizId: quizId || '' },
     skip: !quizId,
   })
 
   const questions = useMemo(
     () =>
-      dataLiveSession?.liveQuiz?.blocks?.flatMap((block) => block.elements) ||
-      [],
-    [dataLiveSession?.liveQuiz?.blocks]
+      dataLiveQuiz?.liveQuiz?.blocks?.flatMap((block) => block.elements) || [],
+    [dataLiveQuiz?.liveQuiz?.blocks]
   )
 
   return (

@@ -13,7 +13,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
-import SessionTimeline from '../../../components/liveQuiz/cockpit/SessionTimeline'
+import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
 
 function Cockpit() {
   const router = useRouter()
@@ -91,10 +91,10 @@ function Cockpit() {
   return (
     <Layout>
       <div className="mb-8 print:hidden">
-        <SessionTimeline
+        <LiveQuizTimeline
           blocks={blocks ?? []}
-          sessionName={name}
-          handleEndSession={() => {
+          quizName={name}
+          handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
             router.push('/sessions')
           }}
@@ -112,7 +112,7 @@ function Cockpit() {
             setEvaluationPublic(!isEvaluationPublic)
           }
           isEvaluationPublic={isEvaluationPublic}
-          sessionId={id}
+          quizId={id}
           startedAt={startedAt}
           loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />
@@ -127,7 +127,7 @@ function Cockpit() {
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}
         quizId={id}
-        sessionName={name}
+        liveQuizName={name}
       />
     </Layout>
   )

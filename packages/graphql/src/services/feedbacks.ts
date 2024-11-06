@@ -144,7 +144,7 @@ export async function respondToFeedback(
   return updatedFeedback
 }
 
-// add confusion timestep to session
+// add confusion timestep to live quiz
 export async function addConfusionTimestep(
   {
     quizId,
@@ -216,7 +216,7 @@ export async function publishFeedback(
   return updatedFeedback
 }
 
-// pin / unpin a feedback on the lecturers running session screen
+// pin / unpin a feedback on the lecturers running live quiz screen
 export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
   ctx: ContextWithUser

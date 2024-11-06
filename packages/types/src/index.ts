@@ -1,10 +1,5 @@
-import type {
-  Element,
-  ElementType,
-  QuestionInstance,
-} from '@klicker-uzh/prisma'
+import type { Element, ElementType } from '@klicker-uzh/prisma'
 
-// TODO: remove all question instance and questiondata content from this file
 export type ElementKeys = keyof Element
 
 // ! Types used in helpers (this file) and across GraphQL
@@ -13,7 +8,7 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum QuestionType {
+enum QuestionType {
   SC = 'SC',
   MC = 'MC',
   KPRIM = 'KPRIM',
@@ -142,56 +137,6 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseFlashcard
   | SingleQuestionResponseContent
 
-export type QuestionResultsChoices = {
-  choices: Record<string, number>
-  total: number
-}
-
-export type QuestionResultsOpen = {
-  responses: {
-    [x: string]: {
-      count: number
-      value: string
-      correct?: boolean
-    }
-  }
-  total: number
-}
-
-export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
-
-// TODO: update during migration of live quiz -> element data instead of question data
-export interface IQuestionInstanceWithResults<
-  Type extends ElementType,
-  Results extends QuestionResults,
-> extends QuestionInstance {
-  elementType?: Type
-  questionData: AllQuestionTypeData
-  results: Results
-  statistics?: {
-    max?: number
-    mean?: number
-    median?: number
-    min?: number
-    q1?: number
-    q3?: number
-    sd?: number[]
-  }
-}
-
-export type ChoicesQuestionInstanceData = IQuestionInstanceWithResults<
-  'SC' | 'MC' | 'KPRIM',
-  QuestionResultsChoices
->
-export type OpenQuestionInstanceData = IQuestionInstanceWithResults<
-  'FREE_TEXT' | 'NUMERICAL',
-  QuestionResultsOpen
->
-
-export type AllQuestionInstanceTypeData =
-  | ChoicesQuestionInstanceData
-  | OpenQuestionInstanceData
-
 export type Choice = {
   ix: number
   value: string
@@ -202,21 +147,6 @@ export type Choice = {
 export type NumericalSolutionRange = {
   min?: number | null
   max?: number | null
-}
-
-export type ChoicesInputType = {
-  type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
-  value: number[]
-}
-
-export type NumericalInputType = {
-  type: QuestionType.NUMERICAL
-  value: number
-}
-
-export type FreeTextInputType = {
-  type: QuestionType.FREE_TEXT
-  value: string
 }
 
 interface BaseQuestionOptions {
@@ -247,7 +177,6 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   }
 }
 
-// TODO: no options for FC and CONTENT?
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -257,11 +186,6 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
-
-export type QuestionOptions =
-  | ElementOptionsChoices
-  | ElementOptionsNumerical
-  | ElementOptionsFreeText
 
 export interface BaseElementData {
   id: string
@@ -274,46 +198,12 @@ export interface BaseElementData {
   options: ElementOptions
 }
 
-// TODO: remove after migration of live quiz
-export interface BaseQuestionData {
-  id: string
-  questionId: number
-  type: ElementType
-  name: string
-  content: string
-  pointsMultiplier: number
-  explanation?: string | null
-  options: object
-}
-
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
   extends Omit<Element, 'id'> {
   id: string
   type: Type
   options: Options
   elementId: number
-}
-
-// TODO: remove after migration of live quiz
-interface IQuestionData<
-  Type extends ElementType,
-  Options extends QuestionOptions,
-> extends Omit<
-    Element,
-    | 'id'
-    | 'originalId'
-    | 'status'
-    | 'version'
-    | 'isArchived'
-    | 'isDeleted'
-    | 'ownerId'
-    | 'createdAt'
-    | 'updatedAt'
-  > {
-  id: string
-  type: Type
-  options: Options
-  questionId: number
 }
 
 export type ChoicesElementData = IElementData<
@@ -340,28 +230,6 @@ export type AllElementTypeData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
-
-// TODO: remove after migration of live quiz
-export type ChoicesQuestionData = IQuestionData<
-  'SC' | 'MC' | 'KPRIM',
-  ElementOptionsChoices
->
-// TODO: remove after migration of live quiz
-export type FreeTextQuestionData = IQuestionData<
-  'FREE_TEXT',
-  ElementOptionsFreeText
->
-// TODO: remove after migration of live quiz
-export type NumericalQuestionData = IQuestionData<
-  'NUMERICAL',
-  ElementOptionsNumerical
->
-
-// TODO: remove after migration of live quiz
-export type AllQuestionTypeData =
-  | ChoicesQuestionData
-  | FreeTextQuestionData
-  | NumericalQuestionData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -438,7 +306,7 @@ export interface IQuestionFeedback {
   value: string
 }
 
-export interface IBaseInstanceEvaluation {
+interface IBaseInstanceEvaluation {
   instanceId: number
   elementType: ElementType
   score: number

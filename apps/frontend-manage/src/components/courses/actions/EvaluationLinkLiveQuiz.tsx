@@ -21,7 +21,7 @@ function EvaluationLinkLiveQuiz({ liveQuiz }: EvaluationLinkLiveQuizProps) {
         passHref
         legacyBehavior
       >
-        <a data-cy={`open-evaluation-session-${liveQuiz.name}`}>
+        <a data-cy={`open-evaluation-live-quiz-${liveQuiz.name}`}>
           {t('shared.generic.evaluation')}
         </a>
       </Link>

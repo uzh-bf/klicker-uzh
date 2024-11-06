@@ -64,7 +64,7 @@ const tileContent = [
   {
     title: 'Learning Analytics',
     content:
-      'Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions, as well as students to reflect on their learning progress.',
+      'Analysis functionalities allow lecturers to evaluate their quizzes and questions in terms of different quality dimensions, as well as students to reflect on their learning progress.',
     useCases: [
       {
         content: 'Learning Analytics for Lecturers',

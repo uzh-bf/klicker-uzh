@@ -44,7 +44,7 @@ function CompletionStep({
         {children}
         <Button
           onClick={onViewElement}
-          data={{ cy: 'load-session-list' }}
+          data={{ cy: 'load-live-quiz-list' }}
           className={{ root: 'space-x-1' }}
         >
           <Button.Icon>

@@ -62,7 +62,7 @@ function Index() {
     Record<number, Element | undefined>
   >({})
 
-  const selectedQuestionData = useMemo(
+  const selectedElementContent = useMemo(
     () =>
       pickBy(
         selectedQuestions,
@@ -162,7 +162,7 @@ function Index() {
             editMode={router.query.editMode as string}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as WizardMode}
-            selection={selectedQuestionData}
+            selection={selectedElementContent}
             resetSelection={() => setSelectedQuestions({})}
           />
         </>
@@ -233,7 +233,7 @@ function Index() {
                           let allQuestions = {}
 
                           if (processedQuestions) {
-                            if (!isEmpty(selectedQuestionData)) {
+                            if (!isEmpty(selectedElementContent)) {
                               // set questions after filtering to undefined
                               // do not uncheck questions that are selected but not in the filtered set
                               allQuestions = processedQuestions.reduce(
@@ -260,7 +260,7 @@ function Index() {
                       }}
                     />
                     {t('manage.questionPool.numSelected', {
-                      count: Object.keys(selectedQuestionData).length,
+                      count: Object.keys(selectedElementContent).length,
                       total: processedQuestions?.length,
                     })}
                   </div>
@@ -328,7 +328,7 @@ function Index() {
                     />
                   </div>
 
-                  {Object.keys(selectedQuestionData).length > 0 && (
+                  {Object.keys(selectedElementContent).length > 0 && (
                     <>
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
@@ -339,8 +339,9 @@ function Index() {
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds:
-                                  Object.keys(selectedQuestionData).map(Number),
+                                questionIds: Object.keys(
+                                  selectedElementContent
+                                ).map(Number),
                                 isArchived: true,
                               },
                             })
@@ -362,8 +363,9 @@ function Index() {
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds:
-                                  Object.keys(selectedQuestionData).map(Number),
+                                questionIds: Object.keys(
+                                  selectedElementContent
+                                ).map(Number),
                                 isArchived: false,
                               },
                             })
@@ -393,7 +395,7 @@ function Index() {
               <div className="h-full overflow-y-auto">
                 <QuestionList
                   questions={processedQuestions}
-                  selectedQuestions={selectedQuestionData}
+                  selectedQuestions={selectedElementContent}
                   setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }

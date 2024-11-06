@@ -4,7 +4,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
-interface LiveSessionFormProps {
+interface LiveQuizFormProps {
   id?: string
   editMode: boolean
   values: LiveQuizFormValues
@@ -22,7 +22,7 @@ async function submitLiveQuizForm({
   editLiveQuiz,
   setIsWizardCompleted,
   setErrorToastOpen,
-}: LiveSessionFormProps) {
+}: LiveQuizFormProps) {
   const blockSubmission = values.blocks.map(
     (block: ElementBlockFormValues, ix) => {
       return {

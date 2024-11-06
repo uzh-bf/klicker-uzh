@@ -84,7 +84,7 @@ function CourseLiveQuizzes({
                 <Button
                   fluid
                   className={{ root: 'justify-start gap-4' }}
-                  data={{ cy: `join-session-${quiz.name}` }}
+                  data={{ cy: `join-live-quiz-${quiz.name}` }}
                 >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faExternalLink} />
@@ -128,7 +128,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  // if only a single session is running, redirect directly to the corresponding session page
+  // if only a single live quiz is running, redirect directly to the corresponding quiz page
   // or if linkTo is set, redirect to the specified link
   if (result.data.getCourseRunningLiveQuizzes.length === 1) {
     return {

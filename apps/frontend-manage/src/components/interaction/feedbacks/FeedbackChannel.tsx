@@ -13,7 +13,7 @@ import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
-  sessionName: string
+  liveQuizName: string
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: (feedbackId: number) => void
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
@@ -26,7 +26,7 @@ interface Props {
 }
 
 function FeedbackChannel({
-  sessionName,
+  liveQuizName,
   feedbacks = [],
   isActive = false,
   isPublic = false,
@@ -64,7 +64,7 @@ function FeedbackChannel({
     <>
       <FeedbacksPrintView
         feedbacks={sortedFeedbacks}
-        sessionName={sessionName}
+        liveQuizName={liveQuizName}
       />
       <FeedbackSearchAndFilters
         disabled={{
@@ -158,7 +158,7 @@ function FeedbackChannel({
               content={
                 <FormattedMessage
                   defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                  id="runningSession.audienceInteraction.survey"
+                  id="runningLiveQuiz.audienceInteraction.survey"
                   values={{
                     link: (
                       <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">

@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
 import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 
-const sortingOrderSessions: Record<PublicationStatus, number> = {
+const sortingOrderLiveQuizzes: Record<PublicationStatus, number> = {
   [PublicationStatus.Published]: 0,
   [PublicationStatus.Scheduled]: 1,
   [PublicationStatus.Draft]: 2,
@@ -26,14 +26,15 @@ function LiveQuizList({
             if (!a.status || !b.status) return 0
 
             return (
-              sortingOrderSessions[a.status] - sortingOrderSessions[b.status]
+              sortingOrderLiveQuizzes[a.status] -
+              sortingOrderLiveQuizzes[b.status]
             )
           }).map((quiz) => (
             <LiveQuizElement quiz={quiz} key={quiz.id} />
           ))}
         </div>
       ) : (
-        <div>{t('manage.course.noSessions')}</div>
+        <div>{t('manage.course.noLiveQuizzes')}</div>
       )}
     </div>
   )

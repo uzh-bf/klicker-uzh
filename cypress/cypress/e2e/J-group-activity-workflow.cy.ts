@@ -189,7 +189,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
@@ -198,7 +198,7 @@ describe('Create and solve a group activity', () => {
       .realClick()
       .type(activityTask)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -218,7 +218,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-start-date"]').click().type(activityStart)
     cy.get('[data-cy="select-end-date"]').click().type(activityEnd)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
@@ -306,12 +306,12 @@ describe('Create and solve a group activity', () => {
         .should('contain', title.substring(0, 20))
     })
 
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(activityName).should('exist')
   })
@@ -499,7 +499,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(runningActivityName).should('exist')
   })

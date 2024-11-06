@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import Question from './Question'
 
 interface QuestionListProps {
-  setSelectedQuestions: (questionId: number, questionData: Element) => void
+  setSelectedQuestions: (id: number, data: Element) => void
   selectedQuestions: Record<number, Element>
   questions?: Element[]
   tagfilter?: string[]

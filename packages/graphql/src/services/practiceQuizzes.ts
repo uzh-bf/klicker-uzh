@@ -194,7 +194,7 @@ export async function manipulatePracticeQuiz(
   ctx: ContextWithUser
 ) {
   if (id) {
-    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    // find all instances belonging to the old practice quiz and delete them as the content of the questions might have changed
     const oldElement = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id,

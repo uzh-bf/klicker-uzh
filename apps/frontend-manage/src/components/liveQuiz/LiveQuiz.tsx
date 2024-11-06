@@ -103,7 +103,7 @@ function LiveQuiz({
   })
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
-  const [selectedSession, setSelectedSession] = useState<string>('')
+  const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
@@ -125,25 +125,25 @@ function LiveQuiz({
 
   return (
     <>
-      <div key={quiz.id} className="rounded border p-1" data-cy="session">
+      <div key={quiz.id} className="rounded border p-1" data-cy="live-quiz">
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
           className={{ root: 'border-0 !py-0.5' }}
           key={quiz.id}
-          open={showDetails && quiz.id === selectedSession}
+          open={showDetails && quiz.id === selectedLiveQuiz}
           onChange={() => {
-            if (quiz.id === selectedSession) {
+            if (quiz.id === selectedLiveQuiz) {
               setShowDetails(!showDetails)
             } else {
               setShowDetails(true)
-              setSelectedSession(quiz.id)
+              setSelectedLiveQuiz(quiz.id)
             }
           }}
           staticContent={
             <div
               className="flex flex-row justify-between"
-              data-cy="session-block"
+              data-cy="live-quiz-block"
             >
               <div className="flex flex-row items-center gap-3">
                 <H3 className={{ root: 'mb-0' }}>{quiz.name}</H3>
@@ -167,7 +167,7 @@ function LiveQuiz({
                       data={{ cy: `show-embedding-modal-${quiz.name}` }}
                     >
                       <FontAwesomeIcon icon={faCode} size="sm" />
-                      {t('manage.sessions.embeddingEvaluation')}
+                      {t('manage.liveQuizzes.embeddingEvaluation')}
                     </Button>
                     <EmbeddingModal
                       key={quiz.id}
@@ -192,10 +192,10 @@ function LiveQuiz({
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-cockpit-${quiz.name}`}
+                      data-cy={`live-quiz-cockpit${quiz.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>{t('manage.sessions.lecturerCockpit')}</div>
+                      <div>{t('manage.liveQuizzes.lecturerCockpit')}</div>
                     </a>
                   </Link>
                 )}
@@ -207,12 +207,12 @@ function LiveQuiz({
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`session-evaluation-${quiz.name}`}
+                      data-cy={`live-quiz-evaluation${quiz.name}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>{t('manage.sessions.sessionEvaluation')}</div>
+                      <div>{t('manage.liveQuizzes.liveQuizEvaluation')}</div>
                     </a>
                   </Link>
                 )}
@@ -225,11 +225,11 @@ function LiveQuiz({
                       await startLiveQuiz()
                       router.push(`sessions/${quiz.id}/cockpit`)
                     }}
-                    data={{ cy: `start-session-${quiz.name}` }}
+                    data={{ cy: `start-live-quiz-${quiz.name}` }}
                   >
                     <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
-                      <div>{t('manage.sessions.startLiveQuiz')}</div>
+                      <div>{t('manage.liveQuizzes.startLiveQuiz')}</div>
                     </div>
                   </Button>
                 )}
@@ -245,7 +245,7 @@ function LiveQuiz({
           }
           closedContent={
             <div className="italic">
-              {t('manage.sessions.nBlocksQuestions', {
+              {t('manage.liveQuizzes.nBlocksQuestions', {
                 blocks: quiz.numOfBlocks,
                 questions: quiz.numOfInstances,
               })}
@@ -264,13 +264,13 @@ function LiveQuiz({
                     },
                   })
                 }
-                data={{ cy: `duplicate-session-${quiz.name}` }}
+                data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
               >
                 <Button.Icon className={{ root: 'text-slate-600' }}>
                   <FontAwesomeIcon icon={faCopy} />
                 </Button.Icon>
                 <Button.Label>
-                  {t('manage.sessions.duplicateSession')}
+                  {t('manage.liveQuizzes.duplicateLiveQuiz')}
                 </Button.Label>
               </Button>
               {(PublicationStatus.Draft === quiz.status ||
@@ -286,13 +286,13 @@ function LiveQuiz({
                       },
                     })
                   }
-                  data={{ cy: `edit-session-${quiz.name}` }}
+                  data={{ cy: `edit-live-quiz-${quiz.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-slate-600' }}>
                     <FontAwesomeIcon icon={faPencil} />
                   </Button.Icon>
                   <Button.Label>
-                    {t('manage.sessions.editLiveQuiz')}
+                    {t('manage.liveQuizzes.editLiveQuiz')}
                   </Button.Label>
                 </Button>
               )}
@@ -310,7 +310,7 @@ function LiveQuiz({
                     <FontAwesomeIcon icon={faTrash} />
                   </Button.Icon>
                   <Button.Label>
-                    {t('manage.sessions.deleteSession')}
+                    {t('manage.liveQuizzes.deleteLiveQuiz')}
                   </Button.Label>
                 </Button>
               )}
@@ -378,10 +378,10 @@ function LiveQuiz({
         </Collapsible>
       </div>
       <DeletionModal
-        title={t('manage.sessions.deleteLiveQuiz')}
-        description={t('manage.sessions.confirmLiveQuizDeletion')}
+        title={t('manage.liveQuizzes.deleteLiveQuiz')}
+        description={t('manage.liveQuizzes.confirmLiveQuizDeletion')}
         elementName={quiz.name || ''}
-        message={t('manage.sessions.liveQuizDeletionHint')}
+        message={t('manage.liveQuizzes.liveQuizDeletionHint')}
         deleteElement={deleteLiveQuiz}
         open={deletionModal}
         setOpen={setDeletionModal}

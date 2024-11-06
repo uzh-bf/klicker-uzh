@@ -3,19 +3,19 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
-import { SessionAbortionConfirmationType } from './CancelLiveQuizModal'
+import { LiveQuizAbortionConfirmationType } from './CancelLiveQuizModal'
 
-interface SessionAbortionConfirmationsProps {
+interface LiveQuizAbortionConfirmationsProps {
   summary: RunningLiveQuizSummary
-  confirmations: SessionAbortionConfirmationType
-  setConfirmations: Dispatch<SetStateAction<SessionAbortionConfirmationType>>
+  confirmations: LiveQuizAbortionConfirmationType
+  setConfirmations: Dispatch<SetStateAction<LiveQuizAbortionConfirmationType>>
 }
 
-function SessionAbortionConfirmations({
+function LiveQuizAbortionConfirmations({
   summary,
   confirmations,
   setConfirmations,
-}: SessionAbortionConfirmationsProps) {
+}: LiveQuizAbortionConfirmationsProps) {
   const t = useTranslations()
 
   return (
@@ -105,4 +105,4 @@ function SessionAbortionConfirmations({
   )
 }
 
-export default SessionAbortionConfirmations
+export default LiveQuizAbortionConfirmations

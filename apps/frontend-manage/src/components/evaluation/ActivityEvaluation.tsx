@@ -160,7 +160,7 @@ function ActivityEvaluation({
                   {feedbacks && feedbacks.length > 0 ? (
                     <EvaluationFeedbacks
                       feedbacks={feedbacks}
-                      sessionName={activityName}
+                      liveQuizName={activityName}
                     />
                   ) : (
                     <UserNotification

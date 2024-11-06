@@ -9,11 +9,7 @@ import Link from 'next/link'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-function SessionQRModal({
-  sessionId,
-}: {
-  sessionId: string
-}): React.ReactElement {
+function LiveQuizQRModal({ quizId }: { quizId: string }): React.ReactElement {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -23,7 +19,7 @@ function SessionQRModal({
 
   const shortname = data?.userProfile?.shortname
   const accountRelativeLink = `/join/${shortname}`
-  const sessionRelativeLink = `/session/${sessionId}`
+  const quizRelativeLink = `/session/${quizId}`
 
   return (
     <Modal
@@ -75,11 +71,11 @@ function SessionQRModal({
           <Prose>{t('manage.cockpit.qrCodeDirectLinkDescription')}</Prose>
           <QR
             className={{ title: 'text-base', canvas: 'flex justify-center' }}
-            path={sessionRelativeLink}
+            path={quizRelativeLink}
             width={100}
           />
 
-          <Link passHref href={`/qr${sessionRelativeLink}`} target="_blank">
+          <Link passHref href={`/qr${quizRelativeLink}`} target="_blank">
             <Button
               fluid
               className={{
@@ -87,7 +83,7 @@ function SessionQRModal({
                   'bg-primary-80 mt-2 h-9 text-lg font-bold text-white'
                 ),
               }}
-              data={{ cy: `qr-direct-link-${sessionId}` }}
+              data={{ cy: `qr-direct-link-${quizId}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
             </Button>
@@ -98,4 +94,4 @@ function SessionQRModal({
   )
 }
 
-export default SessionQRModal
+export default LiveQuizQRModal
