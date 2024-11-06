@@ -828,7 +828,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmDelegatedAccesTooltip:
         'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
-      SESSION_EXEC: 'Session Execution',
+      SESSION_EXEC: 'Live Quiz Execution',
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
@@ -988,8 +988,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityDisplayName:
         'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
-      startDate: 'Please enter a start date for your quiz.',
-      endDate: 'Please enter an end date for your quiz.',
+      startDate: 'Please enter a start date for your activity.',
+      endDate: 'Please enter an end date for your activity.',
       endAfterStart: 'The end date has to be later than the start date.',
       endInFuture: 'The end date has to be in the future.',
       validMultiplicator: 'Please enter a valid multiplicator.',
@@ -1115,11 +1115,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamification:
         'The quiz automatically adopts the gamification setting of the course. If the quiz is not assigned to a course, gamification cannot be activated.',
       liveQuizLiveQA:
-        'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether the live Q&A channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizModeration:
-        'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizFeedbackChannel:
-        'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether the feedback channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizIntroductionName:
         'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       liveQuizUseCase:
@@ -1430,7 +1430,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetSorting: 'Reset sorting',
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
-      resolvedDuringLiveQuiz: 'Resolved during session',
+      resolvedDuringLiveQuiz: 'Resolved during live quiz',
       confusion: 'Confusion',
       minStep60s: 'The step size must be at least 60 seconds.',
       validMinSteps: 'Please enter a valid minimum step size.',
@@ -1790,7 +1790,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     login: {
       header: 'KlickerUZH Controller-App (Token)',
       installAndroid:
-        'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
+        'Install the KlickerUZH Controller app on your phone to control your live quiz directly from your smartphone during lectures.',
       installIOS:
         "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live quizzes directly.",
       shortnameRequired: 'Please enter your shortname.',
@@ -1805,8 +1805,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while loading your courses. Please try again later.',
       selectCourse: 'Please select a course:',
       archivedCourse: '{courseName} (archived)',
-      liveQuizzesNoCourse: 'Sessions without course',
-      listLiveQuizzesNoCourse: 'List of all sessions without course',
+      liveQuizzesNoCourse: 'Live quizzes without course',
+      listLiveQuizzesNoCourse: 'List of all live quizzes without course',
       loadingLiveQuizzesFailed:
         'An error occurred while loading your live quizzes. Please try again later.',
     },
@@ -1815,11 +1815,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       loadingFailed:
         'An error occurred while loading your courses. Please try again later.',
       completedLiveQuizzesHint:
-        'Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.',
+        'Completed live quizzes can be viewed with results on the corresponding page in the KlickerUZH management app.',
       runningLiveQuizzes: 'Running Live Quizzes',
       noRunningLiveQuizzes: 'No running live quizzes',
-      plannedLiveQuizzes: 'Planned Sessions',
-      noPlannedLiveQuizzes: 'No planned sessions',
+      plannedLiveQuizzes: 'Planned Live Quizzes',
+      noPlannedLiveQuizzes: 'No planned live quizzes',
       liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
@@ -1827,7 +1827,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',
       explanationStartLiveQuiz:
-        'Please note that a started live quiz is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app.',
+        'Please note that a started live quiz is generally publicly accessible. Running live quizzes can be canceled or stopped using the KlickerUZH management app.',
     },
     liveQuiz: {
       liveQuizControl: 'Live Quiz Control',
