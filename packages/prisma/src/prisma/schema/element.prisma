@@ -208,6 +208,9 @@ model ElementBlock {
   liveQuizId       String     @db.Uuid
   activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementBlock")
 
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
   @@unique([liveQuizId, order])
 }
 

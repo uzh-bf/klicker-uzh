@@ -70,6 +70,8 @@ CREATE TABLE "ElementBlock" (
     "execution" INTEGER NOT NULL DEFAULT 0,
     "status" "ElementBlockStatus" NOT NULL DEFAULT 'SCHEDULED',
     "liveQuizId" UUID NOT NULL,
+    "createAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updateAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ElementBlock_pkey" PRIMARY KEY ("id")
 );
