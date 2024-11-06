@@ -1,27 +1,19 @@
 /*
   Warnings:
 
-  - The values [LIVE_QUIZ] on the enum `ElementStackType` will be removed. If these variants are still used in the database, this will fail.
   - You are about to drop the column `liveQuizId` on the `ElementStack` table. All the data in the column will be lost.
   - You are about to drop the column `options` on the `ElementStack` table. All the data in the column will be lost.
   - You are about to drop the column `originalId` on the `ElementStack` table. All the data in the column will be lost.
-  - The `status` column on the `GroupActivity` table would be dropped and recreated. This will lead to data loss if there is data in the column.
   - You are about to drop the column `activeStackId` on the `LiveQuiz` table. All the data in the column will be lost.
   - The `status` column on the `LiveQuiz` table would be dropped and recreated. This will lead to data loss if there is data in the column.
   - A unique constraint covering the columns `[type,elementBlockId,order]` on the table `ElementInstance` will be added. If there are existing duplicate values, this will fail.
 
 */
 -- CreateEnum
-CREATE TYPE "ElementBlockStatus" AS ENUM ('SCHEDULED', 'ACTIVE', 'EXECUTED');
+CREATE TYPE "ElementStackTypeNew" AS ENUM ('PRACTICE_QUIZ', 'MICROLEARNING', 'GROUP_ACTIVITY');
 
--- AlterEnum
-BEGIN;
-CREATE TYPE "ElementStackType_new" AS ENUM ('PRACTICE_QUIZ', 'MICROLEARNING', 'GROUP_ACTIVITY');
-ALTER TABLE "ElementStack" ALTER COLUMN "type" TYPE "ElementStackType_new" USING ("type"::text::"ElementStackType_new");
-ALTER TYPE "ElementStackType" RENAME TO "ElementStackType_old";
-ALTER TYPE "ElementStackType_new" RENAME TO "ElementStackType";
-DROP TYPE "ElementStackType_old";
-COMMIT;
+-- CreateEnum
+CREATE TYPE "ElementBlockStatus" AS ENUM ('SCHEDULED', 'ACTIVE', 'EXECUTED');
 
 -- AlterEnum
 -- This migration adds more than one value to an enum.
@@ -53,20 +45,17 @@ ALTER COLUMN "elementStackId" DROP NOT NULL;
 -- AlterTable
 ALTER TABLE "ElementStack" DROP COLUMN "liveQuizId",
 DROP COLUMN "options",
-DROP COLUMN "originalId";
+DROP COLUMN "originalId",
+ADD COLUMN     "typeNEW" "ElementStackTypeNew";
 
 -- AlterTable
-ALTER TABLE "GroupActivity" DROP COLUMN "status",
-ADD COLUMN     "status" "PublicationStatus" NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE "GroupActivity" ADD COLUMN     "statusNEW" "PublicationStatus" NOT NULL DEFAULT 'DRAFT';
 
 -- AlterTable
 ALTER TABLE "LiveQuiz" DROP COLUMN "activeStackId",
 ADD COLUMN     "activeBlockId" INTEGER,
 DROP COLUMN "status",
 ADD COLUMN     "status" "PublicationStatus" NOT NULL DEFAULT 'DRAFT';
-
--- DropEnum
-DROP TYPE "GroupActivityStatus";
 
 -- DropEnum
 DROP TYPE "LiveQuizStatus";

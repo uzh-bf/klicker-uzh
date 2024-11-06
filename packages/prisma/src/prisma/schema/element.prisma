@@ -141,7 +141,16 @@ model InstanceStatistics {
   updatedAt DateTime @updatedAt
 }
 
+// TODO: remove after migration to new data structure
 enum ElementStackType {
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+}
+
+// TODO: rename to ElementStackType after migration to new data structure
+enum ElementStackTypeNew {
   PRACTICE_QUIZ
   MICROLEARNING
   GROUP_ACTIVITY
@@ -150,8 +159,9 @@ enum ElementStackType {
 model ElementStack {
   id Int @id @default(autoincrement())
 
-  type  ElementStackType
-  order Int
+  type    ElementStackType // TODO: drop this after migration
+  typeNEW ElementStackTypeNew? // TODO: rename this after migration and make required
+  order   Int
 
   displayName String?
   description String?
