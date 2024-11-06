@@ -168,41 +168,76 @@ async function run() {
       }
 
       // compute average times
-      // (floor required due to the way prisma handles float to int conversion)
-      const res = details.reduce<{ avgTime: number; counter: number }>(
+      const res = details.reduce<{
+        responseAvgTime: number
+        answers: number
+        firstAnswer: boolean
+      }>(
         (acc, detail) => {
-          acc.avgTime = Math.floor(
-            (acc.avgTime * acc.counter + detail.timeSpent) / (acc.counter + 1)
+          const avgResponseTime =
+            (acc.responseAvgTime * acc.answers + detail.timeSpent) /
+            (acc.answers + 1)
+
+          // number of participants that have influenced the average time spent on the instance
+          const instanceParticipants =
+            instanceUniqueParticipantCount + (acc.firstAnswer ? 0 : 1)
+
+          // flooring operation simulates database storage update -> int precition
+          instanceAverageTimeSpent = Math.floor(
+            ((instanceAverageTimeSpent ?? 0) * instanceParticipants -
+              acc.responseAvgTime +
+              avgResponseTime) /
+              (instanceUniqueParticipantCount + 1)
           )
-          acc.counter += 1
+
+          // flooring operation simulates database storage update -> int precition
+          acc.responseAvgTime = Math.floor(avgResponseTime)
+          acc.answers += 1
+          acc.firstAnswer = false
           return acc
         },
-        { avgTime: 0, counter: 0 }
+        { responseAvgTime: 0, answers: 0, firstAnswer: true }
       )
-      averageTimeSpent = res.avgTime
-
-      // increase aggregated instance values
-      // (floor required due to the way prisma handles float to int conversion)
-      // TODO: investigate why it tends to go to zero
-      // SELECT *
-      // FROM "ElementInstance" ei
-      // JOIN "InstanceStatistics" i ON ei.id = i."elementInstanceId"
-      // JOIN "QuestionResponseDetail" qr ON qr."elementInstanceId" = ei.id
-      // WHERE ei.id = 251;
+      averageTimeSpent = res.responseAvgTime
       instanceUniqueParticipantCount += 1
-      instanceAverageTimeSpent = Math.floor(
-        ((instanceAverageTimeSpent ?? 0) *
-          (instanceUniqueParticipantCount - 1) +
-          averageTimeSpent) /
-          instanceUniqueParticipantCount
-      )
-      console.log(
-        instanceAverageTimeSpent,
-        instanceUniqueParticipantCount,
-        averageTimeSpent,
-        (instanceAverageTimeSpent ?? 0) * (instanceUniqueParticipantCount - 1) +
-          averageTimeSpent
-      )
+
+      // TODO: if solution above fulfills requirements, remove the following code
+      // // compute average times
+      // // (floor required due to the way prisma handles float to int conversion)
+      // const res = details.reduce<{ avgTime: number; counter: number }>(
+      //   (acc, detail) => {
+      //     acc.avgTime = Math.floor(
+      //       (acc.avgTime * acc.counter + detail.timeSpent) / (acc.counter + 1)
+      //     )
+      //     acc.counter += 1
+      //     return acc
+      //   },
+      //   { avgTime: 0, counter: 0 }
+      // )
+      // averageTimeSpent = res.avgTime
+
+      // // increase aggregated instance values
+      // // (floor required due to the way prisma handles float to int conversion)
+      // // TODO: investigate why it tends to go to zero
+      // // SELECT *
+      // // FROM "ElementInstance" ei
+      // // JOIN "InstanceStatistics" i ON ei.id = i."elementInstanceId"
+      // // JOIN "QuestionResponseDetail" qr ON qr."elementInstanceId" = ei.id
+      // // WHERE ei.id = 251;
+      // instanceUniqueParticipantCount += 1
+      // instanceAverageTimeSpent = Math.floor(
+      //   ((instanceAverageTimeSpent ?? 0) *
+      //     (instanceUniqueParticipantCount - 1) +
+      //     averageTimeSpent) /
+      //     instanceUniqueParticipantCount
+      // )
+      // console.log(
+      //   instanceAverageTimeSpent,
+      //   instanceUniqueParticipantCount,
+      //   averageTimeSpent,
+      //   (instanceAverageTimeSpent ?? 0) * (instanceUniqueParticipantCount - 1) +
+      //     averageTimeSpent
+      // )
 
       if (instance.elementType === ElementType.CONTENT) {
         const lastDetail = details[details.length - 1]
