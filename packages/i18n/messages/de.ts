@@ -594,7 +594,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityExpired:
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
-    session: {
+    liveQuiz: {
       noActiveQuestion: 'Keine Frage aktiv.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
@@ -1817,14 +1817,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchenSie es später erneut.',
       selectCourse: 'Bitte wählen Sie einen Kurs aus:',
       archivedCourse: '{courseName} (Archiviert)',
-      sessionsNoCourse: 'Sessionen ohne Kurs',
-      listSessionsNoCourse: 'Liste aller Sessionen ohne Kurs',
+      liveQuizzesNoCourse: 'Sessionen ohne Kurs',
+      listLiveQuizzesNoCourse: 'Liste aller Sessionen ohne Kurs',
+      loadingLiveQuizzesFailed:
+        'Beim Laden Ihrer Live Quizzes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.',
     },
     course: {
       courseOverview: 'Kursübersicht',
       loadingFailed:
         'Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen Sie es später erneut.',
-      completedSessionsHint:
+      completedLiveQuizzesHint:
         'Abgeschlossene Sessionen können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.',
       runningSessions: 'Laufende Sessionen',
       noRunningSessions: 'Keine laufenden Sessionen',

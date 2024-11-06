@@ -11,10 +11,10 @@ import EmbeddingModal from '../liveQuizzes/EmbeddingModal'
 import MenuButton from './MenuButton'
 
 interface MobileMenuBarProps {
-  sessionId?: string
+  quizId?: string
 }
 
-function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
+function MobileMenuBar({ quizId }: MobileMenuBarProps) {
   const t = useTranslations()
   const router = useRouter()
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
@@ -39,18 +39,18 @@ function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
         <MenuButton
           icon={<FontAwesomeIcon icon={faPersonChalkboard} />}
           onClick={() => setEmbedModalOpen(true)}
-          disabled={!sessionId}
+          disabled={!quizId}
           data={{ cy: 'ppt-button' }}
         >
           PPT
         </MenuButton>
       </div>
 
-      {sessionId && (
+      {quizId && (
         <EmbeddingModal
           open={embedModalOpen}
           setOpen={setEmbedModalOpen}
-          quizId={sessionId}
+          quizId={quizId}
         />
       )}
     </div>

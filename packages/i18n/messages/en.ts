@@ -594,7 +594,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityExpired:
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
-    session: {
+    liveQuiz: {
       noActiveQuestion: 'No question active.',
       allQuestionsAnswered: 'You have already answered all active questions.',
     },
@@ -1804,14 +1804,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while loading your courses. Please try again later.',
       selectCourse: 'Please select a course:',
       archivedCourse: '{courseName} (archived)',
-      sessionsNoCourse: 'Sessions without course',
-      listSessionsNoCourse: 'List of all sessions without course',
+      liveQuizzesNoCourse: 'Sessions without course',
+      listLiveQuizzesNoCourse: 'List of all sessions without course',
+      loadingLiveQuizzesFailed:
+        'An error occurred while loading your live quizzes. Please try again later.',
     },
     course: {
       courseOverview: 'Course overview',
       loadingFailed:
         'An error occurred while loading your courses. Please try again later.',
-      completedSessionsHint:
+      completedLiveQuizzesHint:
         'Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.',
       runningSessions: 'Running Sessions',
       noRunningSessions: 'No running sessions',

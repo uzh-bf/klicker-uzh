@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Layout from '../../components/Layout'
-import SessionLists from '../../components/liveQuizzes/SessionLists'
+import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
 function Course() {
   const t = useTranslations()
@@ -60,13 +60,13 @@ function Course() {
 
   return (
     <Layout title={controlCourse.name}>
-      <SessionLists
-        runningSessions={runningQuizzes || []}
-        plannedSessions={plannedQuizzes || []}
+      <LiveQuizLists
+        runningLiveQuizzes={runningQuizzes || []}
+        plannedLiveQuizzes={plannedQuizzes || []}
       />
 
       <div className="mt-4 text-base italic">
-        {t('control.course.completedSessionsHint')}
+        {t('control.course.completedLiveQuizzesHint')}
       </div>
     </Layout>
   )

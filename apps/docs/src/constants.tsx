@@ -285,12 +285,11 @@ export const USE_CASES = {
             into OLAT, even solely for live quizzes, is strongly recommended.
           </li>
           <li>
-            Number of uses per session: In the events organized by the DBF,
+            Number of users per live quiz: In the events organized by the DBF,
             KlickerUZH is mainly utilized in bachelor-level lectures with a
             large number of students (150-800 students). In a single semester
             (14 weeks), KlickerUZH was used between three to seven times in
-            these sessions, with an average of three questions asked per
-            session.
+            these sessions, with an average of three questions asked per quiz.
           </li>
           <li>
             Gamification: Incorporating gamification in live quizzes works
@@ -488,7 +487,7 @@ export const USE_CASES = {
             Grading: It could be an option to make participation in sessions
             and/or passing of quizzes before or during sessions mandatory or
             part of the grade. However, this could also negatively influence the
-            openness of the discussions. Mi
+            openness of the discussions.
           </li>
         </ul>
       </>

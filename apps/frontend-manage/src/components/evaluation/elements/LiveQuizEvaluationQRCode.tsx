@@ -11,7 +11,7 @@ function LiveQuizEvaluationQRCode({
   setHideQR: Dispatch<SetStateAction<boolean>>
 }) {
   const router = useRouter()
-  const sessionRelativeLink = `/session/${router.query.id}`
+  const liveQuizRelativeLink = `/session/${router.query.id}`
 
   return (
     <div className="group relative float-end hidden h-max w-full items-center justify-center lg:flex">
@@ -21,7 +21,7 @@ function LiveQuizEvaluationQRCode({
           title: 'text-base',
           canvas: 'h-40 w-40',
         }}
-        path={sessionRelativeLink}
+        path={liveQuizRelativeLink}
         showLink={false}
         showButton={false}
         showLogo={false}

@@ -176,8 +176,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )) as Element[]
 
-  // ----- LEGACY SEED -----
-  const sessionsTest = await Promise.all(
+  await Promise.all(
     DATA_TEST.LIVE_QUIZZES.map(
       async (data) =>
         await prismaClient.liveQuiz.upsert({

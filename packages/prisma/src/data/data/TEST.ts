@@ -1,6 +1,6 @@
 import Prisma from '../../../dist/index.js'
 import { AchievementType } from '../../prisma/client/index.js'
-const { ElementType, SessionStatus, PublicationStatus } = Prisma
+const { ElementType, PublicationStatus } = Prisma
 
 export const QUESTIONS = [
   {
@@ -178,7 +178,7 @@ export const LIVE_QUIZZES = [
     id: '1ec093e0-b6b6-421f-98ac-98ab146505f7',
     name: 'Test mit Multiplier',
     displayName: 'Test mit Multiplier',
-    description: 'Test description for test session with multiplier.',
+    description: 'Test description for test quiz with multiplier.',
     isGamificationEnabled: true,
     pointsMultiplier: 2,
     blocks: [
@@ -194,8 +194,8 @@ export const LIVE_QUIZZES = [
   },
   {
     id: '35aad5d9-285d-4dda-9e19-7507ee16e9e1',
-    name: 'Test Session',
-    displayName: 'Test Session',
+    name: 'Test Live Quiz',
+    displayName: 'Test Live Quiz',
     isModerationEnabled: false,
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
@@ -216,8 +216,8 @@ export const LIVE_QUIZZES = [
   },
   {
     id: '20325ec6-0ce7-4e24-bd79-5c1a46f64c47',
-    name: 'Test Session 2',
-    displayName: 'Test Session 2',
+    name: 'Test Live Quiz 2',
+    displayName: 'Test Live Quiz 2',
     isModerationEnabled: false,
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
@@ -236,8 +236,8 @@ export const LIVE_QUIZZES = [
   },
   {
     id: '166608f3-10b6-4e62-9842-ab8b774fae58',
-    name: 'Test Session 3',
-    displayName: 'Test Session 3',
+    name: 'Test Live Quiz 3',
+    displayName: 'Test Live Quiz 3',
     isModerationEnabled: false,
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
@@ -265,23 +265,6 @@ export const LIVE_QUIZZES = [
         timeLimit: 30,
       },
     ],
-  },
-]
-
-export const MICRO_SESSIONS = [
-  {
-    id: '943b5a26-7bfb-4678-a482-28430afebe3c',
-    name: 'Test Micro',
-    displayName: 'Test Micro',
-    scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
-    scheduledEndAt: new Date('2023-09-19:12:00.000Z'),
-    arePushNotificationsSent: false,
-    description: `
-Diese Woche lernen wir...
-
-Mehr bla bla...
-`,
-    questions: [0, 1, 2, 3, 4],
   },
 ]
 

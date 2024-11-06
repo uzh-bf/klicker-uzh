@@ -2,7 +2,7 @@ import { Button, CycleCountdown, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
-export interface SessionProgressProps {
+export interface LiveQuizProgressProps {
   activeIndex: number
   isSubmitDisabled?: boolean
   isSubmitHidden?: boolean
@@ -13,7 +13,7 @@ export interface SessionProgressProps {
   onExpire: () => void
 }
 
-export function SessionProgress({
+export function LiveQuizProgress({
   activeIndex,
   isSubmitDisabled = false,
   isSubmitHidden = false,
@@ -22,7 +22,7 @@ export function SessionProgress({
   timeLimit,
   onSubmit,
   onExpire,
-}: SessionProgressProps): React.ReactElement {
+}: LiveQuizProgressProps): React.ReactElement {
   const t = useTranslations()
 
   return (
@@ -70,4 +70,4 @@ export function SessionProgress({
   )
 }
 
-export default SessionProgress
+export default LiveQuizProgress

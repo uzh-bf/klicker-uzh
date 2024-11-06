@@ -123,7 +123,7 @@ function RunningSession() {
   return (
     <Layout
       title={t('control.session.sessionWithName', { name: name })}
-      sessionId={id}
+      quizId={id}
     >
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (

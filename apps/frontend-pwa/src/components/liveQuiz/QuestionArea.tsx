@@ -3,7 +3,7 @@ import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
-import SessionProgress from '@klicker-uzh/shared-components/src/questions/SessionProgress'
+import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -190,10 +190,10 @@ function QuestionArea({
       </H2>
 
       {remainingQuestions.length === 0 ? (
-        t('pwa.session.allQuestionsAnswered')
+        t('pwa.liveQuiz.allQuestionsAnswered')
       ) : (
         <div className="flex w-full flex-col gap-2">
-          <SessionProgress
+          <LiveQuizProgress
             activeIndex={instances.length - remainingQuestions.length}
             numItems={instances.length}
             expiresAt={expiresAt}

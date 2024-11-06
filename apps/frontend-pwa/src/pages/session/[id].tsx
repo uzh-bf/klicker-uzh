@@ -192,7 +192,7 @@ function Index({ id }: { id: string }) {
                 <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
-              <div>{t('pwa.session.noActiveQuestion')}</div>
+              <div>{t('pwa.liveQuiz.noActiveQuestion')}</div>
             )
           ) : (
             <QuestionArea

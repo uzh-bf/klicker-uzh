@@ -25,7 +25,7 @@ function StartModal({
 }: StartModalProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [startLiveQuiz, { loading: startingSession }] = useMutation(
+  const [startLiveQuiz, { loading: startingLiveQuiz }] = useMutation(
     StartLiveQuizDocument,
     {
       optimisticResponse: {
@@ -65,7 +65,7 @@ function StartModal({
       onClose={() => setStartModalOpen(false)}
       onPrimaryAction={
         <Button
-          loading={startingSession}
+          loading={startingLiveQuiz}
           onClick={async () => {
             try {
               await startLiveQuiz({
