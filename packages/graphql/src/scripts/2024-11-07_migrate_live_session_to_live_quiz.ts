@@ -1,17 +1,28 @@
 import {
+  Element,
   ElementBlockStatus,
   ElementInstanceType,
+  ElementStatus,
   ElementType,
   PrismaClient,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
+import { AllElementTypeData } from '@klicker-uzh/types'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 
 // ? This script will migrate the old live sessions to the new live quiz table
 // ? (liveSession -> liveQuiz, sessionBlock -> elementBlock, questionInstance -> elementInstance)
 
-function computeElementType({ instance }: { instance: any }): ElementType {
-  const qiType = instance.questionData.type as string
+// ! Flags
+const verbose = false
+
+function computeElementType({
+  questionData,
+}: {
+  questionData: any
+}): ElementType {
+  const qiType = questionData.type as string
   let newElementType: ElementType | undefined
   if (qiType === 'SC') {
     newElementType = ElementType.SC
@@ -28,6 +39,61 @@ function computeElementType({ instance }: { instance: any }): ElementType {
   }
 
   return newElementType
+}
+
+function fakeElementFromQuestionData({
+  questionData,
+}: {
+  questionData: any
+}): Element {
+  if (!questionData.id || !questionData.name || !questionData.content) {
+    console.log('QUESTION DATA')
+    console.log(questionData)
+    throw new Error('Missing required question data properties')
+  }
+
+  const elemnetId = questionData.id.split('-')[0]
+  const elementVersion = Number(questionData.id.split('-')[1].slice(1))
+  const elementType = computeElementType({ questionData })
+
+  const fakedElement = {
+    id: elemnetId,
+    name: questionData.name,
+    version: elementVersion,
+    type: elementType,
+    content: questionData.content,
+    explanation: questionData.explanation ?? null,
+    pointsMultiplier: questionData.pointsMultiplier ?? 1,
+    options: questionData.options,
+    originalId: '', // unused
+    isArchived: false, // unused
+    isDeleted: false, // unused
+    status: ElementStatus.READY, // unused
+    ownerId: '', // unused
+    createdAt: new Date(), // unused
+    updatedAt: new Date(), // unused
+  }
+
+  return fakedElement
+}
+
+function questionDataToElementData({
+  questionData,
+}: {
+  questionData: any
+}): AllElementTypeData {
+  const fakedElement = fakeElementFromQuestionData({ questionData })
+
+  if (verbose) {
+    console.log('QUESTION DATA')
+    console.log(questionData)
+    console.log('FAKED ELEMENT')
+    console.log(fakedElement)
+    console.log('\n\n')
+  }
+
+  const elementData = processElementData(fakedElement)
+  return elementData
 }
 
 async function run() {
@@ -47,7 +113,6 @@ async function run() {
         },
       },
     },
-    take: 100, // TODO: remove this
   })
 
   for (const liveSession of liveSessions) {
@@ -64,10 +129,14 @@ async function run() {
     const elementBlockContent = liveSession.blocks.map((block) => {
       const elementInstanceContent = block.instances.map((instance) => {
         const newOptions = { pointsMultiplier: instance.pointsMultiplier }
-        const newElementType = computeElementType({ instance })
-        const newElementData = {} // TODO: parse from questionData
-        const newResults = {} // TODO: initialize empty based on elementData / questionData
-        const newAnonymousResults = {} // TODO: parse from results
+        const questionData = instance.questionData
+
+        const newElementType = computeElementType({ questionData })
+        const newElementData = questionDataToElementData({ questionData })
+        const newResults = getInitialElementResults(
+          fakeElementFromQuestionData({ questionData })
+        )
+        const newAnonymousResults = {} // TODO: parse from existing results on question instance
 
         // TODO: figure out how to handle cases with missing element (questionId = null)
         // ? also extracting the questionId from the questionData does not work -> error on creation
