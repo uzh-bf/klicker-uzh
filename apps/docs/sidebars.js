@@ -3,7 +3,6 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
-      'getting_started/migration',
     ],
     'Lecturer Application': [
       'tutorials/supported_element_types',

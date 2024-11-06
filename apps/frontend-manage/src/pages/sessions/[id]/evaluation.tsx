@@ -7,6 +7,7 @@ import {
   GetSessionEvaluationQuery,
   InstanceResult,
   SessionBlockStatus,
+  SessionStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
@@ -240,6 +241,7 @@ function Evaluation() {
               textSize={textSize}
               chartType={chartType}
               totalParticipants={currentInstance.participants}
+              hideQRCode={status !== SessionStatus.Running}
             />
           )}
 

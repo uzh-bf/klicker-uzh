@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.3.0-alpha.6",
+  "version": "3.3.0-alpha.7",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.11.8",
@@ -20,6 +20,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
     "@tanstack/react-table": "8.20.5",
+    "@uidotdev/usehooks": "2.4.1",
     "@uzh-bf/design-system": "3.0.0-alpha.32",
     "d3": "7.9.0",
     "dayjs": "1.11.13",

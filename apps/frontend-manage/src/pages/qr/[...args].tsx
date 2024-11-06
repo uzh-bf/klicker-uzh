@@ -10,17 +10,24 @@ import { twMerge } from 'tailwind-merge'
 
 interface Props {
   path: string
-  width: number
+  width?: number
   className?: {
+    root?: string
     title?: string
     canvas?: string
   }
+  showLink?: boolean
+  showButton?: boolean
+  showLogo?: boolean
 }
 
 export function QR({
   path,
   width = 200,
   className,
+  showLink = true,
+  showButton = true,
+  showLogo = true,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -35,29 +42,46 @@ export function QR({
   }, [ref, path])
 
   return (
-    <div className="space-y-2">
-      <Link target="_blank" href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}>
-        <div className={twMerge('text-primary-100 text-6xl', className?.title)}>
-          {process.env.NEXT_PUBLIC_PWA_URL}
-          {path}
-        </div>
-      </Link>
+    <div className={twMerge('space-y-2', className?.root)}>
+      {showLink && (
+        <Link
+          target="_blank"
+          href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+        >
+          <div
+            className={twMerge('text-primary-100 text-6xl', className?.title)}
+          >
+            {process.env.NEXT_PUBLIC_PWA_URL}
+            {path}
+          </div>
+        </Link>
+      )}
       <div className={className?.canvas}>
-        <QRCode
-          ref={ref as MutableRefObject<QRCode>}
-          logoHeight={width / 3.34}
-          logoImage="/img/KlickerLogo.png"
-          logoWidth={width}
-          size={width * 3}
-          value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
-        />
+        {showLogo && width ? (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            logoHeight={width / 3.34}
+            logoImage="/img/KlickerLogo.png"
+            logoWidth={width}
+            size={width * 3}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        ) : (
+          <QRCode
+            ref={ref as MutableRefObject<QRCode>}
+            style={{ width: '100%', height: '100%' }}
+            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+          />
+        )}
       </div>
-      <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
-        <Button.Icon>
-          <FontAwesomeIcon icon={faDownload} />
-        </Button.Icon>
-        <Button.Label>{t('shared.generic.download')}</Button.Label>
-      </Button>
+      {showButton && (
+        <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faDownload} />
+          </Button.Icon>
+          <Button.Label>{t('shared.generic.download')}</Button.Label>
+        </Button>
+      )}
     </div>
   )
 }
