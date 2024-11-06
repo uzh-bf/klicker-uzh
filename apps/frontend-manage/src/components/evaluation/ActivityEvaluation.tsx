@@ -7,6 +7,7 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
+import useEvaluationInitialization from '@lib/hooks/useEvaluationInitialization'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
@@ -53,9 +54,18 @@ function ActivityEvaluation({
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
-  // TODO: add use Effect hook logic that directly jumps to a certain instance / leaderboard / ... for PPT integration
-
   const instanceResults = stacks.flatMap((stack) => stack.instances)
+
+  // automatically switch to correct instance and use correct settings depending on URL params
+  useEvaluationInitialization({
+    setActiveInstance,
+    setActiveStack,
+    setShowSolution,
+    questionIx: router.query.questionIx as string | null,
+    showLeaderboard: router.query.leaderboard === 'true',
+    showSolution: router.query.showSolution === 'true',
+    type,
+  })
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
