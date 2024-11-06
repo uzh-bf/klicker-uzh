@@ -96,9 +96,10 @@ export function getInitialElementResults(
       total: 0,
     }
   } else if (
-    element.type === PrismaElementType.SC ||
-    element.type === PrismaElementType.MC ||
-    element.type === PrismaElementType.KPRIM
+    (element.type === PrismaElementType.SC ||
+      element.type === PrismaElementType.MC ||
+      element.type === PrismaElementType.KPRIM) &&
+    'choices' in element.options
   ) {
     const choices = element.options.choices.reduce(
       (acc: Record<string, number>, choice: Choice) => ({
