@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2024-11-05)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** display QR code on evaluation page for live quizzes ([#4356](https://github.com/uzh-bf/klicker-uzh/issues/4356)) ([7a734d1](https://github.com/uzh-bf/klicker-uzh/commit/7a734d11aae77ae306c951388b8a22360a1162b9))
+
 ## [3.3.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2024-11-03)
 
 
