@@ -193,8 +193,9 @@ enum ElementBlockStatus {
 }
 
 model ElementBlock {
-  id    Int @id @default(autoincrement())
-  order Int
+  id         Int  @id @default(autoincrement())
+  originalId Int? // TODO: remove after migration to new data structure
+  order      Int
 
   timeLimit       Int?
   expiresAt       DateTime?

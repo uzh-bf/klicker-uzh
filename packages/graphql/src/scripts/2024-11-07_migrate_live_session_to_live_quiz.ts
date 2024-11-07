@@ -20,6 +20,7 @@ import {
   ElementResultsOpen,
 } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 
 // ? This script will migrate the old live sessions to the new live quiz table
@@ -249,6 +250,14 @@ function convertOldResults({
 async function run() {
   const prisma = new PrismaClient()
 
+  const redisExec = new Redis({
+    family: 4,
+    host: process.env.REDIS_HOST ?? 'localhost',
+    password: process.env.REDIS_PASS ?? '',
+    port: Number(process.env.REDIS_PORT) ?? 6379,
+    tls: process.env.REDIS_TLS ? {} : undefined,
+  })
+
   // fetch all live sessions with associated question instances
   const liveSessions = await prisma.liveSession.findMany({
     include: {
@@ -356,6 +365,7 @@ async function run() {
       }
 
       return {
+        originalId: block.id,
         order: block.order,
         timeLimit: block.timeLimit ?? undefined,
         randomSelection: block.randomSelection ?? undefined,
@@ -416,6 +426,11 @@ async function run() {
       },
       include: {
         blocks: true,
+        activeBlock: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
@@ -439,7 +454,65 @@ async function run() {
       `Migrated live session ${liveSession.id} to live quiz ${newLiveQuiz.id}`
     )
 
-    // TODO: update redis cache based on originalId (same as in liveSession / questionInstance) and new ids
+    // update redis cache data related to live quiz
+    const lb = await redisExec.hgetall(`s:${newLiveQuiz.originalId}:lb`)
+    if (typeof lb !== 'undefined' && lb !== null) {
+      await redisExec.hmset(`lq:${newLiveQuiz.id}:lb`, lb)
+    }
+
+    // update redis cache data related to active block
+    const activeBlock = newLiveQuiz.activeBlock
+    if (typeof activeBlock !== 'undefined' && activeBlock !== null) {
+      const blb = await redisExec.hgetall(
+        `s:${newLiveQuiz.originalId}:b:${activeBlock.originalId}:lb`
+      )
+
+      if (typeof blb !== 'undefined' && blb !== null) {
+        // TODO: uncomment to apply changes
+        // await redisExec.hmset(`lq:${newLiveQuiz.id}:eb:${activeBlock.id}:lb`, blb)
+      }
+
+      activeBlock.elements.forEach(async (instance) => {
+        const info = await redisExec.hgetall(
+          `s:${newLiveQuiz.originalId}:i:${instance.originalId}:info`
+        )
+        const responseHashes = await redisExec.hgetall(
+          `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responseHashes`
+        )
+        const responses = await redisExec.hgetall(
+          `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responses`
+        )
+        const results = await redisExec.hgetall(
+          `s:${newLiveQuiz.originalId}:i:${instance.originalId}:results`
+        )
+
+        // TODO: uncomment to apply changes
+        // if (typeof info !== 'undefined' && info !== null) {
+        //   await redisExec.hmset(
+        //     `lq:${newLiveQuiz.id}:ei:${instance.id}:info`,
+        //     info
+        //   )
+        // }
+        // if (typeof responseHashes !== 'undefined' && responseHashes !== null) {
+        //   await redisExec.hmset(
+        //     `lq:${newLiveQuiz.id}:ei:${instance.id}:responseHashes`,
+        //     responseHashes
+        //   )
+        // }
+        // if (typeof responses !== 'undefined' && responses !== null) {
+        //   await redisExec.hmset(
+        //     `lq:${newLiveQuiz.id}:ei:${instance.id}:responses`,
+        //     responses
+        //   )
+        // }
+        // if (typeof results !== 'undefined' && results !== null) {
+        //   await redisExec.hmset(
+        //     `lq:${newLiveQuiz.id}:ei:${instance.id}:results`,
+        //     results
+        //   )
+        // }
+      })
+    }
   }
 
   // TODO: set auto-increment values for instances and blocks

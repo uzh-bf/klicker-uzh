@@ -63,6 +63,7 @@ DROP TYPE "LiveQuizStatus";
 -- CreateTable
 CREATE TABLE "ElementBlock" (
     "id" SERIAL NOT NULL,
+    "originalId" INTEGER,
     "order" INTEGER NOT NULL,
     "timeLimit" INTEGER,
     "expiresAt" TIMESTAMP(3),
