@@ -272,6 +272,8 @@ async function run() {
         },
       },
     },
+    skip: 0, // TODO: remove this
+    take: 100, // TODO: remove this
   })
 
   for (const liveSession of liveSessions) {
@@ -467,10 +469,13 @@ async function run() {
         `s:${newLiveQuiz.originalId}:b:${activeBlock.originalId}:lb`
       )
 
-      if (typeof blb !== 'undefined' && blb !== null) {
-        // TODO: uncomment to apply changes
-        // await redisExec.hmset(`lq:${newLiveQuiz.id}:eb:${activeBlock.id}:lb`, blb)
-      }
+      // TODO: uncomment to apply changes
+      // if (typeof blb !== 'undefined' && blb !== null) {
+      //   await redisExec.hmset(
+      //     `lq:${newLiveQuiz.id}:eb:${activeBlock.id}:lb`,
+      //     blb
+      //   )
+      // }
 
       activeBlock.elements.forEach(async (instance) => {
         const info = await redisExec.hgetall(
@@ -513,6 +518,10 @@ async function run() {
         // }
       })
     }
+
+    // TODO: uncomment to apply
+    // ! Cleanup: remove old live session cache data
+    // await redisExec.del(`s:${newLiveQuiz.originalId}:*`)
   }
 
   // TODO: set auto-increment values for instances and blocks
