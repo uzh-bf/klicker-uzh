@@ -24,7 +24,10 @@ function ChoicesSidebar({
         )}
       >
         {instance.results.choices.map((choice, innerIndex) => {
-          const correctFraction = choice.count / instance.results.totalAnswers
+          const correctFraction =
+            instance.results.totalAnswers > 0
+              ? choice.count / instance.results.totalAnswers
+              : 0
 
           return (
             <div key={`${instance.id}-${innerIndex}`}>
