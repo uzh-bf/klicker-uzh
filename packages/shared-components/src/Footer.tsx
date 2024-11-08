@@ -18,9 +18,6 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
             &copy;
             {new Date().getFullYear()} DF Teaching Center, Department of
             Finance, University of Zurich. All rights reserved.
-            <br />
-            Products and Services displayed herein are trademarks or registered
-            trademarks of their respective owners.
           </p>
         </>
       )}

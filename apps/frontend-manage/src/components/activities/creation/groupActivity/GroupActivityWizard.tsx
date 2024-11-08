@@ -81,7 +81,7 @@ function GroupActivityWizard({
     undefined
   )
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
@@ -219,20 +219,24 @@ function GroupActivityWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.activityWizard.groupActivityInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.activityWizard.groupActivityDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.activityWizard.groupActivitySettings'),
       tooltipDisabled: t('manage.activityWizard.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('shared.generic.questions'),
       tooltip: t('manage.activityWizard.groupActivityQuestions'),
       tooltipDisabled: t('manage.activityWizard.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 
