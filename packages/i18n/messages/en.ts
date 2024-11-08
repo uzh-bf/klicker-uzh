@@ -801,6 +801,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       openSource: 'Open-Source',
       githubRepository: 'GitHub Repository',
       githubRepositoryDesc: 'Source code of the open-source project',
+      survey:
+        'We would like to know what you think about KlickerUZH and our future plans! Please give us your feedback in a <link>short survey (5 - 10min)</link>.',
     },
     login: {
       lecturerLogin: 'Login Lecturers',
