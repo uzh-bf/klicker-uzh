@@ -137,6 +137,15 @@ export async function getPracticeQuizData(
       stacks: orderedStacks,
       numOfStacks: orderedStacks.length,
     }
+  } else if (
+    ctx.user?.sub &&
+    ctx.user.sub === quiz.ownerId &&
+    ctx.user.role === UserRole.USER
+  ) {
+    return {
+      ...quiz,
+      isOwner: true,
+    }
   }
 
   return quiz

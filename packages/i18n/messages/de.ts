@@ -316,6 +316,8 @@ Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an 
 
 Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
 `,
+      activityPreview:
+        'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau nur dazu dient, den Inhalt und das Erscheinungsbild dieser KlickerUZH-Aktivität zu überprüfen und dass alle Funktionalitäten zur Interaktion der Studierenden sowie die Möglichkeit, auf Fragen zu antworten, nicht verfügbar sind.',
     },
     createAccount: {
       dataProcessingTitle: 'Datenverarbeitung und Datenschutz',

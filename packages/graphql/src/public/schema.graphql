@@ -1305,6 +1305,7 @@ type PracticeQuiz {
   description: String
   displayName: String!
   id: String!
+  isOwner: Boolean
   name: String!
   numOfStacks: Int
   orderType: ElementOrderType!
