@@ -88,7 +88,7 @@ function LiveQuizWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<LiveQuizFormValues>>(null)
@@ -173,21 +173,25 @@ function LiveQuizWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.activityWizard.liveQuizInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.activityWizard.liveQuizDescription'),
       tooltipDisabled: t('manage.activityWizard.liveQuizDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.activityWizard.liveQuizSettings'),
       tooltipDisabled: t('manage.activityWizard.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('manage.activityWizard.liveQuizBlocks'),
       tooltip: t('manage.activityWizard.liveQuizDragDrop'),
       tooltipDisabled: t('manage.activityWizard.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 
