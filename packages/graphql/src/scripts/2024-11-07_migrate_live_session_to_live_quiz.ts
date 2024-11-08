@@ -9,7 +9,9 @@ import {
   ElementStatus,
   ElementType,
   PrismaClient,
+  PublicationStatus,
   SessionBlockStatus,
+  SessionStatus,
 } from '@klicker-uzh/prisma'
 import {
   AllElementTypeData,
@@ -380,6 +382,18 @@ async function run() {
       }
     })
 
+    // compute live quiz status
+    let liveQuizStatus: PublicationStatus | undefined
+    if (liveSession.status === SessionStatus.PREPARED) {
+      liveQuizStatus = PublicationStatus.DRAFT
+    } else if (liveSession.status === SessionStatus.SCHEDULED) {
+      liveQuizStatus = PublicationStatus.SCHEDULED
+    } else if (liveSession.status === SessionStatus.RUNNING) {
+      liveQuizStatus = PublicationStatus.PUBLISHED
+    } else if (liveSession.status === SessionStatus.COMPLETED) {
+      liveQuizStatus = PublicationStatus.ENDED
+    }
+
     // compute updates for live quiz and execute modifications
     const newLiveQuiz = await prisma.liveQuiz.create({
       data: {
@@ -390,6 +404,7 @@ async function run() {
         name: liveSession.name,
         displayName: liveSession.displayName,
         description: liveSession.description,
+        status: liveQuizStatus,
 
         startedAt: liveSession.startedAt,
         finishedAt: liveSession.finishedAt,
@@ -469,7 +484,7 @@ async function run() {
 
     //   if (typeof blb !== 'undefined' && blb !== null) {
     //     await redisExec.hmset(
-    //       `lq:${newLiveQuiz.id}:eb:${activeBlock.id}:lb`,
+    //       `lq:${newLiveQuiz.id}:b:${activeBlock.id}:lb`,
     //       blb
     //     )
     //   }
@@ -490,25 +505,25 @@ async function run() {
 
     //     if (typeof info !== 'undefined' && info !== null) {
     //       await redisExec.hmset(
-    //         `lq:${newLiveQuiz.id}:ei:${instance.id}:info`,
+    //         `lq:${newLiveQuiz.id}:i:${instance.id}:info`,
     //         info
     //       )
     //     }
     //     if (typeof responseHashes !== 'undefined' && responseHashes !== null) {
     //       await redisExec.hmset(
-    //         `lq:${newLiveQuiz.id}:ei:${instance.id}:responseHashes`,
+    //         `lq:${newLiveQuiz.id}:i:${instance.id}:responseHashes`,
     //         responseHashes
     //       )
     //     }
     //     if (typeof responses !== 'undefined' && responses !== null) {
     //       await redisExec.hmset(
-    //         `lq:${newLiveQuiz.id}:ei:${instance.id}:responses`,
+    //         `lq:${newLiveQuiz.id}:i:${instance.id}:responses`,
     //         responses
     //       )
     //     }
     //     if (typeof results !== 'undefined' && results !== null) {
     //       await redisExec.hmset(
-    //         `lq:${newLiveQuiz.id}:ei:${instance.id}:results`,
+    //         `lq:${newLiveQuiz.id}:i:${instance.id}:results`,
     //         results
     //       )
     //     }

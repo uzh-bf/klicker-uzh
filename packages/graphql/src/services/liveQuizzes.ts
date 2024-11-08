@@ -59,13 +59,13 @@ async function getCachedBlockResults({
   activeInstanceIds: number[]
 }) {
   const redisMulti = ctx.redisExec.multi()
-  redisMulti.hgetall(`s:${quizId}:lb`)
-  redisMulti.hgetall(`s:${quizId}:b:${blockId}:lb`)
+  redisMulti.hgetall(`lq:${quizId}:lb`)
+  redisMulti.hgetall(`lq:${quizId}:b:${blockId}:lb`)
   activeInstanceIds.forEach((instanceId) => {
-    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:info`)
-    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responseHashes`)
-    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:responses`)
-    redisMulti.hgetall(`s:${quizId}:i:${instanceId}:results`)
+    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:info`)
+    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:responseHashes`)
+    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:responses`)
+    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:results`)
   })
   return redisMulti.exec()
 }
@@ -255,12 +255,12 @@ async function unlinkCachedBlockResults({
 }) {
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
-  unlinkMulti.unlink(`s:${quizId}:b:${blockId}:lb`)
+  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
   activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`s:${quizId}:i:${instanceId}:results`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
   })
   return unlinkMulti.exec()
 }
@@ -714,7 +714,7 @@ export async function startLiveQuiz(
         try {
           await ctx.redisExec
             .pipeline()
-            .hmset(`s:${quiz.id}:meta`, {
+            .hmset(`lq:${quiz.id}:meta`, {
               namespace: quiz.namespace,
               startedAt: Number(new Date()),
             })
@@ -817,7 +817,7 @@ export async function getCockpitQuiz(
     )
     const redisMulti = ctx.redisExec.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
-      redisMulti.hgetall(`s:${id}:i:${instanceId}:results`)
+      redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
     })
     const cacheContent = (await redisMulti.exec()) as
       | [
@@ -966,7 +966,7 @@ export async function activateLiveQuizBlock(
       case ElementType.SC:
       case ElementType.MC:
       case ElementType.KPRIM: {
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: elementData.options.choices.length,
           solutions: JSON.stringify(
@@ -976,7 +976,7 @@ export async function activateLiveQuizBlock(
               .map((choice) => choice.ix)
           ),
         })
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
           ...(instance.results as ElementResultsChoices).choices,
         })
@@ -984,22 +984,22 @@ export async function activateLiveQuizBlock(
       }
 
       case ElementType.NUMERICAL: {
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(elementData.options.solutionRanges),
         })
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
         })
         break
       }
 
       case ElementType.FREE_TEXT: {
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:info`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(elementData.options.solutions),
         })
-        redisMulti.hmset(`s:${quiz.id}:i:${instance.id}:results`, {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
         })
         break
@@ -1239,8 +1239,8 @@ export async function endLiveQuiz(
   }
 
   try {
-    const quizLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
-    const quizXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+    const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
+    const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
 
     let promises: any[] = []
     const participants: Record<string, any> = {}
@@ -1491,7 +1491,7 @@ export async function endLiveQuiz(
     // the live quiz update later on should never fail, but we need the return value (keep separate)
     await ctx.prisma.$transaction(promises)
 
-    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const keys = await ctx.redisExec.keys(`lq:${id}:*`)
     const pipe = ctx.redisExec.multi()
     for (const key of keys) {
       pipe.unlink(key)
@@ -1711,7 +1711,7 @@ export async function cancelLiveQuiz(
       ),
     ])
 
-    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const keys = await ctx.redisExec.keys(`lq:${id}:*`)
     const pipe = ctx.redisExec.multi()
     for (const key of keys) {
       pipe.unlink(key)
