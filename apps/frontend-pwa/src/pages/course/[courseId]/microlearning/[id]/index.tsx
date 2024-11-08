@@ -28,6 +28,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Layout from '~/components/Layout'
+import PreviewMessage from '~/components/common/PreviewMessage'
 import MicroLearningSubscriber from '~/components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
@@ -55,7 +56,9 @@ function MicrolearningIntroduction({
       skip: !id,
     }
   )
-  const { data: selfData } = useQuery(SelfDocument)
+  const { data: selfData } = useQuery(SelfDocument, {
+    skip: data?.microLearning?.isOwner ?? false,
+  })
 
   if (loading) {
     return (
@@ -88,40 +91,49 @@ function MicrolearningIntroduction({
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
+      previewMode={microLearning.isOwner ?? undefined}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
         subscribeToMore={subscribeToMore}
         setEndedMicroLearning={setEndedMicroLearning}
       />
-      <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-3xl md:rounded md:border md:p-8 md:pt-6">
-        {!selfData?.self && (
-          <UserNotification type="warning" className={{ root: 'mb-4' }}>
-            {t.rich('pwa.general.userNotLoggedIn', {
-              login: (text) => (
-                <Button
-                  basic
-                  className={{
-                    root: 'hover:text-primary-100 font-bold',
-                  }}
-                  onClick={() =>
-                    router.push(
-                      `/login?expired=true&redirect_to=${
-                        encodeURIComponent(
-                          window?.location?.pathname +
-                            (window?.location?.search ?? '')
-                        ) ?? '/'
-                      }`
-                    )
-                  }
-                  data={{ cy: 'login-to-start-microlearning' }}
-                >
-                  {text}
-                </Button>
-              ),
-            })}
-          </UserNotification>
-        )}
+      <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
+        {!selfData?.self &&
+          (microLearning.isOwner ? (
+            <PreviewMessage
+              activityType={t('shared.generic.microlearning')}
+              name={microLearning.name}
+              displayName={microLearning.displayName}
+              className="mb-4"
+            />
+          ) : (
+            <UserNotification type="warning" className={{ root: 'mb-4' }}>
+              {t.rich('pwa.general.userNotLoggedIn', {
+                login: (text) => (
+                  <Button
+                    basic
+                    className={{
+                      root: 'hover:text-primary-100 font-bold',
+                    }}
+                    onClick={() =>
+                      router.push(
+                        `/login?expired=true&redirect_to=${
+                          encodeURIComponent(
+                            window?.location?.pathname +
+                              (window?.location?.search ?? '')
+                          ) ?? '/'
+                        }`
+                      )
+                    }
+                    data={{ cy: 'login-to-start-microlearning' }}
+                  >
+                    {text}
+                  </Button>
+                ),
+              })}
+            </UserNotification>
+          ))}
         {microLearningPast ? (
           <UserNotification
             type="warning"

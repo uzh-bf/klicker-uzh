@@ -56,6 +56,7 @@ function PracticeQuizPage({
       </Layout>
     )
   }
+
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }

@@ -121,6 +121,7 @@ function ElementStack({
   // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
     if (
+      !previewOnly &&
       singleSubmission &&
       !stackStorage &&
       evaluationData?.getPreviousStackEvaluation &&
@@ -243,7 +244,14 @@ function ElementStack({
       //   })
       // }
     }
-  }, [evaluationData, setStackStorage, singleSubmission, stack, stackStorage])
+  }, [
+    evaluationData,
+    setStackStorage,
+    singleSubmission,
+    stack,
+    stackStorage,
+    previewOnly,
+  ])
 
   return (
     <div className="pb-12">

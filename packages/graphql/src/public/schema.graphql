@@ -939,6 +939,7 @@ type MicroLearning {
   description: String
   displayName: String!
   id: ID!
+  isOwner: Boolean
   name: String!
   numOfStacks: Int
   pointsMultiplier: Float!

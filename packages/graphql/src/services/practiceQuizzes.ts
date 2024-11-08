@@ -120,9 +120,9 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
   const isOwner =
-    ctx.user?.sub &&
-    ctx.user.sub === quiz.ownerId &&
-    ctx.user.role === UserRole.USER
+    ctx.user?.sub && ctx.user.role === UserRole.USER
+      ? ctx.user.sub === quiz.ownerId
+      : false
 
   // if the quiz is scheduled, return the quiz without the stacks
   if (quiz.status === PublicationStatus.SCHEDULED) {

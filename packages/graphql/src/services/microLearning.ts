@@ -59,6 +59,8 @@ export async function getMicroLearningData(
   })
 
   return microLearning
+    ? { ...microLearning, isOwner: ctx.user?.sub === microLearning.ownerId }
+    : null
 }
 
 export async function getMicroLearningEvaluation(
