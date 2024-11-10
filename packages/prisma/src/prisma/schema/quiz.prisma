@@ -149,7 +149,7 @@ model LiveSession {
 model LiveQuiz {
   id String @id @default(uuid()) @db.Uuid
 
-  originalId                 String? @unique
+  originalId                 String?
   isLiveQAEnabled            Boolean @default(false)
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
