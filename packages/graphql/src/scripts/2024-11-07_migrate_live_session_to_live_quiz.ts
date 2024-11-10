@@ -359,16 +359,16 @@ async function applyCacheUpdatesForQuiz(
 
     activeBlock.elements.forEach(async (instance) => {
       const info = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.id}:info`
+        `s:${newLiveQuiz.id}:i:${instance.originalId}:info`
       )
       const responseHashes = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.id}:responseHashes`
+        `s:${newLiveQuiz.id}:i:${instance.originalId}:responseHashes`
       )
       const responses = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.id}:responses`
+        `s:${newLiveQuiz.id}:i:${instance.originalId}:responses`
       )
       const results = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.id}:results`
+        `s:${newLiveQuiz.id}:i:${instance.originalId}:results`
       )
 
       if (typeof info !== 'undefined' && info !== null) {
