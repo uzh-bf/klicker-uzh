@@ -39,14 +39,6 @@ const logQuestionDataConversion = false
 const logResultsConversion = false
 const logInstanceConversion = false
 
-const redisExec = new Redis({
-  family: 4,
-  host: process.env.REDIS_HOST ?? 'localhost',
-  password: process.env.REDIS_PASS ?? '',
-  port: Number(process.env.REDIS_PORT) ?? 6379,
-  tls: process.env.REDIS_TLS ? {} : undefined,
-})
-
 /**
  * Computes the ElementType based on the provided question data
  *
@@ -342,6 +334,7 @@ function convertOldResults({
  * The function uses key pattern 's:*' for old session data and 'lq:*' for new quiz data.
  */
 async function applyCacheUpdatesForQuiz(
+  redisExec: Redis,
   newLiveQuiz: LiveQuiz & {
     activeBlock?: ElementBlock & { elements: Element[] }
   }
@@ -670,6 +663,14 @@ async function applyDBUpdatesForQuiz(
  * @async
  */
 async function run() {
+  const redisExec = new Redis({
+    family: 4,
+    host: process.env.REDIS_HOST ?? 'localhost',
+    password: process.env.REDIS_PASS ?? '',
+    port: Number(process.env.REDIS_PORT) ?? 6379,
+    tls: process.env.REDIS_TLS ? {} : undefined,
+  })
+
   const prisma = new PrismaClient()
 
   // fetch all live sessions with associated question instances
@@ -692,13 +693,16 @@ async function run() {
     const newLiveQuiz = await applyDBUpdatesForQuiz(prisma, liveSession)
 
     if (newLiveQuiz.status === PublicationStatus.PUBLISHED) {
-      await applyCacheUpdatesForQuiz(newLiveQuiz)
+      await applyCacheUpdatesForQuiz(redisExec, newLiveQuiz)
     }
 
     console.log(
       `Migrated live session ${liveSession.id} to live quiz ${newLiveQuiz.id}`
     )
   }
+
+  prisma.$disconnect()
+  redisExec.quit()
 }
 
 await run()
