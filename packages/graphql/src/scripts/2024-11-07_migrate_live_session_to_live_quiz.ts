@@ -320,83 +320,102 @@ function convertOldResults({
 }
 
 /**
- * Updates Redis cache data for a new LiveQuiz by migrating data from an existing live session.
- * This includes transferring block data, element data, and cleaning up old cache entries.
+ * Applies cache updates for a live quiz by migrating data from the old live session format to the new live quiz format in Redis.
  *
- * The function performs the following operations:
- * 1. Transfers live quiz block data
- * 2. Transfers active block data if it exists
- * 3. For each element in the active block:
- *    - Transfers element info
- *    - Transfers response hashes
- *    - Transfers responses
- *    - Transfers results
- * 4. Cleans up old live session cache data
+ * This function performs the following operations:
+ * 1. Checks if the quiz has already been migrated
+ * 2. Updates meta cache data (namespace and startedAt)
+ * 3. Migrates leaderboard data
+ * 4. For the active block, migrates:
+ *    - Block leaderboard data
+ *    - For each element in the block:
+ *      - Instance info
+ *      - Response hashes
+ *      - Responses
+ *      - Results
  *
- * @param newLiveQuiz - The new LiveQuiz instance with its active block and elements
- * @param newLiveQuiz.id - ID of the new live quiz
- * @param newLiveQuiz.originalId - Original session ID being migrated from
- * @param newLiveQuiz.activeBlock - The currently active block containing elements
+ * @param newLiveQuiz - The live quiz to migrate cache data for, including its active block and elements
  * @returns Promise<void>
+ *
+ * @remarks
+ * All operations are performed using Redis pipeline for better performance.
+ * The function uses key pattern 's:*' for old session data and 'lq:*' for new quiz data.
  */
 async function applyCacheUpdatesForQuiz(
   newLiveQuiz: LiveQuiz & {
     activeBlock?: ElementBlock & { elements: Element[] }
   }
 ) {
+  // check if the key `lq:${newLiveQuiz.id}:meta` exists
+  if (await redisExec.exists(`lq:${newLiveQuiz.id}:meta`)) {
+    console.log(`Cache: Live quiz ${newLiveQuiz.id} already migrated`)
+    return
+  }
+
+  const pipeline = redisExec.pipeline()
+
+  // update the meta cache data related to live quiz (with keys namespace and startedAt)
+  pipeline.hmset(`lq:${newLiveQuiz.id}:meta`, {
+    namespace: newLiveQuiz.namespace,
+    startedAt: Number(newLiveQuiz.startedAt!),
+  })
+
   // update redis cache data related to live quiz
   const lb = await redisExec.hgetall(`s:${newLiveQuiz.originalId}:lb`)
   if (typeof lb !== 'undefined' && lb !== null) {
-    await redisExec.hmset(`lq:${newLiveQuiz.id}:lb`, lb)
+    pipeline.hmset(`lq:${newLiveQuiz.id}:lb`, lb)
   }
+
   // update redis cache data related to active block
   const activeBlock = newLiveQuiz.activeBlock
   if (typeof activeBlock !== 'undefined' && activeBlock !== null) {
-    const blb = await redisExec.hgetall(
+    const blb = await pipeline.hgetall(
       `s:${newLiveQuiz.originalId}:b:${activeBlock.originalId}:lb`
     )
+
     if (typeof blb !== 'undefined' && blb !== null) {
-      await redisExec.hmset(`lq:${newLiveQuiz.id}:b:${activeBlock.id}:lb`, blb)
+      pipeline.hmset(`lq:${newLiveQuiz.id}:b:${activeBlock.id}:lb`, blb)
     }
+
     activeBlock.elements.forEach(async (instance) => {
-      const info = await redisExec.hgetall(
+      const info = pipeline.hgetall(
         `s:${newLiveQuiz.originalId}:i:${instance.originalId}:info`
       )
-      const responseHashes = await redisExec.hgetall(
+      const responseHashes = pipeline.hgetall(
         `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responseHashes`
       )
-      const responses = await redisExec.hgetall(
+      const responses = pipeline.hgetall(
         `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responses`
       )
-      const results = await redisExec.hgetall(
+      const results = pipeline.hgetall(
         `s:${newLiveQuiz.originalId}:i:${instance.originalId}:results`
       )
+
       if (typeof info !== 'undefined' && info !== null) {
-        await redisExec.hmset(
-          `lq:${newLiveQuiz.id}:i:${instance.id}:info`,
-          info
-        )
+        pipeline.hmset(`lq:${newLiveQuiz.id}:i:${instance.id}:info`, info)
       }
+
       if (typeof responseHashes !== 'undefined' && responseHashes !== null) {
-        await redisExec.hmset(
+        pipeline.hmset(
           `lq:${newLiveQuiz.id}:i:${instance.id}:responseHashes`,
           responseHashes
         )
       }
+
       if (typeof responses !== 'undefined' && responses !== null) {
-        await redisExec.hmset(
+        pipeline.hmset(
           `lq:${newLiveQuiz.id}:i:${instance.id}:responses`,
           responses
         )
       }
+
       if (typeof results !== 'undefined' && results !== null) {
-        await redisExec.hmset(
-          `lq:${newLiveQuiz.id}:i:${instance.id}:results`,
-          results
-        )
+        pipeline.hmset(`lq:${newLiveQuiz.id}:i:${instance.id}:results`, results)
       }
     })
   }
+
+  await pipeline.exec()
 
   // Cleanup: remove old live session cache data
   // await redisExec.del(`s:${newLiveQuiz.originalId}:*`)
@@ -432,7 +451,7 @@ async function applyDBUpdatesForQuiz(
   })
 
   if (existingLiveQuiz) {
-    console.log(`Live session ${liveSession.id} has already been migrated`)
+    console.log(`DB: Live session ${liveSession.id} has already been migrated`)
     return existingLiveQuiz
   }
 
@@ -672,7 +691,9 @@ async function run() {
   for (const liveSession of liveSessions) {
     const newLiveQuiz = await applyDBUpdatesForQuiz(prisma, liveSession)
 
-    await applyCacheUpdatesForQuiz(newLiveQuiz)
+    if (newLiveQuiz.status === PublicationStatus.PUBLISHED) {
+      await applyCacheUpdatesForQuiz(newLiveQuiz)
+    }
 
     console.log(
       `Migrated live session ${liveSession.id} to live quiz ${newLiveQuiz.id}`
