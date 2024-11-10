@@ -341,7 +341,7 @@ async function applyCacheUpdatesForQuiz(
   })
 
   // update redis cache data related to live quiz
-  const lb = await redisExec.hgetall(`s:${newLiveQuiz.originalId}:lb`)
+  const lb = await redisExec.hgetall(`s:${newLiveQuiz.id}:lb`)
   if (typeof lb !== 'undefined' && lb !== null) {
     pipeline.hset(`lq:${newLiveQuiz.id}:lb`, { ...lb })
   }
@@ -350,7 +350,7 @@ async function applyCacheUpdatesForQuiz(
   const activeBlock = newLiveQuiz.activeBlock
   if (typeof activeBlock !== 'undefined' && activeBlock !== null) {
     const blb = await redisExec.hgetall(
-      `s:${newLiveQuiz.originalId}:b:${activeBlock.originalId}:lb`
+      `s:${newLiveQuiz.id}:b:${activeBlock.id}:lb`
     )
 
     if (typeof blb !== 'undefined' && blb !== null) {
@@ -359,16 +359,16 @@ async function applyCacheUpdatesForQuiz(
 
     activeBlock.elements.forEach(async (instance) => {
       const info = await redisExec.hgetall(
-        `s:${newLiveQuiz.originalId}:i:${instance.originalId}:info`
+        `s:${newLiveQuiz.id}:i:${instance.id}:info`
       )
       const responseHashes = await redisExec.hgetall(
-        `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responseHashes`
+        `s:${newLiveQuiz.id}:i:${instance.id}:responseHashes`
       )
       const responses = await redisExec.hgetall(
-        `s:${newLiveQuiz.originalId}:i:${instance.originalId}:responses`
+        `s:${newLiveQuiz.id}:i:${instance.id}:responses`
       )
       const results = await redisExec.hgetall(
-        `s:${newLiveQuiz.originalId}:i:${instance.originalId}:results`
+        `s:${newLiveQuiz.id}:i:${instance.id}:results`
       )
 
       if (typeof info !== 'undefined' && info !== null) {
@@ -425,7 +425,7 @@ async function applyDBUpdatesForQuiz(
 ) {
   // check if the considered live session has already been migrated
   const existingLiveQuiz = await prisma.liveQuiz.findFirst({
-    where: { originalId: liveSession.id },
+    where: { id: liveSession.id },
   })
 
   if (existingLiveQuiz) {
@@ -542,7 +542,8 @@ async function applyDBUpdatesForQuiz(
 
   const newLiveQuizData = {
     data: {
-      originalId: liveSession.id,
+      id: liveSession.id,
+      originalId: liveSession.originalId,
       namespace: liveSession.namespace,
       pinCode: liveSession.pinCode,
 
