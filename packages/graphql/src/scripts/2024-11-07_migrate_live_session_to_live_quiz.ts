@@ -677,17 +677,27 @@ async function run() {
   const liveSessions = await prisma.liveSession.findMany({
     include: {
       blocks: {
+        orderBy: {
+          order: 'asc',
+        },
         include: {
-          instances: true,
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       activeBlock: {
         include: {
-          instances: true,
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
-    take: 50,
   })
 
   for (const liveSession of liveSessions) {
