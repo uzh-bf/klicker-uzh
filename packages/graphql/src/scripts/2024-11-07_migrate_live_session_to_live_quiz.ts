@@ -313,31 +313,12 @@ function convertOldResults({
 
 /**
  * Updates Redis cache data for a new live quiz by migrating data from an original session
+ * If the cache already exists for the live quiz, the function returns early.
  *
  * @param redisExec - Redis client instance for executing commands
  * @param newLiveQuiz - The new live quiz object containing quiz data and optional active block
- * @param newLiveQuiz.id - ID of the new live quiz
- * @param newLiveQuiz.namespace - Namespace of the live quiz
- * @param newLiveQuiz.startedAt - Timestamp when the quiz started
- * @param newLiveQuiz.originalId - Original session ID to migrate from
- * @param newLiveQuiz.activeBlock - Optional active block containing elements
- * @param newLiveQuiz.activeBlock.id - ID of the active block
- * @param newLiveQuiz.activeBlock.originalId - Original ID of the block to migrate from
- * @param newLiveQuiz.activeBlock.elements - Array of quiz elements within the block
  *
  * @returns Promise<void>
- *
- * @description
- * Migrates the following cache data from session to live quiz format:
- * - Meta information (namespace and startedAt)
- * - Leaderboard data
- * - Block leaderboard data
- * - Element information
- * - Element response hashes
- * - Element responses
- * - Element results
- *
- * If the cache already exists for the live quiz, the function returns early.
  */
 async function applyCacheUpdatesForQuiz(
   redisExec: Redis,
