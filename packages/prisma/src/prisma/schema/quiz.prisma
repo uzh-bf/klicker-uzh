@@ -284,12 +284,22 @@ model GroupActivityClueInstance {
   @@unique([groupActivityInstanceId, name])
 }
 
+// TODO: drop this after migration
+enum GroupActivityStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ENDED
+  GRADED
+}
+
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
   name        String
   displayName String
-  status      PublicationStatus @default(DRAFT)
+  status      GroupActivityStatus @default(DRAFT) // TODO: drop after migration
+  statusNEW   PublicationStatus   @default(DRAFT) // TODO: rename this after migration
 
   pointsMultiplier Int @default(1)
 

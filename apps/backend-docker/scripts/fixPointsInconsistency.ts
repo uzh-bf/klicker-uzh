@@ -18,8 +18,8 @@ const FAILURES = 1
 const COURSE_ID = ''
 const QUIZ_ID = ''
 
-const quizLB = await redisExec.hgetall(`s:${QUIZ_ID}:lb`)
-const quizXP = await redisExec.hgetall(`s:${QUIZ_ID}:xp`)
+const quizLB = await redisExec.hgetall(`lq:${QUIZ_ID}:lb`)
+const quizXP = await redisExec.hgetall(`lq:${QUIZ_ID}:xp`)
 
 const results = await Promise.allSettled(
   Object.entries(quizLB).map(async ([participantId, score]) => {

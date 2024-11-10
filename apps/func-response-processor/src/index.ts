@@ -67,7 +67,7 @@ const serviceBusTrigger = async function (
 
   try {
     const MD5 = createHash('md5')
-    const sessionKey = `s:${queueItem.sessionId}`
+    const sessionKey = `lq:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
     const response = queueItem.response

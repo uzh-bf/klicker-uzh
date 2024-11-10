@@ -23,7 +23,7 @@ async function run() {
   let count = 0
 
   for (const quiz of quizzes) {
-    const invalidKeys = await redisExec.keys(`s:${quiz.id}:*`)
+    const invalidKeys = await redisExec.keys(`lq:${quiz.id}:*`)
 
     if (invalidKeys.length > 0) {
       count += invalidKeys.length
