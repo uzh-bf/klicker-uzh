@@ -312,26 +312,32 @@ function convertOldResults({
 }
 
 /**
- * Applies cache updates for a live quiz by migrating data from the old live session format to the new live quiz format in Redis.
+ * Updates Redis cache data for a new live quiz by migrating data from an original session
  *
- * This function performs the following operations:
- * 1. Checks if the quiz has already been migrated
- * 2. Updates meta cache data (namespace and startedAt)
- * 3. Migrates leaderboard data
- * 4. For the active block, migrates:
- *    - Block leaderboard data
- *    - For each element in the block:
- *      - Instance info
- *      - Response hashes
- *      - Responses
- *      - Results
+ * @param redisExec - Redis client instance for executing commands
+ * @param newLiveQuiz - The new live quiz object containing quiz data and optional active block
+ * @param newLiveQuiz.id - ID of the new live quiz
+ * @param newLiveQuiz.namespace - Namespace of the live quiz
+ * @param newLiveQuiz.startedAt - Timestamp when the quiz started
+ * @param newLiveQuiz.originalId - Original session ID to migrate from
+ * @param newLiveQuiz.activeBlock - Optional active block containing elements
+ * @param newLiveQuiz.activeBlock.id - ID of the active block
+ * @param newLiveQuiz.activeBlock.originalId - Original ID of the block to migrate from
+ * @param newLiveQuiz.activeBlock.elements - Array of quiz elements within the block
  *
- * @param newLiveQuiz - The live quiz to migrate cache data for, including its active block and elements
  * @returns Promise<void>
  *
- * @remarks
- * All operations are performed using Redis pipeline for better performance.
- * The function uses key pattern 's:*' for old session data and 'lq:*' for new quiz data.
+ * @description
+ * Migrates the following cache data from session to live quiz format:
+ * - Meta information (namespace and startedAt)
+ * - Leaderboard data
+ * - Block leaderboard data
+ * - Element information
+ * - Element response hashes
+ * - Element responses
+ * - Element results
+ *
+ * If the cache already exists for the live quiz, the function returns early.
  */
 async function applyCacheUpdatesForQuiz(
   redisExec: Redis,
@@ -409,27 +415,25 @@ async function applyCacheUpdatesForQuiz(
   }
 
   await pipeline.exec()
-
-  // Cleanup: remove old live session cache data
-  // await redisExec.del(`s:${newLiveQuiz.originalId}:*`)
 }
 
 /**
- * Migrates a LiveSession to a LiveQuiz by creating corresponding database entries.
- *
- * This function handles the migration process by:
- * 1. Checking if migration was already performed
- * 2. Converting session blocks to element blocks
- * 3. Converting question instances to element instances
- * 4. Mapping session status to quiz status
- * 5. Creating a new LiveQuiz with all related data
- * 6. Setting the active block if applicable
+ * Applies database updates to migrate a LiveSession to a LiveQuiz
  *
  * @param prisma - Prisma client instance for database operations
- * @param liveSession - The live session to migrate, including its blocks and question instances
- * @returns Promise that resolves to the newly created LiveQuiz or undefined if already migrated
+ * @param liveSession - LiveSession object to migrate, including active block and block instances
+ * @returns Promise resolving to the newly created or existing LiveQuiz
  *
- * @throws Error if a question instance is missing required order or id fields
+ * @remarks
+ * This function performs the following operations:
+ * 1. Checks if migration was already performed
+ * 2. Maps session blocks to element blocks
+ * 3. Converts question instances to element instances
+ * 4. Migrates results and participant data
+ * 5. Creates a new LiveQuiz with mapped data
+ * 6. Updates active block reference if applicable
+ *
+ * @throws Error if question instance is missing required order or id
  */
 async function applyDBUpdatesForQuiz(
   prisma: PrismaClient,
@@ -641,25 +645,25 @@ async function applyDBUpdatesForQuiz(
 }
 
 /**
- * Migrates existing live sessions to the new live quiz format in the database.
+ * Migrates existing live sessions to live quizzes in the database and updates corresponding Redis cache entries
  *
  * This function:
- * 1. Retrieves all live sessions with their associated blocks and instances
- * 2. For each live session:
- *    - Checks if migration was already performed
- *    - Converts blocks and their question instances to new element blocks/instances
- *    - Creates a new live quiz with converted data
- *    - Updates the active block reference if applicable
- *    - Optionally updates Redis cache data (commented out by default)
+ * 1. Connects to Redis using environment variables or default values
+ * 2. Creates a Prisma client instance
+ * 3. Fetches all live sessions with their associated blocks and question instances
+ * 4. For each live session:
+ *    - Creates a new live quiz entry in the database
+ *    - Updates Redis cache if the quiz is published
+ * 5. Disconnects from Prisma and Redis after completion
  *
- * The migration handles:
- * - Session/block/instance data conversion
- * - Status mapping between old and new models
- * - Results conversion for question instances
- * - Relationship preservation (owner, course connections)
- * - Timestamps preservation
+ * @requires REDIS_HOST - Redis host (defaults to 'localhost')
+ * @requires REDIS_PASS - Redis password (defaults to '')
+ * @requires REDIS_PORT - Redis port (defaults to 6379)
+ * @requires REDIS_TLS - Redis TLS configuration (optional)
  *
- * @throws {Error} If a question instance is missing required order or id fields
+ * @throws Will throw an error if database operations fail
+ * @throws Will throw an error if Redis operations fail
+ *
  * @async
  */
 async function run() {
