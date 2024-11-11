@@ -1,0 +1,13 @@
+{
+  "name": "@klicker-uzh/analytics",
+  "version": "3.3.0-alpha.8",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "nodemon": "~3.1.7"
+  },
+  "scripts": {
+    "dev": "doppler run --config dev -- nodemon --exec 'poetry run poe main' --watch src,prisma --ext py,prisma",
+    "generate": "poetry run poe generate",
+    "main": "doppler run --config dev -- poetry run poe main"
+  }
+}
