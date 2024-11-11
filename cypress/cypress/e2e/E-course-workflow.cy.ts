@@ -513,7 +513,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.reload()
 
     // create a question with sample solution
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
     cy.createQuestionSC({
       title: questionTitle,
       content: questionContent,
@@ -599,7 +599,7 @@ describe('Test course creation and editing functionalities', () => {
     )
 
     // check that the live quiz has been removed from the course
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.contains('[data-cy="session-block"]', liveQuizName)
     cy.get(`[data-cy="edit-session-${liveQuizName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()

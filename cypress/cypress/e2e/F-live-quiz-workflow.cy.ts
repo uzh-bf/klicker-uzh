@@ -270,7 +270,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Edit the created session and check if all settings persist', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
 
     cy.contains('[data-cy="session-block"]', sessionName1)
     cy.get(`[data-cy="edit-session-${sessionName1}"]`).click()
@@ -489,7 +489,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Duplicate the live quiz', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.contains('[data-cy="session-block"]', sessionName1New)
 
     // duplicate the session and verify that the content is the same as for the original session
@@ -523,7 +523,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Cleanup: Delete the duplicated live quiz', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="quizzes"]`).click()
     cy.findByText(sessionName1Dupl).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName1Dupl}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
@@ -533,7 +533,7 @@ describe('Different live-quiz workflows', () => {
   // ! Part 2: Live Quiz Control
   it('Start the created live quizzes, abort it, and restart & completes it', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.contains('[data-cy="session-block"]', sessionName1New)
 
     // start session and then abort it
@@ -568,7 +568,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Cleanup: Delete the created and completed live quiz', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="quizzes"]`).click()
 
     cy.findByText(sessionName1New).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName1New}"]`).click()
@@ -697,7 +697,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Start the second block of the live quiz', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
 
@@ -709,7 +709,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Make feedbacks visible, respond to one and disable moderation', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
 
@@ -763,7 +763,7 @@ describe('Different live-quiz workflows', () => {
   it('Close block and delete feedback / feedback response', () => {
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -788,7 +788,7 @@ describe('Different live-quiz workflows', () => {
   it('End session on lecturer cockpit', () => {
     cy.loginLecturer()
 
-    cy.get('[data-cy="sessions"]').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="session-cockpit-${sessionName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -796,7 +796,7 @@ describe('Different live-quiz workflows', () => {
 
   it('Cleanup: Delete the live quiz used for the full cycle test', () => {
     cy.loginLecturer()
-    cy.get(`[data-cy="sessions"]`).click()
+    cy.get(`[data-cy="quizzes"]`).click()
 
     cy.findByText(sessionName2).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${sessionName2}"]`).click()
