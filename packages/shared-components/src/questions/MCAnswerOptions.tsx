@@ -1,14 +1,15 @@
 import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
-import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
 
 export interface MCAnswerOptionsProps {
   displayMode?: ElementDisplayMode
-  choices: Partial<Choice>[]
+  choices: Choice[]
   feedbacks?: QuestionFeedback[] | null
   value?: Record<number, boolean>
   onChange: (value: Record<number, boolean>) => void
@@ -28,6 +29,8 @@ export function MCAnswerOptions({
   disabled,
   hideFeedbacks = false,
 }: MCAnswerOptionsProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -37,9 +40,14 @@ export function MCAnswerOptions({
           : 'flex flex-col'
       )}
     >
-      {choices.map((choice, index) => {
+      <div>
+        {t.rich(`shared.${ElementType.Mc}.richtext`, {
+          b: (text) => <span className="font-bold">{text}</span>,
+        })}
+      </div>
+      {choices.map((choice) => {
         return (
-          <div key={`mc-choice-${index}-${choice.value}`}>
+          <div key={`mc-choice-${choice.ix}-${choice.value}`}>
             <Button
               fluid
               className={{
@@ -47,13 +55,17 @@ export function MCAnswerOptions({
                   'hover:bg-unset min-h-[2.5rem] border-slate-400',
                   !hideFeedbacks &&
                     feedbacks &&
-                    feedbacks[index] &&
+                    feedbacks[choice.ix] &&
                     'rounded-b-none'
                 ),
               }}
-              onClick={() => onChange({ ...value, [index]: !value?.[index] })}
-              active={value?.[index]}
-              data={{ cy: `mc-${elementIx + 1}-answer-option-${index + 1}` }}
+              onClick={() =>
+                onChange({ ...value, [choice.ix]: !value?.[choice.ix] })
+              }
+              active={value?.[choice.ix]}
+              data={{
+                cy: `mc-${elementIx + 1}-answer-option-${choice.ix + 1}`,
+              }}
               disabled={disabled}
             >
               <Button.Label>
@@ -66,8 +78,8 @@ export function MCAnswerOptions({
                 />
               </Button.Label>
             </Button>
-            {!hideFeedbacks && feedbacks && feedbacks[index] && (
-              <ChoiceFeedback feedback={feedbacks[index]!} />
+            {!hideFeedbacks && feedbacks && feedbacks[choice.ix] && (
+              <ChoiceFeedback feedback={feedbacks[choice.ix]!} />
             )}
           </div>
         )

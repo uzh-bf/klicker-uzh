@@ -12,12 +12,12 @@ function StatusTag({ color, status, icon }: StatusTagProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-1 rounded bg-red-300 px-1 py-0.5 text-sm',
+        'flex flex-row items-center gap-2.5 rounded bg-red-300 px-1.5 py-0.5 text-sm',
         color
       )}
     >
-      <div>{status}</div>
       <FontAwesomeIcon icon={icon} />
+      <div>{status}</div>
     </div>
   )
 }

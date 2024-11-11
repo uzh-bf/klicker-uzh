@@ -1,0 +1,8 @@
+subscription MicroLearningEnded($activityId: String!) {
+  microLearningEnded(activityId: $activityId) {
+    id
+    displayName
+    scheduledStartAt
+    scheduledEndAt
+  }
+}

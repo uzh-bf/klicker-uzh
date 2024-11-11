@@ -94,7 +94,7 @@ function EvaluationFooter({
             <Select
               contentPosition="popper"
               className={{
-                trigger: 'border-slate-400',
+                trigger: 'w-36 border-slate-400',
               }}
               items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
                 return {
@@ -104,7 +104,7 @@ function EvaluationFooter({
                 }
               })}
               value={chartType}
-              onChange={(newValue: ChartType) => setChartType(newValue)}
+              onChange={(newValue) => setChartType(newValue as ChartType)}
               data={{ cy: 'change-chart-type' }}
             />
           </div>

@@ -17,12 +17,7 @@ query GetControlSession($id: String!) {
       execution
       instances {
         id
-        questionData {
-          id
-          name
-          type
-          content
-        }
+        ...QuestionDataInfo
       }
     }
     activeBlock {

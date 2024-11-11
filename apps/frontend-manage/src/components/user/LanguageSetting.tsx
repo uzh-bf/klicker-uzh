@@ -18,7 +18,9 @@ function LanguageSetting({ user }: LanguageSettingProps) {
   const router = useRouter()
   const { pathname, query, asPath } = router
 
-  const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
+  const [changeUserLocale, { loading: changingLanguage }] = useMutation(
+    ChangeUserLocaleDocument
+  )
 
   return (
     <SimpleSetting
@@ -26,6 +28,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
       tooltip={t('manage.settings.languageTooltip')}
     >
       <Select
+        disabled={changingLanguage}
         value={user?.locale || 'en'}
         onChange={(newLocale: string) => {
           changeUserLocale({
@@ -49,7 +52,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
         ]}
         className={{
           content: 'font-normal text-black',
-          trigger: 'font-normal text-black',
+          trigger: 'h-9 w-max font-normal text-black',
         }}
         data={{ cy: 'language-select' }}
       />

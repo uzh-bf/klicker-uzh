@@ -16,6 +16,7 @@ interface GroupActivitySubmissionProps {
   selectedSubmission: number | undefined
   selectSubmission: (submissionId: number) => void
   maxPoints: number
+  activityIndex: number
 }
 
 function GroupActivitySubmission({
@@ -23,6 +24,7 @@ function GroupActivitySubmission({
   selectedSubmission,
   selectSubmission,
   maxPoints,
+  activityIndex,
 }: GroupActivitySubmissionProps) {
   const t = useTranslations()
 
@@ -52,7 +54,7 @@ function GroupActivitySubmission({
         active: 'border-2 border-red-500',
       }}
       onClick={() => selectSubmission(submission.id)}
-      data={{ cy: `group-activity-submission-${submission.id}` }}
+      data={{ cy: `group-activity-submission-${activityIndex}` }}
     >
       <div className="flex flex-col items-start">
         <div>

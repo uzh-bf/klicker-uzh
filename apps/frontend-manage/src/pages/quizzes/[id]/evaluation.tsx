@@ -2,18 +2,21 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementType,
   EvaluationBlock as EvaluationBlockType,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
   SessionBlockStatus,
+  SessionStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ACTIVE_CHART_TYPES,
+  ChartType,
+} from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   Select,
@@ -52,24 +55,11 @@ function Evaluation() {
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
-  const [chartType, setChartType] = useState<string>('')
+  const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
 
-  const [currentInstance, setCurrentInstance] = useState<InstanceResult>({
-    blockIx: 0,
-    id: '',
-    instanceIx: 0,
-    participants: 0,
-    questionData: {
-      id: '',
-      name: '',
-      content: '',
-      type: ElementType.Sc,
-      options: { choices: [] },
-    },
-    results: {},
-    statistics: undefined,
-    status: SessionBlockStatus.Executed,
-  })
+  const [currentInstance, setCurrentInstance] = useState<
+    InstanceResult | undefined
+  >(undefined)
 
   const [textSize, settextSize] = useReducer(sizeReducer, TextSizes['md'])
 
@@ -189,17 +179,20 @@ function Evaluation() {
 
   if (loading || !data) return <Loader />
 
-  if (!currentInstance.id && selectedInstanceIndex !== -1) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
-        <UserNotification
-          className={{
-            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
-          }}
-          message={t('manage.evaluation.evaluationNotYetAvailable')}
-        />
-      </div>
-    )
+  if (!currentInstance?.id) {
+    if (selectedInstanceIndex !== -1) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center">
+          <UserNotification
+            className={{
+              root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
+            }}
+            message={t('manage.evaluation.evaluationNotYetAvailable')}
+          />
+        </div>
+      )
+    }
+    return null
   }
 
   return (
@@ -248,6 +241,7 @@ function Evaluation() {
               textSize={textSize}
               chartType={chartType}
               totalParticipants={currentInstance.participants}
+              hideQRCode={status !== SessionStatus.Running}
             />
           )}
 
@@ -378,7 +372,7 @@ function Evaluation() {
                   <Select
                     contentPosition="popper"
                     className={{
-                      trigger: 'border-slate-400',
+                      trigger: 'w-36 border-slate-400',
                     }}
                     items={ACTIVE_CHART_TYPES[
                       currentInstance.questionData.type
@@ -390,7 +384,9 @@ function Evaluation() {
                       }
                     })}
                     value={chartType}
-                    onChange={(newValue: string) => setChartType(newValue)}
+                    onChange={(newValue: string) =>
+                      setChartType(newValue as ChartType)
+                    }
                     data={{ cy: 'change-chart-type' }}
                   />
                 </div>

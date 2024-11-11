@@ -1,13 +1,14 @@
 fragment ElementDataWithoutSolutions on ElementInstance {
   elementData {
-    id
-    elementId
-    name
-    type
-    content
-    explanation
-
     ... on ChoicesElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         displayMode
         choices {
@@ -18,6 +19,14 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on NumericalElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         accuracy
         placeholder
@@ -30,6 +39,14 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on FreeTextElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
       options {
         restrictions {
           maxLength
@@ -37,14 +54,25 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       }
     }
 
-    # ... on FlashcardElementData {
-    #   options {
-    #   }
-    # }
+    ... on FlashcardElementData {
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
 
-    # ... on ContentElementData {
-    #   options {
-    #   }
-    # }
+    ... on ContentElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
   }
 }

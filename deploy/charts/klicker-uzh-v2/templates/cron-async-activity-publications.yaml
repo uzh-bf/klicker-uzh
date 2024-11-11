@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "chart.fullname" . }}-cron-activity-pubs
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron.activityPublications | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.85.0
+            imagePullPolicy: IfNotPresent
+            args:
+            - -X
+            - POST
+            - -H
+            - "Content-Type: application/json"
+            - -H
+            - "x-token: {{ .Values.cron.token }}"
+            - -H
+            - "x-graphql-yoga-csrf: PublishScheduledActivities"
+            - -d
+            - >
+                {
+                    "operationName": "PublishScheduledActivities",
+                    "variables": {},
+                    "extensions": {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "fa95285ce30b364b49ed276d38bc68d5edccc4e2b89e7903814e7233aacd6040"
+                        }
+                    }
+                }
+            - 'http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql'
+          restartPolicy: OnFailure

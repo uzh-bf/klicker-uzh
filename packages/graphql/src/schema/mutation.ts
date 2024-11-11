@@ -6,7 +6,6 @@ import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as MicroLearningService from '../services/microLearning.js'
-import * as MigrationService from '../services/migration.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -41,6 +40,7 @@ import {
   StackResponseInput,
 } from './practiceQuizzes.js'
 import {
+  ArchivedElement,
   Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
@@ -251,10 +251,10 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishScheduledPracticeQuizzes: t.boolean({
+      publishScheduledActivities: t.boolean({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
-          return PracticeQuizService.publishScheduledPracticeQuizzes(ctx)
+          return CourseService.publishScheduledActivities(ctx)
         },
       }),
 
@@ -615,6 +615,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.enableGamification(args, ctx)
+        },
+      }),
+
+      deleteCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.deleteCourse(args, ctx)
         },
       }),
 
@@ -1014,16 +1025,27 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      toggleArchiveCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.toggleArchiveCourse(args, ctx)
+        },
+      }),
+
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [Element],
+        type: [ArchivedElement],
         args: {
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME: figure out how to return only a partial element or create a new pothos type only for this?
-          return QuestionService.toggleIsArchived(args, ctx) as any
+          return QuestionService.toggleIsArchived(args, ctx)
         },
       }),
 
@@ -1039,25 +1061,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteSession: t.withAuth(asUserFullAccess).field({
+      deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteSession(args, ctx)
-        },
-      }),
-
-      softDeleteLiveSession: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.softDeleteLiveSession(args, ctx)
+          return SessionService.deleteLiveQuiz(args, ctx)
         },
       }),
 
@@ -1189,7 +1200,7 @@ export const Mutation = builder.mutationType({
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
             stacks: t.arg({ required: true, type: [ElementStackInput] }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
@@ -1210,13 +1221,40 @@ export const Mutation = builder.mutationType({
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
             stacks: t.arg({ required: true, type: [ElementStackInput] }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
             return MicroLearningService.manipulateMicroLearning(args, ctx)
+          },
+        }),
+
+      extendMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.extendMicroLearning(args, ctx)
+          },
+        }),
+
+      endMicroLearning: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.endMicroLearning(args, ctx)
           },
         }),
 
@@ -1260,6 +1298,20 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return GroupService.manipulateGroupActivity(args, ctx)
+          },
+        }),
+
+      extendGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.extendGroupActivity(args, ctx)
           },
         }),
 
@@ -1367,6 +1419,32 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      openGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.openGroupActivity(args, ctx)
+          },
+        }),
+
+      endGroupActivity: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return GroupService.endGroupActivity(args, ctx)
+          },
+        }),
+
       deleteGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1414,26 +1492,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER OWNER OPERATIONS -----
       // #region
-      requestMigrationToken: t.withAuth(asUserOwner).boolean({
-        nullable: true,
-        args: {
-          email: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.requestMigrationToken(args, ctx)
-        },
-      }),
-
-      triggerMigration: t.withAuth(asUserOwner).boolean({
-        nullable: true,
-        args: {
-          token: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.triggerMigration(args, ctx)
-        },
-      }),
-
       createUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,

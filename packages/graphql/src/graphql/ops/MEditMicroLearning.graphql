@@ -1,12 +1,10 @@
-#import "./FElementData.graphql"
-
 mutation EditMicroLearning(
   $id: String!
   $name: String!
   $displayName: String!
   $description: String
   $stacks: [ElementStackInput!]!
-  $courseId: String
+  $courseId: String!
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!

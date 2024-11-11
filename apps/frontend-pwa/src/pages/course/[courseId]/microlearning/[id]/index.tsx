@@ -14,13 +14,21 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Prose,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import Layout from '~/components/Layout'
+import MicroLearningSubscriber from '~/components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
   id,
@@ -33,16 +41,20 @@ function MicrolearningIntroduction({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetMicroLearningDocument, {
-    variables: { id },
-    skip: !id,
-  })
+  const { loading, error, data, subscribeToMore } = useQuery(
+    GetMicroLearningDocument,
+    {
+      variables: { id },
+      skip: !id,
+    }
+  )
   const { data: selfData } = useQuery(SelfDocument)
 
   if (loading) {
@@ -67,11 +79,21 @@ function MicrolearningIntroduction({
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
+  const microLearning = data.microLearning
+  const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
+    dayjs()
+  )
+
   return (
     <Layout
-      displayName={data.microLearning.displayName}
-      course={data.microLearning.course ?? undefined}
+      displayName={microLearning.displayName}
+      course={microLearning.course ?? undefined}
     >
+      <MicroLearningSubscriber
+        activityId={microLearning.id}
+        subscribeToMore={subscribeToMore}
+        setEndedMicroLearning={setEndedMicroLearning}
+      />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-3xl md:rounded md:border md:p-8 md:pt-6">
         {!selfData?.self && (
           <UserNotification type="warning" className={{ root: 'mb-4' }}>
@@ -100,15 +122,20 @@ function MicrolearningIntroduction({
             })}
           </UserNotification>
         )}
-        <H3>{data.microLearning.displayName}</H3>
+        {microLearningPast ? (
+          <UserNotification
+            type="warning"
+            message={t('pwa.microLearning.activityExpired')}
+            className={{ root: 'mb-4' }}
+          />
+        ) : null}
+        <H3>{microLearning.displayName}</H3>
         <Prose
           className={{
             root: 'prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 max-w-none hover:text-current',
           }}
         >
-          <DynamicMarkdown
-            content={data.microLearning.description ?? undefined}
-          />
+          <DynamicMarkdown content={microLearning.description ?? undefined} />
         </Prose>
 
         <div className="mb-4 grid grid-cols-1 gap-y-1 text-sm md:mb-0 md:grid-cols-2">
@@ -116,7 +143,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
-                number: data.microLearning.stacks?.length,
+                number: microLearning.stacks?.length,
               })}
             </div>
           </div>
@@ -124,7 +151,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faTimesCircle} />
             <div>
               {t('pwa.practiceQuiz.multiplicatorPoints', {
-                mult: data.microLearning.pointsMultiplier,
+                mult: microLearning.pointsMultiplier,
               })}
             </div>
           </div>
@@ -132,7 +159,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faClock} />
             <div>
               {t('pwa.microLearning.availableFrom', {
-                date: dayjs(data.microLearning.scheduledStartAt).format(
+                date: dayjs(microLearning.scheduledStartAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),
               })}
@@ -142,7 +169,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faClock} />
             <div>
               {t('pwa.microLearning.availableUntil', {
-                date: dayjs(data.microLearning.scheduledEndAt).format(
+                date: dayjs(microLearning.scheduledEndAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),
               })}
@@ -151,10 +178,11 @@ function MicrolearningIntroduction({
         </div>
 
         <Link
-          href={`/course/${data.microLearning.course?.id}/microlearning/${data.microLearning.id}/0`}
+          href={`/course/${microLearning.course?.id}/microlearning/${microLearning.id}/0`}
           legacyBehavior
         >
           <Button
+            disabled={microLearningPast}
             className={{
               root: 'w-full justify-center text-lg md:w-auto md:self-end',
             }}
@@ -164,6 +192,18 @@ function MicrolearningIntroduction({
           </Button>
         </Link>
       </div>
+      <Toast
+        type="warning"
+        openExternal={endedMicroLearning}
+        onCloseExternal={() => setEndedMicroLearning(false)}
+        duration={10000}
+        className={{ root: 'max-w-[30rem]' }}
+        dismissible
+      >
+        {t('pwa.courses.microLearningEndedToast', {
+          activityName: microLearning.displayName,
+        })}
+      </Toast>
     </Layout>
   )
 }

@@ -1,0 +1,20 @@
+query GetGroupActivityInstances($groupId: String!, $courseId: String!) {
+  groupActivityInstances(groupId: $groupId, courseId: $courseId) {
+    id
+    decisionsSubmittedAt
+
+    resultsComputedAt
+    results {
+      passed
+      points
+      comment
+      grading {
+        instanceId
+        score
+        maxPoints
+        feedback
+      }
+    }
+    groupActivityId
+  }
+}

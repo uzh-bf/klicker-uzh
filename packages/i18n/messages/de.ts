@@ -106,6 +106,7 @@ export default {
       passwordError: 'Bitte geben Sie Ihr Passwort ein.',
       studentLoginError:
         'Nutzername/E-Mail oder Passwort sind falsch. Falls Sie Ihr Passwort vergessen haben, nutzen Sie bitte die "E-Mail Login" Funktion.',
+      usernameAvailability: 'Dieser Benutzername ist nicht verfügbar.',
       systemError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
       error: 'Fehler',
       back: 'Zurück',
@@ -195,6 +196,7 @@ export default {
       nonGamified: 'Nicht gamifiziert',
       blockN: 'Block {number}',
       elementN: 'Element {number}',
+      Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
@@ -209,6 +211,8 @@ export default {
       withGroups: 'Mit Gruppen',
       withoutGroups: 'Ohne Gruppen',
       forgotPassword: 'Passwort vergessen?',
+      archived: 'Archiviert',
+      ended: 'Beendet',
     },
     contentInput: {
       boldStyle:
@@ -333,7 +337,6 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
-      usernameAvailability: 'Dieser Benutzername ist nicht verfügbar.',
     },
     studentDocs: {
       pageList: `
@@ -457,6 +460,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
+
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -501,6 +505,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
+      groupActivityEndedToast:
+        'Gruppenaktivität "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
+      groupActivityStartedToast:
+        'Die Gruppenaktivität "{activityName}" hat begonnen. Startet sie jetzt!',
+      microLearningEndedToast:
+        'Microlearning "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
       coursePracticeArea:
         'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
     },
@@ -581,6 +591,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableFrom: 'Verfügbar ab {date}',
       availableUntil: 'Verfügbar bis {date}',
       questionSetN: 'Frageset {number}',
+      activityExpired:
+        'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',
@@ -683,6 +695,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     groups: {
       messageRequired: 'Bitte geben Sie vor dem Abschicken eine Nachricht ein.',
+      nameRequired: 'Bitte geben Sie einen Gruppennamen ein.',
+      pinRequired: 'Bitte geben Sie eine PIN ein.',
+      pinNumeric: 'Die 6-stellige PIN muss numerisch sein.',
     },
     groupActivity: {
       startAt: 'Start: {time}',
@@ -702,6 +717,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerPARTIAL: 'Eure Antwort ist teilweise korrekt.',
       answerINCORRECT: 'Eure Antwort ist falsch.',
       openGroupActivity: 'Zur Gruppenaktivität',
+      openGroupActivitySubmission: 'Zur Abgabe',
       openActivityFeedback: 'Zum Feedback',
       activityNotYetActive:
         'Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.',
@@ -728,6 +744,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       maxNumberOfGroupMembers:
         'Deine Gruppe hat die maximale Anzahl von Teilnehmenden erreicht, wie von deinem Dozierenden festgelegt. Es können keine weiteren Studierenden dieser Gruppe beitreten.',
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
+      groupActivityEnded:
+        'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
     },
   },
   manage: {
@@ -740,7 +758,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       quizzes: 'Quizzes',
       analytics: 'Analytics',
       courses: 'Kurse',
-      migration: 'Migration',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -784,6 +801,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       openSource: 'Open-Source',
       githubRepository: 'GitHub Repository',
       githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
+      survey:
+        'Wir möchten gerne wissen, was Sie über KlickerUZH und unsere zukünftigen Pläne denken! Bitte geben Sie uns Ihr Feedback in einer <link>kurzen Umfrage (5 - 10min)</link>.',
     },
     login: {
       lecturerLogin: 'Login Dozierende',
@@ -813,6 +832,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
       ACCOUNT_OWNER: 'Konto-Besitzer',
+      OTP: 'Einmalpasswort',
+      ACTIVATION: 'Aktivierung',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',
@@ -882,6 +903,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
       tags: 'Tags',
+      selectOrType: 'Auswählen oder Eingeben...',
       untagged: 'Ohne Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
@@ -972,6 +994,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startDate: 'Bitte geben Sie ein Startdatum für Ihre Session ein.',
       endDate: 'Bitte geben Sie ein Enddatum für Ihre Session ein.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
+      endInFuture: 'Das Enddatum muss in der Zukunft liegen.',
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
       checkValues:
         'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
@@ -1024,7 +1047,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningInformation:
         'Geben Sie in diesem Schritt den Namen für das Microlearning ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
       microLearningNoCourse:
-        'Microlearnings müssen immer einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Microlearnings müssen immer einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       microLearningLecturerDocs:
         'Für weitere Informationen zur Erstellung und Durchführung von Microlearnings, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
       microLearningStudentDocs:
@@ -1053,6 +1076,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie das Startdatum des Microlearnings aus. Es wird den Teilnehmenden nach Publikation ab diesem Zeitpunkt angezeigt.',
       microlearningEndDate:
         'Wählen Sie das Enddatum des Microlearnings aus. Es wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+      microlearningStartAfterCourseStart:
+        'Das Startdatum des Microlearnings muss nach dem Startdatum des Kurses liegen.',
+      microlearningEndBeforeCourseEnd:
+        'Das Enddatum des Microlearnings muss vor dem Enddatum des Kurses liegen.',
       microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
@@ -1130,7 +1157,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
       liveQuizTSinceFirstCorrect: 'Zeit seit erster korrekter Antwort [s]',
       practiceQuizNoCourse:
-        'Übungs-Quizzes müssen einem Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü, bevor sie mit der Erstellung fortfahren.',
+        'Übungs-Quizzes müssen einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:
         'Bitte geben Sie einen Namen für Ihr Übungs-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       practiceQuizInformation:
@@ -1143,6 +1170,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizAvailableFrom:
         'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
+      practiceQuizStartAfterCourseStart:
+        'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1199,7 +1228,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEdited:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
       groupActivityNoCourse:
-        'Gruppenaktivitäten müssen immer einem Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
+        'Gruppenaktivitäten müssen immer einem laufenden Kurs zugeordnet werden, in dem Gamifizierung und Gruppenbildung aktiviert sind. Bitte stellen Sie sicher, dass mindestens ein Kurs existiert, in welchem beide Optionen aktiviert ist, bevor sie mit der Erstellung fortfahren.',
       groupActivityIntroductionName:
         'Bitte geben Sie einen Namen für Ihre Gruppenaktivität ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       groupActivityLecturerDocs:
@@ -1226,6 +1255,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
       groupActivityEndDate:
         'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
+      groupActivityStartAfterCourseStart:
+        'Das Startdatum der Gruppenaktivität muss nach dem Startdatum des Kurses liegen.',
+      groupActivityStartAfterGroupDeadline:
+        'Das Startdatum der Gruppenaktivität muss nach dem Enddatum der Gruppenbildung liegen.',
+      groupActivityEndBeforeCourseEnd:
+        'Das Enddatum der Gruppenaktivität muss vor dem Enddatum des Kurses liegen.',
       groupActivityMultiplier:
         'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
       groupActivityUseCase:
@@ -1330,10 +1365,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationResults: 'Auswertung (Resultate)',
       abortSession: 'Quiz abbrechen',
       confirmAbortSession: 'Live Quiz {title} abbrechen?',
-      abortSessionHint:
-        'Beim Abbrechen eines Live Quizzes gehen alle Antworten, Feedbacks, etc. verloren. Das Live Quiz wird zurückgesetzt und kann zu einem späteren Zeitpunkt erneut gestartet werden.',
-      abortEnterName:
-        'Bitte bestätigen Sie den Abbruch des Live Quizzes, indem Sie den Namen des Quizzes eingeben.',
+      cancelLiveQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
+      noResponsesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Antworten gespeichert.',
+      deleteResponses:
+        '{number} Antwort(en) von Studierenden in diesem Live-Quiz werden gelöscht.',
+      noFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Feedbacks abgegeben.',
+      deleteFeedbacks:
+        '{number} Feedback(s) im Live-Q&A-Kanal werden unwiderruflich gelöscht.',
+      noConfusionFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
+      deleteConfusionFeedbacks:
+        '{number} Confusion-Feedback(s) werden unwiderruflich gelöscht.',
+      noLeaderboardEntriesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
+      deleteLeaderboardEntries:
+        'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',
@@ -1387,6 +1436,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
       correctSolutionRanges: 'Korrekte Lösungsbereiche',
+      correctExactSolutions: 'Korrekte Lösungen',
       statistics: 'Statistik',
       keywordsSolution: 'Schlüsselwörter Lösung',
       noChartsAvailable: 'There exists no chart for this question type yet',
@@ -1433,6 +1483,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
       noContentEvaluation:
         'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
+      histogramNotSupported:
+        'Histogramme werden für diesen Fragetyp nicht unterstützt.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -1454,6 +1506,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.',
       courseEndReq:
         'Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.',
+      courseStartBeforeEarliestActivityStart:
+        'Das Kursstartdatum muss vor dem Startdatum der ersten Aktivität ({date}) liegen.',
+      endBeforeEarliestActivityEnd:
+        'Das Kursenddatum muss nach dem Enddatum der letzten Aktivität ({date}) liegen.',
+      groupDeadlineBeforeFirstGroupActivity:
+        'Die Deadline für die Gruppenbildung muss vor dem Start der ersten Gruppenaktivität ({date}) liegen.',
       endDateFuture: 'Das Enddatum muss in der Zukunft liegen.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
       courseName: 'Kursname',
@@ -1514,6 +1572,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
       openPreview: 'Vorschau öffnen',
       openEvaluation: 'Evaluation öffnen',
+      archiveOnlyPastCourses:
+        'Nur Kurse mit einem Enddatum in der Vergangenheit können archiviert werden.',
+      archiveCourse: 'Kurs archivieren',
+      unarchiveCourse: 'Kurs wiederherstellen',
+      confirmCourseArchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs archivieren möchten. Archivierte Kurse und darin enthaltene Aktivitäten bleiben für Studierende zugänglich.',
+      confirmCourseUnarchive:
+        'Bitte bestätigen Sie, dass Sie diesen Kurs wieder aktivieren möchten. Wiederhergestellte Kurse werden Studierenden anders angezeigt.',
+      showArchive: 'Archiv anzeigen',
+      hideArchive: 'Archiv verbergen',
+      deleteCourse: 'Kurs löschen',
+      courseDeletionMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
+      noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
+      deleteParticipations:
+        '{number} Teilnehmende(r) dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
+      noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
+      disconnectLiveQuizzes:
+        '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',
+      noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
+      deletePracticeQuizzes:
+        '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+      noMicroLearningsToDelete: 'Dieser Kurs enthält keine Microlearnings.',
+      deleteMicroLearnings:
+        '{number} Microlearning(s) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
+      noGroupActivitiesToDelete:
+        'Dieser Kurs enthält keine Gruppenaktivitäten.',
+      deleteGroupActivities:
+        '{number} Gruppenaktivität(en) (inklusive der zugehörigen Abgaben) werden unwiderruflich gelöscht.',
+      noParticipantGroupsToDelete:
+        'Dieser Kurs enthält keine Teilnehmergruppen.',
+      deleteParticipantGroups:
+        '{number} Teilnehmergruppe(n) werden unwiderruflich gelöscht.',
+      noLeaderboardEntriesToDelete:
+        'Dieser Kurs enthält keine Leaderboard-Einträge.',
+      deleteLeaderboardEntries:
+        '{number} Leaderboard-Einträge werden unwiderruflich gelöscht.',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
@@ -1522,6 +1617,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
+      noDescriptionNotification: 'Keine Beschreibung vorhanden',
       changedDate: 'Datum wurde erfolgreich angepasst.',
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
@@ -1555,10 +1651,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
+      extendMicroLearning: 'Microlearning verlängern',
+      extendMicroLearningDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum des Microlearnings zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
+      newEndDate: 'Neues Enddatum',
+      futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
-      deleteMicrolearning: 'Microlearning löschen',
+      deleteMicroLearning: 'Microlearning löschen',
+      deleteMicroLearningMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
@@ -1569,30 +1672,66 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceSchedulingHint:
         'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
       microPublishingHint:
-        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
-      confirmDeletionMicrolearning:
-        'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
-      hintDeletionMicrolearning:
-        'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
-      confirmDeletionPracticeQuiz:
-        'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
-      hintDeletionPracticeQuiz:
-        'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deletePracticeQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      noResponsesToDelete:
+        'Für diese Aktivität wurden noch keine Antworten von angemeldeten Teilnehmenden gespeichert.',
+      deleteResponses:
+        '{number} Antwort(en) von angemeldeten Teilnehmenden werden gelöscht.',
+      noAnonymousResponsesToDelete:
+        'Für diese Aktivität wurden noch keine anonymen Antworten gespeichert.',
+      deleteAnonymousResponses:
+        '{number} anonyme Antwort(en) für diese Aktivität werden gelöscht.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
       publishGroupActivity: 'Gruppenaktivität veröffentlichen',
       groupActivityPublishingHint:
         'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editGroupActivity: 'Gruppenaktivität bearbeiten',
+      endGroupActivity: 'Gruppenaktivität beenden',
+      endGroupActivityMessage:
+        'Bitte bestätigen Sie, dass Sie diese Gruppenaktivität beenden möchten. Beachten Sie, dass nach dem Beenden der Gruppenaktivität keine weiteren Abgaben mehr akzeptiert werden.',
+      endMicroLearning: 'Microlearning beenden',
+      endMicroLearningMessage:
+        'Bitte bestätigen Sie, dass Sie dieses Microlearning beenden möchten. Beachten Sie, dass nach dem Beenden des Microlearnings keine weiteren Abgaben mehr akzeptiert werden.',
+      noStartedInstancesLoosingAccess:
+        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
+      startedInstancesLoosingAccess:
+        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate eingereicht. Sie verlieren den Zugriff auf die Gruppenaktivität.',
+      noSubmissionsToActivity:
+        'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
+      unaffectedSubmissions:
+        '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
+      startGroupActivityNow: 'Gruppenaktivität jetzt starten',
+      startGroupActivityNowMessage:
+        'Bitte bestätigen Sie, dass Sie die Gruppenaktivität jetzt starten möchten. Beachten Sie, dass eine Gruppenaktivität nach dem Starten nicht mehr bearbeitet werden kann.',
+      noParticipantGroupsAvailable:
+        'In diesem Kurs wurden bisher keine Teilnehmergruppen gebildet, welche eine Gruppenaktivität lösen könnten. Bitte warten Sie die Gruppenbildung ab oder verschieben Sie die entsprechende Deadline über die Kurseinstellungen in die Zukunft.',
+      groupFormationNotCompleted:
+        'Die Gruppenbildung wurde noch nicht abgeschlossen. Bitte warten Sie das eingestellte Enddatum ab oder wählen sie die sofortige Gruppenzuteilung.',
+      numOfParticipantGroupsGettingAccess:
+        '{number} Teilnehmergruppe(n) erhalten nach dem Start der Gruppenaktivität sofort Zugriff auf den entsprechenden Inhalt.',
+      groupActivityAvailableUntil:
+        'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
       deleteGroupActivity: 'Gruppenaktivität löschen',
-      confirmDeletionGroupActivity:
-        'Sind Sie sich sicher, dass Sie die folgende Gruppenaktivität löschen möchten?',
-      hintDeletionGroupActivity:
-        'Das Löschen einer Gruppenaktivität ist nur möglich, solange sie noch nicht läuft und für die Teilnehmenden zugänglich ist. Gelöschte Gruppenaktivitäten können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deleteGroupActivityMessage:
+        'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      noStartedInstancesToDelete:
+        'Aktuell haben keine Gruppen offene Instanzen dieser Gruppenaktivität.',
+      deleteStartedInstance:
+        '{number} Gruppe(n), welche diese Gruppenaktivität gestartet haben, verlieren den Zugriff darauf.',
+      noSubmissionsToDelete:
+        'Es gibt keine Abgaben für diese Gruppenaktivität.',
+      deleteSubmissions:
+        '{number} Abgabe(n) von separaten Gruppen für diese Aktivität werden gelöscht.',
       unpublishGroupActivity: 'Veröffentlichung aufheben',
+      extendGroupActivity: 'Gruppenaktivität verlängern',
+      extendGroupActivityDescription:
+        'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
       otherActions: 'Weitere Aktionen',

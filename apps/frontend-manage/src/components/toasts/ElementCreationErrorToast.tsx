@@ -19,7 +19,7 @@ function ElementCreationErrorToast({
       dismissible
       duration={6000}
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
       type="error"
     >
       <div>

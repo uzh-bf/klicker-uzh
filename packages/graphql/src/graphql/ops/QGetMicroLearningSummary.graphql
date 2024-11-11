@@ -1,0 +1,6 @@
+query GetMicroLearningSummary($id: String!) {
+  getMicroLearningSummary(id: $id) {
+    numOfResponses
+    numOfAnonymousResponses
+  }
+}

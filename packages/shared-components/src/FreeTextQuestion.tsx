@@ -1,6 +1,6 @@
 import type {
+  FreeTextInstanceEvaluation,
   FreeTextQuestionOptions,
-  InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
@@ -19,7 +19,7 @@ interface FreeTextQuestionProps {
   setResponse: (newValue: string, valid: boolean) => void
   existingResponse?: string
   elementIx: number
-  evaluation?: InstanceEvaluation
+  evaluation?: FreeTextInstanceEvaluation
   disabled?: boolean
 }
 
@@ -66,7 +66,7 @@ function FreeTextQuestion({
         />
       </div>
 
-      {evaluation && (
+      {evaluation && evaluation.solutions && (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}

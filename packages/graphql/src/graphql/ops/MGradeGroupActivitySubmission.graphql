@@ -4,9 +4,28 @@ mutation GradeGroupActivitySubmission(
 ) {
   gradeGroupActivitySubmission(id: $id, gradingDecisions: $gradingDecisions) {
     id
-    decisions
+
     decisionsSubmittedAt
-    results
+    decisions {
+      instanceId
+      type
+      freeTextResponse
+      choicesResponse
+      numericalResponse
+      contentResponse
+    }
+
     resultsComputedAt
+    results {
+      passed
+      points
+      comment
+      grading {
+        instanceId
+        score
+        maxPoints
+        feedback
+      }
+    }
   }
 }

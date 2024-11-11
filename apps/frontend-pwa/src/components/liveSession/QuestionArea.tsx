@@ -12,8 +12,8 @@ import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
-import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
+import { isDeepEqual } from 'remeda'
 
 // TODO: notifications
 
@@ -24,7 +24,11 @@ interface QuestionAreaProps {
     | NumericalQuestionData
     | FreeTextQuestionData
   ) & { instanceId: number })[]
-  handleNewResponse: (type: string, instanceId: number, answer: any) => void
+  handleNewResponse: (
+    type: ElementType,
+    instanceId: number,
+    answer: any
+  ) => void
   sessionId: string
   execution: number
   timeLimit?: number
@@ -109,7 +113,9 @@ function QuestionArea({
     await updateStoredResponses(instanceId, sessionId, execution)
 
     // calculate the new indices of remaining questions
-    const newRemaining = without([activeQuestion], remainingQuestions)
+    const newRemaining = remainingQuestions.filter(
+      (question) => !isDeepEqual(activeQuestion, question)
+    )
 
     setActiveQuestion(newRemaining[0] || 0)
     setInputState({
@@ -150,7 +156,7 @@ function QuestionArea({
   // use the handleNewResponse function to add a response to the question instance
   const answerQuestion = (
     value: any,
-    type: string,
+    type: ElementType,
     instanceId: number
   ): void => {
     if (type === ElementType.Kprim) {

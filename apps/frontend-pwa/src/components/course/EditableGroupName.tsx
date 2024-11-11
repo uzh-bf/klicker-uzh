@@ -40,11 +40,17 @@ function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
         className={{ input: 'h-7' }}
       />
       <Button
+        disabled={groupNameValue.trim() === ''}
         onClick={async () => {
+          if (groupNameValue.trim() === '') {
+            setEditMode(false)
+            return
+          }
+
           await renameParticipantGroup({
             variables: {
               groupId,
-              name: groupNameValue,
+              name: groupNameValue.trim(),
             },
           })
           setEditMode(false)

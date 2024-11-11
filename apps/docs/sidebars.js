@@ -3,9 +3,8 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
-      'getting_started/migration',
     ],
-    'Tutorials for Lecturers': [
+    'Lecturer Application': [
       'tutorials/supported_element_types',
       'tutorials/element_management',
       'tutorials/course_management',
@@ -15,9 +14,10 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
       'tutorials/delegated_access',
+      'tutorials/ppt_integration',
       'tutorials/lti_integration',
     ],
-    'Tutorials for Participants': [
+    'Student Application': [
       'student_tutorials/student_accounts',
       'student_tutorials/klickeruzh_app',
       'student_tutorials/live_quiz',
@@ -26,17 +26,15 @@ module.exports = {
       'student_tutorials/course_leaderboard',
       'student_tutorials/groups_activities',
     ],
-    // Gamification: [
-    //   'gamification/overview',
-    //   'gamification/experience',
-    //   'gamification/points',
-    //   'gamification/achievements',
-    //   'gamification/awards',
-    // ],
+    Gamification: [
+      'gamification/overview',
+      'gamification/grading_logic',
+      'gamification/experience',
+      // 'gamification/achievements',
+      // 'gamification/awards',
+    ],
     // 'Advanced Topics': [
     //   'advanced/control_app',
-    //   'advanced/delegated_access',
-    //   'advanced/lti_integration',
     // ],
     // About: ['about/project', 'about/whats_new', 'about/roadmap'],
   },

@@ -1,23 +1,20 @@
 // @ts-nocheck
+// ! This file can be ignored in type checks, since a newer version is already available
+// ! and will replace the live quiz components as well (StudentElement)
 
-import {
+import type {
   ChoicesQuestionData,
-  ElementType,
   FreeTextQuestionData,
   FreeTextQuestionOptions,
   NumericalQuestionData,
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { without } from 'ramda'
-import React from 'react'
+import { useTranslations } from 'next-intl'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-
-// eslint-disable-next-line prettier/prettier
-import { useEffect } from 'react'
-
-import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptionsOLD } from './questions/FREETextAnswerOptionsOLD'
 import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
@@ -36,6 +33,7 @@ export interface StudentQuestionProps {
   expiresAt?: Date
   timeLimit?: number
   isSubmitDisabled: boolean
+  isSubmitHidden?: boolean
   onSubmit: () => void
   onExpire: () => void
   currentQuestion: (
@@ -55,6 +53,7 @@ export const StudentQuestion = ({
   expiresAt,
   timeLimit,
   isSubmitDisabled,
+  isSubmitHidden = false,
   onSubmit,
   onExpire,
   currentQuestion,
@@ -105,7 +104,7 @@ export const StudentQuestion = ({
         }
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
-          const newInputValue = without([choice], inputValue)
+          const newInputValue = inputValue.filter((c) => c !== choice)
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
@@ -233,6 +232,7 @@ export const StudentQuestion = ({
         expiresAt={expiresAt}
         timeLimit={timeLimit}
         isSubmitDisabled={isSubmitDisabled}
+        isSubmitHidden={isSubmitHidden}
         onSubmit={onSubmit}
         onExpire={onExpire}
       />

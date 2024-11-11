@@ -1,11 +1,16 @@
+import { faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import {
   CHART_COLORS,
   STATISTICS_ORDER,
 } from '@klicker-uzh/shared-components/src/constants'
-import { UserNotification } from '@uzh-bf/design-system'
+import QR from '@pages/qr/[...args]'
+import { useLocalStorage } from '@uidotdev/usehooks'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Statistic from '../../../components/evaluation/Statistic'
@@ -20,6 +25,7 @@ interface QuestionEvaluationProps {
   showSolution: boolean
   chartType: string
   totalParticipants: number
+  hideQRCode?: boolean
   className?: string
 }
 
@@ -30,9 +36,12 @@ function QuestionEvaluation({
   showSolution,
   chartType,
   totalParticipants,
+  hideQRCode,
   className,
 }: QuestionEvaluationProps) {
+  const router = useRouter()
   const t = useTranslations()
+  const questionData = currentInstance.questionData
   const [statisticStates, setStatisticStates] = useState<{
     [key: string]: boolean
   }>({
@@ -42,6 +51,12 @@ function QuestionEvaluation({
     q3: false,
     sd: false,
   })
+
+  const sessionRelativeLink = `/session/${router.query.id}`
+  const [hideQR, setHideQR] = useLocalStorage<boolean>(
+    `hide-qr-evaluation`,
+    false
+  )
 
   return (
     <div className={twMerge('flex h-full flex-col', className)}>
@@ -71,28 +86,26 @@ function QuestionEvaluation({
         </div>
         <div
           className={twMerge(
-            'order-1 flex flex-none flex-col gap-2 border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
+            'order-1 flex flex-none flex-col justify-between overflow-hidden border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
             textSize.text
           )}
         >
-          {(currentInstance.questionData.type === 'SC' ||
-            currentInstance.questionData.type === 'MC' ||
-            currentInstance.questionData.type === 'KPRIM') && (
-            <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2">
-              <div
-                className={twMerge(
-                  'flex flex-1 flex-col gap-2.5 overflow-y-auto',
-                  textSize.text
-                )}
-              >
-                {currentInstance.questionData.options.choices.map(
-                  (choice, innerIndex) => {
+          <div className="flex h-max max-h-full flex-col gap-2 overflow-y-auto">
+            {questionData.__typename === 'ChoicesQuestionData' && (
+              <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2">
+                <div
+                  className={twMerge(
+                    'flex flex-1 flex-col gap-2.5 overflow-y-auto',
+                    textSize.text
+                  )}
+                >
+                  {questionData.options.choices.map((choice) => {
                     const correctFraction =
-                      parseInt(currentInstance.results[innerIndex].count) /
+                      parseInt(currentInstance.results[choice.ix].count) /
                       totalParticipants
 
                     return (
-                      <div key={`${currentInstance.blockIx}-${innerIndex}`}>
+                      <div key={`${currentInstance.blockIx}-${choice.ix}`}>
                         <div className="flex flex-row items-center justify-between leading-5">
                           <div
                             // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
@@ -101,7 +114,7 @@ function QuestionEvaluation({
                                 ? choice.correct
                                   ? '#00de0d'
                                   : '#ff0000'
-                                : CHART_COLORS[innerIndex % 12],
+                                : CHART_COLORS[choice.ix % 12],
                               minWidth: '1.75rem',
                               width: `calc(${correctFraction * 100}%)`,
                             }}
@@ -110,7 +123,7 @@ function QuestionEvaluation({
                               choice.correct && showSolution && 'text-black'
                             )}
                           >
-                            {String.fromCharCode(65 + innerIndex)}
+                            {String.fromCharCode(65 + choice.ix)}
                           </div>
                           <div className="whitespace-nowrap text-right">
                             {Math.round(100 * correctFraction)} %
@@ -132,96 +145,141 @@ function QuestionEvaluation({
                         </div>
                       </div>
                     )
-                  }
-                )}
-              </div>
-            </div>
-          )}
-
-          {currentInstance.questionData.type === 'NUMERICAL' && (
-            <div>
-              <div className="font-bold">
-                {t('manage.evaluation.validSolutionRange')}:
-              </div>
-              <div>
-                [
-                {currentInstance.questionData.options.restrictions?.min ?? '-∞'}
-                ,
-                {currentInstance.questionData.options.restrictions?.max ?? '+∞'}
-                ]
-              </div>
-              <div className="mt-4 font-bold">
-                {t('manage.evaluation.statistics')}:
-              </div>
-              {currentInstance.statistics ? (
-                Object.entries(currentInstance.statistics)
-                  .slice(1)
-                  .sort(
-                    (a, b) =>
-                      STATISTICS_ORDER.indexOf(a[0]) -
-                      STATISTICS_ORDER.indexOf(b[0])
-                  )
-                  .map((statistic) => {
-                    const statisticName = statistic[0]
-                    const statisticValue = statistic[1] as number
-                    return (
-                      <Statistic
-                        key={statisticName}
-                        statisticName={statisticName}
-                        value={statisticValue}
-                        hasCheckbox={
-                          !(statisticName === 'min' || statisticName === 'max')
-                        }
-                        chartType={chartType}
-                        checked={statisticStates[statisticName]}
-                        onCheck={() => {
-                          setStatisticStates({
-                            ...statisticStates,
-                            [statisticName]: !statisticStates[statisticName],
-                          })
-                        }}
-                        size={textSize.size}
-                      />
-                    )
-                  })
-              ) : (
-                <UserNotification type="info">
-                  {t('manage.evaluation.noStatistics')}
-                </UserNotification>
-              )}
-              {showSolution &&
-                currentInstance.questionData.options.solutionRanges && (
-                  <div>
-                    <div className="mt-4 font-bold">
-                      {t('manage.evaluation.correctSolutionRanges')}:
-                    </div>
-                    {currentInstance.questionData.options.solutionRanges.map(
-                      (range, innerIndex) => (
-                        <div key={innerIndex}>
-                          [{range?.min || '-∞'},{range?.max || '+∞'}]
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-            </div>
-          )}
-          {currentInstance.questionData.type === 'FREE_TEXT' &&
-            currentInstance.questionData.options.solutions &&
-            showSolution && (
-              <div>
-                <div className="font-bold">
-                  {t('manage.evaluation.keywordsSolution')}:
+                  })}
                 </div>
-                <ul>
-                  {currentInstance.questionData.options.solutions.map(
-                    (keyword, innerIndex) => (
-                      <li key={innerIndex}>{`- ${keyword}`}</li>
-                    )
-                  )}
-                </ul>
               </div>
             )}
+            {questionData.__typename === 'NumericalQuestionData' &&
+              questionData.options.restrictions && (
+                <div>
+                  <div className="font-bold">
+                    {t('manage.evaluation.validSolutionRange')}:
+                  </div>
+                  <div>
+                    [{questionData.options.restrictions?.min ?? '-∞'},
+                    {questionData.options.restrictions?.max ?? '+∞'}]
+                  </div>
+                  <div className="mt-4 font-bold">
+                    {t('manage.evaluation.statistics')}:
+                  </div>
+                  {currentInstance.statistics ? (
+                    Object.entries(currentInstance.statistics)
+                      .slice(1)
+                      .sort(
+                        (a, b) =>
+                          STATISTICS_ORDER.indexOf(a[0]) -
+                          STATISTICS_ORDER.indexOf(b[0])
+                      )
+                      .map((statistic) => {
+                        const statisticName = statistic[0]
+                        const statisticValue = statistic[1] as number
+                        return (
+                          <Statistic
+                            key={statisticName}
+                            statisticName={statisticName}
+                            value={statisticValue}
+                            hasCheckbox={
+                              !(
+                                statisticName === 'min' ||
+                                statisticName === 'max'
+                              )
+                            }
+                            chartType={chartType}
+                            checked={statisticStates[statisticName]}
+                            onCheck={() => {
+                              setStatisticStates({
+                                ...statisticStates,
+                                [statisticName]:
+                                  !statisticStates[statisticName],
+                              })
+                            }}
+                            size={textSize.size}
+                          />
+                        )
+                      })
+                  ) : (
+                    <UserNotification type="info">
+                      {t('manage.evaluation.noStatistics')}
+                    </UserNotification>
+                  )}
+                  {showSolution &&
+                    questionData.__typename === 'NumericalQuestionData' &&
+                    questionData.options.solutionRanges &&
+                    (questionData.options.solutionRanges.every(
+                      (range) =>
+                        typeof range.min !== 'undefined' &&
+                        range.min !== null &&
+                        typeof range.max !== 'undefined' &&
+                        range.max !== null &&
+                        range.min > range.max - 2 * Number.EPSILON
+                    ) ? (
+                      <div>
+                        <div className="mt-4 font-bold">
+                          {t('manage.evaluation.correctExactSolutions')}:
+                        </div>
+                        {questionData.options.solutionRanges.map(
+                          (range, innerIndex) => (
+                            <div key={innerIndex}>{range.min}</div>
+                          )
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="mt-4 font-bold">
+                          {t('manage.evaluation.correctSolutionRanges')}:
+                        </div>
+                        {questionData.options.solutionRanges.map(
+                          (range, innerIndex) => (
+                            <div key={innerIndex}>
+                              [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                            </div>
+                          )
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            {questionData.__typename === 'FreeTextQuestionData' &&
+              questionData.options.solutions &&
+              showSolution && (
+                <div>
+                  <div className="font-bold">
+                    {t('manage.evaluation.keywordsSolution')}:
+                  </div>
+                  <ul>
+                    {questionData.options.solutions.map(
+                      (keyword, innerIndex) => (
+                        <li key={innerIndex}>{`- ${keyword}`}</li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+          </div>
+
+          {!hideQRCode && !hideQR && (
+            <div className="group relative float-end hidden h-max w-full items-center justify-center lg:flex">
+              <QR
+                className={{
+                  root: 'mx-auto self-center bg-blue-400',
+                  title: 'text-base',
+                  canvas: 'h-40 w-40',
+                }}
+                path={sessionRelativeLink}
+                showLink={false}
+                showButton={false}
+                showLogo={false}
+              />
+              <Button
+                className={{
+                  root: 'absolute right-0 top-0 hidden h-9 group-hover:block',
+                }}
+                onClick={() => setHideQR(true)}
+              >
+                <FontAwesomeIcon icon={faX} />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

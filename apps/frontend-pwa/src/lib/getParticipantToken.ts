@@ -23,13 +23,18 @@ export default async function getParticipantToken({
   let participantToken: string | undefined | null =
     cookies['participant_token'] ?? query.participantToken
 
-  // TODO: reintroduce this after issues with participation creation are in the past
-  // if (participantToken) {
-  //   return {
-  //     participantToken,
-  //     cookiesAvailable: !!cookies['participant_token'],
-  //   }
-  // }
+  // TODO: only check for existing participantToken once participation issues with LTI are resolved
+  if (
+    participantToken &&
+    !cookies['lti-token'] &&
+    !query.jwt &&
+    !(req.method === 'POST')
+  ) {
+    return {
+      participantToken,
+      cookiesAvailable: !!cookies['participant_token'],
+    }
+  }
 
   try {
     let result

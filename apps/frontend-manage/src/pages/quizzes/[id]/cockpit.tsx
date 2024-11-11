@@ -3,62 +3,45 @@ import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
-  Feedback,
   GetCockpitSessionDocument,
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useRouter } from 'next/router'
-import { useState } from 'react'
-
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import Layout from '../../../components/Layout'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const t = useTranslations()
-
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
-  const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
-  const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
-  const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [
-      {
-        query: GetUserRunningSessionsDocument,
-      },
-      {
-        query: GetUserSessionsDocument,
-      },
-    ],
-  })
+  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
+    ActivateSessionBlockDocument
+  )
+  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateSessionBlockDocument
+  )
+  const [endSession, { loading: endingLiveQuiz }] = useMutation(
+    EndSessionDocument,
+    {
+      refetchQueries: [
+        {
+          query: GetUserRunningSessionsDocument,
+        },
+        {
+          query: GetUserSessionsDocument,
+        },
+      ],
+    }
+  )
 
-  // useEffect((): void => {
-  //   router.prefetch('/quizzes/evaluation')
-  //   router.prefetch('/quizzes/feedbacks')
-  //   router.prefetch('/join')
-  //   router.prefetch('/qr')
-  // }, [router])
-
-  // TODO: implement missing queries and corresponding frontend components
-  // const accountSummary = useQuery(AccountSummaryQuery)
-  // const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, {
-  //   pollInterval: 10000,
-  // })
-  // const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
-  // const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
-  // const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
-  // const [resetQuestionBlock, { loading: isResetQuestionBlockLoading }] = useMutation(ResetQuestionBlockMutation)
-  // const [cancelSession, { loading: isCancelSessionLoading }] = useMutation(CancelSessionMutation)
-  // const [activateNextBlock, { loading: isActivateNextBlockLoading }] = useMutation(ActivateNextBlockMutation)
-  // const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
-
-  // const shortname = _get(accountSummary, 'data.user.shortname')
-
+  // TODO: when refactoring this code to be compatible with the new live quiz setup,
+  // think about modifying this logic to only refetch the required live quiz elements
+  // regularly (feedbacks should be handled entirely through subscriptions, etc.)
   const {
     loading: cockpitLoading,
     error: cockpitError,
@@ -105,11 +88,9 @@ function Cockpit() {
     feedbacks,
   } = cockpitData.cockpitSession
 
-  // TODO: add gamification leaderboard button
   return (
     <Layout>
       <div className="mb-8 print:hidden">
-        {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         <SessionTimeline
           blocks={blocks ?? []}
           sessionName={name}
@@ -133,13 +114,14 @@ function Cockpit() {
           isEvaluationPublic={isEvaluationPublic}
           sessionId={id}
           startedAt={startedAt}
+          loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />
       </div>
 
       <AudienceInteraction
         subscribeToMore={subscribeToMore}
         confusionValues={confusionSummary ?? undefined}
-        feedbacks={feedbacks as Feedback[]}
+        feedbacks={feedbacks ?? []}
         isLiveQAEnabled={isLiveQAEnabled}
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}

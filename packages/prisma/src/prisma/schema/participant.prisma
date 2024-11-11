@@ -70,8 +70,8 @@ model ParticipantGroup {
   achievements    GroupAchievementInstance[]
   messages        GroupMessage[]
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
-  courseId String? @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
 
   randomlyAssigned Boolean @default(false)
 
@@ -167,7 +167,7 @@ model LeaderboardEntry {
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String? @db.Uuid
 
   @@unique([type, participantId, sessionId])

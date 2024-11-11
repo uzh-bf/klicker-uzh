@@ -1,5 +1,5 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import { Request, Response } from 'express'
+import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'

@@ -4,6 +4,16 @@ mutation UpdateParticipantAvatar(
 ) {
   updateParticipantAvatar(avatar: $avatar, avatarSettings: $avatarSettings) {
     avatar
-    avatarSettings
+    avatarSettings {
+      skinTone
+      eyes
+      mouth
+      hair
+      facialHair
+      accessory
+      hairColor
+      clothing
+      clothingColor
+    }
   }
 }

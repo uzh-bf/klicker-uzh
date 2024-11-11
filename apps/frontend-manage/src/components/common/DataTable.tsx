@@ -151,7 +151,7 @@ function DataTable<TData, TValue>({
             suffix={dayjs().format('YYYY-MM-DD')}
             filename={csvFilename}
             columns={csvColumns}
-            datas={data}
+            datas={data as Record<string, string | undefined | null>[]}
             separator=";"
           >
             <Button>

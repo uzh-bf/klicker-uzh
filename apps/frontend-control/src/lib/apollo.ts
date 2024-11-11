@@ -18,8 +18,8 @@ import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/a
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
-import { equals } from 'ramda'
 import { useMemo } from 'react'
+import { isDeepEqual } from 'remeda'
 import util from 'util'
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -46,34 +46,32 @@ function createIsomorphLink() {
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
-      graphQLErrors.forEach(
-        ({ message, locations, path, extensions, originalError }) => {
-          console.log(
-            `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
-              locations,
-              false,
-              null,
-              true
-            )}, Path: ${path}, Extensions: ${util.inspect(
-              extensions,
-              false,
-              null,
-              true
-            )}, Original: ${originalError}`
-          )
+      graphQLErrors.forEach(({ message, locations, path, extensions }) => {
+        console.log(
+          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+            locations,
+            false,
+            null,
+            true
+          )}, Path: ${path}, Extensions: ${util.inspect(
+            extensions,
+            false,
+            null,
+            true
+          )}`
+        )
 
-          // redirect the user to the login page on errors
-          if (isBrowser && message === 'Unauthorized') {
-            Router.push(
-              `/login?expired=true&redirect_to=${
-                encodeURIComponent(
-                  window?.location?.pathname + (window?.location?.search ?? '')
-                ) ?? '/'
-              }`
-            )
-          }
+        // redirect the user to the login page on errors
+        if (isBrowser && message === 'Unauthorized') {
+          Router.push(
+            `/login?expired=true&redirect_to=${
+              encodeURIComponent(
+                window?.location?.pathname + (window?.location?.search ?? '')
+              ) ?? '/'
+            }`
+          )
         }
-      )
+      })
     if (networkError) console.log(`[Network error]`, networkError)
   })
 
@@ -169,7 +167,7 @@ export function initializeApollo(
       arrayMerge: (destinationArray, sourceArray) => [
         ...sourceArray,
         ...destinationArray.filter((d) =>
-          sourceArray.every((s) => !equals(d, s))
+          sourceArray.every((s) => !isDeepEqual(d, s))
         ),
       ],
     })

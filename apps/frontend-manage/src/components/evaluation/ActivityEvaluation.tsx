@@ -153,11 +153,11 @@ function ActivityEvaluation({ activityName, stacks }: ActivityEvaluationProps) {
 
       <div
         className={twMerge(
-          'z-20 h-14 flex-none',
+          'h-18 z-20 flex-none',
           (activeStack === 'feedbacks' ||
             activeStack === 'confusion' ||
             activeStack === 'leaderboard') &&
-            'h-18'
+            'h-14'
         )}
       >
         <EvaluationFooter

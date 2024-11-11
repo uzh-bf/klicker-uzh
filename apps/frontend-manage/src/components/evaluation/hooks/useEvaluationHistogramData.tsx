@@ -27,11 +27,11 @@ function useEvaluationHistogramData({
     const min: number =
       instance.results.minValue && typeof instance.results.minValue === 'number'
         ? instance.results.minValue
-        : (minBy(responses, 'value')?.value || 0) - 10
+        : (minBy(responses, 'value')?.value ?? 0) - 10
     const max: number =
       instance.results.maxValue && typeof instance.results.maxValue === 'number'
         ? instance.results.maxValue
-        : (maxBy(responses, 'value')?.value || 0) + 10
+        : (maxBy(responses, 'value')?.value ?? 0) + 10
 
     let dataArray = Array.from({ length: binCount }, (_, i) => ({
       value: min + (max - min) * (i / binCount) + (max - min) / (2 * binCount),

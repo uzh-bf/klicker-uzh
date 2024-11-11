@@ -14,9 +14,9 @@ import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
+import { isEmpty, swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../../questions/Question'
 import {
@@ -145,7 +145,7 @@ function LiveQuizCreationBlock({
             className={{
               root: 'px-1 hover:text-red-600',
             }}
-            data={{ cy: 'delete-block' }}
+            data={{ cy: `delete-block-${index}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
@@ -204,20 +204,20 @@ function LiveQuizCreationBlock({
                     ) {
                       replace(index, {
                         ...block,
-                        questionIds: R.move(
+                        questionIds: swapIndices(
+                          block.questionIds,
                           questionIdx,
-                          questionIdx - 1,
-                          block.questionIds
+                          questionIdx - 1
                         ),
-                        titles: R.move(
+                        titles: swapIndices(
+                          block.titles,
                           questionIdx,
-                          questionIdx - 1,
-                          block.titles
+                          questionIdx - 1
                         ),
-                        types: R.move(
+                        types: swapIndices(
+                          block.types,
                           questionIdx,
-                          questionIdx - 1,
-                          block.types
+                          questionIdx - 1
                         ),
                       })
                     }
@@ -243,20 +243,20 @@ function LiveQuizCreationBlock({
                     ) {
                       replace(index, {
                         ...block,
-                        questionIds: R.move(
+                        questionIds: swapIndices(
+                          block.questionIds,
                           questionIdx,
-                          questionIdx + 1,
-                          block.questionIds
+                          questionIdx + 1
                         ),
-                        titles: R.move(
+                        titles: swapIndices(
+                          block.titles,
                           questionIdx,
-                          questionIdx + 1,
-                          block.titles
+                          questionIdx + 1
                         ),
-                        types: R.move(
+                        types: swapIndices(
+                          block.types,
                           questionIdx,
-                          questionIdx + 1,
-                          block.types
+                          questionIdx + 1
                         ),
                       })
                     }
@@ -297,7 +297,7 @@ function LiveQuizCreationBlock({
           )
         })}
       </div>
-      {selection && !R.isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <Button
           fluid
           className={{
@@ -340,16 +340,17 @@ function LiveQuizCreationBlock({
           </Button.Label>
         </Button>
       )}
-      <div
-        ref={drop}
-        className={twMerge(
-          'w-full rounded border border-solid p-0.5 text-center',
-          isOver && 'bg-primary-20'
-        )}
-        data-cy="drop-questions-here"
-      >
-        <FontAwesomeIcon icon={faPlus} size="lg" />
-      </div>
+      {drop(
+        <div
+          className={twMerge(
+            'w-full rounded border border-solid p-0.5 text-center',
+            isOver && 'bg-primary-20'
+          )}
+          data-cy={`drop-questions-here-${index}`}
+        >
+          <FontAwesomeIcon icon={faPlus} size="lg" />
+        </div>
+      )}
       <Modal
         open={openSettings}
         onClose={() => setOpenSettings(false)}
@@ -357,7 +358,7 @@ function LiveQuizCreationBlock({
           blockIx: index + 1,
         })}
         className={{
-          content: '!h-max !min-h-max w-full !pb-0 sm:w-3/4 md:w-1/2',
+          content: 'sm:w-3/4 md:w-1/2',
         }}
       >
         <NumberField

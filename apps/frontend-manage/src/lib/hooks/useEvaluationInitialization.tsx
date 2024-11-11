@@ -1,17 +1,20 @@
 import { ElementType, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
-import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
+import {
+  ACTIVE_CHART_TYPES,
+  ChartType,
+} from '@klicker-uzh/shared-components/src/constants'
 import { useEffect } from 'react'
 
 interface useEvaluationInitializationProps {
   selectedInstanceIndex: number
   instanceResults: InstanceResult[]
-  chartType: string
+  chartType: ChartType
   questionIx?: number
   setSelectedInstance: (id: string) => void
   setSelectedBlockIndex: (index: number) => void
   setCurrentInstance: (instance: InstanceResult) => void
   setSelectedInstanceIndex: (index: number) => void
-  setChartType: (type: string) => void
+  setChartType: (type: ChartType) => void
 }
 
 function useEvaluationInitialization({

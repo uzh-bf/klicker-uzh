@@ -8,10 +8,12 @@ import {
   DeleteFeedbackResponseDocument,
   Feedback,
   FeedbackCreatedDocument,
+  GetCockpitSessionDocument,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
+  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2, Switch } from '@uzh-bf/design-system'
@@ -53,12 +55,21 @@ function AudienceInteraction({
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
       variables: { sessionId },
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (
+        prev: { cockpitSession: Session },
+        {
+          subscriptionData,
+        }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
+      ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackCreated
+        const updatedSession = {
+          ...prev.cockpitSession,
+          feedbacks: [newItem, ...(prev.cockpitSession.feedbacks ?? [])],
+        }
+
         return {
-          ...prev,
-          feedbacks: [newItem, ...prev.cockpitSession.feedbacks],
+          cockpitSession: updatedSession,
         }
       },
     })
@@ -163,13 +174,73 @@ function AudienceInteraction({
                   sessionName={sessionName}
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
-                    deleteFeedback({ variables: { id: feedbackId } })
+                    deleteFeedback({
+                      variables: { id: feedbackId },
+                      optimisticResponse: {
+                        deleteFeedback: {
+                          id: feedbackId,
+                          __typename: 'Feedback',
+                        },
+                      },
+                      update(cache, res) {
+                        const removedFeedback = res.data?.deleteFeedback
+                        const data = cache.readQuery({
+                          query: GetCockpitSessionDocument,
+                          variables: { id: sessionId },
+                        })
+
+                        if (data?.cockpitSession && removedFeedback) {
+                          cache.writeQuery({
+                            query: GetCockpitSessionDocument,
+                            variables: { id: sessionId },
+                            data: {
+                              cockpitSession: {
+                                ...data.cockpitSession,
+                                feedbacks:
+                                  data.cockpitSession.feedbacks?.filter(
+                                    (feedback) =>
+                                      feedback.id !== removedFeedback.id
+                                  ) ?? [],
+                              },
+                            },
+                          })
+                        }
+                      },
+                    })
                     push(['trackEvent', 'Running Session', 'Feedback Deleted'])
                   }}
                   handleDeleteFeedbackResponse={(responseId: number) => {
                     deleteFeedbackResponse({
                       variables: { id: responseId },
+                      update(cache, res) {
+                        const updatedFeedback = res.data?.deleteFeedbackResponse
+                        const data = cache.readQuery({
+                          query: GetCockpitSessionDocument,
+                          variables: { id: sessionId },
+                        })
+
+                        if (data?.cockpitSession && updatedFeedback) {
+                          cache.writeQuery({
+                            query: GetCockpitSessionDocument,
+                            variables: { id: sessionId },
+                            data: {
+                              cockpitSession: {
+                                ...data.cockpitSession,
+                                feedbacks: data.cockpitSession.feedbacks?.map(
+                                  (feedback) => {
+                                    if (feedback.id === updatedFeedback.id) {
+                                      return updatedFeedback
+                                    }
+                                    return feedback
+                                  }
+                                ),
+                              },
+                            },
+                          })
+                        }
+                      },
                     })
+
                     push([
                       'trackEvent',
                       'Running Session',

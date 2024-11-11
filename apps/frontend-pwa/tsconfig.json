@@ -11,6 +11,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
+    "noErrorTruncation": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
@@ -30,11 +31,5 @@
     "**/*.tsx",
     "src/utils/generateAvatars.js"
   ],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "src/utils/generateAvatars.ts": "esm"
-    }
-  }
+  "exclude": ["node_modules"]
 }

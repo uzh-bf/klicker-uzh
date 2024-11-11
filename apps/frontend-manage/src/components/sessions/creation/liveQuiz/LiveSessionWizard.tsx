@@ -73,7 +73,7 @@ function LiveSessionWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<LiveSessionFormValues>>(null)
@@ -158,21 +158,25 @@ function LiveSessionWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.sessionForms.liveQuizInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.sessionForms.liveQuizDescription'),
       tooltipDisabled: t('manage.sessionForms.liveQuizDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.sessionForms.liveQuizSettings'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('manage.sessionForms.liveQuizBlocks'),
       tooltip: t('manage.sessionForms.liveQuizDragDrop'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 
@@ -279,7 +283,7 @@ function LiveSessionWizard({
                 onClick={async () => {
                   await startSession({
                     variables: {
-                      id: data?.createSession?.id as string,
+                      id: data?.createSession?.id!,
                     },
                   })
                   router.push(`/quizzes/${data?.createSession?.id}/cockpit`)

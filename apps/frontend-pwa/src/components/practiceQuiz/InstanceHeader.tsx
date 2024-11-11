@@ -34,7 +34,7 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
       duration={5000}
       type="error"
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
     >
       <H4>{t('shared.generic.error')}</H4>
       <div>{t('pwa.practiceQuiz.errorRatingElement')}</div>

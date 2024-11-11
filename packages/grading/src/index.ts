@@ -1,4 +1,4 @@
-import { any, equals, toLower, trim } from 'ramda'
+import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
   responseCount: number
@@ -30,7 +30,7 @@ export function gradeQuestionSC({
 }: GradeQuestionChoicesArgs): number | null {
   if (!solution || solution.length === 0) return null
 
-  if (equals(response, solution)) return 1
+  if (isDeepEqual(response, solution)) return 1
 
   return 0
 }
@@ -93,13 +93,13 @@ export function gradeQuestionNumerical({
   if (definedSolutionRanges.length === 0) return null
 
   const withinRanges = definedSolutionRanges.map(({ min, max }) => {
-    if (min && response < min) return false
-    if (max && response > max) return false
+    if (min && response < min - Number.EPSILON) return false
+    if (max && response > max + Number.EPSILON) return false
     return true
   })
 
-  // if the response is within any of the solution ranges
-  if (any(Boolean, withinRanges)) return 1
+  // if the response is within one of the solution ranges
+  if (withinRanges.some((match) => match === true)) return 1
 
   // TODO: maybe incorporate distance from ranges for partial credit?
 
@@ -118,10 +118,10 @@ export function gradeQuestionFreeText({
   if (!solutions || solutions.length === 0) return null
 
   const matchingSolutions = solutions.map(
-    (solution) => toLower(trim(solution)) === toLower(trim(response))
+    (solution) => toLowerCase(solution.trim()) === toLowerCase(response.trim())
   )
 
-  if (any(Boolean, matchingSolutions)) return 1
+  if (matchingSolutions.some((match) => match === true)) return 1
 
   return 0
 }
@@ -162,12 +162,12 @@ export function computeAwardedPoints({
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
     const additionalPoints =
-      pointsPercentage * (defaultCorrectPoints || 0) +
+      pointsPercentage * (defaultCorrectPoints ?? 0) +
       Math.max(pointsPercentage * (maxBonus - slope * responseTiming), 0)
     awardedPoints += additionalPoints
   } else if (getsMaxPoints) {
     const additionalPoints =
-      (defaultCorrectPoints || 0) +
+      (defaultCorrectPoints ?? 0) +
       Math.max(maxBonus - slope * responseTiming, 0)
     awardedPoints += additionalPoints
   }
@@ -176,7 +176,7 @@ export function computeAwardedPoints({
     awardedPoints *= Number(pointsMultiplier)
   }
 
-  awardedPoints += defaultPoints || 0
+  awardedPoints += defaultPoints ?? 0
 
   return Math.round(awardedPoints)
 }

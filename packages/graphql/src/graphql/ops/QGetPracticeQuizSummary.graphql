@@ -1,0 +1,6 @@
+query GetPracticeQuizSummary($id: String!) {
+  getPracticeQuizSummary(id: $id) {
+    numOfResponses
+    numOfAnonymousResponses
+  }
+}

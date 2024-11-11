@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.liveSession.findUnique({
@@ -331,26 +331,30 @@ export async function deleteFeedbackResponse(
   if (
     !feedbackResponse ||
     feedbackResponse.feedback.session!.ownerId !== ctx.user.sub
-  )
+  ) {
     return null
+  }
 
   const deletedFeedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },
+  })
+
+  const updatedFeedback = await ctx.prisma.feedback.findUnique({
+    where: { id: deletedFeedbackResponse.feedbackId },
     include: {
-      feedback: {
-        include: {
-          responses: true,
-        },
-      },
+      responses: true,
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', deletedFeedbackResponse.feedback)
+  if (!updatedFeedback) {
+    return null
+  }
 
+  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: deletedFeedbackResponse.feedback.sessionId,
+    id: updatedFeedback.sessionId,
   })
 
-  return deletedFeedbackResponse.feedback
+  return updatedFeedback
 }

@@ -15,9 +15,9 @@ import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
+import { isEmpty, swapIndices } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { QuestionDragDropTypes } from '../../questions/Question'
 import StackCreationErrors from './StackCreationErrors'
@@ -270,10 +270,10 @@ function StackBlockCreation({
                     if (!(questionIdx === 0 || stack.elements.length === 1)) {
                       replace(index, {
                         ...stack,
-                        elements: R.move(
+                        elements: swapIndices(
+                          stack.elements,
                           questionIdx,
-                          questionIdx - 1,
-                          stack.elements
+                          questionIdx - 1
                         ),
                       })
                     }
@@ -299,10 +299,10 @@ function StackBlockCreation({
                     ) {
                       replace(index, {
                         ...stack,
-                        elements: R.move(
+                        elements: swapIndices(
+                          stack.elements,
                           questionIdx,
-                          questionIdx + 1,
-                          stack.elements
+                          questionIdx + 1
                         ),
                       })
                     }
@@ -337,7 +337,7 @@ function StackBlockCreation({
           )
         })}
       </div>
-      {selection && !R.isEmpty(selection) && (
+      {selection && !isEmpty(selection) && (
         <Button
           fluid
           className={{
@@ -348,7 +348,10 @@ function StackBlockCreation({
               id: question.id,
               title: question.name,
               type: question.type,
-              hasSampleSolution: question.options.hasSampleSolution,
+              hasSampleSolution:
+                'options' in question
+                  ? (question.options.hasSampleSolution ?? false)
+                  : true,
             }))
             const stackElements = stack.elements.concat(newElements)
 
@@ -370,16 +373,17 @@ function StackBlockCreation({
           </Button.Label>
         </Button>
       )}
-      <div
-        ref={drop}
-        className={twMerge(
-          'w-full rounded border border-solid p-0.5 text-center',
-          isOver && 'bg-primary-20'
-        )}
-        data-cy={`drop-elements-stack-${index}`}
-      >
-        <FontAwesomeIcon icon={faPlus} size="lg" />
-      </div>
+      {drop(
+        <div
+          className={twMerge(
+            'w-full rounded border border-solid p-0.5 text-center',
+            isOver && 'bg-primary-20'
+          )}
+          data-cy={`drop-elements-stack-${index}`}
+        >
+          <FontAwesomeIcon icon={faPlus} size="lg" />
+        </div>
+      )}
 
       <StackDescriptionModal
         stackIx={index}

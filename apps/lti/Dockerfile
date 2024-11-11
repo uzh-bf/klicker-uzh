@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
@@ -39,7 +39,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-RUN npm i -g --ignore-scripts pnpm@9.9.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
 
 COPY --from=builder /app/out/json/ .
 RUN pnpm i --frozen-lockfile --prod --ignore-scripts

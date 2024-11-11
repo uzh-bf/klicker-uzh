@@ -9,20 +9,19 @@ import {
   faPencil,
   faPlay,
   faTrash,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  DeleteSessionDocument,
+  DeleteLiveQuizDocument,
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
   SessionBlock,
   SessionStatus,
   Session as SessionType,
-  SoftDeleteLiveSessionDocument,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
+import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -41,16 +40,19 @@ function Session({ session }: SessionProps) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [startSession] = useMutation(StartSessionDocument, {
-    variables: { id: session.id },
-    refetchQueries: [
-      {
-        query: GetUserRunningSessionsDocument,
-      },
-    ],
-  })
+  const [startSession, { loading: startingQuiz }] = useMutation(
+    StartSessionDocument,
+    {
+      variables: { id: session.id },
+      refetchQueries: [
+        {
+          query: GetUserRunningSessionsDocument,
+        },
+      ],
+    }
+  )
 
-  const [deleteSession] = useMutation(DeleteSessionDocument, {
+  const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
     variables: { id: session.id },
     update(cache) {
       const data = cache.readQuery({
@@ -65,29 +67,7 @@ function Session({ session }: SessionProps) {
       })
     },
     optimisticResponse: {
-      deleteSession: {
-        __typename: 'Session',
-        id: session.id,
-      },
-    },
-  })
-
-  const [softDeleteLiveSession] = useMutation(SoftDeleteLiveSessionDocument, {
-    variables: { id: session.id },
-    update(cache) {
-      const data = cache.readQuery({
-        query: GetUserSessionsDocument,
-      })
-      cache.writeQuery({
-        query: GetUserSessionsDocument,
-        data: {
-          userSessions:
-            data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
-        },
-      })
-    },
-    optimisticResponse: {
-      softDeleteLiveSession: {
+      deleteLiveQuiz: {
         __typename: 'Session',
         id: session.id,
       },
@@ -98,7 +78,6 @@ function Session({ session }: SessionProps) {
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
-  const [softDeletionModal, setSoftDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
 
   const timeIcon: Record<SessionStatus, IconDefinition> = {
@@ -199,6 +178,8 @@ function Session({ session }: SessionProps) {
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
                       data-cy={`session-evaluation-${session.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
@@ -209,6 +190,7 @@ function Session({ session }: SessionProps) {
                   SessionStatus.Scheduled === session.status) && (
                   <Button
                     basic
+                    disabled={startingQuiz}
                     onClick={async () => {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)
@@ -263,50 +245,36 @@ function Session({ session }: SessionProps) {
               </Button>
               {(SessionStatus.Prepared === session.status ||
                 SessionStatus.Scheduled === session.status) && (
-                <>
-                  <Button
-                    className={{ root: 'px-3 py-1 text-sm' }}
-                    onClick={() =>
-                      router.push({
-                        pathname: '/',
-                        query: {
-                          elementId: session.id,
-                          editMode: WizardMode.LiveQuiz,
-                        },
-                      })
-                    }
-                    data={{ cy: `edit-session-${session.name}` }}
-                  >
-                    <Button.Icon className={{ root: 'text-slate-600' }}>
-                      <FontAwesomeIcon icon={faPencil} />
-                    </Button.Icon>
-                    <Button.Label>
-                      {t('manage.sessions.editSession')}
-                    </Button.Label>
-                  </Button>
-                  <Button
-                    className={{
-                      root: 'border-red-600 px-3 py-1 text-sm',
-                    }}
-                    onClick={() => setDeletionModal(true)}
-                    data={{ cy: `delete-session-${session.name}` }}
-                  >
-                    <Button.Icon className={{ root: 'text-red-400' }}>
-                      <FontAwesomeIcon icon={faTrash} />
-                    </Button.Icon>
-                    <Button.Label>
-                      {t('manage.sessions.deleteSession')}
-                    </Button.Label>
-                  </Button>
-                </>
+                <Button
+                  className={{ root: 'px-3 py-1 text-sm' }}
+                  onClick={() =>
+                    router.push({
+                      pathname: '/',
+                      query: {
+                        elementId: session.id,
+                        editMode: WizardMode.LiveQuiz,
+                      },
+                    })
+                  }
+                  data={{ cy: `edit-session-${session.name}` }}
+                >
+                  <Button.Icon className={{ root: 'text-slate-600' }}>
+                    <FontAwesomeIcon icon={faPencil} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {t('manage.sessions.editSession')}
+                  </Button.Label>
+                </Button>
               )}
-              {SessionStatus.Completed === session.status && (
+              {(SessionStatus.Prepared === session.status ||
+                SessionStatus.Scheduled === session.status ||
+                SessionStatus.Completed === session.status) && (
                 <Button
                   className={{
                     root: 'border-red-600 px-3 py-1 text-sm',
                   }}
-                  onClick={() => setSoftDeletionModal(true)}
-                  data={{ cy: `delete-past-session-${session.name}` }}
+                  onClick={() => setDeletionModal(true)}
+                  data={{ cy: `delete-live-quiz-${session.name}` }}
                 >
                   <Button.Icon className={{ root: 'text-red-400' }}>
                     <FontAwesomeIcon icon={faTrash} />
@@ -319,40 +287,61 @@ function Session({ session }: SessionProps) {
             </div>
           }
         >
-          <div className="my-2 flex flex-row gap-2 overflow-y-scroll">
+          <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
             {session.blocks?.map((block, index) => (
-              <div key={block.id} className="flex flex-col gap-1">
-                <div className="italic">
-                  {t('manage.sessions.blockXQuestions', {
-                    block: index + 1,
-                    questions: block.instances?.length,
+              <div
+                key={block.id}
+                className="w-64 min-w-52 border-r border-black pr-4 last:border-r-0 last:pr-0"
+              >
+                <div className="flex flex-row justify-between">
+                  <H4>
+                    {t('shared.generic.blockN', {
+                      number: index + 1,
+                    })}
+                  </H4>
+                  {block.numOfParticipants ? (
+                    <div className="flex flex-row items-center">
+                      <div>{block.numOfParticipants}</div>
+                      <FontAwesomeIcon
+                        icon={faUserGroup}
+                        className="ml-1 w-4"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <div>
+                  {block.instances?.map((instance) => (
+                    <Link
+                      href={`/questions/${instance.questionData!.questionId}`}
+                      className="text-sm hover:text-slate-700"
+                      key={instance.id}
+                      legacyBehavior
+                      passHref
+                    >
+                      <a
+                        data-cy={`open-question-live-quiz-${instance.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <div className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm">
+                          <div>
+                            {instance.questionData?.name} (
+                            {t(`shared.${instance.questionData!.type}.short`)})
+                          </div>
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            className="h-3 w-3"
+                          />
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
+                <div className="float-right text-sm">
+                  {t('shared.generic.Nelements', {
+                    number: block.instances?.length,
                   })}
                 </div>
-                {block.instances?.map((instance) => (
-                  <div
-                    key={instance.id}
-                    className="border-uzh-grey-100 w-60 rounded-md border border-solid text-sm"
-                  >
-                    <div className="bg-uzh-grey-40 flex flex-row justify-between px-1 py-0.5">
-                      <Ellipsis
-                        className={{ markdown: 'text-base font-bold' }}
-                        maxLength={20}
-                      >
-                        {instance.questionData!.name}
-                      </Ellipsis>
-
-                      <div className="italic">
-                        ({t(`shared.${instance.questionData!.type}.short`)})
-                      </div>
-                    </div>
-                    <Ellipsis
-                      maxLength={50}
-                      className={{ markdown: 'px-1 text-sm' }}
-                    >
-                      {instance.questionData!.content}
-                    </Ellipsis>
-                  </div>
-                ))}
               </div>
             ))}
           </div>
@@ -363,20 +352,9 @@ function Session({ session }: SessionProps) {
         description={t('manage.sessions.confirmLiveQuizDeletion')}
         elementName={session.name || ''}
         message={t('manage.sessions.liveQuizDeletionHint')}
-        deleteElement={deleteSession}
+        deleteElement={deleteLiveQuiz}
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-live-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
-      />
-      <DeletionModal
-        title={t('manage.sessions.deleteLiveQuiz')}
-        description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name || ''}
-        message={t('manage.sessions.pastLiveQuizDeletionHint')}
-        deleteElement={softDeleteLiveSession}
-        open={softDeletionModal}
-        setOpen={setSoftDeletionModal}
         primaryData={{ cy: 'confirm-delete-live-quiz' }}
         secondaryData={{ cy: 'cancel-delete-live-quiz' }}
       />

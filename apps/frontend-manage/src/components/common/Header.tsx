@@ -88,38 +88,43 @@ function Header({ user }: HeaderProps): React.ReactElement {
           root: 'rounded-none bg-slate-100',
         }}
       >
-        <Navigation.TriggerItem
-          icon={
-            <FontAwesomeIcon
-              icon={faPlayCircle}
-              className="h-5 group-hover:text-white"
-            />
-          }
-          dropdownWidth="w-36"
-          className={{
-            root: 'group hidden h-9 w-9 md:block',
-            icon: twMerge(
-              data?.userRunningSessions?.length !== 0 && 'text-green-600'
-            ),
-            disabled: '!text-gray-400',
-          }}
-          disabled={data?.userRunningSessions?.length === 0}
-        >
-          {data?.userRunningSessions && data?.userRunningSessions.length > 0 ? (
-            data?.userRunningSessions.map((session) => {
-              return (
-                <Navigation.DropdownItem
-                  key={session.id}
-                  title={session.name}
-                  onClick={() => router.push(`/quizzes/${session.id}/cockpit`)}
-                  className={{ title: 'text-base font-bold', root: 'p-2' }}
-                />
-              )
-            })
-          ) : (
-            <div />
-          )}
-        </Navigation.TriggerItem>
+        <div className="hidden md:block">
+          <Navigation.TriggerItem
+            icon={
+              <FontAwesomeIcon
+                icon={faPlayCircle}
+                className="h-5 group-hover:text-white"
+              />
+            }
+            dropdownWidth="w-36"
+            className={{
+              root: 'group hidden h-9 w-9 md:block',
+              icon: twMerge(
+                data?.userRunningSessions?.length !== 0 && 'text-green-600'
+              ),
+              disabled: '!text-gray-400',
+            }}
+            disabled={data?.userRunningSessions?.length === 0}
+          >
+            {data?.userRunningSessions &&
+            data?.userRunningSessions.length > 0 ? (
+              data?.userRunningSessions.map((session) => {
+                return (
+                  <Navigation.DropdownItem
+                    key={session.id}
+                    title={session.name}
+                    onClick={() =>
+                      router.push(`/quizzes/${session.id}/cockpit`)
+                    }
+                    className={{ title: 'text-base font-bold', root: 'p-2' }}
+                  />
+                )
+              })
+            ) : (
+              <div />
+            )}
+          </Navigation.TriggerItem>
+        </div>
         <Navigation.ButtonItem
           onClick={() => setShowSupportModal(true)}
           label=""

@@ -9,10 +9,12 @@ import { useEffect, useState } from 'react'
 
 function AccountDeletionForm() {
   const t = useTranslations()
-  const [deleteParticipantAccount] = useMutation(
+  const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
     DeleteParticipantAccountDocument
   )
-  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  const [logoutParticipant, { loading: loggingOut }] = useMutation(
+    LogoutParticipantDocument
+  )
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -49,9 +51,10 @@ function AccountDeletionForm() {
           open={deleteModalOpen}
           onClose={(): void => setDeleteModalOpen(false)}
           hideCloseButton={true}
-          className={{ content: 'h-max max-w-md' }}
+          className={{ content: 'max-w-md' }}
           onPrimaryAction={
             <Button
+              loading={deletingAccount || loggingOut}
               className={{
                 root: 'border-red-700 bg-red-600 text-white',
               }}

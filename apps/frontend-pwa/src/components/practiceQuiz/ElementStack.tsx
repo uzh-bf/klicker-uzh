@@ -2,19 +2,19 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
+  FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
-  ElementChoicesType,
   StudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H2 } from '@uzh-bf/design-system'
+import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
@@ -41,6 +41,8 @@ interface ElementStackProps {
   bookmarks?: number[] | null
   hideBookmark?: boolean
   singleSubmission?: boolean
+  activityExpired?: boolean
+  activityExpiredMessage?: string
 }
 
 function ElementStack({
@@ -56,12 +58,16 @@ function ElementStack({
   bookmarks,
   hideBookmark = false,
   singleSubmission = false,
+  activityExpired = false,
+  activityExpiredMessage,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
-  const [respondToElementStack] = useMutation(RespondToElementStackDocument)
+  const [respondToElementStack, { loading: submittingResponse }] = useMutation(
+    RespondToElementStackDocument
+  )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: withParticipant,
@@ -122,63 +128,104 @@ function ElementStack({
       const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
 
       setStackStorage(
-        evaluations.reduce((acc, evaluation) => {
+        evaluations.reduce<StudentResponseType>((acc, evaluation) => {
           const foundElement = stack.elements?.find(
             (element) => element.id === evaluation.instanceId
           )
+          const commonAttributes = {
+            valid: true,
+            evaluation,
+          }
 
-          if (!foundElement) {
+          if (!foundElement || !evaluation.lastResponse) {
             // Handle the error, log a warning, or skip this evaluation
             console.warn(`Element with ID ${evaluation.instanceId} not found.`)
             return acc
           } else {
             const elementType = foundElement.elementType
-            let response: StudentResponseType[0]['response']
-
-            if (elementType === ElementType.Flashcard) {
-              response = evaluation.lastResponse
-                .correctness as FlashcardCorrectnessType
-            } else if (elementType === ElementType.Content) {
-              response = evaluation.lastResponse.viewed as boolean
-            } else if (
-              elementType === ElementType.Sc ||
-              elementType === ElementType.Mc
+            if (
+              elementType === ElementType.Flashcard &&
+              evaluation.__typename === 'FlashcardInstanceEvaluation'
             ) {
-              const storedChoices = evaluation.lastResponse.choices as number[]
-              response = storedChoices.reduce(
-                (acc, choice) => {
-                  return {
-                    ...acc,
-                    [choice]: true,
-                  }
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.correctness,
                 },
-                {} as Record<number, boolean>
-              )
-            } else if (elementType === ElementType.Kprim) {
-              const storedChoices = evaluation.lastResponse.choices as number[]
-              response = { 0: false, 1: false, 2: false, 3: false }
-              storedChoices.forEach((choice) => {
-                response[choice] = true
-              })
+              }
             } else if (
-              elementType === ElementType.Numerical ||
-              elementType === ElementType.FreeText
+              elementType === ElementType.Content &&
+              evaluation.__typename === 'ContentInstanceEvaluation'
             ) {
-              response = evaluation.lastResponse.value
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.viewed,
+                },
+              }
+            } else if (
+              (elementType === ElementType.Sc ||
+                elementType === ElementType.Mc) &&
+              evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ) {
+              const storedChoices = evaluation.lastResponse.choices
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: storedChoices.reduce<Record<number, boolean>>(
+                    (acc, choice) => {
+                      return {
+                        ...acc,
+                        [choice]: true,
+                      }
+                    },
+                    {}
+                  ),
+                },
+              }
+            } else if (
+              elementType === ElementType.Kprim &&
+              evaluation.__typename === 'ChoicesInstanceEvaluation'
+            ) {
+              const storedChoices = evaluation.lastResponse.choices
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: {
+                    0: storedChoices.includes(0),
+                    1: storedChoices.includes(1),
+                    2: storedChoices.includes(2),
+                    3: storedChoices.includes(3),
+                  },
+                },
+              }
+            } else if (
+              (elementType === ElementType.Numerical ||
+                elementType === ElementType.FreeText) &&
+              (evaluation.__typename === 'FreeTextInstanceEvaluation' ||
+                evaluation.__typename === 'NumericalInstanceEvaluation')
+            ) {
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.value,
+                },
+              }
             }
 
-            return {
-              ...acc,
-              [evaluation.instanceId]: {
-                type: elementType,
-                response,
-                correct: evaluation.correctness,
-                valid: true,
-                evaluation,
-              },
-            }
+            return acc
           }
-        }, {} as StudentResponseType)
+        }, {})
       )
 
       // set status and score according to returned correctness
@@ -199,6 +246,14 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
+        {activityExpired && activityExpiredMessage && (
+          <UserNotification
+            type="error"
+            message={activityExpiredMessage}
+            className={{ root: 'mb-2' }}
+          />
+        )}
+
         {!hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
@@ -222,7 +277,7 @@ function ElementStack({
           </div>
         )}
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 md:gap-12">
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
@@ -270,7 +325,7 @@ function ElementStack({
               handleNextElement()
             }
           }}
-          data={{ cy: 'practice-quiz-continue' }}
+          data={{ cy: 'student-stack-continue' }}
         >
           {currentStep === totalSteps
             ? t('shared.generic.finish')
@@ -288,7 +343,7 @@ function ElementStack({
           onClick={() => {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
-              Object.entries(currentResponses).reduce(
+              Object.entries(currentResponses).reduce<StudentResponseType>(
                 (acc, [instanceId, value]) => {
                   if (value.type === ElementType.Content) {
                     return {
@@ -302,7 +357,7 @@ function ElementStack({
                     return { ...acc, [instanceId]: value }
                   }
                 },
-                {} as StudentResponseType
+                {}
               )
             )
           }}
@@ -314,10 +369,12 @@ function ElementStack({
 
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
+          loading={submittingResponse}
+          disabled={
+            activityExpired ||
+            Object.values(studentResponse).some((response) => !response.valid)
+          }
           className={{ root: 'float-right mt-4 text-lg' }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {
@@ -327,17 +384,27 @@ function ElementStack({
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
+                      let responseValue: FlashcardCorrectnessType
+                      if (value.response === FlashcardCorrectness.Correct) {
+                        responseValue = FlashcardCorrectnessType.Correct
+                      } else if (
+                        value.response === FlashcardCorrectness.Partial
+                      ) {
+                        responseValue = FlashcardCorrectnessType.Partial
+                      } else {
+                        responseValue = FlashcardCorrectnessType.Incorrect
+                      }
+
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Flashcard,
-                        flashcardResponse:
-                          value.response as FlashcardCorrectnessType,
+                        flashcardResponse: responseValue,
                       }
                     } else if (value.type === ElementType.Content) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Content,
-                        contentReponse: value.response as boolean,
+                        contentReponse: value.response,
                       }
                     } else if (
                       value.type === ElementType.Sc ||
@@ -345,15 +412,13 @@ function ElementStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(
-                        value.response as Record<number, boolean>
-                      )
+                      const responseList = Object.entries(value.response!)
                         .filter(([, value]) => value)
                         .map(([key]) => parseInt(key))
 
                       return {
                         instanceId: parseInt(instanceId),
-                        type: value.type as ElementChoicesType,
+                        type: value.type,
                         choicesResponse: responseList,
                       }
                     }
@@ -362,13 +427,13 @@ function ElementStack({
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response as string),
+                        numericalResponse: parseFloat(value.response!),
                       }
                     } else if (value.type === ElementType.FreeText) {
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
-                        freeTextResponse: value.response as string,
+                        freeTextResponse: value.response,
                       }
                     } else {
                       return {
@@ -388,18 +453,22 @@ function ElementStack({
             }
 
             setStackStorage(
-              Object.entries(studentResponse).reduce((acc, [key, value]) => {
-                return {
-                  ...acc,
-                  [key]: {
-                    ...value,
-                    evaluation:
-                      result.data!.respondToElementStack!.evaluations?.find(
-                        (evaluation) => evaluation.instanceId === parseInt(key)
-                      ),
-                  },
-                }
-              }, {} as StudentResponseType)
+              Object.entries(studentResponse).reduce<StudentResponseType>(
+                (acc, [key, value]) => {
+                  return {
+                    ...acc,
+                    [key]: {
+                      ...value,
+                      evaluation:
+                        result.data!.respondToElementStack!.evaluations?.find(
+                          (evaluation) =>
+                            evaluation.instanceId === parseInt(key)
+                        ),
+                    },
+                  }
+                },
+                {}
+              )
             )
 
             // set status and score according to returned correctness
@@ -428,7 +497,7 @@ function ElementStack({
               }
             }
           }}
-          data={{ cy: 'practice-quiz-stack-submit' }}
+          data={{ cy: 'student-stack-submit' }}
         >
           {t('shared.generic.submit')}
         </Button>

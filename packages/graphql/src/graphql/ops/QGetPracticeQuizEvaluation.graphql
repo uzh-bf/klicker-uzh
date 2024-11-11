@@ -1,5 +1,3 @@
-#import "./FEvaluationResults.graphql"
-
 query GetPracticeQuizEvaluation($id: String!) {
   getPracticeQuizEvaluation(id: $id) {
     id

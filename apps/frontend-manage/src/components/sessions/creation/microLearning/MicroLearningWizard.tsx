@@ -79,7 +79,7 @@ function MicroLearningWizard({
     undefined
   )
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
@@ -100,11 +100,34 @@ function MicroLearningWizard({
   })
 
   const settingsValidationSchema = yup.object().shape({
-    startDate: yup.date().required(t('manage.sessionForms.startDate')),
+    startDate: yup
+      .date()
+      .required(t('manage.sessionForms.startDate'))
+      .test(
+        'afterCourseStart',
+        t('manage.sessionForms.microlearningStartAfterCourseStart'),
+        (value, context) =>
+          context.parent.courseStartDate
+            ? dayjs(value) > dayjs(context.parent.courseStartDate)
+            : true
+      ),
     endDate: yup
       .date()
-      .min(yup.ref('startDate'), t('manage.sessionForms.endAfterStart'))
-      .required(t('manage.sessionForms.endDate')),
+      .required(t('manage.sessionForms.endDate'))
+      .test('checkDateInPast', t('manage.sessionForms.endInFuture'), (date) => {
+        return !!(date && date > new Date())
+      })
+      .when('startDate', (startDate, schema) =>
+        schema.min(startDate, t('manage.sessionForms.endAfterStart'))
+      )
+      .test(
+        'beforeCourseEnd',
+        t('manage.sessionForms.microlearningEndBeforeCourseEnd'),
+        (value, context) =>
+          context.parent.courseEndDate
+            ? dayjs(value) < dayjs(context.parent.courseEndDate)
+            : true
+      ),
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
@@ -158,6 +181,8 @@ function MicroLearningWizard({
     ],
     startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
     endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    courseStartDate: undefined,
+    courseEndDate: undefined,
     multiplier: '1',
     courseId: undefined,
   }
@@ -166,21 +191,25 @@ function MicroLearningWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.sessionForms.microLearningInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.sessionForms.microlearningDescription'),
       tooltipDisabled: t('manage.sessionForms.microlearningDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.sessionForms.microlearningSettings'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('shared.generic.questions'),
       tooltip: t('manage.sessionForms.microlearningQuestions'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 
@@ -199,7 +228,9 @@ function MicroLearningWizard({
                 title: element.elementData.name,
                 type: element.elementData.type,
                 hasSampleSolution:
-                  element.elementData.options?.hasSampleSolution ?? true,
+                  'options' in element.elementData
+                    ? (element.elementData.options.hasSampleSolution ?? false)
+                    : true,
               }
             }),
           }
@@ -213,6 +244,8 @@ function MicroLearningWizard({
     endDate: initialValues?.scheduledEndAt
       ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
       : formDefaultValues.endDate,
+    courseStartDate: formDefaultValues.courseStartDate,
+    courseEndDate: formDefaultValues.courseEndDate,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,

@@ -9,9 +9,6 @@ on:
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
 
 jobs:
   test:
@@ -25,7 +22,7 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.9.0
+          version: 9.10.0
           run_install: true
       - name: Test functions
         shell: bash

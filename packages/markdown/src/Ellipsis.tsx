@@ -8,6 +8,7 @@ export interface EllipsisBaseProps {
   maxLength?: number
   maxLines?: 1 | 2 | 3
   withoutPopup?: boolean
+  withMarkdown?: boolean
   className?: {
     root?: string
     tooltip?: string
@@ -32,6 +33,7 @@ function Ellipsis({
   maxLength,
   maxLines,
   withoutPopup = false,
+  withMarkdown = true,
   className,
 }: EllipsisProps): React.ReactElement {
   if (maxLines) {
@@ -39,19 +41,23 @@ function Ellipsis({
       <Tooltip
         delay={1000}
         tooltip={
-          <Prose
-            className={{
-              root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 hover:text-white',
-            }}
-          >
-            <Markdown
-              withModal={false}
-              content={children
-                .toString()
-                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={{ root: className?.markdown, img: 'max-h-36' }}
-            />
-          </Prose>
+          withMarkdown ? (
+            <Prose
+              className={{
+                root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 hover:text-white',
+              }}
+            >
+              <Markdown
+                withModal={false}
+                content={children
+                  .toString()
+                  .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+                className={{ root: className?.markdown, img: 'max-h-36' }}
+              />
+            </Prose>
+          ) : (
+            children
+          )
         }
         className={{
           tooltip: twMerge(
@@ -61,26 +67,37 @@ function Ellipsis({
         }}
         withIndicator={false}
       >
-        <Prose
-          className={{
-            root: twMerge(
-              'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 text-black hover:text-black',
-              // HACK: dynamic classnames do not work with tailwind
-              // line-clamp-1 line-clamp-2 line-clamp-3
-              // the above ensures classes 1-3 are present
+        {withMarkdown ? (
+          <Prose
+            className={{
+              root: twMerge(
+                'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 text-black hover:text-black',
+                // HACK: dynamic classnames do not work with tailwind - ensure that the following classes are present:
+                // line-clamp-1 line-clamp-2 line-clamp-3
+                `line-clamp-${maxLines}`,
+                className?.root,
+                className?.content
+              ),
+            }}
+          >
+            <Markdown
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={{ root: className?.markdown, img: 'max-h-16' }}
+            />
+          </Prose>
+        ) : (
+          <div
+            className={twMerge(
               `line-clamp-${maxLines}`,
               className?.root,
               className?.content
-            ),
-          }}
-        >
-          <Markdown
-            content={children
-              .toString()
-              .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-            className={{ root: className?.markdown, img: 'max-h-16' }}
-          />
-        </Prose>
+            )}
+          >
+            {children}
+          </div>
+        )}
       </Tooltip>
     )
   }
@@ -111,7 +128,7 @@ function Ellipsis({
   }
 
   // compute shortened output based on either maxLength or endIndex
-  const shortenedParsedContent = (
+  const shortenedParsedContent = withMarkdown ? (
     <Prose
       className={{
         root: twMerge(
@@ -128,6 +145,10 @@ function Ellipsis({
         className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     </Prose>
+  ) : (
+    <div className={className?.content}>
+      {children.toString().substr(0, endIndex || maxLength)}
+    </div>
   )
 
   // return full content if it was shorter than the set maxLength or if endIndex = children.length
@@ -137,11 +158,13 @@ function Ellipsis({
     typeof children !== 'string' ||
     children.length === endIndex
   ) {
-    return (
+    return withMarkdown ? (
       <Markdown
         content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
         className={{ root: className?.markdown, img: 'max-h-36' }}
       />
+    ) : (
+      <div className={className?.content}>{children}</div>
     )
   }
 
@@ -154,13 +177,17 @@ function Ellipsis({
         <Tooltip
           delay={1000}
           tooltip={
-            <Markdown
-              withModal={false}
-              content={children
-                .toString()
-                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={{ root: className?.markdown }}
-            />
+            withMarkdown ? (
+              <Markdown
+                withModal={false}
+                content={children
+                  .toString()
+                  .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+                className={{ root: className?.markdown }}
+              />
+            ) : (
+              children
+            )
           }
           className={{
             tooltip: twMerge(

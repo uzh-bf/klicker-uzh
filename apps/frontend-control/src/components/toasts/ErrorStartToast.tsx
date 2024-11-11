@@ -13,7 +13,7 @@ function ErrorStartToast({ open, setOpen }: ErrorStartToastProps) {
     <Toast
       dismissible
       openExternal={open}
-      setOpenExternal={setOpen}
+      onCloseExternal={() => setOpen(false)}
       type="error"
       duration={5000}
     >

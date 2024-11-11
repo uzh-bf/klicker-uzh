@@ -1,7 +1,11 @@
-import { Course, MicroLearning, PushSubscription } from '@klicker-uzh/prisma'
+import type {
+  Course,
+  MicroLearning,
+  PushSubscription,
+} from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 // import webpush, { WebPushError } from 'web-push'
-import { Context, ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 interface SubscriptionObjectInput {
   endpoint: string

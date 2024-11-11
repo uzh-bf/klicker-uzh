@@ -13,7 +13,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import CourseSelectionMonitor from '../CourseSelectMonitor'
+import CourseSelectionMonitorPracticeQuiz from '../CourseSelectionMonitorPracticeQuiz'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
@@ -49,17 +49,19 @@ function PracticeQuizSettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setTouched }) => (
+      {({ values, isValid, isSubmitting, setTouched, setValues }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
             activeStep={activeStep}
             setStepValidity={setStepValidity}
           />
-          <CourseSelectionMonitor
+          <CourseSelectionMonitorPracticeQuiz
             values={values}
             gamifiedCourses={gamifiedCourses}
             setCourseGamified={setCourseGamified}
+            setTouched={setTouched}
+            setValues={setValues}
           />
           <div className="flex h-full w-full flex-col justify-between gap-1">
             <div className="flex flex-col justify-center gap-4 md:flex-row">

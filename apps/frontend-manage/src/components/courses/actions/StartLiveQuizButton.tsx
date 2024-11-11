@@ -13,12 +13,13 @@ interface StartLiveQuizButtonProps {
 function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [startSession] = useMutation(StartSessionDocument)
+  const [startSession, { loading: startingSession }] =
+    useMutation(StartSessionDocument)
 
   return (
     <Button
       basic
-      className={{ root: 'text-primary-100' }}
+      disabled={startingSession}
       onClick={async () => {
         try {
           await startSession({
@@ -29,6 +30,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
           console.log(error)
         }
       }}
+      className={{ root: 'text-primary-100' }}
       data={{ cy: `start-live-quiz-${liveQuiz.name}` }}
     >
       <Button.Icon>

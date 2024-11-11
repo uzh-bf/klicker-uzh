@@ -53,7 +53,11 @@ function MultiplierSelector({
         },
       ]}
       data={{ cy: 'select-multiplier' }}
-      className={{ ...className, tooltip: 'z-20' }}
+      className={{
+        ...className,
+        tooltip: 'z-20',
+        select: { trigger: 'h-10 w-max' },
+      }}
     />
   )
 }

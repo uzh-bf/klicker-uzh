@@ -1,10 +1,12 @@
 import { useSuspenseQuery } from '@apollo/client'
 import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useField } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Creatable from 'react-select/creatable'
 
 function SuspendedTagInput() {
+  const t = useTranslations()
   const [field, _, helpers] = useField<string[]>('tags')
 
   const { data } = useSuspenseQuery(GetUserTagsDocument)
@@ -35,6 +37,7 @@ function SuspendedTagInput() {
         helpers.setValue(newValue.map((tag) => tag.value))
       }
       onCreateOption={(newTag) => helpers.setValue([...field.value, newTag])}
+      placeholder={t('manage.questionPool.selectOrType')}
     />
   )
 }

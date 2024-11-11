@@ -19,7 +19,9 @@ function TokenGeneration() {
   const [token, setToken] = useState<string>('')
   const [endTime, setEndTime] = useState<Dayjs>(dayjs())
 
-  const [generateLoginToken] = useMutation(GenerateLoginTokenDocument)
+  const [generateLoginToken, { loading: generatingToken }] = useMutation(
+    GenerateLoginTokenDocument
+  )
   const { data: tokenData } = useQuery(GetLoginTokenDocument)
 
   useEffect(() => {
@@ -54,6 +56,7 @@ function TokenGeneration() {
           })}
         </div>
         <Button
+          loading={generatingToken}
           data={{ cy: 'generate-token' }}
           onClick={async () => {
             const result = await generateLoginToken()

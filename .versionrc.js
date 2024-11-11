@@ -12,8 +12,6 @@ module.exports = {
     'apps/backend-docker/',
     'apps/func-incoming-responses/',
     'apps/func-response-processor/',
-    'apps/func-migration-v2-export/',
-    'apps/func-migration-v3-import/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
     'apps/frontend-control/',

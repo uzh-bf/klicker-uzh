@@ -5,7 +5,6 @@ import {
   GetMicroLearningDocument,
   GetParticipationDocument,
   MarkMicroLearningCompletedDocument,
-  MicroLearning,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -31,13 +30,12 @@ function MicrolearningEvaluation() {
     skip: !data?.microLearning?.course?.id,
   })
 
-  const [markMicrolearningCompleted] = useMutation(
-    MarkMicroLearningCompletedDocument
-  )
+  const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
+    useMutation(MarkMicroLearningCompletedDocument)
 
   const microlearning = data?.microLearning
   const aggregatedResults = useStackEvaluationAggregation({
-    microlearning: microlearning as MicroLearning,
+    microlearning: microlearning,
   })
 
   if (loading || !microlearning) {
@@ -117,6 +115,7 @@ function MicrolearningEvaluation() {
         {participation?.getParticipation && (
           <div className="text-right">
             <Button
+              loading={markingAsCompleted}
               onClick={async () => {
                 await markMicrolearningCompleted({
                   variables: {

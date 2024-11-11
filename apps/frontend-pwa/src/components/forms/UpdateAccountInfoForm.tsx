@@ -57,7 +57,7 @@ function UpdateAccountInfoForm({
           .max(15, t('pwa.profile.usernameMaxLength', { length: '15' }))
           .test(
             'isUsernameAvailable',
-            t('pwa.createAccount.usernameAvailability'),
+            t('shared.generic.usernameAvailability'),
             () =>
               typeof isUsernameAvailable === 'undefined' ||
               isUsernameAvailable === true
@@ -165,6 +165,9 @@ function UpdateAccountInfoForm({
                         })
                       return result?.checkParticipantNameAvailable ?? false
                     }}
+                    unavailableMessage={t(
+                      'shared.generic.usernameAvailability'
+                    )}
                     className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />

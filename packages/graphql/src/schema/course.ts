@@ -1,28 +1,26 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
-import { GroupActivityRef, IGroupActivity } from './groupActivity.js'
-import { IMicroLearning, MicroLearningRef } from './microLearning.js'
-import type {
-  IGroupAssignmentPoolEntryRef,
-  IParticipant,
-  IParticipantGroup,
-  IParticipation,
-} from './participant.js'
+import { type IGroupActivity, GroupActivityRef } from './groupActivity.js'
+import { type IMicroLearning, MicroLearningRef } from './microLearning.js'
 import {
+  type IGroupAssignmentPoolEntryRef,
+  type IParticipant,
+  type IParticipantGroup,
+  type IParticipation,
   GroupAssignmentPoolEntryRef,
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
-import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
-import type { ISession } from './session.js'
-import { SessionRef } from './session.js'
-import { IUser, UserRef } from './user.js'
+import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
+import { type ISession, SessionRef } from './session.js'
+import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
   numOfActiveParticipants?: number
+  numOfParticipantGroups?: number
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
@@ -54,6 +52,9 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
+      nullable: true,
+    }),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups', {
       nullable: true,
     }),
 
@@ -131,6 +132,29 @@ export const Course = builder.objectType(CourseRef, {
   }),
 })
 
+export interface ICourseSummary {
+  numOfParticipations: number
+  numOfLiveQuizzes: number
+  numOfPracticeQuizzes: number
+  numOfMicroLearnings: number
+  numOfGroupActivities: number
+  numOfLeaderboardEntries: number
+  numOfParticipantGroups: number
+}
+export const CourseSummaryRef =
+  builder.objectRef<ICourseSummary>('CourseSummary')
+export const CourseSummary = CourseSummaryRef.implement({
+  fields: (t) => ({
+    numOfParticipations: t.exposeInt('numOfParticipations'),
+    numOfLiveQuizzes: t.exposeInt('numOfLiveQuizzes'),
+    numOfPracticeQuizzes: t.exposeInt('numOfPracticeQuizzes'),
+    numOfMicroLearnings: t.exposeInt('numOfMicroLearnings'),
+    numOfGroupActivities: t.exposeInt('numOfGroupActivities'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups'),
+  }),
+})
+
 export interface IStudentCourse extends DB.Course {
   owner: IUser
 }
@@ -150,16 +174,25 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
   }),
 })
 
-export interface ILeaderboardEntry extends DB.LeaderboardEntry {
+export interface ILeaderboardEntry
+  extends Omit<
+    DB.LeaderboardEntry,
+    'courseId' | 'sessionId' | 'liveQuizId' | 'type' | 'sessionParticipationId'
+  > {
   username: string
-  email: string
+  email?: string | null
   avatar?: string | null
   rank: number
   lastBlockOrder?: number
   isSelf?: boolean
   level: number
-  participant: IParticipant
-  participation: IParticipation
+  participant?: IParticipant
+  participation?: IParticipation
+  courseId?: string | null
+  sessionId?: string | null
+  liveQuizId?: string | null
+  sessionParticipationId?: string | null
+  type?: string | null // TODO: specify custom leaderboard type enum here
 }
 export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
@@ -183,9 +216,9 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
       nullable: true,
     }),
     participantId: t.exposeString('participantId'),
-
     participation: t.expose('participation', {
       type: ParticipationRef,
+      nullable: true,
     }),
   }),
 })

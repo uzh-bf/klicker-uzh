@@ -1,5 +1,5 @@
+import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import {
-  faClock,
   faCode,
   faPlay,
   faStop,
@@ -7,42 +7,19 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, H1 } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
-
-import durationPlugin from 'dayjs/plugin/duration'
-
-import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
-import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
-import SessionBlock from './SessionBlock'
+import RuntimeCounter from './RuntimeCounter'
+import SessionBlock, { SessionTimelineBlock } from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
 
-dayjs.extend(durationPlugin)
-
-const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
-  const start = dayjs(startedAt)
-  const duration = dayjs.duration(dayjs().diff(start))
-
-  const days = duration.days()
-  const hours = `0${duration.hours()}`.slice(-2)
-  const minutes = `0${duration.minutes()}`.slice(-2)
-  const seconds = `0${duration.seconds()}`.slice(-2)
-
-  if (days > 0) {
-    return `${days}d ${hours}:${minutes}:${seconds}`
-  }
-  return `${hours}:${minutes}:${seconds}`
-}
-
-interface Props {
-  shortname: string
-  blocks?: ISessionBlock[]
+interface SessionTimelineProps {
+  blocks?: SessionTimelineBlock[]
   sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
@@ -51,10 +28,10 @@ interface Props {
   isEvaluationPublic?: boolean
   sessionId: string
   startedAt?: string
+  loading?: boolean
 }
 
 function SessionTimeline({
-  shortname,
   sessionId,
   blocks = [],
   sessionName,
@@ -64,14 +41,14 @@ function SessionTimeline({
   handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
-}: Props): React.ReactElement {
+  loading,
+}: SessionTimelineProps): React.ReactElement {
   const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
   const { locale } = useRouter()
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [inCooldown, setInCooldown] = useState<boolean>(false)
-  const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
   const [buttonState, setButtonState] = useState<
@@ -81,22 +58,11 @@ function SessionTimeline({
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
 
-  const startingTime = runtime.includes('d')
-    ? dayjs(startedAt).format('DD.MM HH:mm:ss')
-    : dayjs(startedAt).format('HH:mm:ss')
-
-  useEffect(() => {
-    const currentRuntime = setInterval(() => {
-      setRuntime(calculateRuntime({ startedAt }))
-    }, 1000)
-    return () => clearInterval(currentRuntime)
-  }, [runtime, startedAt])
-
   // basic session timeline logic - identifying the currently active block as well as the state of the session
   useEffect(() => {
     if (blocks && blocks.length > 0) {
       setActiveBlockId(
-        blocks.find((block) => block.status === 'ACTIVE')?.id || -1
+        blocks.find((block) => block.status === 'ACTIVE')?.id ?? -1
       )
       if (blocks.every((block) => block.status === 'EXECUTED')) {
         setLastActiveBlockId(blocks[blocks.length - 1].id)
@@ -142,12 +108,7 @@ function SessionTimeline({
       <div className="flex flex-1 flex-row flex-wrap items-end justify-between md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end gap-8">
           <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {sessionName}</H1>
-          <div>
-            <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
-          </div>
-          <div>
-            <FontAwesomeIcon icon={faPlay} className="mr-1" /> {runtime}
-          </div>
+          <RuntimeCounter startedAt={startedAt} />
         </div>
 
         <div className="mt-1.5 flex flex-row flex-wrap items-end gap-2 sm:mt-0">
@@ -173,7 +134,7 @@ function SessionTimeline({
                 questions={blocks.flatMap((block) => block.instances ?? [])}
               />
             )}
-            <SessionQRModal sessionId={sessionId} shortname={shortname} />
+            <SessionQRModal sessionId={sessionId} />
             <a
               className="flex-1"
               href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
@@ -218,6 +179,7 @@ function SessionTimeline({
           {isFeedbackSession && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
+                loading={loading}
                 className={{
                   root: twMerge('bg-uzh-red-100 h-10 text-white'),
                 }}
@@ -282,6 +244,7 @@ function SessionTimeline({
               {t('manage.cockpit.abortSession')}
             </Button>
             <Button
+              loading={loading}
               className={{
                 root: twMerge(
                   (buttonState === 'firstBlock' ||
@@ -319,8 +282,8 @@ function SessionTimeline({
             </Button>
           </div>
           <CancelSessionModal
-            isCancellationModalOpen={cancelSessionModal}
-            setIsCancellationModalOpen={setCancelSessionModal}
+            open={cancelSessionModal}
+            setOpen={setCancelSessionModal}
             sessionId={sessionId}
             title={sessionName}
           />

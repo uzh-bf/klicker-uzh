@@ -14,6 +14,24 @@ services:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  reverse_proxy_macos:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
 
   reverse_proxy_wsl:
     image: docker.io/library/traefik:v2.10
@@ -93,9 +111,6 @@ services:
       REDIS_PORT: 6379
       # BLOB_STORAGE_ACCESS_KEY: ''
       # BLOB_STORAGE_ACCOUNT_NAME: ''
-      # LISTMONK_TEMPLATE_MIGRATION_REQUEST: ''
-      # LISTMONK_URL: ''
-      # LISTMONK_USER: ''
       # MIGRATION_SERVICE_BUS_QUEUE_NAME: ''
       # NOTIFICATION_SECRET: ''
       # REDIS_CACHE_TLS: 'true'
@@ -123,7 +138,22 @@ services:
       - klicker_data:/var/lib/postgresql/data
       - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-    # redis instance to support session execution
+  # main database
+  postgres_diff:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod
+    ports:
+      - 5433:5432
+    networks:
+      - klicker
+    volumes:
+      - klicker_data_diff:/var/lib/postgresql/data
+      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # redis instance to support session execution
   redis_exec:
     image: docker.io/library/redis:7
     ports:
@@ -150,58 +180,13 @@ services:
     networks:
       - klicker
 
-  # service for transactional emails and newsletter campaigns
-  # uses mailhog to send transactional emails during development
-  listmonk:
-    image: docker.io/listmonk/listmonk:latest
-    ports:
-      - 9000:9000
-    environment:
-      - TZ=Europe/Zurich
-    depends_on:
-      listmonk_db:
-        condition: service_healthy
-    volumes:
-      - ./util/listmonk-config.toml:/listmonk/config.toml
-    networks:
-      - klicker
-    command: [sh, -c, 'yes | ./listmonk --install && ./listmonk']
-
-  listmonk_db:
-    image: docker.io/library/postgres:13
-    environment:
-      - POSTGRES_PASSWORD=listmonk
-      - POSTGRES_USER=listmonk
-      - POSTGRES_DB=listmonk
-    volumes:
-      - listmonk_data:/var/lib/postgresql/data
-    networks:
-      - klicker
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U listmonk']
-      interval: 10s
-      timeout: 5s
-      retries: 6
-
-  mongodb:
-    image: mongo:4.0
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: klicker
-      MONGO_INITDB_ROOT_PASSWORD: klicker
-    ports:
-      - 27017:27017
-    networks:
-      - klicker
-    volumes:
-      - /data/db
-
 networks:
   klicker:
     driver: bridge
 
 volumes:
-  listmonk_data:
   klicker_data:
+  klicker_data_diff:
   klicker_lti_data:
   redis_data:
   lti_data:

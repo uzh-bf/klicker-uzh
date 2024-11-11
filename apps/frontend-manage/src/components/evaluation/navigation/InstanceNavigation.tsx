@@ -69,7 +69,7 @@ function InstanceNavigation({
         }}
         className={{
           root: 'z-20 h-[2.65rem]',
-          trigger: 'm-0 h-full rounded-none border-none shadow-none',
+          trigger: 'm-0 h-full w-max rounded-none border-none shadow-none',
         }}
         value={String(activeInstance)}
         data={{ cy: 'evaluate-question-select' }}

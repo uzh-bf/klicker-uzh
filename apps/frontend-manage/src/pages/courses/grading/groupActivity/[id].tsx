@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
-  GroupActivityInstance,
   GroupActivityStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -51,7 +50,7 @@ function GroupActivityGrading() {
         .reduce((acc, element) => {
           return (
             acc +
-            (element.options?.pointsMultiplier || 1) * MAX_POINTS_PER_QUESTION
+            (element.options?.pointsMultiplier ?? 1) * MAX_POINTS_PER_QUESTION
           )
         }, 0)
     }, [groupActivity]) ?? 0
@@ -62,8 +61,6 @@ function GroupActivityGrading() {
       [...(groupActivity?.activityInstances || [])].sort((a, b) => {
         if (a.decisions && !b.decisions) return -1
         if (!a.decisions && b.decisions) return 1
-        if (a.results && !b.results) return 1
-        if (!a.results && b.results) return -1
         if (a.decisionsSubmittedAt && b.decisionsSubmittedAt)
           return dayjs(a.decisionsSubmittedAt).diff(
             dayjs(b.decisionsSubmittedAt)
@@ -104,13 +101,17 @@ function GroupActivityGrading() {
               />
             ) : (
               <>
-                {submissions.map((submission) => (
+                {submissions.map((submission, ix) => (
                   <GroupActivitySubmission
                     key={submission.id}
-                    submission={submission as GroupActivityInstance}
+                    activityIndex={ix}
+                    submission={submission}
                     selectedSubmission={selectedSubmission}
                     selectSubmission={(submissionId: number) => {
-                      if (currentEditing) {
+                      if (
+                        currentEditing &&
+                        groupActivity.status !== GroupActivityStatus.Graded
+                      ) {
                         setSwitchingModal(true)
                         setNextSubmission(submissionId)
                       } else {
@@ -159,11 +160,9 @@ function GroupActivityGrading() {
                   element.elementType !== ElementType.Content &&
                   element.elementType !== ElementType.Flashcard
               )}
-              submission={
-                submissions.find(
-                  (submission) => submission.id === selectedSubmission
-                ) as GroupActivityInstance
-              }
+              submission={submissions.find(
+                (submission) => submission.id === selectedSubmission
+              )}
               gradingCompleted={
                 groupActivity.status === GroupActivityStatus.Graded
               }

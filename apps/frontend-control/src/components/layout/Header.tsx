@@ -12,13 +12,14 @@ interface HeaderProps {
 function Header({ title }: HeaderProps) {
   const router = useRouter()
   const { pathname, asPath, query } = router
-  const [logoutUser] = useMutation(LogoutUserDocument)
+  const [logoutUser, { loading: loggingOut }] = useMutation(LogoutUserDocument)
 
   return (
     <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
       <div className="line-clamp-1 text-lg font-bold">{title}</div>
       <div className="flex flex-row gap-4">
         <Select
+          basic
           value={router.locale}
           items={[
             { value: 'de', label: 'DE', data: { cy: 'language-de' } },
@@ -30,17 +31,15 @@ function Header({ title }: HeaderProps) {
             })
           }
           className={{
-            trigger:
-              'rounded-none border-b border-solid p-0.5 pb-0 text-white hover:bg-transparent hover:text-white',
+            trigger: 'h-max w-max text-white',
           }}
           data={{ cy: 'language-select' }}
-          basic
         />
         <Button
           basic
+          disabled={loggingOut}
           onClick={async () => {
             const userIdLogout = await logoutUser()
-            // TODO: proper error handling
             userIdLogout.data?.logoutUser
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
