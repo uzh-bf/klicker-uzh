@@ -193,7 +193,7 @@ function Session({ session }: SessionProps) {
                     disabled={startingQuiz}
                     onClick={async () => {
                       await startSession()
-                      router.push(`sessions/${session.id}/cockpit`)
+                      router.push(`quizzes/${session.id}/cockpit`)
                     }}
                     data={{ cy: `start-session-${session.name}` }}
                   >
