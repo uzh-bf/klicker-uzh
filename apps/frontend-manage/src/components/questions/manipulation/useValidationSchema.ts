@@ -206,6 +206,7 @@ function useOptionsSchemaFreeText() {
           .required(t('manage.formErrors.enterSolution'))
           .min(1, t('manage.formErrors.enterSolution'))
       )
+      .nullable()
       .when('hasSampleSolution', {
         is: true,
         then: (schema) =>
