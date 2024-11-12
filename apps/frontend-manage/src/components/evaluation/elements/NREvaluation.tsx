@@ -5,12 +5,12 @@ import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import NumericalSidebar from './NumericalSidebar'
 
-import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@uzh-bf/design-system/dist/future'
+import { useState } from 'react'
 
 interface NREvaluationProps {
   instanceEvaluation: NumericalElementInstanceEvaluation
@@ -25,18 +25,15 @@ function NREvaluation({
   chartType,
   showSolution,
 }: NREvaluationProps) {
-  const [isCollapsed, setIsCollapsed] = useLocalStorage(
-    `evaluation-${instanceEvaluation.id}-isCollapsed`,
-    false
-  )
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel
-        defaultSize={isCollapsed ? 100 : 80}
-        minSize={50}
-        className="px-4"
-      >
+    <ResizablePanelGroup
+      autoSaveId={`evaluation-${instanceEvaluation.id}`}
+      key={`panel-group-${instanceEvaluation.id}`}
+      direction="horizontal"
+    >
+      <ResizablePanel defaultSize={80} minSize={50} className="px-4">
         <ElementChart
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
@@ -46,8 +43,7 @@ function NREvaluation({
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel
-        key={`parent-${instanceEvaluation.id}-${isCollapsed ? 'collapsed' : 'expanded'}`}
-        defaultSize={isCollapsed ? 0 : 20}
+        defaultSize={20}
         minSize={10}
         collapsible
         collapsedSize={0}

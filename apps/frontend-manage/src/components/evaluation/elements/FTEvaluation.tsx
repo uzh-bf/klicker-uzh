@@ -5,12 +5,12 @@ import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import FTSidebar from './FTSidebar'
 
-import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@uzh-bf/design-system/dist/future'
+import { useState } from 'react'
 
 interface FTEvaluationProps {
   instanceEvaluation: FreeElementInstanceEvaluation
@@ -25,20 +25,17 @@ function FTEvaluation({
   chartType,
   showSolution,
 }: FTEvaluationProps) {
-  const [isCollapsed, setIsCollapsed] = useLocalStorage(
-    `evaluation-${instanceEvaluation.id}-isCollapsed`,
-    false
-  )
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <>
       {showSolution ? (
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel
-            defaultSize={isCollapsed ? 100 : 80}
-            minSize={50}
-            className="px-4"
-          >
+        <ResizablePanelGroup
+          autoSaveId={`evaluation-${instanceEvaluation.id}`}
+          key={`panel-group-${instanceEvaluation.id}`}
+          direction="horizontal"
+        >
+          <ResizablePanel defaultSize={80} minSize={50} className="px-4">
             <ElementChart
               chartType={chartType}
               instanceEvaluation={instanceEvaluation}
@@ -48,8 +45,7 @@ function FTEvaluation({
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel
-            key={`parent-${instanceEvaluation.id}-${isCollapsed ? 'collapsed' : 'expanded'}`}
-            defaultSize={isCollapsed ? 0 : 20}
+            defaultSize={20}
             minSize={10}
             collapsible
             collapsedSize={0}
