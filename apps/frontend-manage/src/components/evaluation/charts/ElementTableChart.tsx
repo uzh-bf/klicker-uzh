@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
 import useEvaluationTableData from '../hooks/useEvaluationTableData'
@@ -29,7 +28,6 @@ function ElementTableChart({
   textSize,
 }: ElementTableChartProps) {
   const t = useTranslations()
-  const ref = useRef<{ reset: () => void }>(null)
 
   const supportedElementTypes = [
     ElementType.Sc,
