@@ -72,8 +72,6 @@ const INITIAL_STATE: FilterSortType = {
 }
 
 function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
-  console.log(state, action)
-
   switch (action.type) {
     case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is untagged
