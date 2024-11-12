@@ -98,7 +98,7 @@ async function run() {
       console.log('PROCESSING INSTANCE', instanceCounter, 'OF', numOfInstances)
 
       // update the instance
-      checkAndUpdateInstance({ instance })
+      await checkAndUpdateInstance({ prisma, instance })
     }
 
     // increment the loop counter
@@ -107,9 +107,11 @@ async function run() {
   }
 }
 
-function checkAndUpdateInstance({
+async function checkAndUpdateInstance({
+  prisma,
   instance,
 }: {
+  prisma: PrismaClient
   instance: ElementInstance & {
     element: Element
     responses: (QuestionResponse & { participation: Participation })[]
@@ -1214,9 +1216,7 @@ function checkAndUpdateInstance({
   //     ...responseUpdates.map((update) =>
   //       prisma.questionResponse.update(update)
   //     ),
-  //     ...instanceUpdates.map((update) =>
-  //       prisma.elementInstance.update(update)
-  //     ),
+  //     ...instanceUpdates.map((update) => prisma.elementInstance.update(update)),
   //     ...Object.entries(participantUpdates).map(
   //       ([participantId, updatedData]) =>
   //         prisma.participant.update({
