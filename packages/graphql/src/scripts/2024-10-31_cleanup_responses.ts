@@ -767,7 +767,6 @@ function checkAndUpdateInstance({
             .add(acc.interval, 'day')
             .toDate()
 
-          // TODO: replace this through helper function once available
           // update aggregated responses
           const value = String(parseFloat(detail.response.value))
           const MD5 = createHash('md5')
@@ -1000,7 +999,6 @@ function checkAndUpdateInstance({
             .add(acc.interval, 'day')
             .toDate()
 
-          // TODO: replace this through helper function once available
           // update aggregated responses
           const value = toLowerCase(detail.response.value.trim())
           const MD5 = createHash('md5')
