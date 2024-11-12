@@ -83,6 +83,9 @@ async function run() {
         element: true,
         instanceStatistics: true,
       },
+      orderBy: {
+        id: 'asc',
+      },
       take: batchSize,
       skip: loopCounter * batchSize,
     })
@@ -229,16 +232,13 @@ async function checkAndUpdateInstance({
         const instanceParticipants =
           instanceUniqueParticipantCount + (acc.firstAnswer ? 0 : 1)
 
-        // flooring operation simulates database storage update -> int precition
-        instanceAverageTimeSpent = Math.floor(
+        instanceAverageTimeSpent =
           ((instanceAverageTimeSpent ?? 0) * instanceParticipants -
             acc.responseAvgTime +
             avgResponseTime) /
-            (instanceUniqueParticipantCount + 1)
-        )
+          (instanceUniqueParticipantCount + 1)
 
-        // flooring operation simulates database storage update -> int precition
-        acc.responseAvgTime = Math.floor(avgResponseTime)
+        acc.responseAvgTime = avgResponseTime
         acc.answers += 1
         acc.firstAnswer = false
         return acc
@@ -1289,7 +1289,7 @@ function computeDetailUpdate({
     // }
     if (
       typeof newValues.timeSpent !== 'undefined' &&
-      detail.timeSpent !== newValues.timeSpent
+      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-5
     ) {
       console.log(
         'TimeSpent not identical:',
@@ -1315,7 +1315,7 @@ function computeDetailUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.timeSpent !== 'undefined' &&
-      detail.timeSpent !== newValues.timeSpent)
+      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-5)
 
   if (updateReq) {
     // if (verbose) {
@@ -1414,7 +1414,7 @@ function computeResponseUpdate({
     // }
     if (
       typeof newValues.averageTimeSpent !== 'undefined' &&
-      response.averageTimeSpent !== newValues.averageTimeSpent
+      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-5
     ) {
       console.log(
         'averageTimeSpent not identical:',
@@ -1562,7 +1562,7 @@ function computeResponseUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.averageTimeSpent !== 'undefined' &&
-      response.averageTimeSpent !== newValues.averageTimeSpent)
+      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-5)
   updateReq =
     updateReq ||
     (typeof newValues.correctCount !== 'undefined' &&
@@ -1771,7 +1771,8 @@ function computeInstanceUpdate({
       // }
       if (
         typeof newValues.averageTimeSpent !== 'undefined' &&
-        stats.averageTimeSpent !== newValues.averageTimeSpent
+        Math.abs((stats.averageTimeSpent ?? 0) - newValues.averageTimeSpent) >
+          1e-5
       ) {
         console.log(
           'Average time spent not identical:',
@@ -1826,7 +1827,8 @@ function computeInstanceUpdate({
     updateReq =
       updateReq ||
       (typeof newValues.averageTimeSpent !== 'undefined' &&
-        stats.averageTimeSpent !== newValues.averageTimeSpent)
+        Math.abs((stats.averageTimeSpent ?? 0) - newValues.averageTimeSpent) >
+          1e-5)
 
     if (updateReq) {
       // if (verbose) {

@@ -136,8 +136,8 @@ model InstanceStatistics {
   lastWrongCount           Int?
 
   // only logged in participants impact the following counts (consistent with results and counts above)
-  uniqueParticipantCount Int  @default(0)
-  averageTimeSpent       Int? // computed based on averageTimeSpent per participant
+  uniqueParticipantCount Int    @default(0)
+  averageTimeSpent       Float? // computed based on averageTimeSpent per participant
 
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int             @id
