@@ -1769,7 +1769,10 @@ function computeInstanceUpdate({
       //     instance.id
       //   )
       // }
-      if (stats.averageTimeSpent !== newValues.averageTimeSpent) {
+      if (
+        typeof newValues.averageTimeSpent !== 'undefined' &&
+        stats.averageTimeSpent !== newValues.averageTimeSpent
+      ) {
         console.log(
           'Average time spent not identical:',
           stats.averageTimeSpent,
