@@ -1,3 +1,5 @@
+import pandas as pd
+
 from .get_participant_responses import get_participant_responses
 from .compute_correctness import compute_correctness
 from .aggregate_analytics import aggregate_analytics
@@ -14,9 +16,7 @@ def compute_participant_analytics(
 
     if df_details is None:
         print(f"No participant responses found for {start_date} to {end_date}.")
-        del df_details
-        del df_element_instances
-        return
+        return pd.DataFrame(), pd.DataFrame()
 
     # Compute participant analytics (score/xp counts and correctness statistics)
     df_analytics = aggregate_analytics(df_details)
@@ -24,7 +24,4 @@ def compute_participant_analytics(
     # Save the aggreagted analytics into the database
     save_participant_analytics(db, df_analytics, timestamp, analytics_type)
 
-    # Delete the dataframes to avoid conflicts in the next iteration
-    del df_details
-    del df_element_instances
-    del df_analytics
+    return df_details, df_analytics
