@@ -3,10 +3,13 @@ import {
   computeSimpleAwardedPoints,
 } from '@klicker-uzh/grading'
 import {
+  Element,
   ElementInstance,
   ElementInstanceType,
   ElementType,
   InstanceStatistics,
+  Participant,
+  Participation,
   PrismaClient,
   QuestionResponse,
   QuestionResponseDetail,
@@ -45,11 +48,9 @@ const verbose = true
 // ? update the question responses and question response details
 async function run() {
   const prisma = new PrismaClient()
-  const MD5 = createHash('md5')
-  let counter = 0
 
-  // fetch all element instances with their corresponding responses
-  const instances = await prisma.elementInstance.findMany({
+  // count number of available instances for logging
+  const numOfInstances = await prisma.elementInstance.count({
     where: {
       type: {
         in: [
@@ -58,1177 +59,1181 @@ async function run() {
         ],
       },
     },
-    include: {
-      responses: { include: { participation: true } },
-      detailResponses: { include: { participant: true } },
-      element: true,
-      instanceStatistics: true,
-    },
-    take: 100,
-    skip: 200,
   })
 
-  for (const instance of instances) {
-    counter += 1
-    console.log('PROCESSING INSTANCE', counter, 'OF', instances.length)
+  // count loops to update instances with limited query size
+  const batchSize = 100
+  let loopCounter = 0
+  let instanceCounter = 0
 
-    // ! Initialization
-    const emptyInstanceResults = getInitialElementResults(instance.element)
-    let instanceResults = { ...emptyInstanceResults }
+  while (true) {
+    // fetch all element instances with their corresponding responses
+    const instances = await prisma.elementInstance.findMany({
+      where: {
+        type: {
+          in: [
+            ElementInstanceType.PRACTICE_QUIZ,
+            ElementInstanceType.MICROLEARNING,
+          ],
+        },
+      },
+      include: {
+        responses: { include: { participation: true } },
+        detailResponses: { include: { participant: true } },
+        element: true,
+        instanceStatistics: true,
+      },
+      take: batchSize,
+      skip: loopCounter * batchSize,
+    })
 
-    // ! Response and Result Updates
-    const detailUpdates: any[] = []
-    const responseUpdates: any[] = []
-    const instanceUpdates: any[] = []
-    const participantUpdates: Record<
+    // return if no more instances are available
+    if (instances.length === 0) {
+      console.log('ALL INSTANCES HAVE BEEN UPDATED')
+      break
+    }
+
+    for (const instance of instances) {
+      instanceCounter += 1
+      console.log('PROCESSING INSTANCE', instanceCounter, 'OF', numOfInstances)
+
+      // update the instance
+      checkAndUpdateInstance({ instance })
+    }
+
+    // increment the loop counter
+    console.log('SUCCESSFULLY PROCESSED BATCH', loopCounter + 1)
+    loopCounter += 1
+  }
+}
+
+function checkAndUpdateInstance({
+  instance,
+}: {
+  instance: ElementInstance & {
+    element: Element
+    responses: (QuestionResponse & { participation: Participation })[]
+    detailResponses: (QuestionResponseDetail & { participant: Participant })[]
+    instanceStatistics?: InstanceStatistics | null
+  }
+}) {
+  // ! Initialization
+  const emptyInstanceResults = getInitialElementResults(instance.element)
+  let instanceResults = { ...emptyInstanceResults }
+
+  // ! Response and Result Updates
+  const detailUpdates: any[] = []
+  const responseUpdates: any[] = []
+  const instanceUpdates: any[] = []
+  const participantUpdates: Record<
+    string,
+    {
+      additionalXp?: number
+    }
+  > = {}
+
+  // group responses and details by participant (format: { participantId: { response, detail[] }, ... })
+  const participantResponses = instance.responses.reduce<
+    Record<
       string,
       {
-        additionalXp?: number
+        response: QuestionResponse
+        details: QuestionResponseDetail[]
+        participationActive: boolean
       }
-    > = {}
+    >
+  >((acc, response) => {
+    // find all details for this response (same participant and same instance)
+    const responseDetails = instance.detailResponses.filter(
+      (detail) =>
+        detail.elementInstanceId === instance.id &&
+        detail.participantId === response.participantId
+    )
 
-    // group responses and details by participant (format: { participantId: { response, detail[] }, ... })
-    const participantResponses = instance.responses.reduce<
-      Record<
-        string,
-        {
-          response: QuestionResponse
-          details: QuestionResponseDetail[]
-          participationActive: boolean
-        }
-      >
-    >((acc, response) => {
-      // find all details for this response (same participant and same instance)
-      const responseDetails = instance.detailResponses.filter(
-        (detail) =>
-          detail.elementInstanceId === instance.id &&
-          detail.participantId === response.participantId
-      )
+    // if there are no details for this response, skip it
+    if (responseDetails.length === 0) return acc
 
-      // if there are no details for this response, skip it
-      if (responseDetails.length === 0) return acc
+    // add response and details to the accumulator
+    acc[response.participantId] = {
+      response,
+      details: sortBy(responseDetails, [prop('createdAt'), 'asc']),
+      participationActive: response.participation?.isActive ?? false,
+    }
+    return acc
+  }, {})
 
-      // add response and details to the accumulator
-      acc[response.participantId] = {
-        response,
-        details: sortBy(responseDetails, [prop('createdAt'), 'asc']),
-        participationActive: response.participation?.isActive ?? false,
-      }
-      return acc
-    }, {})
+  // track counts on instance level for instance results and statistics update
+  let instanceCorrectCount = 0
+  let instancePartialCorrectCount = 0
+  let instanceWrongCount = 0
+  let instanceFirstCorrectCount: number | undefined = undefined
+  let instanceFirstPartialCorrectCount: number | undefined = undefined
+  let instanceFirstWrongCount: number | undefined = undefined
+  let instanceLastCorrectCount: number | undefined = undefined
+  let instanceLastPartialCorrectCount: number | undefined = undefined
+  let instanceLastWrongCount: number | undefined = undefined
 
-    // track counts on instance level for instance results and statistics update
-    let instanceCorrectCount = 0
-    let instancePartialCorrectCount = 0
-    let instanceWrongCount = 0
-    let instanceFirstCorrectCount: number | undefined = undefined
-    let instanceFirstPartialCorrectCount: number | undefined = undefined
-    let instanceFirstWrongCount: number | undefined = undefined
-    let instanceLastCorrectCount: number | undefined = undefined
-    let instanceLastPartialCorrectCount: number | undefined = undefined
-    let instanceLastWrongCount: number | undefined = undefined
+  let instanceUniqueParticipantCount = 0
+  let instanceAverageTimeSpent: number | undefined = undefined
 
-    let instanceUniqueParticipantCount = 0
-    let instanceAverageTimeSpent: number | undefined = undefined
+  for (const [
+    participantId,
+    { response, details, participationActive },
+  ] of Object.entries(participantResponses)) {
+    // initialize fields for question response
+    let trialsCount = 0
+    let totalScore = 0
+    let totalPointsAwarded = 0
+    let totalXpAwarded = 0
+    let averageTimeSpent = 0
+    let lastAwardedAt: Date | undefined = undefined
+    let lastXpAwardedAt: Date | undefined = undefined
+    let lastAnsweredAt: Date | undefined = undefined
 
-    for (const [
-      participantId,
-      { response, details, participationActive },
-    ] of Object.entries(participantResponses)) {
-      // initialize fields for question response
-      let trialsCount = 0
-      let totalScore = 0
-      let totalPointsAwarded = 0
-      let totalXpAwarded = 0
-      let averageTimeSpent = 0
-      let lastAwardedAt: Date | undefined = undefined
-      let lastXpAwardedAt: Date | undefined = undefined
-      let lastAnsweredAt: Date | undefined = undefined
+    let correctCount = 0
+    let correctCountStreak = 0
+    let lastCorrectAt: Date | undefined = undefined
 
-      let correctCount = 0
-      let correctCountStreak = 0
-      let lastCorrectAt: Date | undefined = undefined
+    let partialCorrectCount = 0
+    let lastPartialCorrectAt: Date | undefined = undefined
 
-      let partialCorrectCount = 0
-      let lastPartialCorrectAt: Date | undefined = undefined
+    let wrongCount = 0
+    let lastWrongAt: Date | undefined = undefined
 
-      let wrongCount = 0
-      let lastWrongAt: Date | undefined = undefined
+    let eFactor = 2.5
+    let interval = 1
+    let nextDueAt: Date | undefined = undefined
 
-      let eFactor = 2.5
-      let interval = 1
-      let nextDueAt: Date | undefined = undefined
+    let firstResponse: SingleQuestionResponse | undefined = undefined
+    let firstResponseCorrectness: ResponseCorrectness | undefined = undefined
+    let lastResponse: SingleQuestionResponse | undefined = undefined
+    let lastResponseCorrectness: ResponseCorrectness | undefined = undefined
+    let aggregatedResponses: ElementInstanceResults = {
+      ...emptyInstanceResults,
+    }
 
-      let firstResponse: SingleQuestionResponse | undefined = undefined
-      let firstResponseCorrectness: ResponseCorrectness | undefined = undefined
-      let lastResponse: SingleQuestionResponse | undefined = undefined
-      let lastResponseCorrectness: ResponseCorrectness | undefined = undefined
-      let aggregatedResponses: ElementInstanceResults = {
-        ...emptyInstanceResults,
-      }
+    // compute average times
+    const res = details.reduce<{
+      responseAvgTime: number
+      answers: number
+      firstAnswer: boolean
+    }>(
+      (acc, detail) => {
+        const avgResponseTime =
+          (acc.responseAvgTime * acc.answers + detail.timeSpent) /
+          (acc.answers + 1)
 
-      // compute average times
-      const res = details.reduce<{
-        responseAvgTime: number
-        answers: number
-        firstAnswer: boolean
+        // number of participants that have influenced the average time spent on the instance
+        const instanceParticipants =
+          instanceUniqueParticipantCount + (acc.firstAnswer ? 0 : 1)
+
+        // flooring operation simulates database storage update -> int precition
+        instanceAverageTimeSpent = Math.floor(
+          ((instanceAverageTimeSpent ?? 0) * instanceParticipants -
+            acc.responseAvgTime +
+            avgResponseTime) /
+            (instanceUniqueParticipantCount + 1)
+        )
+
+        // flooring operation simulates database storage update -> int precition
+        acc.responseAvgTime = Math.floor(avgResponseTime)
+        acc.answers += 1
+        acc.firstAnswer = false
+        return acc
+      },
+      { responseAvgTime: 0, answers: 0, firstAnswer: true }
+    )
+    averageTimeSpent = res.responseAvgTime
+    instanceUniqueParticipantCount += 1
+
+    if (instance.elementType === ElementType.CONTENT) {
+      const lastDetail = details[details.length - 1]
+
+      // set correctness parameters, trials, timestamps and time spent
+      trialsCount = details.length
+      lastAnsweredAt = lastDetail.createdAt
+      correctCount = details.length
+      correctCountStreak = details.length
+      lastCorrectAt = lastDetail.createdAt
+      firstResponseCorrectness = ResponseCorrectness.CORRECT
+      lastResponseCorrectness = ResponseCorrectness.CORRECT
+
+      // compute updated spaced repetition parameters
+      const repetitionParams = details.reduce<{
+        streak: number
+        eFactor: number
+        interval: number
+        nextDueAt: Date | undefined
       }>(
         (acc, detail) => {
-          const avgResponseTime =
-            (acc.responseAvgTime * acc.answers + detail.timeSpent) /
-            (acc.answers + 1)
-
-          // number of participants that have influenced the average time spent on the instance
-          const instanceParticipants =
-            instanceUniqueParticipantCount + (acc.firstAnswer ? 0 : 1)
-
-          // flooring operation simulates database storage update -> int precition
-          instanceAverageTimeSpent = Math.floor(
-            ((instanceAverageTimeSpent ?? 0) * instanceParticipants -
-              acc.responseAvgTime +
-              avgResponseTime) /
-              (instanceUniqueParticipantCount + 1)
-          )
-
-          // flooring operation simulates database storage update -> int precition
-          acc.responseAvgTime = Math.floor(avgResponseTime)
-          acc.answers += 1
-          acc.firstAnswer = false
+          acc.streak += 1
+          const newValues = updateSpacedRepetition({
+            eFactor: acc.eFactor,
+            interval: acc.interval,
+            streak: acc.streak,
+            grade: 1,
+          })
+          acc.eFactor = newValues.eFactor
+          acc.interval = newValues.interval
+          acc.nextDueAt = dayjs(detail.createdAt)
+            .add(acc.interval, 'day')
+            .toDate()
           return acc
         },
-        { responseAvgTime: 0, answers: 0, firstAnswer: true }
-      )
-      averageTimeSpent = res.responseAvgTime
-      instanceUniqueParticipantCount += 1
-
-      // TODO: if solution above fulfills requirements, remove the following code
-      // // compute average times
-      // // (floor required due to the way prisma handles float to int conversion)
-      // const res = details.reduce<{ avgTime: number; counter: number }>(
-      //   (acc, detail) => {
-      //     acc.avgTime = Math.floor(
-      //       (acc.avgTime * acc.counter + detail.timeSpent) / (acc.counter + 1)
-      //     )
-      //     acc.counter += 1
-      //     return acc
-      //   },
-      //   { avgTime: 0, counter: 0 }
-      // )
-      // averageTimeSpent = res.avgTime
-
-      // // increase aggregated instance values
-      // // (floor required due to the way prisma handles float to int conversion)
-      // // TODO: investigate why it tends to go to zero
-      // // SELECT *
-      // // FROM "ElementInstance" ei
-      // // JOIN "InstanceStatistics" i ON ei.id = i."elementInstanceId"
-      // // JOIN "QuestionResponseDetail" qr ON qr."elementInstanceId" = ei.id
-      // // WHERE ei.id = 251;
-      // instanceUniqueParticipantCount += 1
-      // instanceAverageTimeSpent = Math.floor(
-      //   ((instanceAverageTimeSpent ?? 0) *
-      //     (instanceUniqueParticipantCount - 1) +
-      //     averageTimeSpent) /
-      //     instanceUniqueParticipantCount
-      // )
-      // console.log(
-      //   instanceAverageTimeSpent,
-      //   instanceUniqueParticipantCount,
-      //   averageTimeSpent,
-      //   (instanceAverageTimeSpent ?? 0) * (instanceUniqueParticipantCount - 1) +
-      //     averageTimeSpent
-      // )
-
-      if (instance.elementType === ElementType.CONTENT) {
-        const lastDetail = details[details.length - 1]
-
-        // set correctness parameters, trials, timestamps and time spent
-        trialsCount = details.length
-        lastAnsweredAt = lastDetail.createdAt
-        correctCount = details.length
-        correctCountStreak = details.length
-        lastCorrectAt = lastDetail.createdAt
-        firstResponseCorrectness = ResponseCorrectness.CORRECT
-        lastResponseCorrectness = ResponseCorrectness.CORRECT
-
-        // compute updated spaced repetition parameters
-        const repetitionParams = details.reduce<{
-          streak: number
-          eFactor: number
-          interval: number
-          nextDueAt: Date | undefined
-        }>(
-          (acc, detail) => {
-            acc.streak += 1
-            const newValues = updateSpacedRepetition({
-              eFactor: acc.eFactor,
-              interval: acc.interval,
-              streak: acc.streak,
-              grade: 1,
-            })
-            acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
-            acc.nextDueAt = dayjs(detail.createdAt)
-              .add(acc.interval, 'day')
-              .toDate()
-            return acc
-          },
-          {
-            streak: 0,
-            eFactor,
-            interval,
-            nextDueAt,
-          }
-        )
-        eFactor = repetitionParams.eFactor
-        interval = repetitionParams.interval
-        nextDueAt = repetitionParams.nextDueAt
-
-        // update responses
-        firstResponse = { viewed: true }
-        lastResponse = { viewed: true }
-        aggregatedResponses.total = details.length
-
-        // update instance results
-        instanceResults.total += details.length
-      } else if (
-        instance.elementType === ElementType.FLASHCARD &&
-        FlashcardCorrectness.CORRECT in instanceResults &&
-        FlashcardCorrectness.PARTIAL in instanceResults &&
-        FlashcardCorrectness.INCORRECT in instanceResults
-      ) {
-        const firstDetail = details[0]
-        const lastDetail = details[details.length - 1]
-        // set correctness parameters, trials, timestamps and time spent
-        trialsCount = details.length
-        lastAnsweredAt = lastDetail.createdAt
-        firstResponse = firstDetail.response as SingleQuestionResponseFlashcard
-        lastResponse = lastDetail.response as SingleQuestionResponseFlashcard
-        firstResponseCorrectness =
-          firstResponse.correctness === FlashcardCorrectness.CORRECT
-            ? ResponseCorrectness.CORRECT
-            : firstResponse.correctness === FlashcardCorrectness.PARTIAL
-              ? ResponseCorrectness.PARTIAL
-              : ResponseCorrectness.WRONG
-        lastResponseCorrectness =
-          lastResponse.correctness === FlashcardCorrectness.CORRECT
-            ? ResponseCorrectness.CORRECT
-            : lastResponse.correctness === FlashcardCorrectness.PARTIAL
-              ? ResponseCorrectness.PARTIAL
-              : ResponseCorrectness.WRONG
-
-        // aggregate over all details to compute the total quantities
-        const newValues = details.reduce<{
-          correctCount: number
-          correctCountStreak: number
-          lastCorrectAt: Date | undefined
-          partialCorrectCount: number
-          lastPartialCorrectAt: Date | undefined
-          wrongCount: number
-          lastWrongAt: Date | undefined
-          eFactor: number
-          interval: number
-          nextDueAt: Date | undefined
-          aggResponses: FlashcardResults
-        }>(
-          (acc, detail) => {
-            const correctness = (
-              detail.response as SingleQuestionResponseFlashcard
-            ).correctness
-            if (correctness === FlashcardCorrectness.CORRECT) {
-              acc.correctCount += 1
-              acc.correctCountStreak += 1
-              acc.lastCorrectAt = detail.createdAt
-            } else if (correctness === FlashcardCorrectness.PARTIAL) {
-              acc.partialCorrectCount += 1
-              acc.lastPartialCorrectAt = detail.createdAt
-              acc.correctCountStreak = 0
-            } else if (correctness === FlashcardCorrectness.INCORRECT) {
-              acc.wrongCount += 1
-              acc.lastWrongAt = detail.createdAt
-              acc.correctCountStreak = 0
-            }
-
-            // update spaced repetition parameters
-            const updatedRepetition = updateSpacedRepetition({
-              eFactor: acc.eFactor,
-              interval: acc.interval,
-              streak: acc.correctCountStreak,
-              grade:
-                correctness === FlashcardCorrectness.CORRECT
-                  ? 1
-                  : correctness === FlashcardCorrectness.PARTIAL
-                    ? 0.5
-                    : 0,
-            })
-            acc.eFactor = updatedRepetition.eFactor
-            acc.interval = updatedRepetition.interval
-            acc.nextDueAt = dayjs(detail.createdAt)
-              .add(acc.interval, 'day')
-              .toDate()
-
-            // update aggregated responses
-            acc.aggResponses.total += 1
-            if (correctness === FlashcardCorrectness.CORRECT) {
-              acc.aggResponses.CORRECT += 1
-            } else if (correctness === FlashcardCorrectness.PARTIAL) {
-              acc.aggResponses.PARTIAL += 1
-            } else if (correctness === FlashcardCorrectness.INCORRECT) {
-              acc.aggResponses.INCORRECT += 1
-            }
-            return acc
-          },
-          {
-            correctCount: 0,
-            correctCountStreak: 0,
-            lastCorrectAt: undefined,
-            partialCorrectCount: 0,
-            lastPartialCorrectAt: undefined,
-            wrongCount: 0,
-            lastWrongAt: undefined,
-            eFactor: 2.5,
-            interval: 1,
-            nextDueAt: undefined,
-            aggResponses: {
-              ...emptyInstanceResults,
-            } as FlashcardResults,
-          }
-        )
-
-        // set the aggregated values
-        correctCount = newValues.correctCount
-        correctCountStreak = newValues.correctCountStreak
-        lastCorrectAt = newValues.lastCorrectAt
-        partialCorrectCount = newValues.partialCorrectCount
-        lastPartialCorrectAt = newValues.lastPartialCorrectAt
-        wrongCount = newValues.wrongCount
-        lastWrongAt = newValues.lastWrongAt
-        eFactor = newValues.eFactor
-        interval = newValues.interval
-        nextDueAt = newValues.nextDueAt
-        aggregatedResponses = newValues.aggResponses
-
-        // update instance results
-        instanceResults[FlashcardCorrectness.CORRECT] += correctCount
-        instanceResults[FlashcardCorrectness.PARTIAL] += partialCorrectCount
-        instanceResults[FlashcardCorrectness.INCORRECT] += wrongCount
-        instanceResults.total += trialsCount
-      } else if (
-        (instance.elementType === ElementType.SC ||
-          instance.elementType === ElementType.MC ||
-          instance.elementType === ElementType.KPRIM) &&
-        'choices' in instanceResults
-      ) {
-        const multiplier = instance.options.pointsMultiplier
-        const firstDetail = details[0]
-        firstResponse = firstDetail.response as SingleQuestionResponseChoices
-        const lastDetail = details[details.length - 1]
-        lastResponse = lastDetail.response as SingleQuestionResponseChoices
-
-        // set correctness parameters, trials, timestamps and time spent
-        trialsCount = details.length
-        lastAnsweredAt = lastDetail.createdAt
-
-        // evaluate first and last answer correctness
-        const firstCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: firstResponse,
-        })
-        const lastCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: lastResponse,
-        })
-        firstResponseCorrectness =
-          firstCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-        lastResponseCorrectness =
-          lastCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-
-        const newValues = details.reduce<{
-          totalScore: number
-          totalPointsAwarded: number
-          totalXpAwarded: number
-          lastAwardedAt: Date | undefined
-          lastXpAwardedAt: Date | undefined
-          correctCount: number
-          correctCountStreak: number
-          lastCorrectAt: Date | undefined
-          partialCorrectCount: number
-          lastPartialCorrectAt: Date | undefined
-          wrongCount: number
-          lastWrongAt: Date | undefined
-          eFactor: number
-          interval: number
-          nextDueAt: Date | undefined
-          aggResponses: ElementResultsChoices
-        }>(
-          (acc, detail) => {
-            // compute correctness
-            const correctness =
-              evaluateAnswerCorrectness({
-                elementData: instance.elementData,
-                response: detail.response,
-              }) ?? 0
-
-            // update the score, correctness counters, etc.
-            const score = computeSimpleAwardedPoints({
-              points: POINTS_PER_INSTANCE,
-              pointsPercentage: correctness,
-              pointsMultiplier: multiplier,
-            })
-            const xp = computeAwardedXp({
-              pointsPercentage: correctness,
-            })
-
-            acc.totalScore += score
-            acc.correctCount += correctness === 1 ? 1 : 0
-            acc.correctCountStreak =
-              correctness === 1 ? acc.correctCountStreak + 1 : 0
-            acc.lastCorrectAt =
-              correctness === 1 ? detail.createdAt : acc.lastCorrectAt
-
-            acc.partialCorrectCount +=
-              correctness > 0 && correctness < 1 ? 1 : 0
-            acc.lastPartialCorrectAt =
-              correctness > 0 && correctness < 1
-                ? detail.createdAt
-                : acc.lastPartialCorrectAt
-
-            acc.wrongCount += correctness === 0 ? 1 : 0
-            acc.lastWrongAt =
-              correctness === 0 ? detail.createdAt : acc.lastWrongAt
-
-            // check if points and xp are awarded and set attributes
-            const newPoints =
-              typeof acc.lastAwardedAt !== 'undefined'
-                ? dayjs(acc.lastAwardedAt).isBefore(
-                    dayjs().subtract(
-                      instance.options.resetTimeDays ??
-                        POINTS_AWARD_TIMEFRAME_DAYS,
-                      'days'
-                    )
-                  )
-                : true
-            const newXP =
-              typeof acc.lastXpAwardedAt !== 'undefined'
-                ? dayjs(acc.lastXpAwardedAt).isBefore(
-                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-                  )
-                : true
-
-            if (newPoints && participationActive) {
-              acc.totalPointsAwarded += score
-              acc.lastAwardedAt = detail.createdAt
-            }
-            if (newXP) {
-              acc.totalXpAwarded += xp
-              acc.lastXpAwardedAt = detail.createdAt
-
-              // if new xp are greater than the ones already awarded, we add the difference to the participant
-              if (xp > detail.xpAwarded) {
-                participantUpdates[participantId] = {
-                  additionalXp:
-                    (participantUpdates[participantId]?.additionalXp ?? 0) +
-                    xp -
-                    detail.xpAwarded,
-                }
-              }
-            }
-
-            // update spaced repetition parameters
-            const newValues = updateSpacedRepetition({
-              eFactor: acc.eFactor,
-              interval: acc.interval,
-              streak: acc.correctCountStreak,
-              grade: correctness,
-            })
-            acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
-            acc.nextDueAt = dayjs(detail.createdAt)
-              .add(acc.interval, 'day')
-              .toDate()
-
-            // TODO: replace this through helper function once available
-            // update aggregated responses
-            acc.aggResponses.choices = detail.response.choices.reduce(
-              (acc, ix) => ({
-                ...acc,
-                [ix]: acc[ix]! + 1,
-              }),
-              acc.aggResponses.choices
-            )
-            acc.aggResponses.total = acc.aggResponses.total + 1
-
-            // update instance results
-            instanceResults.choices = detail.response.choices.reduce(
-              (acc, ix) => ({
-                ...acc,
-                [ix]: acc[ix]! + 1,
-              }),
-              (instanceResults as ElementResultsChoices).choices
-            )
-            instanceResults.total += 1
-
-            // check if update of detail response is required
-            const detailUpdate = computeDetailUpdate({
-              detail,
-              newValues: {
-                score,
-                pointsAwarded: participationActive ? score : undefined,
-                xpAwarded: xp,
-                timeSpent: detail.timeSpent,
-              },
-            })
-            if (detailUpdate) {
-              detailUpdates.push(detailUpdate)
-            }
-
-            return acc
-          },
-          {
-            totalScore: 0,
-            totalPointsAwarded: 0,
-            totalXpAwarded: 0,
-            lastAwardedAt: undefined,
-            lastXpAwardedAt: undefined,
-            correctCount: 0,
-            correctCountStreak: 0,
-            lastCorrectAt: undefined,
-            partialCorrectCount: 0,
-            lastPartialCorrectAt: undefined,
-            wrongCount: 0,
-            lastWrongAt: undefined,
-            eFactor: 2.5,
-            interval: 1,
-            nextDueAt: undefined,
-            aggResponses: {
-              ...emptyInstanceResults,
-            } as ElementResultsChoices,
-          }
-        )
-
-        // set the aggregated values
-        totalScore = newValues.totalScore
-        totalPointsAwarded = newValues.totalPointsAwarded
-        totalXpAwarded = newValues.totalXpAwarded
-        lastAwardedAt = newValues.lastAwardedAt
-        lastXpAwardedAt = newValues.lastXpAwardedAt
-
-        correctCount = newValues.correctCount
-        correctCountStreak = newValues.correctCountStreak
-        lastCorrectAt = newValues.lastCorrectAt
-        partialCorrectCount = newValues.partialCorrectCount
-        lastPartialCorrectAt = newValues.lastPartialCorrectAt
-        wrongCount = newValues.wrongCount
-        lastWrongAt = newValues.lastWrongAt
-        eFactor = newValues.eFactor
-        interval = newValues.interval
-        nextDueAt = newValues.nextDueAt
-        aggregatedResponses = newValues.aggResponses
-      } else if (
-        instance.elementType === ElementType.NUMERICAL &&
-        'responses' in instanceResults
-      ) {
-        const multiplier = instance.options.pointsMultiplier
-        const firstDetail = details[0]
-        firstResponse = firstDetail.response as SingleQuestionResponseValue
-        const lastDetail = details[details.length - 1]
-        lastResponse = lastDetail.response as SingleQuestionResponseValue
-
-        // set correctness parameters, trials, timestamps and time spent
-        trialsCount = details.length
-        lastAnsweredAt = lastDetail.createdAt
-
-        // evaluate first and last answer correctness
-        const firstCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: firstResponse,
-        })
-        const lastCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: lastResponse,
-        })
-        firstResponseCorrectness =
-          firstCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-        lastResponseCorrectness =
-          lastCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-
-        const newValues = details.reduce<{
-          totalScore: number
-          totalPointsAwarded: number
-          totalXpAwarded: number
-          lastAwardedAt: Date | undefined
-          lastXpAwardedAt: Date | undefined
-          correctCount: number
-          correctCountStreak: number
-          lastCorrectAt: Date | undefined
-          partialCorrectCount: number
-          lastPartialCorrectAt: Date | undefined
-          wrongCount: number
-          lastWrongAt: Date | undefined
-          eFactor: number
-          interval: number
-          nextDueAt: Date | undefined
-          aggResponses: ElementResultsOpen
-        }>(
-          (acc, detail) => {
-            // compute correctness
-            const correctness =
-              evaluateAnswerCorrectness({
-                elementData: instance.elementData,
-                response: detail.response,
-              }) ?? 0
-
-            // update the score, correctness counters, etc.
-            const score = computeSimpleAwardedPoints({
-              points: POINTS_PER_INSTANCE,
-              pointsPercentage: correctness,
-              pointsMultiplier: multiplier,
-            })
-            const xp = computeAwardedXp({
-              pointsPercentage: correctness,
-            })
-
-            acc.totalScore += score
-            acc.correctCount += correctness === 1 ? 1 : 0
-            acc.correctCountStreak =
-              correctness === 1 ? acc.correctCountStreak + 1 : 0
-            acc.lastCorrectAt =
-              correctness === 1 ? detail.createdAt : acc.lastCorrectAt
-
-            acc.partialCorrectCount +=
-              correctness > 0 && correctness < 1 ? 1 : 0
-            acc.lastPartialCorrectAt =
-              correctness > 0 && correctness < 1
-                ? detail.createdAt
-                : acc.lastPartialCorrectAt
-
-            acc.wrongCount += correctness === 0 ? 1 : 0
-            acc.lastWrongAt =
-              correctness === 0 ? detail.createdAt : acc.lastWrongAt
-
-            // check if points and xp are awarded and set attributes
-            const newPoints =
-              typeof acc.lastAwardedAt !== 'undefined'
-                ? dayjs(acc.lastAwardedAt).isBefore(
-                    dayjs().subtract(
-                      instance.options.resetTimeDays ??
-                        POINTS_AWARD_TIMEFRAME_DAYS,
-                      'days'
-                    )
-                  )
-                : true
-            const newXP =
-              typeof acc.lastXpAwardedAt !== 'undefined'
-                ? dayjs(acc.lastXpAwardedAt).isBefore(
-                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-                  )
-                : true
-
-            if (newPoints && participationActive) {
-              acc.totalPointsAwarded += score
-              acc.lastAwardedAt = detail.createdAt
-            }
-            if (newXP) {
-              acc.totalXpAwarded += xp
-              acc.lastXpAwardedAt = detail.createdAt
-            }
-
-            // update spaced repetition parameters
-            const newValues = updateSpacedRepetition({
-              eFactor: acc.eFactor,
-              interval: acc.interval,
-              streak: acc.correctCountStreak,
-              grade: correctness,
-            })
-            acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
-            acc.nextDueAt = dayjs(detail.createdAt)
-              .add(acc.interval, 'day')
-              .toDate()
-
-            // TODO: replace this through helper function once available
-            // update aggregated responses
-            const value = String(parseFloat(detail.response.value))
-            MD5.update(value)
-            const hashedValue = MD5.digest('hex')
-
-            if (Object.keys(acc.aggResponses.responses).includes(hashedValue)) {
-              acc.aggResponses.responses = {
-                ...acc.aggResponses.responses,
-                [hashedValue]: {
-                  ...acc.aggResponses.responses[hashedValue],
-                  count: acc.aggResponses.responses[hashedValue].count + 1,
-                },
-              }
-            } else {
-              acc.aggResponses.responses = {
-                ...acc.aggResponses.responses,
-                [hashedValue]: {
-                  value: value,
-                  count: 1,
-                  correct: correctness === 1,
-                },
-              }
-            }
-            acc.aggResponses.total = acc.aggResponses.total + 1
-
-            // update instance results
-            if (Object.keys(instanceResults.responses).includes(hashedValue)) {
-              instanceResults.responses = {
-                ...instanceResults.responses,
-                [hashedValue]: {
-                  ...instanceResults.responses[hashedValue],
-                  count: instanceResults.responses[hashedValue].count + 1,
-                },
-              }
-            } else {
-              instanceResults.responses = {
-                ...instanceResults.responses,
-                [hashedValue]: {
-                  value: value,
-                  count: 1,
-                  correct: correctness === 1,
-                },
-              }
-            }
-            instanceResults.total = instanceResults.total + 1
-
-            // check if update of detail response is required
-            const detailUpdate = computeDetailUpdate({
-              detail,
-              newValues: {
-                score,
-                pointsAwarded: score,
-                xpAwarded: xp,
-                timeSpent: detail.timeSpent,
-              },
-            })
-            if (detailUpdate) {
-              detailUpdates.push(detailUpdate)
-            }
-
-            return acc
-          },
-          {
-            totalScore: 0,
-            totalPointsAwarded: 0,
-            totalXpAwarded: 0,
-            lastAwardedAt: undefined,
-            lastXpAwardedAt: undefined,
-            correctCount: 0,
-            correctCountStreak: 0,
-            lastCorrectAt: undefined,
-            partialCorrectCount: 0,
-            lastPartialCorrectAt: undefined,
-            wrongCount: 0,
-            lastWrongAt: undefined,
-            eFactor: 2.5,
-            interval: 1,
-            nextDueAt: undefined,
-            aggResponses: {
-              ...emptyInstanceResults,
-            } as ElementResultsOpen,
-          }
-        )
-
-        // set the aggregated values
-        totalScore = newValues.totalScore
-        totalPointsAwarded = newValues.totalPointsAwarded
-        totalXpAwarded = newValues.totalXpAwarded
-        lastAwardedAt = newValues.lastAwardedAt
-        lastXpAwardedAt = newValues.lastXpAwardedAt
-
-        correctCount = newValues.correctCount
-        correctCountStreak = newValues.correctCountStreak
-        lastCorrectAt = newValues.lastCorrectAt
-        partialCorrectCount = newValues.partialCorrectCount
-        lastPartialCorrectAt = newValues.lastPartialCorrectAt
-        wrongCount = newValues.wrongCount
-        lastWrongAt = newValues.lastWrongAt
-        eFactor = newValues.eFactor
-        interval = newValues.interval
-        nextDueAt = newValues.nextDueAt
-        aggregatedResponses = newValues.aggResponses
-      } else if (
-        instance.elementType === ElementType.FREE_TEXT &&
-        'responses' in instanceResults
-      ) {
-        const multiplier = instance.options.pointsMultiplier
-        const firstDetail = details[0]
-        firstResponse = firstDetail.response as SingleQuestionResponseValue
-        const lastDetail = details[details.length - 1]
-        lastResponse = lastDetail.response as SingleQuestionResponseValue
-
-        // set correctness parameters, trials, timestamps and time spent
-        trialsCount = details.length
-        lastAnsweredAt = lastDetail.createdAt
-
-        // evaluate first and last answer correctness
-        const firstCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: firstResponse,
-        })
-        const lastCorrect = evaluateAnswerCorrectness({
-          elementData: instance.elementData,
-          response: lastResponse,
-        })
-        firstResponseCorrectness =
-          firstCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-        lastResponseCorrectness =
-          lastCorrect === 1
-            ? ResponseCorrectness.CORRECT
-            : firstCorrect === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL
-
-        const newValues = details.reduce<{
-          totalScore: number
-          totalPointsAwarded: number
-          totalXpAwarded: number
-          lastAwardedAt: Date | undefined
-          lastXpAwardedAt: Date | undefined
-          correctCount: number
-          correctCountStreak: number
-          lastCorrectAt: Date | undefined
-          partialCorrectCount: number
-          lastPartialCorrectAt: Date | undefined
-          wrongCount: number
-          lastWrongAt: Date | undefined
-          eFactor: number
-          interval: number
-          nextDueAt: Date | undefined
-          aggResponses: ElementResultsOpen
-        }>(
-          (acc, detail) => {
-            // compute correctness
-            const correctness =
-              evaluateAnswerCorrectness({
-                elementData: instance.elementData,
-                response: detail.response,
-              }) ?? 0
-
-            // update the score, correctness counters, etc.
-            const score = computeSimpleAwardedPoints({
-              points: POINTS_PER_INSTANCE,
-              pointsPercentage: correctness,
-              pointsMultiplier: multiplier,
-            })
-            const xp = computeAwardedXp({
-              pointsPercentage: correctness,
-            })
-
-            acc.totalScore += score
-            acc.correctCount += correctness === 1 ? 1 : 0
-            acc.correctCountStreak =
-              correctness === 1 ? acc.correctCountStreak + 1 : 0
-            acc.lastCorrectAt =
-              correctness === 1 ? detail.createdAt : acc.lastCorrectAt
-
-            acc.partialCorrectCount +=
-              correctness > 0 && correctness < 1 ? 1 : 0
-            acc.lastPartialCorrectAt =
-              correctness > 0 && correctness < 1
-                ? detail.createdAt
-                : acc.lastPartialCorrectAt
-
-            acc.wrongCount += correctness === 0 ? 1 : 0
-            acc.lastWrongAt =
-              correctness === 0 ? detail.createdAt : acc.lastWrongAt
-
-            // check if points and xp are awarded and set attributes
-            const newPoints =
-              typeof acc.lastAwardedAt !== 'undefined'
-                ? dayjs(acc.lastAwardedAt).isBefore(
-                    dayjs().subtract(
-                      instance.options.resetTimeDays ??
-                        POINTS_AWARD_TIMEFRAME_DAYS,
-                      'days'
-                    )
-                  )
-                : true
-            const newXP =
-              typeof acc.lastXpAwardedAt !== 'undefined'
-                ? dayjs(acc.lastXpAwardedAt).isBefore(
-                    dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
-                  )
-                : true
-
-            if (newPoints && participationActive) {
-              acc.totalPointsAwarded += score
-              acc.lastAwardedAt = detail.createdAt
-            }
-            if (newXP) {
-              acc.totalXpAwarded += xp
-              acc.lastXpAwardedAt = detail.createdAt
-            }
-
-            // update spaced repetition parameters
-            const newValues = updateSpacedRepetition({
-              eFactor: acc.eFactor,
-              interval: acc.interval,
-              streak: acc.correctCountStreak,
-              grade: correctness,
-            })
-            acc.eFactor = newValues.eFactor
-            acc.interval = newValues.interval
-            acc.nextDueAt = dayjs(detail.createdAt)
-              .add(acc.interval, 'day')
-              .toDate()
-
-            // TODO: replace this through helper function once available
-            // update aggregated responses
-            const value = toLowerCase(detail.response.value.trim())
-            MD5.update(value)
-            const hashedValue = MD5.digest('hex')
-
-            if (Object.keys(acc.aggResponses.responses).includes(hashedValue)) {
-              acc.aggResponses.responses = {
-                ...acc.aggResponses.responses,
-                [hashedValue]: {
-                  ...acc.aggResponses.responses[hashedValue]!,
-                  count: acc.aggResponses.responses[hashedValue]!.count + 1,
-                },
-              }
-            } else {
-              acc.aggResponses.responses = {
-                ...acc.aggResponses.responses,
-                [hashedValue]: {
-                  value: value,
-                  count: 1,
-                  correct: correctness === 1,
-                },
-              }
-            }
-            acc.aggResponses.total = acc.aggResponses.total + 1
-
-            // update instance results
-            if (Object.keys(instanceResults.responses).includes(hashedValue)) {
-              instanceResults.responses = {
-                ...instanceResults.responses,
-                [hashedValue]: {
-                  ...instanceResults.responses[hashedValue]!,
-                  count: instanceResults.responses[hashedValue]!.count + 1,
-                },
-              }
-            } else {
-              instanceResults.responses = {
-                ...instanceResults.responses,
-                [hashedValue]: {
-                  value: value,
-                  count: 1,
-                  correct: correctness === 1,
-                },
-              }
-            }
-            instanceResults.total = instanceResults.total + 1
-
-            // check if update of detail response is required
-            const detailUpdate = computeDetailUpdate({
-              detail,
-              newValues: {
-                score,
-                pointsAwarded: score,
-                xpAwarded: xp,
-                timeSpent: detail.timeSpent,
-              },
-            })
-            if (detailUpdate) {
-              detailUpdates.push(detailUpdate)
-            }
-
-            return acc
-          },
-          {
-            totalScore: 0,
-            totalPointsAwarded: 0,
-            totalXpAwarded: 0,
-            lastAwardedAt: undefined,
-            lastXpAwardedAt: undefined,
-            correctCount: 0,
-            correctCountStreak: 0,
-            lastCorrectAt: undefined,
-            partialCorrectCount: 0,
-            lastPartialCorrectAt: undefined,
-            wrongCount: 0,
-            lastWrongAt: undefined,
-            eFactor: 2.5,
-            interval: 1,
-            nextDueAt: undefined,
-            aggResponses: {
-              ...emptyInstanceResults,
-            } as ElementResultsOpen,
-          }
-        )
-
-        // set the aggregated values
-        totalScore = newValues.totalScore
-        totalPointsAwarded = newValues.totalPointsAwarded
-        totalXpAwarded = newValues.totalXpAwarded
-        lastAwardedAt = newValues.lastAwardedAt
-        lastXpAwardedAt = newValues.lastXpAwardedAt
-
-        correctCount = newValues.correctCount
-        correctCountStreak = newValues.correctCountStreak
-        lastCorrectAt = newValues.lastCorrectAt
-        partialCorrectCount = newValues.partialCorrectCount
-        lastPartialCorrectAt = newValues.lastPartialCorrectAt
-        wrongCount = newValues.wrongCount
-        lastWrongAt = newValues.lastWrongAt
-        eFactor = newValues.eFactor
-        interval = newValues.interval
-        nextDueAt = newValues.nextDueAt
-        aggregatedResponses = newValues.aggResponses
-      } else {
-        throw new Error(
-          `Unsupported element type or missing results for element instance ${instance.id} with type ${instance.elementType}`
-        )
-      }
-
-      // update question response, if the content is different
-      // (if participation is not active, do not update awarded points in any case)
-      const responseUpdate = computeResponseUpdate({
-        response,
-        newValues: {
-          trialsCount,
-          totalScore,
-          totalPointsAwarded: participationActive
-            ? totalPointsAwarded
-            : undefined,
-          totalXpAwarded,
-          averageTimeSpent,
-          lastAwardedAt: participationActive ? lastAwardedAt : undefined,
-          lastXpAwardedAt,
-          lastAnsweredAt,
-          correctCount,
-          correctCountStreak,
-          lastCorrectAt,
-          partialCorrectCount,
-          lastPartialCorrectAt,
-          wrongCount,
-          lastWrongAt,
+        {
+          streak: 0,
           eFactor,
           interval,
           nextDueAt,
-          firstResponse,
-          firstResponseCorrectness,
-          lastResponse,
-          lastResponseCorrectness,
-          aggregatedResponses,
+        }
+      )
+      eFactor = repetitionParams.eFactor
+      interval = repetitionParams.interval
+      nextDueAt = repetitionParams.nextDueAt
+
+      // update responses
+      firstResponse = { viewed: true }
+      lastResponse = { viewed: true }
+      aggregatedResponses.total = details.length
+
+      // update instance results
+      instanceResults.total += details.length
+    } else if (
+      instance.elementType === ElementType.FLASHCARD &&
+      FlashcardCorrectness.CORRECT in instanceResults &&
+      FlashcardCorrectness.PARTIAL in instanceResults &&
+      FlashcardCorrectness.INCORRECT in instanceResults
+    ) {
+      const firstDetail = details[0]
+      const lastDetail = details[details.length - 1]
+      // set correctness parameters, trials, timestamps and time spent
+      trialsCount = details.length
+      lastAnsweredAt = lastDetail.createdAt
+      firstResponse = firstDetail.response as SingleQuestionResponseFlashcard
+      lastResponse = lastDetail.response as SingleQuestionResponseFlashcard
+      firstResponseCorrectness =
+        firstResponse.correctness === FlashcardCorrectness.CORRECT
+          ? ResponseCorrectness.CORRECT
+          : firstResponse.correctness === FlashcardCorrectness.PARTIAL
+            ? ResponseCorrectness.PARTIAL
+            : ResponseCorrectness.WRONG
+      lastResponseCorrectness =
+        lastResponse.correctness === FlashcardCorrectness.CORRECT
+          ? ResponseCorrectness.CORRECT
+          : lastResponse.correctness === FlashcardCorrectness.PARTIAL
+            ? ResponseCorrectness.PARTIAL
+            : ResponseCorrectness.WRONG
+
+      // aggregate over all details to compute the total quantities
+      const newValues = details.reduce<{
+        correctCount: number
+        correctCountStreak: number
+        lastCorrectAt: Date | undefined
+        partialCorrectCount: number
+        lastPartialCorrectAt: Date | undefined
+        wrongCount: number
+        lastWrongAt: Date | undefined
+        eFactor: number
+        interval: number
+        nextDueAt: Date | undefined
+        aggResponses: FlashcardResults
+      }>(
+        (acc, detail) => {
+          const correctness = (
+            detail.response as SingleQuestionResponseFlashcard
+          ).correctness
+          if (correctness === FlashcardCorrectness.CORRECT) {
+            acc.correctCount += 1
+            acc.correctCountStreak += 1
+            acc.lastCorrectAt = detail.createdAt
+          } else if (correctness === FlashcardCorrectness.PARTIAL) {
+            acc.partialCorrectCount += 1
+            acc.lastPartialCorrectAt = detail.createdAt
+            acc.correctCountStreak = 0
+          } else if (correctness === FlashcardCorrectness.INCORRECT) {
+            acc.wrongCount += 1
+            acc.lastWrongAt = detail.createdAt
+            acc.correctCountStreak = 0
+          }
+
+          // update spaced repetition parameters
+          const updatedRepetition = updateSpacedRepetition({
+            eFactor: acc.eFactor,
+            interval: acc.interval,
+            streak: acc.correctCountStreak,
+            grade:
+              correctness === FlashcardCorrectness.CORRECT
+                ? 1
+                : correctness === FlashcardCorrectness.PARTIAL
+                  ? 0.5
+                  : 0,
+          })
+          acc.eFactor = updatedRepetition.eFactor
+          acc.interval = updatedRepetition.interval
+          acc.nextDueAt = dayjs(detail.createdAt)
+            .add(acc.interval, 'day')
+            .toDate()
+
+          // update aggregated responses
+          acc.aggResponses.total += 1
+          if (correctness === FlashcardCorrectness.CORRECT) {
+            acc.aggResponses.CORRECT += 1
+          } else if (correctness === FlashcardCorrectness.PARTIAL) {
+            acc.aggResponses.PARTIAL += 1
+          } else if (correctness === FlashcardCorrectness.INCORRECT) {
+            acc.aggResponses.INCORRECT += 1
+          }
+          return acc
         },
+        {
+          correctCount: 0,
+          correctCountStreak: 0,
+          lastCorrectAt: undefined,
+          partialCorrectCount: 0,
+          lastPartialCorrectAt: undefined,
+          wrongCount: 0,
+          lastWrongAt: undefined,
+          eFactor: 2.5,
+          interval: 1,
+          nextDueAt: undefined,
+          aggResponses: {
+            ...emptyInstanceResults,
+          } as FlashcardResults,
+        }
+      )
+
+      // set the aggregated values
+      correctCount = newValues.correctCount
+      correctCountStreak = newValues.correctCountStreak
+      lastCorrectAt = newValues.lastCorrectAt
+      partialCorrectCount = newValues.partialCorrectCount
+      lastPartialCorrectAt = newValues.lastPartialCorrectAt
+      wrongCount = newValues.wrongCount
+      lastWrongAt = newValues.lastWrongAt
+      eFactor = newValues.eFactor
+      interval = newValues.interval
+      nextDueAt = newValues.nextDueAt
+      aggregatedResponses = newValues.aggResponses
+
+      // update instance results
+      instanceResults[FlashcardCorrectness.CORRECT] += correctCount
+      instanceResults[FlashcardCorrectness.PARTIAL] += partialCorrectCount
+      instanceResults[FlashcardCorrectness.INCORRECT] += wrongCount
+      instanceResults.total += trialsCount
+    } else if (
+      (instance.elementType === ElementType.SC ||
+        instance.elementType === ElementType.MC ||
+        instance.elementType === ElementType.KPRIM) &&
+      'choices' in instanceResults
+    ) {
+      const multiplier = instance.options.pointsMultiplier
+      const firstDetail = details[0]
+      firstResponse = firstDetail.response as SingleQuestionResponseChoices
+      const lastDetail = details[details.length - 1]
+      lastResponse = lastDetail.response as SingleQuestionResponseChoices
+
+      // set correctness parameters, trials, timestamps and time spent
+      trialsCount = details.length
+      lastAnsweredAt = lastDetail.createdAt
+
+      // evaluate first and last answer correctness
+      const firstCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: firstResponse,
       })
-      if (responseUpdate) {
-        responseUpdates.push(responseUpdate)
-      }
+      const lastCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: lastResponse,
+      })
+      firstResponseCorrectness =
+        firstCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
+      lastResponseCorrectness =
+        lastCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
 
-      // update instance counts
-      instanceCorrectCount += correctCount
-      instancePartialCorrectCount += partialCorrectCount
-      instanceWrongCount += wrongCount
+      const newValues = details.reduce<{
+        totalScore: number
+        totalPointsAwarded: number
+        totalXpAwarded: number
+        lastAwardedAt: Date | undefined
+        lastXpAwardedAt: Date | undefined
+        correctCount: number
+        correctCountStreak: number
+        lastCorrectAt: Date | undefined
+        partialCorrectCount: number
+        lastPartialCorrectAt: Date | undefined
+        wrongCount: number
+        lastWrongAt: Date | undefined
+        eFactor: number
+        interval: number
+        nextDueAt: Date | undefined
+        aggResponses: ElementResultsChoices
+      }>(
+        (acc, detail) => {
+          // compute correctness
+          const correctness =
+            evaluateAnswerCorrectness({
+              elementData: instance.elementData,
+              response: detail.response,
+            }) ?? 0
 
-      instanceFirstCorrectCount =
-        (instanceFirstCorrectCount ?? 0) +
-        (firstResponseCorrectness === ResponseCorrectness.CORRECT ? 1 : 0)
-      instanceFirstPartialCorrectCount =
-        (instanceFirstPartialCorrectCount ?? 0) +
-        (firstResponseCorrectness === ResponseCorrectness.PARTIAL ? 1 : 0)
-      instanceFirstWrongCount =
-        (instanceFirstWrongCount ?? 0) +
-        (firstResponseCorrectness === ResponseCorrectness.WRONG ? 1 : 0)
+          // update the score, correctness counters, etc.
+          const score = computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage: correctness,
+            pointsMultiplier: multiplier,
+          })
+          const xp = computeAwardedXp({
+            pointsPercentage: correctness,
+          })
 
-      instanceLastCorrectCount =
-        (instanceLastCorrectCount ?? 0) +
-        (lastResponseCorrectness! === ResponseCorrectness.CORRECT ? 1 : 0)
-      instanceLastPartialCorrectCount =
-        (instanceLastPartialCorrectCount ?? 0) +
-        (lastResponseCorrectness! === ResponseCorrectness.PARTIAL ? 1 : 0)
-      instanceLastWrongCount =
-        (instanceLastWrongCount ?? 0) +
-        (lastResponseCorrectness! === ResponseCorrectness.WRONG ? 1 : 0)
+          acc.totalScore += score
+          acc.correctCount += correctness === 1 ? 1 : 0
+          acc.correctCountStreak =
+            correctness === 1 ? acc.correctCountStreak + 1 : 0
+          acc.lastCorrectAt =
+            correctness === 1 ? detail.createdAt : acc.lastCorrectAt
+
+          acc.partialCorrectCount += correctness > 0 && correctness < 1 ? 1 : 0
+          acc.lastPartialCorrectAt =
+            correctness > 0 && correctness < 1
+              ? detail.createdAt
+              : acc.lastPartialCorrectAt
+
+          acc.wrongCount += correctness === 0 ? 1 : 0
+          acc.lastWrongAt =
+            correctness === 0 ? detail.createdAt : acc.lastWrongAt
+
+          // check if points and xp are awarded and set attributes
+          const newPoints =
+            typeof acc.lastAwardedAt !== 'undefined'
+              ? dayjs(acc.lastAwardedAt).isBefore(
+                  dayjs().subtract(
+                    instance.options.resetTimeDays ??
+                      POINTS_AWARD_TIMEFRAME_DAYS,
+                    'days'
+                  )
+                )
+              : true
+          const newXP =
+            typeof acc.lastXpAwardedAt !== 'undefined'
+              ? dayjs(acc.lastXpAwardedAt).isBefore(
+                  dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                )
+              : true
+
+          if (newPoints && participationActive) {
+            acc.totalPointsAwarded += score
+            acc.lastAwardedAt = detail.createdAt
+          }
+          if (newXP) {
+            acc.totalXpAwarded += xp
+            acc.lastXpAwardedAt = detail.createdAt
+
+            // if new xp are greater than the ones already awarded, we add the difference to the participant
+            if (xp > detail.xpAwarded) {
+              participantUpdates[participantId] = {
+                additionalXp:
+                  (participantUpdates[participantId]?.additionalXp ?? 0) +
+                  xp -
+                  detail.xpAwarded,
+              }
+            }
+          }
+
+          // update spaced repetition parameters
+          const newValues = updateSpacedRepetition({
+            eFactor: acc.eFactor,
+            interval: acc.interval,
+            streak: acc.correctCountStreak,
+            grade: correctness,
+          })
+          acc.eFactor = newValues.eFactor
+          acc.interval = newValues.interval
+          acc.nextDueAt = dayjs(detail.createdAt)
+            .add(acc.interval, 'day')
+            .toDate()
+
+          // TODO: replace this through helper function once available
+          // update aggregated responses
+          acc.aggResponses.choices = detail.response.choices.reduce(
+            (acc, ix) => ({
+              ...acc,
+              [ix]: acc[ix]! + 1,
+            }),
+            acc.aggResponses.choices
+          )
+          acc.aggResponses.total = acc.aggResponses.total + 1
+
+          // update instance results
+          instanceResults.choices = detail.response.choices.reduce(
+            (acc, ix) => ({
+              ...acc,
+              [ix]: acc[ix]! + 1,
+            }),
+            (instanceResults as ElementResultsChoices).choices
+          )
+          instanceResults.total += 1
+
+          // check if update of detail response is required
+          const detailUpdate = computeDetailUpdate({
+            detail,
+            newValues: {
+              score,
+              pointsAwarded: participationActive ? score : undefined,
+              xpAwarded: xp,
+              timeSpent: detail.timeSpent,
+            },
+          })
+          if (detailUpdate) {
+            detailUpdates.push(detailUpdate)
+          }
+
+          return acc
+        },
+        {
+          totalScore: 0,
+          totalPointsAwarded: 0,
+          totalXpAwarded: 0,
+          lastAwardedAt: undefined,
+          lastXpAwardedAt: undefined,
+          correctCount: 0,
+          correctCountStreak: 0,
+          lastCorrectAt: undefined,
+          partialCorrectCount: 0,
+          lastPartialCorrectAt: undefined,
+          wrongCount: 0,
+          lastWrongAt: undefined,
+          eFactor: 2.5,
+          interval: 1,
+          nextDueAt: undefined,
+          aggResponses: {
+            ...emptyInstanceResults,
+          } as ElementResultsChoices,
+        }
+      )
+
+      // set the aggregated values
+      totalScore = newValues.totalScore
+      totalPointsAwarded = newValues.totalPointsAwarded
+      totalXpAwarded = newValues.totalXpAwarded
+      lastAwardedAt = newValues.lastAwardedAt
+      lastXpAwardedAt = newValues.lastXpAwardedAt
+
+      correctCount = newValues.correctCount
+      correctCountStreak = newValues.correctCountStreak
+      lastCorrectAt = newValues.lastCorrectAt
+      partialCorrectCount = newValues.partialCorrectCount
+      lastPartialCorrectAt = newValues.lastPartialCorrectAt
+      wrongCount = newValues.wrongCount
+      lastWrongAt = newValues.lastWrongAt
+      eFactor = newValues.eFactor
+      interval = newValues.interval
+      nextDueAt = newValues.nextDueAt
+      aggregatedResponses = newValues.aggResponses
+    } else if (
+      instance.elementType === ElementType.NUMERICAL &&
+      'responses' in instanceResults
+    ) {
+      const multiplier = instance.options.pointsMultiplier
+      const firstDetail = details[0]
+      firstResponse = firstDetail.response as SingleQuestionResponseValue
+      const lastDetail = details[details.length - 1]
+      lastResponse = lastDetail.response as SingleQuestionResponseValue
+
+      // set correctness parameters, trials, timestamps and time spent
+      trialsCount = details.length
+      lastAnsweredAt = lastDetail.createdAt
+
+      // evaluate first and last answer correctness
+      const firstCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: firstResponse,
+      })
+      const lastCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: lastResponse,
+      })
+      firstResponseCorrectness =
+        firstCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
+      lastResponseCorrectness =
+        lastCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
+
+      const newValues = details.reduce<{
+        totalScore: number
+        totalPointsAwarded: number
+        totalXpAwarded: number
+        lastAwardedAt: Date | undefined
+        lastXpAwardedAt: Date | undefined
+        correctCount: number
+        correctCountStreak: number
+        lastCorrectAt: Date | undefined
+        partialCorrectCount: number
+        lastPartialCorrectAt: Date | undefined
+        wrongCount: number
+        lastWrongAt: Date | undefined
+        eFactor: number
+        interval: number
+        nextDueAt: Date | undefined
+        aggResponses: ElementResultsOpen
+      }>(
+        (acc, detail) => {
+          // compute correctness
+          const correctness =
+            evaluateAnswerCorrectness({
+              elementData: instance.elementData,
+              response: detail.response,
+            }) ?? 0
+
+          // update the score, correctness counters, etc.
+          const score = computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage: correctness,
+            pointsMultiplier: multiplier,
+          })
+          const xp = computeAwardedXp({
+            pointsPercentage: correctness,
+          })
+
+          acc.totalScore += score
+          acc.correctCount += correctness === 1 ? 1 : 0
+          acc.correctCountStreak =
+            correctness === 1 ? acc.correctCountStreak + 1 : 0
+          acc.lastCorrectAt =
+            correctness === 1 ? detail.createdAt : acc.lastCorrectAt
+
+          acc.partialCorrectCount += correctness > 0 && correctness < 1 ? 1 : 0
+          acc.lastPartialCorrectAt =
+            correctness > 0 && correctness < 1
+              ? detail.createdAt
+              : acc.lastPartialCorrectAt
+
+          acc.wrongCount += correctness === 0 ? 1 : 0
+          acc.lastWrongAt =
+            correctness === 0 ? detail.createdAt : acc.lastWrongAt
+
+          // check if points and xp are awarded and set attributes
+          const newPoints =
+            typeof acc.lastAwardedAt !== 'undefined'
+              ? dayjs(acc.lastAwardedAt).isBefore(
+                  dayjs().subtract(
+                    instance.options.resetTimeDays ??
+                      POINTS_AWARD_TIMEFRAME_DAYS,
+                    'days'
+                  )
+                )
+              : true
+          const newXP =
+            typeof acc.lastXpAwardedAt !== 'undefined'
+              ? dayjs(acc.lastXpAwardedAt).isBefore(
+                  dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                )
+              : true
+
+          if (newPoints && participationActive) {
+            acc.totalPointsAwarded += score
+            acc.lastAwardedAt = detail.createdAt
+          }
+          if (newXP) {
+            acc.totalXpAwarded += xp
+            acc.lastXpAwardedAt = detail.createdAt
+          }
+
+          // update spaced repetition parameters
+          const newValues = updateSpacedRepetition({
+            eFactor: acc.eFactor,
+            interval: acc.interval,
+            streak: acc.correctCountStreak,
+            grade: correctness,
+          })
+          acc.eFactor = newValues.eFactor
+          acc.interval = newValues.interval
+          acc.nextDueAt = dayjs(detail.createdAt)
+            .add(acc.interval, 'day')
+            .toDate()
+
+          // TODO: replace this through helper function once available
+          // update aggregated responses
+          const value = String(parseFloat(detail.response.value))
+          const MD5 = createHash('md5')
+          MD5.update(value)
+          const hashedValue = MD5.digest('hex')
+
+          if (Object.keys(acc.aggResponses.responses).includes(hashedValue)) {
+            acc.aggResponses.responses = {
+              ...acc.aggResponses.responses,
+              [hashedValue]: {
+                ...acc.aggResponses.responses[hashedValue],
+                count: acc.aggResponses.responses[hashedValue].count + 1,
+              },
+            }
+          } else {
+            acc.aggResponses.responses = {
+              ...acc.aggResponses.responses,
+              [hashedValue]: {
+                value: value,
+                count: 1,
+                correct: correctness === 1,
+              },
+            }
+          }
+          acc.aggResponses.total = acc.aggResponses.total + 1
+
+          // update instance results
+          if (Object.keys(instanceResults.responses).includes(hashedValue)) {
+            instanceResults.responses = {
+              ...instanceResults.responses,
+              [hashedValue]: {
+                ...instanceResults.responses[hashedValue],
+                count: instanceResults.responses[hashedValue].count + 1,
+              },
+            }
+          } else {
+            instanceResults.responses = {
+              ...instanceResults.responses,
+              [hashedValue]: {
+                value: value,
+                count: 1,
+                correct: correctness === 1,
+              },
+            }
+          }
+          instanceResults.total = instanceResults.total + 1
+
+          // check if update of detail response is required
+          const detailUpdate = computeDetailUpdate({
+            detail,
+            newValues: {
+              score,
+              pointsAwarded: score,
+              xpAwarded: xp,
+              timeSpent: detail.timeSpent,
+            },
+          })
+          if (detailUpdate) {
+            detailUpdates.push(detailUpdate)
+          }
+
+          return acc
+        },
+        {
+          totalScore: 0,
+          totalPointsAwarded: 0,
+          totalXpAwarded: 0,
+          lastAwardedAt: undefined,
+          lastXpAwardedAt: undefined,
+          correctCount: 0,
+          correctCountStreak: 0,
+          lastCorrectAt: undefined,
+          partialCorrectCount: 0,
+          lastPartialCorrectAt: undefined,
+          wrongCount: 0,
+          lastWrongAt: undefined,
+          eFactor: 2.5,
+          interval: 1,
+          nextDueAt: undefined,
+          aggResponses: {
+            ...emptyInstanceResults,
+          } as ElementResultsOpen,
+        }
+      )
+
+      // set the aggregated values
+      totalScore = newValues.totalScore
+      totalPointsAwarded = newValues.totalPointsAwarded
+      totalXpAwarded = newValues.totalXpAwarded
+      lastAwardedAt = newValues.lastAwardedAt
+      lastXpAwardedAt = newValues.lastXpAwardedAt
+
+      correctCount = newValues.correctCount
+      correctCountStreak = newValues.correctCountStreak
+      lastCorrectAt = newValues.lastCorrectAt
+      partialCorrectCount = newValues.partialCorrectCount
+      lastPartialCorrectAt = newValues.lastPartialCorrectAt
+      wrongCount = newValues.wrongCount
+      lastWrongAt = newValues.lastWrongAt
+      eFactor = newValues.eFactor
+      interval = newValues.interval
+      nextDueAt = newValues.nextDueAt
+      aggregatedResponses = newValues.aggResponses
+    } else if (
+      instance.elementType === ElementType.FREE_TEXT &&
+      'responses' in instanceResults
+    ) {
+      const multiplier = instance.options.pointsMultiplier
+      const firstDetail = details[0]
+      firstResponse = firstDetail.response as SingleQuestionResponseValue
+      const lastDetail = details[details.length - 1]
+      lastResponse = lastDetail.response as SingleQuestionResponseValue
+
+      // set correctness parameters, trials, timestamps and time spent
+      trialsCount = details.length
+      lastAnsweredAt = lastDetail.createdAt
+
+      // evaluate first and last answer correctness
+      const firstCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: firstResponse,
+      })
+      const lastCorrect = evaluateAnswerCorrectness({
+        elementData: instance.elementData,
+        response: lastResponse,
+      })
+      firstResponseCorrectness =
+        firstCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
+      lastResponseCorrectness =
+        lastCorrect === 1
+          ? ResponseCorrectness.CORRECT
+          : firstCorrect === 0
+            ? ResponseCorrectness.WRONG
+            : ResponseCorrectness.PARTIAL
+
+      const newValues = details.reduce<{
+        totalScore: number
+        totalPointsAwarded: number
+        totalXpAwarded: number
+        lastAwardedAt: Date | undefined
+        lastXpAwardedAt: Date | undefined
+        correctCount: number
+        correctCountStreak: number
+        lastCorrectAt: Date | undefined
+        partialCorrectCount: number
+        lastPartialCorrectAt: Date | undefined
+        wrongCount: number
+        lastWrongAt: Date | undefined
+        eFactor: number
+        interval: number
+        nextDueAt: Date | undefined
+        aggResponses: ElementResultsOpen
+      }>(
+        (acc, detail) => {
+          // compute correctness
+          const correctness =
+            evaluateAnswerCorrectness({
+              elementData: instance.elementData,
+              response: detail.response,
+            }) ?? 0
+
+          // update the score, correctness counters, etc.
+          const score = computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage: correctness,
+            pointsMultiplier: multiplier,
+          })
+          const xp = computeAwardedXp({
+            pointsPercentage: correctness,
+          })
+
+          acc.totalScore += score
+          acc.correctCount += correctness === 1 ? 1 : 0
+          acc.correctCountStreak =
+            correctness === 1 ? acc.correctCountStreak + 1 : 0
+          acc.lastCorrectAt =
+            correctness === 1 ? detail.createdAt : acc.lastCorrectAt
+
+          acc.partialCorrectCount += correctness > 0 && correctness < 1 ? 1 : 0
+          acc.lastPartialCorrectAt =
+            correctness > 0 && correctness < 1
+              ? detail.createdAt
+              : acc.lastPartialCorrectAt
+
+          acc.wrongCount += correctness === 0 ? 1 : 0
+          acc.lastWrongAt =
+            correctness === 0 ? detail.createdAt : acc.lastWrongAt
+
+          // check if points and xp are awarded and set attributes
+          const newPoints =
+            typeof acc.lastAwardedAt !== 'undefined'
+              ? dayjs(acc.lastAwardedAt).isBefore(
+                  dayjs().subtract(
+                    instance.options.resetTimeDays ??
+                      POINTS_AWARD_TIMEFRAME_DAYS,
+                    'days'
+                  )
+                )
+              : true
+          const newXP =
+            typeof acc.lastXpAwardedAt !== 'undefined'
+              ? dayjs(acc.lastXpAwardedAt).isBefore(
+                  dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+                )
+              : true
+
+          if (newPoints && participationActive) {
+            acc.totalPointsAwarded += score
+            acc.lastAwardedAt = detail.createdAt
+          }
+          if (newXP) {
+            acc.totalXpAwarded += xp
+            acc.lastXpAwardedAt = detail.createdAt
+          }
+
+          // update spaced repetition parameters
+          const newValues = updateSpacedRepetition({
+            eFactor: acc.eFactor,
+            interval: acc.interval,
+            streak: acc.correctCountStreak,
+            grade: correctness,
+          })
+          acc.eFactor = newValues.eFactor
+          acc.interval = newValues.interval
+          acc.nextDueAt = dayjs(detail.createdAt)
+            .add(acc.interval, 'day')
+            .toDate()
+
+          // TODO: replace this through helper function once available
+          // update aggregated responses
+          const value = toLowerCase(detail.response.value.trim())
+          const MD5 = createHash('md5')
+          MD5.update(value)
+          const hashedValue = MD5.digest('hex')
+
+          if (Object.keys(acc.aggResponses.responses).includes(hashedValue)) {
+            acc.aggResponses.responses = {
+              ...acc.aggResponses.responses,
+              [hashedValue]: {
+                ...acc.aggResponses.responses[hashedValue]!,
+                count: acc.aggResponses.responses[hashedValue]!.count + 1,
+              },
+            }
+          } else {
+            acc.aggResponses.responses = {
+              ...acc.aggResponses.responses,
+              [hashedValue]: {
+                value: value,
+                count: 1,
+                correct: correctness === 1,
+              },
+            }
+          }
+          acc.aggResponses.total = acc.aggResponses.total + 1
+
+          // update instance results
+          if (Object.keys(instanceResults.responses).includes(hashedValue)) {
+            instanceResults.responses = {
+              ...instanceResults.responses,
+              [hashedValue]: {
+                ...instanceResults.responses[hashedValue]!,
+                count: instanceResults.responses[hashedValue]!.count + 1,
+              },
+            }
+          } else {
+            instanceResults.responses = {
+              ...instanceResults.responses,
+              [hashedValue]: {
+                value: value,
+                count: 1,
+                correct: correctness === 1,
+              },
+            }
+          }
+          instanceResults.total = instanceResults.total + 1
+
+          // check if update of detail response is required
+          const detailUpdate = computeDetailUpdate({
+            detail,
+            newValues: {
+              score,
+              pointsAwarded: score,
+              xpAwarded: xp,
+              timeSpent: detail.timeSpent,
+            },
+          })
+          if (detailUpdate) {
+            detailUpdates.push(detailUpdate)
+          }
+
+          return acc
+        },
+        {
+          totalScore: 0,
+          totalPointsAwarded: 0,
+          totalXpAwarded: 0,
+          lastAwardedAt: undefined,
+          lastXpAwardedAt: undefined,
+          correctCount: 0,
+          correctCountStreak: 0,
+          lastCorrectAt: undefined,
+          partialCorrectCount: 0,
+          lastPartialCorrectAt: undefined,
+          wrongCount: 0,
+          lastWrongAt: undefined,
+          eFactor: 2.5,
+          interval: 1,
+          nextDueAt: undefined,
+          aggResponses: {
+            ...emptyInstanceResults,
+          } as ElementResultsOpen,
+        }
+      )
+
+      // set the aggregated values
+      totalScore = newValues.totalScore
+      totalPointsAwarded = newValues.totalPointsAwarded
+      totalXpAwarded = newValues.totalXpAwarded
+      lastAwardedAt = newValues.lastAwardedAt
+      lastXpAwardedAt = newValues.lastXpAwardedAt
+
+      correctCount = newValues.correctCount
+      correctCountStreak = newValues.correctCountStreak
+      lastCorrectAt = newValues.lastCorrectAt
+      partialCorrectCount = newValues.partialCorrectCount
+      lastPartialCorrectAt = newValues.lastPartialCorrectAt
+      wrongCount = newValues.wrongCount
+      lastWrongAt = newValues.lastWrongAt
+      eFactor = newValues.eFactor
+      interval = newValues.interval
+      nextDueAt = newValues.nextDueAt
+      aggregatedResponses = newValues.aggResponses
+    } else {
+      throw new Error(
+        `Unsupported element type or missing results for element instance ${instance.id} with type ${instance.elementType}`
+      )
     }
 
-    // prepare instance updates if any are required
-    const instanceUpdate = computeInstanceUpdate({
-      instance: instance as ElementInstance & {
-        instanceStatistics: InstanceStatistics
-      },
+    // update question response, if the content is different
+    // (if participation is not active, do not update awarded points in any case)
+    const responseUpdate = computeResponseUpdate({
+      response,
       newValues: {
-        results: instanceResults,
-        correctCount: instanceCorrectCount,
-        partialCorrectCount: instancePartialCorrectCount,
-        wrongCount: instanceWrongCount,
-        uniqueParticipantCount: instanceUniqueParticipantCount,
-        averageTimeSpent: instanceAverageTimeSpent,
-        firstCorrectCount: instanceFirstCorrectCount,
-        firstPartialCorrectCount: instanceFirstPartialCorrectCount,
-        firstWrongCount: instanceFirstWrongCount,
-        lastCorrectCount: instanceLastCorrectCount,
-        lastPartialCorrectCount: instanceLastPartialCorrectCount,
-        lastWrongCount: instanceLastWrongCount,
+        trialsCount,
+        totalScore,
+        totalPointsAwarded: participationActive
+          ? totalPointsAwarded
+          : undefined,
+        totalXpAwarded,
+        averageTimeSpent,
+        lastAwardedAt: participationActive ? lastAwardedAt : undefined,
+        lastXpAwardedAt,
+        lastAnsweredAt,
+        correctCount,
+        correctCountStreak,
+        lastCorrectAt,
+        partialCorrectCount,
+        lastPartialCorrectAt,
+        wrongCount,
+        lastWrongAt,
+        eFactor,
+        interval,
+        nextDueAt,
+        firstResponse,
+        firstResponseCorrectness,
+        lastResponse,
+        lastResponseCorrectness,
+        aggregatedResponses,
       },
     })
-    if (instanceUpdate) {
-      instanceUpdates.push(instanceUpdate)
+    if (responseUpdate) {
+      responseUpdates.push(responseUpdate)
     }
 
-    // console.log(detailUpdates)
-    // console.log(responseUpdates)
-    // console.log(instanceUpdates)
-    // console.log(participantUpdates)
+    // update instance counts
+    instanceCorrectCount += correctCount
+    instancePartialCorrectCount += partialCorrectCount
+    instanceWrongCount += wrongCount
 
-    // TODO: uncomment this part to apply updates in a single transaction for each element instance
-    // ! Execute all updates that are potentially required in a single transaction
-    // if (
-    //   detailUpdates.length > 0 ||
-    //   responseUpdates.length > 0 ||
-    //   instanceUpdates.length > 0 ||
-    //   Object.keys(participantUpdates).length > 0
-    // ) {
-    //   await prisma.$transaction([
-    //     ...detailUpdates.map((update) =>
-    //       prisma.questionResponseDetail.update(update)
-    //     ),
-    //     ...responseUpdates.map((update) =>
-    //       prisma.questionResponse.update(update)
-    //     ),
-    //     ...instanceUpdates.map((update) =>
-    //       prisma.elementInstance.update(update)
-    //     ),
-    //     ...Object.entries(participantUpdates).map(
-    //       ([participantId, updatedData]) =>
-    //         prisma.participant.update({
-    //           where: {
-    //             id: participantId,
-    //           },
-    //           data: {
-    //             xp: {
-    //               increment: updatedData.additionalXp ?? 0,
-    //             },
-    //           },
-    //         })
-    //     ),
-    //   ])
-    // }
+    instanceFirstCorrectCount =
+      (instanceFirstCorrectCount ?? 0) +
+      (firstResponseCorrectness === ResponseCorrectness.CORRECT ? 1 : 0)
+    instanceFirstPartialCorrectCount =
+      (instanceFirstPartialCorrectCount ?? 0) +
+      (firstResponseCorrectness === ResponseCorrectness.PARTIAL ? 1 : 0)
+    instanceFirstWrongCount =
+      (instanceFirstWrongCount ?? 0) +
+      (firstResponseCorrectness === ResponseCorrectness.WRONG ? 1 : 0)
+
+    instanceLastCorrectCount =
+      (instanceLastCorrectCount ?? 0) +
+      (lastResponseCorrectness! === ResponseCorrectness.CORRECT ? 1 : 0)
+    instanceLastPartialCorrectCount =
+      (instanceLastPartialCorrectCount ?? 0) +
+      (lastResponseCorrectness! === ResponseCorrectness.PARTIAL ? 1 : 0)
+    instanceLastWrongCount =
+      (instanceLastWrongCount ?? 0) +
+      (lastResponseCorrectness! === ResponseCorrectness.WRONG ? 1 : 0)
   }
+
+  // prepare instance updates if any are required
+  const instanceUpdate = computeInstanceUpdate({
+    instance: instance as ElementInstance & {
+      instanceStatistics: InstanceStatistics
+    },
+    newValues: {
+      results: instanceResults,
+      correctCount: instanceCorrectCount,
+      partialCorrectCount: instancePartialCorrectCount,
+      wrongCount: instanceWrongCount,
+      uniqueParticipantCount: instanceUniqueParticipantCount,
+      averageTimeSpent: instanceAverageTimeSpent,
+      firstCorrectCount: instanceFirstCorrectCount,
+      firstPartialCorrectCount: instanceFirstPartialCorrectCount,
+      firstWrongCount: instanceFirstWrongCount,
+      lastCorrectCount: instanceLastCorrectCount,
+      lastPartialCorrectCount: instanceLastPartialCorrectCount,
+      lastWrongCount: instanceLastWrongCount,
+    },
+  })
+  if (instanceUpdate) {
+    instanceUpdates.push(instanceUpdate)
+  }
+
+  // console.log(detailUpdates)
+  // console.log(responseUpdates)
+  // console.log(instanceUpdates)
+  // console.log(participantUpdates)
+
+  // TODO: uncomment this part to apply updates in a single transaction for each element instance
+  // ! Execute all updates that are potentially required in a single transaction
+  // if (
+  //   detailUpdates.length > 0 ||
+  //   responseUpdates.length > 0 ||
+  //   instanceUpdates.length > 0 ||
+  //   Object.keys(participantUpdates).length > 0
+  // ) {
+  //   await prisma.$transaction([
+  //     ...detailUpdates.map((update) =>
+  //       prisma.questionResponseDetail.update(update)
+  //     ),
+  //     ...responseUpdates.map((update) =>
+  //       prisma.questionResponse.update(update)
+  //     ),
+  //     ...instanceUpdates.map((update) =>
+  //       prisma.elementInstance.update(update)
+  //     ),
+  //     ...Object.entries(participantUpdates).map(
+  //       ([participantId, updatedData]) =>
+  //         prisma.participant.update({
+  //           where: {
+  //             id: participantId,
+  //           },
+  //           data: {
+  //             xp: {
+  //               increment: updatedData.additionalXp ?? 0,
+  //             },
+  //           },
+  //         })
+  //     ),
+  //   ])
+  // }
 }
 
 function computeDetailUpdate({
