@@ -17,16 +17,17 @@ model ParticipantAnalytics {
   type AnalyticsType
 
   timestamp  DateTime @db.Date
-  computedAt DateTime @db.Date @default(now())
+  computedAt DateTime @default(now()) @db.Date
 
   // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
   responseCount Int // total number of unique questions attempted
 
   // summed across all question attempts (non-unique)
-  totalScore  Int
-  totalPoints Int
-  totalXp     Int
+  totalScore     Int
+  totalPoints    Int
+  totalXp        Int
+  totalTimeSpent Float @db.Real
 
   // responseCount = meanCorrectCount + meanPartialCorrectCount + meanWrongCount
   meanCorrectCount        Float @db.Real // mean over responses to same question and sum over all questions
@@ -61,13 +62,14 @@ model AggregatedAnalytics {
 
   // all quantities are defined as the values at the end of the selected timeframe
   timestamp              DateTime @db.Date
-  computedAt             DateTime @db.Date @default(now())
+  computedAt             DateTime @default(now()) @db.Date
   responseCount          Int
   participantCount       Int
   totalScore             Int
   totalPoints            Int
   totalXp                Int
   totalElementsAvailable Int // total number of elements available at the end of selected timeframe (practice quizzes & microlearnings != instances linked to course)
+  totalTimeSpent         Float    @db.Real
 
   aggregatedCompetencyAnalytics AggregatedCompetencyAnalytics[]
 
