@@ -496,12 +496,12 @@ function combineCorrectnessParams({
 }
 
 type SpacedRepetitionResult = {
-  efactor: number
+  eFactor: number
   interval: number
   nextDueAt: Date
 }
 
-function updateSpacedRepetition({
+export function updateSpacedRepetition({
   eFactor,
   interval,
   streak,
@@ -544,7 +544,7 @@ function updateSpacedRepetition({
   const nextDueAt = dayjs().add(newInterval, 'day').toDate()
 
   return {
-    efactor: newEfactor,
+    eFactor: newEfactor,
     interval: newInterval,
     nextDueAt: nextDueAt,
   }
@@ -931,7 +931,7 @@ async function respondToFlashcard(
           incorrect: response === FlashcardCorrectness.INCORRECT,
         }),
 
-        eFactor: resultSpacedRepetition.efactor,
+        eFactor: resultSpacedRepetition.eFactor,
         interval: resultSpacedRepetition.interval,
         nextDueAt: resultSpacedRepetition.nextDueAt,
       },
@@ -959,7 +959,7 @@ async function respondToFlashcard(
           existingResponse,
         }),
 
-        eFactor: resultSpacedRepetition.efactor,
+        eFactor: resultSpacedRepetition.eFactor,
         interval: resultSpacedRepetition.interval,
         nextDueAt: resultSpacedRepetition.nextDueAt,
       },
@@ -1188,7 +1188,7 @@ async function respondToContent(
         lastCorrectAt: new Date(),
 
         // update spaced repetition parameters
-        eFactor: resultSpacedRepetition.efactor,
+        eFactor: resultSpacedRepetition.eFactor,
         interval: resultSpacedRepetition.interval,
         nextDueAt: resultSpacedRepetition.nextDueAt,
       },
@@ -1219,7 +1219,7 @@ async function respondToContent(
         lastCorrectAt: new Date(),
 
         // update spaced repetition parameters
-        eFactor: resultSpacedRepetition.efactor,
+        eFactor: resultSpacedRepetition.eFactor,
         interval: resultSpacedRepetition.interval,
         nextDueAt: resultSpacedRepetition.nextDueAt,
       },
@@ -2003,7 +2003,7 @@ export async function respondToQuestion(
             incorrect: correctness === 0,
           }),
 
-          eFactor: resultSpacedRepetition.efactor,
+          eFactor: resultSpacedRepetition.eFactor,
           nextDueAt: resultSpacedRepetition.nextDueAt,
           interval: resultSpacedRepetition.interval,
         },
@@ -2037,7 +2037,7 @@ export async function respondToQuestion(
             existingResponse,
           }),
 
-          eFactor: resultSpacedRepetition.efactor,
+          eFactor: resultSpacedRepetition.eFactor,
           nextDueAt: resultSpacedRepetition.nextDueAt,
           interval: resultSpacedRepetition.interval,
         },
