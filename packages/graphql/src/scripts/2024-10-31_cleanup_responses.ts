@@ -492,12 +492,15 @@ async function checkAndUpdateInstance({
         aggResponses: ElementResultsChoices
       }>(
         (acc, detail) => {
-          // compute correctness
+          // compute correctness (consistent with backend mutation, FT questions without sample solution should be considered to be correct)
           const correctness =
-            evaluateAnswerCorrectness({
-              elementData: instance.elementData,
-              response: detail.response,
-            }) ?? 0
+            !instance.elementData.hasSampleSolution &&
+            instance.elementType === ElementType.FREE_TEXT
+              ? 1
+              : (evaluateAnswerCorrectness({
+                  elementData: instance.elementData,
+                  response: detail.response,
+                }) ?? 0)
 
           // update the score, correctness counters, etc.
           const score = computeSimpleAwardedPoints({
@@ -902,10 +905,12 @@ async function checkAndUpdateInstance({
       const firstCorrect = evaluateAnswerCorrectness({
         elementData: instance.elementData,
         response: firstResponse,
+        treatFTDefaultCorrect: true,
       })
       const lastCorrect = evaluateAnswerCorrectness({
         elementData: instance.elementData,
         response: lastResponse,
+        treatFTDefaultCorrect: true,
       })
       firstResponseCorrectness =
         firstCorrect === 1
@@ -944,6 +949,7 @@ async function checkAndUpdateInstance({
             evaluateAnswerCorrectness({
               elementData: instance.elementData,
               response: detail.response,
+              treatFTDefaultCorrect: true,
             }) ?? 0
 
           // update the score, correctness counters, etc.
@@ -1801,6 +1807,9 @@ function computeInstanceUpdate({
       }
     }
 
+    // first and last counts are only set for instances in practice quizzes
+    const isPracticeQuiz = instance.type === ElementInstanceType.PRACTICE_QUIZ
+
     updateReq = updateReq || !isDeepEqual(instance.results, newValues.results)
     updateReq =
       updateReq ||
@@ -1816,27 +1825,33 @@ function computeInstanceUpdate({
         stats.wrongCount !== newValues.wrongCount)
     updateReq =
       updateReq ||
-      (typeof newValues.firstCorrectCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.firstCorrectCount !== 'undefined' &&
         stats.firstCorrectCount !== newValues.firstCorrectCount)
     updateReq =
       updateReq ||
-      (typeof newValues.firstPartialCorrectCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.firstPartialCorrectCount !== 'undefined' &&
         stats.firstPartialCorrectCount !== newValues.firstPartialCorrectCount)
     updateReq =
       updateReq ||
-      (typeof newValues.firstWrongCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.firstWrongCount !== 'undefined' &&
         stats.firstWrongCount !== newValues.firstWrongCount)
     updateReq =
       updateReq ||
-      (typeof newValues.lastCorrectCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.lastCorrectCount !== 'undefined' &&
         stats.lastCorrectCount !== newValues.lastCorrectCount)
     updateReq =
       updateReq ||
-      (typeof newValues.lastPartialCorrectCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.lastPartialCorrectCount !== 'undefined' &&
         stats.lastPartialCorrectCount !== newValues.lastPartialCorrectCount)
     updateReq =
       updateReq ||
-      (typeof newValues.lastWrongCount !== 'undefined' &&
+      (isPracticeQuiz &&
+        typeof newValues.lastWrongCount !== 'undefined' &&
         stats.lastWrongCount !== newValues.lastWrongCount)
     updateReq =
       updateReq ||
@@ -1866,6 +1881,24 @@ function computeInstanceUpdate({
               correctCount: newValues.correctCount,
               partialCorrectCount: newValues.partialCorrectCount,
               wrongCount: newValues.wrongCount,
+              firstCorrectCount: isPracticeQuiz
+                ? newValues.firstCorrectCount
+                : undefined,
+              firstPartialCorrectCount: isPracticeQuiz
+                ? newValues.firstPartialCorrectCount
+                : undefined,
+              firstWrongCount: isPracticeQuiz
+                ? newValues.firstWrongCount
+                : undefined,
+              lastCorrectCount: isPracticeQuiz
+                ? newValues.lastCorrectCount
+                : undefined,
+              lastPartialCorrectCount: isPracticeQuiz
+                ? newValues.lastPartialCorrectCount
+                : undefined,
+              lastWrongCount: isPracticeQuiz
+                ? newValues.lastWrongCount
+                : undefined,
               uniqueParticipantCount: newValues.uniqueParticipantCount,
               averageTimeSpent: newValues.averageTimeSpent,
             },
