@@ -29,8 +29,6 @@ function PracticeQuizPublishingModal({
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
     useMutation(PublishPracticeQuizDocument)
 
-  // TODO: translate content of entire file
-
   return (
     <Modal
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
