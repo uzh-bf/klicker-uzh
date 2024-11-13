@@ -66,6 +66,10 @@ async function run() {
   let loopCounter = 0
   let instanceCounter = 0
 
+  let totalInstanceUpdates = 0
+  let totalResponseUpdates = 0
+  let totalDetailUpdates = 0
+
   while (true) {
     // fetch all element instances with their corresponding responses
     const instances = await prisma.elementInstance.findMany({
@@ -101,13 +105,22 @@ async function run() {
       console.log('PROCESSING INSTANCE', instanceCounter, 'OF', numOfInstances)
 
       // update the instance
-      await checkAndUpdateInstance({ prisma, instance })
+      const { instanceUpdates, responseUpdates, detailUpdates } =
+        await checkAndUpdateInstance({ prisma, instance })
+
+      totalInstanceUpdates += instanceUpdates
+      totalResponseUpdates += responseUpdates
+      totalDetailUpdates += detailUpdates
     }
 
     // increment the loop counter
     console.log('SUCCESSFULLY PROCESSED BATCH', loopCounter + 1)
     loopCounter += 1
   }
+
+  console.log('TOTAL INSTANCES UPDATED:', totalInstanceUpdates)
+  console.log('TOTAL RESPONSES UPDATED:', totalResponseUpdates)
+  console.log('TOTAL DETAILS UPDATED:', totalDetailUpdates)
 }
 
 async function checkAndUpdateInstance({
@@ -563,7 +576,6 @@ async function checkAndUpdateInstance({
             .add(acc.interval, 'day')
             .toDate()
 
-          // TODO: replace this through helper function once available
           // update aggregated responses
           acc.aggResponses.choices = detail.response.choices.reduce(
             (acc, ix) => ({
@@ -1232,6 +1244,12 @@ async function checkAndUpdateInstance({
   //     ),
   //   ])
   // }
+
+  return {
+    instanceUpdates: instanceUpdates.length,
+    responseUpdates: responseUpdates.length,
+    detailUpdates: detailUpdates.length,
+  }
 }
 
 function computeDetailUpdate({
@@ -1289,7 +1307,7 @@ function computeDetailUpdate({
     // }
     if (
       typeof newValues.timeSpent !== 'undefined' &&
-      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-5
+      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-3
     ) {
       console.log(
         'TimeSpent not identical:',
@@ -1315,7 +1333,7 @@ function computeDetailUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.timeSpent !== 'undefined' &&
-      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-5)
+      Math.abs(detail.timeSpent - newValues.timeSpent) > 1e-3)
 
   if (updateReq) {
     // if (verbose) {
@@ -1414,7 +1432,7 @@ function computeResponseUpdate({
     // }
     if (
       typeof newValues.averageTimeSpent !== 'undefined' &&
-      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-5
+      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-3
     ) {
       console.log(
         'averageTimeSpent not identical:',
@@ -1562,7 +1580,7 @@ function computeResponseUpdate({
   updateReq =
     updateReq ||
     (typeof newValues.averageTimeSpent !== 'undefined' &&
-      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-5)
+      Math.abs(response.averageTimeSpent - newValues.averageTimeSpent) > 1e-3)
   updateReq =
     updateReq ||
     (typeof newValues.correctCount !== 'undefined' &&
@@ -1772,7 +1790,7 @@ function computeInstanceUpdate({
       if (
         typeof newValues.averageTimeSpent !== 'undefined' &&
         Math.abs((stats.averageTimeSpent ?? 0) - newValues.averageTimeSpent) >
-          1e-5
+          1e-3
       ) {
         console.log(
           'Average time spent not identical:',
@@ -1828,7 +1846,7 @@ function computeInstanceUpdate({
       updateReq ||
       (typeof newValues.averageTimeSpent !== 'undefined' &&
         Math.abs((stats.averageTimeSpent ?? 0) - newValues.averageTimeSpent) >
-          1e-5)
+          1e-3)
 
     if (updateReq) {
       // if (verbose) {
