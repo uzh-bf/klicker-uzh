@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2024-11-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** sample solution for free text questions should only be required conditionally ([#4371](https://github.com/uzh-bf/klicker-uzh/issues/4371)) ([9eef146](https://github.com/uzh-bf/klicker-uzh/commit/9eef146c15a2337e4d25ba04f0fdaf7be53b9a66))
+
 ## [3.3.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2024-11-08)
 
 
