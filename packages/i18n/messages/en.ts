@@ -1746,7 +1746,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmPublication: 'Confirm Publication',
       schedulePublication: 'Schedule Publication',
       practiceQuizSchedulingHint:
-        'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again.',
+        'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
     },
     groupActivity: {
