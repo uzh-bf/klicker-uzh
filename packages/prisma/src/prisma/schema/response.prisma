@@ -79,7 +79,7 @@ model QuestionResponseDetail {
   score         Float  @default(0)
   pointsAwarded Float? @default(0)
   xpAwarded     Float  @default(0)
-  timeSpent     Float  @default(0) @db.Real // TODO: remove default value after applying migration
+  timeSpent     Float  @db.Real
 
   /// [PrismaSingleQuestionResponse]
   response Json
