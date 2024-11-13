@@ -317,7 +317,7 @@ You are currently **not** participating in the course leaderboard, meaning that 
 Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
 `,
       activityPreview:
-        'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is only meant to check the content and appearance of this KlickerUZH activity and that all student interaction functionalities, as well as the possibility to respond to questions, are unavailable.',
+        'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
     createAccount: {
       dataProcessingTitle: 'Data Processing and Privacy',
