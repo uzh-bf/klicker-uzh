@@ -1752,6 +1752,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Zuweisen der Gruppen ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob genügend Studierende im Zuweisungspool sind und versuchen Sie es erneut.',
       groupAssignmentSuccessful:
         'Die Gruppenzuweisung war erfolgreich. Alle Studierenden aus dem Pool wurden in zufällige Gruppen eingeteilt.',
+      practiceQuizPublishImmediately: 'Sofort Veröffentlichen',
+      practiceQuizPublishingHint:
+        'Wenn Sie diese Option wählen, wird das Übungs-Quiz "{title}" sofort für alle Studierenden in Ihrem Kurs sichtbar. Da Studierende Antworten auf alle veröffentlichten Übungs-Quizzes abgeben können, können diese nur gelöscht, aber nicht mehr unveröffentlicht werden.',
+      confirmPublication: 'Veröffentlichung bestätigen',
+      schedulePublication: 'Veröffentlichung planen',
+      practiceQuizSchedulingHint:
+        'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden.',
+      confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

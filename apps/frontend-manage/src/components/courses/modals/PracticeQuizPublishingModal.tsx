@@ -40,17 +40,14 @@ function PracticeQuizPublishingModal({
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
       <div className="flex w-full flex-col gap-4 md:flex-row">
-        <div className="border-uzh-grey-80 w-full border-b border-solid pb-3 md:w-1/2 md:border-b-0 md:border-r md:pr-3">
+        <div className="border-uzh-grey-80 w-full border-b border-solid pb-3 md:w-1/2 md:border-b-0 md:border-r md:pr-5">
           <div className="mb-2 flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faUserGroup} />
-            <H3 className={{ root: 'mb-0' }}>Publish Immediately</H3>
+            <H3 className={{ root: 'mb-0' }}>
+              {t('manage.course.practiceQuizPublishImmediately')}
+            </H3>
           </div>
-          <div>
-            When choosing this option, the practice quiz {title} will become
-            immediately visible to all students in your course. Since students
-            can submit answers to all published practice quizzes, they can only
-            be deleted, but no longer be unpublished.
-          </div>
+          <div>{t('manage.course.practiceQuizPublishingHint', { title })}</div>
           <Button
             className={{
               root: twMerge(
@@ -70,21 +67,19 @@ function PracticeQuizPublishingModal({
             loading={practiceQuizPublishing}
             data={{ cy: 'publish-practice-quiz-immediately' }}
           >
-            Confirm Publication
+            {t('manage.course.confirmPublication')}
           </Button>
         </div>
 
         <div className="w-full md:w-1/2 md:pl-3">
           <div className="mb-2 flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faClock} />
-            <H3 className={{ root: 'mb-0' }}>Schedule Publication</H3>
+            <H3 className={{ root: 'mb-0' }}>
+              {t('manage.course.schedulePublication')}
+            </H3>
           </div>
           <div className="mb-2">
-            Scheduling the practice quiz {title} for publication at a certain
-            point in time, it will automatically become available to all
-            students in the course at that time. Before the scheduled
-            publication date is reached, the activity can still be unpublished
-            and edited again.
+            {t('manage.course.practiceQuizSchedulingHint', { title })}
           </div>
           <Formik
             validateOnMount
@@ -137,7 +132,7 @@ function PracticeQuizPublishingModal({
                     disabled={!isValid}
                     data={{ cy: 'schedule-practice-quiz-publication' }}
                   >
-                    Confirm Scheduling
+                    {t('manage.course.confirmScheduling')}
                   </Button>
                 </Form>
               )

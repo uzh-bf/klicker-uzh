@@ -1740,6 +1740,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred during the group assignment. Please check that sufficiently many students are in the assignment pool and try again.',
       groupAssignmentSuccessful:
         'The group assignment was successful. All students from the pool were assigned to random groups.',
+      practiceQuizPublishImmediately: 'Publish Immediately',
+      practiceQuizPublishingHint:
+        'When choosing this option, the practice quiz "{title}" will become immediately visible to all students in your course. Since students can submit answers to all published practice quizzes, they can only be deleted, but no longer be unpublished.',
+      confirmPublication: 'Confirm Publication',
+      schedulePublication: 'Schedule Publication',
+      practiceQuizSchedulingHint:
+        'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again.',
+      confirmScheduling: 'Confirm Scheduling',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
