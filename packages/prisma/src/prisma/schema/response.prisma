@@ -12,7 +12,7 @@ model QuestionResponse {
   totalScore         Float     @default(0)
   totalPointsAwarded Float?    @default(0)
   totalXpAwarded     Float     @default(0)
-  averageTimeSpent   Float     @default(0) @db.Real // TODO: remove default value after applying migration
+  averageTimeSpent   Float     @db.Real
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
   lastAnsweredAt     DateTime?
