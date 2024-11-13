@@ -492,12 +492,15 @@ async function checkAndUpdateInstance({
         aggResponses: ElementResultsChoices
       }>(
         (acc, detail) => {
-          // compute correctness
+          // compute correctness (consistent with backend mutation, FT questions without sample solution should be considered to be correct)
           const correctness =
-            evaluateAnswerCorrectness({
-              elementData: instance.elementData,
-              response: detail.response,
-            }) ?? 0
+            !instance.elementData.hasSampleSolution &&
+            instance.elementType === ElementType.FREE_TEXT
+              ? 1
+              : (evaluateAnswerCorrectness({
+                  elementData: instance.elementData,
+                  response: detail.response,
+                }) ?? 0)
 
           // update the score, correctness counters, etc.
           const score = computeSimpleAwardedPoints({
@@ -902,10 +905,12 @@ async function checkAndUpdateInstance({
       const firstCorrect = evaluateAnswerCorrectness({
         elementData: instance.elementData,
         response: firstResponse,
+        treatFTDefaultCorrect: true,
       })
       const lastCorrect = evaluateAnswerCorrectness({
         elementData: instance.elementData,
         response: lastResponse,
+        treatFTDefaultCorrect: true,
       })
       firstResponseCorrectness =
         firstCorrect === 1
@@ -944,6 +949,7 @@ async function checkAndUpdateInstance({
             evaluateAnswerCorrectness({
               elementData: instance.elementData,
               response: detail.response,
+              treatFTDefaultCorrect: true,
             }) ?? 0
 
           // update the score, correctness counters, etc.

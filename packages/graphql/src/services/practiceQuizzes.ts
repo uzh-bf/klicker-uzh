@@ -874,7 +874,7 @@ async function respondToFlashcard(
         participant: {
           connect: { id: ctx.user.sub },
         },
-        averageTimeSpent: newAverageResponseTime,
+        averageTimeSpent: newAverageResponseTime ?? 0,
         elementInstance: {
           connect: { id },
         },
@@ -1130,7 +1130,7 @@ async function respondToContent(
         participant: {
           connect: { id: ctx.user.sub },
         },
-        averageTimeSpent: newAverageResponseTime,
+        averageTimeSpent: newAverageResponseTime ?? 0,
         elementInstance: {
           connect: { id },
         },
@@ -1226,15 +1226,15 @@ async function respondToContent(
   return transactionResult
 }
 
-interface EvaluateAnswerCorrectnessArgs {
-  elementData: AllElementTypeData
-  response: ResponseInput
-}
-
 export function evaluateAnswerCorrectness({
   elementData,
   response,
-}: EvaluateAnswerCorrectnessArgs) {
+  treatFTDefaultCorrect = false,
+}: {
+  elementData: AllElementTypeData
+  response: ResponseInput
+  treatFTDefaultCorrect?: boolean
+}) {
   switch (elementData.type) {
     case ElementType.SC:
     case ElementType.MC:
@@ -1284,6 +1284,11 @@ export function evaluateAnswerCorrectness({
     }
 
     case ElementType.FREE_TEXT: {
+      // if the corresponding option is activated, treat FT questions without a sample solution always as correct
+      if (treatFTDefaultCorrect && !elementData.options.hasSampleSolution) {
+        return 1
+      }
+
       const solutions = (elementData.options as FreeTextQuestionOptions)
         .solutions
 
@@ -1652,9 +1657,11 @@ export async function respondToQuestion(
     ) {
       correctness = 1
     } else {
-      correctness = elementData.options.hasSampleSolution
-        ? evaluateAnswerCorrectness({ elementData, response })
-        : 1
+      correctness = evaluateAnswerCorrectness({
+        elementData,
+        response,
+        treatFTDefaultCorrect: true,
+      })
     }
 
     const updatedResults = updateQuestionResults({
@@ -1950,7 +1957,7 @@ export async function respondToQuestion(
           totalPointsAwarded: pointsAwarded,
           totalXpAwarded: xpAwarded,
           trialsCount: 1,
-          averageTimeSpent: newAverageResponseTime,
+          averageTimeSpent: newAverageResponseTime ?? 0,
           lastAwardedAt,
           lastXpAwardedAt,
           firstResponse: response as SingleQuestionResponse,
@@ -2379,6 +2386,7 @@ export async function getPreviousStackEvaluation(
         const correctness = evaluateAnswerCorrectness({
           elementData,
           response: lastResponse,
+          treatFTDefaultCorrect: true,
         })
 
         const evaluation = evaluateElementResponse(
