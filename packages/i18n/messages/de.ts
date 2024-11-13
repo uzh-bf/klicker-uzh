@@ -1165,10 +1165,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
-      practiceQuizAvailableFrom:
-        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
+      practiceQuizSchedulingMoved:
+        'Die Funktionalität zur Planung von Übungs-Quizzes wurde verschoben! Erstellen Sie einfach Ihr Übungs-Quiz, veröffentlichen Sie es und wählen Sie zwischen sofortiger Veröffentlichung und einem geplanten Startdatum, ab welchem die Aktivität verfügbar sein soll.',
       practiceQuizStartAfterCourseStart:
         'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
+      practiceQuizStartReqeuired:
+        'Bitte geben Sie ein Startdatum für Ihr Übungs-Quiz ein.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:

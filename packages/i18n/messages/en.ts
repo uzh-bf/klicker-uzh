@@ -1159,10 +1159,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      practiceQuizAvailableFrom:
-        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
+      practiceQuizSchedulingMoved:
+        'The functionality to schedule practice quizzes has been moved! Simply create your practice quiz, publish it and choose between immediate publication and a scheduled start date when the activity should become available.',
       practiceQuizStartAfterCourseStart:
         'The start date of the practice quiz must be after the start date of the course.',
+      practiceQuizStartReqeuired:
+        'Please choose the start date of the practice quiz.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:

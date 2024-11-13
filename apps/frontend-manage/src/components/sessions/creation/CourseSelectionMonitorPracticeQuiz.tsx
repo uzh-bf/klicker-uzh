@@ -34,7 +34,6 @@ function CourseSelectionMonitorPracticeQuiz({
 
       setCourseGamified(course.isGamified)
       setTouched({
-        availableFrom: true,
         courseStartDate: true,
         courseEndDate: true,
       })

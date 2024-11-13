@@ -1,10 +1,9 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
-import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
+import { faCrown, faGears, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  FormikDateField,
   FormikNumberField,
   FormikSelectField,
   UserNotification,
@@ -161,20 +160,14 @@ function PracticeQuizSettingsStep({
                     {t('manage.sessionForms.practiceQuizAvailabilityOptional')}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div className="mt-1 text-sm">
-                    {t('manage.sessionForms.practiceQuizAvailableFrom')}
-                  </div>
-                  <FormikDateField
-                    label={t('shared.generic.availableFrom')}
-                    name="availableFrom"
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      tooltip: 'z-20',
-                    }}
-                    data={{ cy: 'select-available-from' }}
+                <div className="flex flex-row items-center gap-4">
+                  <FontAwesomeIcon
+                    icon={faWarning}
+                    className="text-orange-500"
                   />
+                  <div className="mt-1 text-sm">
+                    {t('manage.sessionForms.practiceQuizSchedulingMoved')}
+                  </div>
                 </div>
               </div>
             </div>

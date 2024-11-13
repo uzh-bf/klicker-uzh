@@ -3,7 +3,6 @@ import {
   ElementInstanceType,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
-  PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -11,7 +10,6 @@ import { useTranslations } from 'next-intl'
 interface PublishConfirmationModalProps {
   elementType:
     | ElementInstanceType.Microlearning
-    | ElementInstanceType.PracticeQuiz
     | ElementInstanceType.GroupActivity
   elementId: string
   title: string
@@ -29,14 +27,7 @@ function PublishConfirmationModal({
   setOpen,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
-  const [publishPracticeQuiz, { loading: pqPublishLoading }] = useMutation(
-    PublishPracticeQuizDocument,
-    {
-      variables: {
-        id: elementId,
-      },
-    }
-  )
+
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
     {
@@ -59,12 +50,10 @@ function PublishConfirmationModal({
       title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
-          loading={pqPublishLoading || mlPublishLoading || gaPublishLoading}
+          loading={mlPublishLoading || gaPublishLoading}
           onClick={async () => {
             if (elementType === ElementInstanceType.Microlearning) {
               await publishMicroLearning()
-            } else if (elementType === ElementInstanceType.PracticeQuiz) {
-              await publishPracticeQuiz()
             } else if (elementType === ElementInstanceType.GroupActivity) {
               await publishGroupActivity()
             }
