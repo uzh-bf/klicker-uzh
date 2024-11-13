@@ -380,6 +380,7 @@ input ElementStackInput {
 
 enum ElementStackType {
   GROUP_ACTIVITY
+  LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
 }

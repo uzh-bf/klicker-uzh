@@ -424,6 +424,7 @@ export type ElementStackInput = {
 
 export enum ElementStackType {
   GroupActivity = 'GROUP_ACTIVITY',
+  LiveQuiz = 'LIVE_QUIZ',
   Microlearning = 'MICROLEARNING',
   PracticeQuiz = 'PRACTICE_QUIZ'
 }
