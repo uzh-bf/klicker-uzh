@@ -323,8 +323,7 @@ function ElementStack({
       </div>
 
       {/* display continue button if question was already answered */}
-      {previewOnly ||
-      (typeof stackStorage !== 'undefined' && !showMarkAsRead) ? (
+      {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
         <Button
           className={{ root: 'float-right mt-4 text-lg' }}
           onClick={() => {
@@ -345,178 +344,175 @@ function ElementStack({
       ) : null}
 
       {/* display mark all as read button, if only content elements have not been answered yet */}
-      {!previewOnly &&
-        typeof stackStorage === 'undefined' &&
-        showMarkAsRead && (
-          <Button
-            className={{ root: 'float-right mt-4 text-lg' }}
-            disabled={Object.values(studentResponse).some(
-              (response) => !response.valid
-            )}
-            onClick={() => {
-              // update the read status of all content elements in studentResponse to true
-              setStudentResponse((currentResponses) =>
-                Object.entries(currentResponses).reduce<StudentResponseType>(
-                  (acc, [instanceId, value]) => {
-                    if (value.type === ElementType.Content) {
-                      return {
-                        ...acc,
-                        [instanceId]: {
-                          ...value,
-                          response: true,
-                        },
-                      }
-                    } else {
-                      return { ...acc, [instanceId]: value }
-                    }
-                  },
-                  {}
-                )
-              )
-            }}
-            data={{ cy: 'practice-quiz-mark-all-as-read' }}
-          >
-            {t('pwa.practiceQuiz.markAllAsRead')}
-          </Button>
-        )}
-
-      {!previewOnly &&
-        typeof stackStorage === 'undefined' &&
-        !showMarkAsRead && (
-          <Button
-            loading={submittingResponse}
-            disabled={
-              activityExpired ||
-              Object.values(studentResponse).some((response) => !response.valid)
-            }
-            className={{ root: 'float-right mt-4 text-lg' }}
-            onClick={async () => {
-              const result = await respondToElementStack({
-                variables: {
-                  stackId: stack.id,
-                  courseId: courseId,
-                  stackAnswerTime: timeRef.current,
-                  responses: Object.entries(studentResponse).map(
-                    ([instanceId, value]) => {
-                      if (value.type === ElementType.Flashcard) {
-                        let responseValue: FlashcardCorrectnessType
-                        if (value.response === FlashcardCorrectness.Correct) {
-                          responseValue = FlashcardCorrectnessType.Correct
-                        } else if (
-                          value.response === FlashcardCorrectness.Partial
-                        ) {
-                          responseValue = FlashcardCorrectnessType.Partial
-                        } else {
-                          responseValue = FlashcardCorrectnessType.Incorrect
-                        }
-
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Flashcard,
-                          flashcardResponse: responseValue,
-                        }
-                      } else if (value.type === ElementType.Content) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Content,
-                          contentReponse: value.response,
-                        }
-                      } else if (
-                        value.type === ElementType.Sc ||
-                        value.type === ElementType.Mc ||
-                        value.type === ElementType.Kprim
-                      ) {
-                        // convert the solution objects into integer lists
-                        const responseList = Object.entries(value.response!)
-                          .filter(([, value]) => value)
-                          .map(([key]) => parseInt(key))
-
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: value.type,
-                          choicesResponse: responseList,
-                        }
-                      }
-                      // submission logic for numerical questions
-                      else if (value.type === ElementType.Numerical) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Numerical,
-                          numericalResponse: parseFloat(value.response!),
-                        }
-                      } else if (value.type === ElementType.FreeText) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.FreeText,
-                          freeTextResponse: value.response,
-                        }
-                      } else {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: value.type,
-                          response: value.response,
-                        }
-                      }
-                    }
-                  ),
-                },
-              })
-
-              if (!result.data || !result.data?.respondToElementStack) {
-                console.error('Error submitting response')
-                return
-              }
-
-              setStackStorage(
-                Object.entries(studentResponse).reduce<StudentResponseType>(
-                  (acc, [key, value]) => {
+      {typeof stackStorage === 'undefined' && showMarkAsRead && (
+        <Button
+          className={{ root: 'float-right mt-4 text-lg' }}
+          disabled={Object.values(studentResponse).some(
+            (response) => !response.valid
+          )}
+          onClick={() => {
+            // update the read status of all content elements in studentResponse to true
+            setStudentResponse((currentResponses) =>
+              Object.entries(currentResponses).reduce<StudentResponseType>(
+                (acc, [instanceId, value]) => {
+                  if (value.type === ElementType.Content) {
                     return {
                       ...acc,
-                      [key]: {
+                      [instanceId]: {
                         ...value,
-                        evaluation:
-                          result.data!.respondToElementStack!.evaluations?.find(
-                            (evaluation) =>
-                              evaluation.instanceId === parseInt(key)
-                          ),
+                        response: true,
                       },
                     }
-                  },
-                  {}
-                )
+                  } else {
+                    return { ...acc, [instanceId]: value }
+                  }
+                },
+                {}
               )
+            )
+          }}
+          data={{ cy: 'practice-quiz-mark-all-as-read' }}
+        >
+          {t('pwa.practiceQuiz.markAllAsRead')}
+        </Button>
+      )}
 
-              // set status and score according to returned correctness
-              const grading = result.data?.respondToElementStack
-              setStudentResponse({})
+      {typeof stackStorage === 'undefined' && !showMarkAsRead && (
+        <Button
+          loading={submittingResponse}
+          disabled={
+            activityExpired ||
+            Object.values(studentResponse).some((response) => !response.valid)
+          }
+          className={{ root: 'float-right mt-4 text-lg' }}
+          onClick={async () => {
+            const result = await respondToElementStack({
+              variables: {
+                isOwner: previewOnly,
+                stackId: stack.id,
+                courseId: courseId,
+                stackAnswerTime: timeRef.current,
+                responses: Object.entries(studentResponse).map(
+                  ([instanceId, value]) => {
+                    if (value.type === ElementType.Flashcard) {
+                      let responseValue: FlashcardCorrectnessType
+                      if (value.response === FlashcardCorrectness.Correct) {
+                        responseValue = FlashcardCorrectnessType.Correct
+                      } else if (
+                        value.response === FlashcardCorrectness.Partial
+                      ) {
+                        responseValue = FlashcardCorrectnessType.Partial
+                      } else {
+                        responseValue = FlashcardCorrectnessType.Incorrect
+                      }
 
-              if (typeof setStepStatus !== 'undefined') {
-                setStepStatus({
-                  status: grading.status,
-                  score: grading.score,
-                })
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Flashcard,
+                        flashcardResponse: responseValue,
+                      }
+                    } else if (value.type === ElementType.Content) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Content,
+                        contentReponse: value.response,
+                      }
+                    } else if (
+                      value.type === ElementType.Sc ||
+                      value.type === ElementType.Mc ||
+                      value.type === ElementType.Kprim
+                    ) {
+                      // convert the solution objects into integer lists
+                      const responseList = Object.entries(value.response!)
+                        .filter(([, value]) => value)
+                        .map(([key]) => parseInt(key))
+
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        choicesResponse: responseList,
+                      }
+                    }
+                    // submission logic for numerical questions
+                    else if (value.type === ElementType.Numerical) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Numerical,
+                        numericalResponse: parseFloat(value.response!),
+                      }
+                    } else if (value.type === ElementType.FreeText) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.FreeText,
+                        freeTextResponse: value.response,
+                      }
+                    } else {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        response: value.response,
+                      }
+                    }
+                  }
+                ),
+              },
+            })
+
+            if (!result.data || !result.data?.respondToElementStack) {
+              console.error('Error submitting response')
+              return
+            }
+
+            setStackStorage(
+              Object.entries(studentResponse).reduce<StudentResponseType>(
+                (acc, [key, value]) => {
+                  return {
+                    ...acc,
+                    [key]: {
+                      ...value,
+                      evaluation:
+                        result.data!.respondToElementStack!.evaluations?.find(
+                          (evaluation) =>
+                            evaluation.instanceId === parseInt(key)
+                        ),
+                    },
+                  }
+                },
+                {}
+              )
+            )
+
+            // set status and score according to returned correctness
+            const grading = result.data?.respondToElementStack
+            setStudentResponse({})
+
+            if (typeof setStepStatus !== 'undefined') {
+              setStepStatus({
+                status: grading.status,
+                score: grading.score,
+              })
+            }
+
+            // continue if stack only included content elements and/or flashcards, otherwise show evaluation
+            if (
+              Object.values(studentResponse).every(
+                (response) =>
+                  response.type === ElementType.Content ||
+                  response.type === ElementType.Flashcard
+              )
+            ) {
+              if (currentStep === totalSteps) {
+                onAllStacksCompletion()
+              } else {
+                handleNextElement()
               }
-
-              // continue if stack only included content elements and/or flashcards, otherwise show evaluation
-              if (
-                Object.values(studentResponse).every(
-                  (response) =>
-                    response.type === ElementType.Content ||
-                    response.type === ElementType.Flashcard
-                )
-              ) {
-                if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
-                } else {
-                  handleNextElement()
-                }
-              }
-            }}
-            data={{ cy: 'student-stack-submit' }}
-          >
-            {t('shared.generic.submit')}
-          </Button>
-        )}
+            }
+          }}
+          data={{ cy: 'student-stack-submit' }}
+        >
+          {t('shared.generic.submit')}
+        </Button>
+      )}
     </div>
   )
 }

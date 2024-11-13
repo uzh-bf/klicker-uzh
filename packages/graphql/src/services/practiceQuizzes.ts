@@ -684,17 +684,26 @@ export function updateFlashcardResults({
   }
 }
 
-interface RespondToFlashcardInput {
-  id: number
-  courseId: string
-  response: FlashcardCorrectness
-  answerTime: number
-}
-
 async function respondToFlashcard(
-  { id, courseId, response, answerTime }: RespondToFlashcardInput,
+  {
+    id,
+    courseId,
+    response,
+    answerTime,
+    skipTracking = false,
+  }: {
+    id: number
+    courseId: string
+    response: FlashcardCorrectness
+    answerTime: number
+    skipTracking?: boolean
+  },
   ctx: Context
 ) {
+  const participantId =
+    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT && !skipTracking
+      ? ctx.user.sub
+      : null
   const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
     const existingInstance = await prisma.elementInstance.findUnique({
       where: {
@@ -718,11 +727,11 @@ async function respondToFlashcard(
       return null
     }
 
-    const existingResponse = ctx.user?.sub
+    const existingResponse = participantId
       ? await prisma.questionResponse.findUnique({
           where: {
             participantId_elementInstanceId: {
-              participantId: ctx.user.sub,
+              participantId,
               elementInstanceId: id,
             },
           },
@@ -736,12 +745,12 @@ async function respondToFlashcard(
     }
 
     // fetch the participation of the participant
-    const participation = ctx.user?.sub
+    const participation = participantId
       ? await prisma.participation.findUnique({
           where: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
           include: {
@@ -766,37 +775,39 @@ async function respondToFlashcard(
         })
       : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
 
-    // variable summaries for code readability
-    const answerCorrect = response === FlashcardCorrectness.CORRECT
-    const answerPartial = response === FlashcardCorrectness.PARTIAL
-    const answerIncorrect = response === FlashcardCorrectness.INCORRECT
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack.practiceQuizId
+    if (!skipTracking) {
+      // variable summaries for code readability
+      const answerCorrect = response === FlashcardCorrectness.CORRECT
+      const answerPartial = response === FlashcardCorrectness.PARTIAL
+      const answerIncorrect = response === FlashcardCorrectness.INCORRECT
+      const instanceInPracticeQuiz =
+        !!existingInstance.elementStack.practiceQuizId
 
-    // compute updated instance statistics
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse,
-      newAverageInstanceTime,
-      answerCorrect,
-      answerPartial,
-      answerIncorrect,
-      instanceInPracticeQuiz,
-    })
+      // compute updated instance statistics
+      const statisticsUpdate = computeUpdatedInstanceStatistics({
+        participation,
+        existingResponse,
+        newAverageInstanceTime,
+        answerCorrect,
+        answerPartial,
+        answerIncorrect,
+        instanceInPracticeQuiz,
+      })
 
-    await prisma.elementInstance.update({
-      where: {
-        id,
-      },
-      data: {
-        results: participation ? newResults : undefined,
-        anonymousResults: participation ? undefined : newResults,
-        instanceStatistics: statisticsUpdate,
-      },
-    })
+      await prisma.elementInstance.update({
+        where: {
+          id,
+        },
+        data: {
+          results: participation ? newResults : undefined,
+          anonymousResults: participation ? undefined : newResults,
+          instanceStatistics: statisticsUpdate,
+        },
+      })
+    }
 
     // if no user exists, return the grading for client display
-    if (!ctx.user?.sub || !participation) {
+    if (!participantId || !participation) {
       return result
     }
 
@@ -808,7 +819,7 @@ async function respondToFlashcard(
         },
         timeSpent: answerTime,
         participant: {
-          connect: { id: ctx.user.sub },
+          connect: { id: participantId },
         },
         elementInstance: {
           connect: { id },
@@ -831,7 +842,7 @@ async function respondToFlashcard(
           connect: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
         },
@@ -870,13 +881,13 @@ async function respondToFlashcard(
     await prisma.questionResponse.upsert({
       where: {
         participantId_elementInstanceId: {
-          participantId: ctx.user.sub,
+          participantId,
           elementInstanceId: id,
         },
       },
       create: {
         participant: {
-          connect: { id: ctx.user.sub },
+          connect: { id: participantId },
         },
         averageTimeSpent: newAverageResponseTime,
         elementInstance: {
@@ -905,7 +916,7 @@ async function respondToFlashcard(
           connect: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
         },
@@ -970,16 +981,24 @@ async function respondToFlashcard(
   return transactionResult
 }
 
-interface RespondToContentInput {
-  id: number
-  courseId: string
-  answerTime: number
-}
-
 async function respondToContent(
-  { id, courseId, answerTime }: RespondToContentInput,
+  {
+    id,
+    courseId,
+    answerTime,
+    skipTracking = false,
+  }: {
+    id: number
+    courseId: string
+    answerTime: number
+    skipTracking?: boolean
+  },
   ctx: Context
 ) {
+  const participantId =
+    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT && !skipTracking
+      ? ctx.user.sub
+      : null
   const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
     const existingInstance = await prisma.elementInstance.findUnique({
       where: {
@@ -996,11 +1015,11 @@ async function respondToContent(
       return null
     }
 
-    const existingResponse = ctx.user?.sub
+    const existingResponse = participantId
       ? await prisma.questionResponse.findUnique({
           where: {
             participantId_elementInstanceId: {
-              participantId: ctx.user.sub,
+              participantId,
               elementInstanceId: id,
             },
           },
@@ -1014,12 +1033,12 @@ async function respondToContent(
     }
 
     // fetch the participation of the participant
-    const participation = ctx.user?.sub
+    const participation = participantId
       ? await prisma.participation.findUnique({
           where: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
           include: {
@@ -1037,38 +1056,40 @@ async function respondToContent(
         })
       : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
 
-    // compute updated instance statistics
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack.practiceQuizId
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse,
-      newAverageInstanceTime,
-      answerCorrect: true,
-      answerPartial: false,
-      answerIncorrect: false,
-      instanceInPracticeQuiz,
-    })
+    if (!skipTracking) {
+      // compute updated instance statistics
+      const instanceInPracticeQuiz =
+        !!existingInstance.elementStack.practiceQuizId
+      const statisticsUpdate = computeUpdatedInstanceStatistics({
+        participation,
+        existingResponse,
+        newAverageInstanceTime,
+        answerCorrect: true,
+        answerPartial: false,
+        answerIncorrect: false,
+        instanceInPracticeQuiz,
+      })
 
-    await prisma.elementInstance.update({
-      where: {
-        id,
-      },
-      data: {
-        results: participation
-          ? { total: existingInstance.results.total + 1 }
-          : undefined,
-        anonymousResults: participation
-          ? undefined
-          : {
-              total: existingInstance.anonymousResults.total + 1,
-            },
-        instanceStatistics: statisticsUpdate,
-      },
-    })
+      await prisma.elementInstance.update({
+        where: {
+          id,
+        },
+        data: {
+          results: participation
+            ? { total: existingInstance.results.total + 1 }
+            : undefined,
+          anonymousResults: participation
+            ? undefined
+            : {
+                total: existingInstance.anonymousResults.total + 1,
+              },
+          instanceStatistics: statisticsUpdate,
+        },
+      })
+    }
 
     // if no user exists, return the grading for client display
-    if (!ctx.user?.sub || !participation) {
+    if (!participantId || !participation) {
       return result
     }
 
@@ -1080,7 +1101,7 @@ async function respondToContent(
         },
         timeSpent: answerTime,
         participant: {
-          connect: { id: ctx.user.sub },
+          connect: { id: participantId },
         },
         elementInstance: {
           connect: { id },
@@ -1103,7 +1124,7 @@ async function respondToContent(
           connect: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
         },
@@ -1126,13 +1147,13 @@ async function respondToContent(
     await prisma.questionResponse.upsert({
       where: {
         participantId_elementInstanceId: {
-          participantId: ctx.user.sub,
+          participantId,
           elementInstanceId: id,
         },
       },
       create: {
         participant: {
-          connect: { id: ctx.user.sub },
+          connect: { id: participantId },
         },
         averageTimeSpent: newAverageResponseTime,
         elementInstance: {
@@ -1161,7 +1182,7 @@ async function respondToContent(
           connect: {
             courseId_participantId: {
               courseId,
-              participantId: ctx.user.sub,
+              participantId,
             },
           },
         },
@@ -1406,7 +1427,6 @@ function evaluateElementResponse(
     }
 
     case ElementType.NUMERICAL: {
-      // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         elementType: ElementType.NUMERICAL,
         feedbacks: [],
@@ -1578,23 +1598,29 @@ export async function respondToQuestion(
     id,
     response,
     answerTime,
+    skipTracking = false,
   }: {
     courseId: string
     id: number
     response: ResponseInput
     answerTime: number
+    skipTracking?: boolean
   },
   ctx: Context
 ) {
+  const participantId =
+    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT && !skipTracking
+      ? ctx.user.sub
+      : null
   const MD5 = createHash('md5')
   let treatAnonymous = false
 
-  const participation = ctx.user?.sub
+  const participation = participantId
     ? await ctx.prisma.participation.findUnique({
         where: {
           courseId_participantId: {
             courseId,
-            participantId: ctx.user.sub,
+            participantId,
           },
         },
         include: {
@@ -1604,7 +1630,7 @@ export async function respondToQuestion(
     : null
 
   // if the participant is logged in does not participate in the course, treat him as anonymous
-  if (ctx.user?.sub && !participation) {
+  if (participantId && !participation) {
     treatAnonymous = true
   }
 
@@ -1635,11 +1661,11 @@ export async function respondToQuestion(
       }
     }
 
-    const existingResponse = ctx.user?.sub
+    const existingResponse = participantId
       ? await ctx.prisma.questionResponse.findUnique({
           where: {
             participantId_elementInstanceId: {
-              participantId: ctx.user.sub,
+              participantId,
               elementInstanceId: id,
             },
           },
@@ -1648,8 +1674,8 @@ export async function respondToQuestion(
 
     // evaluate the correctness of the response
     const elementData = instance?.elementData
-
     let correctness: number | null
+
     if (
       elementData.type === ElementType.CONTENT ||
       elementData.type === ElementType.FLASHCARD
@@ -1711,22 +1737,26 @@ export async function respondToQuestion(
       instanceInPracticeQuiz,
     })
 
-    const updatedInstance = await prisma.elementInstance.update({
-      where: { id },
-      data: {
-        results: participation ? updatedResults.results : undefined,
-        anonymousResults: participation ? undefined : updatedResults.results,
-        instanceStatistics: statisticsUpdate,
-      },
-      include: {
-        elementStack: true,
-      },
-    })
+    const updatedInstance = !skipTracking
+      ? await prisma.elementInstance.update({
+          where: { id },
+          data: {
+            results: participation ? updatedResults.results : undefined,
+            anonymousResults: participation
+              ? undefined
+              : updatedResults.results,
+            instanceStatistics: statisticsUpdate,
+          },
+          include: {
+            elementStack: true,
+          },
+        })
+      : null
 
     return {
       instance,
       existingResponse,
-      updatedInstance,
+      updatedInstance: !skipTracking ? updatedInstance : instance,
       correctness,
       newAverageResponseTime,
       validResponse: true,
@@ -1774,9 +1804,9 @@ export async function respondToQuestion(
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response
   if (
-    ctx.user?.sub &&
+    participantId &&
     !treatAnonymous &&
-    ctx.user.role === UserRole.PARTICIPANT
+    ctx.user?.role === UserRole.PARTICIPANT
   ) {
     if (existingResponse) {
       const previousResponseOutsideTimeframe =
@@ -2434,6 +2464,7 @@ export async function getPreviousStackEvaluation(
 }
 
 export interface RespondToElementStackInput {
+  isOwner: boolean
   stackId: number
   courseId: string
   responses: {
@@ -2449,7 +2480,13 @@ export interface RespondToElementStackInput {
 }
 
 export async function respondToElementStack(
-  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
+  {
+    isOwner,
+    stackId,
+    courseId,
+    responses,
+    stackAnswerTime,
+  }: RespondToElementStackInput,
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
@@ -2496,6 +2533,7 @@ export async function respondToElementStack(
           courseId: courseId,
           response: response.flashcardResponse!,
           answerTime: elementAnswerTime,
+          skipTracking: isOwner,
         },
         ctx
       )
@@ -2521,6 +2559,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           courseId: courseId,
           answerTime: elementAnswerTime,
+          skipTracking: isOwner,
         },
         ctx
       )
@@ -2548,6 +2587,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           response: { choices: response.choicesResponse },
           answerTime: elementAnswerTime,
+          skipTracking: isOwner,
         },
         ctx
       )
@@ -2575,6 +2615,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           response: { value: String(response.numericalResponse) },
           answerTime: elementAnswerTime,
+          skipTracking: isOwner,
         },
         ctx
       )
@@ -2602,6 +2643,7 @@ export async function respondToElementStack(
           id: response.instanceId,
           response: { value: response.freeTextResponse },
           answerTime: elementAnswerTime,
+          skipTracking: isOwner,
         },
         ctx
       )
