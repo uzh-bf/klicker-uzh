@@ -2,6 +2,12 @@ import messages from '../../../packages/i18n/messages/en'
 import { AvatarOptions } from '../../../packages/shared-components/src/constants'
 
 describe('Login / Logout workflows for lecturer and students', () => {
+  it('Queries the database', () => {
+    cy.task('getAllUsers').then((users) => {
+      console.log(users)
+    })
+  })
+
   it('signs in into student account', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))

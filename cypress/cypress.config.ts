@@ -1,3 +1,4 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
@@ -38,7 +39,37 @@ export default defineConfig({
     experimentalStudio: true,
     //   // includeShadowDom: true,
     setupNodeEvents(on, config) {
+      // merge process.env with config.env
+      config.env = { ...config.env, ...process.env }
+
       require('@cypress/code-coverage/task')(on, config)
+      on('task', {
+        async getAllUsers() {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const users = await prisma.user.findMany({
+              select: {
+                shortname: true,
+                email: true,
+              },
+            })
+            return users
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+      })
       return config
     },
   },
