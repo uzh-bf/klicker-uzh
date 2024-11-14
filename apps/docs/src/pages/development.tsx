@@ -135,6 +135,21 @@ const Development = () => {
             <img src="/img/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
+        <div className="flex flex-col items-center">
+          <div className="bg-uzh-grey-20 mx-4 mb-4 mt-4 w-full max-w-xl rounded-md p-4 pb-0">
+            <iframe
+              src="https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_ol91rao1"
+              width="100%"
+              height="360"
+              allowFullScreen
+              allow="fullscreen"
+              title="Video Player"
+            />
+            <div className="m-0 flex flex-col items-center pb-0">
+              <p className="mb-2"> Video Explanation</p>
+            </div>
+          </div>
+        </div>
         <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-2 lg:gap-4 xl:grid-cols-4">
           {tileContent.map((tile: any) => (
             <RoadmapTile
