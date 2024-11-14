@@ -136,7 +136,7 @@ const Development = () => {
           </div>
         </div>
         <div className="flex flex-col items-center">
-          <div className="bg-uzh-grey-20 mx-4 mb-4 mt-4 w-full max-w-xl rounded-md p-4 pb-0">
+          <div className="shadow--md mx-4 mb-4 mt-4 w-full max-w-xl rounded-md p-4 pb-0 shadow">
             <iframe
               src="https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_ol91rao1"
               width="100%"
