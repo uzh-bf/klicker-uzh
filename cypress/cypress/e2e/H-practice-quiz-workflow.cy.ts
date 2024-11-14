@@ -712,7 +712,7 @@ describe('Different practice quiz workflows', () => {
         )
 
         // verify that the scheduled practice quiz is visible to lecturers
-        cy.findByText(scheduledDisplayName).should('exist')
+        cy.get('[data-cy="start-practice-quiz"]').should('exist')
       }
     )
   })

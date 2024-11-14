@@ -22,6 +22,7 @@ const loginFactory = (tokenData) => {
   return () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
 
     cy.viewport('macbook-16')
 
