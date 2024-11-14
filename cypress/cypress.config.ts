@@ -77,6 +77,38 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async getMicroLearningInfo({ mlName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const microLearnings = await prisma.microLearning.findMany({
+              where: {
+                name: mlName,
+              },
+            })
+
+            if (!microLearnings || microLearnings.length === 0) {
+              return null
+            }
+
+            return {
+              id: microLearnings[0].id,
+              courseId: microLearnings[0].courseId,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
       })
       return config
     },
