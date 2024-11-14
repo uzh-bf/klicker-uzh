@@ -6,7 +6,8 @@ export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
   env: {
-    URL_STUDENT: 'http://127.0.0.1:3001/login',
+    URL_STUDENT: 'http://127.0.0.1:3001',
+    URL_STUDENT_LOGIN: 'http://127.0.0.1:3001/login',
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
     LECTURER_EMAIL: 'lecturer@df.uzh.ch',
@@ -44,7 +45,7 @@ export default defineConfig({
 
       require('@cypress/code-coverage/task')(on, config)
       on('task', {
-        async getAllUsers() {
+        async getPracticeQuizInfo({ quizName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
           }
@@ -58,13 +59,20 @@ export default defineConfig({
           })
 
           try {
-            const users = await prisma.user.findMany({
-              select: {
-                shortname: true,
-                email: true,
+            const practiceQuizzes = await prisma.practiceQuiz.findMany({
+              where: {
+                name: quizName,
               },
             })
-            return users
+
+            if (!practiceQuizzes || practiceQuizzes.length === 0) {
+              return null
+            }
+
+            return {
+              id: practiceQuizzes[0].id,
+              courseId: practiceQuizzes[0].courseId,
+            }
           } finally {
             await prisma.$disconnect()
           }

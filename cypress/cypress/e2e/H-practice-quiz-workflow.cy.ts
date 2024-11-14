@@ -486,6 +486,26 @@ describe('Different practice quiz workflows', () => {
   })
 
   // ! Part 2: Running Practice Quiz
+  it('Check out the preview of the draft practice quiz and validate its content', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getPracticeQuizInfo', { quizName: runningName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Practice quiz not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+        )
+
+        // TODO: check content of the practice quiz
+      }
+    )
+  })
+
   it('Publish the practice quiz around the current time', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -605,6 +625,26 @@ describe('Different practice quiz workflows', () => {
       .click()
   })
 
+  it('Check that published practice quizzes can still be accessed as a preview', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getPracticeQuizInfo', { quizName: runningName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Practice quiz not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+        )
+
+        // TODO: check content of the practice quiz
+      }
+    )
+  })
+
   it('Cleanup: Delete the running practice quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -647,6 +687,26 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
       'not.exist'
+    )
+  })
+
+  it('Check that scheduled practice quizzes can be accessed as a preview', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getPracticeQuizInfo', { quizName: scheduledName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Practice quiz not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+        )
+
+        // TODO: check content of the practice quiz
+      }
     )
   })
 

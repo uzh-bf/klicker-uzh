@@ -105,7 +105,7 @@ Cypress.Commands.add(
   ({ username }: { username: string }) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
