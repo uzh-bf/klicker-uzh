@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2024-11-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure edit modal does not load in empty state while network request is ongoing ([3662247](https://github.com/uzh-bf/klicker-uzh/commit/366224710ff888eba56e878cbf3b2a336af16543))
+
+## [3.3.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2024-11-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** sample solution for free text questions should only be required conditionally ([#4371](https://github.com/uzh-bf/klicker-uzh/issues/4371)) ([9eef146](https://github.com/uzh-bf/klicker-uzh/commit/9eef146c15a2337e4d25ba04f0fdaf7be53b9a66))
+
+## [3.3.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2024-11-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that runtime counter on live quiz cockpit does not trigger re-rendering of timeline ([#4364](https://github.com/uzh-bf/klicker-uzh/issues/4364)) ([d82f896](https://github.com/uzh-bf/klicker-uzh/commit/d82f89621a5b1faf25ca0748e5dcfaba73be156b))
+* **apps/frontend-manage:** resolve NaN values on activity evaluation page ([a8c376a](https://github.com/uzh-bf/klicker-uzh/commit/a8c376ae4d033fc360326884625e8f41249f6907))
+* **packages/graphql:** use average question response time to update average time on instance ([a05a253](https://github.com/uzh-bf/klicker-uzh/commit/a05a253bf4d13c71ef07d137e0e000daf01c80f6))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add completeness states to workflow component in wizards ([#4365](https://github.com/uzh-bf/klicker-uzh/issues/4365)) ([2e80627](https://github.com/uzh-bf/klicker-uzh/commit/2e8062782cdb24f9337a8eae48f7cc13a57f7f06))
+* **apps/frontend-manage:** add survey banner to lecturer frontend ([d07ab42](https://github.com/uzh-bf/klicker-uzh/commit/d07ab421ce0adb84343385d984370ced40bff14c))
+
 ## [3.3.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2024-11-05)
 
 

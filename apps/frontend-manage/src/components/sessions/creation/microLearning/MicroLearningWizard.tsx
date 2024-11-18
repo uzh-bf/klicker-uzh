@@ -79,7 +79,7 @@ function MicroLearningWizard({
     undefined
   )
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
@@ -191,21 +191,25 @@ function MicroLearningWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.sessionForms.microLearningInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.sessionForms.microlearningDescription'),
       tooltipDisabled: t('manage.sessionForms.microlearningDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.sessionForms.microlearningSettings'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('shared.generic.questions'),
       tooltip: t('manage.sessionForms.microlearningQuestions'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 

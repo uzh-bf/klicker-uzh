@@ -92,7 +92,7 @@ function PracticeQuizWizard({
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [activeStep, setActiveStep] = useState(0)
-  const [stepValidity, setStepValidity] = useState(
+  const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
@@ -197,20 +197,24 @@ function PracticeQuizWizard({
     {
       title: t('shared.generic.information'),
       tooltip: t('manage.sessionForms.practiceQuizInformation'),
+      completed: stepValidity[0],
     },
     {
       title: t('shared.generic.description'),
       tooltip: t('manage.sessionForms.practiceQuizDescription'),
+      completed: stepValidity[1],
     },
     {
       title: t('shared.generic.settings'),
       tooltip: t('manage.sessionForms.practiceQuizSettings'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[2],
     },
     {
       title: t('shared.generic.questions'),
       tooltip: t('manage.sessionForms.practiceQuizContent'),
       tooltipDisabled: t('manage.sessionForms.checkValues'),
+      completed: stepValidity[3],
     },
   ]
 

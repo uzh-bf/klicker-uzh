@@ -15,7 +15,8 @@ function useEvaluationTableData({
         count: choice.count,
         value: choice.value,
         correct: choice.correct ?? false,
-        percentage: choice.count / results.totalAnswers,
+        percentage:
+          results.totalAnswers > 0 ? choice.count / results.totalAnswers : 0,
       }
     })
   } else if (instance.__typename === 'NumericalElementInstanceEvaluation') {
@@ -27,7 +28,8 @@ function useEvaluationTableData({
         count: response.count,
         value: response.value,
         correct: response.correct ?? false,
-        percentage: response.count / results.totalAnswers,
+        percentage:
+          results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
       }
     })
   } else if (instance.__typename === 'FreeElementInstanceEvaluation') {
@@ -37,7 +39,8 @@ function useEvaluationTableData({
         count: response.count,
         value: response.value,
         correct: response.correct ?? false,
-        percentage: response.count / results.totalAnswers,
+        percentage:
+          results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
       }
     })
   }
