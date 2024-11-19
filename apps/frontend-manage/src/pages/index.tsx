@@ -105,11 +105,18 @@ function Index() {
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return buildIndex('questions', dataQuestions.userQuestions, [
+      const dataQuestionsFlatTags = dataQuestions.userQuestions.map(
+        (question) => ({
+          ...question,
+          tagsString: (question.tags ?? []).map((tag) => tag.name).join(' '),
+        })
+      )
+      return buildIndex('questions', dataQuestionsFlatTags, [
         'name',
         'content',
         'createdAt',
         'updatedAt',
+        'tagsString',
       ])
     }
     return null
