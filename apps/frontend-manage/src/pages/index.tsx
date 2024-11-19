@@ -107,6 +107,7 @@ function Index() {
     if (dataQuestions?.userQuestions) {
       return buildIndex('questions', dataQuestions.userQuestions, [
         'name',
+        'content',
         'createdAt',
         'updatedAt',
       ])
