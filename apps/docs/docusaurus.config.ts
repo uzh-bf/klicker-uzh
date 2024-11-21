@@ -155,6 +155,11 @@ const config: Config = {
           label: 'Roadmap',
           position: 'left',
         },
+        {
+          to: 'about',
+          label: 'About',
+          position: 'left',
+        },
         // {
         //   to: 'faq',
         //   label: 'FAQ',
