@@ -22,7 +22,7 @@ function useElementFormInitialValues({
   isDuplication,
 }: UseElementFormInitialValuesProps) {
   return useMemo((): ElementFormTypes | undefined => {
-    if (mode === ElementEditMode.CREATE || !question) {
+    if (mode === ElementEditMode.CREATE) {
       return {
         status: ElementStatus.Ready,
         type: ElementType.Sc,
@@ -45,6 +45,10 @@ function useElementFormInitialValues({
           ],
         },
       }
+    }
+
+    if (!question) {
+      return undefined
     }
 
     const sharedAttributes = {
