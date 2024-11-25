@@ -9,12 +9,14 @@ interface PracticeQuizTileProps {
     'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
   >[]
   courseId: string
+  courseStartDate: string
   userCatalyst?: boolean
 }
 
 function PracticeQuizList({
   practiceQuizzes,
   courseId,
+  courseStartDate,
   userCatalyst,
 }: PracticeQuizTileProps) {
   const t = useTranslations()
@@ -25,9 +27,10 @@ function PracticeQuizList({
         <div className="flex flex-col gap-2">
           {practiceQuizzes.map((quiz) => (
             <PracticeQuizElement
+              key={quiz.id}
               practiceQuiz={quiz}
               courseId={courseId}
-              key={quiz.id}
+              courseStartDate={courseStartDate}
             />
           ))}
         </div>

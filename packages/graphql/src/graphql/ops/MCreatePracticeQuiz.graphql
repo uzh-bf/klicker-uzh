@@ -6,7 +6,6 @@ mutation CreatePracticeQuiz(
   $courseId: String!
   $multiplier: Int!
   $order: ElementOrderType!
-  $availableFrom: Date
   $resetTimeDays: Int!
 ) {
   createPracticeQuiz(
@@ -17,7 +16,6 @@ mutation CreatePracticeQuiz(
     courseId: $courseId
     multiplier: $multiplier
     order: $order
-    availableFrom: $availableFrom
     resetTimeDays: $resetTimeDays
   ) {
     id

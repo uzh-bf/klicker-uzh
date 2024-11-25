@@ -2643,7 +2643,6 @@ interface ManipulatePracticeQuizArgs {
   courseId: string
   multiplier: number
   order: ElementOrderType
-  availableFrom?: Date | null
   resetTimeDays: number
 }
 
@@ -2657,7 +2656,6 @@ export async function manipulatePracticeQuiz(
     courseId,
     multiplier,
     order,
-    availableFrom,
     resetTimeDays,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser
@@ -2720,18 +2718,12 @@ export async function manipulatePracticeQuiz(
     {}
   )
 
-  const availabilityTime =
-    availableFrom && dayjs(availableFrom).isBefore(dayjs())
-      ? null
-      : (availableFrom ?? undefined)
-
   const createOrUpdateJSON = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
-    availableFrom: availabilityTime,
     resetTimeDays: resetTimeDays,
     stacks: {
       create: stacks.map((stack) => {
@@ -2860,6 +2852,7 @@ export async function unpublishPracticeQuiz(
       status: PublicationStatus.SCHEDULED,
     },
     data: {
+      availableFrom: null,
       status: PublicationStatus.DRAFT,
     },
     include: {
@@ -2992,12 +2985,14 @@ export async function deletePracticeQuiz(
   }
 }
 
-interface PublishPracticeQuizArgs {
-  id: string
-}
-
 export async function publishPracticeQuiz(
-  { id }: PublishPracticeQuizArgs,
+  {
+    id,
+    availableFrom,
+  }: {
+    id: string
+    availableFrom?: Date | null
+  },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -3013,10 +3008,7 @@ export async function publishPracticeQuiz(
   }
 
   // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
-  if (
-    practiceQuiz.availableFrom &&
-    dayjs(practiceQuiz.availableFrom).isAfter(dayjs())
-  ) {
+  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
     // change the status of the practice quiz to scheduled for the cronjob to identify it and publish it at the given time
     const updatedQuiz = await ctx.prisma.practiceQuiz.update({
       where: {
@@ -3024,6 +3016,7 @@ export async function publishPracticeQuiz(
         ownerId: ctx.user.sub,
       },
       data: {
+        availableFrom,
         status: PublicationStatus.SCHEDULED,
       },
     })

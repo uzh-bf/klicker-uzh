@@ -245,6 +245,7 @@ function CourseOverviewPage() {
             <PracticeQuizList
               practiceQuizzes={course.practiceQuizzes ?? []}
               courseId={course.id}
+              courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
             />
           </Tabs.TabContent>

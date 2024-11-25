@@ -1154,7 +1154,6 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
-            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1182,7 +1181,6 @@ export const Mutation = builder.mutationType({
               type: ElementOrderType,
               required: true,
             }),
-            availableFrom: t.arg({ type: 'Date', required: false }),
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
@@ -1322,6 +1320,7 @@ export const Mutation = builder.mutationType({
           type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
           },
           resolve(_, args, ctx) {
             return PracticeQuizService.publishPracticeQuiz(args, ctx)

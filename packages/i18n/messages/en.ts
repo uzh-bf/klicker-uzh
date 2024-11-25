@@ -1159,10 +1159,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      practiceQuizAvailableFrom:
-        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
       practiceQuizStartAfterCourseStart:
         'The start date of the practice quiz must be after the start date of the course.',
+      practiceQuizStartReqeuired:
+        'Please choose the start date of the practice quiz.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1181,7 +1181,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'With the current course selection the practice quiz will not be gamified.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      practiceQuizAvailabilityOptional: 'Availability (optional)',
       selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
@@ -1738,6 +1737,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred during the group assignment. Please check that sufficiently many students are in the assignment pool and try again.',
       groupAssignmentSuccessful:
         'The group assignment was successful. All students from the pool were assigned to random groups.',
+      practiceQuizPublishImmediately: 'Publish Immediately',
+      practiceQuizPublishingHint:
+        'When choosing this option, the practice quiz "{title}" will become immediately visible to all students in your course. Since students can submit answers to all published practice quizzes, they can only be deleted, but no longer be unpublished.',
+      confirmPublication: 'Confirm Publication',
+      schedulePublication: 'Schedule Publication',
+      practiceQuizSchedulingHint:
+        'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
+      confirmScheduling: 'Confirm Scheduling',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

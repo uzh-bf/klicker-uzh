@@ -81,7 +81,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       messages.shared.generic.draft
     )
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.published
     )
