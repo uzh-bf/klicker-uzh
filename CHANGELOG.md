@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2024-11-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure edit modal does not load in empty state while network request is ongoing ([3662247](https://github.com/uzh-bf/klicker-uzh/commit/366224710ff888eba56e878cbf3b2a336af16543))
+
 ## [3.3.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2024-11-13)
 
 

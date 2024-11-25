@@ -6,12 +6,14 @@ import { PracticeQuizFormValues } from './WizardLayout'
 function CourseSelectionMonitorPracticeQuiz({
   values,
   gamifiedCourses,
+  nonGamifiedCourses,
   setCourseGamified,
   setTouched,
   setValues,
 }: {
   values: PracticeQuizFormValues
   gamifiedCourses?: ElementSelectCourse[]
+  nonGamifiedCourses?: ElementSelectCourse[]
   setCourseGamified: (value: boolean) => void
   setTouched: (
     touched: FormikTouched<PracticeQuizFormValues>
@@ -23,18 +25,23 @@ function CourseSelectionMonitorPracticeQuiz({
 }) {
   useEffect(() => {
     if (values.courseId) {
-      const course = gamifiedCourses?.find(
+      let course = gamifiedCourses?.find(
         (course) => course.value === values.courseId
       )
 
       if (!course) {
-        console.log('Invalid course selection detected')
+        course = nonGamifiedCourses?.find(
+          (course) => course.value === values.courseId
+        )
+      }
+
+      if (!course) {
+        console.log('Invalid course selection')
         return
       }
 
       setCourseGamified(course.isGamified)
       setTouched({
-        availableFrom: true,
         courseStartDate: true,
         courseEndDate: true,
       })

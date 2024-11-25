@@ -1166,10 +1166,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
-      practiceQuizAvailableFrom:
-        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
       practiceQuizStartAfterCourseStart:
         'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
+      practiceQuizStartReqeuired:
+        'Bitte geben Sie ein Startdatum für Ihr Übungs-Quiz ein.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1186,7 +1186,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes müssen einem Kurs zugewiesen werden.',
       practiceQuizCourseNotGamified:
         'Mit der aktuellen Kursauswahl wird das Übugns-Quiz nicht gamifiziert sein.',
-      practiceQuizAvailabilityOptional: 'Verfügbarkeit (optional)',
       practiceQuizContent:
         'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
       practiceQuizCreationFailed:
@@ -1750,6 +1749,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Zuweisen der Gruppen ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob genügend Studierende im Zuweisungspool sind und versuchen Sie es erneut.',
       groupAssignmentSuccessful:
         'Die Gruppenzuweisung war erfolgreich. Alle Studierenden aus dem Pool wurden in zufällige Gruppen eingeteilt.',
+      practiceQuizPublishImmediately: 'Sofort Veröffentlichen',
+      practiceQuizPublishingHint:
+        'Wenn Sie diese Option wählen, wird das Übungs-Quiz "{title}" sofort für alle Studierenden in Ihrem Kurs sichtbar. Da Studierende Antworten auf alle veröffentlichten Übungs-Quizzes abgeben können, können diese nur gelöscht, aber nicht mehr unveröffentlicht werden.',
+      confirmPublication: 'Veröffentlichung bestätigen',
+      schedulePublication: 'Veröffentlichung planen',
+      practiceQuizSchedulingHint:
+        'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
+      confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

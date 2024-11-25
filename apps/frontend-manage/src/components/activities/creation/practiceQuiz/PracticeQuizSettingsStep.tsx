@@ -1,10 +1,8 @@
-import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  FormikDateField,
   FormikNumberField,
   FormikSelectField,
   UserNotification,
@@ -59,6 +57,7 @@ function PracticeQuizSettingsStep({
           <CourseSelectionMonitorPracticeQuiz
             values={values}
             gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             setCourseGamified={setCourseGamified}
             setTouched={setTouched}
             setValues={setValues}
@@ -153,31 +152,6 @@ function PracticeQuizSettingsStep({
                       root: 'w-full',
                       tooltip: 'z-20',
                     }}
-                  />
-                </div>
-              </div>
-              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
-                <div className="flex flex-row items-center justify-center gap-2">
-                  <FontAwesomeIcon icon={faClock} />
-                  <div className="text-lg font-bold">
-                    {t(
-                      'manage.activityWizard.practiceQuizAvailabilityOptional'
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="mt-1 text-sm">
-                    {t('manage.activityWizard.practiceQuizAvailableFrom')}
-                  </div>
-                  <FormikDateField
-                    label={t('shared.generic.availableFrom')}
-                    name="availableFrom"
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      tooltip: 'z-20',
-                    }}
-                    data={{ cy: 'select-available-from' }}
                   />
                 </div>
               </div>
