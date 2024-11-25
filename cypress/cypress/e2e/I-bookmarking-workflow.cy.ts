@@ -18,7 +18,7 @@ const microlearningName = 'Bookmarking microlearning'
 const microlearningDisplayName = microlearningName + ' (Display)'
 const microStartDate = `${currentYear}-01-01T02:00`
 const microEndDate = `${currentYear}-12-31T18:00`
-const microMutliplier = messages.manage.sessionForms.multiplier2
+const microMutliplier = messages.manage.activityWizard.multiplier2
 const flagML1 = `Test flagging question on microlearning ${microlearningName}`
 const flagML2 = `Test flagging question on microlearning ${microlearningName} new`
 
@@ -81,7 +81,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       messages.shared.generic.draft
     )
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.published
     )

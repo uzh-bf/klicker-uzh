@@ -1,5 +1,4 @@
 import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
-import dayjs from 'dayjs'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
 interface PracticeQuizFormProps {
@@ -49,7 +48,6 @@ async function submitPracticeQuizForm({
       multiplier: parseInt(values.multiplier),
       courseId: values.courseId,
       order: values.order,
-      availableFrom: dayjs(values.availableFrom).utc().format(),
       resetTimeDays: parseInt(values.resetTimeDays),
     }
 

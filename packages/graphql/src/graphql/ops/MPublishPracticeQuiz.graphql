@@ -1,8 +1,9 @@
-mutation PublishPracticeQuiz($id: String!) {
-  publishPracticeQuiz(id: $id) {
+mutation PublishPracticeQuiz($id: String!, $availableFrom: Date) {
+  publishPracticeQuiz(id: $id, availableFrom: $availableFrom) {
     id
     name
     displayName
     status
+    availableFrom
   }
 }

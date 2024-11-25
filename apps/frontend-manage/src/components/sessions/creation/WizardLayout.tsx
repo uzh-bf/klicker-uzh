@@ -82,7 +82,6 @@ export interface MicroLearningFormValues extends CommonFormValues {
 export interface PracticeQuizFormValues extends CommonFormValues {
   stacks: ElementStackFormValues[]
   order: ElementOrderType
-  availableFrom?: string
   resetTimeDays: string
 }
 

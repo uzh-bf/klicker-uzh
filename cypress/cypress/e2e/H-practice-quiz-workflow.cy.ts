@@ -152,32 +152,32 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSPACED_REPETITION}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -264,18 +264,18 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -356,11 +356,11 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
@@ -391,13 +391,12 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
-  it('Create a practice quiz with a start date in the future', () => {
+  it('Create a practice quiz that will be scheduled', () => {
     cy.loginLecturer()
     cy.createPracticeQuiz({
       name: scheduledName,
       displayName: scheduledDisplayName,
       courseName: testCourse,
-      scheduledStartDate: `${currentYear + 5}-01-01T02:00`,
       stacks: [
         { elements: [SCQuestionTitle] },
         { elements: [MCQuestionTitle] },
@@ -436,11 +435,11 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
@@ -682,7 +681,23 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
+
+    // check that if publication date is before course start date, submission is disabled
+    cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
+      'be.disabled'
+    )
+    cy.get('[data-cy="practice-quiz-available-from"]')
+      .click()
+      .type(`${currentYear - 10}-01-01T02:00`)
+    cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
+      'be.disabled'
+    )
+
+    // set future publication date
+    cy.get('[data-cy="practice-quiz-available-from"]')
+      .click()
+      .type(`${currentYear + 5}-01-01T02:00`)
+    cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
       messages.shared.generic.scheduled
     )
@@ -727,34 +742,6 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
       messages.shared.generic.draft
     )
-
-    // change the availability start date of the practice quiz to the past
-    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-    cy.get(`[data-cy="edit-practice-quiz-${scheduledName}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
-      'exist'
-    )
-    cy.get('[data-cy="insert-practice-quiz-name"]').should(
-      'have.value',
-      scheduledName
-    )
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
-      'have.value',
-      scheduledDisplayName
-    )
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    cy.get('[data-cy="select-available-from"]')
-      .click()
-      .type(`${currentYear - 1}-01-01T02:00`)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
-      messages.shared.generic.draft
-    )
   })
 
   it('Check that immediate publication works for practice quizzes with past start dates', () => {
@@ -763,7 +750,10 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get('[data-cy="practice-quiz-available-from"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
       messages.shared.generic.published
     )

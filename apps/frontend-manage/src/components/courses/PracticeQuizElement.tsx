@@ -108,11 +108,13 @@ interface PracticeQuizElementProps {
     'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
   >
   courseId: string
+  courseStartDate: string
 }
 
 function PracticeQuizElement({
   practiceQuiz,
   courseId,
+  courseStartDate,
 }: PracticeQuizElementProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -206,7 +208,10 @@ function PracticeQuizElement({
         <div className="flex flex-row items-center gap-3 text-sm">
           {practiceQuiz.status === PublicationStatus.Draft && (
             <>
-              <PublishPracticeQuizButton practiceQuiz={practiceQuiz} />
+              <PublishPracticeQuizButton
+                practiceQuiz={practiceQuiz}
+                courseStartDate={courseStartDate}
+              />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
                 className={{

@@ -9,7 +9,6 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
-import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
@@ -126,16 +125,6 @@ function PracticeQuizWizard({
         Object.values(ElementOrderType),
         t('manage.sessionForms.practiceQuizOrder')
       ),
-    availableFrom: yup
-      .date()
-      .test(
-        'afterCourseStart',
-        t('manage.sessionForms.practiceQuizStartAfterCourseStart'),
-        (value, context) =>
-          context.parent.courseStartDate && dayjs(value) > dayjs()
-            ? dayjs(value) > dayjs(context.parent.courseStartDate)
-            : true
-      ),
     resetTimeDays: yup
       .string()
       .required(t('manage.sessionForms.practiceQuizResetDays'))
@@ -188,7 +177,6 @@ function PracticeQuizWizard({
     multiplier: '1',
     courseId: undefined,
     order: ElementOrderType.SpacedRepetition,
-    availableFrom: dayjs().local().format('YYYY-MM-DDTHH:mm'),
     courseStartDate: undefined,
     resetTimeDays: '6',
   }
@@ -247,9 +235,6 @@ function PracticeQuizWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
     order:
       (initialValues?.orderType as ElementOrderType) || formDefaultValues.order,
-    availableFrom: initialValues?.availableFrom
-      ? dayjs(initialValues?.availableFrom).local().format('YYYY-MM-DDTHH:mm')
-      : formDefaultValues.availableFrom,
     courseStartDate: formDefaultValues.courseStartDate,
     resetTimeDays: initialValues?.resetTimeDays
       ? String(initialValues?.resetTimeDays)
