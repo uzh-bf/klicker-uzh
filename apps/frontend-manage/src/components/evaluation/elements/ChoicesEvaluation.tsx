@@ -26,7 +26,7 @@ function ChoicesEvaluation({
 }: ChoicesEvaluationProps) {
   return (
     <ResizablePanelGroup
-      autoSaveId={`evaluation-${instanceEvaluation.id}`}
+      autoSaveId="evaluation-choices"
       key={`panel-group-${instanceEvaluation.id}`}
       direction="horizontal"
     >

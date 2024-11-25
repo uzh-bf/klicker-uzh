@@ -31,7 +31,7 @@ function FTEvaluation({
     <>
       {showSolution ? (
         <ResizablePanelGroup
-          autoSaveId={`evaluation-${instanceEvaluation.id}`}
+          autoSaveId="evaluation-ft"
           key={`panel-group-${instanceEvaluation.id}`}
           direction="horizontal"
         >

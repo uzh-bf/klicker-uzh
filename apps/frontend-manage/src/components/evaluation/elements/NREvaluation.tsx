@@ -29,7 +29,7 @@ function NREvaluation({
 
   return (
     <ResizablePanelGroup
-      autoSaveId={`evaluation-${instanceEvaluation.id}`}
+      autoSaveId="evaluation-nr"
       key={`panel-group-${instanceEvaluation.id}`}
       direction="horizontal"
     >
