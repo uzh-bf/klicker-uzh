@@ -252,8 +252,12 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
-  const [createMicroLearning] = useMutation(CreateMicroLearningDocument)
-  const [editMicroLearning] = useMutation(EditMicroLearningDocument)
+  const [createMicroLearning, { data: microLearningCreateData }] = useMutation(
+    CreateMicroLearningDocument
+  )
+  const [editMicroLearning, { data: microLearningEditData }] = useMutation(
+    EditMicroLearningDocument
+  )
   const handleSubmit = useCallback(
     async (values: MicroLearningFormValues) => {
       submitMicrolearningForm({
@@ -297,9 +301,8 @@ function MicroLearningWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            onViewElement={() => {
-              router.push(`/courses/${selectedCourseId}?tab=microLearnings`)
-            }}
+            previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microlearning/${microLearningCreateData?.createMicroLearning?.id || microLearningEditData?.editMicroLearning?.id}/`}
+            viewElementHref={`/courses/${selectedCourseId}?tab=microLearnings`}
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()

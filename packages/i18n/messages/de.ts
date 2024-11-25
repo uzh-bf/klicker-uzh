@@ -1007,6 +1007,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       multiplier4: 'Vierfach (4x)',
       changesSaved: 'Änderungen gespeichert',
       elementCreated: 'Element erfolgreich erstellt',
+      openPreview: 'Vorschau öffnen',
       openOverview: 'Übersicht öffnen',
       createNewElement: 'Weiteres Element erstellen',
       enterContentHere: 'Inhalt hier eingeben…',

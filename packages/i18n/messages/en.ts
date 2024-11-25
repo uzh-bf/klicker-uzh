@@ -1007,6 +1007,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       multiplier4: 'Quadruple (4x)',
       changesSaved: 'Changes saved',
       elementCreated: 'Element has been created successfully',
+      openPreview: 'Open preview',
       openOverview: 'Open overview',
       createNewElement: 'Create another element',
       enterContentHere: 'Enter your content here...',

@@ -1,8 +1,9 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { faSync, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faList, faSync, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 interface CompletionStepProps {
@@ -10,7 +11,8 @@ interface CompletionStepProps {
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   name: string
   editMode: boolean
-  onViewElement: () => void
+  previewElementHref?: string
+  viewElementHref: string
   onRestartForm: () => void
   resetForm: () => void
   setStepNumber: (stepNumber: number) => void
@@ -22,7 +24,8 @@ function CompletionStep({
   completionSuccessMessage,
   name,
   editMode,
-  onViewElement,
+  previewElementHref,
+  viewElementHref,
   onRestartForm,
   resetForm,
   setStepNumber,
@@ -42,16 +45,35 @@ function CompletionStep({
       </div>
       <div className="space-x-2">
         {children}
-        <Button
-          onClick={onViewElement}
-          data={{ cy: 'load-session-list' }}
-          className={{ root: 'space-x-1' }}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faEye} />
-          </Button.Icon>
-          <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
-        </Button>
+
+        {previewElementHref && (
+          <Link href={previewElementHref} target="_blank" prefetch>
+            <Button
+              data={{ cy: 'load-activity-preview' }}
+              className={{ root: 'space-x-1' }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faEye} />
+              </Button.Icon>
+              <Button.Label>
+                {t('manage.sessionForms.openPreview')}
+              </Button.Label>
+            </Button>
+          </Link>
+        )}
+
+        <Link href={viewElementHref}>
+          <Button
+            data={{ cy: 'load-session-list' }}
+            className={{ root: 'space-x-1' }}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faList} />
+            </Button.Icon>
+            <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
+          </Button>
+        </Link>
+
         {editMode ? (
           <Button
             onClick={() => {

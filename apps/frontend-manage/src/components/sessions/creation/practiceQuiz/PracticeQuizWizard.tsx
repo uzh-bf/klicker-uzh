@@ -256,8 +256,12 @@ function PracticeQuizWizard({
       : formDefaultValues.resetTimeDays,
   })
 
-  const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
-  const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
+  const [createPracticeQuiz, { data: practiceQuizCreateData }] = useMutation(
+    CreatePracticeQuizDocument
+  )
+  const [editPracticeQuiz, { data: practiceQuizEditData }] = useMutation(
+    EditPracticeQuizDocument
+  )
   const handleSubmit = useCallback(
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
@@ -301,9 +305,8 @@ function PracticeQuizWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            onViewElement={() => {
-              router.push(`/courses/${selectedCourseId}?tab=practiceQuizzes`)
-            }}
+            previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/quiz/${practiceQuizEditData?.editPracticeQuiz?.id || practiceQuizCreateData?.createPracticeQuiz?.id}`}
+            viewElementHref={`/courses/${selectedCourseId}?tab=practiceQuizzes`}
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()
