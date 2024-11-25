@@ -1168,7 +1168,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizStartAfterCourseStart:
         'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
-      practiceQuizStartReqeuired:
+      practiceQuizStartRequired:
         'Bitte geben Sie ein Startdatum für Ihr Übungs-Quiz ein.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',

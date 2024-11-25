@@ -1163,7 +1163,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a number of days after which the practice quiz can be repeated.',
       practiceQuizStartAfterCourseStart:
         'The start date of the practice quiz must be after the start date of the course.',
-      practiceQuizStartReqeuired:
+      practiceQuizStartRequired:
         'Please choose the start date of the practice quiz.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',

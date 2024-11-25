@@ -95,10 +95,10 @@ function PracticeQuizPublishingModal({
             validationSchema={yup.object().shape({
               availableFrom: yup
                 .date()
-                .required(t('manage.sessionForms.practiceQuizStartReqeuired'))
+                .required(t('manage.activityWizard.practiceQuizStartRequired'))
                 .test(
                   'afterCourseStart',
-                  t('manage.sessionForms.practiceQuizStartAfterCourseStart'),
+                  t('manage.activityWizard.practiceQuizStartAfterCourseStart'),
                   (value) => dayjs(value) > dayjs(courseStartDate)
                 ),
             })}
