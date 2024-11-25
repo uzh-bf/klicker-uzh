@@ -1,5 +1,4 @@
-import { faClock } from '@fortawesome/free-regular-svg-icons'
-import { faCrown, faGears, faWarning } from '@fortawesome/free-solid-svg-icons'
+import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
@@ -58,6 +57,7 @@ function PracticeQuizSettingsStep({
           <CourseSelectionMonitorPracticeQuiz
             values={values}
             gamifiedCourses={gamifiedCourses}
+            nonGamifiedCourses={nonGamifiedCourses}
             setCourseGamified={setCourseGamified}
             setTouched={setTouched}
             setValues={setValues}
@@ -151,23 +151,6 @@ function PracticeQuizSettingsStep({
                       tooltip: 'z-20',
                     }}
                   />
-                </div>
-              </div>
-              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
-                <div className="flex flex-row items-center justify-center gap-2">
-                  <FontAwesomeIcon icon={faClock} />
-                  <div className="text-lg font-bold">
-                    {t('manage.sessionForms.practiceQuizAvailabilityOptional')}
-                  </div>
-                </div>
-                <div className="flex flex-row items-center gap-4">
-                  <FontAwesomeIcon
-                    icon={faWarning}
-                    className="text-orange-500"
-                  />
-                  <div className="mt-1 text-sm">
-                    {t('manage.sessionForms.practiceQuizSchedulingMoved')}
-                  </div>
                 </div>
               </div>
             </div>
