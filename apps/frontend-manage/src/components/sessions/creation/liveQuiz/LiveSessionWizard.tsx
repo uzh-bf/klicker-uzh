@@ -266,9 +266,7 @@ function LiveSessionWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            onViewElement={() => {
-              router.push(`/sessions`)
-            }}
+            viewElementHref="/sessions"
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()
