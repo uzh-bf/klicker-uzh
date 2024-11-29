@@ -331,9 +331,7 @@ function GroupActivityWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            onViewElement={() => {
-              router.push(`/courses/${selectedCourseId}?tab=groupActivities`)
-            }}
+            viewElementHref={`/courses/${selectedCourseId}?tab=groupActivities`}
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()

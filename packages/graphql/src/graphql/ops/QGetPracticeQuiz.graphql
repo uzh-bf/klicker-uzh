@@ -1,5 +1,6 @@
 query GetPracticeQuiz($id: String!) {
   practiceQuiz(id: $id) {
+    isOwner
     ...PracticeQuizDataWithoutSolutions
   }
 }

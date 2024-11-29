@@ -43,6 +43,7 @@ interface ElementStackProps {
   singleSubmission?: boolean
   activityExpired?: boolean
   activityExpiredMessage?: string
+  previewOnly?: boolean
 }
 
 function ElementStack({
@@ -60,6 +61,7 @@ function ElementStack({
   singleSubmission = false,
   activityExpired = false,
   activityExpiredMessage,
+  previewOnly = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
@@ -109,7 +111,7 @@ function ElementStack({
   const { data: evaluationData } = useQuery(
     GetPreviousStackEvaluationDocument,
     {
-      skip: !singleSubmission || !!stackStorage,
+      skip: previewOnly || !singleSubmission || !!stackStorage,
       variables: {
         stackId: stack.id,
       },
@@ -119,6 +121,7 @@ function ElementStack({
   // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
     if (
+      !previewOnly &&
       singleSubmission &&
       !stackStorage &&
       evaluationData?.getPreviousStackEvaluation &&
@@ -241,7 +244,14 @@ function ElementStack({
       //   })
       // }
     }
-  }, [evaluationData, setStackStorage, singleSubmission, stack, stackStorage])
+  }, [
+    evaluationData,
+    setStackStorage,
+    singleSubmission,
+    stack,
+    stackStorage,
+    previewOnly,
+  ])
 
   return (
     <div className="pb-12">
@@ -254,7 +264,7 @@ function ElementStack({
           />
         )}
 
-        {!hideBookmark ? (
+        {!previewOnly && !hideBookmark ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark
@@ -313,7 +323,7 @@ function ElementStack({
       </div>
 
       {/* display continue button if question was already answered */}
-      {typeof stackStorage !== 'undefined' && !showMarkAsRead && (
+      {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
         <Button
           className={{ root: 'float-right mt-4 text-lg' }}
           onClick={() => {
@@ -331,7 +341,7 @@ function ElementStack({
             ? t('shared.generic.finish')
             : t('shared.generic.continue')}
         </Button>
-      )}
+      ) : null}
 
       {/* display mark all as read button, if only content elements have not been answered yet */}
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
@@ -378,6 +388,7 @@ function ElementStack({
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {
+                isOwner: previewOnly,
                 stackId: stack.id,
                 courseId: courseId,
                 stackAnswerTime: timeRef.current,

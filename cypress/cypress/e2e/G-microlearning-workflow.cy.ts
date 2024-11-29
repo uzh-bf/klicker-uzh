@@ -535,6 +535,52 @@ describe('Different microlearning workflows', () => {
   })
 
   // ! Part 2: Running Microlearning
+  function answerMicroLearningPreview() {
+    cy.get('[data-cy="start-microlearning"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-front-1"]').click()
+    cy.get('[data-cy="flashcard-response-1-No"]').click()
+    cy.get('[data-cy="flashcard-response-1-Yes"]').click()
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should(
+      'not.be.disabled'
+    )
+    cy.get('[data-cy="read-content-element-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer 2')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+  }
+
+  it('Check if the drafted microlearning can be accessed by the lecturer through the activity preview', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getMicroLearningInfo', { mlName: runningMLName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Microlearning not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+        )
+
+        // verify that the microlearning can be answered through the activity preview
+        answerMicroLearningPreview()
+      }
+    )
+  })
+
   it('Publish a microlearning that will immediately be running', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -547,6 +593,27 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${runningMLName}"]`).contains(
       messages.shared.generic.published
+    )
+  })
+
+  it('Check if the running microlearning can be accessed by the lecturer through the activity preview', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getMicroLearningInfo', { mlName: runningMLName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Microlearning not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+        )
+
+        // verify that the microlearning can be answered through the activity preview
+        answerMicroLearningPreview()
+      }
     )
   })
 
@@ -732,6 +799,27 @@ describe('Different microlearning workflows', () => {
     cy.loginStudent()
     cy.get(`[data-cy="microlearning-${futureMLDisplayName}"]`).should(
       'not.exist'
+    )
+  })
+
+  it('Check that a scheduled microlearning can be accessed through the activity preview', () => {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('getMicroLearningInfo', { mlName: futureMLName }).then(
+      (quiz: { id: string; courseId: string }) => {
+        // check if the query was successful
+        if (quiz === null) {
+          throw new Error('Microlearning not found')
+        }
+
+        // visit the activity preview with the manager cookie being active
+        cy.visit(
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+        )
+
+        // verify that the scheduled microlearning is visible to lecturers
+        cy.get('[data-cy="start-microlearning"]').should('exist')
+      }
     )
   })
 

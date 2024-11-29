@@ -4,7 +4,7 @@ import { AvatarOptions } from '../../../packages/shared-components/src/constants
 describe('Login / Logout workflows for lecturer and students', () => {
   it('signs in into student account', () => {
     cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
@@ -19,7 +19,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
   it('signs in into student account on mobile', () => {
     cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('iphone-x')
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
@@ -35,7 +35,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
   it('signs in into the student account and tries to modify the profile settings', () => {
     cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
     cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
@@ -143,7 +143,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     const newPassword = 'NEW PASSWORD'
 
     cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
@@ -197,7 +197,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
   it('signs in into student account with the students email', () => {
     cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_EMAIL'))

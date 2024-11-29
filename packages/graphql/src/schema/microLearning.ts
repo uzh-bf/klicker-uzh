@@ -11,6 +11,7 @@ export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null
   stacks?: IElementStack[]
   numOfStacks?: number
+  isOwner?: boolean
 }
 
 export const MicroLearningRef =
@@ -31,6 +32,7 @@ export const MicroLearning = MicroLearningRef.implement({
       nullable: true,
     }),
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
 
     course: t.expose('course', {
       type: CourseRef,

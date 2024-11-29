@@ -939,6 +939,7 @@ type MicroLearning {
   description: String
   displayName: String!
   id: ID!
+  isOwner: Boolean
   name: String!
   numOfStacks: Int
   pointsMultiplier: Float!
@@ -1030,7 +1031,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
-  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
+  respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -1305,6 +1306,7 @@ type PracticeQuiz {
   description: String
   displayName: String!
   id: String!
+  isOwner: Boolean
   name: String!
   numOfStacks: Int
   orderType: ElementOrderType!
