@@ -616,7 +616,7 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="publish-practice-quiz-${runningName}"]`).click()
-    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
     cy.get(`[data-cy="practice-quiz-${runningName}"]`).contains(
       messages.shared.generic.published
     )
