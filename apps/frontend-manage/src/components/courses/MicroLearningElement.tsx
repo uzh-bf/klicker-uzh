@@ -34,6 +34,7 @@ import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
+import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import ExtensionModal from './modals/ExtensionModal'
@@ -183,15 +184,15 @@ function MicroLearningElement({
                         name: microLearning.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <MicroLearningPreviewLink
-                  //       microLearning={microLearning}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <MicroLearningPreviewLink
+                        microLearning={microLearning}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
@@ -247,15 +248,15 @@ function MicroLearningElement({
                         name: microLearning.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <MicroLearningPreviewLink
-                  //       microLearning={microLearning}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <MicroLearningPreviewLink
+                        microLearning={microLearning}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   getActivityDuplicationAction({
                     id: microLearning.id,
                     text: t('manage.course.duplicateMicroLearning'),
@@ -306,15 +307,15 @@ function MicroLearningElement({
                         name: microLearning.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <MicroLearningPreviewLink
-                  //       microLearning={microLearning}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <MicroLearningPreviewLink
+                        microLearning={microLearning}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <MicroLearningEvaluationLink

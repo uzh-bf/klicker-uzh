@@ -7,8 +7,10 @@ import {
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
@@ -28,6 +30,7 @@ interface PracticeQuizProps {
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
   showResetLocalStorage?: boolean
+  previewOnly?: boolean
 }
 
 function PracticeQuiz({
@@ -36,10 +39,14 @@ function PracticeQuiz({
   setCurrentIx,
   handleNextElement,
   showResetLocalStorage = false,
+  previewOnly = false,
 }: PracticeQuizProps) {
   const router = useRouter()
+  const t = useTranslations()
   const currentStack = quiz.stacks?.[currentIx]
-  const { data: dataParticipant } = useQuery(SelfDocument)
+  const { data: dataParticipant } = useQuery(SelfDocument, {
+    skip: previewOnly,
+  })
 
   const [progressState, setProgressState] = useLocalStorage<
     Record<
@@ -68,7 +75,7 @@ function PracticeQuiz({
       courseId: router.query.courseId as string,
       quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
     },
-    skip: !router.query.courseId || !dataParticipant?.self,
+    skip: previewOnly || !router.query.courseId || !dataParticipant?.self,
   })
 
   return (
@@ -96,6 +103,14 @@ function PracticeQuiz({
           }
         />
 
+        {previewOnly && (
+          <PreviewMessage
+            activityType={t('shared.generic.practiceQuiz')}
+            name={quiz.name}
+            displayName={quiz.displayName}
+          />
+        )}
+
         {currentIx === -1 && (
           <PracticeQuizOverview
             displayName={quiz.displayName}
@@ -107,6 +122,7 @@ function PracticeQuiz({
             // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
             pointsMultiplier={quiz.pointsMultiplier}
             setCurrentIx={setCurrentIx}
+            previewOnly={previewOnly}
           />
         )}
 
@@ -132,6 +148,7 @@ function PracticeQuiz({
               router.push(`/`)
             }
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
+            previewOnly={previewOnly}
           />
         )}
       </div>

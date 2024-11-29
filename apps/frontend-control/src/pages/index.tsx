@@ -58,7 +58,7 @@ function Index() {
                             .rich('control.home.archivedCourse', {
                               courseName: course.name,
                             })
-                            .toString()
+                            ?.toString() || course.name
                     }
                     data={{ cy: `course-${course.name}` }}
                   />

@@ -21,6 +21,7 @@ interface PracticeQuizOverviewProps {
   //   stacksWithQuestions?: number
   pointsMultiplier: number
   setCurrentIx: (ix: number) => void
+  previewOnly: boolean
 }
 
 function PracticeQuizOverview({
@@ -33,14 +34,15 @@ function PracticeQuizOverview({
   //   stacksWithQuestions,
   pointsMultiplier,
   setCurrentIx,
+  previewOnly,
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { data } = useQuery(SelfDocument)
+  const { data } = useQuery(SelfDocument, { skip: previewOnly })
 
   return (
     <div className="flex flex-col space-y-4">
-      {!data?.self && (
+      {!previewOnly && !data?.self && (
         <UserNotification type="warning">
           {t.rich('pwa.general.userNotLoggedIn', {
             login: (text) => (

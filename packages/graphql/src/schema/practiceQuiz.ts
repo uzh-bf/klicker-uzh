@@ -114,6 +114,7 @@ export interface IPracticeQuiz
   startedCount?: number
   completedCount?: number
   repeatedCount?: number
+  isOwner?: boolean
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -135,6 +136,7 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     // startedCount: t.exposeInt('startedCount', { nullable: true }),
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
   }),
 })
 

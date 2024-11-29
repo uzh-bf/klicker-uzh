@@ -67,14 +67,17 @@ export async function getPracticeQuizData(
   })
 
   if (!quiz) return null
+  const isOwner =
+    ctx.user?.sub && ctx.user.role === UserRole.USER
+      ? ctx.user.sub === quiz.ownerId
+      : false
 
   // if the quiz is scheduled, return the quiz without the stacks
   if (quiz.status === PublicationStatus.SCHEDULED) {
-    return { ...quiz, stacks: [] }
+    return isOwner ? { ...quiz, isOwner } : { ...quiz, isOwner, stacks: [] }
   }
 
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
-    // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense
     const orderedStacks =
       quiz.orderType === ElementOrderType.SPACED_REPETITION
         ? orderStacks(quiz.stacks)
@@ -82,12 +85,13 @@ export async function getPracticeQuizData(
 
     return {
       ...quiz,
+      isOwner,
       stacks: orderedStacks,
       numOfStacks: orderedStacks.length,
     }
   }
 
-  return quiz
+  return { ...quiz, isOwner }
 }
 
 export async function getPracticeQuizEvaluation(

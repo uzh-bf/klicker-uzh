@@ -656,12 +656,14 @@ async function respondToFlashcard(
     response,
     answerTime,
     participation,
+    skipTracking = false,
   }: {
     id: number
     courseId: string
     response: FlashcardCorrectness
     answerTime: number
     participation: (Participation & { participant: Participant }) | null
+    skipTracking?: boolean
   },
   ctx: Context
 ) {
@@ -669,6 +671,10 @@ async function respondToFlashcard(
   const result = {
     grading: flashcardResultMap[response],
     score: null,
+  }
+
+  if (skipTracking) {
+    return result
   }
 
   // variable summaries for code readability
@@ -999,11 +1005,13 @@ async function respondToContent(
     courseId,
     answerTime,
     participation,
+    skipTracking = false,
   }: {
     id: number
     courseId: string
     answerTime: number
     participation: (Participation & { participant: Participant }) | null
+    skipTracking?: boolean
   },
   ctx: Context
 ) {
@@ -1011,6 +1019,10 @@ async function respondToContent(
   const result = {
     grading: StackFeedbackStatus.CORRECT,
     score: null,
+  }
+
+  if (skipTracking) {
+    return result
   }
 
   const transactionResult = await ctx.prisma.$transaction(async (prisma) => {
@@ -2137,12 +2149,14 @@ export async function respondToQuestion(
     response,
     answerTime,
     participation,
+    skipTracking,
   }: {
     courseId: string
     id: number
     response: ResponseInput
     answerTime: number
     participation: (Participation & { participant: Participant }) | null
+    skipTracking?: boolean
   },
   ctx: Context
 ) {
@@ -2202,17 +2216,19 @@ export async function respondToQuestion(
     })
 
     // update the element instance
-    const updatedInstance = await prisma.elementInstance.update({
-      where: { id },
-      data: {
-        results: participation ? results : undefined,
-        anonymousResults: participation ? undefined : results,
-        instanceStatistics: statisticsUpdate,
-      },
-      include: {
-        elementStack: true,
-      },
-    })
+    const updatedInstance = !skipTracking
+      ? await prisma.elementInstance.update({
+          where: { id },
+          data: {
+            results: participation ? results : undefined,
+            anonymousResults: participation ? undefined : results,
+            instanceStatistics: statisticsUpdate,
+          },
+          include: {
+            elementStack: true,
+          },
+        })
+      : existingInstance
 
     // compute question evaluation
     // TODO: call computeChoicesEvaluation, computeNumericalEvaluation and computeFreeTextEvaluation for consistent feedback
@@ -2271,84 +2287,88 @@ export async function respondToQuestion(
       instance: updatedInstance,
     })
 
-    // compute updated aggregated responses
-    const newAggResponses = computeAggregatedResponsesQuestion({
-      instance: updatedInstance,
-      existingResponse,
-      response,
-    })
-
-    if (!newAggResponses) {
-      throw new Error(
-        `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
-      )
-    }
-
-    // update aggregated results for choices and open questions
-    const streakIncrement = percentile === 1 ? 1 : 0
-    const resultSpacedRepetition = updateSpacedRepetition({
-      eFactor: existingResponse?.eFactor ?? 2.5,
-      interval: existingResponse?.interval ?? 1,
-      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
-      grade: percentile,
-    })
-
     // create a question response detail
-    await createQuestionResponseDetail({
-      prisma,
-      id,
-      participantId: ctx.user.sub,
-      courseId,
-      response,
-      score: questionEval.score ?? 0,
-      pointsAwarded,
-      xpAwarded,
-      answerTime,
-      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
-      microLearningId:
-        updatedInstance.elementStack?.microLearningId ?? undefined,
-    })
-
-    // upsert the question response
-    await upsertQuestionResponse({
-      prisma,
-      id,
-      participantId: ctx.user.sub,
-      courseId,
-      response,
-      correctness: percentile,
-      score: questionEval.score ?? 0,
-      pointsAwarded,
-      lastAwardedAt: lastAwardedAt ?? new Date(),
-      xpAwarded,
-      lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
-      newAverageResponseTime,
-      existingResponse,
-      newAggResponses,
-      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
-      microLearningId:
-        updatedInstance.elementStack?.microLearningId ?? undefined,
-      resultSpacedRepetition,
-    })
-
-    // increment participant xp
-    if (xpAwarded > 0) {
-      await incrementParticipantXp({
-        prisma,
-        participantId: ctx.user.sub,
-        xpAwarded,
+    if (!skipTracking) {
+      // compute updated aggregated responses
+      const newAggResponses = computeAggregatedResponsesQuestion({
+        instance: updatedInstance,
+        existingResponse,
+        response,
       })
-    }
 
-    // create or increment the leaderboard entry, if the participant has an active participation in the course
-    // active participation has already been checked during computation of pointsAwarded
-    if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
-      await updateLeaderboardOnQuestionResponse({
+      if (!newAggResponses) {
+        throw new Error(
+          `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
+        )
+      }
+
+      // update aggregated results for choices and open questions
+      const streakIncrement = percentile === 1 ? 1 : 0
+      const resultSpacedRepetition = updateSpacedRepetition({
+        eFactor: existingResponse?.eFactor ?? 2.5,
+        interval: existingResponse?.interval ?? 1,
+        streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
+        grade: percentile,
+      })
+
+      await createQuestionResponseDetail({
         prisma,
+        id,
         participantId: ctx.user.sub,
         courseId,
+        response,
+        score: questionEval.score ?? 0,
         pointsAwarded,
+        xpAwarded,
+        answerTime,
+        practiceQuizId:
+          updatedInstance.elementStack?.practiceQuizId ?? undefined,
+        microLearningId:
+          updatedInstance.elementStack?.microLearningId ?? undefined,
       })
+
+      // upsert the question response
+      await upsertQuestionResponse({
+        prisma,
+        id,
+        participantId: ctx.user.sub,
+        courseId,
+        response,
+        correctness: percentile,
+        score: questionEval.score ?? 0,
+        pointsAwarded,
+        lastAwardedAt: lastAwardedAt ?? new Date(),
+        xpAwarded,
+        lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
+        newAverageResponseTime,
+        existingResponse,
+        newAggResponses,
+        practiceQuizId:
+          updatedInstance.elementStack?.practiceQuizId ?? undefined,
+        microLearningId:
+          updatedInstance.elementStack?.microLearningId ?? undefined,
+        resultSpacedRepetition,
+      })
+
+      // increment participant xp
+      if (xpAwarded > 0) {
+        await incrementParticipantXp({
+          prisma,
+          participantId: ctx.user.sub,
+          xpAwarded,
+        })
+      }
+
+      // create or increment the leaderboard entry, if the participant has an active participation in the course
+      // active participation has already been checked during computation of pointsAwarded
+      if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
+        await updateLeaderboardOnQuestionResponse({
+          prisma,
+          participantId: ctx.user.sub,
+          courseId,
+          pointsAwarded,
+        })
+      }
     }
 
     return {
@@ -2386,11 +2406,13 @@ async function respondToElement({
   response,
   courseId,
   answerTime,
+  skipTracking = false,
 }: {
   ctx: Context
   response: ElementResponseInput
   courseId: string
   answerTime: number
+  skipTracking?: boolean
 }): Promise<{
   grading: StackFeedbackStatus | null
   score: number | null
@@ -2418,6 +2440,7 @@ async function respondToElement({
         response: response.flashcardResponse!,
         answerTime,
         participation,
+        skipTracking,
       },
       ctx
     )
@@ -2451,6 +2474,7 @@ async function respondToElement({
         courseId: courseId,
         answerTime,
         participation,
+        skipTracking,
       },
       ctx
     )
@@ -2486,6 +2510,7 @@ async function respondToElement({
         response: { choices: response.choicesResponse },
         answerTime,
         participation,
+        skipTracking,
       },
       ctx
     )
@@ -2514,6 +2539,7 @@ async function respondToElement({
         response: { value: String(response.numericalResponse) },
         answerTime,
         participation,
+        skipTracking,
       },
       ctx
     )
@@ -2542,6 +2568,7 @@ async function respondToElement({
         response: { value: response.freeTextResponse },
         answerTime,
         participation,
+        skipTracking,
       },
       ctx
     )
@@ -2575,10 +2602,17 @@ export interface RespondToElementStackInput {
   courseId: string
   responses: ElementResponseInput[]
   stackAnswerTime: number
+  isOwner?: boolean
 }
 
 export async function respondToElementStack(
-  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
+  {
+    stackId,
+    courseId,
+    responses,
+    stackAnswerTime,
+    isOwner,
+  }: RespondToElementStackInput,
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
@@ -2622,6 +2656,7 @@ export async function respondToElementStack(
       response,
       courseId,
       answerTime: elementAnswerTime,
+      skipTracking: isOwner,
     })
 
     // update stack status

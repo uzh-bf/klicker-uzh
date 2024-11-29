@@ -31,6 +31,7 @@ import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
+import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
@@ -238,15 +239,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <PracticeQuizPreviewLink
-                  //       practiceQuiz={practiceQuiz}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
@@ -299,6 +300,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   getActivityDuplicationAction({
                     id: practiceQuiz.id,
                     text: t('manage.course.duplicatePracticeQuiz'),
@@ -347,15 +357,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <PracticeQuizPreviewLink
-                  //       practiceQuiz={practiceQuiz}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <PracticeQuizEvaluationLink

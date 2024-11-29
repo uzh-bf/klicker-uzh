@@ -1,3 +1,4 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
@@ -5,7 +6,8 @@ export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
   env: {
-    URL_STUDENT: 'http://127.0.0.1:3001/login',
+    URL_STUDENT: 'http://127.0.0.1:3001',
+    URL_STUDENT_LOGIN: 'http://127.0.0.1:3001/login',
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
     LECTURER_EMAIL: 'lecturer@df.uzh.ch',
@@ -38,7 +40,76 @@ export default defineConfig({
     experimentalStudio: true,
     //   // includeShadowDom: true,
     setupNodeEvents(on, config) {
+      // merge process.env with config.env
+      config.env = { ...config.env, ...process.env }
+
       require('@cypress/code-coverage/task')(on, config)
+      on('task', {
+        async getPracticeQuizInfo({ quizName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const practiceQuizzes = await prisma.practiceQuiz.findMany({
+              where: {
+                name: quizName,
+              },
+            })
+
+            if (!practiceQuizzes || practiceQuizzes.length === 0) {
+              return null
+            }
+
+            return {
+              id: practiceQuizzes[0].id,
+              courseId: practiceQuizzes[0].courseId,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async getMicroLearningInfo({ mlName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const microLearnings = await prisma.microLearning.findMany({
+              where: {
+                name: mlName,
+              },
+            })
+
+            if (!microLearnings || microLearnings.length === 0) {
+              return null
+            }
+
+            return {
+              id: microLearnings[0].id,
+              courseId: microLearnings[0].courseId,
+            }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+      })
       return config
     },
   },
