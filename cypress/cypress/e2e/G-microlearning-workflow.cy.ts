@@ -168,13 +168,13 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-end-date"]').click().type(runningEndOLD)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.activityWizard.multiplier1)
+      .contains(messages.manage.sessionForms.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier2
+      messages.manage.sessionForms.multiplier2
     )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-session-creation"]').click()
@@ -327,13 +327,13 @@ describe('Different microlearning workflows', () => {
       .type(runningEnd)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.activityWizard.multiplier2)
+      .contains(messages.manage.sessionForms.multiplier2)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier4
+      messages.manage.sessionForms.multiplier4
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -463,7 +463,7 @@ describe('Different microlearning workflows', () => {
       .should('have.value', runningEnd)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.activityWizard.multiplier4)
+      .contains(messages.manage.sessionForms.multiplier4)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the elements are correctly duplicated
@@ -496,7 +496,7 @@ describe('Different microlearning workflows', () => {
       displayName: futureMLDisplayName,
       description: futureMLDescription,
       courseName: testCourse,
-      multiplier: messages.manage.activityWizard.multiplier2,
+      multiplier: messages.manage.sessionForms.multiplier2,
       startDate: `${currentYear + 1}-01-01T02:00`,
       endDate: `${currentYear + 1}-12-31T18:00`,
       stacks: [{ elements: [SCQuestionTitle] }],
@@ -982,18 +982,18 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.activityWizard.multiplier1)
+      .contains(messages.manage.sessionForms.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier2
+      messages.manage.sessionForms.multiplier2
     )
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if any questions are contained in the question step and create quiz
