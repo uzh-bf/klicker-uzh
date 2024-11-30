@@ -49,38 +49,34 @@ const THIRD_ACHIEVEMENT_ID = 7
 // #region
 async function getCachedBlockResults({
   ctx,
-  quizId,
-  blockId,
-  activeInstanceIds,
-}: {
-  ctx: Context
-  quizId: string
-  blockId: number
-  activeInstanceIds: number[]
-}) {
-  const redisMulti = ctx.redisExec.multi()
-  redisMulti.hgetall(`lq:${quizId}:lb`)
-  redisMulti.hgetall(`lq:${quizId}:b:${blockId}:lb`)
-  activeInstanceIds.forEach((instanceId) => {
-    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:info`)
-    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:responseHashes`)
-    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:responses`)
-    redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:results`)
-  })
-
-  const results = await redisMulti.exec()
-
-  return results
-}
-
-async function processCachedData({
-  cachedResults,
   activeBlock,
 }: {
-  cachedResults: any[]
+  ctx: Context
   activeBlock: ElementBlock & { elements: ElementInstance[] }
 }) {
-  const mappedResults = cachedResults.map(([_, result]) => result)
+  const redisMulti = ctx.redisExec.multi()
+
+  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
+  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
+
+  const activeInstanceIds = activeBlock.elements.map((instance) => instance.id)
+
+  activeInstanceIds.forEach((instanceId) => {
+    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:info`)
+    redisMulti.hgetall(
+      `lq:${activeBlock.liveQuizId}:i:${instanceId}:responseHashes`
+    )
+    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:responses`)
+    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:results`)
+  })
+
+  const cacheData = await redisMulti.exec()
+
+  if (!cacheData) {
+    return null
+  }
+
+  const mappedResults: any[] = cacheData.map(([_, result]) => result)
 
   const liveQuizLeaderboard: Record<string, string> = mappedResults[0]
   const blockLeaderboard: Record<string, string> = mappedResults[1]
@@ -99,7 +95,12 @@ async function processCachedData({
     }
   > = mappedResults.slice(2).reduce((acc, cacheObj, ix) => {
     const ixMod = ix % 4
-    const instance = activeBlock.elements[Math.floor((ix - ixMod) / 3)]
+
+    const instanceId = activeInstanceIds[Math.floor((ix - ixMod) / 3)]
+
+    const instance = activeBlock.elements.find(
+      (instance) => instance.id === instanceId
+    )
 
     if (!instance) return acc
 
@@ -171,9 +172,10 @@ async function processCachedData({
             omitBy(cacheObj, (_, key) => key === 'participants')
           ).reduce<Record<string, { value: string; count: number }>>(
             (responses_acc, [responseHash, count]) => {
-              const solutions = acc[instance.id]?.['info']?.solutions
-                ? JSON.parse(acc[instance.id]['info'].solutions)
-                : []
+              const solutions =
+                typeof acc[instance.id]?.['info']?.solutions !== 'undefined'
+                  ? JSON.parse(acc[instance.id]['info'].solutions)
+                  : []
               const response =
                 acc[instance.id]?.['responseHashes'][responseHash] ??
                 responseHash
@@ -239,9 +241,9 @@ async function processCachedData({
 
   return {
     liveQuizLeaderboard,
-    // blockLeaderboard,
-    // cachedResults,
+    blockLeaderboard,
     instanceResults,
+    activeInstanceIds,
   }
 }
 
@@ -1048,24 +1050,16 @@ export async function deactivateLiveQuizBlock(
   // if the block is not the active one, return early
   if (quiz.activeBlockId !== blockId) return quiz
 
-  const activeInstanceIds = quiz.activeBlock.elements.map(
-    (instance) => instance.id
-  )
-
-  const cachedResults = await getCachedBlockResults({
-    ctx,
-    quizId,
-    blockId,
-    activeInstanceIds,
-  })
-
-  if (!cachedResults) return null
-
   try {
-    const { instanceResults, liveQuizLeaderboard } = await processCachedData({
-      cachedResults,
+    const cachedResults = await getCachedBlockResults({
+      ctx,
       activeBlock: quiz.activeBlock,
     })
+
+    if (!cachedResults) return null
+
+    const { instanceResults, liveQuizLeaderboard, activeInstanceIds } =
+      cachedResults
 
     const existingParticipantsLB = (
       await Promise.allSettled(
@@ -1820,16 +1814,11 @@ export async function getLiveQuizEvaluation(
 
     const cachedResults = await getCachedBlockResults({
       ctx,
-      quizId: id,
-      blockId: liveQuiz.activeBlockId,
-      activeInstanceIds,
+      activeBlock: liveQuiz.activeBlock,
     })
 
     if (cachedResults) {
-      const { instanceResults } = await processCachedData({
-        cachedResults,
-        activeBlock: liveQuiz.activeBlock,
-      })
+      const { instanceResults } = cachedResults
 
       activeBlockWithResults = {
         ...liveQuiz.activeBlock,
