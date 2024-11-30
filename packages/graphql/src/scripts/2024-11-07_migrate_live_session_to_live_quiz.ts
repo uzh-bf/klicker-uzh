@@ -357,42 +357,49 @@ async function applyCacheUpdatesForQuiz(
       pipeline.hset(`lq:${newLiveQuiz.id}:b:${activeBlock.id}:lb`, { ...blb })
     }
 
-    activeBlock.elements.forEach(async (instance) => {
-      const info = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.originalId}:info`
-      )
-      const responseHashes = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.originalId}:responseHashes`
-      )
-      const responses = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.originalId}:responses`
-      )
-      const results = await redisExec.hgetall(
-        `s:${newLiveQuiz.id}:i:${instance.originalId}:results`
-      )
+    await Promise.all(
+      activeBlock.elements.map(async (instance) => {
+        const info = await redisExec.hgetall(
+          `s:${newLiveQuiz.id}:i:${instance.originalId}:info`
+        )
+        const responseHashes = await redisExec.hgetall(
+          `s:${newLiveQuiz.id}:i:${instance.originalId}:responseHashes`
+        )
+        const responses = await redisExec.hgetall(
+          `s:${newLiveQuiz.id}:i:${instance.originalId}:responses`
+        )
+        const results = await redisExec.hgetall(
+          `s:${newLiveQuiz.id}:i:${instance.originalId}:results`
+        )
 
-      if (typeof info !== 'undefined' && info !== null) {
-        pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:info`, { ...info })
-      }
+        if (typeof info !== 'undefined' && info !== null) {
+          pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:info`, {
+            ...info,
+          })
+        }
 
-      if (typeof responseHashes !== 'undefined' && responseHashes !== null) {
-        pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:responseHashes`, {
-          ...responseHashes,
-        })
-      }
+        if (typeof responseHashes !== 'undefined' && responseHashes !== null) {
+          pipeline.hset(
+            `lq:${newLiveQuiz.id}:i:${instance.id}:responseHashes`,
+            {
+              ...responseHashes,
+            }
+          )
+        }
 
-      if (typeof responses !== 'undefined' && responses !== null) {
-        pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:responses`, {
-          ...responses,
-        })
-      }
+        if (typeof responses !== 'undefined' && responses !== null) {
+          pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:responses`, {
+            ...responses,
+          })
+        }
 
-      if (typeof results !== 'undefined' && results !== null) {
-        pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:results`, {
-          ...results,
-        })
-      }
-    })
+        if (typeof results !== 'undefined' && results !== null) {
+          pipeline.hset(`lq:${newLiveQuiz.id}:i:${instance.id}:results`, {
+            ...results,
+          })
+        }
+      })
+    )
   }
 
   await pipeline.exec()
