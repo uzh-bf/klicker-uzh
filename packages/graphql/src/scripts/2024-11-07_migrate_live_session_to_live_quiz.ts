@@ -341,7 +341,7 @@ async function applyCacheUpdatesForQuiz(
   })
 
   // update redis cache data related to live quiz
-  const lb = await redisExec.hgetall(`s:${newLiveQuiz.id}:lb`)
+  const lb = await redisExec.hgetall(`s:${newLiveQuiz.originalId}:lb`)
   if (typeof lb !== 'undefined' && lb !== null) {
     pipeline.hset(`lq:${newLiveQuiz.id}:lb`, { ...lb })
   }
@@ -350,7 +350,7 @@ async function applyCacheUpdatesForQuiz(
   const activeBlock = newLiveQuiz.activeBlock
   if (typeof activeBlock !== 'undefined' && activeBlock !== null) {
     const blb = await redisExec.hgetall(
-      `s:${newLiveQuiz.id}:b:${activeBlock.id}:lb`
+      `s:${newLiveQuiz.id}:b:${activeBlock.originalId}:lb`
     )
 
     if (typeof blb !== 'undefined' && blb !== null) {
