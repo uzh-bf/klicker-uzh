@@ -67,7 +67,10 @@ async function getCachedBlockResults({
     redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:responses`)
     redisMulti.hgetall(`lq:${quizId}:i:${instanceId}:results`)
   })
-  return redisMulti.exec()
+
+  const results = await redisMulti.exec()
+
+  return results
 }
 
 async function processCachedData({
@@ -168,9 +171,9 @@ async function processCachedData({
             omitBy(cacheObj, (_, key) => key === 'participants')
           ).reduce<Record<string, { value: string; count: number }>>(
             (responses_acc, [responseHash, count]) => {
-              const solutions = JSON.parse(
-                acc[instance.id]?.['info']?.solutions
-              )
+              const solutions = acc[instance.id]?.['info']?.solutions
+                ? JSON.parse(acc[instance.id]['info'].solutions)
+                : []
               const response =
                 acc[instance.id]?.['responseHashes'][responseHash] ??
                 responseHash
@@ -828,6 +831,7 @@ export async function getCockpitQuiz(
           },
         ][]
       | null
+
     const activeBlockParticipants = cacheContent
       ?.map(([_, result]) => parseInt(result?.participants))
       .reduce((acc, val) => min(acc, val), 100000)
