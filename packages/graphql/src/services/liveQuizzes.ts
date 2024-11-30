@@ -59,17 +59,6 @@ async function getCachedBlockResults({
   redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
   redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
 
-  const activeInstanceIds = activeBlock.elements.map((instance) => instance.id)
-
-  activeInstanceIds.forEach((instanceId) => {
-    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:info`)
-    redisMulti.hgetall(
-      `lq:${activeBlock.liveQuizId}:i:${instanceId}:responseHashes`
-    )
-    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:responses`)
-    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instanceId}:results`)
-  })
-
   const cacheData = await redisMulti.exec()
 
   if (!cacheData) {
@@ -93,157 +82,123 @@ async function getCachedBlockResults({
         | ElementResultsFlashcard
         | ElementResultsContent
     }
-  > = mappedResults.slice(2).reduce((acc, cacheObj, ix) => {
-    const ixMod = ix % 4
+  > = {}
 
-    const instanceId = activeInstanceIds[Math.floor((ix - ixMod) / 3)]
+  for (const instance of activeBlock.elements) {
+    const redisMulti = ctx.redisExec.multi()
 
-    const instance = activeBlock.elements.find(
-      (instance) => instance.id === instanceId
+    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:info`)
+    redisMulti.hgetall(
+      `lq:${activeBlock.liveQuizId}:i:${instance.id}:responseHashes`
     )
+    redisMulti.hgetall(
+      `lq:${activeBlock.liveQuizId}:i:${instance.id}:responses`
+    )
+    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:results`)
 
-    if (!instance) return acc
+    const cacheData = await redisMulti.exec()
 
-    switch (ixMod) {
-      // compute element instance results from cache entries
+    if (!cacheData) return
 
-      // instance info / solutions
-      case 0:
+    const mappedResults: any[] = cacheData.map(([_, result]) => result)
+
+    const [info, responseHashes, responses, results] = mappedResults
+
+    // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
+    let anonymousResults:
+      | ElementResultsChoices
+      | ElementResultsOpen
+      | ElementResultsFlashcard
+      | ElementResultsContent
+      | undefined
+
+    if (
+      instance.elementType === ElementType.SC ||
+      instance.elementType === ElementType.MC ||
+      instance.elementType === ElementType.KPRIM
+    ) {
+      const choices = Object.entries(
+        omitBy(results, (_, key) => key === 'participants')
+      ).reduce<Record<string, number>>((acc, [responseHash, count]) => {
         return {
           ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            info: cacheObj,
-          },
+          [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
         }
+      }, {})
 
-      // response hashes
-      case 1:
-        return {
-          ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            responseHashes: cacheObj,
-          },
-        }
+      anonymousResults = {
+        choices,
+        total: parseInt(results.participants),
+      } as ElementResultsChoices
+    } else if (
+      instance.elementType === ElementType.NUMERICAL ||
+      instance.elementType === ElementType.FREE_TEXT
+    ) {
+      const responses = Object.entries(
+        omitBy(results, (_, key) => key === 'participants')
+      ).reduce<Record<string, { value: string; count: number }>>(
+        (responses_acc, [responseHash, count]) => {
+          const solutions =
+            typeof info.solutions !== 'undefined'
+              ? JSON.parse(info.solutions)
+              : []
+          const response = responseHashes[responseHash] ?? responseHash
 
-      // responses
-      case 2:
-        return {
-          ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            responses: cacheObj,
-          },
-        }
-
-      case 3: {
-        // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
-        let anonymousResults:
-          | ElementResultsChoices
-          | ElementResultsOpen
-          | ElementResultsFlashcard
-          | ElementResultsContent
-          | undefined
-
-        if (
-          instance.elementType === ElementType.SC ||
-          instance.elementType === ElementType.MC ||
-          instance.elementType === ElementType.KPRIM
-        ) {
-          const choices = Object.entries(
-            omitBy(cacheObj, (_, key) => key === 'participants')
-          ).reduce<Record<string, number>>((acc, [responseHash, count]) => {
-            return {
-              ...acc,
-              [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
+          let grading: number | undefined
+          if (solutions && solutions.length > 0) {
+            if (instance.elementType === ElementType.NUMERICAL) {
+              grading =
+                gradeQuestionNumerical({
+                  response,
+                  solutionRanges: solutions,
+                }) ?? undefined
+            } else if (instance.elementType === ElementType.FREE_TEXT) {
+              grading =
+                gradeQuestionFreeText({
+                  response,
+                  solutions,
+                }) ?? undefined
             }
-          }, {})
+          }
 
-          anonymousResults = {
-            choices,
-            total: parseInt(cacheObj.participants),
-          } as ElementResultsChoices
-        } else if (
-          instance.elementType === ElementType.NUMERICAL ||
-          instance.elementType === ElementType.FREE_TEXT
-        ) {
-          const responses = Object.entries(
-            omitBy(cacheObj, (_, key) => key === 'participants')
-          ).reduce<Record<string, { value: string; count: number }>>(
-            (responses_acc, [responseHash, count]) => {
-              const solutions =
-                typeof acc[instance.id]?.['info']?.solutions !== 'undefined'
-                  ? JSON.parse(acc[instance.id]['info'].solutions)
-                  : []
-              const response =
-                acc[instance.id]?.['responseHashes'][responseHash] ??
-                responseHash
+          const updatedResponse = {
+            value: responseHashes[responseHash] ?? responseHash,
+            count: (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
+          }
 
-              let grading: number | undefined
-              if (solutions && solutions.length > 0) {
-                if (instance.elementType === ElementType.NUMERICAL) {
-                  grading =
-                    gradeQuestionNumerical({
-                      response,
-                      solutionRanges: solutions,
-                    }) ?? undefined
-                } else if (instance.elementType === ElementType.FREE_TEXT) {
-                  grading =
-                    gradeQuestionFreeText({
-                      response,
-                      solutions,
-                    }) ?? undefined
-                }
-              }
+          return {
+            ...responses_acc,
+            [responseHash]:
+              typeof grading !== 'undefined'
+                ? {
+                    ...updatedResponse,
+                    correct: grading === 1 ? true : false,
+                  }
+                : updatedResponse,
+          }
+        },
+        {}
+      )
 
-              const updatedResponse = {
-                value:
-                  acc[instance.id]?.['responseHashes'][responseHash] ??
-                  responseHash,
-                count:
-                  (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
-              }
-
-              return {
-                ...responses_acc,
-                [responseHash]:
-                  typeof grading !== 'undefined'
-                    ? {
-                        ...updatedResponse,
-                        correct: grading === 1 ? true : false,
-                      }
-                    : updatedResponse,
-              }
-            },
-            {}
-          )
-
-          anonymousResults = {
-            responses,
-            total: parseInt(cacheObj.participants),
-          } as ElementResultsOpen
-        }
-
-        return {
-          ...acc,
-          [instance.id]: {
-            ...acc[instance.id],
-            anonymousResults,
-          },
-        }
-      }
-
-      default:
-        return acc
+      anonymousResults = {
+        responses,
+        total: parseInt(results.participants),
+      } as ElementResultsOpen
     }
-  }, {})
+
+    instanceResults[instance.id] = {
+      info,
+      responseHashes,
+      responses,
+      anonymousResults: anonymousResults ?? { total: 0 },
+    }
+  }
 
   return {
     liveQuizLeaderboard,
     blockLeaderboard,
     instanceResults,
-    activeInstanceIds,
+    activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
   }
 }
 
