@@ -6,6 +6,13 @@ import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import NRSidebar from './NRSidebar'
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@uzh-bf/design-system/dist/future'
+import { twMerge } from 'tailwind-merge'
+
 interface NREvaluationProps {
   instanceEvaluation: NumericalElementInstanceEvaluation
   textSize: TextSizeType
@@ -29,6 +36,7 @@ function NREvaluation({
   showSolution,
   type,
 }: NREvaluationProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [showStatistics, setShowStatistics] = useState<ShowStatisticsType>({
     mean: false,
     median: false,
@@ -38,8 +46,12 @@ function NREvaluation({
   })
 
   return (
-    <>
-      <div className="order-2 flex-1 px-4 md:order-1">
+    <ResizablePanelGroup
+      autoSaveId="evaluation-nr"
+      key={`panel-group-${instanceEvaluation.id}`}
+      direction="horizontal"
+    >
+      <ResizablePanel defaultSize={80} minSize={50} className="px-4">
         <ElementChart
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
@@ -47,17 +59,30 @@ function NREvaluation({
           showStatistics={showStatistics}
           textSize={textSize}
         />
-      </div>
-      <NRSidebar
-        instance={instanceEvaluation}
-        chartType={chartType}
-        textSize={textSize}
-        showSolution={showSolution}
-        showStatistics={showStatistics}
-        setShowStatistics={setShowStatistics}
-        type={type}
-      />
-    </>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel
+        defaultSize={20}
+        minSize={10}
+        collapsible
+        collapsedSize={0}
+        onCollapse={() => setIsCollapsed(true)}
+        onExpand={() => setIsCollapsed(false)}
+        className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
+      >
+        {!isCollapsed && (
+          <NRSidebar
+            instance={instanceEvaluation}
+            chartType={chartType}
+            textSize={textSize}
+            showSolution={showSolution}
+            showStatistics={showStatistics}
+            setShowStatistics={setShowStatistics}
+            type={type}
+          />
+        )}
+      </ResizablePanel>
+    </ResizablePanelGroup>
   )
 }
 
