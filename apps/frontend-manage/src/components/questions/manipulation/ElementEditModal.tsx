@@ -10,7 +10,7 @@ import {
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  UpdateQuestionInstancesDocument,
+  UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -92,7 +92,7 @@ function ElementEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
-  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
+  const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
   const initialValues = useElementFormInitialValues({
     mode,
@@ -220,8 +220,8 @@ function ElementEditModal({
 
         if (mode === ElementEditMode.EDIT && updateInstances) {
           if (questionId !== null && typeof questionId !== 'undefined') {
-            await updateQuestionInstances({
-              variables: { questionId: questionId },
+            await updateElementInstances({
+              variables: { elementId: questionId },
             })
           }
         }

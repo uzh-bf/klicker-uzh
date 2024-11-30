@@ -1,3 +1,4 @@
+import { SubscribeToMoreOptions } from '@apollo/client'
 import {
   Course,
   MicroLearning,
@@ -8,7 +9,7 @@ import { Dispatch, SetStateAction, useEffect } from 'react'
 
 interface MicroLearningListSubscriberProps {
   activityId: string
-  subscribeToMore: any
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
   setEndedMicroLearning: Dispatch<SetStateAction<string | undefined>>
 }
 

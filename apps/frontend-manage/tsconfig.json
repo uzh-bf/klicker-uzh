@@ -22,6 +22,15 @@
       "@type/*": ["src/types/*"]
     }
   },
-  "include": ["next-env.d.ts", "src/types/app.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "src/types/app.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "../../packages/shared-components/src/hooks/useEvaluationBarChartData.tsx",
+    "../../packages/shared-components/src/hooks/useEvaluationHistogramData.tsx",
+    "../../packages/shared-components/src/hooks/useEvaluationTableColumns.tsx",
+    "../../packages/shared-components/src/hooks/useEvaluationTableData.tsx"
+  ],
   "exclude": ["node_modules"]
 }

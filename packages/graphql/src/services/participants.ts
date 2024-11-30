@@ -1,6 +1,5 @@
 import {
   PublicationStatus,
-  SessionStatus,
   UserRole,
   type ElementFeedback,
 } from '@klicker-uzh/prisma'
@@ -121,8 +120,8 @@ export async function getParticipations(
                   isDeleted: false,
                 },
               },
-              sessions: {
-                where: { status: SessionStatus.RUNNING },
+              liveQuizzes: {
+                where: { status: PublicationStatus.PUBLISHED },
               },
             },
           },
@@ -534,8 +533,8 @@ export async function flagElement(
   })
 
   if (
-    !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
-    !elementInstance?.elementStack.microLearning?.course?.notificationEmail
+    !elementInstance?.elementStack!.practiceQuiz?.course?.notificationEmail &&
+    !elementInstance?.elementStack!.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
     return elementFeedback

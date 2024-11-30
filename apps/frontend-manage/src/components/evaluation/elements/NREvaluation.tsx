@@ -1,22 +1,31 @@
 import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
-import NumericalSidebar from './NumericalSidebar'
+import NRSidebar from './NRSidebar'
 
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@uzh-bf/design-system/dist/future'
-import { useState } from 'react'
 
 interface NREvaluationProps {
   instanceEvaluation: NumericalElementInstanceEvaluation
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  type: ActivityEvaluationType
+}
+
+export interface ShowStatisticsType {
+  mean?: boolean
+  median?: boolean
+  q1?: boolean
+  q3?: boolean
+  sd?: boolean
 }
 
 function NREvaluation({
@@ -24,8 +33,16 @@ function NREvaluation({
   textSize,
   chartType,
   showSolution,
+  type,
 }: NREvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [showStatistics, setShowStatistics] = useState<ShowStatisticsType>({
+    mean: false,
+    median: false,
+    q1: false,
+    q3: false,
+    sd: false,
+  })
 
   return (
     <ResizablePanelGroup
@@ -38,6 +55,7 @@ function NREvaluation({
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
           showSolution={showSolution}
+          showStatistics={showStatistics}
           textSize={textSize}
         />
       </ResizablePanel>
@@ -52,10 +70,14 @@ function NREvaluation({
         className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
       >
         {!isCollapsed && (
-          <NumericalSidebar
+          <NRSidebar
             instance={instanceEvaluation}
+            chartType={chartType}
             textSize={textSize}
             showSolution={showSolution}
+            showStatistics={showStatistics}
+            setShowStatistics={setShowStatistics}
+            type={type}
           />
         )}
       </ResizablePanel>

@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.3.0-alpha.8",
+  "version": "3.3.0-alpha.10",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -28,17 +28,17 @@
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "~5.21.1",
     "cross-env": "~7.0.3",
-    "husky": "~9.1.6",
+    "husky": "~9.1.7",
     "lint-staged": "~15.2.10",
     "npm-run-all": "~4.1.5",
     "prettier": "~3.3.3",
     "prettier-plugin-organize-imports": "~4.1.0",
-    "prettier-plugin-tailwindcss": "~0.6.8",
+    "prettier-plugin-tailwindcss": "~0.6.9",
     "standard-version": "~9.5.0",
     "syncpack": "~13.0.0",
     "turbo": "~2.1.3",
     "typescript": "~5.6.3",
-    "yaml": "~2.6.0"
+    "yaml": "~2.6.1"
   },
   "scripts": {
     "//check:app": "turbo run check --parallel --continue",
@@ -89,8 +89,8 @@
     "node": "=20"
   },
   "volta": {
-    "node": "20.17.0",
-    "pnpm": "9.10.0"
+    "node": "20.18.1",
+    "pnpm": "9.14.3"
   },
-  "packageManager": "pnpm@9.10.0"
+  "packageManager": "pnpm@9.14.3"
 }

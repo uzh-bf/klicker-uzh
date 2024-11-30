@@ -1,6 +1,6 @@
 import { ChoicesElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import ChoicesSidebar from './ChoicesSidebar'
@@ -16,6 +16,7 @@ interface ChoicesEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  type: ActivityEvaluationType
 }
 
 function ChoicesEvaluation({
@@ -23,6 +24,7 @@ function ChoicesEvaluation({
   textSize,
   chartType,
   showSolution,
+  type,
 }: ChoicesEvaluationProps) {
   return (
     <ResizablePanelGroup
@@ -50,6 +52,7 @@ function ChoicesEvaluation({
           instance={instanceEvaluation}
           textSize={textSize}
           showSolution={showSolution}
+          type={type}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

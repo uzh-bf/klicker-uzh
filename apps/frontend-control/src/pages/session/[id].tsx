@@ -2,12 +2,12 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivateSessionBlockDocument,
-  DeactivateSessionBlockDocument,
-  EndSessionDocument,
-  GetControlSessionDocument,
-  GetUserRunningSessionsDocument,
-  SessionBlockStatus,
+  ActivateLiveQuizBlockDocument,
+  DeactivateLiveQuizBlockDocument,
+  ElementBlockStatus,
+  EndLiveQuizDocument,
+  GetControlLiveQuizDocument,
+  GetUnassignedLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -17,33 +17,46 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { sort } from 'remeda'
 import Layout from '../../components/Layout'
-import SessionBlock from '../../components/sessions/SessionBlock'
+import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
 
-function RunningSession() {
+function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
   const [nextBlockOrder, setNextBlockOrder] = useState(-1)
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
-    ActivateSessionBlockDocument
+  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
+    ActivateLiveQuizBlockDocument
   )
-  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateSessionBlockDocument
+  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
-      refetchQueries: [{ query: GetUserRunningSessionsDocument }],
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUnassignedLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUnassignedLiveQuizzesDocument,
+          data: {
+            unassignedLiveQuizzes:
+              data?.unassignedLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.endLiveQuiz?.id
+              ) ?? [],
+          },
+        })
+      },
     }
   )
 
   const {
-    loading: sessionLoading,
-    error: sessionError,
-    data: sessionData,
-  } = useQuery(GetControlSessionDocument, {
+    loading: quizLoading,
+    error: quizError,
+    data: quizData,
+  } = useQuery(GetControlLiveQuizDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -52,56 +65,53 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    setCurrentBlockOrder(sessionData?.controlSession?.activeBlock?.order)
-  }, [
-    sessionData?.controlSession?.id,
-    sessionData?.controlSession?.activeBlock,
-  ])
+    setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
+  }, [quizData?.controlLiveQuiz?.id, quizData?.controlLiveQuiz?.activeBlock])
 
   useEffect(() => {
-    if (!sessionData?.controlSession?.blocks) return
+    if (!quizData?.controlLiveQuiz?.blocks) return
 
     const sortedBlocks = sort(
-      sessionData?.controlSession?.blocks,
+      quizData?.controlLiveQuiz?.blocks,
       (a, b) => a.order - b.order
     )
 
     if (!sortedBlocks) return
     const scheduledNext = sortedBlocks.find(
-      (block) => block.status === SessionBlockStatus.Scheduled
+      (block) => block.status === ElementBlockStatus.Scheduled
     )
     setNextBlockOrder(
       typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
     )
-  }, [sessionData?.controlSession?.blocks])
+  }, [quizData?.controlLiveQuiz?.blocks])
 
-  if (sessionLoading) {
+  if (quizLoading) {
     return (
-      <Layout title={t('control.session.sessionControl')}>
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <Loader />
       </Layout>
     )
   }
 
-  if (!sessionData?.controlSession || sessionError) {
+  if (!quizData?.controlLiveQuiz || quizError) {
     return (
-      <Layout title={t('control.session.sessionControl')}>
+      <Layout title={t('control.liveQuiz.liveQuizControl')}>
         <UserNotification
-          message={t('control.session.errorLoadingSession')}
+          message={t('control.liveQuiz.errorLoadingLiveQuiz')}
           type="error"
         />
       </Layout>
     )
   }
 
-  const { id, name, course, blocks } = sessionData?.controlSession
+  const { id, name, course, blocks } = quizData?.controlLiveQuiz
 
   if (!blocks) {
     return (
       <Layout title={name}>
         <UserNotification
           type="warning"
-          message={t('control.session.containsNoQuestions')}
+          message={t('control.liveQuiz.containsNoQuestions')}
         />
       </Layout>
     )
@@ -109,15 +119,15 @@ function RunningSession() {
 
   return (
     <Layout
-      title={t('control.session.sessionWithName', { name: name })}
-      sessionId={id}
+      title={t('control.liveQuiz.liveQuizWithName', { name: name })}
+      quizId={id}
     >
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
-            <H3>{t('control.session.activeBlock')}</H3>
+            <H3>{t('control.liveQuiz.activeBlock')}</H3>
 
-            <SessionBlock
+            <LiveQuizBlock
               block={blocks.find((block) => block.order === currentBlockOrder)}
               active
             />
@@ -131,7 +141,7 @@ function RunningSession() {
                     size="2xl"
                   />
 
-                  <SessionBlock
+                  <LiveQuizBlock
                     block={blocks.find(
                       (block) => block.order === nextBlockOrder
                     )}
@@ -141,10 +151,10 @@ function RunningSession() {
             <Button
               loading={deactivatingBlock}
               onClick={async () => {
-                await deactivateSessionBlock({
+                await deactivateLiveQuizBlock({
                   variables: {
-                    sessionId: id,
-                    sessionBlockId:
+                    quizId: id,
+                    blockId:
                       blocks.find((block) => block.order === currentBlockOrder)
                         ?.id || -1,
                   },
@@ -156,12 +166,12 @@ function RunningSession() {
               }}
               data={{ cy: 'deactivate-block' }}
             >
-              {t('control.session.closeBlock')}
+              {t('control.liveQuiz.closeBlock')}
             </Button>
           </div>
         ) : nextBlockOrder !== -1 ? (
           <div>
-            <H3>{t('control.session.nextBlock')}</H3>
+            <H3>{t('control.liveQuiz.nextBlock')}</H3>
             {nextBlockOrder > 0 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
@@ -169,7 +179,7 @@ function RunningSession() {
                 className="mx-auto w-full"
               />
             )}
-            <SessionBlock
+            <LiveQuizBlock
               block={blocks.find((block) => block.order === nextBlockOrder)}
             />
             {nextBlockOrder < blocks.length - 1 && (
@@ -183,10 +193,10 @@ function RunningSession() {
               loading={activatingBlock}
               onClick={async () => {
                 {
-                  await activateSessionBlock({
+                  await activateLiveQuizBlock({
                     variables: {
-                      sessionId: id,
-                      sessionBlockId:
+                      quizId: id,
+                      blockId:
                         blocks.find((block) => block.order === nextBlockOrder)
                           ?.id || -1,
                     },
@@ -200,7 +210,7 @@ function RunningSession() {
               }}
               data={{ cy: 'activate-next-block' }}
             >
-              {t('control.session.activateBlockN', {
+              {t('control.liveQuiz.activateBlockN', {
                 number: nextBlockOrder + 1,
               })}
             </Button>
@@ -209,13 +219,13 @@ function RunningSession() {
           <div>
             <UserNotification
               type="info"
-              message={t('control.session.hintAllBlocksClosed')}
+              message={t('control.liveQuiz.hintAllBlocksClosed')}
               className={{ root: 'mb-2' }}
             />
             <Button
               loading={endingLiveQuiz}
               onClick={async () => {
-                await endSession({ variables: { id: id } })
+                await endLiveQuiz({ variables: { id: id } })
                 router.push(
                   course ? `/course/${course?.id}` : '/course/unassigned'
                 )
@@ -223,16 +233,16 @@ function RunningSession() {
               className={{
                 root: 'bg-uzh-red-100 float-right text-white',
               }}
-              data={{ cy: 'end-session' }}
+              data={{ cy: 'end-live-quiz' }}
             >
-              {t('control.session.endSession')}
+              {t('control.liveQuiz.endQuiz')}
             </Button>
           </div>
         )}
 
         {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
           <UserNotification
-            message={t('control.session.hintLastBlock')}
+            message={t('control.liveQuiz.hintLastBlock')}
             className={{ root: 'mt-14' }}
           />
         )}
@@ -256,4 +266,4 @@ export function getStaticPaths() {
   }
 }
 
-export default RunningSession
+export default RunningLiveQuiz

@@ -38,7 +38,7 @@ interface LoginFormProps {
   setMagicLinkLogin: (value: boolean) => void
 }
 
-export function LoginForm({
+function LoginForm({
   labelIdentifier,
   fieldIdentifier,
   dataIdentifier,

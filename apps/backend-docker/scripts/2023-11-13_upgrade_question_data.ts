@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 // import { PrismaClient } from '@klicker-uzh/prisma'
 

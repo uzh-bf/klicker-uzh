@@ -1,6 +1,6 @@
 import { FreeElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 import FTSidebar from './FTSidebar'
@@ -17,6 +17,7 @@ interface FTEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  type: ActivityEvaluationType
 }
 
 function FTEvaluation({
@@ -24,6 +25,7 @@ function FTEvaluation({
   textSize,
   chartType,
   showSolution,
+  type,
 }: FTEvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -60,6 +62,7 @@ function FTEvaluation({
                   instance={instanceEvaluation}
                   textSize={textSize}
                   showSolution={showSolution}
+                  type={type}
                 />
               )}
           </ResizablePanel>

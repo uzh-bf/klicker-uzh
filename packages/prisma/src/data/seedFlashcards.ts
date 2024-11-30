@@ -42,7 +42,6 @@ async function seedFlashcardSet(
         create: elements.map((el, ix) => ({
           order: ix,
           type: ElementStackType.PRACTICE_QUIZ,
-          options: {},
           course: {
             connect: {
               id: courseId,

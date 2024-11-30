@@ -26,7 +26,7 @@ export enum SortyByType {
   UNDEFINED = 'UNDEFINED',
 }
 
-export enum QuestionPoolReducerActionType {
+enum QuestionPoolReducerActionType {
   TAG_CLICK = 'TAG_CLICK',
   TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
   SORT_ORDER = 'SORT_ORDER',
@@ -72,8 +72,6 @@ const INITIAL_STATE: FilterSortType = {
 }
 
 function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
-  console.log(state, action)
-
   switch (action.type) {
     case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is untagged

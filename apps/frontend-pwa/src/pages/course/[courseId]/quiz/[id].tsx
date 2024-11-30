@@ -16,21 +16,18 @@ import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
 
-interface Props {
-  courseId: string
-  id: string
-  participantToken?: string
-  cookiesAvailable?: boolean
-}
-
 function PracticeQuizPage({
   courseId,
   id,
   participantToken,
   cookiesAvailable,
-}: Props) {
+}: {
+  courseId: string
+  id: string
+  participantToken?: string
+  cookiesAvailable?: boolean
+}) {
   const t = useTranslations()
-
   const [currentIx, setCurrentIx] = useState(-1)
 
   useParticipantToken({
@@ -59,12 +56,16 @@ function PracticeQuizPage({
       </Layout>
     )
   }
+
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   // show notification with activity start date
-  if (data.practiceQuiz.status === PublicationStatus.Scheduled) {
+  if (
+    data.practiceQuiz.status === PublicationStatus.Scheduled &&
+    !data.practiceQuiz.isOwner
+  ) {
     return (
       <Layout
         displayName={data.practiceQuiz.displayName}
@@ -92,8 +93,10 @@ function PracticeQuizPage({
     <Layout
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
+      previewMode={data.practiceQuiz.isOwner ?? undefined}
     >
       <PracticeQuiz
+        showResetLocalStorage
         quiz={{
           ...data.practiceQuiz,
           course: data.practiceQuiz.course!,
@@ -101,7 +104,7 @@ function PracticeQuizPage({
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
-        showResetLocalStorage
+        previewOnly={data.practiceQuiz.isOwner ?? undefined}
       />
       <Footer
         browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${id}`}

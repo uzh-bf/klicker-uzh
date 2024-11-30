@@ -26,6 +26,7 @@ interface LayoutProps {
     data?: { cy?: string; test?: string }
   }[]
   setActiveMobilePage?: (value: string) => void
+  previewMode?: boolean
   className?: string
 }
 
@@ -35,6 +36,7 @@ function Layout({
   course,
   mobileMenuItems,
   setActiveMobilePage,
+  previewMode = false,
   className,
 }: LayoutProps) {
   const { data: dataParticipant } = useQuery(SelfDocument)
@@ -62,11 +64,12 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className="flex-none">
+      <div className={twMerge('flex-none', className)}>
         <Header
           participant={dataParticipant?.self || undefined}
           title={displayName}
           course={course}
+          previewMode={previewMode}
         />
       </div>
 

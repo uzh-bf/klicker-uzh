@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.3.0-alpha.8",
+  "version": "3.3.0-alpha.10",
   "license": "AGPL-3.0",
   "dependencies": {
     "@klicker-uzh/i18n": "workspace:*",
@@ -8,7 +8,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@next-auth/prisma-adapter": "1.0.7",
-    "@uzh-bf/design-system": "3.0.0-alpha.34",
+    "@uzh-bf/design-system": "3.0.0-alpha.35",
     "axios": "1.7.7",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",
@@ -17,7 +17,6 @@
     "next": "15.0.0",
     "next-auth": "4.24.8",
     "next-intl": "3.21.1",
-    "nookies": "2.5.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "sharp": "0.33.5",

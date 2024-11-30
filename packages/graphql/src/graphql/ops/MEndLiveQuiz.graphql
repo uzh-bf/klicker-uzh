@@ -1,0 +1,6 @@
+mutation EndLiveQuiz($id: String!) {
+  endLiveQuiz(id: $id) {
+    id
+    status
+  }
+}

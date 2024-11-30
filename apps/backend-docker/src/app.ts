@@ -67,7 +67,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
               process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
             )
           ) {
-            token = req.cookies?.['participant_token']
+            token =
+              req.cookies?.['participant_token'] ??
+              req.cookies?.['next-auth.session-token']
           }
 
           return (
