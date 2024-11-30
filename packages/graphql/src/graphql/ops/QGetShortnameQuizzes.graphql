@@ -1,0 +1,11 @@
+query GetShortnameQuizzes($shortname: String!) {
+  shortnameQuizzes(shortname: $shortname) {
+    id
+    name
+    displayName
+    course {
+      id
+      displayName
+    }
+  }
+}

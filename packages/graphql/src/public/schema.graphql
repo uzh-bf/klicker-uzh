@@ -15,8 +15,10 @@ type Achievement {
 }
 
 type ActivityEvaluation {
+  confusionFeedbacks: [ConfusionTimestep!]
   description: String
   displayName: String
+  feedbacks: [Feedback!]
   id: ID!
   name: String!
   results: [StackEvaluation!]!
@@ -65,12 +67,6 @@ type AwardEntry {
   participant: Participant
   participantGroup: ParticipantGroup
   type: String!
-}
-
-input BlockInput {
-  questionIds: [Int!]!
-  randomSelection: Int
-  timeLimit: Int
 }
 
 type Choice {
@@ -147,7 +143,7 @@ type ChoicesElementResults {
 }
 
 type ChoicesInstanceEvaluation {
-  choices: Json
+  choices: [SingleChoiceResponse!]
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -163,41 +159,6 @@ type ChoicesInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
-}
-
-type ChoicesQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: ChoiceQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type ChoicesQuestionResponse {
-  aggregatedResponses: ElementResultsChoices!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseChoices!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
 }
 
 type ClassAchievementInstance {
@@ -276,40 +237,6 @@ type ContentInstanceEvaluation {
   xpAwarded: Int
 }
 
-type ContentQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type ContentQuestionResponse {
-  aggregatedResponses: ElementResultsContent!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseContent!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type Course {
   averageActiveScore: Float
   averageScore: Float
@@ -328,6 +255,7 @@ type Course {
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
+  liveQuizzes: [LiveQuiz!]
   maxGroupSize: Int!
   microLearnings: [MicroLearning!]
   name: String!
@@ -341,7 +269,6 @@ type Course {
   practiceQuizzes: [PracticeQuiz!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
-  sessions: [Session!]
   startDate: Date!
   updatedAt: Date
 }
@@ -362,6 +289,30 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 scalar Date
 
 union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
+
+type ElementBlock {
+  elements: [ElementInstance!]
+  execution: Int
+  expiresAt: Date
+  id: Int!
+  numOfParticipants: Int
+  order: Int!
+  randomSelection: Int
+  status: ElementBlockStatus!
+  timeLimit: Int
+}
+
+input ElementBlockInput {
+  elements: [ElementInstanceInput!]!
+  order: Int!
+  timeLimit: Int
+}
+
+enum ElementBlockStatus {
+  ACTIVE
+  EXECUTED
+  SCHEDULED
+}
 
 union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
 
@@ -389,6 +340,11 @@ type ElementInstance {
 
 union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
 
+input ElementInstanceInput {
+  elementId: Int!
+  order: Int!
+}
+
 type ElementInstanceOptions {
   pointsMultiplier: Int
   resetTimeDays: Int
@@ -406,27 +362,6 @@ enum ElementOrderType {
   SPACED_REPETITION
 }
 
-type ElementResultsChoices {
-  choices: Json!
-  total: Int!
-}
-
-type ElementResultsContent {
-  total: Int!
-}
-
-type ElementResultsFlashcard {
-  CORRECT: Int!
-  INCORRECT: Int!
-  PARTIAL: Int!
-  total: Int!
-}
-
-type ElementResultsOpen {
-  responses: Json!
-  total: Int!
-}
-
 type ElementStack {
   description: String
   displayName: String
@@ -439,7 +374,7 @@ type ElementStack {
 input ElementStackInput {
   description: String
   displayName: String
-  elements: [StackElementsInput!]!
+  elements: [ElementInstanceInput!]!
   order: Int!
 }
 
@@ -464,12 +399,6 @@ enum ElementType {
   MC
   NUMERICAL
   SC
-}
-
-type EvaluationBlock {
-  blockIx: Int!
-  blockStatus: SessionBlockStatus!
-  tabData: [TabData!]!
 }
 
 type Feedback {
@@ -574,40 +503,6 @@ type FlashcardInstanceEvaluation {
   xpAwarded: Int
 }
 
-type FlashcardQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
-}
-
-type FlashcardQuestionResponse {
-  aggregatedResponses: ElementResultsFlashcard!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseFlashcard!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
-}
-
 type FreeElementInstanceEvaluation {
   content: String!
   explanation: String
@@ -662,7 +557,7 @@ type FreeTextElementData {
 }
 
 type FreeTextInstanceEvaluation {
-  answers: Json
+  answers: [SingleFreeTextResponse!]
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -679,17 +574,6 @@ type FreeTextInstanceEvaluation {
   solutions: [String!]
   xp: Int
   xpAwarded: Int
-}
-
-type FreeTextQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: FreeTextQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
 }
 
 type FreeTextQuestionOptions {
@@ -726,7 +610,7 @@ type GroupActivity {
   scheduledEndAt: Date!
   scheduledStartAt: Date!
   stacks: [ElementStack!]
-  status: GroupActivityStatus!
+  status: PublicationStatus!
 }
 
 type GroupActivityClue {
@@ -787,7 +671,7 @@ type GroupActivityDetails {
   scheduledEndAt: Date
   scheduledStartAt: Date
   stacks: [ElementStack!]!
-  status: GroupActivityStatus!
+  status: PublicationStatus!
 }
 
 type GroupActivityGrading {
@@ -831,14 +715,6 @@ type GroupActivityResults {
   points: Float!
 }
 
-enum GroupActivityStatus {
-  DRAFT
-  ENDED
-  GRADED
-  PUBLISHED
-  SCHEDULED
-}
-
 type GroupActivitySummary {
   numOfStartedInstances: Int!
   numOfSubmissions: Int!
@@ -869,17 +745,6 @@ type GroupMessage {
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
-
-type InstanceResult {
-  blockIx: Int
-  id: String!
-  instanceIx: Int!
-  participants: Int!
-  questionData: QuestionData!
-  results: Json!
-  statistics: Statistics
-  status: SessionBlockStatus!
-}
 
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
@@ -920,6 +785,52 @@ type Level {
   requiredXp: Int!
 }
 
+type LiveQuiz {
+  accessMode: LiveQuizAccessMode!
+  activeBlock: ElementBlock
+  blocks: [ElementBlock!]
+  confusionFeedbacks: [ConfusionTimestep!]
+  confusionSummary: ConfusionSummary
+  course: Course
+  createdAt: Date!
+  description: String
+  displayName: String!
+  feedbacks: [Feedback!]
+  finishedAt: Date
+  id: ID!
+  isConfusionFeedbackEnabled: Boolean!
+  isGamificationEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
+  isModerationEnabled: Boolean!
+  maxBonusPoints: Int
+  name: String!
+  namespace: String
+  numOfBlocks: Int
+  numOfInstances: Int
+  pinCode: Int
+  pointsMultiplier: Int!
+  startedAt: Date
+  status: PublicationStatus!
+  timeToZeroBonus: Int
+  updatedAt: Date
+}
+
+enum LiveQuizAccessMode {
+  PUBLIC
+  RESTRICTED
+}
+
+type LiveQuizInfo {
+  id: ID!
+  name: String!
+}
+
+type LiveQuizMeta {
+  id: ID!
+  name: String!
+  status: PublicationStatus!
+}
+
 enum LocaleType {
   de
   en
@@ -950,34 +861,34 @@ type MicroLearning {
 }
 
 type Mutation {
+  activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
-  activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
-  addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  cancelSession(id: String!): Session
+  cancelLiveQuiz(id: String!): LiveQuiz
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
-  changeLiveQuizName(displayName: String!, id: String!, name: String!): Session
+  changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
+  changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
-  changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
-  createFeedback(content: String!, sessionId: String!): Feedback
+  createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
+  createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
-  deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
+  deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
-  deleteLiveQuiz(id: String!): Session
+  deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
@@ -985,14 +896,14 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
+  editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
-  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int!, multiplier: Int!, name: String!, timeToZeroBonus: Int!): Session
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endGroupActivity(id: String!): GroupActivity
+  endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
-  endSession(id: String!): Session
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalRandomGroupAssignments: Boolean!
@@ -1037,7 +948,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
-  startSession(id: String!): Session
+  startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -1047,10 +958,10 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
+  updateElementInstances(elementId: Int!): [ElementInstance!]!
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
-  updateQuestionInstances(questionId: Int!): [QuestionOrElementInstance!]!
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -1092,6 +1003,7 @@ type NumericalElementInstanceEvaluation {
   id: Int!
   name: String!
   results: NumericalElementResults!
+  statistics: Statistics
   type: ElementType!
 }
 
@@ -1116,7 +1028,6 @@ type NumericalElementSolutions {
 }
 
 type NumericalInstanceEvaluation {
-  answers: Json
   correctness: Float
   elementType: ElementType!
   explanation: String
@@ -1129,21 +1040,11 @@ type NumericalInstanceEvaluation {
   percentile: Float
   pointsAwarded: Float
   pointsMultiplier: Int!
+  responses: [SingleNumericalResponse!]
   score: Float!
   solutionRanges: [NumericalSolutionRange!]
   xp: Int
   xpAwarded: Int
-}
-
-type NumericalQuestionData {
-  content: String!
-  explanation: String
-  id: ID!
-  name: String!
-  options: NumericalQuestionOptions!
-  pointsMultiplier: Int
-  questionId: Int
-  type: ElementType!
 }
 
 type NumericalQuestionOptions {
@@ -1171,30 +1072,6 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
-}
-
-type OpenQuestionResponse {
-  aggregatedResponses: ElementResultsOpen!
-  correctCount: Int!
-  correctCountStreak: Int!
-  eFactor: Float!
-  elementType: ElementType!
-  id: Int!
-  interval: Int!
-  lastAnsweredAt: Date
-  lastAwardedAt: Date
-  lastCorrectAt: Date
-  lastPartialCorrectAt: Date
-  lastResponse: SingleQuestionResponseValue!
-  lastWrongAt: Date
-  lastXpAwardedAt: Date
-  nextDueAt: Date
-  partialCorrectCount: Int!
-  totalPointsAwarded: Float
-  totalScore: Float!
-  totalXpAwarded: Float
-  trialsCount: Int!
-  wrongCount: Int!
 }
 
 input OptionsChoicesInput {
@@ -1318,6 +1195,8 @@ type PracticeQuiz {
 
 enum PublicationStatus {
   DRAFT
+  ENDED
+  GRADED
   PUBLISHED
   SCHEDULED
 }
@@ -1328,25 +1207,28 @@ type PushSubscription {
 }
 
 type Query {
+  artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
-  cockpitSession(id: String!): Session
+  cockpitQuiz(id: String!): LiveQuiz
   controlCourse(id: String!): Course
   controlCourses: [Course!]
-  controlSession(id: String!): Session
+  controlLiveQuiz(id: String!): LiveQuiz
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
-  feedbacks(id: String!): [Feedback!]
+  feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
+  getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
@@ -1364,61 +1246,38 @@ type Query {
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
-  liveSession(id: String!): Session
+  liveQuiz(id: String!): LiveQuiz
+  liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
+  liveQuizHMAC(id: String!): String
+  liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
-  pinnedFeedbacks(id: String!): Session
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
-  runningSessions(shortname: String!): [Session!]
-  runningSessionsCourse(courseId: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
-  session(id: String!): Session
-  sessionEvaluation(hmac: String, id: String!): SessionEvaluation
-  sessionHMAC(id: String!): String
-  sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
-  unassignedSessions: [Session!]
+  shortnameQuizzes(shortname: String!): [LiveQuiz!]
+  studentLiveQuiz(id: String!): LiveQuiz
+  unassignedLiveQuizzes: [LiveQuiz!]
   userCourses: [Course!]
+  userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
   userQuestions: [Element!]
-  userRunningSessions: [Session!]
+  userRunningLiveQuizzes: [LiveQuizInfo!]
   userScope: UserLoginScope
-  userSessions: [Session!]
   userTags: [Tag!]
 }
-
-union QuestionData = ChoicesQuestionData | ContentQuestionData | FlashcardQuestionData | FreeTextQuestionData | NumericalQuestionData
 
 type QuestionFeedback {
   correct: Boolean
   feedback: String
   ix: Int!
   value: String!
-}
-
-type QuestionInstance {
-  id: Int!
-  pointsMultiplier: Int
-  questionData: QuestionData
-}
-
-type QuestionOrElementInstance {
-  elementInstance: ElementInstance
-  questionInstance: QuestionInstance
-}
-
-union QuestionResponse = ChoicesQuestionResponse | ContentQuestionResponse | FlashcardQuestionResponse | OpenQuestionResponse
-
-enum ResponseCorrectness {
-  CORRECT
-  PARTIAL
-  WRONG
 }
 
 enum ResponseCorrectnessType {
@@ -1439,77 +1298,19 @@ type RunningLiveQuizSummary {
   numOfResponses: Int!
 }
 
-type Session {
-  accessMode: SessionAccessMode!
-  activeBlock: SessionBlock
-  blocks: [SessionBlock!]
-  confusionFeedbacks: [ConfusionTimestep!]
-  confusionSummary: ConfusionSummary
-  course: Course
-  createdAt: Date!
-  description: String
-  displayName: String!
-  feedbacks: [Feedback!]
-  finishedAt: Date
-  id: ID!
-  isConfusionFeedbackEnabled: Boolean!
-  isGamificationEnabled: Boolean!
-  isLiveQAEnabled: Boolean!
-  isModerationEnabled: Boolean!
-  linkTo: String
-  linkToJoin: String
-  maxBonusPoints: Int!
-  name: String!
-  namespace: String!
-  numOfBlocks: Int
-  numOfQuestions: Int
-  pinCode: Int
-  pointsMultiplier: Int!
-  startedAt: Date
-  status: SessionStatus!
-  timeToZeroBonus: Int!
-  updatedAt: Date
+type SingleChoiceResponse {
+  count: Int!
+  ix: Int!
 }
 
-enum SessionAccessMode {
-  PUBLIC
-  RESTRICTED
+type SingleFreeTextResponse {
+  count: Int!
+  value: String!
 }
 
-type SessionBlock {
-  execution: Int
-  expiresAt: Date
-  id: Int!
-  instances: [QuestionInstance!]
-  numOfParticipants: Int
-  order: Int!
-  randomSelection: Int
-  status: SessionBlockStatus!
-  timeLimit: Int
-}
-
-enum SessionBlockStatus {
-  ACTIVE
-  EXECUTED
-  SCHEDULED
-}
-
-type SessionEvaluation {
-  blocks: [EvaluationBlock!]!
-  confusionFeedbacks: [ConfusionTimestep!]!
-  displayName: String!
-  feedbacks: [Feedback!]!
-  id: String!
-  instanceResults: [InstanceResult!]!
-  isGamificationEnabled: Boolean!
-  status: SessionStatus!
-}
-
-enum SessionStatus {
-  COMPLETED
-  PREPARED
-  RUNNING
-  SCHEDULED
+type SingleNumericalResponse {
+  count: Int!
+  value: Float!
 }
 
 type SingleQuestionResponseChoices {
@@ -1531,11 +1332,6 @@ type SingleQuestionResponseValue {
 input SolutionRangeInput {
   max: Float
   min: Float
-}
-
-input StackElementsInput {
-  elementId: Int!
-  order: Int!
 }
 
 type StackEvaluation {
@@ -1591,14 +1387,14 @@ type StudentCourse {
 }
 
 type Subscription {
-  feedbackAdded(sessionId: String!): Feedback!
-  feedbackCreated(sessionId: String!): Feedback!
-  feedbackRemoved(sessionId: String!): String!
-  feedbackUpdated(sessionId: String!): Feedback!
+  feedbackAdded(quizId: String!): Feedback!
+  feedbackCreated(quizId: String!): Feedback!
+  feedbackRemoved(quizId: String!): String!
+  feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
   microLearningEnded(activityId: String!): MicroLearning!
-  runningSessionUpdated(sessionId: String!): SessionBlock
+  runningLiveQuizUpdated(quizId: String!): ElementBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 
@@ -1611,13 +1407,6 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeysInput!
-}
-
-type TabData {
-  id: String!
-  name: String!
-  questionIx: Int
-  status: String
 }
 
 type Tag {

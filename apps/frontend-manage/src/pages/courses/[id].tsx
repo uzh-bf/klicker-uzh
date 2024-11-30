@@ -29,7 +29,7 @@ import PracticeQuizList from '../../components/courses/PracticeQuizList'
 function CourseOverviewPage() {
   const t = useTranslations()
   const router = useRouter()
-  const [tabValue, setTabValue] = useState('liveSessions')
+  const [tabValue, setTabValue] = useState('liveQuizzes')
   const [gamificationTabValue, setGamificationTabValue] =
     useState('ind-leaderboard')
 
@@ -159,24 +159,24 @@ function CourseOverviewPage() {
 
       <div className="mt-4 flex flex-col flex-wrap gap-4 md:flex-row">
         <Tabs
-          defaultValue="liveSessions"
+          defaultValue="liveQuizzes"
           value={tabValue}
           onValueChange={(newValue: string) => setTabValue(newValue)}
           className={{ root: 'flex-1 basis-2/3' }}
         >
           <Tabs.TabList>
             <Tabs.Tab
-              key="tab-liveSessions"
-              value="liveSessions"
-              label={t('manage.general.sessions')}
+              key="tab-liveQuizzes"
+              value="liveQuizzes"
+              label={t('manage.general.liveQuizzes')}
               className={{
                 root: 'border border-solid',
                 label: twMerge(
                   'whitespace-nowrap text-base',
-                  tabValue === 'liveSessions' && 'font-bold'
+                  tabValue === 'liveQuizzes' && 'font-bold'
                 ),
               }}
-              data={{ cy: 'tab-liveSessions' }}
+              data={{ cy: 'tab-liveQuizzes' }}
             />
             <Tabs.Tab
               key="tab-practiceQuizzes"
@@ -231,11 +231,11 @@ function CourseOverviewPage() {
             </Tabs.Tab>
           </Tabs.TabList>
           <Tabs.TabContent
-            key="content-liveSessions"
-            value="liveSessions"
+            key="content-liveQuizzes"
+            value="liveQuizzes"
             className={{ root: 'overflow-y-auto px-0 py-2' }}
           >
-            <LiveQuizList sessions={course.sessions ?? []} />
+            <LiveQuizList liveQuizzes={course.liveQuizzes ?? []} />
           </Tabs.TabContent>
           <Tabs.TabContent
             key="content-practiceQuizzes"

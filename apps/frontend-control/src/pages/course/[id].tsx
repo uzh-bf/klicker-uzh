@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetControlCourseDocument,
-  SessionStatus,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Layout from '../../components/Layout'
-import SessionLists from '../../components/sessions/SessionLists'
+import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
 function Course() {
   const t = useTranslations()
@@ -49,24 +49,24 @@ function Course() {
 
   const { controlCourse } = data
 
-  const runningSessions = controlCourse.sessions?.filter(
-    (session) => session.status === SessionStatus.Running
+  const runningQuizzes = controlCourse.liveQuizzes?.filter(
+    (quiz) => quiz.status === PublicationStatus.Published
   )
-  const plannedSessions = controlCourse.sessions?.filter(
-    (session) =>
-      session.status === SessionStatus.Prepared ||
-      session.status === SessionStatus.Scheduled
+  const plannedQuizzes = controlCourse.liveQuizzes?.filter(
+    (quiz) =>
+      quiz.status === PublicationStatus.Draft ||
+      quiz.status === PublicationStatus.Scheduled
   )
 
   return (
     <Layout title={controlCourse.name}>
-      <SessionLists
-        runningSessions={runningSessions || []}
-        plannedSessions={plannedSessions || []}
+      <LiveQuizLists
+        runningLiveQuizzes={runningQuizzes || []}
+        plannedLiveQuizzes={plannedQuizzes || []}
       />
 
       <div className="mt-4 text-base italic">
-        {t('control.course.completedSessionsHint')}
+        {t('control.course.completedLiveQuizzesHint')}
       </div>
     </Layout>
   )

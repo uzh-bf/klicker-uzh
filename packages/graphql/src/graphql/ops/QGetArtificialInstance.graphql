@@ -1,0 +1,8 @@
+query GetArtificialInstance($elementId: Int!) {
+  artificialInstance(elementId: $elementId) {
+    id
+    type
+    elementType
+    ...ElementData
+  }
+}

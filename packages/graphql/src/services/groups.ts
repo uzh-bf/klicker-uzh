@@ -4,13 +4,17 @@ import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
-  GroupActivityStatus,
   LeaderboardType,
   ParameterType,
   type Participant,
   type ParticipantGroup,
+  PublicationStatus,
 } from '@klicker-uzh/prisma'
-import { ResponseCorrectness, type StackInput } from '@klicker-uzh/types'
+import {
+  ElementInstanceResults,
+  ResponseCorrectness,
+  type StackInput,
+} from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -19,7 +23,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import type { ElementInstanceOptions } from 'src/ops.js'
+import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -36,8 +40,10 @@ import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
   type RespondToElementStackInput,
-  updateQuestionResults,
-} from './practiceQuizzes.js'
+  updateChoicesResults,
+  updateFreeTextResults,
+  updateNumericalResults,
+} from './stacks.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
@@ -963,9 +969,9 @@ export async function manipulateGroupActivity(
       throw new GraphQLError('Group Activity not found')
     }
     if (
-      oldElement.status === GroupActivityStatus.SCHEDULED ||
-      oldElement.status === GroupActivityStatus.PUBLISHED ||
-      oldElement.status === GroupActivityStatus.GRADED
+      oldElement.status === PublicationStatus.SCHEDULED ||
+      oldElement.status === PublicationStatus.PUBLISHED ||
+      oldElement.status === PublicationStatus.GRADED
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
@@ -1012,7 +1018,7 @@ export async function manipulateGroupActivity(
     name: name,
     displayName: displayName,
     description: description,
-    status: GroupActivityStatus.DRAFT,
+    status: PublicationStatus.DRAFT,
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
     parameters: {},
@@ -1042,7 +1048,6 @@ export async function manipulateGroupActivity(
         order: 0,
         displayName: stack.displayName,
         description: stack.description,
-        options: {},
         elements: {
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
@@ -1179,9 +1184,9 @@ export async function getGroupActivityDetails(
       id: activityId,
       status: {
         in: [
-          GroupActivityStatus.PUBLISHED,
-          GroupActivityStatus.ENDED,
-          GroupActivityStatus.GRADED,
+          PublicationStatus.PUBLISHED,
+          PublicationStatus.ENDED,
+          PublicationStatus.GRADED,
         ],
       },
       isDeleted: false,
@@ -1264,7 +1269,7 @@ export async function getGroupActivityDetails(
               }
 
               return {
-                ...(groupActivity.status === GroupActivityStatus.GRADED
+                ...(groupActivity.status === PublicationStatus.GRADED
                   ? clueAssignment.groupActivityClueInstance
                   : omitBy(
                       clueAssignment.groupActivityClueInstance,
@@ -1287,7 +1292,7 @@ export async function startGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId, status: GroupActivityStatus.PUBLISHED },
+    where: { id: activityId, status: PublicationStatus.PUBLISHED },
     include: {
       course: true,
       clues: {
@@ -1463,10 +1468,10 @@ export async function submitGroupActivityDecisions(
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
     !!groupActivityInstance.decisionsSubmittedAt ||
-    groupActivityInstance.groupActivity.status === GroupActivityStatus.DRAFT ||
+    groupActivityInstance.groupActivity.status === PublicationStatus.DRAFT ||
     groupActivityInstance.groupActivity.status ===
-      GroupActivityStatus.SCHEDULED ||
-    groupActivityInstance.groupActivity.status === GroupActivityStatus.ENDED
+      PublicationStatus.SCHEDULED ||
+    groupActivityInstance.groupActivity.status === PublicationStatus.ENDED
   ) {
     return null
   }
@@ -1493,30 +1498,49 @@ export async function submitGroupActivityDecisions(
         })
         if (!instance || !instance.elementData) return []
 
-        let response
+        // compute the updated results
+        let response: ResponseInput
+        let updatedResults: {
+          results: ElementInstanceResults
+          modified: boolean
+        }
         if (
-          inputResponse.type === ElementType.SC ||
-          inputResponse.type === ElementType.MC ||
-          inputResponse.type === ElementType.KPRIM
+          (inputResponse.type === ElementType.SC ||
+            inputResponse.type === ElementType.MC ||
+            inputResponse.type === ElementType.KPRIM) &&
+          'choices' in instance.results
         ) {
           response = { choices: inputResponse.choicesResponse }
-        } else if (inputResponse.type === ElementType.NUMERICAL) {
+          updatedResults = updateChoicesResults({
+            previousResults: instance.results,
+            response: response,
+          })
+        } else if (
+          inputResponse.type === ElementType.NUMERICAL &&
+          'responses' in instance.results
+        ) {
           response = { value: String(inputResponse.numericalResponse) }
-        } else if (inputResponse.type === ElementType.FREE_TEXT) {
+          updatedResults = updateNumericalResults({
+            previousResults: instance.results,
+            elementData: instance.elementData,
+            response: response,
+          })
+        } else if (
+          inputResponse.type === ElementType.FREE_TEXT &&
+          'responses' in instance.results
+        ) {
           response = { value: inputResponse.freeTextResponse }
+          updatedResults = updateFreeTextResults({
+            previousResults: instance.results,
+            elementData: instance.elementData,
+            response: response,
+          })
         } else {
           console.log('Element type not supported for group activity')
           return
         }
 
-        // compute the updated results
-        const updatedResults = updateQuestionResults({
-          previousResults: instance.results,
-          elementData: instance.elementData,
-          response: response,
-        })
-
-        if (!updatedResults.results) return
+        if (!updatedResults.modified) return
 
         // update the instance with the new results
         await prisma.elementInstance.update({
@@ -1592,10 +1616,10 @@ export async function publishGroupActivity(
     data: {
       status:
         now < groupActivity.scheduledStartAt
-          ? GroupActivityStatus.SCHEDULED
+          ? PublicationStatus.SCHEDULED
           : now > groupActivity.scheduledEndAt
-            ? GroupActivityStatus.ENDED
-            : GroupActivityStatus.PUBLISHED,
+            ? PublicationStatus.ENDED
+            : PublicationStatus.PUBLISHED,
     },
   })
 
@@ -1610,7 +1634,7 @@ export async function unpublishGroupActivity(
     where: {
       id,
       ownerId: ctx.user.sub,
-      status: GroupActivityStatus.SCHEDULED,
+      status: PublicationStatus.SCHEDULED,
       isDeleted: false,
     },
   })
@@ -1620,7 +1644,7 @@ export async function unpublishGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: GroupActivityStatus.DRAFT,
+      status: PublicationStatus.DRAFT,
     },
   })
 
@@ -1635,7 +1659,7 @@ export async function openGroupActivity(
     where: {
       id,
       ownerId: ctx.user.sub,
-      status: GroupActivityStatus.SCHEDULED,
+      status: PublicationStatus.SCHEDULED,
       isDeleted: false,
     },
   })
@@ -1645,7 +1669,7 @@ export async function openGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: GroupActivityStatus.PUBLISHED,
+      status: PublicationStatus.PUBLISHED,
       scheduledStartAt: new Date(),
     },
   })
@@ -1664,7 +1688,7 @@ export async function endGroupActivity(
     where: {
       id,
       ownerId: ctx.user.sub,
-      status: GroupActivityStatus.PUBLISHED,
+      status: PublicationStatus.PUBLISHED,
       isDeleted: false,
     },
   })
@@ -1674,7 +1698,7 @@ export async function endGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: GroupActivityStatus.ENDED,
+      status: PublicationStatus.ENDED,
       scheduledEndAt: new Date(),
     },
   })
@@ -1704,8 +1728,8 @@ export async function deleteGroupActivity(
   // if the the group activity is not yet published / has not started or has no instances -> hard deletion
   // as soon as an instance exists (independent of results) -> soft deletion
   if (
-    groupActivity.status === GroupActivityStatus.DRAFT ||
-    groupActivity.status === GroupActivityStatus.SCHEDULED ||
+    groupActivity.status === PublicationStatus.DRAFT ||
+    groupActivity.status === PublicationStatus.SCHEDULED ||
     groupActivity.activityInstances.length === 0
   ) {
     const deletedItem = await ctx.prisma.groupActivity.delete({
@@ -1749,10 +1773,10 @@ export async function getCourseGroupActivities(
         where: {
           status: {
             in: [
-              GroupActivityStatus.SCHEDULED,
-              GroupActivityStatus.PUBLISHED,
-              GroupActivityStatus.ENDED,
-              GroupActivityStatus.GRADED,
+              PublicationStatus.SCHEDULED,
+              PublicationStatus.PUBLISHED,
+              PublicationStatus.ENDED,
+              PublicationStatus.GRADED,
             ],
           },
           isDeleted: false,
@@ -1878,7 +1902,7 @@ export async function extendGroupActivity(
       id,
       ownerId: ctx.user.sub,
       status: {
-        in: [GroupActivityStatus.SCHEDULED, GroupActivityStatus.PUBLISHED],
+        in: [PublicationStatus.SCHEDULED, PublicationStatus.PUBLISHED],
       },
       scheduledEndAt: { gt: new Date() },
     },
@@ -1982,7 +2006,7 @@ export async function finalizeGroupActivityGrading(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: GroupActivityStatus.GRADED,
+      status: PublicationStatus.GRADED,
       activityInstances: {
         updateMany: {
           where: {

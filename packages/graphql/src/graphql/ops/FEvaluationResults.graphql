@@ -79,6 +79,16 @@ fragment EvaluationResults on ActivityEvaluation {
             count
           }
         }
+
+        statistics {
+          max
+          mean
+          median
+          min
+          q1
+          q3
+          sd
+        }
       }
 
       ... on FlashcardElementInstanceEvaluation {

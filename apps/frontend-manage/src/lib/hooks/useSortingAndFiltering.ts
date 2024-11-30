@@ -26,7 +26,7 @@ export enum SortyByType {
   UNDEFINED = 'UNDEFINED',
 }
 
-export enum QuestionPoolReducerActionType {
+enum QuestionPoolReducerActionType {
   TAG_CLICK = 'TAG_CLICK',
   TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
   SORT_ORDER = 'SORT_ORDER',

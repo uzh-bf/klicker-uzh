@@ -151,13 +151,6 @@ function PracticeQuiz({
             previewOnly={previewOnly}
           />
         )}
-
-        {/* {currentIx >= 0 && !currentStack && (
-        <ElementSummary
-          displayName={quiz.displayName}
-          stacks={quiz.stacks || []}
-        />
-      )} */}
       </div>
     </div>
   )

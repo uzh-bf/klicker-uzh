@@ -68,13 +68,13 @@ function Index() {
         )}
 
         <div>
-          <H4>{t('control.home.sessionsNoCourse')}</H4>
+          <H4>{t('control.home.liveQuizzesNoCourse')}</H4>
           <div className="flex flex-col gap-2">
             <ListButton
               link="/course/unassigned"
               icon={faList}
-              label={t('control.home.listSessionsNoCourse')}
-              data={{ cy: 'unassigned-sessions' }}
+              label={t('control.home.listLiveQuizzesNoCourse')}
+              data={{ cy: 'unassigned-live-quizzes' }}
             />
           </div>
         </div>

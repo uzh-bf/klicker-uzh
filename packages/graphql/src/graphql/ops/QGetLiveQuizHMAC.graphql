@@ -1,0 +1,3 @@
+query GetLiveQuizHMAC($id: String!) {
+  liveQuizHMAC(id: $id)
+}

@@ -126,7 +126,7 @@ describe('Different practice quiz workflows', () => {
 
     // create practice quiz
     cy.get('[data-cy="create-practice-quiz"]').click()
-    cy.get('[data-cy="cancel-session-creation"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
     cy.get('[data-cy="create-practice-quiz"]').click()
 
     // Step 1: Name
@@ -134,7 +134,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
@@ -143,7 +143,7 @@ describe('Different practice quiz workflows', () => {
       .realClick()
       .type(runningDescriptionOLD)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -152,34 +152,34 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSPACED_REPETITION}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSPACED_REPETITION}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Create stacks
@@ -211,10 +211,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // end the practice quiz creation
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningNameOLD}"]`).contains(
       messages.shared.generic.draft
@@ -264,18 +264,18 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -318,7 +318,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check on the course overview if the updated practice quiz is visible
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningName}"]`).contains(
       messages.shared.generic.draft
@@ -356,11 +356,11 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
@@ -435,11 +435,11 @@ describe('Different practice quiz workflows', () => {
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
+      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question

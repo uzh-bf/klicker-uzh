@@ -2,7 +2,7 @@ query GetControlCourse($courseId: String!) {
   controlCourse(id: $courseId) {
     id
     name
-    sessions {
+    liveQuizzes {
       id
       name
       status

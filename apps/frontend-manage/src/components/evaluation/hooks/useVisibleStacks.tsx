@@ -1,25 +1,29 @@
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { ActiveStackType } from '../ActivityEvaluation'
+import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 
 interface UseVisibleStacksProps {
   stacks: StackEvaluation[]
   activeStack: ActiveStackType
   width: number
+  type: ActivityEvaluationType
 }
 
 function useVisibleStacks({
   stacks,
   activeStack,
   width,
+  type,
 }: UseVisibleStacksProps) {
   const t = useTranslations()
 
   const visibleStacks = useMemo(() => {
     const items = stacks.map((_, index) => ({
-      // TODO: use stack.stackName here?
-      label: t('shared.generic.stackN', { number: String(index + 1) }),
+      label: t(
+        type === 'LiveQuiz' ? 'shared.generic.blockN' : 'shared.generic.stackN',
+        { number: String(index + 1) }
+      ),
       value: index,
     }))
 

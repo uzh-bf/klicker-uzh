@@ -1,0 +1,31 @@
+query GetRunningLiveQuiz($id: String!) {
+  studentLiveQuiz(id: $id) {
+    id
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
+    isGamificationEnabled
+    namespace
+    displayName
+    status
+    course {
+      id
+      displayName
+      color
+    }
+    activeBlock {
+      id
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      elements {
+        id
+        type
+        elementType
+        ...ElementDataWithoutSolutions
+      }
+    }
+  }
+}

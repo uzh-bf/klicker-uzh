@@ -1,0 +1,12 @@
+query GetLiveQuizLeaderboard($quizId: String!) {
+  liveQuizLeaderboard(quizId: $quizId) {
+    id
+    participantId
+    rank
+    username
+    avatar
+    score
+    isSelf
+    lastBlockOrder
+  }
+}

@@ -132,7 +132,7 @@ jobs:
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
-        timeout-minutes: 20
+        timeout-minutes: 60
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'

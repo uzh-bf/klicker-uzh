@@ -1,0 +1,30 @@
+query GetSingleLiveQuiz($quizId: String!) {
+  liveQuiz(id: $quizId) {
+    id
+    name
+    displayName
+    description
+    blocks {
+      id
+      order
+      status
+      timeLimit
+      elements {
+        id
+        type
+        elementType
+        ...ElementData
+      }
+    }
+    course {
+      id
+    }
+    pointsMultiplier
+    maxBonusPoints
+    timeToZeroBonus
+    isGamificationEnabled
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
+  }
+}

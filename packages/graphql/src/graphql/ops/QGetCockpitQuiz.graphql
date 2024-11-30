@@ -1,0 +1,58 @@
+query GetCockpitQuiz($id: String!) {
+  cockpitQuiz(id: $id) {
+    id
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
+    isGamificationEnabled
+    namespace
+    name
+    displayName
+    status
+    startedAt
+    course {
+      id
+      displayName
+    }
+    blocks {
+      id
+      numOfParticipants
+      order
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      elements {
+        id
+        type
+        elementType
+        ...ElementDataInfo
+      }
+    }
+    activeBlock {
+      id
+    }
+    confusionSummary {
+      speed
+      difficulty
+      numberOfParticipants
+    }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
+  }
+}

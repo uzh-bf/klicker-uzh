@@ -1,5 +1,5 @@
-mutation ActivateSessionBlock($sessionId: String!, $sessionBlockId: Int!) {
-  activateSessionBlock(sessionId: $sessionId, sessionBlockId: $sessionBlockId) {
+mutation ActivateLiveQuizBlock($quizId: String!, $blockId: Int!) {
+  activateLiveQuizBlock(quizId: $quizId, blockId: $blockId) {
     id
     status
     blocks {

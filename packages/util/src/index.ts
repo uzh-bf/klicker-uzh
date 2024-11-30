@@ -5,40 +5,14 @@ import {
 } from '@klicker-uzh/prisma'
 import {
   type AllElementTypeData,
-  type AllQuestionTypeData,
   type Choice,
   type ElementInstanceResults,
   type ElementKeys,
+  type ElementOptionsChoices,
+  type ElementOptionsFreeText,
+  type ElementOptionsNumerical,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
-
-const RELEVANT_KEYS: ElementKeys[] = [
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'type',
-  'options',
-]
-
-export function processQuestionData(
-  question: Element
-): AllQuestionTypeData | null {
-  if (
-    question.type === PrismaElementType.SC ||
-    question.type === PrismaElementType.MC ||
-    question.type === PrismaElementType.KPRIM ||
-    question.type === PrismaElementType.NUMERICAL ||
-    question.type === PrismaElementType.FREE_TEXT
-  ) {
-    return {
-      ...pick(question, RELEVANT_KEYS),
-      id: `${question.id}-v${question.version}`,
-      questionId: question.id,
-    } as AllQuestionTypeData
-  }
-  return null
-}
 
 // save custom type
 const CONTENT_KEYS: ElementKeys[] = [
@@ -51,7 +25,6 @@ const FLASHCARD_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
-  'type',
   'pointsMultiplier',
 ]
 const QUESTION_KEYS: ElementKeys[] = [
@@ -59,7 +32,6 @@ const QUESTION_KEYS: ElementKeys[] = [
   'content',
   'explanation',
   'pointsMultiplier',
-  'type',
   'options',
 ]
 
@@ -67,24 +39,42 @@ export function processElementData(element: Element): AllElementTypeData {
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
       ...pick(element, FLASHCARD_KEYS),
+      type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (
     element.type === PrismaElementType.SC ||
     element.type === PrismaElementType.MC ||
-    element.type === PrismaElementType.KPRIM ||
-    element.type === PrismaElementType.NUMERICAL ||
-    element.type === PrismaElementType.FREE_TEXT
+    element.type === PrismaElementType.KPRIM
   ) {
     return {
       ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsChoices,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else if (element.type === PrismaElementType.NUMERICAL) {
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsNumerical,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else if (element.type === PrismaElementType.FREE_TEXT) {
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsFreeText,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
   } else if (element.type === PrismaElementType.CONTENT) {
     return {
       ...pick(element, CONTENT_KEYS),
+      type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
@@ -106,9 +96,10 @@ export function getInitialElementResults(
       total: 0,
     }
   } else if (
-    element.type === PrismaElementType.SC ||
-    element.type === PrismaElementType.MC ||
-    element.type === PrismaElementType.KPRIM
+    (element.type === PrismaElementType.SC ||
+      element.type === PrismaElementType.MC ||
+      element.type === PrismaElementType.KPRIM) &&
+    'choices' in element.options
   ) {
     const choices = element.options.choices.reduce(
       (acc: Record<string, number>, choice: Choice) => ({
@@ -139,7 +130,21 @@ export function getInitialElementResults(
 
 export function getInitialInstanceStatistics(type: PrismaElementInstanceType) {
   if (type === PrismaElementInstanceType.LIVE_QUIZ) {
-    return undefined
+    return {
+      anonymousCorrectCount: 0,
+      anonymousPartialCorrectCount: 0,
+      anonymousWrongCount: 0,
+
+      correctCount: 0,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+
+      upvoteCount: 0,
+      downvoteCount: 0,
+
+      uniqueParticipantCount: 0,
+      averageTimeSpent: 0,
+    }
   } else if (type === PrismaElementInstanceType.PRACTICE_QUIZ) {
     return {
       anonymousCorrectCount: 0,

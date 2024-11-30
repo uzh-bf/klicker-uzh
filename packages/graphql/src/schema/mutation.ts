@@ -5,14 +5,16 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
-import * as SessionService from '../services/sessions.js'
+import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -20,6 +22,13 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import {
+  ConfusionTimestep,
+  Feedback,
+  FeedbackResponse,
+  LiveQuiz,
+  LiveQuizMeta,
+} from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -33,29 +42,22 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
   StackFeedback,
   StackResponseInput,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 import {
   ArchivedElement,
   Element,
+  ElementInstance,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  QuestionOrElementInstance,
   Tag,
 } from './question.js'
-import { ElementStatus, ElementType } from './questionData.js'
-import {
-  BlockInput,
-  ConfusionTimestep,
-  Feedback,
-  FeedbackResponse,
-  Session,
-} from './session.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -83,7 +85,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ConfusionTimestep,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           difficulty: t.arg.int({ required: true }),
           speed: t.arg.int({ required: true }),
         },
@@ -107,7 +109,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Feedback,
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -234,7 +236,7 @@ export const Mutation = builder.mutationType({
           stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToElementStack(args, ctx)
+          return StacksService.respondToElementStack(args, ctx)
         },
       }),
 
@@ -597,14 +599,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelSession: t.withAuth(asUserSessionExec).field({
+      cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.cancelSession(args, ctx)
+          return LiveQuizService.cancelLiveQuiz(args, ctx)
         },
       }),
 
@@ -686,25 +688,25 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      endSession: t.withAuth(asUserSessionExec).field({
+      endLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.endSession(args, ctx)
+          return LiveQuizService.endLiveQuiz(args, ctx)
         },
       }),
 
-      startSession: t.withAuth(asUserSessionExec).field({
+      startLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuizMeta,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.startSession(args, ctx)
+          return LiveQuizService.startLiveQuiz(args, ctx)
         },
       }),
 
@@ -771,21 +773,21 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deactivateSessionBlock: t.withAuth(asUserSessionExec).field({
+      deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deactivateSessionBlock(args, ctx)
+          return LiveQuizService.deactivateLiveQuizBlock(args, ctx)
         },
       }),
 
-      changeSessionSettings: t.withAuth(asUserSessionExec).field({
+      changeLiveQuizSettings: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: false }),
@@ -794,70 +796,72 @@ export const Mutation = builder.mutationType({
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SessionService.changeSessionSettings(args, ctx)
+          return LiveQuizService.changeLiveQuizSettings(args, ctx)
         },
       }),
 
-      activateSessionBlock: t.withAuth(asUserSessionExec).field({
+      activateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
-          sessionId: t.arg.string({ required: true }),
-          sessionBlockId: t.arg.int({ required: true }),
+          quizId: t.arg.string({ required: true }),
+          blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.activateSessionBlock(args, ctx)
+          return LiveQuizService.activateLiveQuizBlock(args, ctx)
         },
       }),
 
-      createSession: t.withAuth(asUserFullAccess).field({
+      createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
           blocks: t.arg({
-            type: [BlockInput],
+            type: [ElementBlockInput],
             required: true,
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.createSession(args, ctx)
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
-      editSession: t.withAuth(asUserFullAccess).field({
+      editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
           blocks: t.arg({
-            type: [BlockInput],
+            type: [ElementBlockInput],
             required: true,
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          maxBonusPoints: t.arg.int({ required: true }),
-          timeToZeroBonus: t.arg.int({ required: true }),
+
+          maxBonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.editSession(args, ctx)
+          return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
@@ -967,13 +971,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
-        type: [QuestionOrElementInstance],
+      updateElementInstances: t.withAuth(asUserFullAccess).field({
+        type: [ElementInstance],
         args: {
-          questionId: t.arg.int({ required: true }),
+          elementId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.updateQuestionInstances(args, ctx)
+          return QuestionService.updateElementInstances(args, ctx)
         },
       }),
 
@@ -1064,25 +1068,25 @@ export const Mutation = builder.mutationType({
 
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.deleteLiveQuiz(args, ctx)
+          return LiveQuizService.deleteLiveQuiz(args, ctx)
         },
       }),
 
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.changeLiveQuizName(args, ctx)
+          return LiveQuizService.changeLiveQuizName(args, ctx)
         },
       }),
 

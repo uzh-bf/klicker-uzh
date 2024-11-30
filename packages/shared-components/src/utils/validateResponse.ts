@@ -28,27 +28,6 @@ export function validateKprimResponse(response?: Record<number, boolean>) {
   )
 }
 
-export function validateScResponseOld(response?: number[]) {
-  return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
-  )
-}
-
-export function validateMcResponseOld(response?: number[]) {
-  return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
-  )
-}
-
-export function validateKprimResponseOld(response?: Record<number, boolean>) {
-  return (
-    typeof response !== 'undefined' &&
-    response !== null &&
-    Object.values(response).length === 4 &&
-    Object.values(response).every((value) => typeof value === 'boolean')
-  )
-}
-
 export function validateNumericalResponse({
   response,
   options,

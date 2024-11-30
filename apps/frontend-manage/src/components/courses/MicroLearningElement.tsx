@@ -2,13 +2,13 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   faCalendar,
   faClock,
+  faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
   faFlagCheckered,
-  faHandPointer,
   faHourglassEnd,
   faHourglassStart,
   faLock,
@@ -28,7 +28,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../sessions/creation/ElementCreation'
+import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -79,7 +79,7 @@ function MicroLearningElement({
     variables: { id: microLearning.id },
   })
 
-  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+  const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
@@ -103,6 +103,8 @@ function MicroLearningElement({
         icon={faClock}
       />
     ),
+    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Graded]: null,
   }
 
   const deletionElement = {

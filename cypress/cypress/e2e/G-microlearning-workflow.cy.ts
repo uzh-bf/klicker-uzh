@@ -138,7 +138,7 @@ describe('Different microlearning workflows', () => {
     // Start creation
     cy.loginLecturer()
     cy.get('[data-cy="create-microlearning"]').click()
-    cy.get('[data-cy="cancel-session-creation"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
     cy.get('[data-cy="create-microlearning"]').click()
 
     // Step 1: Name
@@ -148,7 +148,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-microlearning-display-name"]')
       .click()
@@ -157,7 +157,7 @@ describe('Different microlearning workflows', () => {
       .realClick()
       .type(runningMLDescriptionOLD)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -168,16 +168,16 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-end-date"]').click().type(runningEndOLD)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Create stacks
@@ -269,12 +269,12 @@ describe('Different microlearning workflows', () => {
 
     // finalize microlearning creation
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // navigate to list of microlearnings and check status
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
   })
 
   it('Edit the running microlearnings content', () => {
@@ -327,13 +327,13 @@ describe('Different microlearning workflows', () => {
       .type(runningEnd)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier2)
+      .contains(messages.manage.activityWizard.multiplier2)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -373,7 +373,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${runningMLName}"]`).contains(
       messages.shared.generic.draft
@@ -417,7 +417,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="stack-1-displayname"]').should('have.value', stackTitle2)
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${runningMLName}"]`).contains(
       messages.shared.generic.draft
@@ -463,7 +463,7 @@ describe('Different microlearning workflows', () => {
       .should('have.value', runningEnd)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier4)
+      .contains(messages.manage.activityWizard.multiplier4)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the elements are correctly duplicated
@@ -482,7 +482,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${duplicatedMLName}"]`).contains(
       messages.shared.generic.draft
@@ -496,14 +496,14 @@ describe('Different microlearning workflows', () => {
       displayName: futureMLDisplayName,
       description: futureMLDescription,
       courseName: testCourse,
-      multiplier: messages.manage.sessionForms.multiplier2,
+      multiplier: messages.manage.activityWizard.multiplier2,
       startDate: `${currentYear + 1}-01-01T02:00`,
       endDate: `${currentYear + 1}-12-31T18:00`,
       stacks: [{ elements: [SCQuestionTitle] }],
     })
 
     // check if creation was successful
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${futureMLName}"]`).contains(
       messages.shared.generic.draft
@@ -982,18 +982,18 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
+      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if any questions are contained in the question step and create quiz
@@ -1002,7 +1002,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the practice quiz is listed in the course overview
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${convertedPracticeQuizName}"]`).contains(
       messages.shared.generic.draft

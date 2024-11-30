@@ -1,15 +1,28 @@
 import * as DB from '@klicker-uzh/prisma'
-import { FlashcardCorrectness as FlashcardCorrectnessType } from '@klicker-uzh/types'
+import {
+  FlashcardCorrectness as FlashcardCorrectnessType,
+  InstanceEvaluation as IInstanceEvaluation,
+  StackFeedbackStatus as StackFeedbackStatusType,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { ElementType } from './questionData.js'
+import { ElementType } from './elementData.js'
+import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
 
-// TODO: move types to separate file with type definitions?
 export interface IActivityEvaluation {
   id: string
   name: string
   displayName?: string | null
   description?: string | null
   results: IStackEvaluation[]
+  feedbacks?: IFeedback[] | null
+  confusionFeedbacks?: DB.ConfusionTimestep[] | null
+}
+
+export interface IStackFeedback {
+  id: number
+  status: StackFeedbackStatusType
+  score?: number
+  evaluations?: IInstanceEvaluation[]
 }
 
 export interface IStackEvaluation {
@@ -67,9 +80,20 @@ export interface INumericalElementEvaluationResults {
   }[]
 }
 
+export interface IStatistics {
+  max: number
+  min: number
+  mean: number
+  median: number
+  q1: number
+  q3: number
+  sd: number
+}
+
 export interface INumericalElementInstanceEvaluation
   extends IElementInstanceEvaluation {
   results: INumericalElementEvaluationResults
+  statistics?: IStatistics
 }
 
 export interface IFreeElementEvaluationResults {
@@ -127,6 +151,14 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     description: t.exposeString('description', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
+    }),
+    feedbacks: t.expose('feedbacks', {
+      type: [FeedbackRef],
+      nullable: true,
+    }),
+    confusionFeedbacks: t.expose('confusionFeedbacks', {
+      type: [ConfusionTimestepRef],
+      nullable: true,
     }),
   }),
 })
@@ -197,6 +229,20 @@ export const ChoiceElementResults = ChoiceElementResultsRef.implement({
 })
 
 // ----- NUMERICAL ELEMENT EVALUATION INTERFACE -----
+export const Statistics = builder
+  .objectRef<IStatistics>('Statistics')
+  .implement({
+    fields: (t) => ({
+      max: t.exposeFloat('max'),
+      min: t.exposeFloat('min'),
+      mean: t.exposeFloat('mean'),
+      median: t.exposeFloat('median'),
+      q1: t.exposeFloat('q1'),
+      q3: t.exposeFloat('q3'),
+      sd: t.exposeFloat('sd'),
+    }),
+  })
+
 export const NumericalElementInstanceEvaluationRef =
   builder.objectRef<INumericalElementInstanceEvaluation>(
     'NumericalElementInstanceEvaluation'
@@ -205,6 +251,7 @@ export const NumericalElementInstanceEvaluation =
   NumericalElementInstanceEvaluationRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
+      statistics: t.expose('statistics', { type: Statistics, nullable: true }),
       results: t.expose('results', {
         type: NumericalElementResults,
       }),

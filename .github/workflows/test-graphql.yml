@@ -27,5 +27,13 @@ jobs:
       - name: Test functions
         shell: bash
         run: |
-          cd packages/graphql
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../util
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../graphql
           pnpm run test

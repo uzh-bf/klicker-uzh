@@ -149,7 +149,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -209,7 +209,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -269,7 +269,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -350,7 +350,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -412,7 +412,7 @@ Cypress.Commands.add(
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.multiplier1)
+        .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
@@ -503,7 +503,7 @@ Cypress.Commands.add(
     if (typeof courseName !== 'undefined') {
       cy.get('[data-cy="select-course"]')
         .should('exist')
-        .contains(messages.manage.sessionForms.liveQuizNoCourse)
+        .contains(messages.manage.activityWizard.liveQuizNoCourse)
       cy.get('[data-cy="select-course"]').click()
       cy.get(`[data-cy="select-course-${courseName}"]`).click()
       cy.get('[data-cy="select-course"]').contains(courseName)
@@ -520,10 +520,10 @@ Cypress.Commands.add(
           .trigger('dragstart', {
             dataTransfer,
           })
-        cy.get('[data-cy="drop-questions-here-0"]').trigger('drop', {
+        cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${ix}-block-0"]`)
+        cy.get(`[data-cy="question-${ix}-stack-0"]`)
           .should('exist')
           .should('contain', question.substring(0, 20))
       })
@@ -721,7 +721,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()

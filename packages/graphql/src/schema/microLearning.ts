@@ -5,7 +5,7 @@ import {
   type IElementStack,
   ElementStackRef,
   PublicationStatus,
-} from './practiceQuizzes.js'
+} from './practiceQuiz.js'
 
 export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null

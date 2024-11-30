@@ -1,8 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
-  faHandPointer,
   faHourglassStart,
   faLink,
   faLock,
@@ -23,7 +26,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../sessions/creation/ElementCreation'
+import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
@@ -136,7 +139,7 @@ function PracticeQuizElement({
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
-  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+  const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
@@ -158,6 +161,8 @@ function PracticeQuizElement({
         icon={faUserGroup}
       />
     ),
+    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Graded]: null,
   }
 
   const deletionItem = {
