@@ -11,6 +11,7 @@ import {
   ResizablePanelGroup,
 } from '@uzh-bf/design-system/dist/future'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface FTEvaluationProps {
   instanceEvaluation: FreeElementInstanceEvaluation

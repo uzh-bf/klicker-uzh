@@ -10,6 +10,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@uzh-bf/design-system/dist/future'
+import { twMerge } from 'tailwind-merge'
 
 interface ChoicesEvaluationProps {
   instanceEvaluation: ChoicesElementInstanceEvaluation
