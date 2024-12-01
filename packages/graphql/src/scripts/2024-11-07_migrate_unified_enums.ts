@@ -32,6 +32,8 @@ async function run() {
         break
     }
 
+    console.log('processing stack ', elementStack.id)
+
     await prisma.elementStack.update({
       where: { id: elementStack.id },
       data: { typeNEW: newType },
@@ -63,6 +65,8 @@ async function run() {
       default:
         break
     }
+
+    console.log('processing group activity ', groupActivity.id)
 
     await prisma.groupActivity.update({
       where: { id: groupActivity.id },
