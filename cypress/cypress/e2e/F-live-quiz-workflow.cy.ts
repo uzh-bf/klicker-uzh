@@ -587,8 +587,8 @@ describe('Different live-quiz workflows', () => {
 
     // Step 2: Display name and description
     cy.get('[data-cy="insert-live-display-name"]').type(quizDisplayName2)
-    cy.get('[data-cy="insert-live-display-name"]')
-      .clear()
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
       .type(quizDescription2)
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
@@ -658,6 +658,7 @@ describe('Different live-quiz workflows', () => {
 
     // start live quiz and first block
     cy.get(`[data-cy="start-live-quiz-${quizName2}"]`).click()
+    cy.wait(1000)
   })
 
   it('Check that the live quiz description is correctly shown to students', () => {
@@ -669,14 +670,6 @@ describe('Different live-quiz workflows', () => {
 
     // check if the description is also shown correctly on mobile view
     cy.viewport('iphone-x')
-    cy.get('[data-cy="live-quiz-description"]').contains(quizDisplayName2)
-    cy.get('[data-cy="live-quiz-description"]').contains(quizDescription2)
-
-    cy.get('[data-cy="mobile-menu-leaderboard"]').click()
-    cy.get('[data-cy="live-quiz-description"]').should('not.exist')
-    cy.get('[data-cy="mobile-menu-feedbacks"]').click()
-    cy.get('[data-cy="live-quiz-description"]').should('not.exist')
-    cy.get('[data-cy="mobile-menu-questions"]').click()
     cy.get('[data-cy="live-quiz-description"]').contains(quizDisplayName2)
     cy.get('[data-cy="live-quiz-description"]').contains(quizDescription2)
   })

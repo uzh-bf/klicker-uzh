@@ -1942,7 +1942,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   })
 
   // check if any block has been started / completed
-  const beforeFirstBlock = quiz?.blocks.every(
+  const beforeFirstBlock = quiz?.blocks?.every(
     (block) => block.status === ElementBlockStatus.SCHEDULED
   )
 
