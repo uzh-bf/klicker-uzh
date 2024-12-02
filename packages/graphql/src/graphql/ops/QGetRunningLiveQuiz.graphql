@@ -1,13 +1,17 @@
 query GetRunningLiveQuiz($id: String!) {
   studentLiveQuiz(id: $id) {
     id
+    status
     isLiveQAEnabled
     isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
+    beforeFirstBlock
+
     namespace
     displayName
-    status
+    description
+
     course {
       id
       displayName
