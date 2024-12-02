@@ -483,7 +483,7 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
-  blocks: { questions: string[] }[]
+  blocks: BlockType[]
 }
 
 Cypress.Commands.add(
@@ -511,24 +511,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Blocks & Questions
-    if (blocks.length > 0) {
-      const dataTransfer = new DataTransfer()
-
-      blocks[0].questions.forEach((question, ix) => {
-        cy.get(`[data-cy="question-item-${question}"]`)
-          .contains(question)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-          dataTransfer,
-        })
-        cy.get(`[data-cy="question-${ix}-stack-0"]`)
-          .should('exist')
-          .should('contain', question.substring(0, 20))
-      })
-    }
-
+    cy.createBlocks({ blocks })
     cy.get('[data-cy="next-or-submit"]').click()
   }
 )
@@ -574,6 +557,48 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
   }
 }
 Cypress.Commands.add('createStacks', createStacks)
+
+interface BlockType {
+  questions: string[]
+}
+
+function createBlocks({ blocks }: { blocks: BlockType[] }) {
+  blocks[0].questions.forEach((element, ix) => {
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${element}"]`)
+      .contains(element)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
+      element.substring(0, 20)
+    )
+  })
+
+  if (blocks.length > 1) {
+    blocks.slice(1).forEach((block, ix) => {
+      cy.get('[data-cy="drop-elements-add-stack"]').click()
+      block.questions.forEach((element, jx) => {
+        const dataTransfer = new DataTransfer()
+        cy.get(`[data-cy="question-item-${element}"]`)
+          .contains(element)
+          .trigger('dragstart', {
+            dataTransfer,
+          })
+        cy.get(`[data-cy="drop-elements-block-${ix + 1}"]`).trigger('drop', {
+          dataTransfer,
+        })
+        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
+          element.substring(0, 20)
+        )
+      })
+    })
+  }
+}
+Cypress.Commands.add('createBlocks', createBlocks)
 
 interface CreatePracticeQuizArgs {
   name: string
@@ -836,6 +861,7 @@ declare global {
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
+      createBlocks({ blocks }: { blocks: BlockType[] }): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,

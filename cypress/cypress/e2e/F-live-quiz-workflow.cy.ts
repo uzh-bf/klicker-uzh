@@ -625,32 +625,13 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="set-liveqa-enabled"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: replace this with cy.createStacks function after migration to element stacks
     // Step 4: Questions
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle1}"]`)
-        .contains(questionTitle1)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-        dataTransfer,
-      })
-    }
-
-    cy.get('[data-cy="drop-elements-add-stack"]').click()
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-        .contains(questionTitle2)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-block-1"]').trigger('drop', {
-        dataTransfer,
-      })
-    }
+    cy.createBlocks({
+      blocks: [
+        { questions: [questionTitle1, questionTitle1] },
+        { questions: [questionTitle2, questionTitle2] },
+      ],
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-live-quiz-list"]').click()
