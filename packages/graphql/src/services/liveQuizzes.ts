@@ -1937,14 +1937,21 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
         },
       },
       course: true,
+      blocks: true,
     },
   })
+
+  // check if any block has been started / completed
+  const beforeFirstBlock = quiz?.blocks.every(
+    (block) => block.status === ElementBlockStatus.SCHEDULED
+  )
 
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
     quizWithoutSolutions = {
       ...quiz,
+      beforeFirstBlock,
       activeBlock: {
         ...quiz.activeBlock,
         elements: quiz.activeBlock.elements.map((instance) => {
@@ -1988,7 +1995,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   }
 
   if (quiz?.status === PublicationStatus.PUBLISHED) {
-    return quizWithoutSolutions ?? quiz
+    return quizWithoutSolutions ?? { ...quiz, beforeFirstBlock }
   }
 
   return null

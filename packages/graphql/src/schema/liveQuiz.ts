@@ -87,6 +87,7 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   confusionSummary?: IConfusionSummary | null
   numOfBlocks?: number
   numOfInstances?: number
+  beforeFirstBlock?: boolean
 }
 
 export const LiveQuizRef = builder.objectRef<ILiveQuiz>('LiveQuiz')
@@ -114,6 +115,7 @@ export const LiveQuiz = LiveQuizRef.implement({
 
     numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
     numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
+    beforeFirstBlock: t.exposeBoolean('beforeFirstBlock', { nullable: true }),
 
     blocks: t.expose('blocks', {
       type: [ElementBlockRef],

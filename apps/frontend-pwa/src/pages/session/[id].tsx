@@ -16,8 +16,10 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
+import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
@@ -80,6 +82,8 @@ function Index({ id }: { id: string }) {
   const {
     activeBlock,
     displayName,
+    description,
+    beforeFirstBlock,
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
@@ -187,7 +191,14 @@ function Index({ id }: { id: string }) {
           )}
         >
           {!activeBlock ? (
-            isGamificationEnabled ? (
+            beforeFirstBlock &&
+            description !== null &&
+            typeof description !== 'undefined' ? (
+              <div>
+                <H3>{displayName}</H3>
+                <Markdown content={description} />
+              </div>
+            ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
                 <LiveQuizLeaderboard quizId={id} />
               </div>
