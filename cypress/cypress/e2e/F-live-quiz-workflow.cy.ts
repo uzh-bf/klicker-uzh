@@ -195,22 +195,11 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle1}"]`)
-      .contains(questionTitle1)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-      dataTransfer,
-    })
-    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-      .contains(questionTitle2)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
-      dataTransfer,
+    cy.createBlocks({
+      blocks: [
+        { questions: [questionTitle1] },
+        { questions: [questionTitle2] },
+      ],
     })
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
