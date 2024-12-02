@@ -12,6 +12,7 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import PreviewMessage from '~/components/common/PreviewMessage'
 import useStackEvaluationAggregation from '~/components/hooks/useStackEvaluationAggregation'
 import Layout from '~/components/Layout'
 
@@ -50,8 +51,17 @@ function MicrolearningEvaluation() {
     <Layout
       displayName={microlearning.displayName}
       course={microlearning.course ?? undefined}
+      previewMode={microlearning.isOwner ?? undefined}
     >
-      <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-5xl md:rounded md:border md:p-8 md:pt-6">
+      <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
+        {microlearning.isOwner ? (
+          <PreviewMessage
+            activityType={t('shared.generic.microlearning')}
+            name={microlearning.name}
+            displayName={microlearning.displayName}
+            className="mb-2"
+          />
+        ) : null}
         <div className="flex flex-row items-center gap-4">
           <FontAwesomeIcon
             icon={faCheckCircle}

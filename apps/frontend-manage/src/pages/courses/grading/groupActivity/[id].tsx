@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import {
   ElementType,
   GetGradingGroupActivityDocument,
-  GroupActivityStatus,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
@@ -110,7 +110,7 @@ function GroupActivityGrading() {
                     selectSubmission={(submissionId: number) => {
                       if (
                         currentEditing &&
-                        groupActivity.status !== GroupActivityStatus.Graded
+                        groupActivity.status !== PublicationStatus.Graded
                       ) {
                         setSwitchingModal(true)
                         setNextSubmission(submissionId)
@@ -126,7 +126,7 @@ function GroupActivityGrading() {
                     submissions.some(
                       (submission) =>
                         !submission.results && submission.decisions
-                    ) || groupActivity.status === GroupActivityStatus.Graded
+                    ) || groupActivity.status === PublicationStatus.Graded
                   }
                   className={{
                     root: twMerge(
@@ -135,7 +135,7 @@ function GroupActivityGrading() {
                         (submission) =>
                           !submission.results && submission.decisions
                       ) ||
-                        groupActivity.status === GroupActivityStatus.Graded) &&
+                        groupActivity.status === PublicationStatus.Graded) &&
                         'bg-primary-60 cursor-not-allowed'
                     ),
                   }}
@@ -164,7 +164,7 @@ function GroupActivityGrading() {
                 (submission) => submission.id === selectedSubmission
               )}
               gradingCompleted={
-                groupActivity.status === GroupActivityStatus.Graded
+                groupActivity.status === PublicationStatus.Graded
               }
               pointsPerInstance={MAX_POINTS_PER_QUESTION}
               maxPoints={maxPoints}
@@ -173,7 +173,7 @@ function GroupActivityGrading() {
             <UserNotification
               type="warning"
               message={
-                groupActivity.status === GroupActivityStatus.Graded
+                groupActivity.status === PublicationStatus.Graded
                   ? t('manage.groupActivity.gradingAlreadyFinalized')
                   : t('manage.groupActivity.noSubmissionSelected')
               }

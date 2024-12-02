@@ -1,4 +1,4 @@
-import { ElementSelectCourse } from '../../components/sessions/creation/ElementCreation'
+import { ElementSelectCourse } from '../../components/activities/ElementCreation'
 
 function useCoursesGroupsSplit({
   courseSelection,

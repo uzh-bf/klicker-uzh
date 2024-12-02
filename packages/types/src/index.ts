@@ -1,10 +1,4 @@
-import type {
-  Element,
-  ElementStackType,
-  ElementType,
-  QuestionInstance,
-  SessionBlockStatus,
-} from '@klicker-uzh/prisma'
+import type { Element, ElementType } from '@klicker-uzh/prisma'
 
 export type ElementKeys = keyof Element
 
@@ -14,7 +8,7 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum QuestionType {
+enum QuestionType {
   SC = 'SC',
   MC = 'MC',
   KPRIM = 'KPRIM',
@@ -25,6 +19,15 @@ export enum QuestionType {
 export type StackInput = {
   displayName?: string | null
   description?: string | null
+  order: number
+  elements: {
+    elementId: number
+    order: number
+  }[]
+}
+
+export type BlockInput = {
+  timeLimit?: number | null
   order: number
   elements: {
     elementId: number
@@ -134,56 +137,6 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseFlashcard
   | SingleQuestionResponseContent
 
-export type QuestionResultsChoices = {
-  choices: Record<string, number>
-  total: number
-}
-
-export type QuestionResultsOpen = {
-  responses: {
-    [x: string]: {
-      count: number
-      value: string
-      correct?: boolean
-    }
-  }
-  total: number
-}
-
-export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
-
-// TODO: update during migration of live quiz -> element data instead of question data
-export interface IQuestionInstanceWithResults<
-  Type extends ElementType,
-  Results extends QuestionResults,
-> extends QuestionInstance {
-  elementType?: Type
-  questionData: AllQuestionTypeData
-  results: Results
-  statistics?: {
-    max?: number
-    mean?: number
-    median?: number
-    min?: number
-    q1?: number
-    q3?: number
-    sd?: number[]
-  }
-}
-
-export type ChoicesQuestionInstanceData = IQuestionInstanceWithResults<
-  'SC' | 'MC' | 'KPRIM',
-  QuestionResultsChoices
->
-export type OpenQuestionInstanceData = IQuestionInstanceWithResults<
-  'FREE_TEXT' | 'NUMERICAL',
-  QuestionResultsOpen
->
-
-export type AllQuestionInstanceTypeData =
-  | ChoicesQuestionInstanceData
-  | OpenQuestionInstanceData
-
 export type Choice = {
   ix: number
   value: string
@@ -194,21 +147,6 @@ export type Choice = {
 export type NumericalSolutionRange = {
   min?: number | null
   max?: number | null
-}
-
-export type ChoicesInputType = {
-  type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
-  value: number[]
-}
-
-export type NumericalInputType = {
-  type: QuestionType.NUMERICAL
-  value: number
-}
-
-export type FreeTextInputType = {
-  type: QuestionType.FREE_TEXT
-  value: string
 }
 
 interface BaseQuestionOptions {
@@ -239,7 +177,6 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   }
 }
 
-// TODO: no options for FC and CONTENT?
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -249,11 +186,6 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
-
-export type QuestionOptions =
-  | ElementOptionsChoices
-  | ElementOptionsNumerical
-  | ElementOptionsFreeText
 
 export interface BaseElementData {
   id: string
@@ -266,46 +198,12 @@ export interface BaseElementData {
   options: ElementOptions
 }
 
-// TODO: remove after migration of live quiz
-export interface BaseQuestionData {
-  id: string
-  questionId: number
-  type: ElementType
-  name: string
-  content: string
-  pointsMultiplier: number
-  explanation?: string | null
-  options: object
-}
-
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
   extends Omit<Element, 'id'> {
   id: string
   type: Type
   options: Options
   elementId: number
-}
-
-// TODO: remove after migration of live quiz
-interface IQuestionData<
-  Type extends ElementType,
-  Options extends QuestionOptions,
-> extends Omit<
-    Element,
-    | 'id'
-    | 'originalId'
-    | 'status'
-    | 'version'
-    | 'isArchived'
-    | 'isDeleted'
-    | 'ownerId'
-    | 'createdAt'
-    | 'updatedAt'
-  > {
-  id: string
-  type: Type
-  options: Options
-  questionId: number
 }
 
 export type ChoicesElementData = IElementData<
@@ -333,28 +231,6 @@ export type AllElementTypeData =
   | FlashcardElementData
   | ContentElementData
 
-// TODO: remove after migration of live quiz
-export type ChoicesQuestionData = IQuestionData<
-  'SC' | 'MC' | 'KPRIM',
-  ElementOptionsChoices
->
-// TODO: remove after migration of live quiz
-export type FreeTextQuestionData = IQuestionData<
-  'FREE_TEXT',
-  ElementOptionsFreeText
->
-// TODO: remove after migration of live quiz
-export type NumericalQuestionData = IQuestionData<
-  'NUMERICAL',
-  ElementOptionsNumerical
->
-
-// TODO: remove after migration of live quiz
-export type AllQuestionTypeData =
-  | ChoicesQuestionData
-  | FreeTextQuestionData
-  | NumericalQuestionData
-
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
   resetTimeDays?: number
@@ -378,22 +254,22 @@ export type ElementResultsOpen = {
   total: number
 }
 
-export type FlashcardResults = {
+export type ElementResultsFlashcard = {
   [FlashcardCorrectness.INCORRECT]: number
   [FlashcardCorrectness.PARTIAL]: number
   [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
-export type ContentResults = {
+export type ElementResultsContent = {
   total: number
 }
 
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
-  | FlashcardResults
-  | ContentResults
+  | ElementResultsFlashcard
+  | ElementResultsContent
 
 export type GroupActivityDecision = {
   instanceId: number
@@ -430,7 +306,7 @@ export interface IQuestionFeedback {
   value: string
 }
 
-export interface IBaseInstanceEvaluation {
+interface IBaseInstanceEvaluation {
   instanceId: number
   elementType: ElementType
   score: number
@@ -447,21 +323,24 @@ export interface IBaseInstanceEvaluation {
   correctness?: number | null
 }
 
+export type SingleChoiceResponse = { ix: number; count: number }
 export interface IInstanceEvaluationChoices extends IBaseInstanceEvaluation {
-  choices: Record<string, number> // instance results type cannot be represented with exact keys
+  choices: SingleChoiceResponse[]
   lastResponse?: SingleQuestionResponseChoices | null
 }
 export type InstanceEvaluationChoices = IInstanceEvaluationChoices
 
+export type SingleNumericalResponse = { count: number; value: number }
 export interface IInstanceEvaluationNumerical extends IBaseInstanceEvaluation {
-  answers?: Record<string, { count: number; value: string; correct?: boolean }> // instance results type cannot be represented with exact keys
+  responses?: SingleNumericalResponse[]
   solutionRanges?: NumericalSolutionRange[]
   lastResponse?: SingleQuestionResponseValue | null
 }
 export type InstanceEvaluationNumerical = IInstanceEvaluationNumerical
 
+export type SingleFreeTextResponse = { count: number; value: string }
 export interface IInstanceEvaluationFreeText extends IBaseInstanceEvaluation {
-  answers?: Record<string, { count: number; value: string; correct?: boolean }> // instance results type cannot be represented with exact keys
+  answers?: SingleFreeTextResponse[]
   solutions: string[]
   lastResponse?: SingleQuestionResponseValue | null
 }
@@ -483,41 +362,4 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFreeText
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
-// #endregion
-
-// ----- ELEMENT STACKS -----
-// #region
-export type LiveQuizStackOptions = {
-  timeLimit?: number
-  expiresAt?: Date
-  randomSelection?: number
-  // TODO: by moving it here, we lose the default value, so ensure it is set in backend code correctly
-  execution: number
-  // TODO: rename the enum for consistency
-  status: SessionBlockStatus
-}
-
-export type MicrolearningStackOptions = {}
-
-export type PracticeQuizStackOptions = {}
-
-export type GroupActivityStackOptions = {}
-
-export type ElementStackOptions =
-  | LiveQuizStackOptions
-  | MicrolearningStackOptions
-  | PracticeQuizStackOptions
-  | GroupActivityStackOptions
-
-interface IElementStackOptions<
-  Type extends ElementStackType,
-  Options extends ElementStackOptions | null,
-> {}
-
-export type AllElementStackOptions =
-  | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
-  | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
-  | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
-  | IElementStackOptions<'GROUP_ACTIVITY', GroupActivityStackOptions>
-
 // #endregion

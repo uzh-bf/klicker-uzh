@@ -14,7 +14,10 @@ fragment StackFeedbackEvaluations on StackFeedback {
         correct
         value
       }
-      choices
+      choices {
+        ix
+        count
+      }
       numAnswers
       score
       xp
@@ -43,7 +46,10 @@ fragment StackFeedbackEvaluations on StackFeedback {
         value
       }
       numAnswers
-      answers
+      responses {
+        value
+        count
+      }
       score
       xp
       pointsAwarded
@@ -75,7 +81,10 @@ fragment StackFeedbackEvaluations on StackFeedback {
         value
       }
       numAnswers
-      answers
+      answers {
+        value
+        count
+      }
       score
       xp
       pointsAwarded

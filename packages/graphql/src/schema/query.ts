@@ -4,11 +4,12 @@ import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
-import * as SessionService from '../services/sessions.js'
+import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import {
   Course,
@@ -23,6 +24,12 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import {
+  Feedback,
+  LiveQuiz,
+  LiveQuizInfo,
+  RunningLiveQuizSummary,
+} from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -36,14 +43,8 @@ import {
   ElementStack,
   PracticeQuiz,
   StackFeedback,
-} from './practiceQuizzes.js'
-import { Element, Tag } from './question.js'
-import {
-  Feedback,
-  RunningLiveQuizSummary,
-  Session,
-  SessionEvaluation,
-} from './session.js'
+} from './practiceQuiz.js'
+import { Element, ElementInstance, Tag } from './question.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -158,7 +159,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [Feedback],
         args: {
-          id: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
@@ -230,22 +231,22 @@ export const Query = builder.queryType({
         },
       }),
 
-      unassignedSessions: asUser.field({
+      unassignedLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         resolve(_, __, ctx) {
-          return SessionService.getUnassignedSessions(ctx)
+          return LiveQuizService.getUnassignedLiveQuizzes(ctx)
         },
       }),
 
-      runningSessions: t.field({
+      shortnameQuizzes: t.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         args: {
           shortname: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSessions(args, ctx)
+          return LiveQuizService.getShortnameQuizzes(args, ctx)
         },
       }),
 
@@ -256,26 +257,26 @@ export const Query = builder.queryType({
           quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveQuizSummary(args, ctx)
+          return LiveQuizService.getLiveQuizSummary(args, ctx)
         },
       }),
 
-      runningSessionsCourse: t.field({
+      getCourseRunningLiveQuizzes: t.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSessionsCourse(args, ctx)
+          return LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
         },
       }),
 
-      userRunningSessions: asUser.field({
+      userRunningLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuizInfo],
         resolve(_, __, ctx) {
-          return SessionService.getUserRunningSessions(ctx)
+          return LiveQuizService.getUserRunningLiveQuizzes(ctx)
         },
       }),
 
@@ -287,34 +288,33 @@ export const Query = builder.queryType({
         },
       }),
 
-      userSessions: asUser.field({
+      userLiveQuizzes: asUser.field({
         nullable: true,
-        type: [Session],
+        type: [LiveQuiz],
         resolve(_, __, ctx) {
-          return SessionService.getUserSessions(ctx)
+          return LiveQuizService.getUserLiveQuizzes(ctx)
         },
       }),
 
-      cockpitSession: asUser.field({
+      cockpitQuiz: asUser.field({
         nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        // TODO: fix type errors after migration to live quiz
-        resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx) as any
-        },
-      }),
-
-      controlSession: asUser.field({
-        nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getControlSession(args, ctx)
+          return LiveQuizService.getCockpitQuiz(args, ctx)
+        },
+      }),
+
+      controlLiveQuiz: asUser.field({
+        nullable: true,
+        type: LiveQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LiveQuizService.getControlLiveQuiz(args, ctx)
         },
       }),
 
@@ -336,7 +336,7 @@ export const Query = builder.queryType({
           stackId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return PracticeQuizService.getPreviousStackEvaluation(args, ctx)
+          return StacksService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 
@@ -395,27 +395,26 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionEvaluation: t.field({
+      liveQuizEvaluation: t.field({
         nullable: true,
-        type: SessionEvaluation,
+        type: ActivityEvaluation,
         args: {
           id: t.arg.string({ required: true }),
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
-          // TODO: fix type issues after migration to live quiz
-          return SessionService.getSessionEvaluation(args, ctx) as any
+          return LiveQuizService.getLiveQuizEvaluation(args, ctx)
         },
       }),
 
-      session: t.field({
+      studentLiveQuiz: t.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSession(args, ctx)
+          return LiveQuizService.getRunningLiveQuiz(args, ctx)
         },
       }),
 
@@ -441,25 +440,25 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionHMAC: asUser.field({
+      liveQuizHMAC: asUser.field({
         nullable: true,
         type: 'String',
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionHMAC(args, ctx)
+          return LiveQuizService.getLiveQuizHMAC(args, ctx)
         },
       }),
 
-      pinnedFeedbacks: asUser.field({
+      getLecturerViewLiveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getPinnedFeedbacks(args, ctx)
+          return LiveQuizService.getLecturerViewLiveQuiz(args, ctx)
         },
       }),
 
@@ -474,14 +473,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      liveSession: asUser.field({
+      liveQuiz: asUser.field({
         nullable: true,
-        type: Session,
+        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLiveSessionData(args, ctx)
+          return LiveQuizService.getLiveQuizData(args, ctx)
         },
       }),
 
@@ -496,14 +495,25 @@ export const Query = builder.queryType({
         },
       }),
 
-      sessionLeaderboard: t.field({
+      artificialInstance: asUser.field({
+        nullable: true,
+        type: ElementInstance,
+        args: {
+          elementId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getArtificialElementInstance(args, ctx)
+        },
+      }),
+
+      liveQuizLeaderboard: t.field({
         nullable: true,
         type: [LeaderboardEntry],
         args: {
-          sessionId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLeaderboard(args, ctx)
+          return LiveQuizService.getLiveQuizLeaderboard(args, ctx)
         },
       }),
 

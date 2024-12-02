@@ -1,0 +1,28 @@
+query GetControlLiveQuiz($id: String!) {
+  controlLiveQuiz(id: $id) {
+    id
+    name
+    displayName
+    course {
+      id
+      displayName
+    }
+    blocks {
+      id
+      order
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      elements {
+        id
+        ...ElementDataInfo
+      }
+    }
+    activeBlock {
+      id
+      order
+    }
+  }
+}

@@ -124,7 +124,15 @@ export const ACTIVE_CHART_TYPES: Record<
   ],
 }
 
-export const STATISTICS_ORDER: string[] = [
+export interface ShowStatisticsType {
+  mean?: boolean
+  median?: boolean
+  q1?: boolean
+  q3?: boolean
+  sd?: boolean
+}
+
+export const STATISTICS_ORDER = [
   'min',
   'max',
   'mean',

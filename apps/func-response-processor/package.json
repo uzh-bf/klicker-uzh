@@ -18,7 +18,7 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.34",
+    "@uzh-bf/design-system": "3.0.0-alpha.35",
     "azure-functions-core-tools": "~4.0.6280",
     "cross-env": "~7.0.3",
     "dotenv": "~16.4.5",

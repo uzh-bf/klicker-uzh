@@ -1,0 +1,38 @@
+query GetUserLiveQuizzes {
+  userLiveQuizzes {
+    id
+    name
+    displayName
+    namespace
+    pointsMultiplier
+    accessMode
+    status
+    createdAt
+    updatedAt
+    startedAt
+    finishedAt
+    numOfBlocks
+    numOfInstances
+    isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
+    blocks {
+      id
+      order
+      status
+      numOfParticipants
+      elements {
+        id
+        type
+        elementType
+        ...ElementData
+      }
+    }
+    course {
+      id
+      name
+      displayName
+    }
+  }
+}

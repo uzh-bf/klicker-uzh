@@ -33,7 +33,7 @@ interface LoginFormProps {
   installIOS?: string
 }
 
-export function LoginForm({
+function LoginForm({
   header,
   labelIdentifier,
   fieldIdentifier,

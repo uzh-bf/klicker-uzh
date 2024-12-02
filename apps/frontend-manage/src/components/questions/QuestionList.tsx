@@ -9,7 +9,7 @@ import React from 'react'
 import Question from './Question'
 
 interface QuestionListProps {
-  setSelectedQuestions: (questionId: number, questionData: Element) => void
+  setSelectedQuestions: (id: number, data: Element) => void
   selectedQuestions: Record<number, Element>
   questions?: Element[]
   tagfilter?: string[]
@@ -77,7 +77,7 @@ function QuestionList({
         />
       ))}
       {hideSurvey === 'false' && (
-        <div className="fixed bottom-12 w-[calc(100%-17rem)]">
+        <div className="fixed bottom-11 w-[calc(100%-17rem)]">
           <div className="flex flex-row items-center justify-between rounded-md bg-orange-200 px-3 py-1.5">
             <div className="flex flex-row items-center gap-3">
               <FontAwesomeIcon icon={faBullhorn} className="h-6" />

@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import { type IGroupActivity, GroupActivityRef } from './groupActivity.js'
+import { type ILiveQuiz, LiveQuizRef } from './liveQuiz.js'
 import { type IMicroLearning, MicroLearningRef } from './microLearning.js'
 import {
   type IGroupAssignmentPoolEntryRef,
@@ -13,8 +14,7 @@ import {
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
-import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes.js'
-import { type ISession, SessionRef } from './session.js'
+import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
 import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
@@ -24,7 +24,7 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
-  sessions?: ISession[]
+  liveQuizzes?: ILiveQuiz[]
   practiceQuizzes?: IPracticeQuiz[]
   microLearnings?: IMicroLearning[]
   participantGroups?: IParticipantGroup[]
@@ -93,8 +93,8 @@ export const Course = builder.objectType(CourseRef, {
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
-    sessions: t.expose('sessions', {
-      type: [SessionRef],
+    liveQuizzes: t.expose('liveQuizzes', {
+      type: [LiveQuizRef],
       nullable: true,
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
@@ -189,7 +189,6 @@ export interface ILeaderboardEntry
   participant?: IParticipant
   participation?: IParticipation
   courseId?: string | null
-  sessionId?: string | null
   liveQuizId?: string | null
   sessionParticipationId?: string | null
   type?: string | null // TODO: specify custom leaderboard type enum here

@@ -2,7 +2,6 @@ import {
   getInitialElementResults,
   getInitialInstanceStatistics,
   processElementData,
-  processQuestionData,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
@@ -11,12 +10,7 @@ import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
 import Prisma from '../../dist/index.js'
-import {
-  ElementType,
-  QuestionInstanceType,
-  UserLoginScope,
-  type Element,
-} from '../prisma/client/index.js'
+import { ElementType, UserLoginScope } from '../prisma/client/index.js'
 
 export async function prepareUser({
   name,
@@ -209,204 +203,6 @@ export function prepareQuestion({
   }
 }
 
-export function prepareQuestionInstance({
-  question,
-  type,
-  pointsMultiplier,
-  resetTimeDays,
-  maxBonusPoints,
-  timeToZeroBonus,
-  order,
-}: {
-  question: Partial<Prisma.Element>
-  type: QuestionInstanceType
-  pointsMultiplier?: number
-  resetTimeDays?: number
-  maxBonusPoints?: number
-  timeToZeroBonus?: number
-  order?: number
-}): any {
-  const common = {
-    order,
-    type,
-    pointsMultiplier,
-    resetTimeDays,
-    maxBonusPoints,
-    timeToZeroBonus,
-    questionData: processQuestionData(question as Element),
-    question: {
-      connect: {
-        id: question.id,
-      },
-    },
-    owner: {
-      connect: {
-        id: question.ownerId,
-      },
-    },
-  }
-
-  switch (question.type) {
-    case Prisma.ElementType.SC:
-    case Prisma.ElementType.MC:
-    case Prisma.ElementType.KPRIM: {
-      const questionOptions = question.options?.valueOf() as {
-        choices: {
-          ix: number
-          value: string
-          feedback: string
-          correct: boolean
-        }[]
-      }
-
-      return {
-        ...common,
-        results: {
-          choices: questionOptions.choices.reduce(
-            (acc, choice) => ({
-              ...acc,
-              [choice.ix]: 0,
-            }),
-            {}
-          ),
-        },
-      }
-    }
-
-    case Prisma.ElementType.NUMERICAL:
-    case Prisma.ElementType.FREE_TEXT:
-    case Prisma.ElementType.CONTENT:
-    case Prisma.ElementType.FLASHCARD: {
-      return {
-        ...common,
-        results: {
-          participants: 0,
-        },
-      }
-    }
-  }
-}
-
-interface BaseQuestionData {
-  id: number
-  name: string
-  pointsMultiplier: number
-  content: string
-  type: Prisma.ElementType
-  options?: any
-}
-
-export async function prepareSession({
-  blocks,
-  ...args
-}: {
-  blocks: {
-    order: number
-    questions: BaseQuestionData[]
-    expiresAt?: Date
-    timeLimit?: number
-  }[]
-  id: string
-  name: string
-  displayName: string
-  courseId: string
-  ownerId: string
-  status: Prisma.SessionStatus
-  isModerationEnabled?: boolean
-  isLiveQAEnabled?: boolean
-  isConfusionFeedbackEnabled?: boolean
-  isGamificationEnabled?: boolean
-  linkTo?: string
-  pointsMultiplier?: number
-}) {
-  return {
-    where: {
-      id: args.id,
-    },
-    create: {
-      ...args,
-      blocks: {
-        create: await Promise.all(
-          blocks.map(async ({ questions, ...rest }) => {
-            const questionData = await Promise.all(questions)
-
-            if (
-              questionData.some(
-                (value) => value === null || typeof value === 'undefined'
-              )
-            ) {
-              throw new Error('Invalid question data')
-            }
-
-            const preparedInstances = questionData.map((question, ix) =>
-              prepareQuestionInstance({
-                order: ix,
-                question,
-                type: QuestionInstanceType.SESSION,
-                pointsMultiplier: args.pointsMultiplier,
-                maxBonusPoints: 100,
-                timeToZeroBonus: 50,
-              })
-            )
-
-            return {
-              ...rest,
-              instances: {
-                create: preparedInstances,
-              },
-            }
-          })
-        ),
-      },
-    },
-    update: {
-      ...args,
-      blocks: {
-        upsert: await Promise.all(
-          blocks.map(async ({ questions, ...rest }) => {
-            const questionData = await Promise.all(questions)
-
-            if (
-              questionData.some(
-                (value) => value === null || typeof value === 'undefined'
-              )
-            ) {
-              throw new Error('Invalid question data')
-            }
-
-            const preparedInstances = questionData.map((question, ix) =>
-              prepareQuestionInstance({
-                order: ix,
-                question,
-                type: QuestionInstanceType.SESSION,
-              })
-            )
-
-            return {
-              where: {
-                sessionId_order: {
-                  sessionId: args.id,
-                  order: rest.order,
-                },
-              },
-              create: {
-                ...rest,
-                instances: {
-                  create: preparedInstances,
-                },
-              },
-              // TODO: upsert instances that are added to blocks? (need to get session block id)
-              update: {
-                ...rest,
-              },
-            }
-          })
-        ),
-      },
-    },
-  }
-}
-
 export function prepareGroupActivityStack({
   flashcards,
   questions,
@@ -427,7 +223,6 @@ export function prepareGroupActivityStack({
     description: 'Stack description for group activity.',
     order: 0,
     type: Prisma.ElementStackType.GROUP_ACTIVITY,
-    options: {},
     elements: {
       create: [
         ...questions
@@ -510,7 +305,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *flashcard*.',
       order: ix,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -544,7 +338,6 @@ export function prepareStackVariety({
       description: 'This stack contains all the *flashcards*.',
       order: flashcards.length,
       type: stackType,
-      options: {},
       elements: {
         create: flashcards.map((el, ix) => ({
           migrationId: String(migrationIdOffset + flashcards.length + ix),
@@ -576,7 +369,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *question*.',
       order: flashcards.length + ix + 1,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -610,7 +402,6 @@ export function prepareStackVariety({
       description: 'This stack contains all the *questions*.',
       order: flashcards.length + questions.length + 1,
       type: stackType,
-      options: {},
       elements: {
         create: questions.map((el, ix) => ({
           migrationId: String(
@@ -644,7 +435,6 @@ export function prepareStackVariety({
       description: 'This stack contains a single *content element*.',
       order: flashcards.length + questions.length + ix + 2,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {
@@ -688,7 +478,6 @@ export function prepareStackVariety({
         2 +
         outer_ix,
       type: stackType,
-      options: {},
       elements: {
         create: contentElements.map((el, ix) => ({
           migrationId: String(
@@ -729,7 +518,6 @@ export function prepareStackVariety({
       order:
         flashcards.length + questions.length + contentElements.length + 4 + ix,
       type: stackType,
-      options: {},
       elements: {
         create: [
           {

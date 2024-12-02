@@ -3,7 +3,7 @@ import {
   EndGroupActivityDocument,
   GetGroupActivitySummaryDocument,
   GetSingleCourseDocument,
-  GroupActivityStatus,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -41,7 +41,7 @@ function GroupActivityEndingModal({
         __typename: 'Mutation',
         endGroupActivity: {
           id: activityId,
-          status: GroupActivityStatus.Ended,
+          status: PublicationStatus.Ended,
           scheduledEndAt: new Date(),
           __typename: 'GroupActivity',
         },

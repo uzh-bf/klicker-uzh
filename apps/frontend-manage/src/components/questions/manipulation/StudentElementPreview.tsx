@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import StudentElement, {
-  StudentResponseType,
+  StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,9 +23,8 @@ function StudentElementPreview({
   elementDataTypename,
 }: StudentElementPreviewProps): React.ReactElement {
   const t = useTranslations()
-  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
-    {}
-  )
+  const [studentResponse, setStudentResponse] =
+    useState<StackStudentResponseType>({})
 
   return (
     <div className="max-w-sm flex-1">
@@ -95,7 +94,9 @@ function StudentElementPreview({
                             'restrictions' in values.options &&
                             values.options.restrictions &&
                             'maxLength' in values.options.restrictions &&
-                            values.options.restrictions.maxLength
+                            typeof values.options.restrictions.maxLength !==
+                              'undefined' &&
+                            values.options.restrictions.maxLength !== null
                               ? parseFloat(
                                   String(values.options.restrictions.maxLength)
                                 )

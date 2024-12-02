@@ -7,8 +7,8 @@ import { useEffect } from 'react'
 
 interface UseChartTypeUpdateProps {
   activeInstance: number
-  activeElementType: ElementType
-  chartType: ChartType
+  activeElementType?: ElementType
+  chartType?: ChartType
   setChartType: (newType: ChartType) => void
 }
 
@@ -19,7 +19,11 @@ function useChartTypeUpdate({
   setChartType,
 }: UseChartTypeUpdateProps) {
   useEffect(() => {
-    if (activeInstance !== -1) {
+    if (
+      activeInstance !== -1 &&
+      typeof chartType !== 'undefined' &&
+      typeof activeElementType !== 'undefined'
+    ) {
       const possibleChartTypes = ACTIVE_CHART_TYPES[activeElementType].map(
         (type) => type.value
       )

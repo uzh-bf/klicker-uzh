@@ -1,0 +1,31 @@
+query GetLecturerViewLiveQuiz($id: String!) {
+  getLecturerViewLiveQuiz(id: $id) {
+    id
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
+    isGamificationEnabled
+    confusionSummary {
+      speed
+      difficulty
+      numberOfParticipants
+    }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+        createdAt
+      }
+    }
+  }
+}

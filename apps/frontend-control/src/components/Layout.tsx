@@ -10,11 +10,11 @@ import MobileMenuBar from './layout/MobileMenuBar'
 interface LayoutProps {
   title: string
   children: React.ReactNode
-  sessionId?: string
+  quizId?: string
   className?: string
 }
 
-function Layout({ title, children, sessionId, className }: LayoutProps) {
+function Layout({ title, children, quizId, className }: LayoutProps) {
   const router = useRouter()
   const {
     loading: loadingUser,
@@ -50,7 +50,7 @@ function Layout({ title, children, sessionId, className }: LayoutProps) {
         </div>
 
         <div className="fixed bottom-0 h-12 w-full md:hidden">
-          <MobileMenuBar sessionId={sessionId} />
+          <MobileMenuBar quizId={quizId} />
         </div>
       </div>
     </div>

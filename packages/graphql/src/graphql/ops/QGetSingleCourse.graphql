@@ -22,18 +22,21 @@ query GetSingleCourse($courseId: String!) {
     preferredGroupSize
     randomAssignmentFinalized
 
-    sessions {
+    liveQuizzes {
       id
       name
       displayName
       isGamificationEnabled
+      isLiveQAEnabled
+      isConfusionFeedbackEnabled
+      isModerationEnabled
       pinCode
       accessMode
       status
       pointsMultiplier
       createdAt
       numOfBlocks
-      numOfQuestions
+      numOfInstances
     }
     practiceQuizzes {
       id

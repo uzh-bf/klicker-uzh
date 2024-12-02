@@ -14,7 +14,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { computeStackEvaluation } from './practiceQuizzes.js'
+import { computeStackEvaluation } from './stacks.js'
 
 interface GetMicroLearningArgs {
   id: string
@@ -59,6 +59,8 @@ export async function getMicroLearningData(
   })
 
   return microLearning
+    ? { ...microLearning, isOwner: ctx.user?.sub === microLearning.ownerId }
+    : null
 }
 
 export async function getMicroLearningEvaluation(
@@ -173,7 +175,6 @@ interface ManipulateMicroLearningArgs {
   endDate: Date
 }
 
-// TODO: merge this entire logic with manipulatePracticeQuiz (or extract duplications into helper functions)
 export async function manipulateMicroLearning(
   {
     id,
@@ -189,7 +190,7 @@ export async function manipulateMicroLearning(
   ctx: ContextWithUser
 ) {
   if (id) {
-    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    // find all instances belonging to the old microlearning and delete them as the content of the questions might have changed
     const oldElement = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
@@ -260,7 +261,6 @@ export async function manipulateMicroLearning(
           order: stack.order,
           displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
-          options: {},
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]!
