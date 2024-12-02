@@ -580,9 +580,9 @@ function createBlocks({ blocks }: { blocks: BlockType[] }) {
       cy.get(`[data-cy="drop-elements-block-${blockIndex}"]`).trigger('drop', {
         dataTransfer,
       })
-      cy.get(`[data-cy="question-${questionIndex}-stack-${blockIndex}"]`).contains(
-        element.substring(0, 20)
-      )
+      cy.get(
+        `[data-cy="question-${questionIndex}-stack-${blockIndex}"]`
+      ).contains(element.substring(0, 20))
     })
   })
 }
