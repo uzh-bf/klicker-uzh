@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GroupActivityDetailsDocument,
   GroupActivityGrading,
-  GroupActivityStatus,
+  PublicationStatus,
   StartGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -99,8 +99,8 @@ function GroupActivityDetails() {
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
-            {(groupActivity.status === GroupActivityStatus.Ended ||
-              groupActivity.status === GroupActivityStatus.Graded) && (
+            {(groupActivity.status === PublicationStatus.Ended ||
+              groupActivity.status === PublicationStatus.Graded) && (
               <UserNotification
                 type="warning"
                 message={t('pwa.groupActivity.groupActivityEnded')}
@@ -172,7 +172,7 @@ function GroupActivityDetails() {
                 ))}
               </div>
 
-              {groupActivity.status === GroupActivityStatus.Published ? (
+              {groupActivity.status === PublicationStatus.Published ? (
                 <>
                   <p className="prose mt-4 max-w-none">
                     {t('pwa.groupActivity.groupCompleteQuestion')}
@@ -244,9 +244,7 @@ function GroupActivityDetails() {
               <GroupActivityStack
                 key={`group-activity-stack-ended-${activityEnded}`}
                 activityId={instance.id}
-                activityEnded={
-                  groupActivity.status === GroupActivityStatus.Ended
-                }
+                activityEnded={groupActivity.status === PublicationStatus.Ended}
                 stack={groupActivity.stacks[0]}
                 decisions={instance.decisions}
                 results={instance.results}

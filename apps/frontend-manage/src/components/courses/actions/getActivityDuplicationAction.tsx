@@ -1,7 +1,7 @@
-import { WizardMode } from '@components/sessions/creation/ElementCreation'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { NextRouter } from 'next/router'
+import { WizardMode } from '../../activities/ElementCreation'
 
 interface getActivityDuplicationActionProps {
   id: string

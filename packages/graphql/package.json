@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.3.0-alpha.9",
+  "version": "3.3.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -91,6 +91,7 @@
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
+    "script:stg": "ENV=development doppler run --config stg -- tsx",
     "test": "jest"
   },
   "engines": {

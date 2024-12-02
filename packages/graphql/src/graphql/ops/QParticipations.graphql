@@ -19,10 +19,9 @@ query Participations($endpoint: String) {
         scheduledStartAt
         scheduledEndAt
       }
-      sessions {
+      liveQuizzes {
         id
         displayName
-        linkTo
       }
     }
   }

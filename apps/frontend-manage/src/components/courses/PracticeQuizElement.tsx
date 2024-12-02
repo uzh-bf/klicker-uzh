@@ -1,8 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
-  faHandPointer,
   faHourglassStart,
   faLink,
   faLock,
@@ -23,11 +26,12 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../sessions/creation/ElementCreation'
+import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
+import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
@@ -107,11 +111,13 @@ interface PracticeQuizElementProps {
     'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
   >
   courseId: string
+  courseStartDate: string
 }
 
 function PracticeQuizElement({
   practiceQuiz,
   courseId,
+  courseStartDate,
 }: PracticeQuizElementProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -133,7 +139,7 @@ function PracticeQuizElement({
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
-  const statusMap: Record<PublicationStatus, React.ReactElement> = {
+  const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
       <StatusTag
         color="bg-gray-200"
@@ -155,6 +161,8 @@ function PracticeQuizElement({
         icon={faUserGroup}
       />
     ),
+    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Graded]: null,
   }
 
   const deletionItem = {
@@ -205,7 +213,10 @@ function PracticeQuizElement({
         <div className="flex flex-row items-center gap-3 text-sm">
           {practiceQuiz.status === PublicationStatus.Draft && (
             <>
-              <PublishPracticeQuizButton practiceQuiz={practiceQuiz} />
+              <PublishPracticeQuizButton
+                practiceQuiz={practiceQuiz}
+                courseStartDate={courseStartDate}
+              />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
                 className={{
@@ -228,15 +239,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <PracticeQuizPreviewLink
-                  //       practiceQuiz={practiceQuiz}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
@@ -289,6 +300,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   getActivityDuplicationAction({
                     id: practiceQuiz.id,
                     text: t('manage.course.duplicatePracticeQuiz'),
@@ -337,15 +357,15 @@ function PracticeQuizElement({
                         name: practiceQuiz.name,
                       })
                     : [],
-                  // {
-                  //   label: (
-                  //     <PracticeQuizPreviewLink
-                  //       practiceQuiz={practiceQuiz}
-                  //       href={href}
-                  //     />
-                  //   ),
-                  //   onClick: () => null,
-                  // },
+                  {
+                    label: (
+                      <PracticeQuizPreviewLink
+                        practiceQuiz={practiceQuiz}
+                        href={href}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
                   {
                     label: (
                       <PracticeQuizEvaluationLink

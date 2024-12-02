@@ -1,0 +1,11 @@
+query GetCourseRunningLiveQuizzes($courseId: String!) {
+  getCourseRunningLiveQuizzes(courseId: $courseId) {
+    id
+    name
+    displayName
+    course {
+      id
+      displayName
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from './ActivityEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
 import FCEvaluation from './elements/FCEvaluation'
@@ -15,6 +16,7 @@ interface ElementEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  type: ActivityEvaluationType
   className?: string
 }
 
@@ -24,6 +26,7 @@ function ElementEvaluation({
   textSize,
   chartType,
   showSolution,
+  type,
   className,
 }: ElementEvaluationProps) {
   return (
@@ -42,6 +45,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            type={type}
           />
         )}
         {currentInstance.__typename ===
@@ -51,6 +55,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            type={type}
           />
         )}
         {currentInstance.__typename === 'FreeElementInstanceEvaluation' && (
@@ -59,6 +64,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            type={type}
           />
         )}
         {currentInstance.__typename ===

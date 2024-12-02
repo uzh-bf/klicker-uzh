@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-incoming-responses",
-  "version": "3.3.0-alpha.9",
+  "version": "3.3.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.34",
+    "@uzh-bf/design-system": "3.0.0-alpha.35",
     "azure-functions-core-tools": "~4.0.6280",
     "cross-env": "~7.0.3",
     "dotenv": "~16.4.5",

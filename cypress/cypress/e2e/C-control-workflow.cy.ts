@@ -2,8 +2,8 @@ import { v4 as uuid } from 'uuid'
 
 const questionTitle = uuid()
 const question = uuid()
-const sessionTitle = uuid()
-const session = uuid()
+const quizTitle = uuid()
+const quiz = uuid()
 
 describe('Test functionalities of frontend-control application', () => {
   it('Create a new SC question to use it in a live quiz', () => {
@@ -22,8 +22,8 @@ describe('Test functionalities of frontend-control application', () => {
 
     // create live quiz with single choice question
     cy.createLiveQuiz({
-      name: sessionTitle,
-      displayName: session,
+      name: quizTitle,
+      displayName: quiz,
       blocks: [
         {
           questions: [questionTitle],
@@ -32,11 +32,11 @@ describe('Test functionalities of frontend-control application', () => {
     })
 
     // check if the creation was successful
-    cy.get('[data-cy="load-session-list"]').click()
-    cy.contains('[data-cy="session-block"]', sessionTitle)
+    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', quizTitle)
   })
 
-  it('Generate a token to log into the control-frontend application, execute session', () => {
+  it('Generate a token to log into the control-frontend application, execute quiz', () => {
     cy.loginLecturer()
 
     cy.get('[data-cy="user-menu"]').click()
@@ -53,30 +53,30 @@ describe('Test functionalities of frontend-control application', () => {
     // login into the control-frontend application
     cy.loginControlApp()
 
-    // check ppt links and start the session
-    cy.get('[data-cy="unassigned-sessions"]').click()
-    cy.get(`[data-cy="ppt-link-${sessionTitle}"]`).should('exist').click()
+    // check ppt links and start the quiz
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
+    cy.get(`[data-cy="ppt-link-${quizTitle}"]`).should('exist').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
-    cy.findByText(sessionTitle).click()
-    cy.get('[data-cy="confirm-start-session"]').click()
+    cy.findByText(quizTitle).click()
+    cy.get('[data-cy="confirm-start-live-quiz"]').click()
 
     // test the mobile menu of the control app
     cy.viewport('iphone-6')
     cy.get('[data-cy="ppt-button"]').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
     cy.get('[data-cy="home-button"]').click()
-    cy.get('[data-cy="unassigned-sessions"]').click()
-    cy.findByText(sessionTitle).click()
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
+    cy.findByText(quizTitle).click()
     cy.get('[data-cy="back-button"]').click()
-    cy.findByText(sessionTitle).click()
+    cy.findByText(quizTitle).click()
     cy.viewport('macbook-16')
 
-    // open and close block, end the session
+    // open and close block, end the quiz
     cy.get('[data-cy="activate-next-block"]').click()
     cy.get('[data-cy="deactivate-block"]').click()
-    cy.get('[data-cy="end-session"]').click()
-    cy.findByText(sessionTitle).should('not.exist')
+    cy.get('[data-cy="end-live-quiz"]').click()
+    cy.findByText(quizTitle).should('not.exist')
   })
 
-  // TODO (later): check if session is running correctly / add student answer
+  // TODO (later): check if quiz is running correctly / add student answer
 })

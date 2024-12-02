@@ -547,7 +547,7 @@ const MarkButton = ({
   )
 }
 
-export const SlateButton = React.forwardRef<
+const SlateButton = React.forwardRef<
   HTMLSpanElement,
   PropsWithChildren<{
     active: boolean

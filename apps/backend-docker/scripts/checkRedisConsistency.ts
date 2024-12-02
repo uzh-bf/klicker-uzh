@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma'
 import { Redis } from 'ioredis'
 
 async function run() {
@@ -12,18 +12,18 @@ async function run() {
     tls: process.env.REDIS_TLS ? {} : undefined,
   })
 
-  const sessions = await prisma.liveSession.findMany({
+  const quizzes = await prisma.liveQuiz.findMany({
     where: {
       status: {
-        not: 'RUNNING',
+        not: PublicationStatus.PUBLISHED,
       },
     },
   })
 
   let count = 0
 
-  for (const session of sessions) {
-    const invalidKeys = await redisExec.keys(`s:${session.id}:*`)
+  for (const quiz of quizzes) {
+    const invalidKeys = await redisExec.keys(`lq:${quiz.id}:*`)
 
     if (invalidKeys.length > 0) {
       count += invalidKeys.length

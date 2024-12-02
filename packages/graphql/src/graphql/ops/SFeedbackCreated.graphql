@@ -1,5 +1,5 @@
-subscription FeedbackCreated($sessionId: String!) {
-  feedbackCreated(sessionId: $sessionId) {
+subscription FeedbackCreated($quizId: String!) {
+  feedbackCreated(quizId: $quizId) {
     id
     isPublished
     isPinned

@@ -1,6 +1,6 @@
 import { SelectGroup } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ElementSelectCourse } from '../../components/sessions/creation/ElementCreation'
+import { ElementSelectCourse } from '../../components/activities/ElementCreation'
 
 interface useLiveQuizCourseGroupingProps {
   gamifiedCourses: ElementSelectCourse[]
@@ -17,10 +17,10 @@ function useLiveQuizCourseGrouping({
     {
       items: [
         {
-          label: t('manage.sessionForms.liveQuizNoCourse'),
+          label: t('manage.activityWizard.liveQuizNoCourse'),
           value: '',
           data: {
-            cy: `select-course-${t('manage.sessionForms.liveQuizNoCourse')}`,
+            cy: `select-course-${t('manage.activityWizard.liveQuizNoCourse')}`,
           },
         },
       ],

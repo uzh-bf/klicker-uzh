@@ -24,7 +24,7 @@ function ElementCreationErrorToast({
     >
       <div>
         <div>{error}</div>
-        <div>{t('manage.sessionForms.considerFormErrors')}</div>
+        <div>{t('manage.activityWizard.considerFormErrors')}</div>
       </div>
     </Toast>
   )

@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.17.0-alpine AS base
+FROM docker.io/library/node:20.18.1-alpine AS base
 
 
 FROM base AS deps
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.14.3 turbo@2.1.0
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.14.3 turbo@2.1.0
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -38,7 +38,7 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@9.10.0 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@9.14.3 turbo@2.1.0
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .

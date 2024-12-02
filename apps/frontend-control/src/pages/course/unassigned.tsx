@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
-  GetUnassignedSessionsDocument,
-  SessionStatus,
+  GetUnassignedLiveQuizzesDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -9,54 +9,50 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Layout from '../../components/Layout'
-import SessionLists from '../../components/sessions/SessionLists'
+import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
-function UnassignedSessions() {
+function UnassignedLiveQuizzes() {
   const t = useTranslations()
-  const {
-    loading: loadingSessions,
-    error: errorSessions,
-    data: dataSessions,
-  } = useQuery(GetUnassignedSessionsDocument)
+  const { data, loading, error } = useQuery(GetUnassignedLiveQuizzesDocument)
 
-  const runningSessions = useMemo(() => {
-    return dataSessions?.unassignedSessions?.filter(
-      (session) => session.status === SessionStatus.Running
+  const runningQuizzes = useMemo(() => {
+    return data?.unassignedLiveQuizzes?.filter(
+      (quiz) => quiz.status === PublicationStatus.Published
     )
-  }, [dataSessions])
+  }, [data])
 
-  const plannedSessions = useMemo(() => {
-    return dataSessions?.unassignedSessions?.filter(
-      (session) =>
-        session.status === SessionStatus.Scheduled ||
-        session.status === SessionStatus.Prepared
+  const plannedQuizzes = useMemo(() => {
+    return data?.unassignedLiveQuizzes?.filter(
+      (quiz) =>
+        quiz.status === PublicationStatus.Scheduled ||
+        quiz.status === PublicationStatus.Draft
     )
-  }, [dataSessions])
+  }, [data])
 
-  if (loadingSessions) {
+  if (loading) {
     return (
-      <Layout title={t('control.home.sessionsNoCourse')}>
+      <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <Loader />
       </Layout>
     )
   }
-  if (errorSessions || !dataSessions) {
+  if (error || !data) {
     return (
-      <Layout title={t('control.home.sessionsNoCourse')}>
+      <Layout title={t('control.home.liveQuizzesNoCourse')}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Beim Laden Ihrer Sessionen ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
+          message={t('control.home.loadingLiveQuizzesFailed')}
         />
       </Layout>
     )
   }
 
   return (
-    <Layout title={t('control.home.sessionsNoCourse')}>
-      <SessionLists
-        runningSessions={runningSessions || []}
-        plannedSessions={plannedSessions || []}
+    <Layout title={t('control.home.liveQuizzesNoCourse')}>
+      <LiveQuizLists
+        runningLiveQuizzes={runningQuizzes || []}
+        plannedLiveQuizzes={plannedQuizzes || []}
       />
     </Layout>
   )
@@ -70,4 +66,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default UnassignedSessions
+export default UnassignedLiveQuizzes

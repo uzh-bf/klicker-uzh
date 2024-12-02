@@ -1,6 +1,5 @@
 import {
   ElementOrderType,
-  GroupActivityStatus,
   LeaderboardType,
   type Participant,
   type ParticipantGroup,
@@ -610,7 +609,11 @@ export async function getCourseSummary(
     include: {
       _count: {
         select: {
-          sessions: true,
+          liveQuizzes: {
+            where: {
+              isDeleted: false,
+            },
+          },
           practiceQuizzes: {
             where: {
               isDeleted: false,
@@ -638,7 +641,7 @@ export async function getCourseSummary(
 
   return {
     numOfParticipations: course._count.participations,
-    numOfLiveQuizzes: course._count.sessions,
+    numOfLiveQuizzes: course._count.liveQuizzes,
     numOfPracticeQuizzes: course._count.practiceQuizzes,
     numOfMicroLearnings: course._count.microLearnings,
     numOfGroupActivities: course._count.groupActivities,
@@ -710,7 +713,7 @@ export async function getCourseData(
       _count: {
         select: { participantGroups: true },
       },
-      sessions: {
+      liveQuizzes: {
         where: {
           isDeleted: false,
         },
@@ -718,7 +721,7 @@ export async function getCourseData(
           blocks: {
             include: {
               _count: {
-                select: { instances: true },
+                select: { elements: true },
               },
             },
           },
@@ -791,12 +794,12 @@ export async function getCourseData(
 
   if (!course) return null
 
-  const reducedSessions = course?.sessions.map((session) => {
+  const reducedLiveQuizzes = course?.liveQuizzes.map((session) => {
     return {
       ...session,
       numOfBlocks: session.blocks.length,
-      numOfQuestions: session.blocks.reduce(
-        (acc, block) => acc + block._count.instances,
+      numOfInstances: session.blocks.reduce(
+        (acc, block) => acc + block._count.elements,
         0
       ),
     }
@@ -825,7 +828,6 @@ export async function getCourseData(
           participantId: entry.participantId,
           participant: entry.participation!.participant,
           sessionParticipationId: null,
-          sessionId: null,
           liveQuizId: null,
         })
 
@@ -865,7 +867,7 @@ export async function getCourseData(
 
   return {
     ...course,
-    sessions: reducedSessions,
+    liveQuizzes: reducedLiveQuizzes,
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: reducedGroupActivities,
     microLearnings: reducedMicroLearnings,
@@ -884,7 +886,7 @@ export async function getControlCourse(
   const course = await ctx.prisma.course.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
-      sessions: {
+      liveQuizzes: {
         where: {
           isDeleted: false,
         },
@@ -892,7 +894,7 @@ export async function getControlCourse(
           blocks: {
             include: {
               _count: {
-                select: { instances: true },
+                select: { elements: true },
               },
             },
           },
@@ -1129,7 +1131,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Set group activity status to ended for all published group activities that have ended
   const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: GroupActivityStatus.PUBLISHED,
+      status: PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -1143,7 +1145,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: GroupActivityStatus.ENDED,
+          status: PublicationStatus.ENDED,
         },
       })
     )

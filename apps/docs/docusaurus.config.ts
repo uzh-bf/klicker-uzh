@@ -4,6 +4,9 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 
 const config: Config = {
+  future: {
+    experimental_faster: true,
+  },
   trailingSlash: true,
   title: 'KlickerUZH',
   tagline: 'Open Source Audience Interaction',
@@ -69,17 +72,17 @@ const config: Config = {
         },
       }
     },
-    [
-      '@gabrielcsapo/docusaurus-plugin-matomo',
-      {
-        matomoUrl: 'https://webstats.uzh.ch',
-        siteUrl: 'https://www.klicker.uzh.ch',
-        siteId: '356',
-        matomoPhpScript: 'matomo.php',
-        matomoJsScript: 'matomo.js',
-        dev: true,
-      },
-    ],
+    // [
+    //   '@gabrielcsapo/docusaurus-plugin-matomo',
+    //   {
+    //     matomoUrl: 'https://webstats.uzh.ch',
+    //     siteUrl: 'https://www.klicker.uzh.ch',
+    //     siteId: '356',
+    //     matomoPhpScript: 'matomo.php',
+    //     matomoJsScript: 'matomo.js',
+    //     dev: true,
+    //   },
+    // ],
     [
       '@docusaurus/plugin-ideal-image',
       {
@@ -110,7 +113,7 @@ const config: Config = {
     announcementBar: {
       id: 'release_v3',
       content:
-        'We are offering introductory courses on Zoom. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
+        'We are offering introductory courses at UZH. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,

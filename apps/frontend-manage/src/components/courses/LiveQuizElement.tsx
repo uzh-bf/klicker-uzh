@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
-  faCalculator,
   faCheck,
   faLock,
   faPencil,
@@ -14,9 +13,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteLiveQuizDocument,
   GetSingleCourseDocument,
-  Session,
-  SessionAccessMode,
-  SessionStatus,
+  LiveQuiz,
+  LiveQuizAccessMode,
+  PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -24,7 +23,7 @@ import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../sessions/creation/ElementCreation'
+import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -34,27 +33,18 @@ import StartLiveQuizButton from './actions/StartLiveQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import DeletionModal from './modals/DeletionModal'
 
-const statusMap = {
-  PREPARED: <FontAwesomeIcon icon={faClock} />,
-  SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
-  RUNNING: <FontAwesomeIcon icon={faPlay} />,
-  COMPLETED: <FontAwesomeIcon icon={faCheck} />,
-}
+export type LiveQuizListElementType = Pick<
+  LiveQuiz,
+  | 'id'
+  | 'status'
+  | 'name'
+  | 'numOfBlocks'
+  | 'numOfInstances'
+  | 'isGamificationEnabled'
+  | 'accessMode'
+>
 
-interface LiveQuizElementProps {
-  session: Pick<
-    Session,
-    | 'id'
-    | 'status'
-    | 'name'
-    | 'numOfBlocks'
-    | 'numOfQuestions'
-    | 'isGamificationEnabled'
-    | 'accessMode'
-  >
-}
-
-function LiveQuizElement({ session }: LiveQuizElementProps) {
+function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -65,8 +55,40 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     fetchPolicy: 'cache-only',
   })
 
+  const statusTagMap: Record<PublicationStatus, React.ReactElement | null> = {
+    [PublicationStatus.Draft]: (
+      <StatusTag
+        color="bg-gray-200"
+        status={t('shared.generic.draft')}
+        icon={faPencil}
+      />
+    ),
+    [PublicationStatus.Scheduled]: (
+      <StatusTag
+        color="bg-orange-200"
+        status={t('shared.generic.scheduled')}
+        icon={faClock}
+      />
+    ),
+    [PublicationStatus.Published]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.published')}
+        icon={faPlay}
+      />
+    ),
+    [PublicationStatus.Ended]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.completed')}
+        icon={faCheck}
+      />
+    ),
+    [PublicationStatus.Graded]: null,
+  }
+
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
-    variables: { id: session.id },
+    variables: { id: quiz.id },
     update(cache, res) {
       const data = cache.readQuery({
         query: GetSingleCourseDocument,
@@ -81,8 +103,8 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
         data: {
           course: {
             ...data.course,
-            sessions: data.course.sessions?.filter(
-              (session) => session.id !== res.data!.deleteLiveQuiz!.id
+            liveQuizzes: data.course.liveQuizzes?.filter(
+              (quiz) => quiz.id !== res.data!.deleteLiveQuiz!.id
             ),
           },
         },
@@ -90,8 +112,8 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
     },
     optimisticResponse: {
       deleteLiveQuiz: {
-        __typename: 'Session',
-        id: session.id,
+        __typename: 'LiveQuiz',
+        id: quiz.id,
       },
     },
     refetchQueries: [GetSingleCourseDocument],
@@ -101,182 +123,198 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
 
   return (
     <div
-      className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
-      data-cy={`session-${session.name}`}
+      className="border-uzh-grey-80 w-full rounded border border-solid p-2"
+      data-cy={`live-quiz-${quiz.name}`}
     >
-      <div className="flex-1">
-        <div className="flex flex-row gap-2">
-          <div>{statusMap[session.status]}</div>
+      <div className="flex w-full flex-row justify-between">
+        <div className="flex-1">
+          <div className="flex flex-row gap-2">
+            <Ellipsis
+              maxLength={50}
+              className={{ markdown: 'text-base font-bold' }}
+            >
+              {quiz.name}
+            </Ellipsis>
+          </div>
+          <div className="mb-1 text-sm italic">
+            {t('manage.liveQuizzes.nBlocksQuestions', {
+              blocks: quiz.numOfBlocks,
+              questions: quiz.numOfInstances,
+            })}
+          </div>
+        </div>
 
-          <Ellipsis
-            maxLength={50}
-            className={{ markdown: 'text-base font-bold' }}
-          >
-            {session.name}
-          </Ellipsis>
+        <div className="flex flex-col items-end justify-between gap-4">
+          <div className="flex flex-row items-center gap-3.5 text-sm">
+            {(quiz.status === PublicationStatus.Scheduled ||
+              quiz.status === PublicationStatus.Draft) && (
+              <>
+                <StartLiveQuizButton liveQuiz={quiz} />
+                <Dropdown
+                  data={{ cy: `live-quiz-actions-${quiz.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    getAccessLink({
+                      href,
+                      setCopyToast,
+                      t,
+                      name: quiz.name,
+                    }),
+                    dataUser?.userProfile?.catalyst
+                      ? getLTIAccessLink({
+                          href,
+                          setCopyToast,
+                          t,
+                          name: quiz.name,
+                        })
+                      : [],
+                    {
+                      label: (
+                        <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
+                          <FontAwesomeIcon icon={faPencil} />
+                          <div>{t('manage.liveQuizzes.editLiveQuiz')}</div>
+                        </div>
+                      ),
+                      onClick: () =>
+                        router.push({
+                          pathname: '/',
+                          query: {
+                            elementId: quiz.id,
+                            editMode: WizardMode.LiveQuiz,
+                          },
+                        }),
+                      data: { cy: `edit-live-quiz-${quiz.name}` },
+                    },
+                    getActivityDuplicationAction({
+                      id: quiz.id,
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
+                      wizardMode: WizardMode.LiveQuiz,
+                      router: router,
+                      data: { cy: `duplicate-live-quiz-${quiz.name}` },
+                    }),
+                    {
+                      label: (
+                        <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
+                          <FontAwesomeIcon icon={faTrashCan} />
+                          <div>{t('manage.liveQuizzes.deleteLiveQuiz')}</div>
+                        </div>
+                      ),
+                      onClick: () => setDeletionModal(true),
+                      data: { cy: `delete-live-quiz-${quiz.name}` },
+                    },
+                  ].flat()}
+                  triggerIcon={faHandPointer}
+                />
+              </>
+            )}
+            {quiz.status === PublicationStatus.Published && (
+              <>
+                <RunningLiveQuizLink liveQuiz={quiz} />
+                <Dropdown
+                  data={{ cy: `live-quiz-actions-${quiz.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    getAccessLink({
+                      href,
+                      setCopyToast,
+                      t,
+                      name: quiz.name,
+                    }),
+                    dataUser?.userProfile?.catalyst
+                      ? getLTIAccessLink({
+                          href,
+                          setCopyToast,
+                          t,
+                          name: quiz.name,
+                        })
+                      : [],
+                    getActivityDuplicationAction({
+                      id: quiz.id,
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
+                      wizardMode: WizardMode.LiveQuiz,
+                      router: router,
+                      data: { cy: `duplicate-live-quiz-${quiz.name}` },
+                    }),
+                  ].flat()}
+                  triggerIcon={faHandPointer}
+                />
+              </>
+            )}
+            {quiz.status === PublicationStatus.Ended && (
+              <>
+                <EvaluationLinkLiveQuiz liveQuiz={quiz} />
+                <Dropdown
+                  data={{ cy: `live-quiz-actions-${quiz.name}` }}
+                  className={{
+                    item: 'p-1 hover:bg-gray-200',
+                    viewport: 'bg-white',
+                  }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
+                          <FontAwesomeIcon icon={faTrashCan} />
+                          <div>{t('manage.liveQuizzes.deleteLiveQuiz')}</div>
+                        </div>
+                      ),
+                      onClick: () => setDeletionModal(true),
+                      data: { cy: `delete-live-quiz-${quiz.name}` },
+                    },
+                    getActivityDuplicationAction({
+                      id: quiz.id,
+                      text: t('manage.liveQuizzes.duplicateLiveQuiz'),
+                      wizardMode: WizardMode.LiveQuiz,
+                      router: router,
+                      data: { cy: `duplicate-live-quiz-${quiz.name}` },
+                    }),
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+              </>
+            )}
+          </div>
         </div>
-        <div className="mb-1 text-sm italic">
-          {t('manage.sessions.nBlocksQuestions', {
-            blocks: session.numOfBlocks,
-            questions: session.numOfQuestions,
-          })}
-        </div>
+
+        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
+        <DeletionModal
+          title={t('manage.liveQuizzes.deleteLiveQuiz')}
+          description={t('manage.liveQuizzes.confirmLiveQuizDeletion')}
+          elementName={quiz.name}
+          message={t('manage.liveQuizzes.liveQuizDeletionHint')}
+          deleteElement={deleteLiveQuiz}
+          open={deletionModal}
+          setOpen={setDeletionModal}
+          primaryData={{ cy: 'confirm-delete-live-quiz' }}
+          secondaryData={{ cy: 'cancel-delete-live-quiz' }}
+        />
       </div>
 
-      <div className="flex flex-col items-end justify-between gap-4">
-        <div className="flex flex-row items-center gap-3.5 text-sm">
-          {(session.status === SessionStatus.Scheduled ||
-            session.status === SessionStatus.Prepared) && (
-            <>
-              <StartLiveQuizButton liveQuiz={session} />
-              <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
-                items={[
-                  getAccessLink({
-                    href,
-                    setCopyToast,
-                    t,
-                    name: session.name,
-                  }),
-                  dataUser?.userProfile?.catalyst
-                    ? getLTIAccessLink({
-                        href,
-                        setCopyToast,
-                        t,
-                        name: session.name,
-                      })
-                    : [],
-                  {
-                    label: (
-                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-2">
-                        <FontAwesomeIcon icon={faPencil} />
-                        <div>{t('manage.sessions.editSession')}</div>
-                      </div>
-                    ),
-                    onClick: () =>
-                      router.push({
-                        pathname: '/',
-                        query: {
-                          elementId: session.id,
-                          editMode: WizardMode.LiveQuiz,
-                        },
-                      }),
-                    data: { cy: `edit-live-quiz-${session.name}` },
-                  },
-                  getActivityDuplicationAction({
-                    id: session.id,
-                    text: t('manage.sessions.duplicateSession'),
-                    wizardMode: WizardMode.LiveQuiz,
-                    router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
-                  }),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
-                        <FontAwesomeIcon icon={faTrashCan} />
-                        <div>{t('manage.sessions.deleteSession')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-live-quiz-${session.name}` },
-                  },
-                ].flat()}
-                triggerIcon={faHandPointer}
-              />
-            </>
-          )}
-          {session.status === SessionStatus.Running && (
-            <>
-              <RunningLiveQuizLink liveQuiz={session} />
-              <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
-                items={[
-                  getAccessLink({
-                    href,
-                    setCopyToast,
-                    t,
-                    name: session.name,
-                  }),
-                  dataUser?.userProfile?.catalyst
-                    ? getLTIAccessLink({
-                        href,
-                        setCopyToast,
-                        t,
-                        name: session.name,
-                      })
-                    : [],
-                  getActivityDuplicationAction({
-                    id: session.id,
-                    text: t('manage.sessions.duplicateSession'),
-                    wizardMode: WizardMode.LiveQuiz,
-                    router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
-                  }),
-                ].flat()}
-                triggerIcon={faHandPointer}
-              />
-            </>
-          )}
-          {session.status === SessionStatus.Completed && (
-            <>
-              <EvaluationLinkLiveQuiz liveQuiz={session} />
-              <Dropdown
-                data={{ cy: `live-quiz-actions-${session.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
-                items={[
-                  {
-                    label: (
-                      <div className="flex cursor-pointer flex-row items-center gap-2 text-red-600">
-                        <FontAwesomeIcon icon={faTrashCan} />
-                        <div>{t('manage.sessions.deleteSession')}</div>
-                      </div>
-                    ),
-                    onClick: () => setDeletionModal(true),
-                    data: { cy: `delete-live-quiz-${session.name}` },
-                  },
-                  getActivityDuplicationAction({
-                    id: session.id,
-                    text: t('manage.sessions.duplicateSession'),
-                    wizardMode: WizardMode.LiveQuiz,
-                    router: router,
-                    data: { cy: `duplicate-live-quiz-${session.name}` },
-                  }),
-                ]}
-                triggerIcon={faHandPointer}
-              />
-            </>
-          )}
-        </div>
+      <div className="flex w-full flex-row justify-between">
         <div className="flex flex-row gap-2">
-          {session.isGamificationEnabled && (
+          {quiz.isGamificationEnabled && (
             <StatusTag
               color="bg-uzh-red-40"
               status="Gamified"
               icon={faTrophy}
             />
           )}
-          {session.accessMode === SessionAccessMode.Public && (
+          {quiz.accessMode === LiveQuizAccessMode.Public && (
             <StatusTag
               color="bg-green-300"
               status={t('manage.course.publicAccess')}
               icon={faUserGroup}
             />
           )}
-          {session.accessMode === SessionAccessMode.Restricted && (
+          {quiz.accessMode === LiveQuizAccessMode.Restricted && (
             <StatusTag
               color="bg-red-300"
               status={t('manage.course.restrictedAccess')}
@@ -284,20 +322,8 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
             />
           )}
         </div>
+        <div>{statusTagMap[quiz.status]}</div>
       </div>
-
-      <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <DeletionModal
-        title={t('manage.sessions.deleteLiveQuiz')}
-        description={t('manage.sessions.confirmLiveQuizDeletion')}
-        elementName={session.name}
-        message={t('manage.sessions.liveQuizDeletionHint')}
-        deleteElement={deleteLiveQuiz}
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-live-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
-      />
     </div>
   )
 }

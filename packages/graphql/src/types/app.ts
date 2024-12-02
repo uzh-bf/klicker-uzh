@@ -1,15 +1,12 @@
 import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
 import type {
   AllElementTypeData,
-  AllQuestionTypeData,
   AvatarSettings,
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
-  ElementStackOptions,
   GroupActivityDecisions,
   GroupActivityResults,
-  QuestionResults,
   SingleQuestionResponse,
 } from '@klicker-uzh/types'
 
@@ -35,21 +32,10 @@ declare global {
     type PrismaSingleQuestionResponse = SingleQuestionResponse
     type PrismaElementOptions = ElementOptions
     type PrismaElementResults = ElementInstanceResults
-    type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
-    type PrismaQuestionData = AllQuestionTypeData // TODO: remove after migration of live quiz
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
-  }
-}
-// #endregion
-
-// ----- ELEMENT STACKS -----
-// #region
-declare global {
-  namespace PrismaJson {
-    type PrismaElementStackOptions = ElementStackOptions
   }
 }
 // #endregion

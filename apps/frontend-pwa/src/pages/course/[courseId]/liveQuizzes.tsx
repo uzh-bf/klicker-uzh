@@ -1,7 +1,8 @@
 import { useQuery } from '@apollo/client'
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetRunningSessionsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -31,16 +32,24 @@ function CourseLiveQuizzes({
     cookiesAvailable,
   })
 
-  const { data } = useQuery(GetRunningSessionsCourseDocument, {
+  const { data, loading } = useQuery(GetCourseRunningLiveQuizzesDocument, {
     variables: { courseId: courseId },
     skip: isInactive,
   })
 
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
   if (
     isInactive ||
     !data ||
-    !data.runningSessionsCourse?.length ||
-    data.runningSessionsCourse.length === 0
+    !data.getCourseRunningLiveQuizzes?.length ||
+    data.getCourseRunningLiveQuizzes.length === 0
   ) {
     return (
       <Layout>
@@ -60,27 +69,27 @@ function CourseLiveQuizzes({
   }
 
   return (
-    <Layout course={data.runningSessionsCourse[0].course ?? undefined}>
+    <Layout course={data.getCourseRunningLiveQuizzes[0].course ?? undefined}>
       <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
         <div className="font-bold">
           {t.rich('pwa.general.activeLiveQuizzesInCourse', {
             i: (text) => <span className="italic">{text}</span>,
-            name: data.runningSessionsCourse[0].course?.displayName,
+            name: data.getCourseRunningLiveQuizzes[0].course?.displayName,
           })}
         </div>
         <div className="mt-2 space-y-1">
-          {data.runningSessionsCourse.map((session) => (
-            <div key={session.id}>
-              <Link href={`/session/${session.id}`}>
+          {data.getCourseRunningLiveQuizzes.map((quiz) => (
+            <div key={quiz.id}>
+              <Link href={`/session/${quiz.id}`}>
                 <Button
                   fluid
                   className={{ root: 'justify-start gap-4' }}
-                  data={{ cy: `join-session-${session.name}` }}
+                  data={{ cy: `join-live-quiz-${quiz.name}` }}
                 >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faExternalLink} />
                   </Button.Icon>
-                  <Button.Label>{session.displayName}</Button.Label>
+                  <Button.Label>{quiz.displayName}</Button.Label>
                 </Button>
               </Link>
             </div>
@@ -104,14 +113,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   const result = await apolloClient.query({
-    query: GetRunningSessionsCourseDocument,
+    query: GetCourseRunningLiveQuizzesDocument,
     variables: {
       courseId: ctx.params.courseId,
     },
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  if (!result?.data?.runningSessionsCourse) {
+  if (!result?.data?.getCourseRunningLiveQuizzes) {
     return {
       props: {
         isInactive: true,
@@ -119,21 +128,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  // if only a single session is running, redirect directly to the corresponding session page
+  // if only a single live quiz is running, redirect directly to the corresponding quiz page
   // or if linkTo is set, redirect to the specified link
-  if (result.data.runningSessionsCourse.length === 1) {
-    if (result.data.runningSessionsCourse[0].linkTo) {
-      return {
-        redirect: {
-          destination: result.data.runningSessionsCourse[0].linkTo,
-          permanent: false,
-        },
-      }
-    }
-
+  if (result.data.getCourseRunningLiveQuizzes.length === 1) {
     return {
       redirect: {
-        destination: `/session/${result.data.runningSessionsCourse[0].id}`,
+        destination: `/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
         permanent: false,
       },
     }

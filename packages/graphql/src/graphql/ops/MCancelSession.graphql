@@ -1,5 +1,0 @@
-mutation CancelSession($id: String!) {
-  cancelSession(id: $id) {
-    id
-  }
-}
