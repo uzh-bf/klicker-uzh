@@ -64,8 +64,6 @@ enum ElementInstanceType {
 model ElementInstance {
   id Int @id @default(autoincrement())
 
-  originalId String?
-
   type        ElementInstanceType
   elementType ElementType
   order       Int
@@ -101,7 +99,6 @@ model ElementInstance {
 
   @@unique([type, elementStackId, order])
   @@unique([type, elementBlockId, order])
-  @@unique([ownerId, originalId])
 }
 
 model InstanceStatistics {
@@ -177,9 +174,8 @@ enum ElementBlockStatus {
 }
 
 model ElementBlock {
-  id         Int  @id @default(autoincrement())
-  originalId Int? // TODO: remove after migration to new data structure
-  order      Int
+  id    Int @id @default(autoincrement())
+  order Int
 
   timeLimit       Int?
   expiresAt       DateTime?
@@ -209,8 +205,6 @@ model Tag {
 
   order Int @default(0)
 
-  originalId String?
-
   questions Element[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -220,7 +214,6 @@ model Tag {
   updatedAt DateTime @updatedAt
 
   @@unique([ownerId, name])
-  @@unique([ownerId, originalId])
 }
 
 // #endregion

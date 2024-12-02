@@ -50,7 +50,6 @@ async function seedFlashcardSet(
             createMany: {
               data: [
                 {
-                  originalId: el.originalId,
                   order: ix,
                   type: ElementInstanceType.PRACTICE_QUIZ,
                   elementType: ElementType.FLASHCARD,
