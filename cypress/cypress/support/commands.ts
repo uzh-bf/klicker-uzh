@@ -563,40 +563,28 @@ interface BlockType {
 }
 
 function createBlocks({ blocks }: { blocks: BlockType[] }) {
-  blocks[0].questions.forEach((element, ix) => {
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${element}"]`)
-      .contains(element)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-      dataTransfer,
-    })
-    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
-      element.substring(0, 20)
-    )
-  })
-
-  if (blocks.length > 1) {
-    blocks.slice(1).forEach((block, ix) => {
+  if (!blocks || blocks.length === 0) {
+    throw new Error('No blocks provided.')
+  }
+  blocks.forEach((block, blockIndex) => {
+    if (blockIndex > 0) {
       cy.get('[data-cy="drop-elements-add-stack"]').click()
-      block.questions.forEach((element, jx) => {
-        const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="question-item-${element}"]`)
-          .contains(element)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get(`[data-cy="drop-elements-block-${ix + 1}"]`).trigger('drop', {
+    }
+    block.questions.forEach((element, questionIndex) => {
+      const dataTransfer = new DataTransfer()
+      cy.get(`[data-cy="question-item-${element}"]`)
+        .contains(element)
+        .trigger('dragstart', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
-          element.substring(0, 20)
-        )
+      cy.get(`[data-cy="drop-elements-block-${blockIndex}"]`).trigger('drop', {
+        dataTransfer,
       })
+      cy.get(`[data-cy="question-${questionIndex}-stack-${blockIndex}"]`).contains(
+        element.substring(0, 20)
+      )
     })
-  }
+  })
 }
 Cypress.Commands.add('createBlocks', createBlocks)
 
