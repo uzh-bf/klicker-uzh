@@ -561,7 +561,7 @@ async function upsertFlashcardResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -907,7 +907,7 @@ async function upsertContentResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -1912,7 +1912,7 @@ async function upsertQuestionResponse({
   lastAwardedAt: Date
   xpAwarded: number
   lastXpAwardedAt: Date
-  newAverageResponseTime: number | undefined
+  newAverageResponseTime?: number
   existingResponse: PrismaQuestionResponse | null
   newAggResponses: ElementInstanceResults
   practiceQuizId?: string
@@ -1938,7 +1938,7 @@ async function upsertQuestionResponse({
       totalPointsAwarded: pointsAwarded,
       totalXpAwarded: xpAwarded,
       trialsCount: 1,
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       lastAwardedAt,
       lastXpAwardedAt,
       firstResponse: response as SingleQuestionResponse,
