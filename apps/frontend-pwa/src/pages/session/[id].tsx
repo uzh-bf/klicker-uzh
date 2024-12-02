@@ -194,7 +194,7 @@ function Index({ id }: { id: string }) {
             beforeFirstBlock &&
             description !== null &&
             typeof description !== 'undefined' ? (
-              <div>
+              <div data-cy="live-quiz-description">
                 <H3>{displayName}</H3>
                 <Markdown content={description} />
               </div>
