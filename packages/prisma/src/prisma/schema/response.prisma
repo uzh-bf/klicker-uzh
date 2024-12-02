@@ -12,7 +12,7 @@ model QuestionResponse {
   totalScore         Float     @default(0)
   totalPointsAwarded Float?    @default(0)
   totalXpAwarded     Float     @default(0)
-  averageTimeSpent   Int       @default(0) // TODO: remove default value after applying migration
+  averageTimeSpent   Int
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
   lastAnsweredAt     DateTime?
@@ -79,7 +79,7 @@ model QuestionResponseDetail {
   score         Float  @default(0)
   pointsAwarded Float? @default(0)
   xpAwarded     Float  @default(0)
-  timeSpent     Int    @default(0) // TODO: remove default value after applying migration
+  timeSpent     Int
 
   /// [PrismaSingleQuestionResponse]
   response Json

@@ -275,7 +275,6 @@ export async function manipulatePracticeQuiz(
 
               return {
                 elementType: element.type,
-                migrationId: uuidv4(),
                 order: elem.order,
                 type: ElementInstanceType.PRACTICE_QUIZ,
                 elementData: processedElementData,

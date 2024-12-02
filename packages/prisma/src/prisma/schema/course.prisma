@@ -21,7 +21,6 @@ model Course {
   maxGroupSize              Int      @default(5)
   randomAssignmentFinalized Boolean  @default(false)
 
-  sessions                   LiveSession[]
   elementStacks              ElementStack[]
   practiceQuizzes            PracticeQuiz[]
   groupActivities            GroupActivity[]

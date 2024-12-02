@@ -344,7 +344,6 @@ export async function manipulateLiveQuiz(
 
               return {
                 elementType: element.type,
-                migrationId: uuidv4(),
                 order: elem.order,
                 type: ElementInstanceType.LIVE_QUIZ,
                 elementData: processedElementData,

@@ -30,7 +30,6 @@ model Title {
 
 // Achievements are awarded to participants, groups, or classes
 // They are managed on a course-level and can yield points for the leaderboard, individual XP, or titles
-// TODO: add mechanisms to automate the awarding of achievements
 model Achievement {
   id Int @id @default(autoincrement())
 

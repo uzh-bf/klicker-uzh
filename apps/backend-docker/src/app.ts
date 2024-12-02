@@ -112,7 +112,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
       //   //   Course: 60000,
       //   //   PracticeQuiz: 60000,
       //   //   MicroLearning: 60000,
-      //   //   QuestionInstance: 60000,
+      //   //   ElementInstance: 60000,
       //   //   Participation: 0,
       //   //   LeaderboardEntry: 0,
       //   // },

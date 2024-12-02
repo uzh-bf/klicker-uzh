@@ -160,17 +160,12 @@ model LeaderboardEntry {
   sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
   sessionParticipationId Int?
 
-  // TODO: remove after migration
-  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String?      @db.Uuid
-
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
   course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String? @db.Uuid
 
-  @@unique([type, participantId, sessionId])
   @@unique([type, participantId, courseId])
   @@unique([type, participantId, liveQuizId])
 }

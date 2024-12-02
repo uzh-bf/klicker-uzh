@@ -269,7 +269,6 @@ export async function manipulateMicroLearning(
 
               return {
                 elementType: element.type,
-                migrationId: uuidv4(),
                 order: elem.order,
                 type: ElementInstanceType.MICROLEARNING,
                 elementData: processedElementData,

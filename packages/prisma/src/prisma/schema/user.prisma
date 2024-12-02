@@ -94,21 +94,19 @@ model User {
   catalystIndividual    Boolean @default(false)
   catalystTier          String?
 
-  logins            UserLogin[]
-  session           Session[]
-  accounts          Account[]
-  courses           Course[]
-  questions         Element[]
-  mediaFiles        MediaFile[]
-  tags              Tag[]
-  questionInstances QuestionInstance[]
-  sessions          LiveSession[]
-  groupActivities   GroupActivity[]
-  elementInstances  ElementInstance[]
-  practiceQuizzes   PracticeQuiz[]
-  microLearnings    MicroLearning[]
-  liveQuizzes       LiveQuiz[]
-  competencyTrees   CompetencyTree[]
+  logins           UserLogin[]
+  session          Session[]
+  accounts         Account[]
+  courses          Course[]
+  questions        Element[]
+  mediaFiles       MediaFile[]
+  tags             Tag[]
+  groupActivities  GroupActivity[]
+  elementInstances ElementInstance[]
+  practiceQuizzes  PracticeQuiz[]
+  microLearnings   MicroLearning[]
+  liveQuizzes      LiveQuiz[]
+  competencyTrees  CompetencyTree[]
 
   firstLogin Boolean @default(true)
 

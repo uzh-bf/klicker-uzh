@@ -10,7 +10,6 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
@@ -1281,7 +1280,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
             elements: {
               create: questions.map((element, elementIx) => {
                 return {
-                  migrationId: uuidv4(),
                   order: elementIx,
                   type: DB.ElementInstanceType.LIVE_QUIZ,
                   elementType: element.type,
