@@ -37,6 +37,40 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
     # create or update course-wide analytics entries (should be unique for participant / course combination)
     elif analytics_type == "COURSE":
         for _, row in df_analytics.iterrows():
+            course = db.course.find_unique_or_raise(
+                where={"id": row["courseId"]},
+                include={
+                    "practiceQuizzes": {
+                        "include": {
+                            "stacks": {
+                                "include": {"elements": True},
+                            }
+                        }
+                    },
+                    "microLearnings": {
+                        "include": {
+                            "stacks": {
+                                "include": {"elements": True},
+                            }
+                        }
+                    },
+                },
+            )
+            course = dict(course)
+
+            # add all the number of elements in all practice quizzes and microlearnings together
+            totalElementsAvailable = 0
+            for practice_quiz in course["practiceQuizzes"]:
+                pq_dict = dict(practice_quiz)
+                for stack in pq_dict["stacks"]:
+                    stack_dict = dict(stack)
+                    totalElementsAvailable += len(stack_dict["elements"])
+            for microlearning in course["microLearnings"]:
+                ml_dict = dict(microlearning)
+                for stack in ml_dict["stacks"]:
+                    stack_dict = dict(stack)
+                    totalElementsAvailable += len(stack_dict["elements"])
+
             db.aggregatedanalytics.upsert(
                 where={
                     "type_courseId_timestamp": {
@@ -55,9 +89,7 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
                         "totalScore": row["totalScore"],
                         "totalPoints": row["totalPoints"],
                         "totalXp": row["totalXp"],
-                        # TODO
-                        # ! SET THIS VALUE CORRECTLY - COURSE WIDE IS CURRENTLY AVAILABLE STUFF?!
-                        "totalElementsAvailable": -1,
+                        "totalElementsAvailable": totalElementsAvailable,
                         "course": {"connect": {"id": row["courseId"]}},
                     },
                     "update": {
@@ -67,9 +99,7 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
                         "totalScore": row["totalScore"],
                         "totalPoints": row["totalPoints"],
                         "totalXp": row["totalXp"],
-                        # TODO
-                        # ! SET THIS VALUE CORRECTLY - COURSE WIDE IS CURRENTLY AVAILABLE STUFF?!
-                        "totalElementsAvailable": -1,
+                        "totalElementsAvailable": totalElementsAvailable,
                     },
                 },
             )
